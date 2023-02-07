@@ -23,7 +23,8 @@ def round_to_fraction(
 
     Also, optionally round to a specified number of digits.
 
-    Example: Round numeric column to the nearest 1/4 value.
+    Examples:
+        Round numeric column to the nearest 1/4 value.
 
         >>> import numpy as np
         >>> import pandas as pd
@@ -43,14 +44,19 @@ def round_to_fraction(
         1  2.50  y
         2   NaN  z
 
-    :param df: A pandas DataFrame.
-    :param column_name: Name of column to round to fraction.
-    :param denominator: The denominator of the fraction for rounding. Must be
-        a positive number.
-    :param digits: The number of digits for rounding after rounding to the
-        fraction. Default is np.inf (i.e. no subsequent rounding).
-    :returns: A pandas DataFrame with a column's values rounded.
-    :raises ValueError: If `denominator` is not a positive number.
+    Args:
+        df: A pandas DataFrame.
+        column_name: Name of column to round to fraction.
+        denominator: The denominator of the fraction for rounding. Must be
+            a positive number.
+        digits: The number of digits for rounding after rounding to the
+            fraction. Default is np.inf (i.e. no subsequent rounding).
+
+    Raises:
+        ValueError: If `denominator` is not a positive number.
+
+    Returns:
+        A pandas DataFrame with a column's values rounded.
     """
     check_column(df, column_name)
     check("denominator", denominator, [float, int])

@@ -24,8 +24,7 @@ def toset(series: pd.Series) -> Set:
     (for str, int, float) or a pandas scalar
     (for Timestamp/Timedelta/Interval/Period)
 
-    Example:
-
+    Examples:
         >>> import pandas as pd
         >>> import janitor
         >>> s = pd.Series([1, 2, 3, 5, 5], index=["a", "b", "c", "d", "e"])
@@ -39,8 +38,11 @@ def toset(series: pd.Series) -> Set:
         >>> s.toset()
         {1, 2, 3, 5}
 
-    :param series: A pandas series.
-    :returns: A set of values.
+    Args:
+        series: A pandas series.
+
+    Returns:
+        A set of values.
     """
 
     return set(series.tolist())

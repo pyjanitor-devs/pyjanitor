@@ -5,11 +5,9 @@ import pandas as pd
 
 @pf.register_dataframe_method
 def drop_constant_columns(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Finds and drops the constant columns from a Pandas DataFrame.
+    """Finds and drops the constant columns from a Pandas DataFrame.
 
-    Example:
-
+    Examples:
         >>> import pandas as pd
         >>> import janitor
         >>> data_dict = {
@@ -31,7 +29,10 @@ def drop_constant_columns(df: pd.DataFrame) -> pd.DataFrame:
         1  2  leopard   Shanghai
         2  3     lion      Basel
 
-    :param df: Input Pandas DataFrame
-    :returns: The Pandas DataFrame with the constant columns dropped.
+    Args:
+        df: Input Pandas DataFrame
+
+    Returns:
+        The Pandas DataFrame with the constant columns dropped.
     """
     return df.loc[:, df.nunique().ne(1)]

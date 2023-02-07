@@ -36,8 +36,7 @@ def pivot_longer(
     sort_by_appearance: Optional[bool] = False,
     ignore_index: Optional[bool] = True,
 ) -> pd.DataFrame:
-    """
-    Unpivots a DataFrame from *wide* to *long* format.
+    """Unpivots a DataFrame from *wide* to *long* format.
 
     This method does not mutate the original DataFrame.
 
@@ -54,8 +53,7 @@ def pivot_longer(
     Column selection in `index` and `column_names` is possible using the
     [`select_columns`][janitor.functions.select.select_columns] syntax.
 
-    Example:
-
+    Examples:
         >>> import pandas as pd
         >>> import janitor
         >>> df = pd.DataFrame(
@@ -72,7 +70,7 @@ def pivot_longer(
         0           5.1          3.5           1.4          0.2     setosa
         1           5.9          3.0           5.1          1.8  virginica
 
-    Replicate pandas' melt:
+        Replicate pandas' melt:
 
         >>> df.pivot_longer(index = 'Species')
              Species      variable  value
@@ -85,7 +83,7 @@ def pivot_longer(
         6     setosa   Petal.Width    0.2
         7  virginica   Petal.Width    1.8
 
-    Split the column labels into parts:
+        Split the column labels into parts:
 
         >>> df.pivot_longer(
         ...     index = 'Species',
@@ -103,7 +101,7 @@ def pivot_longer(
         6  virginica  Petal    Length    5.1
         7  virginica  Petal     Width    1.8
 
-    Retain parts of the column names as headers:
+        Retain parts of the column names as headers:
 
         >>> df.pivot_longer(
         ...     index = 'Species',
@@ -117,7 +115,7 @@ def pivot_longer(
         2  virginica  Sepal     5.9    3.0
         3  virginica  Petal     5.1    1.8
 
-    Split the column labels based on regex:
+        Split the column labels based on regex:
 
         >>> df = pd.DataFrame({"id": [1], "new_sp_m5564": [2], "newrel_f65": [3]})
         >>> df
@@ -132,7 +130,7 @@ def pivot_longer(
         0   1        sp      m  5564      2
         1   1       rel      f    65      3
 
-    Split the column labels for the above dataframe using named groups in `names_pattern`:
+        Split the column labels for the above dataframe using named groups in `names_pattern`:
 
         >>> df.pivot_longer(
         ...     index = 'id',
@@ -142,7 +140,7 @@ def pivot_longer(
         0   1        sp      m  5564      2
         1   1       rel      f    65      3
 
-    Convert the dtypes of specific columns with `names_transform`:
+        Convert the dtypes of specific columns with `names_transform`:
 
         >>> result = (df
         ...          .pivot_longer(
@@ -158,7 +156,7 @@ def pivot_longer(
         value        int64
         dtype: object
 
-    Use multiple `.value` to reshape dataframe:
+        Use multiple `.value` to reshape dataframe:
 
         >>> df = pd.DataFrame(
         ...     [
@@ -183,7 +181,7 @@ def pivot_longer(
         0    50    1      10      30
         1    50    2      20      40
 
-    Replicate the above with named groups in `names_pattern` - use `_` instead of `.value`:
+        Replicate the above with named groups in `names_pattern` - use `_` instead of `.value`:
 
         >>> df.pivot_longer(
         ...     index="unit",
@@ -193,7 +191,7 @@ def pivot_longer(
         0    50    1      10      30
         1    50    2      20      40
 
-    Reshape dataframe by passing a sequence to `names_pattern`:
+        Reshape dataframe by passing a sequence to `names_pattern`:
 
         >>> df = pd.DataFrame({'hr1': [514, 573],
         ...                    'hr2': [545, 526],
@@ -215,7 +213,7 @@ def pivot_longer(
         2  Red Sox  545  2008
         3  Yankees  526  2008
 
-    Reshape above dataframe by passing a dictionary to `names_pattern`:
+        Reshape above dataframe by passing a dictionary to `names_pattern`:
 
         >>> df.pivot_longer(
         ...     index = 'team',
@@ -227,7 +225,7 @@ def pivot_longer(
         2  Red Sox  545  2008
         3  Yankees  526  2008
 
-    Multiple values_to:
+        Multiple values_to:
 
         >>> df = pd.DataFrame(
         ...         {
@@ -274,7 +272,7 @@ def pivot_longer(
         7   Austin    Texas  Watermelon      99   None     NaN
         8   Hoover  Alabama  Watermelon      43   None     NaN
 
-    Replicate the above transformation with a nested dictionary passed to `names_pattern`:
+        Replicate the above transformation with a nested dictionary passed to `names_pattern`:
 
         >>> df.pivot_longer(
         ...     index=["City", "State"],
@@ -303,72 +301,74 @@ def pivot_longer(
             - `names_pattern` can accept a dictionary.
             - named groups supported in `names_pattern`.
 
+    Args:
+        df: A pandas DataFrame.
+        index: Name(s) of columns to use as identifier variables.
+            Should be either a single column name, or a list/tuple of
+            column names.
+            `index` should be a list of tuples if the columns are a MultiIndex.
+        column_names: Name(s) of columns to unpivot. Should be either
+            a single column name or a list/tuple of column names.
+            `column_names` should be a list of tuples
+            if the columns are a MultiIndex.
+        names_to: Name of new column as a string that will contain
+            what were previously the column names in `column_names`.
+            The default is `variable` if no value is provided. It can
+            also be a list/tuple of strings that will serve as new column
+            names, if `name_sep` or `names_pattern` is provided.
+            If `.value` is in `names_to`, new column names will be extracted
+            from part of the existing column names and overrides`values_to`.
+        values_to: Name of new column as a string that will contain what
+            were previously the values of the columns in `column_names`.
+            values_to can also be a list/tuple
+            and requires that names_pattern is also a list/tuple.
+        column_level: If columns are a MultiIndex, then use this level to
+            unpivot the DataFrame. Provided for compatibility with pandas' melt,
+            and applies only if neither `names_sep` nor `names_pattern` is
+            provided.
+        names_sep: Determines how the column name is broken up, if
+            `names_to` contains multiple values. It takes the same
+            specification as pandas' `str.split` method, and can be a string
+            or regular expression. `names_sep` does not work with MultiIndex
+            columns.
+        names_pattern: Determines how the column name is broken up.
+            It can be a regular expression containing matching groups.
+            Under the hood it is processed with pandas' `str.extract` function.
+            If it is a single regex, the number of groups must match
+            the length of `names_to`.
+            Named groups are supported, if `names_to` is none. `_` is used
+            instead of `.value` as a placeholder in named groups.
+            `_` can be overloaded for multiple `.value`
+            calls - `_`, `__`, `___`, ...
+            `names_pattern` can also be a list/tuple of regular expressions
+            It can also be a list/tuple of strings;
+            the strings will be treated as regular expressions.
+            Under the hood it is processed with pandas' `str.contains` function.
+            For a list/tuple of regular expressions,
+            `names_to` must also be a list/tuple and the lengths of both
+            arguments must match.
+            `names_pattern` can also be a dictionary, where the keys are
+            the new column names, while the values can be a regular expression
+            or a string which will be evaluated as a regular expression.
+            Alternatively, a nested dictionary can be used, where the sub
+            key(s) are associated with `values_to`. Please have a look
+            at the examples for usage.
+            `names_pattern` does not work with MultiIndex columns.
+        names_transform: Use this option to change the types of columns that
+            have been transformed to rows. This does not applies to the values' columns.
+            Accepts any argument that is acceptable by `pd.astype`.
+        dropna: Determines whether or not to drop nulls
+            from the values columns. Default is `False`.
+        sort_by_appearance: Boolean value that determines
+            the final look of the DataFrame. If `True`, the unpivoted DataFrame
+            will be stacked in order of first appearance.
+        ignore_index: If `True`,
+            the original index is ignored. If `False`, the original index
+            is retained and the index labels will be repeated as necessary.
 
-    :param df: A pandas DataFrame.
-    :param index: Name(s) of columns to use as identifier variables.
-        Should be either a single column name, or a list/tuple of
-        column names.
-        `index` should be a list of tuples if the columns are a MultiIndex.
-    :param column_names: Name(s) of columns to unpivot. Should be either
-        a single column name or a list/tuple of column names.
-        `column_names` should be a list of tuples
-        if the columns are a MultiIndex.
-    :param names_to: Name of new column as a string that will contain
-        what were previously the column names in `column_names`.
-        The default is `variable` if no value is provided. It can
-        also be a list/tuple of strings that will serve as new column
-        names, if `name_sep` or `names_pattern` is provided.
-        If `.value` is in `names_to`, new column names will be extracted
-        from part of the existing column names and overrides`values_to`.
-    :param values_to: Name of new column as a string that will contain what
-        were previously the values of the columns in `column_names`.
-        values_to can also be a list/tuple
-        and requires that names_pattern is also a list/tuple.
-    :param column_level: If columns are a MultiIndex, then use this level to
-        unpivot the DataFrame. Provided for compatibility with pandas' melt,
-        and applies only if neither `names_sep` nor `names_pattern` is
-        provided.
-    :param names_sep: Determines how the column name is broken up, if
-        `names_to` contains multiple values. It takes the same
-        specification as pandas' `str.split` method, and can be a string
-        or regular expression. `names_sep` does not work with MultiIndex
-        columns.
-    :param names_pattern: Determines how the column name is broken up.
-        It can be a regular expression containing matching groups.
-        Under the hood it is processed with pandas' `str.extract` function.
-        If it is a single regex, the number of groups must match
-        the length of `names_to`.
-        Named groups are supported, if `names_to` is none. `_` is used
-        instead of `.value` as a placeholder in named groups.
-        `_` can be overloaded for multiple `.value`
-        calls - `_`, `__`, `___`, ...
-        `names_pattern` can also be a list/tuple of regular expressions
-        It can also be a list/tuple of strings;
-        the strings will be treated as regular expressions.
-        Under the hood it is processed with pandas' `str.contains` function.
-        For a list/tuple of regular expressions,
-        `names_to` must also be a list/tuple and the lengths of both
-        arguments must match.
-        `names_pattern` can also be a dictionary, where the keys are
-        the new column names, while the values can be a regular expression
-        or a string which will be evaluated as a regular expression.
-        Alternatively, a nested dictionary can be used, where the sub
-        key(s) are associated with `values_to`. Please have a look
-        at the examples for usage.
-        `names_pattern` does not work with MultiIndex columns.
-    :param names_transform: Use this option to change the types of columns that
-        have been transformed to rows. This does not applies to the values' columns.
-        Accepts any argument that is acceptable by `pd.astype`.
-    :param dropna: Determines whether or not to drop nulls
-        from the values columns. Default is `False`.
-    :param sort_by_appearance: Default `False`. Boolean value that determines
-        the final look of the DataFrame. If `True`, the unpivoted DataFrame
-        will be stacked in order of first appearance.
-    :param ignore_index: Default `True`. If `True`,
-        the original index is ignored. If `False`, the original index
-        is retained and the index labels will be repeated as necessary.
-    :returns: A pandas DataFrame that has been unpivoted from wide to long
-        format.
+    Returns:
+        A pandas DataFrame that has been unpivoted from wide to long
+            format.
     """  # noqa: E501
 
     # this code builds on the wonderful work of @benjaminjack’s PR
@@ -1374,8 +1374,7 @@ def pivot_wider(
     names_expand: bool = False,
     index_expand: bool = False,
 ) -> pd.DataFrame:
-    """
-    Reshapes data from *long* to *wide* form.
+    """Reshapes data from *long* to *wide* form.
 
     The number of columns are increased, while decreasing
     the number of rows. It is the inverse of the
@@ -1396,10 +1395,7 @@ def pivot_wider(
     If flattened, the values from `values_from` are usually
     at the start of each label in the columns.
 
-
-
-    Example:
-
+    Examples:
         >>> import pandas as pd
         >>> import janitor
         >>> df = [{'dep': 5.5, 'step': 1, 'a': 20, 'b': 30},
@@ -1414,7 +1410,7 @@ def pivot_wider(
         2  6.1     1  22  19
         3  6.1     2  18  29
 
-    Pivot and flatten columns:
+        Pivot and flatten columns:
 
         >>> df.pivot_wider(
         ...     index = "dep",
@@ -1424,7 +1420,7 @@ def pivot_wider(
         0  5.5   20   25   30   37
         1  6.1   22   18   19   29
 
-    Modify columns with `names_sep`:
+        Modify columns with `names_sep`:
 
         >>> df.pivot_wider(
         ...     index = "dep",
@@ -1435,7 +1431,7 @@ def pivot_wider(
         0  5.5  20  25  30  37
         1  6.1  22  18  19  29
 
-    Modify columns with `names_glue`:
+        Modify columns with `names_glue`:
 
         >>> df.pivot_wider(
         ...     index = "dep",
@@ -1446,47 +1442,45 @@ def pivot_wider(
         0  5.5       20       25       30       37
         1  6.1       22       18       19       29
 
-
     !!! abstract "Version Changed"
 
         - 0.24.0
             - Added `reset_index`, `names_expand` and `index_expand` parameters.
 
+    Args:
+        df: A pandas DataFrame.
+        index: Name(s) of columns to use as identifier variables.
+            It should be either a single column name, or a list of column names.
+            If `index` is not provided, the DataFrame's index is used.
+        names_from: Name(s) of column(s) to use to make the new
+            DataFrame's columns. Should be either a single column name,
+            or a list of column names.
+        values_from: Name(s) of column(s) that will be used for populating
+            the new DataFrame's values.
+            If `values_from` is not specified,  all remaining columns
+            will be used.
+        flatten_levels: If `False`, the DataFrame stays as a MultiIndex.
+        names_sep: If `names_from` or `values_from` contain multiple
+            variables, this will be used to join the values into a single string
+            to use as a column name. Default is `_`.
+            Applicable only if `flatten_levels` is `True`.
+        names_glue: A string to control the output of the flattened columns.
+            It offers more flexibility in creating custom column names,
+            and uses python's `str.format_map` under the hood.
+            Simply create the string template,
+            using the column labels in `names_from`,
+            and special `_value` as a placeholder for `values_from`.
+            Applicable only if `flatten_levels` is `True`.
+        reset_index: Determines whether to restore `index`
+            as a column/columns. Applicable only if `index` is provided,
+            and `flatten_levels` is `True`.
+        names_expand: Expand columns to show all the categories.
+            Applies only if `names_from` is a categorical column.
+        index_expand: Expand the index to show all the categories.
+            Applies only if `index` is a categorical column.
 
-    :param df: A pandas DataFrame.
-    :param index: Name(s) of columns to use as identifier variables.
-        It should be either a single column name, or a list of column names.
-        If `index` is not provided, the DataFrame's index is used.
-    :param names_from: Name(s) of column(s) to use to make the new
-        DataFrame's columns. Should be either a single column name,
-        or a list of column names.
-    :param values_from: Name(s) of column(s) that will be used for populating
-        the new DataFrame's values.
-        If `values_from` is not specified,  all remaining columns
-        will be used.
-    :param flatten_levels: Default is `True`. If `False`, the DataFrame stays
-        as a MultiIndex.
-    :param names_sep: If `names_from` or `values_from` contain multiple
-        variables, this will be used to join the values into a single string
-        to use as a column name. Default is `_`.
-        Applicable only if `flatten_levels` is `True`.
-    :param names_glue: A string to control the output of the flattened columns.
-        It offers more flexibility in creating custom column names,
-        and uses python's `str.format_map` under the hood.
-        Simply create the string template,
-        using the column labels in `names_from`,
-        and special `_value` as a placeholder for `values_from`.
-        Applicable only if `flatten_levels` is `True`.
-    :param reset_index: Determines whether to restore `index`
-        as a column/columns. Applicable only if `index` is provided,
-        and `flatten_levels` is `True`. Default is `True`.
-    :param names_expand: Expand columns to show all the categories.
-        Applies only if `names_from` is a categorical column.
-        Default is `False`.
-    :param index_expand: Expand the index to show all the categories.
-        Applies only if `index` is a categorical column. Default is `False`.
-    :returns: A pandas DataFrame that has been unpivoted from long to wide
-        form.
+    Returns:
+        A pandas DataFrame that has been unpivoted from long to wide form.
     """  # noqa: E501
 
     df = df.copy()

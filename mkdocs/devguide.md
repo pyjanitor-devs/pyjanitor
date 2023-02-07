@@ -231,6 +231,20 @@ can help you with reviewing the code checks.
 pyjanitor supports Python 3.6+,
 so all contributed code must maintain this compatibility.
 
+## Docstring Style
+
+We follow the Google docstring style, please read [Napoleon's documentation](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html) for a detailed introduction.
+
+We are using the following docstring section identifiers -- please stick to them if you are contributing a docstring change:
+
+- **Examples:** for sample code blocks demonstrating the use of pyjanitor. keep example blocks in the `pycon` (python-console) style, i.e., input code prefixed by `>>> ` and `... `, and output code with no prefix.
+- **Args:** for function parameters
+- **Raises:** for exceptions
+- **Returns:** for function return value(s)
+- **Yields:** for generator yield value(s)
+
+If possible, it is preferable to stick to this section ordering within each docstring.
+
 ## Tips
 
 To run a subset of tests:

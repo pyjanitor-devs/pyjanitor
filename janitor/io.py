@@ -3,7 +3,7 @@ import os
 import subprocess
 from glob import glob
 from io import StringIO
-from typing import Iterable, Union, TYPE_CHECKING, NamedTuple
+from typing import Any, Iterable, Union, TYPE_CHECKING, NamedTuple
 
 
 import pandas as pd
@@ -17,26 +17,32 @@ from itertools import chain
 
 @deprecated_alias(seperate_df="separate_df", filespath="files_path")
 def read_csvs(
-    files_path: Union[str, Iterable[str]], separate_df: bool = False, **kwargs
+    files_path: Union[str, Iterable[str]],
+    separate_df: bool = False,
+    **kwargs: Any,
 ) -> Union[pd.DataFrame, dict]:
-    """
-    Read multiple CSV files and return a dictionary of DataFrames, or
+    """Read multiple CSV files and return a dictionary of DataFrames, or
     one concatenated DataFrame.
 
-    :param files_path: The filepath pattern matching the CSV files.
-        Accepts regular expressions, with or without `.csv` extension.
-        Also accepts iterable of file paths.
-    :param separate_df: If `False` (default), returns a single Dataframe
-        with the concatenation of the csv files.
-        If `True`, returns a dictionary of separate DataFrames
-        for each CSV file.
-    :param kwargs: Keyword arguments to pass into the
-        original pandas `read_csv`.
-    :returns: DataFrame of concatenated DataFrames or dictionary of DataFrames.
-    :raises JanitorError: if `None` provided for `files_path`.
-    :raises JanitorError: if length of `files_path` is `0`.
-    :raises ValueError: if no CSV files exist in `files_path`.
-    :raises ValueError: if columns in input CSV files do not match.
+    Args:
+        files_path: The filepath pattern matching the CSV files.
+            Accepts regular expressions, with or without `.csv` extension.
+            Also accepts iterable of file paths.
+        separate_df: If `False` (default), returns a single Dataframe
+            with the concatenation of the csv files.
+            If `True`, returns a dictionary of separate DataFrames
+            for each CSV file.
+        **kwargs: Keyword arguments to pass into the
+            original pandas `read_csv`.
+
+    Raises:
+        JanitorError: If `None` provided for `files_path`.
+        JanitorError: If length of `files_path` is `0`.
+        ValueError: If no CSV files exist in `files_path`.
+        ValueError: If columns in input CSV files do not match.
+
+    Returns:
+        DataFrame of concatenated DataFrames or dictionary of DataFrames.
     """
     # Sanitize input
     if files_path is None:
@@ -78,9 +84,8 @@ def read_csvs(
     return dfs_dict
 
 
-def read_commandline(cmd: str, **kwargs) -> pd.DataFrame:
-    """
-    Read a CSV file based on a command-line command.
+def read_commandline(cmd: str, **kwargs: Any) -> pd.DataFrame:
+    """Read a CSV file based on a command-line command.
 
     For example, you may wish to run the following command on `sep-quarter.csv`
     before reading it into a pandas DataFrame:
@@ -101,11 +106,14 @@ def read_commandline(cmd: str, **kwargs) -> pd.DataFrame:
     We default to using `pd.read_csv` underneath the hood.
     Keyword arguments are passed through to read_csv.
 
-    :param cmd: Shell command to preprocess a file on disk.
-    :param kwargs: Keyword arguments that are passed through to
-        `pd.read_csv()`.
-    :returns: A pandas DataFrame parsed from the stdout of the underlying
-        shell.
+    Args:
+        cmd: Shell command to preprocess a file on disk.
+        **kwargs: Keyword arguments that are passed through to
+            `pd.read_csv()`.
+
+    Returns:
+        A pandas DataFrame parsed from the stdout of the underlying
+            shell.
     """
 
     check("cmd", cmd, [str])
@@ -126,8 +134,8 @@ def xlsx_table(
     sheetname: str,
     table: Union[str, list, tuple] = None,
 ) -> Union[pd.DataFrame, dict]:
-    """
-    Returns a DataFrame of values in a table in the Excel file.
+    """Returns a DataFrame of values in a table in the Excel file.
+
     This applies to an Excel file, where the data range is explicitly
     specified as a Microsoft Excel table.
 
@@ -138,13 +146,13 @@ def xlsx_table(
     a dictionary of DataFrames is returned, where the keys of the dictionary
     are the table names.
 
-    Example:
-
+    Examples:
         >>> import pandas as pd
         >>> from janitor import xlsx_table
         >>> filename="../pyjanitor/tests/test_data/016-MSPTDA-Excel.xlsx"
 
-        # single table
+        Single table:
+
         >>> xlsx_table(filename, sheetname='Tables', table='dCategory')
            CategoryID       Category
         0           1       Beginner
@@ -153,7 +161,8 @@ def xlsx_table(
         3           4    Competition
         4           5  Long Distance
 
-        # multiple tables:
+        Multiple tables:
+
         >>> out=xlsx_table(filename, sheetname="Tables", table=["dCategory", "dSalesReps"])
         >>> out["dCategory"]
            CategoryID       Category
@@ -168,18 +177,21 @@ def xlsx_table(
         1           2        Tyrone Smithe     NE
         2           3         Chantel Zoya     SW
 
-    :param path: Path to the Excel File. It can also be an openpyxl Workbook.
-    :param sheetname: Name of the sheet from which the tables
-        are to be extracted.
-    :param table: Name of a table, or list of tables in the sheet.
-    :returns: A pandas DataFrame, or a dictionary of DataFrames,
-        if there are multiple arguments for the `table` parameter,
-        or the argument to `table` is `None`.
-    :raises AttributeError: If a workbook is provided, and is a ReadOnlyWorksheet.
-    :raises ValueError: If there are no tables in the sheet.
-    :raises KeyError: If the provided table does not exist in the sheet.
+    Args:
+          path: Path to the Excel File. It can also be an openpyxl Workbook.
+          sheetname: Name of the sheet from which the tables
+                are to be extracted.
+          table: Name of a table, or list of tables in the sheet.
 
+    Raises:
+        AttributeError: If a workbook is provided, and is a ReadOnlyWorksheet.
+        ValueError: If there are no tables in the sheet.
+        KeyError: If the provided table does not exist in the sheet.
 
+    Returns:
+        A pandas DataFrame, or a dictionary of DataFrames,
+            if there are multiple arguments for the `table` parameter,
+            or the argument to `table` is `None`.
     """  # noqa : E501
 
     try:
@@ -271,10 +283,10 @@ def xlsx_cells(
     border: bool = False,
     protection: bool = False,
     comment: bool = False,
-    **kwargs,
+    **kwargs: Any,
 ) -> Union[dict, pd.DataFrame]:
-    """
-    Imports data from spreadsheet without coercing it into a rectangle.
+    """Imports data from spreadsheet without coercing it into a rectangle.
+
     Each cell is represented by a row in a dataframe, and includes the
     cell's coordinates, the value, row and column position.
     The cell formatting (fill, font, border, etc) can also be accessed;
@@ -284,8 +296,7 @@ def xlsx_cells(
     Inspiration for this comes from R's [tidyxl][link] package.
     [link]: https://nacnudus.github.io/tidyxl/reference/tidyxl.html
 
-    Example:
-
+    Examples:
         >>> import pandas as pd
         >>> from janitor import xlsx_cells
         >>> pd.set_option("display.max_columns", None)
@@ -293,7 +304,8 @@ def xlsx_cells(
         >>> pd.set_option("max_colwidth", None)
         >>> filename = "../pyjanitor/tests/test_data/worked-examples.xlsx"
 
-        # Each cell is returned as a row:
+        Each cell is returned as a row:
+
         >>> xlsx_cells(filename, sheetnames="highlights")
             value internal_value coordinate  row  column data_type  is_date number_format
         0     Age            Age         A1    1       1         s    False       General
@@ -305,7 +317,8 @@ def xlsx_cells(
         6       5              5         A4    4       1         n    False       General
         7       6              6         B4    4       2         n    False       General
 
-        # Access cell formatting such as fill :
+        Access cell formatting such as fill:
+
         >>> out=xlsx_cells(filename, sheetnames="highlights", fill=True).select_columns("value", "fill")
         >>> out
             value                                                                                                                                              fill
@@ -318,7 +331,8 @@ def xlsx_cells(
         6       5     {'patternType': None, 'fgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}}
         7       6     {'patternType': None, 'fgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}}
 
-        # specific cell attributes can be accessed by using Pandas' series.str.get :
+        Specific cell attributes can be accessed by using Pandas' `series.str.get`:
+
         >>> out.fill.str.get("fgColor").str.get("rgb")
         0    00000000
         1    00000000
@@ -330,38 +344,43 @@ def xlsx_cells(
         7    00000000
         Name: fill, dtype: object
 
-    :param path: Path to the Excel File. It can also be an openpyxl Workbook.
-    :param sheetnames: Names of the sheets from which the cells are to be extracted.
-        If `None`, all the sheets in the file are extracted;
-        if it is a string, or list or tuple, only the specified sheets are extracted.
-    :param start_point: start coordinates of the Excel sheet. This is useful
-        if the user is only interested in a subsection of the sheet.
-        If start_point is provided, end_point must be provided as well.
-    :param end_point: end coordinates of the Excel sheet. This is useful
-        if the user is only interested in a subsection of the sheet.
-        If end_point is provided, start_point must be provided as well.
-    :param read_only: Determines if the entire file is loaded in memory,
-        or streamed. For memory efficiency, read_only should be set to `True`.
-        Some cell properties like `comment`, can only be accessed by
-        setting `read_only` to `False`.
-    :param include_blank_cells: Determines if cells without a value should be included.
-    :param fill: If `True`, return fill properties of the cell.
-        It is usually returned as a dictionary.
-    :param font: If `True`, return font properties of the cell.
-        It is usually returned as a dictionary.
-    :param alignment: If `True`, return alignment properties of the cell.
-        It is usually returned as a dictionary.
-    :param border: If `True`, return border properties of the cell.
-        It is usually returned as a dictionary.
-    :param protection: If `True`, return protection properties of the cell.
-        It is usually returned as a dictionary.
-    :param comment: If `True`, return comment properties of the cell.
-        It is usually returned as a dictionary.
-    :param kwargs: Any other attributes of the cell, that can be accessed from openpyxl.
-    :raises ValueError: If kwargs is provided, and one of the keys is a default column.
-    :raises AttributeError: If kwargs is provided and any of the keys
-        is not a openpyxl cell attribute.
-    :returns: A pandas DataFrame, or a dictionary of DataFrames.
+    Args:
+        path: Path to the Excel File. It can also be an openpyxl Workbook.
+        sheetnames: Names of the sheets from which the cells are to be extracted.
+            If `None`, all the sheets in the file are extracted;
+            if it is a string, or list or tuple, only the specified sheets are extracted.
+        start_point: Start coordinates of the Excel sheet. This is useful
+            if the user is only interested in a subsection of the sheet.
+            If `start_point` is provided, `end_point` must be provided as well.
+        end_point: End coordinates of the Excel sheet. This is useful
+            if the user is only interested in a subsection of the sheet.
+            If `end_point` is provided, `start_point` must be provided as well.
+        read_only: Determines if the entire file is loaded in memory,
+            or streamed. For memory efficiency, read_only should be set to `True`.
+            Some cell properties like `comment`, can only be accessed by
+            setting `read_only` to `False`.
+        include_blank_cells: Determines if cells without a value should be included.
+        fill: If `True`, return fill properties of the cell.
+            It is usually returned as a dictionary.
+        font: If `True`, return font properties of the cell.
+            It is usually returned as a dictionary.
+        alignment: If `True`, return alignment properties of the cell.
+            It is usually returned as a dictionary.
+        border: If `True`, return border properties of the cell.
+            It is usually returned as a dictionary.
+        protection: If `True`, return protection properties of the cell.
+            It is usually returned as a dictionary.
+        comment: If `True`, return comment properties of the cell.
+            It is usually returned as a dictionary.
+        **kwargs: Any other attributes of the cell, that can be accessed from openpyxl.
+
+    Raises:
+        ValueError: If kwargs is provided, and one of the keys is a default column.
+        AttributeError: If kwargs is provided and any of the keys
+            is not a openpyxl cell attribute.
+
+    Returns:
+        A pandas DataFrame, or a dictionary of DataFrames.
     """  # noqa : E501
 
     try:
@@ -483,15 +502,18 @@ def _xlsx_cells(
     """
     Function to process a single sheet. Returns a DataFrame.
 
-    :param wb: Openpyxl Workbook.
-    :param defaults: Sequence of default cell attributes.
-    :param parameters: Dictionary of cell attributes to be retrieved.
-        that will always be returned as columns.
-    :param start_point: start coordinates of the Excel sheet.
-    :param end_point: end coordinates of the Excel sheet.
-    :param include_blank_cells: Determines if empty cells should be included.
-    :param path_is_workbook: True/False.
-    :returns : A pandas DataFrame.
+    Args:
+        wb: Openpyxl Workbook.
+        defaults: Sequence of default cell attributes.
+        parameters: Dictionary of cell attributes to be retrieved.
+            that will always be returned as columns.
+        start_point: start coordinates of the Excel sheet.
+        end_point: end coordinates of the Excel sheet.
+        include_blank_cells: Determines if empty cells should be included.
+        path_is_workbook: True/False.
+
+    Returns:
+        A pandas DataFrame.
     """
 
     if start_point:
@@ -519,10 +541,13 @@ def _object_to_dict(obj):
     Recursively get the attributes
     of an object as a dictionary.
 
-    :param obj: Object whose attributes are to be extracted.
-    :returns: A dictionary or the object.
+    Args:
+        obj: Object whose attributes are to be extracted.
+
+    Returns:
+        A dictionary or the object.
     """
-    # https://stackoverflow.com/a/71366813/7175713
+    # https://stackoverflow.com/a/71366813
     data = {}
     if getattr(obj, "__dict__", None):
         for key, value in obj.__dict__.items():

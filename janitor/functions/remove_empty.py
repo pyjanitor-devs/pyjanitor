@@ -13,9 +13,7 @@ def remove_empty(df: pd.DataFrame, reset_index: bool = True) -> pd.DataFrame:
 
     [so]: https://stackoverflow.com/questions/38884538/python-pandas-find-all-rows-where-all-values-are-nan
 
-
-    Example:
-
+    Examples:
         >>> import numpy as np
         >>> import pandas as pd
         >>> import janitor
@@ -34,10 +32,12 @@ def remove_empty(df: pd.DataFrame, reset_index: bool = True) -> pd.DataFrame:
         0  1.0  3.0
         1  2.0  4.0
 
-    :param df: The pandas DataFrame object.
-    :param reset_index: Determines if the index is reset.
-          Default is `True`.
-    :returns: A pandas DataFrame.
+    Args:
+        df: The pandas DataFrame object.
+        reset_index: Determines if the index is reset.
+
+    Returns:
+        A pandas DataFrame.
     """  # noqa: E501
     outcome = df.isna()
     outcome = df.loc[~outcome.all(axis=1), ~outcome.all(axis=0)]

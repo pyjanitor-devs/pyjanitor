@@ -1,6 +1,6 @@
 import warnings
 from enum import Enum
-from typing import Hashable, Iterable, Union
+from typing import Any, Hashable, Iterable, Union
 
 import numpy as np
 import pandas as pd
@@ -16,7 +16,7 @@ from janitor.functions.utils import get_index_labels
 def encode_categorical(
     df: pd.DataFrame,
     column_names: Union[str, Iterable[str], Hashable] = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> pd.DataFrame:
     """Encode the specified columns with Pandas' [category dtype][cat].
 
@@ -43,7 +43,8 @@ def encode_categorical(
 
     `column_names` and `kwargs` parameters cannot be used at the same time.
 
-    Example: Using `column_names`
+    Examples:
+        Using `column_names`
 
         >>> import pandas as pd
         >>> import janitor
@@ -72,7 +73,7 @@ def encode_categorical(
         >>> enc_df["foo"].cat.ordered
         False
 
-    Example: Using `kwargs` to specify an ordered categorical.
+        Using `kwargs` to specify an ordered categorical.
 
         >>> import pandas as pd
         >>> import janitor
@@ -94,15 +95,20 @@ def encode_categorical(
         >>> enc_df["foo"].cat.ordered
         True
 
-    :param df: A pandas DataFrame object.
-    :param column_names: A column name or an iterable (list or tuple)
-        of column names.
-    :param **kwargs: A mapping from column name to either `None`,
-        `'sort'` or `'appearance'`, or a 1-D array. This is useful
-        in creating categorical columns that are ordered, or
-        if the user needs to explicitly specify the categories.
-    :returns: A pandas DataFrame.
-    :raises ValueError: If both `column_names` and `kwargs` are provided.
+    Args:
+        df: A pandas DataFrame object.
+        column_names: A column name or an iterable (list or tuple)
+            of column names.
+        **kwargs: A mapping from column name to either `None`,
+            `'sort'` or `'appearance'`, or a 1-D array. This is useful
+            in creating categorical columns that are ordered, or
+            if the user needs to explicitly specify the categories.
+
+    Raises:
+        ValueError: If both `column_names` and `kwargs` are provided.
+
+    Returns:
+        A pandas DataFrame.
     """  # noqa: E501
 
     if all((column_names, kwargs)):
@@ -160,9 +166,9 @@ def _computations_as_categorical(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
 
 
 def _as_categorical_checks(df: pd.DataFrame, **kwargs) -> dict:
-    """
-    This function raises errors if columns in `kwargs` are
+    """This function raises errors if columns in `kwargs` are
     absent from the dataframe's columns.
+
     It also raises errors if the value in `kwargs`
     is not a string (`'appearance'` or `'sort'`), or a 1D array.
 
@@ -170,12 +176,17 @@ def _as_categorical_checks(df: pd.DataFrame, **kwargs) -> dict:
 
     If all checks pass, a dictionary of column names and value is returned.
 
-    :param df: The pandas DataFrame object.
-    :param **kwargs: A pairing of column name and value.
-    :returns: A dictionary.
-    :raises TypeError: If `value` is not a 1-D array, or a string.
-    :raises ValueError: If `value` is a 1-D array, and contains nulls,
-        or is non-unique.
+    Args:
+        df: The pandas DataFrame object.
+        **kwargs: A pairing of column name and value.
+
+    Raises:
+        TypeError: If `value` is not a 1-D array, or a string.
+        ValueError: If `value` is a 1-D array, and contains nulls,
+            or is non-unique.
+
+    Returns:
+        A dictionary.
     """
 
     check_column(df, kwargs)

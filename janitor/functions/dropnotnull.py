@@ -1,3 +1,4 @@
+"""Implementation source for `dropnotnull`."""
 from typing import Hashable
 import pandas_flavor as pf
 import pandas as pd
@@ -12,8 +13,7 @@ def dropnotnull(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
 
     This method does not mutate the original DataFrame.
 
-    Example:
-
+    Examples:
         >>> import numpy as np
         >>> import pandas as pd
         >>> import janitor
@@ -30,8 +30,11 @@ def dropnotnull(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
              a     b
         0  1.0  None
 
-    :param df: A pandas DataFrame.
-    :param column_name: The column name to drop rows from.
-    :returns: A pandas DataFrame with dropped rows.
+    Args:
+        df: A pandas DataFrame.
+        column_name: The column name to drop rows from.
+
+    Returns:
+        A pandas DataFrame with dropped rows.
     """
     return df[pd.isna(df[column_name])]

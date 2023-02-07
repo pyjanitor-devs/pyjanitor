@@ -30,7 +30,7 @@ from janitor.functions.utils import (
 def conditional_join(
     df: pd.DataFrame,
     right: Union[pd.DataFrame, pd.Series],
-    *conditions,
+    *conditions: Any,
     how: Literal["inner", "left", "right"] = "inner",
     sort_by_appearance: bool = False,
     df_columns: Optional[Any] = slice(None),
@@ -39,9 +39,7 @@ def conditional_join(
     use_numba: bool = False,
     indicator: Optional[bool, str] = False,
 ) -> pd.DataFrame:
-    """
-
-    The conditional_join function operates similarly to `pd.merge`,
+    """The conditional_join function operates similarly to `pd.merge`,
     but allows joins on inequality operators,
     or a combination of equi and non-equi joins.
 
@@ -84,8 +82,7 @@ def conditional_join(
     a single index column is returned; else, a MultiIndex column
     is returned.
 
-    Example:
-
+    Examples:
         >>> import pandas as pd
         >>> import janitor
         >>> df1 = pd.DataFrame({"value_1": [2, 5, 7, 1, 3, 4]})

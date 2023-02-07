@@ -1,5 +1,5 @@
 """Implementation of the `factorize_columns` function"""
-from typing import Hashable, Iterable, Union
+from typing import Any, Hashable, Iterable, Union
 import pandas_flavor as pf
 import pandas as pd
 
@@ -11,10 +11,9 @@ def factorize_columns(
     df: pd.DataFrame,
     column_names: Union[str, Iterable[str], Hashable],
     suffix: str = "_enc",
-    **kwargs,
+    **kwargs: Any,
 ) -> pd.DataFrame:
-    """
-    Converts labels into numerical data.
+    """Converts labels into numerical data.
 
     This method will create a new column with the string `_enc` appended
     after the original column's name.
@@ -26,8 +25,7 @@ def factorize_columns(
 
     This method does not mutate the original DataFrame.
 
-    Example:
-
+    Examples:
         >>> import pandas as pd
         >>> import janitor
         >>> df = pd.DataFrame({
@@ -49,16 +47,18 @@ def factorize_columns(
         3   c    7        2
         4   b    8        0
 
-    :param df: The pandas DataFrame object.
-    :param column_names: A column name or an iterable (list or tuple) of
-        column names.
-    :param suffix: Suffix to be used for the new column.
-        An empty string suffix means, it will override the existing column.
-    :param **kwargs: Keyword arguments. It takes any of the keyword arguments,
-        which the pandas factorize method takes like `sort`, `na_sentinel`,
-        `size_hint`.
+    Args:
+        df: The pandas DataFrame object.
+        column_names: A column name or an iterable (list or tuple) of
+            column names.
+        suffix: Suffix to be used for the new column.
+            An empty string suffix means, it will override the existing column.
+        **kwargs: Keyword arguments. It takes any of the keyword arguments,
+            which the pandas factorize method takes like `sort`, `na_sentinel`,
+            `size_hint`.
 
-    :returns: A pandas DataFrame.
+    Returns:
+        A pandas DataFrame.
     """
     df = _factorize(df.copy(), column_names, suffix, **kwargs)
     return df

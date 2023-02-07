@@ -1,5 +1,4 @@
-"""
-Biology and bioinformatics-oriented data cleaning functions.
+"""Biology and bioinformatics-oriented data cleaning functions.
 """
 
 import pandas as pd
@@ -23,8 +22,7 @@ except ImportError:
 def join_fasta(
     df: pd.DataFrame, filename: str, id_col: str, column_name: str
 ) -> pd.DataFrame:
-    """
-    Convenience method to join in a FASTA file as a column.
+    """Convenience method to join in a FASTA file as a column.
 
     This allows us to add the string sequence of a FASTA file as a new column
     of data in the dataframe.
@@ -39,12 +37,10 @@ def join_fasta(
 
     For more advanced functions, please use phylopandas.
 
-    Method chaining usage example:
-
+    Examples:
         >>> import tempfile
         >>> import pandas as pd
         >>> import janitor.biology
-
         >>> tf = tempfile.NamedTemporaryFile()
         >>> tf.write('''>SEQUENCE_1
         ... MTEITAAMVKELRESTGAGMMDCK
@@ -53,26 +49,26 @@ def join_fasta(
         66
         >>> tf.seek(0)
         0
-
         >>> df = pd.DataFrame({"sequence_accession":
         ... ["SEQUENCE_1", "SEQUENCE_2", ]})
-
         >>> df = df.join_fasta(  # doctest: +SKIP
         ...     filename=tf.name,
         ...     id_col='sequence_accession',
         ...     column_name='sequence',
         ... )
-
         >>> df.sequence  # doctest: +SKIP
         0    MTEITAAMVKELRESTGAGMMDCK
         1           SATVSEINSETDFVAKN
         Name: sequence, dtype: object
 
-    :param df: A pandas DataFrame.
-    :param filename: Path to the FASTA file.
-    :param id_col: The column in the DataFrame that houses sequence IDs.
-    :param column_name: The name of the new column.
-    :returns: A pandas DataFrame with new FASTA string sequence column.
+    Args:
+        df: A pandas DataFrame.
+        filename: Path to the FASTA file.
+        id_col: The column in the DataFrame that houses sequence IDs.
+        column_name: The name of the new column.
+
+    Returns:
+        A pandas DataFrame with new FASTA string sequence column.
     """
     seqrecords = {
         x.id: x.seq.__str__() for x in SeqIO.parse(filename, "fasta")

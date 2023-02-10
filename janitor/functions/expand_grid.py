@@ -30,10 +30,6 @@ def expand_grid(
     The output will always be a DataFrame, usually with a MultiIndex column,
     with the keys of the `others` dictionary serving as the top level columns.
 
-    If a DataFrame with MultiIndex columns
-    is part of the arguments in `others`,
-    the columns are flattened, before the final DataFrame is generated.
-
     If a pandas Series/DataFrame is passed, and has a labeled index, or
     a MultiIndex index, the index is discarded; the final DataFrame
     will have a RangeIndex.
@@ -87,18 +83,8 @@ def expand_grid(
         A pandas DataFrame of the cartesian product.
     """
 
-    if not others:
-        if df is not None:
-            return df
-        return
-
-    check("others", others, [dict])
-
-    # if there is a DataFrame, for the method chaining,
-    # it must have a key, to create a name value pair
     if df is not None:
-        df = df.copy()
-
+        check("df", df, [pd.DataFrame])
         if not df_key:
             raise KeyError(
                 "Using `expand_grid` as part of a "
@@ -109,6 +95,18 @@ def expand_grid(
 
         check("df_key", df_key, [str])
 
+    if not others and (df is not None):
+        return df
+
+    if not others:
+        return None
+
+    check("others", others, [dict])
+
+    for key in others:
+        check("key", key, [str])
+
+    if df is not None:
         others = {**{df_key: df}, **others}
 
     return _computations_expand_grid(others)

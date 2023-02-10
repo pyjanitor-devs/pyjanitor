@@ -117,12 +117,11 @@ def _sub_expand_grid(value, grid_index, key):  # noqa: F811
     Expands the DataFrame based on `grid_index`.
     Returns a dictionary.
     """
-
-    # use set_axis here, to prevent the column change from
-    # transmitting back to the original dataframe
     if isinstance(value.columns, pd.MultiIndex):
-        columns = ["_".join(map(str, ent)) for ent in value]
-        value = value.set_axis(columns, axis="columns")
+        return {
+            (key, *name): val._values[grid_index]
+            for name, val in value.items()
+        }
 
     return {
         (key, name): val._values[grid_index] for name, val in value.items()

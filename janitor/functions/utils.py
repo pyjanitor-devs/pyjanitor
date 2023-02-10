@@ -217,7 +217,20 @@ def _computations_expand_grid(others: dict) -> pd.DataFrame:
     contents = {}
     for key, value, grid_index in grid:
         contents.update(_expand_grid(value, grid_index, key))
-    return pd.DataFrame(contents, copy=False)
+    # check length of keys and pad if necessary
+    lengths = set(map(len, contents))
+    if len(lengths) > 1:
+        lengths = max(lengths)
+        others = {}
+        for key, value in contents.items():
+            len_key = len(key)
+            if len_key < lengths:
+                padding = [""] * (lengths - len_key)
+                key = (*key, *padding)
+            others[key] = value
+    else:
+        others = contents
+    return pd.DataFrame(others, copy=False)
 
 
 @dispatch(pd.DataFrame, (list, tuple), str)

@@ -195,6 +195,8 @@ def _computations_complete(
         explicit,
     ) = _data_checks_complete(df, columns, sort, by, fill_value, explicit)
 
+    return columns
+
     all_strings = True
     for column in columns:
         if not isinstance(column, str):
@@ -447,10 +449,6 @@ def _data_checks_complete(
     Returns `df`, `columns`, `column_checker`, `by`, `fill_value`,
     and `explicit` if all checks pass.
     """
-    # TODO: get `complete` to work on MultiIndex columns,
-    # if there is sufficient interest with use cases
-    if isinstance(df.columns, pd.MultiIndex):
-        raise ValueError("`complete` does not support MultiIndex columns.")
 
     columns = [
         [*grouping] if isinstance(grouping, tuple) else grouping
@@ -458,12 +456,12 @@ def _data_checks_complete(
     ]
     column_checker = []
     for grouping in columns:
-        check("grouping", grouping, [list, dict, str])
-        if not grouping:
-            raise ValueError("grouping cannot be empty")
-        if isinstance(grouping, str):
+        if is_scalar(grouping):
             column_checker.append(grouping)
         else:
+            check("grouping", grouping, [list, dict])
+            if not grouping:
+                raise ValueError("grouping cannot be empty")
             column_checker.extend(grouping)
 
     # columns should not be duplicated across groups
@@ -477,12 +475,6 @@ def _data_checks_complete(
     column_checker_no_duplicates = None
 
     check("sort", sort, [bool])
-
-    if by is not None:
-        if isinstance(by, str):
-            by = [by]
-        check("by", by, [list])
-        check_column(df, by)
 
     check("explicit", explicit, [bool])
 

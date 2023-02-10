@@ -1,5 +1,5 @@
 """Implementation source for `expand_grid`."""
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 import pandas_flavor as pf
 import pandas as pd
 
@@ -14,7 +14,7 @@ def expand_grid(
     df_key: Optional[str] = None,
     *,
     others: Optional[Dict] = None,
-) -> pd.DataFrame:
+) -> Union[pd.DataFrame, None]:
     """Creates a DataFrame from a cartesian combination of all inputs.
 
     It is not restricted to DataFrame;

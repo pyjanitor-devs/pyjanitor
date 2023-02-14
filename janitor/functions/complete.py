@@ -1,6 +1,6 @@
 from typing import Optional, Union, List, Tuple, Dict, Any
 from pandas.core.common import apply_if_callable
-from pandas.core.construction import extract_array
+import numpy as np
 import pandas_flavor as pf
 import pandas as pd
 import functools
@@ -29,8 +29,17 @@ def complete(
 
     Combinations of column names or a list/tuple of column names, or even a
     dictionary of column names and new values are possible.
+    If a dictionary is passed,
+    the user is required to ensure that the values are unique 1-D arrays.
+    The keys in a dictionary must be present in the dataframe.
 
-    MultiIndex columns are not supported.
+    `complete` can also be executed on the names of the index -
+    the index should have names
+    (`df.index.names` or `df.index.name` should not have any None).
+    Groupby is not applicable if `completing` on the index.
+    When `completing` on the index, only the passed levels are returned.
+
+
 
     Examples:
         >>> import pandas as pd
@@ -145,7 +154,8 @@ def complete(
     Args:
         df: A pandas DataFrame.
         *columns: This refers to the columns to be
-            completed. It could be column labels (string type),
+            completed. It can also refer to the names of the index.
+            It could be column labels (string type),
             a list/tuple of column labels, or a dictionary that pairs
             column labels with new values.
         sort: Sort DataFrame based on *columns.
@@ -189,22 +199,17 @@ def _computations_complete(
     (
         columns,
         column_checker,
+        index,
         sort,
         by,
         fill_value,
         explicit,
     ) = _data_checks_complete(df, columns, sort, by, fill_value, explicit)
 
-    return columns
-
-    all_strings = True
-    for column in columns:
-        if not isinstance(column, str):
-            all_strings = False
-            break
+    all_scalars = all(map(is_scalar, columns))
 
     # nothing to 'complete' here
-    if (all_strings and len(columns) == 1) or df.empty:
+    if (all_scalars and len(columns) == 1) or df.empty:
         return df
 
     # under the right conditions, stack/unstack can be faster
@@ -217,14 +222,27 @@ def _computations_complete(
     # trade-off for the simplicity of merge is not so bad
     # of course there could be a better way ...
     if by is None:
-        uniques = _generic_complete(df, columns, all_strings, sort)
+        uniques = _generic_complete(
+            df=df,
+            columns=columns,
+            all_scalars=all_scalars,
+            index=index,
+            sort=sort,
+        )
     else:
-        uniques = df.groupby(by)
-        uniques = uniques.apply(_generic_complete, columns, all_strings, sort)
-        uniques = uniques.droplevel(-1)
+        uniques = df.groupby(by, group_keys=True)
+        uniques = uniques.apply(
+            _generic_complete,
+            columns=columns,
+            all_scalars=all_scalars,
+            index=index,
+            sort=sort,
+        )
+        uniques = uniques.droplevel(-1, axis=0)
         column_checker = by + column_checker
 
     columns = df.columns
+    index_labels = df.index.names
     indicator = False
     if fill_value is not None and not explicit:
         # to get a name that does not exist in the columns
@@ -278,84 +296,112 @@ def _computations_complete(
                         )
                     df.loc[boolean_filter, column_name] = value
 
+    if index and (index_labels != df.index.names):
+        labels = [label for label in index_labels if label in df.index.names]
+        return df.reorder_levels(order=labels, axis="index")
     if not df.columns.equals(columns):
         return df.reindex(columns=columns)
     return df
 
 
 def _generic_complete(
-    df: pd.DataFrame, columns: list, all_strings: bool, sort: bool
+    df: pd.DataFrame, columns: list, all_scalars: bool, index: bool, sort: bool
 ):
     """Generate cartesian product for `_computations_complete`.
 
     Returns a DataFrame, with no duplicates.
     """
-    if all_strings:
-        if sort:
-            uniques = {}
-            for col in columns:
-                column = extract_array(df[col], extract_numpy=True)
-                _, column = pd.factorize(column, sort=sort)
-                uniques[col] = column
+    if all_scalars:
+        if index:
+            uniques = {
+                col: pd.factorize(df.index.get_level_values(col), sort=sort)[
+                    -1
+                ]
+                for col in columns
+            }
         else:
-            uniques = {col: df[col].unique() for col in columns}
+            uniques = {
+                col: pd.factorize(df[col], sort=sort)[-1] for col in columns
+            }
         uniques = _computations_expand_grid(uniques)
+        if index:
+            # it is assured that scalars cannot be single
+            # hence a MultiIndex
+            uniques = {key[0]: value for key, value in uniques.items()}
+            data = list(uniques.values())
+            uniques = pd.MultiIndex.from_arrays(data, names=uniques)
+            if df.columns.nlevels == 1:
+                columns = pd.Index([], name=df.columns.name)
+            else:
+                length = len(df.columns.names)
+                columns = pd.MultiIndex.from_arrays(
+                    [[]] * length, names=df.columns.names
+                )
+            return pd.DataFrame([], index=uniques, columns=columns, copy=False)
+        uniques = pd.DataFrame(uniques, copy=False)
         uniques.columns = columns
         return uniques
 
     uniques = {}
-    df_columns = []
-    for index, column in enumerate(columns):
-        if not isinstance(column, str):
-            df_columns.extend(column)
-        else:
-            df_columns.append(column)
+    for ind, column in enumerate(columns):
         if isinstance(column, dict):
-            column = _complete_column(column, df, sort)
-            uniques = {**uniques, **column}
+            len_columns = len(columns)
+            column = _complete_column(column, df=df, index=index, sort=sort)
+            # iteration here avoids any potential index collision
+            column = {
+                ind + len_columns + key: value for key, value in column.items()
+            }
+            uniques.update(column)
         else:
-            uniques[index] = _complete_column(column, df, sort)
-
-    if len(uniques) == 1:
-        _, uniques = uniques.popitem()
-        return uniques.to_frame()
-
+            uniques[ind] = _complete_column(
+                column, df=df, index=index, sort=sort
+            )
     uniques = _computations_expand_grid(uniques)
-    uniques.columns = df_columns
+    if index:
+        uniques = {key[-1]: value for key, value in uniques.items()}
+        if len(uniques) > 1:
+            data = list(uniques.values())
+            uniques = pd.MultiIndex.from_arrays(data, names=uniques)
+        else:
+            key = next(iter(uniques))
+            data = uniques[key]
+            uniques = pd.Index(data, name=key)
+        if df.columns.nlevels == 1:
+            columns = pd.Index([], name=df.columns.name)
+        else:
+            length = len(df.columns.names)
+            columns = pd.MultiIndex.from_arrays(
+                [[]] * length, names=df.columns.names
+            )
+        return pd.DataFrame([], index=uniques, columns=columns, copy=False)
+
+    uniques = pd.DataFrame(uniques, copy=False)
+    uniques.columns = uniques.columns.droplevel(0)
     return uniques
 
 
 @functools.singledispatch
-def _complete_column(column: str, df, sort):
+def _complete_column(column, df, index, sort):
     """
     Args:
-        column: str/list/dict
+        column: scalar/list/dict
         df: Pandas DataFrame
         sort: whether or not to sort the Series.
 
     Returns:
         A Pandas Series/DataFrame with no duplicates,
-            or a dictionary of unique Pandas Series.
+        or a dictionary of unique Pandas Series.
     """
-    # the cost of checking uniqueness is expensive,
-    # especially for large data
-    # dirty tests also show that drop_duplicates
-    # is faster than pd.unique for fairly large data
 
-    column = df[column]
-    dupes = column.duplicated()
-
-    if dupes.any():
-        column = column[~dupes]
-
-    if sort and not column.is_monotonic_increasing:
-        column = column.sort_values()
-
-    return column
+    if index:
+        _, arr = pd.factorize(df.index.get_level_values(column), sort=sort)
+    else:
+        _, arr = pd.factorize(df.loc(axis=1)[column], sort=sort)
+    return pd.Series(arr, name=column)
 
 
 @_complete_column.register(list)  # noqa: F811
-def _sub_complete_column(column, df, sort):  # noqa: F811
+def _sub_complete_column(column, df, index, sort):  # noqa: F811
     """
     Args:
         column: list
@@ -366,20 +412,40 @@ def _sub_complete_column(column, df, sort):  # noqa: F811
         Pandas DataFrame
     """
 
-    outcome = df.loc[:, column]
-    dupes = outcome.duplicated()
+    if index:
+        outcome = df.index
+        exclude = [label for label in outcome.names if label not in column]
+        if exclude:
+            outcome = outcome.droplevel(level=exclude)
+        # ideally, there shouldn't be nulls in the index
+        exclude = [outcome.get_level_values(label).isna() for label in column]
+        exclude = np.column_stack(exclude).all(axis=1)
+        if exclude.any():
+            outcome = outcome[~exclude]
+        _, outcome = pd.factorize(outcome, sort=sort)
+        outcome.names = column
 
-    if dupes.any():
-        outcome = outcome.loc[~dupes]
+    else:
+        outcome = df.loc(axis=1)[column]
 
-    if sort:
-        outcome = outcome.sort_values(by=column)
+        exclude = outcome.isna().all(axis=1)
+
+        if exclude.any(axis=None):
+            outcome = outcome.loc[~exclude]
+
+        exclude = outcome.duplicated()
+
+        if exclude.any():
+            outcome = outcome.loc[~exclude]
+
+        if sort:
+            outcome = outcome.sort_values(by=column)
 
     return outcome
 
 
 @_complete_column.register(dict)  # noqa: F811
-def _sub_complete_column(column, df, sort):  # noqa: F811
+def _sub_complete_column(column, df, index, sort):  # noqa: F811
     """
     Args:
         column: dictionary
@@ -391,8 +457,11 @@ def _sub_complete_column(column, df, sort):  # noqa: F811
     """
 
     collection = {}
-    for key, value in column.items():
-        arr = apply_if_callable(value, df[key])
+    for ind, (key, value) in enumerate(column.items()):
+        if index:
+            arr = apply_if_callable(value, df.index.get_level_values(key))
+        else:
+            arr = apply_if_callable(value, df[key])
         if not is_list_like(arr):
             raise ValueError(f"value for {key} should be a 1-D array.")
         if not hasattr(arr, "shape"):
@@ -412,20 +481,16 @@ def _sub_complete_column(column, df, sort):  # noqa: F811
         if arr_ndim != 1:
             raise ValueError(f"Kindly provide a 1-D array for {key}.")
 
-        if not isinstance(arr, pd.Series):
-            arr = pd.Series(arr)
+        if sort:
+            _, arr = pd.factorize(arr, sort=sort)
 
-        dupes = arr.duplicated()
+        if isinstance(key, tuple):  # handle a MultiIndex column
+            arr = pd.DataFrame(arr, columns=pd.MultiIndex.from_tuples([key]))
 
-        if dupes.any():
-            arr = arr[~dupes]
+        else:
+            arr = pd.Series(arr, name=key)
 
-        if sort and not arr.is_monotonic_increasing:
-            arr = arr.sort_values()
-
-        arr.name = key
-
-        collection[key] = arr
+        collection[ind] = arr
 
     return collection
 
@@ -446,9 +511,30 @@ def _data_checks_complete(
     Check is conducted to ensure that column names are not repeated.
     Also checks that the names in `columns` actually exist in `df`.
 
-    Returns `df`, `columns`, `column_checker`, `by`, `fill_value`,
+    Returns `df`, `columns`, `column_checker`, `index`, `by`, `fill_value`,
     and `explicit` if all checks pass.
     """
+
+    df_columns = df.columns
+    index_labels = (
+        df.index.names
+        if isinstance(df.index, pd.MultiIndex)
+        else [df.index.name]
+    )
+    if by:
+        if not isinstance(by, list):
+            by = [by]
+        for label in by:
+            if label in df_columns:
+                continue
+            elif label in index_labels:
+                index = True
+                continue
+            else:
+                raise ValueError(
+                    f"{label} in by is neither in the dataframe's columns, "
+                    "nor is it a label in the dataframe's index names."
+                )
 
     columns = [
         [*grouping] if isinstance(grouping, tuple) else grouping
@@ -461,27 +547,58 @@ def _data_checks_complete(
         else:
             check("grouping", grouping, [list, dict])
             if not grouping:
-                raise ValueError("grouping cannot be empty")
+                raise ValueError("entry in columns argument cannot be empty")
             column_checker.extend(grouping)
 
     # columns should not be duplicated across groups
     column_checker_no_duplicates = set()
     for column in column_checker:
+        if column is None:
+            raise ValueError("label in the columns argument cannot be None.")
         if column in column_checker_no_duplicates:
-            raise ValueError(f"{column} column should be in only one group.")
+            raise ValueError(f"{column} should be in only one group.")
         column_checker_no_duplicates.add(column)  # noqa: PD005
 
-    check_column(df, column_checker)
+    # columns should either be all in columns
+    # or all in index.names/index.name
+    # ideally there shouldn't be None in either index names or columns
+    index = False
+    for label in column_checker:
+        if by and (label in by):
+            raise ValueError(f"{label} already exists in by.")
+        if label in df_columns:
+            continue
+        elif label in index_labels:
+            index = True
+            continue
+        else:
+            raise ValueError(
+                f"{label} is neither in the dataframe's columns, "
+                "nor is it a label in the dataframe's index names."
+            )
+
+    if index:
+        for label in column_checker:
+            if label not in index_labels:
+                raise ValueError(
+                    f"{label} not found in the dataframe's index names."
+                )
+        if by:
+            raise ValueError(
+                "Groupby not supported if complete "
+                "is applied on the dataframe's index."
+            )
+
+    check("explicit", explicit, [bool])
+
     column_checker_no_duplicates = None
 
     check("sort", sort, [bool])
 
-    check("explicit", explicit, [bool])
-
     fill_value_check = is_scalar(fill_value), isinstance(fill_value, dict)
     if not any(fill_value_check):
         raise TypeError(
-            "`fill_value` should either be a dictionary or a scalar value."
+            "fill_value should either be a dictionary or a scalar value."
         )
     if fill_value_check[-1]:
         check_column(df, fill_value)
@@ -491,4 +608,4 @@ def _data_checks_complete(
                     f"The value for {column_name} should be a scalar."
                 )
 
-    return columns, column_checker, sort, by, fill_value, explicit
+    return columns, column_checker, index, sort, by, fill_value, explicit

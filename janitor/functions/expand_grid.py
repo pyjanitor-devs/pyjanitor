@@ -109,4 +109,5 @@ def expand_grid(
     if df is not None:
         others = {**{df_key: df}, **others}
 
-    return _computations_expand_grid(others)
+    others = _computations_expand_grid(others)
+    return pd.DataFrame(others, copy=False)

@@ -230,7 +230,7 @@ def _computations_expand_grid(others: dict) -> pd.DataFrame:
             others[key] = value
     else:
         others = contents
-    return pd.DataFrame(others, copy=False)
+    return others
 
 
 @dispatch(pd.DataFrame, (list, tuple), str)

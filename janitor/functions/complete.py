@@ -151,6 +151,45 @@ def complete(
         6      2        2         b     0.0    99.0
         7      2        3         b     4.0     7.0
 
+        Expose missing values via the index:
+
+        >>> index = pd.date_range('1/1/2000', periods=4, freq='T')
+        >>> series = pd.Series([0.0, None, 2.0, 3.0], index=index)
+        >>> DT = pd.DataFrame({'s': series})
+        >>> DT.index.name = 'dates'
+        >>> DT
+                               s
+        dates
+        2000-01-01 00:00:00  0.0
+        2000-01-01 00:01:00  NaN
+        2000-01-01 00:02:00  2.0
+        2000-01-01 00:03:00  3.0
+
+        >>> dates = {'dates':lambda f: pd.date_range(f.min(), f.max(), freq='30S')}
+        >>> DT.complete(dates)
+                               s
+        dates
+        2000-01-01 00:00:00  0.0
+        2000-01-01 00:00:30  NaN
+        2000-01-01 00:01:00  NaN
+        2000-01-01 00:01:30  NaN
+        2000-01-01 00:02:00  2.0
+        2000-01-01 00:02:30  NaN
+        2000-01-01 00:03:00  3.0
+
+        The above can be solved in a simpler way with `pd.DataFrame.asfreq`:
+
+        >>> DT.asfreq(freq='30S')
+                               s
+        dates
+        2000-01-01 00:00:00  0.0
+        2000-01-01 00:00:30  NaN
+        2000-01-01 00:01:00  NaN
+        2000-01-01 00:01:30  NaN
+        2000-01-01 00:02:00  2.0
+        2000-01-01 00:02:30  NaN
+        2000-01-01 00:03:00  3.0
+
     Args:
         df: A pandas DataFrame.
         *columns: This refers to the columns to be
@@ -171,7 +210,7 @@ def complete(
 
     Returns:
         A pandas DataFrame with explicit missing rows, if any.
-    """
+    """  # noqa: E501
 
     if not columns:
         return df

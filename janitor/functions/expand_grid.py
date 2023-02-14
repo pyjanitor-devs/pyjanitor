@@ -40,6 +40,7 @@ def expand_grid(
     `droplevel` method.
 
     Examples:
+
         >>> import pandas as pd
         >>> import janitor as jn
         >>> df = pd.DataFrame({"x": [1, 2], "y": [2, 1]})

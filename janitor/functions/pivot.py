@@ -1200,6 +1200,7 @@ def _pivot_longer_dot_value(
                 "cumcount": cumcount.unique(),
             }
         indexer = _computations_expand_grid(indexer)
+        indexer = pd.DataFrame(indexer, copy=False)
 
         indexer.columns = columns
         df = df.reindex(columns=indexer)

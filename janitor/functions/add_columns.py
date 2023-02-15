@@ -1,12 +1,18 @@
 import pandas_flavor as pf
 
-from janitor.utils import check, deprecated_alias
+from janitor.utils import check, deprecated_alias, refactored_function
 import pandas as pd
 from typing import Union, List, Any, Tuple
 import numpy as np
 
 
 @pf.register_dataframe_method
+@refactored_function(
+    message=(
+        "This function will be deprecated in a 1.x release. "
+        "Please use `pd.DataFrame.assign` instead."
+    )
+)
 @deprecated_alias(col_name="column_name")
 def add_column(
     df: pd.DataFrame,
@@ -22,7 +28,13 @@ def add_column(
     df[column_name] = value
     ```
 
-    Example: Add a column of constant values to the dataframe.
+    !!!note
+
+        This function will be deprecated in a 1.x release.
+        Please use `pd.DataFrame.assign` instead.
+
+    Examples:
+        Add a column of constant values to the dataframe.
 
         >>> import pandas as pd
         >>> import janitor
@@ -33,7 +45,7 @@ def add_column(
         1  1  b  1
         2  2  c  1
 
-    Example: Add a column of different values to the dataframe.
+        Add a column of different values to the dataframe.
 
         >>> import pandas as pd
         >>> import janitor
@@ -44,7 +56,7 @@ def add_column(
         1  1  b  f
         2  2  c  g
 
-    Example: Add a column using an iterator.
+        Add a column using an iterator.
 
         >>> import pandas as pd
         >>> import janitor
@@ -55,21 +67,26 @@ def add_column(
         1  1  b  5
         2  2  c  6
 
-    :param df: A pandas DataFrame.
-    :param column_name: Name of the new column. Should be a string, in order
-        for the column name to be compatible with the Feather binary
-        format (this is a useful thing to have).
-    :param value: Either a single value, or a list/tuple of values.
-    :param fill_remaining: If value is a tuple or list that is smaller than
-        the number of rows in the DataFrame, repeat the list or tuple
-        (R-style) to the end of the DataFrame.
-    :returns: A pandas DataFrame with an added column.
-    :raises ValueError: If attempting to add a column that already exists.
-    :raises ValueError: If `value` has more elements that number of
-        rows in the DataFrame.
-    :raises ValueError: If attempting to add an iterable of values with
-        a length not equal to the number of DataFrame rows.
-    :raises ValueError: If `value` has length of `0`.
+    Args:
+        df: A pandas DataFrame.
+        column_name: Name of the new column. Should be a string, in order
+            for the column name to be compatible with the Feather binary
+            format (this is a useful thing to have).
+        value: Either a single value, or a list/tuple of values.
+        fill_remaining: If value is a tuple or list that is smaller than
+            the number of rows in the DataFrame, repeat the list or tuple
+            (R-style) to the end of the DataFrame.
+
+    Raises:
+        ValueError: If attempting to add a column that already exists.
+        ValueError: If `value` has more elements that number of
+            rows in the DataFrame.
+        ValueError: If attempting to add an iterable of values with
+            a length not equal to the number of DataFrame rows.
+        ValueError: If `value` has length of `0`.
+
+    Returns:
+        A pandas DataFrame with an added column.
     """
     check("column_name", column_name, [str])
 
@@ -119,10 +136,16 @@ def add_column(
 
 
 @pf.register_dataframe_method
+@refactored_function(
+    message=(
+        "This function will be deprecated in a 1.x release. "
+        "Please use `pd.DataFrame.assign` instead."
+    )
+)
 def add_columns(
     df: pd.DataFrame,
     fill_remaining: bool = False,
-    **kwargs,
+    **kwargs: Any,
 ) -> pd.DataFrame:
     """Add multiple columns to the dataframe.
 
@@ -139,7 +162,13 @@ def add_columns(
 
     Values passed can be scalar or iterable (list, ndarray, etc.)
 
-    Example: Inserting two more columns into a dataframe.
+    !!!note
+
+        This function will be deprecated in a 1.x release.
+        Please use `pd.DataFrame.assign` instead.
+
+    Examples:
+        Inserting two more columns into a dataframe.
 
         >>> import pandas as pd
         >>> import janitor
@@ -150,13 +179,17 @@ def add_columns(
         1  1  b  4  e
         2  2  c  4  f
 
-    :param df: A pandas dataframe.
-    :param fill_remaining: If value is a tuple or list that is smaller than
-        the number of rows in the DataFrame, repeat the list or tuple
-        (R-style) to the end of the DataFrame. (Passed to `add_column`)
-    :param **kwargs: Column, value pairs which are looped through in
-        `add_column` calls.
-    :returns: A pandas DataFrame with added columns.
+    Args:
+        df: A pandas DataFrame.
+        fill_remaining: If value is a tuple or list that is smaller than
+            the number of rows in the DataFrame, repeat the list or tuple
+            (R-style) to the end of the DataFrame. (Passed to
+            [`add_column`][janitor.functions.add_columns.add_column])
+        **kwargs: Column, value pairs which are looped through in
+            [`add_column`][janitor.functions.add_columns.add_column] calls.
+
+    Returns:
+        A pandas DataFrame with added columns.
     """
     # Note: error checking can pretty much be handled in `add_column`
 

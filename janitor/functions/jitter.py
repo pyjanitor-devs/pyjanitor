@@ -16,27 +16,7 @@ def jitter(
     clip: Optional[Iterable[np.number]] = None,
     random_state: Optional[np.number] = None,
 ) -> pd.DataFrame:
-    """
-    Adds Gaussian noise (jitter) to the values of a column.
-
-    Example:
-
-        >>> import numpy as np
-        >>> import pandas as pd
-        >>> import janitor
-        >>> df = pd.DataFrame({"a": [3, 4, 5, np.nan]})
-        >>> df
-             a
-        0  3.0
-        1  4.0
-        2  5.0
-        3  NaN
-        >>> df.jitter("a", dest_column_name="a_jit", scale=1, random_state=42)
-             a     a_jit
-        0  3.0  3.496714
-        1  4.0  3.861736
-        2  5.0  5.647689
-        3  NaN       NaN
+    """Adds Gaussian noise (jitter) to the values of a column.
 
     A new column will be created containing the values of the original column
     with Gaussian noise added.
@@ -55,27 +35,49 @@ def jitter(
 
     This method mutates the original DataFrame.
 
-    :param df: A pandas DataFrame.
-    :param column_name: Name of the column containing
-        values to add Gaussian jitter to.
-    :param dest_column_name: The name of the new column containing the
-        jittered values that will be created.
-    :param scale: A positive value multiplied by the original
-        column value to determine the scale (standard deviation) of the
-        Gaussian distribution to sample from. (A value of zero results in
-        no jittering.)
-    :param clip: An iterable of two values (minimum and maximum) to clip
-        the jittered values to, default to None.
-    :param random_state: An integer or 1-d array value used to set the random
-        seed, default to None.
+    Examples:
+        >>> import numpy as np
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame({"a": [3, 4, 5, np.nan]})
+        >>> df
+             a
+        0  3.0
+        1  4.0
+        2  5.0
+        3  NaN
+        >>> df.jitter("a", dest_column_name="a_jit", scale=1, random_state=42)
+             a     a_jit
+        0  3.0  3.496714
+        1  4.0  3.861736
+        2  5.0  5.647689
+        3  NaN       NaN
 
-    :returns: A pandas DataFrame with a new column containing
-        Gaussian-jittered values from another column.
-    :raises TypeError: If `column_name` is not numeric.
-    :raises ValueError: If `scale` is not a numerical value
-        greater than `0`.
-    :raises ValueError: If `clip` is not an iterable of length `2`.
-    :raises ValueError: If `clip[0]` is greater than `clip[1]`.
+    Args:
+        df: A pandas DataFrame.
+        column_name: Name of the column containing
+            values to add Gaussian jitter to.
+        dest_column_name: The name of the new column containing the
+            jittered values that will be created.
+        scale: A positive value multiplied by the original
+            column value to determine the scale (standard deviation) of the
+            Gaussian distribution to sample from. (A value of zero results in
+            no jittering.)
+        clip: An iterable of two values (minimum and maximum) to clip
+            the jittered values to, default to None.
+        random_state: An integer or 1-d array value used to set the random
+            seed, default to None.
+
+    Raises:
+        TypeError: If `column_name` is not numeric.
+        ValueError: If `scale` is not a numerical value
+            greater than `0`.
+        ValueError: If `clip` is not an iterable of length `2`.
+        ValueError: If `clip[0]` is greater than `clip[1]`.
+
+    Returns:
+        A pandas DataFrame with a new column containing
+            Gaussian-jittered values from another column.
     """
 
     # Check types

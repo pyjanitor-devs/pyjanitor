@@ -1,12 +1,14 @@
 import datetime as dt
 import warnings
 from functools import reduce
-from typing import Dict, Hashable, Iterable, List, Optional
+from typing import Any, Dict, Hashable, Iterable, List, Optional
 
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
-from janitor.utils import deprecated_alias
+from janitor.utils import deprecated_alias, refactored_function
+
+warnings.simplefilter("always", DeprecationWarning)
 
 
 @pf.register_dataframe_method
@@ -18,7 +20,7 @@ def filter_string(
     complement: bool = False,
     case: bool = True,
     flags: int = 0,
-    na=None,
+    na: Any = None,
     regex: bool = True,
 ) -> pd.DataFrame:
     """Filter a string-based column according to whether it contains a substring.
@@ -32,7 +34,8 @@ def filter_string(
 
     This method does not mutate the original DataFrame.
 
-    Example: Retain rows whose column values contain a particular substring.
+    Examples:
+        Retain rows whose column values contain a particular substring.
 
         >>> import pandas as pd
         >>> import janitor
@@ -50,7 +53,7 @@ def filter_string(
         1  4  peeL
         2  5  sail
 
-    Example: Filter names does not contain `'.'` (disable regex mode).
+        Filter names does not contain `'.'` (disable regex mode).
 
         >>> import pandas as pd
         >>> import janitor
@@ -63,20 +66,23 @@ def filter_string(
                Name
         0  JoseChen
 
-    :param df: A pandas DataFrame.
-    :param column_name: The column to filter. The column should contain strings.
-    :param search_string: A regex pattern or a (sub-)string to search.
-    :param complement: Whether to return the complement of the filter or not. If
-        set to True, then the rows for which the string search fails are retained
-        instead.
-    :param case: If True, case sensitive.
-    :param flags: Flags to pass through to the re module, e.g. re.IGNORECASE.
-    :param na: Fill value for missing values. The default depends on dtype of
-        the array. For object-dtype, `numpy.nan` is used. For `StringDtype`,
-        `pandas.NA` is used.
-    :param regex: If True, assumes `search_string` is a regular expression. If False,
-        treats the `search_string` as a literal string.
-    :returns: A filtered pandas DataFrame.
+    Args:
+        df: A pandas DataFrame.
+        column_name: The column to filter. The column should contain strings.
+        search_string: A regex pattern or a (sub-)string to search.
+        complement: Whether to return the complement of the filter or not. If
+            set to True, then the rows for which the string search fails are retained
+            instead.
+        case: If True, case sensitive.
+        flags: Flags to pass through to the re module, e.g. re.IGNORECASE.
+        na: Fill value for missing values. The default depends on dtype of
+            the array. For object-dtype, `numpy.nan` is used. For `StringDtype`,
+            `pandas.NA` is used.
+        regex: If True, assumes `search_string` is a regular expression. If False,
+            treats the `search_string` as a literal string.
+
+    Returns:
+        A filtered pandas DataFrame.
     """  # noqa: E501
 
     criteria = df[column_name].str.contains(
@@ -94,6 +100,12 @@ def filter_string(
 
 
 @pf.register_dataframe_method
+@refactored_function(
+    message=(
+        "This function will be deprecated in a 1.x release. "
+        "Please use `pd.DataFrame.query` instead."
+    )
+)
 def filter_on(
     df: pd.DataFrame,
     criteria: str,
@@ -109,11 +121,19 @@ def filter_on(
     intent of a pandas user than the verb `query`.
 
     This is intended to be the method-chaining equivalent of the following:
+
     ```python
     df = df[df["score"] < 3]
     ```
 
-    Example: Filter students who failed an exam (scored less than 50).
+    !!!note
+
+        This function will be deprecated in a 1.x release.
+        Please use `pd.DataFrame.query` instead.
+
+
+    Examples:
+        Filter students who failed an exam (scored less than 50).
 
         >>> import pandas as pd
         >>> import janitor
@@ -132,14 +152,25 @@ def filter_on(
 
     Credit to Brant Peterson for the name.
 
-    :param df: A pandas DataFrame.
-    :param criteria: A filtering criteria that returns an array or Series of
-        booleans, on which pandas can filter on.
-    :param complement: Whether to return the complement of the filter or not.
-        If set to True, then the rows for which the criteria is False are
-        retained instead.
-    :returns: A filtered pandas DataFrame.
+    Args:
+        df: A pandas DataFrame.
+        criteria: A filtering criteria that returns an array or Series of
+            booleans, on which pandas can filter on.
+        complement: Whether to return the complement of the filter or not.
+            If set to True, then the rows for which the criteria is False are
+            retained instead.
+
+    Returns:
+        A filtered pandas DataFrame.
     """
+
+    warnings.warn(
+        "This function will be deprecated in a 1.x release. "
+        "Kindly use `pd.DataFrame.query` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
     if complement:
         return df.query(f"not ({criteria})")
     return df.query(criteria)
@@ -170,8 +201,7 @@ def filter_date(
 
     [datetime]: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.to_datetime.html
 
-    Example:
-
+    Examples:
         >>> import pandas as pd
         >>> import janitor
         >>> df = pd.DataFrame({
@@ -202,21 +232,24 @@ def filter_date(
         parameters. If there's an issue with the format of the DataFrame being
         parsed, you would pass `{'format': your_format}` to `column_date_options`.
 
-    :param df: The dataframe to filter on.
-    :param column_name: The column which to apply the fraction transformation.
-    :param start_date: The beginning date to use to filter the DataFrame.
-    :param end_date: The end date to use to filter the DataFrame.
-    :param years: The years to use to filter the DataFrame.
-    :param months: The months to use to filter the DataFrame.
-    :param days: The days to use to filter the DataFrame.
-    :param column_date_options: Special options to use when parsing the date
-        column in the original DataFrame. The options may be found at the
-        official Pandas documentation.
-    :param format: If you're using a format for `start_date` or `end_date`
-        that is not recognized natively by pandas' `to_datetime` function, you
-        may supply the format yourself. Python date and time formats may be
-        found [here](http://strftime.org/).
-    :returns: A filtered pandas DataFrame.
+    Args:
+        df: The dataframe to filter on.
+        column_name: The column which to apply the fraction transformation.
+        start_date: The beginning date to use to filter the DataFrame.
+        end_date: The end date to use to filter the DataFrame.
+        years: The years to use to filter the DataFrame.
+        months: The months to use to filter the DataFrame.
+        days: The days to use to filter the DataFrame.
+        column_date_options: Special options to use when parsing the date
+            column in the original DataFrame. The options may be found at the
+            official Pandas documentation.
+        format: If you're using a format for `start_date` or `end_date`
+            that is not recognized natively by pandas' `to_datetime` function, you
+            may supply the format yourself. Python date and time formats may be
+            found [here](http://strftime.org/).
+
+    Returns:
+        A filtered pandas DataFrame.
     """  # noqa: E501
 
     def _date_filter_conditions(conditions):
@@ -272,7 +305,8 @@ def filter_column_isin(
 
     Assumes exact matching; fuzzy matching not implemented.
 
-    Example: Filter the dataframe to retain rows for which `names`
+    Examples:
+        Filter the dataframe to retain rows for which `names`
         are exactly `James` or `John`.
 
         >>> import pandas as pd
@@ -287,24 +321,29 @@ def filter_column_isin(
           names foo
         2  John   z
 
-    This is the method-chaining alternative to:
+        This is the method-chaining alternative to:
 
-    ```python
-    df = df[df["names"].isin(["James", "John"])]
-    ```
+        ```python
+        df = df[df["names"].isin(["James", "John"])]
+        ```
 
-    If `complement=True`, then we will only get rows for which the names
-    are neither `James` nor `John`.
+        If `complement=True`, then we will only get rows for which the names
+        are neither `James` nor `John`.
 
-    :param df: A pandas DataFrame.
-    :param column_name: The column on which to filter.
-    :param iterable: An iterable. Could be a list, tuple, another pandas
-        Series.
-    :param complement: Whether to return the complement of the selection or
-        not.
-    :returns: A filtered pandas DataFrame.
-    :raises ValueError: If `iterable` does not have a length of `1`
-        or greater.
+    Args:
+        df: A pandas DataFrame.
+        column_name: The column on which to filter.
+        iterable: An iterable. Could be a list, tuple, another pandas
+            Series.
+        complement: Whether to return the complement of the selection or
+            not.
+
+    Raises:
+        ValueError: If `iterable` does not have a length of `1`
+            or greater.
+
+    Returns:
+        A filtered pandas DataFrame.
     """  # noqa: E501
     if len(iterable) == 0:
         raise ValueError(

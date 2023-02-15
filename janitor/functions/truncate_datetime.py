@@ -17,7 +17,6 @@ def truncate_datetime_dataframe(
     This method does not mutate the original DataFrame.
 
     Examples:
-
         >>> import pandas as pd
         >>> import janitor
         >>> df = pd.DataFrame({
@@ -35,14 +34,18 @@ def truncate_datetime_dataframe(
         1  yyyy 2020-03-11
         2  zzzz 2020-03-12
 
-    :param df: The pandas DataFrame on which to truncate datetime.
-    :param datepart: Truncation precision, YEAR, MONTH, DAY,
-        HOUR, MINUTE, SECOND. (String is automagically
-        capitalized)
+    Args:
+        df: The pandas DataFrame on which to truncate datetime.
+        datepart: Truncation precision, YEAR, MONTH, DAY,
+            HOUR, MINUTE, SECOND. (String is automagically
+            capitalized)
 
-    :raises ValueError: If an invalid `datepart` precision is passed in.
-    :returns: A pandas DataFrame with all valid datetimes truncated down
-        to the specified precision.
+    Raises:
+        ValueError: If an invalid `datepart` precision is passed in.
+
+    Returns:
+        A pandas DataFrame with all valid datetimes truncated down
+            to the specified precision.
     """
     ACCEPTABLE_DATEPARTS = ("YEAR", "MONTH", "DAY", "HOUR", "MINUTE", "SECOND")
     datepart = datepart.upper()
@@ -76,11 +79,14 @@ def _truncate_datetime(timestamp: dt.datetime, datepart: str) -> dt.datetime:
 
     Truncation will only occur on valid timestamps (datetime-like objects).
 
-    :param timestamp: Expecting a datetime from python `datetime` class (dt).
-    :param datepart: Truncation precision, YEAR, MONTH, DAY,
-        HOUR, MINUTE, SECOND.
-    :returns: A truncated datetime object to the precision specified by
-        datepart.
+    Args:
+        timestamp: Expecting a datetime from python `datetime` class (dt).
+        datepart: Truncation precision, YEAR, MONTH, DAY,
+            HOUR, MINUTE, SECOND.
+
+    Returns:
+        A truncated datetime object to the precision specified by
+            datepart.
     """
     if pd.isna(timestamp):
         return timestamp

@@ -4,26 +4,22 @@ channels:
 dependencies:
   - python=3.9
   - biopython
-  - black=22.1.0
+  - black=22.12.0 # keep this in sync with `.pre-commit-config.yaml`
   - bump2version=1.0.1
   - cairo
   - conda
-  - darglint
-  - doc8
-  - flake8
   - hypothesis
-  - interrogate
   - ipykernel
   - ipython
   - isort
-  - jinja2<3.1.0 # 27 March 2022: https://github.com/pallets/jinja/issues/1631
+  - jinja2>=3.1.0
   - jupyterlab
   - lxml
   - make
   - mkdocs
   - mkdocs-material
-  - mkdocstrings=0.18.1
-  - mkdocstrings-python-legacy=0.2.2
+  - mkdocstrings>=0.19.0
+  - mkdocstrings-python
   - missingno
   - multipledispatch
   - mypy
@@ -38,12 +34,11 @@ dependencies:
   - pipreqs
   - pip-tools
   - pre-commit
-  - pyflakes
-  - pylint
   - pyspark>=3.2.0
   - pytest
   - pytest-cov
   - pytest-xdist
+  - pytest-doctestplus
   - python-language-server
   - rdkit=2021.09.3
   - recommonmark

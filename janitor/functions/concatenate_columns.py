@@ -21,7 +21,8 @@ def concatenate_columns(
 
     This method mutates the original DataFrame.
 
-    Example: Concatenate two columns row-wise.
+    Examples:
+        Concatenate two columns row-wise.
 
         >>> import pandas as pd
         >>> import janitor
@@ -39,14 +40,19 @@ def concatenate_columns(
         1  3  y  3-y
         2  5  z  5-z
 
-    :param df: A pandas DataFrame.
-    :param column_names: A list of columns to concatenate together.
-    :param new_column_name: The name of the new column.
-    :param sep: The separator between each column's data.
-    :param ignore_empty: Ignore null values if exists.
-    :returns: A pandas DataFrame with concatenated columns.
-    :raises JanitorError: If at least two columns are not provided
-        within `column_names`.
+    Args:
+        df: A pandas DataFrame.
+        column_names: A list of columns to concatenate together.
+        new_column_name: The name of the new column.
+        sep: The separator between each column's data.
+        ignore_empty: Ignore null values if exists.
+
+    Raises:
+        JanitorError: If at least two columns are not provided
+            within `column_names`.
+
+    Returns:
+        A pandas DataFrame with concatenated columns.
     """
     if len(column_names) < 2:
         raise JanitorError("At least two columns must be specified")

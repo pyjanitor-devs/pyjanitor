@@ -33,7 +33,9 @@
 		"ms-python.python",
 		"ms-python.vscode-pylance",
 		"ms-vsliveshare.vsliveshare-pack",
-		"arcticicestudio.nord-visual-studio-code"
+		"arcticicestudio.nord-visual-studio-code",
+		"ms-vsliveshare.vsliveshare",
+		"ms-vsliveshare.vsliveshare-audio"
 	],
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	"forwardPorts": [

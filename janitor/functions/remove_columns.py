@@ -3,10 +3,16 @@ from typing import Hashable, Iterable, Union
 import pandas_flavor as pf
 import pandas as pd
 
-from janitor.utils import deprecated_alias
+from janitor.utils import deprecated_alias, refactored_function
 
 
 @pf.register_dataframe_method
+@refactored_function(
+    message=(
+        "This function will be deprecated in a 1.x release. "
+        "Please use `pd.DataFrame.drop` instead."
+    )
+)
 @deprecated_alias(columns="column_names")
 def remove_columns(
     df: pd.DataFrame,
@@ -18,8 +24,12 @@ def remove_columns(
 
     Intended to be the method-chaining alternative to `del df[col]`.
 
-    Example:
+    !!!note
 
+        This function will be deprecated in a 1.x release.
+        Kindly use `pd.DataFrame.drop` instead.
+
+    Examples:
         >>> import pandas as pd
         >>> import janitor
         >>> df = pd.DataFrame({"a": [2, 4, 6], "b": [1, 3, 5], "c": [7, 8, 9]})
@@ -34,8 +44,12 @@ def remove_columns(
         1  3
         2  5
 
-    :param df: A pandas DataFrame.
-    :param column_names: The columns to remove.
-    :returns: A pandas DataFrame.
+    Args:
+        df: A pandas DataFrame.
+        column_names: The columns to remove.
+
+    Returns:
+        A pandas DataFrame.
     """
+
     return df.drop(columns=column_names)

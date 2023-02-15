@@ -87,7 +87,7 @@ selecting the correct kernel from the top right corner of JupyterLab!
     For PyCharm users,
     here are some `instructions <PYCHARM_USERS.html>`__  to get your Conda environment set up.
 
-### Install the pre-commit hooks.
+### Install the pre-commit hooks
 
 `pre-commit` hooks are available
 to run code formatting checks automagically before git commits happen.
@@ -172,8 +172,8 @@ formatted and that all tests still pass.
 
 To do so:
 
-* Run `python -m flake8 --exclude nbconvert_config.py janitor` to check code styling problems
-* Run `python -m black -c pyproject.toml` to format your code.
+* Run `make lint` to check code styling problems.
+* Run `make format` to format your code.
 * Run `python -m interrogate -c pyproject.toml` to check your code for missing docstring.
 * Run `darglint -v 2` to check quality of your docstrings.
 * Run `python -m pytest` to run all unit tests.
@@ -230,6 +230,20 @@ can help you with reviewing the code checks.
 
 pyjanitor supports Python 3.6+,
 so all contributed code must maintain this compatibility.
+
+## Docstring Style
+
+We follow the Google docstring style, please read [Napoleon's documentation](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html) for a detailed introduction.
+
+We are using the following docstring section identifiers -- please stick to them if you are contributing a docstring change:
+
+- **Examples:** for sample code blocks demonstrating the use of pyjanitor. keep example blocks in the `pycon` (python-console) style, i.e., input code prefixed by `>>> ` and `... `, and output code with no prefix.
+- **Args:** for function parameters
+- **Raises:** for exceptions
+- **Returns:** for function return value(s)
+- **Yields:** for generator yield value(s)
+
+If possible, it is preferable to stick to this section ordering within each docstring.
 
 ## Tips
 

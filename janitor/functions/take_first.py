@@ -11,11 +11,9 @@ def take_first(
     by: Hashable,
     ascending: bool = True,
 ) -> pd.DataFrame:
-    """
-    Take the first row within each group specified by `subset`.
+    """Take the first row within each group specified by `subset`.
 
-    Example:
-
+    Examples:
         >>> import pandas as pd
         >>> import janitor
         >>> df = pd.DataFrame({"a": ["x", "x", "y", "y"], "b": [0, 1, 2, 3]})
@@ -30,11 +28,14 @@ def take_first(
         0  x  0
         2  y  2
 
-    :param df: A pandas DataFrame.
-    :param subset: Column(s) defining the group.
-    :param by: Column to sort by.
-    :param ascending: Whether or not to sort in ascending order, `bool`.
-    :returns: A pandas DataFrame.
+    Args:
+        df: A pandas DataFrame.
+        subset: Column(s) defining the group.
+        by: Column to sort by.
+        ascending: Whether or not to sort in ascending order, `bool`.
+
+    Returns:
+        A pandas DataFrame.
     """
     result = df.sort_values(by=by, ascending=ascending).drop_duplicates(
         subset=subset, keep="first"

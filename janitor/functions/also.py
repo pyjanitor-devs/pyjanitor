@@ -1,11 +1,13 @@
 """Implementation source for chainable function `also`."""
-from typing import Callable
+from typing import Any, Callable
 import pandas_flavor as pf
 import pandas as pd
 
 
 @pf.register_dataframe_method
-def also(df: pd.DataFrame, func: Callable, *args, **kwargs) -> pd.DataFrame:
+def also(
+    df: pd.DataFrame, func: Callable, *args: Any, **kwargs: Any
+) -> pd.DataFrame:
     """Run a function with side effects.
 
     This function allows you to run an arbitrary function
@@ -13,8 +15,7 @@ def also(df: pd.DataFrame, func: Callable, *args, **kwargs) -> pd.DataFrame:
     Doing so will let you do things like save the dataframe to disk midway
     while continuing to modify the dataframe afterwards.
 
-    Example:
-
+    Examples:
         >>> import pandas as pd
         >>> import janitor
         >>> df = (
@@ -30,13 +31,16 @@ def also(df: pd.DataFrame, func: Callable, *args, **kwargs) -> pd.DataFrame:
         DataFrame shape is: (2, 2)
         Columns: Index(['a_new', 'b'], dtype='object')
 
-    :param df: A pandas DataFrame.
-    :param func: A function you would like to run in the method chain.
-        It should take one DataFrame object as a parameter and have no return.
-        If there is a return, it will be ignored.
-    :param args: Optional arguments for `func`.
-    :param kwargs: Optional keyword arguments for `func`.
-    :returns: The input pandas DataFrame, unmodified.
+    Args:
+        df: A pandas DataFrame.
+        func: A function you would like to run in the method chain.
+            It should take one DataFrame object as a parameter and have no return.
+            If there is a return, it will be ignored.
+        *args: Optional arguments for `func`.
+        **kwargs: Optional keyword arguments for `func`.
+
+    Returns:
+        The input pandas DataFrame, unmodified.
     """  # noqa: E501
     func(df.copy(), *args, **kwargs)
     return df

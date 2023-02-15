@@ -14,8 +14,7 @@ def label_encode(
     df: pd.DataFrame,
     column_names: Union[str, Iterable[str], Hashable],
 ) -> pd.DataFrame:
-    """
-    Convert labels into numerical data.
+    """Convert labels into numerical data.
 
     This method will create a new column with the string `_enc` appended
     after the original column's name.
@@ -30,8 +29,13 @@ def label_encode(
 
     This method mutates the original DataFrame.
 
-    Example:
+    !!!note
 
+        This function will be deprecated in a 1.x release.
+        Please use [`factorize_columns`][janitor.functions.factorize_columns.factorize_columns]
+        instead.
+
+    Examples:
         >>> import pandas as pd
         >>> import janitor
         >>> df = pd.DataFrame({
@@ -53,16 +57,13 @@ def label_encode(
         3   c    7        2
         4   b    8        0
 
-    !!!note
+    Args:
+        df: The pandas DataFrame object.
+        column_names: A column name or an iterable (list
+            or tuple) of column names.
 
-        This function will be deprecated in a 1.x release.
-        Please use [`factorize_columns`][janitor.functions.factorize_columns.factorize_columns]
-        instead.
-
-    :param df: The pandas DataFrame object.
-    :param column_names: A column name or an iterable (list
-        or tuple) of column names.
-    :returns: A pandas DataFrame.
+    Returns:
+        A pandas DataFrame.
     """  # noqa: E501
     warnings.warn(
         "`label_encode` will be deprecated in a 1.x release. "

@@ -37,8 +37,7 @@ def deconcatenate_column(
 
     Used to quickly split columns out of a single column.
 
-    Example:
-
+    Examples:
         >>> import pandas as pd
         >>> import janitor
         >>> df = pd.DataFrame({"m": ["1-x", "2-y", "3-z"]})
@@ -80,23 +79,27 @@ def deconcatenate_column(
 
     This method does not mutate the original DataFrame.
 
-    :param df: A pandas DataFrame.
-    :param column_name: The column to split.
-    :param sep: The separator delimiting the column's data.
-    :param new_column_names: A list of new column names post-splitting.
-    :param autoname: A base name for automatically naming the new columns.
-        Takes precedence over `new_column_names` if both are provided.
-    :param preserve_position: Boolean for whether or not to preserve original
-        position of the column upon de-concatenation.
-    :returns: A pandas DataFrame with a deconcatenated column.
-    :raises ValueError: If `column_name` is not present in the
-        DataFrame.
-    :raises ValueError: If `sep` is not provided and the column values
-        are of type `str`.
-    :raises ValueError: If either `new_column_names` or `autoname`
-        is not supplied.
-    :raises JanitorError: If incorrect number of names is provided
-        within `new_column_names`.
+    Args:
+        df: A pandas DataFrame.
+        column_name: The column to split.
+        sep: The separator delimiting the column's data.
+        new_column_names: A list of new column names post-splitting.
+        autoname: A base name for automatically naming the new columns.
+            Takes precedence over `new_column_names` if both are provided.
+        preserve_position: Boolean for whether or not to preserve original
+            position of the column upon de-concatenation.
+
+    Raises:
+        ValueError: If `column_name` is not present in the DataFrame.
+        ValueError: If `sep` is not provided and the column values
+            are of type `str`.
+        ValueError: If either `new_column_names` or `autoname`
+            is not supplied.
+        JanitorError: If incorrect number of names is provided
+            within `new_column_names`.
+
+    Returns:
+        A pandas DataFrame with a deconcatenated column.
     """  # noqa: E501
 
     if column_name not in df.columns:

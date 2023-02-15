@@ -19,8 +19,7 @@ def limit_column_characters(
     a given separator character with the index of duplicate columns, except
     for the first distinct column name.
 
-    Example:
-
+    Examples:
         >>> import pandas as pd
         >>> import janitor
         >>> data_dict = {
@@ -41,17 +40,20 @@ def limit_column_characters(
         1        8        4         y       q
         2        7        6         z       r
 
-    :param df: A pandas DataFrame.
-    :param column_length: Character length for which to truncate all columns.
-        The column separator value and number for duplicate column name does
-        not contribute. Therefore, if all columns are truncated to 10
-        characters, the first distinct column will be 10 characters and the
-        remaining will be 12 characters (assuming a column separator of one
-        character).
-    :param col_separator: The separator to use for counting distinct column
-        values, for example, `'_'` or `'.'`.
-        Supply an empty string (i.e. `''`) to remove the separator.
-    :returns: A pandas DataFrame with truncated column lengths.
+    Args:
+        df: A pandas DataFrame.
+        column_length: Character length for which to truncate all columns.
+            The column separator value and number for duplicate column name does
+            not contribute. Therefore, if all columns are truncated to 10
+            characters, the first distinct column will be 10 characters and the
+            remaining will be 12 characters (assuming a column separator of one
+            character).
+        col_separator: The separator to use for counting distinct column
+            values, for example, `'_'` or `'.'`.
+            Supply an empty string (i.e. `''`) to remove the separator.
+
+    Returns:
+        A pandas DataFrame with truncated column lengths.
     """  # noqa: E501
 
     check("column_length", column_length, [int])

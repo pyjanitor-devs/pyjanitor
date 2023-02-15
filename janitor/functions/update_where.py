@@ -1,6 +1,4 @@
-"""
-Function for updating values based on other column values
-"""
+"""Function for updating values based on other column values."""
 
 from typing import Any, Hashable
 import pandas_flavor as pf
@@ -17,13 +15,12 @@ def update_where(
     target_column_name: Hashable,
     target_val: Any,
 ) -> pd.DataFrame:
-    """
-    Add multiple conditions to update a column in the dataframe.
+    """Add multiple conditions to update a column in the dataframe.
 
     This method does not mutate the original DataFrame.
 
-    Example usage:
-
+    Examples:
+        >>> import janitor
         >>> data = {
         ...    "a": [1, 2, 3, 4],
         ...    "b": [5, 6, 7, 8],
@@ -57,18 +54,21 @@ def update_where(
         2  3  7  10
         3  4  8   0
 
-    :param df: The pandas DataFrame object.
-    :param conditions: Conditions used to update a target column
-        and target value.
-    :param target_column_name: Column to be updated. If column does not exist
-        in DataFrame, a new column will be created; note that entries that do
-        not get set in the new column will be null.
-    :param target_val: Value to be updated
-    :returns: A pandas DataFrame.
-    :raises ValueError: if `conditions` does not return a boolean array-like
-        data structure.
+    Args:
+        df: The pandas DataFrame object.
+        conditions: Conditions used to update a target column
+            and target value.
+        target_column_name: Column to be updated. If column does not exist
+            in DataFrame, a new column will be created; note that entries
+            that do not get set in the new column will be null.
+        target_val: Value to be updated.
 
-    .. # noqa: DAR402
+    Raises:
+        ValueError: If `conditions` does not return a boolean array-like
+            data structure.
+
+    Returns:
+        A pandas DataFrame.
     """
 
     df = df.copy()

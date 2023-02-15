@@ -19,8 +19,7 @@ def clean_names(
     enforce_string: bool = True,
     truncate_limit: int = None,
 ) -> pd.DataFrame:
-    """
-    Clean column names.
+    """Clean column names.
 
     Takes all column names, converts them to lowercase,
     then replaces all spaces with underscores.
@@ -30,8 +29,7 @@ def clean_names(
 
     This method does not mutate the original DataFrame.
 
-    Example usage:
-
+    Examples:
         >>> import pandas as pd
         >>> import janitor
         >>> df = pd.DataFrame(
@@ -57,28 +55,31 @@ def clean_names(
         1      1           1        1
         2      2           2        2
 
-    :param df: The pandas DataFrame object.
-    :param strip_underscores: (optional) Removes the outer underscores from all
-        column names. Default None keeps outer underscores. Values can be
-        either 'left', 'right' or 'both' or the respective shorthand 'l', 'r'
-        and True.
-    :param case_type: (optional) Whether to make columns lower or uppercase.
-        Current case may be preserved with 'preserve',
-        while snake case conversion (from CamelCase or camelCase only)
-        can be turned on using "snake".
-        Default 'lower' makes all characters lowercase.
-    :param remove_special: (optional) Remove special characters from columns.
-        Only letters, numbers and underscores are preserved.
-    :param strip_accents: Whether or not to remove accents from
-        columns names.
-    :param preserve_original_columns: (optional) Preserve original names.
-        This is later retrievable using `df.original_columns`.
-    :param enforce_string: Whether or not to convert all column names
-        to string type. Defaults to True, but can be turned off.
-        Columns with >1 levels will not be converted by default.
-    :param truncate_limit: (optional) Truncates formatted column names to
-        the specified length. Default None does not truncate.
-    :returns: A pandas DataFrame.
+    Args:
+        df: The pandas DataFrame object.
+        strip_underscores: Removes the outer underscores from all
+            column names. Default None keeps outer underscores. Values can be
+            either 'left', 'right' or 'both' or the respective shorthand 'l',
+            'r' and True.
+        case_type: Whether to make columns lower or uppercase.
+            Current case may be preserved with 'preserve',
+            while snake case conversion (from CamelCase or camelCase only)
+            can be turned on using "snake".
+            Default 'lower' makes all characters lowercase.
+        remove_special: Remove special characters from columns.
+            Only letters, numbers and underscores are preserved.
+        strip_accents: Whether or not to remove accents from
+            columns names.
+        preserve_original_columns: Preserve original names.
+            This is later retrievable using `df.original_columns`.
+        enforce_string: Whether or not to convert all column names
+            to string type. Defaults to True, but can be turned off.
+            Columns with >1 levels will not be converted by default.
+        truncate_limit: Truncates formatted column names to
+            the specified length. Default None does not truncate.
+
+    Returns:
+        A pandas DataFrame.
     """
     original_column_names = list(df.columns)
 
@@ -178,18 +179,20 @@ def _strip_underscores(
 
     Underscores can be stripped from the beginning, end or both.
 
-    Example usage:
+    Examples:
+        ```python
+        df = _strip_underscores(df, strip_underscores='left')
+        ```
 
-    ```
-    df = _strip_underscores(df, strip_underscores='left')
-    ```
+    Args:
+        df: The pandas DataFrame object.
+        strip_underscores: Removes the outer underscores from all
+            column names. Default `None` keeps outer underscores. Values can be
+            either `'left'`, `'right'` or `'both'` or the respective shorthand
+            `'l'`, `'r'` and `True`.
 
-    :param df: The pandas DataFrame object.
-    :param strip_underscores: (optional) Removes the outer underscores from all
-        column names. Default `None` keeps outer underscores. Values can be
-        either `'left'`, `'right'` or `'both'` or the respective shorthand
-        `'l'`, `'r'` and `True`.
-    :returns: A pandas DataFrame with underscores removed.
+    Returns:
+        A pandas DataFrame with underscores removed.
     """
     df = df.rename(
         columns=lambda x: _strip_underscores_func(x, strip_underscores)

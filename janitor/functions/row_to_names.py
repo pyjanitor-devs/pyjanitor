@@ -21,7 +21,8 @@ def row_to_names(
     Contains options to remove the elevated row from the DataFrame along with
     removing the rows above the selected row.
 
-    Example: Replace column names with the first row and reset the index.
+    Examples:
+        Replace column names with the first row and reset the index.
 
         >>> import pandas as pd
         >>> import janitor
@@ -39,7 +40,7 @@ def row_to_names(
         0    6     x
         1    9     y
 
-    Example: Remove rows above the elevated row and the elevated row itself.
+        Remove rows above the elevated row and the elevated row itself.
 
         >>> import pandas as pd
         >>> import janitor
@@ -58,16 +59,17 @@ def row_to_names(
         0    6     x
         1    9     y
 
-    :param df: A pandas DataFrame.
-    :param row_number: Position of the row containing the variable names.
-        Note that indexing starts from 0. Defaults to 0 (first row).
-    :param remove_row: Whether the row should be removed from the DataFrame.
-        Defaults to False.
-    :param remove_rows_above: Whether the rows above the selected row should
-        be removed from the DataFrame. Defaults to False.
-    :param reset_index: Whether the index should be reset on the returning
-        DataFrame. Defaults to False.
-    :returns: A pandas DataFrame with set column names.
+    Args:
+        df: A pandas DataFrame.
+        row_number: Position of the row containing the variable names.
+            Note that indexing starts from 0. Defaults to 0 (first row).
+        remove_row: Whether the row should be removed from the DataFrame.
+        remove_rows_above: Whether the rows above the selected row should
+            be removed from the DataFrame.
+        reset_index: Whether the index should be reset on the returning DataFrame.
+
+    Returns:
+        A pandas DataFrame with set column names.
     """  # noqa: E501
 
     check("row_number", row_number, [int])

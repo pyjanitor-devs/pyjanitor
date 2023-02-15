@@ -2,16 +2,22 @@
 from typing import Callable
 import pandas_flavor as pf
 import pandas as pd
+from janitor.utils import refactored_function
 
 
 @pf.register_dataframe_method
+@refactored_function(
+    message=(
+        "This function will be deprecated in a 1.x release. "
+        "Please use `jn.transform_columns` instead."
+    )
+)
 def join_apply(
     df: pd.DataFrame,
     func: Callable,
     new_column_name: str,
 ) -> pd.DataFrame:
-    """
-    Join the result of applying a function across dataframe rows.
+    """Join the result of applying a function across dataframe rows.
 
     This method does not mutate the original DataFrame.
 
@@ -20,7 +26,14 @@ def join_apply(
     requirement is that the function signature takes in a row from the
     DataFrame.
 
-    Example: Sum the result of two columns into a new column.
+    !!!note
+
+        This function will be deprecated in a 1.x release.
+        Please use [`jn.transform_column`][janitor.functions.transform_columns.transform_column]
+        instead.
+
+    Examples:
+        Sum the result of two columns into a new column.
 
         >>> import pandas as pd
         >>> import janitor
@@ -39,7 +52,7 @@ def join_apply(
         1  2  3     7
         2  3  4    10
 
-    Example: Incorporating conditionals in `func`.
+        Incorporating conditionals in `func`.
 
         >>> import pandas as pd
         >>> import janitor
@@ -60,11 +73,14 @@ def join_apply(
         1  2  30          2
         2  3  40         40
 
-    :param df: A pandas DataFrame.
-    :param func: A function that is applied elementwise across all rows of the
-        DataFrame.
-    :param new_column_name: Name of the resulting column.
-    :returns: A pandas DataFrame with new column appended.
-    """
+    Args:
+        df: A pandas DataFrame.
+        func: A function that is applied elementwise across all rows of the
+            DataFrame.
+        new_column_name: Name of the resulting column.
+
+    Returns:
+        A pandas DataFrame with new column appended.
+    """  # noqa: E501
     df = df.copy().join(df.apply(func, axis=1).rename(new_column_name))
     return df

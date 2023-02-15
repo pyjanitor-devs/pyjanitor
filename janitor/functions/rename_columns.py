@@ -2,10 +2,16 @@ from typing import Callable, Dict, Union
 import pandas_flavor as pf
 import pandas as pd
 
-from janitor.utils import check_column, deprecated_alias
+from janitor.utils import check_column, deprecated_alias, refactored_function
 
 
 @pf.register_dataframe_method
+@refactored_function(
+    message=(
+        "This function will be deprecated in a 1.x release. "
+        "Please use `pd.DataFrame.rename` instead."
+    )
+)
 @deprecated_alias(old="old_column_name", new="new_column_name")
 def rename_column(
     df: pd.DataFrame,
@@ -16,7 +22,17 @@ def rename_column(
 
     This method does not mutate the original DataFrame.
 
-    Example: Change the name of column 'a' to 'a_new'.
+    !!!note
+
+        This function will be deprecated in a 1.x release.
+        Please use `pd.DataFrame.rename` instead.
+
+    This is just syntactic sugar/a convenience function for renaming one column at a time.
+    If you are convinced that there are multiple columns in need of changing,
+    then use the `pandas.DataFrame.rename` method.
+
+    Examples:
+        Change the name of column 'a' to 'a_new'.
 
         >>> import pandas as pd
         >>> import janitor
@@ -27,21 +43,27 @@ def rename_column(
         1      1  b
         2      2  c
 
-    This is just syntactic sugar/a convenience function for renaming one column at a time.
-    If you are convinced that there are multiple columns in need of changing,
-    then use the `pandas.DataFrame.rename` method.
+    Args:
+        df: The pandas DataFrame object.
+        old_column_name: The old column name.
+        new_column_name: The new column name.
 
-    :param df: The pandas DataFrame object.
-    :param old_column_name: The old column name.
-    :param new_column_name: The new column name.
-    :returns: A pandas DataFrame with renamed columns.
+    Returns:
+        A pandas DataFrame with renamed columns.
     """  # noqa: E501
+
     check_column(df, [old_column_name])
 
     return df.rename(columns={old_column_name: new_column_name})
 
 
 @pf.register_dataframe_method
+@refactored_function(
+    message=(
+        "This function will be deprecated in a 1.x release. "
+        "Please use `pd.DataFrame.rename` instead."
+    )
+)
 def rename_columns(
     df: pd.DataFrame,
     new_column_names: Union[Dict, None] = None,
@@ -51,7 +73,17 @@ def rename_columns(
 
     This method does not mutate the original DataFrame.
 
-    Example: Rename columns using a dictionary which maps old names to new names.
+    !!!note
+
+        This function will be deprecated in a 1.x release.
+        Please use `pd.DataFrame.rename` instead.
+
+    One of the `new_column_names` or `function` are a required parameter.
+    If both are provided, then `new_column_names` takes priority and `function`
+    is never executed.
+
+    Examples:
+        Rename columns using a dictionary which maps old names to new names.
 
         >>> import pandas as pd
         >>> import janitor
@@ -67,7 +99,7 @@ def rename_columns(
         1      1     y
         2      2     z
 
-    Example: Rename columns using a generic callable.
+        Rename columns using a generic callable.
 
         >>> import pandas as pd
         >>> import janitor
@@ -78,15 +110,16 @@ def rename_columns(
         1  1  y
         2  2  z
 
-    One of the `new_column_names` or `function` are a required parameter.
-    If both are provided, then `new_column_names` takes priority and `function`
-    is never executed.
+    Args:
+        df: The pandas DataFrame object.
+        new_column_names: A dictionary of old and new column names.
+        function: A function which should be applied to all the columns.
 
-    :param df: The pandas DataFrame object.
-    :param new_column_names: A dictionary of old and new column names.
-    :param function: A function which should be applied to all the columns.
-    :returns: A pandas DataFrame with renamed columns.
-    :raises ValueError: if both `new_column_names` and `function` are None.
+    Raises:
+        ValueError: If both `new_column_names` and `function` are None.
+
+    Returns:
+        A pandas DataFrame with renamed columns.
     """  # noqa: E501
 
     if new_column_names is None and function is None:

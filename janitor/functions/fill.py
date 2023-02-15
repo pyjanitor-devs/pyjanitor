@@ -1,27 +1,40 @@
 from collections.abc import Iterable as abcIterable
 from enum import Enum
 from operator import methodcaller
-from typing import Hashable, Iterable, Union
+from typing import Any, Hashable, Iterable, Union
 
 import pandas as pd
 import pandas_flavor as pf
-from janitor.utils import check, check_column, deprecated_alias
+from janitor.utils import (
+    check,
+    check_column,
+    deprecated_alias,
+    refactored_function,
+)
 from multipledispatch import dispatch
 
 
 @pf.register_dataframe_method
-def fill_direction(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
-    """
-    Provide a method-chainable function for filling missing values
+@refactored_function(
+    message=(
+        "This function will be deprecated in a 1.x release. "
+        "Please use `pd.DataFrame.assign` instead."
+    )
+)
+def fill_direction(df: pd.DataFrame, **kwargs: Any) -> pd.DataFrame:
+    """Provide a method-chainable function for filling missing values
     in selected columns.
 
     It is a wrapper for `pd.Series.ffill` and `pd.Series.bfill`,
     and pairs the column name with one of `up`, `down`, `updown`,
     and `downup`.
 
+    !!!note
 
-    Example:
+        This function will be deprecated in a 1.x release.
+        Please use `pd.DataFrame.assign` instead.
 
+    Examples:
         >>> import pandas as pd
         >>> import janitor as jn
         >>> df = pd.DataFrame(
@@ -51,14 +64,19 @@ def fill_direction(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         2     3   6.0  10.0  11.0  13.0
         3     4   7.0  10.0  11.0  13.0
 
-    :param df: A pandas DataFrame.
-    :param kwargs: Key - value pairs of columns and directions.
-        Directions can be either `down`, `up`, `updown`
-        (fill up then down) and `downup` (fill down then up).
-    :returns: A pandas DataFrame with modified column(s).
-    :raises ValueError: if direction supplied is not one of `down`, `up`,
-        `updown`, or `downup`.
-    """
+    Args:
+        df: A pandas DataFrame.
+        **kwargs: Key - value pairs of columns and directions.
+            Directions can be either `down`, `up`, `updown`
+            (fill up then down) and `downup` (fill down then up).
+
+    Raises:
+        ValueError: If direction supplied is not one of `down`, `up`,
+            `updown`, or `downup`.
+
+    Returns:
+        A pandas DataFrame with modified column(s).
+    """  # noqa: E501
 
     if not kwargs:
         return df
@@ -69,10 +87,7 @@ def fill_direction(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         check("fill_type", fill_type, [str])
         if fill_type.upper() not in fill_types:
             raise ValueError(
-                """
-                fill_type should be one of
-                up, down, updown, or downup.
-                """
+                "fill_type should be one of up, down, updown, or downup."
             )
 
     check_column(df, kwargs)
@@ -113,19 +128,28 @@ class _FILLTYPE(Enum):
 
 
 @pf.register_dataframe_method
+@refactored_function(
+    message="This function will be deprecated in a 1.x release. "
+    "Kindly use `jn.impute` instead."
+)
 @deprecated_alias(columns="column_names")
 def fill_empty(
-    df: pd.DataFrame, column_names: Union[str, Iterable[str], Hashable], value
+    df: pd.DataFrame,
+    column_names: Union[str, Iterable[str], Hashable],
+    value: Any,
 ) -> pd.DataFrame:
-    """
-    Fill `NaN` values in specified columns with a given value.
+    """Fill `NaN` values in specified columns with a given value.
 
     Super sugary syntax that wraps `pandas.DataFrame.fillna`.
 
     This method mutates the original DataFrame.
 
-    Example:
+    !!!note
 
+        This function will be deprecated in a 1.x release.
+        Please use [`jn.impute`][janitor.functions.impute.impute] instead.
+
+    Examples:
         >>> import pandas as pd
         >>> import janitor
         >>> df = pd.DataFrame(
@@ -151,15 +175,18 @@ def fill_empty(
         1     2   4.0   5.0
         2     3   0.0   6.0
 
+    Args:
+        df: A pandas DataFrame.
+        column_names: A column name or an iterable (list
+            or tuple) of column names. If a single column name is passed in,
+            then only that column will be filled; if a list or tuple is passed
+            in, then those columns will all be filled with the same value.
+        value: The value that replaces the `NaN` values.
 
-    :param df: A pandas DataFrame.
-    :param column_names: column_names: A column name or an iterable (list
-        or tuple) of column names. If a single column name is passed in, then
-        only that column will be filled; if a list or tuple is passed in, then
-        those columns will all be filled with the same value.
-    :param value: The value that replaces the `NaN` values.
-    :returns: A pandas DataFrame with `NaN` values filled.
+    Returns:
+        A pandas DataFrame with `NaN` values filled.
     """
+
     check_column(df, column_names)
     return _fill_empty(df, column_names, value=value)
 

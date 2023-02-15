@@ -3,12 +3,14 @@
 Lazy loading used here to speed up imports.
 """
 
+from __future__ import annotations
 import os
 import sys
 import socket
-from typing import Callable, Dict, Iterable, Union
+from typing import Any, Callable, Dict, Iterable, Union, List
 from functools import singledispatch, wraps
 from warnings import warn
+
 
 import lazy_loader as lazy
 
@@ -21,20 +23,22 @@ pdtypes = lazy.load("pandas.api.types")
 
 
 def check(varname: str, value, expected_types: list):
-    """
-    One-liner syntactic sugar for checking types.
+    """One-liner syntactic sugar for checking types.
+
     It can also check callables.
 
-    Example usage:
+    Examples:
+        ```python
+        check('x', x, [int, float])
+        ```
 
-    ```python
-    check('x', x, [int, float])
-    ```
+    Args:
+        varname: The name of the variable (for diagnostic error message).
+        value: The value of the `varname`.
+        expected_types: The type(s) the item is expected to be.
 
-    :param varname: The name of the variable (for diagnostic error message).
-    :param value: The value of the `varname`.
-    :param expected_types: The type(s) the item is expected to be.
-    :raises TypeError: if data is not the expected type.
+    Raises:
+        TypeError: If data is not the expected type.
     """
     is_expected_type: bool = False
     for t in expected_types:
@@ -151,18 +155,18 @@ def import_message(
     conda_channel: str = None,
     pip_install: bool = False,
 ):
-    """
-    Return warning if package is not found.
+    """Return warning if package is not found.
 
     Generic message for indicating to the user when a function relies on an
     optional module / package that is not currently installed. Includes
     installation instructions. Used in `chemistry.py` and `biology.py`.
 
-    :param submodule: `pyjanitor` submodule that needs an external dependency.
-    :param package: External package this submodule relies on.
-    :param conda_channel: `conda` channel package can be installed from,
-        if at all.
-    :param pip_install: Whether package can be installed via `pip`.
+    Args:
+        submodule: `pyjanitor` submodule that needs an external dependency.
+        package: External package this submodule relies on.
+        conda_channel: `conda` channel package can be installed from,
+            if at all.
+        pip_install: Whether package can be installed via `pip`.
     """
     is_conda = os.path.exists(os.path.join(sys.prefix, "conda-meta"))
     installable = True
@@ -192,17 +196,21 @@ def import_message(
         print(f"{installation}")
 
 
-def idempotent(func: Callable, df: pd.DataFrame, *args, **kwargs):
-    """
-    Raises an error if a function operating on a DataFrame is not idempotent.
+def idempotent(func: Callable, df: pd.DataFrame, *args: Any, **kwargs: Any):
+    """Raises an error if a function operating on a DataFrame is not
+    idempotent.
+
     That is, `func(func(df)) = func(df)` is not `True` for all `df`.
 
-    :param func: A Python method.
-    :param df: A pandas `DataFrame`.
-    :param args: Positional arguments supplied to the method.
-    :param kwargs: Keyword arguments supplied to the method.
-    :raises ValueError: If `func` is found to not be idempotent for the given
-        DataFrame (`df`).
+    Args:
+        func: A Python method.
+        df: A pandas `DataFrame`.
+        *args: Positional arguments supplied to the method.
+        **kwargs: Keyword arguments supplied to the method.
+
+    Raises:
+        ValueError: If `func` is found to not be idempotent for the given
+            DataFrame (`df`).
     """
     if not func(df, *args, **kwargs) == func(
         func(df, *args, **kwargs), *args, **kwargs
@@ -213,35 +221,42 @@ def idempotent(func: Callable, df: pd.DataFrame, *args, **kwargs):
 
 
 def deprecated_kwargs(
-    *arguments: list[str],
+    *arguments: List[str],
     message: str = (
         "The keyword argument '{argument}' of '{func_name}' is deprecated."
     ),
     error: bool = True,
 ) -> Callable:
-    """
-    Used as a decorator when deprecating function's keyword arguments.
+    """Used as a decorator when deprecating function's keyword arguments.
 
-    Example:
+    Examples:
 
-    ```python
-    from janitor.utils import deprecated_kwargs
+        ```python
+        from janitor.utils import deprecated_kwargs
 
-    @deprecated_kwargs('x', 'y')
-    def plus(a, b, x=0, y=0):
-        return a + b
-    ```
+        @deprecated_kwargs('x', 'y')
+        def plus(a, b, x=0, y=0):
+            return a + b
+        ```
 
-    :param arguments: The list of deprecated keyword arguments.
-    :param message: The message of `ValueError` or `DeprecationWarning`.
-        It should be a string or a string template. If a string template
-        defaults input `func_name` and `argument`.
-    :param error: If True raises `ValueError` else returns
-        `DeprecationWarning`.
-    :return: The original function wrapped with the deprecated `kwargs`
-        checking function.
-    :raises ValueError: If one of `arguments` is in the decorated function's
-        keyword arguments.  # noqa: DAR402
+    Args:
+        *arguments: The list of deprecated keyword arguments.
+        message: The message of `ValueError` or `DeprecationWarning`.
+            It should be a string or a string template. If a string template
+            defaults input `func_name` and `argument`.
+        error: If True, raises `ValueError` else returns `DeprecationWarning`.
+
+    Raises:
+        ValueError: If one of `arguments` is in the decorated function's
+            keyword arguments.
+
+    Returns:
+        The original function wrapped with the deprecated `kwargs`
+            checking function.
+
+    <!--
+    # noqa: DAR402
+    -->
     """
 
     def decorator(func):
@@ -272,17 +287,19 @@ def deprecated_alias(**aliases) -> Callable:
 
     [stack_link]: https://stackoverflow.com/questions/49802412/how-to-implement-deprecation-in-python-with-argument-alias
 
-    Functional usage example:
+    Examples:
+        ```python
+        @deprecated_alias(a='alpha', b='beta')
+        def simple_sum(alpha, beta):
+            return alpha + beta
+        ```
 
-    ```python
-    @deprecated_alias(a='alpha', b='beta')
-    def simple_sum(alpha, beta):
-        return alpha + beta
-    ```
+    Args:
+        **aliases: Dictionary of aliases for a function's arguments.
 
-    :param aliases: Dictionary of aliases for a function's arguments.
-    :return: Your original function wrapped with the `kwarg` redirection
-        function.
+    Returns:
+        Your original function wrapped with the `kwarg` redirection
+            function.
     """  # noqa: E501
 
     def decorator(func):
@@ -296,32 +313,34 @@ def deprecated_alias(**aliases) -> Callable:
     return decorator
 
 
-def refactored_function(message: str) -> Callable:
-    """
-    Used as a decorator when refactoring functions.
+def refactored_function(message: str, category=FutureWarning) -> Callable:
+    """Used as a decorator when refactoring functions.
 
     Implementation is inspired from [`Hacker Noon`][hacker_link].
 
     [hacker_link]: https://hackernoon.com/why-refactoring-how-to-restructure-python-package-51b89aa91987
 
-    Functional usage example:
+    Examples:
+        ```python
+        @refactored_function(
+            message="simple_sum() has been refactored. Use hard_sum() instead."
+        )
+        def simple_sum(alpha, beta):
+            return alpha + beta
+        ```
 
-    ```python
-    @refactored_function(
-        message="simple_sum() has been refactored. Use hard_sum() instead."
-    )
-    def simple_sum(alpha, beta):
-        return alpha + beta
-    ```
+    Args:
+        message: Message to use in warning user about refactoring.
+        category: Type of Warning. Default is `FutureWarning`.
 
-    :param message: Message to use in warning user about refactoring.
-    :return: Your original function wrapped with the kwarg redirection
-        function.
+    Returns:
+        Your original function wrapped with the kwarg redirection function.
     """  # noqa: E501
 
     def decorator(func):
+        @wraps(func)
         def emit_warning(*args, **kwargs):
-            warn(message, FutureWarning)
+            warn(message, category, stacklevel=find_stack_level())
             return func(*args, **kwargs)
 
         return emit_warning
@@ -330,18 +349,23 @@ def refactored_function(message: str) -> Callable:
 
 
 def rename_kwargs(func_name: str, kwargs: Dict, aliases: Dict):
-    """
-    Used to update deprecated argument names with new names. Throws a
+    """Used to update deprecated argument names with new names.
+
+    Throws a
     `TypeError` if both arguments are provided, and warns if old alias
     is used. Nothing is returned as the passed `kwargs` are modified
     directly. Implementation is inspired from [`StackOverflow`][stack_link].
 
     [stack_link]: https://stackoverflow.com/questions/49802412/how-to-implement-deprecation-in-python-with-argument-alias
 
-    :param func_name: name of decorated function.
-    :param kwargs: Arguments supplied to the method.
-    :param aliases: Dictionary of aliases for a function's arguments.
-    :raises TypeError: if both arguments are provided.
+
+    Args:
+        func_name: name of decorated function.
+        kwargs: Arguments supplied to the method.
+        aliases: Dictionary of aliases for a function's arguments.
+
+    Raises:
+        TypeError: If both arguments are provided.
     """  # noqa: E501
     for old_alias, new_alias in aliases.items():
         if old_alias in kwargs:
@@ -359,15 +383,13 @@ def rename_kwargs(func_name: str, kwargs: Dict, aliases: Dict):
 def check_column(
     df: pd.DataFrame, column_names: Union[Iterable, str], present: bool = True
 ):
-    """
-    One-liner syntactic sugar for checking the presence or absence
+    """One-liner syntactic sugar for checking the presence or absence
     of columns.
 
-    Example usage:
-
-    ```python
-    check(df, ['a', 'b'], present=True)
-    ```
+    Examples:
+        ```python
+        check(df, ['a', 'b'], present=True)
+        ```
 
     This will check whether columns `'a'` and `'b'` are present in
     `df`'s columns.
@@ -375,13 +397,16 @@ def check_column(
     One can also guarantee that `'a'` and `'b'` are not present
     by switching to `present=False`.
 
-    :param df: The name of the variable.
-    :param column_names: A list of column names we want to check to see if
-        present (or absent) in `df`.
-    :param present: If `True` (default), checks to see if all of `column_names`
-        are in `df.columns`. If `False`, checks that none of `column_names` are
-        in `df.columns`.
-    :raises ValueError: if data is not the expected type.
+    Args:
+        df: The name of the variable.
+        column_names: A list of column names we want to check to see if
+            present (or absent) in `df`.
+        present: If `True` (default), checks to see if all of `column_names`
+            are in `df.columns`. If `False`, checks that none of `column_names`
+            are in `df.columns`.
+
+    Raises:
+        ValueError: If data is not the expected type.
     """
     if isinstance(column_names, str) or not isinstance(column_names, Iterable):
         column_names = [column_names]
@@ -398,22 +423,26 @@ def check_column(
 
 
 def skipna(f: Callable) -> Callable:
-    """
-    Decorator for escaping `np.nan` and `None` in a function.
+    """Decorator for escaping `np.nan` and `None` in a function.
 
-    Example usage:
+    Examples:
+        ```python
+        df[column].apply(skipna(transform))
+        ```
 
-    ```python
-    df[column].apply(skipna(transform))
+        Can also be used as shown below
 
-    # Can also be used as shown below
-    @skipna
-    def transform(x):
-        pass
-    ```
+        ```python
+        @skipna
+        def transform(x):
+            pass
+        ```
 
-    :param f: the function to be wrapped.
-    :returns: the wrapped function.
+    Args:
+        f: The function to be wrapped.
+
+    Returns:
+        The wrapped function.
     """
 
     def _wrapped(x, *args, **kwargs):
@@ -427,26 +456,31 @@ def skipna(f: Callable) -> Callable:
 def skiperror(
     f: Callable, return_x: bool = False, return_val=np.nan
 ) -> Callable:
-    """
-    Decorator for escaping any error in a function.
+    """Decorator for escaping any error in a function.
 
-    Example usage:
+    Examples:
+        ```python
+        df[column].apply(
+            skiperror(transform, return_val=3, return_x=False))
+        ```
 
-    ```python
-    df[column].apply(
-        skiperror(transform, return_val=3, return_x=False))
+        Can also be used as shown below
 
-    # Can also be used as shown below
-    @skiperror(return_val=3, return_x=False)
-    def transform(x):
-        pass
-    ```
-    :param f: the function to be wrapped.
-    :param return_x: whether or not the original value that caused error
-        should be returned.
-    :param return_val: the value to be returned when an error hits.
-        Ignored if `return_x` is `True`.
-    :returns: the wrapped function.
+        ```python
+        @skiperror(return_val=3, return_x=False)
+        def transform(x):
+            pass
+        ```
+
+    Args:
+        f: The function to be wrapped.
+        return_x: Whether or not the original value that caused error
+            should be returned.
+        return_val: The value to be returned when an error hits.
+            Ignored if `return_x` is `True`.
+
+    Returns:
+        The wrapped function.
     """
 
     def _wrapped(x, *args, **kwargs):
@@ -461,20 +495,23 @@ def skiperror(
 
 
 def is_connected(url: str) -> bool:
-    """
-    This is a helper function to check if the client
+    """This is a helper function to check if the client
     is connected to the internet.
 
-    Example:
-        print(is_connected("www.google.com"))
-        console >> True
+    Examples:
 
-    :param url: We take a test url to check if we are
-        able to create a valid connection.
-    :raises OSError: if connection to `URL` cannot be
-        established
-    :return: We return a boolean that signifies our
-        connection to the internet
+        >>> print(is_connected("www.google.com"))
+        True
+
+    Args:
+        url: We take a test url to check if we are
+            able to create a valid connection.
+
+    Raises:
+        OSError: If connection to `URL` cannot be established
+
+    Returns:
+        We return a boolean that signifies our connection to the internet
     """
     try:
         sock = socket.create_connection((url, 80))
@@ -489,3 +526,32 @@ def is_connected(url: str) -> bool:
         )
         raise e
     return False
+
+
+def find_stack_level() -> int:
+    """Find the first place in the stack that is not inside janitor
+    (tests notwithstanding).
+
+    Adapted from Pandas repo.
+
+    Returns:
+        Stack level number
+    """
+
+    import janitor as jn
+    import inspect
+
+    pkg_dir = os.path.abspath(os.path.dirname(jn.__file__))
+    test_dir = os.path.join(os.path.dirname(pkg_dir), "tests")
+
+    # https://stackoverflow.com/questions/17407119/python-inspect-stack-is-slow
+    frame = inspect.currentframe()
+    n = 0
+    while frame:
+        fname = inspect.getfile(frame)
+        if fname.startswith(pkg_dir) and not fname.startswith(test_dir):
+            frame = frame.f_back
+            n += 1
+        else:
+            break
+    return n

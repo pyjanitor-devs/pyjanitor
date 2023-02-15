@@ -17,11 +17,12 @@ def expand_column(
 ) -> pd.DataFrame:
     """Expand a categorical column with multiple labels into dummy-coded columns.
 
-    Super sugary syntax that wraps :py:meth:`pandas.Series.str.get_dummies`.
+    Super sugary syntax that wraps `pandas.Series.str.get_dummies`.
 
     This method does not mutate the original DataFrame.
 
-    Functional usage syntax:
+    Examples:
+        Functional usage syntax:
 
         >>> import pandas as pd
         >>> df = pd.DataFrame(
@@ -42,7 +43,7 @@ def expand_column(
         2     E, F     3  0  0  0  0  1  1
         3  A, E, F     4  1  0  0  0  1  1
 
-    Method chaining syntax:
+        Method chaining syntax:
 
         >>> import pandas as pd
         >>> import janitor
@@ -65,14 +66,17 @@ def expand_column(
         2     E, F     3  0  0  0  0  1  1
         3  A, E, F     4  1  0  0  0  1  1
 
-    :param df: A pandas DataFrame.
-    :param column_name: Which column to expand.
-    :param sep: The delimiter, same to
-        :py:meth:`~pandas.Series.str.get_dummies`'s `sep`, default as `|`.
-    :param concat: Whether to return the expanded column concatenated to
-        the original dataframe (`concat=True`), or to return it standalone
-        (`concat=False`).
-    :returns: A pandas DataFrame with an expanded column.
+    Args:
+        df: A pandas DataFrame.
+        column_name: Which column to expand.
+        sep: The delimiter, same to
+            `pandas.Series.str.get_dummies`'s `sep`.
+        concat: Whether to return the expanded column concatenated to
+            the original dataframe (`concat=True`), or to return it standalone
+            (`concat=False`).
+
+    Returns:
+        A pandas DataFrame with an expanded column.
     """  # noqa: E501
     expanded_df = df[column_name].str.get_dummies(sep=sep)
     if concat:

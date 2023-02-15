@@ -1,17 +1,17 @@
 """Function for performing coalesce."""
-from typing import Optional, Union
+from typing import Any, Optional, Union
 import pandas as pd
 import pandas_flavor as pf
 
 from janitor.utils import check, deprecated_alias
-from janitor.functions.utils import _select_index
+from janitor.functions.utils import get_index_labels
 
 
 @pf.register_dataframe_method
 @deprecated_alias(columns="column_names", new_column_name="target_column_name")
 def coalesce(
     df: pd.DataFrame,
-    *column_names,
+    *column_names: Any,
     target_column_name: Optional[str] = None,
     default_value: Optional[Union[int, float, str]] = None,
 ) -> pd.DataFrame:
@@ -28,7 +28,8 @@ def coalesce(
 
     This method does not mutate the original DataFrame.
 
-    Example: Use `coalesce` with 3 columns, "a", "b" and "c".
+    Examples:
+        Use `coalesce` with 3 columns, "a", "b" and "c".
 
         >>> import pandas as pd
         >>> import numpy as np
@@ -44,7 +45,7 @@ def coalesce(
         1  1.0  3.0  NaN
         2  NaN  NaN  NaN
 
-    Example: Provide a target_column_name.
+        Provide a target_column_name.
 
         >>> df.coalesce("a", "b", "c", target_column_name="new_col")
              a    b    c  new_col
@@ -52,7 +53,7 @@ def coalesce(
         1  1.0  3.0  NaN      1.0
         2  NaN  NaN  NaN      NaN
 
-    Example: Provide a default value.
+        Provide a default value.
 
         >>> import pandas as pd
         >>> import numpy as np
@@ -76,15 +77,20 @@ def coalesce(
     should be more intuitive than the `pandas.Series.combine_first`
     method.
 
-    :param df: A pandas DataFrame.
-    :param column_names: A list of column names.
-    :param target_column_name: The new column name after combining.
-        If `None`, then the first column in `column_names` is updated,
-        with the Null values replaced.
-    :param default_value: A scalar to replace any remaining nulls
-        after coalescing.
-    :returns: A pandas DataFrame with coalesced columns.
-    :raises ValueError: if length of `column_names` is less than 2.
+    Args:
+        df: A pandas DataFrame.
+        column_names: A list of column names.
+        target_column_name: The new column name after combining.
+            If `None`, then the first column in `column_names` is updated,
+            with the Null values replaced.
+        default_value: A scalar to replace any remaining nulls
+            after coalescing.
+
+    Raises:
+        ValueError: If length of `column_names` is less than 2.
+
+    Returns:
+        A pandas DataFrame with coalesced columns.
     """
 
     if not column_names:
@@ -95,8 +101,7 @@ def coalesce(
             "The number of columns to coalesce should be a minimum of 2."
         )
 
-    indices = _select_index([*column_names], df, axis="columns")
-    column_names = df.columns[indices]
+    column_names = get_index_labels([*column_names], df, axis="columns")
 
     if target_column_name:
         check("target_column_name", target_column_name, [str])

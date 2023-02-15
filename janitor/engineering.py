@@ -1,11 +1,9 @@
-"""
-Engineering-specific data cleaning functions.
+"""Engineering-specific data cleaning functions.
 """
 
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
-
 
 from .utils import check, import_message
 
@@ -29,15 +27,22 @@ def convert_units(
     to_units: str = None,
     dest_column_name: str = None,
 ) -> pd.DataFrame:
-    """
-    Converts a column of numeric values from one unit to another.
+    """Converts a column of numeric values from one unit to another.
 
-    Functional usage example:
+    Unit conversion can only take place if the `existing_units` and
+    `to_units` are of the same type (e.g., temperature or pressure).
+    The provided unit types can be any unit name or alternate name provided
+    in the `unyt` package's [Listing of Units table](
+    https://unyt.readthedocs.io/en/stable/unit_listing.html#unit-listing).
 
-    Method chaining usage example:
+    Volume units are not provided natively in `unyt`.  However, exponents are
+    supported, and therefore some volume units can be converted.  For example,
+    a volume in cubic centimeters can be converted to cubic meters using
+    `existing_units='cm**3'` and `to_units='m**3'`.
 
-    Example:
+    This method mutates the original DataFrame.
 
+    Examples:
         >>> import pandas as pd
         >>> import janitor.engineering
         >>> df = pd.DataFrame({"temp_F": [-40, 112]})
@@ -52,30 +57,20 @@ def convert_units(
         0     -40 -40.000000
         1     112  44.444444
 
+    Args:
+        df: A pandas DataFrame.
+        column_name: Name of the column containing numeric
+            values that are to be converted from one set of units to another.
+        existing_units: The unit type to convert from.
+        to_units: The unit type to convert to.
+        dest_column_name: The name of the new column containing the
+            converted values that will be created.
 
+    Raises:
+        TypeError: If column is not numeric.
 
-    Unit conversion can only take place if the `existing_units` and
-    `to_units` are of the same type (e.g., temperature or pressure).
-    The provided unit types can be any unit name or alternate name provided
-    in the `unyt` package's [Listing of Units table](
-    https://unyt.readthedocs.io/en/stable/unit_listing.html#unit-listing).
-
-    Volume units are not provided natively in `unyt`.  However, exponents are
-    supported, and therefore some volume units can be converted.  For example,
-    a volume in cubic centimeters can be converted to cubic meters using
-    `existing_units='cm**3'` and `to_units='m**3'`.
-
-    **Note**: This method mutates the original DataFrame.
-
-    :param df: A pandas DataFrame.
-    :param column_name: Name of the column containing numeric
-        values that are to be converted from one set of units to another.
-    :param existing_units: The unit type to convert from.
-    :param to_units: The unit type to convert to.
-    :param dest_column_name: The name of the new column containing the
-        converted values that will be created.
-    :returns: A pandas DataFrame with a new column of unit-converted values.
-    :raises TypeError: if column is not numeric.
+    Returns:
+        A pandas DataFrame with a new column of unit-converted values.
     """
 
     # Check all inputs are correct data type

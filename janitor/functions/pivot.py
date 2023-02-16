@@ -191,6 +191,18 @@ def pivot_longer(
         0    50    1      10      30
         1    50    2      20      40
 
+    Column selection in `index` and `column_names` is possible using the
+    [`select_columns`][janitor.functions.select.select_columns] syntax:
+
+        >>> df.pivot_longer(
+            ...     column_names="*mean",
+            ...     names_to=(".value", "time", ".value"),
+            ...     names_pattern=r"(x|y)_([0-9])(_mean)",
+            ... )
+           unit time  x_mean  y_mean
+        0    50    1      10      30
+        1    50    2      20      40
+
         Reshape dataframe by passing a sequence to `names_pattern`:
 
         >>> df = pd.DataFrame({'hr1': [514, 573],

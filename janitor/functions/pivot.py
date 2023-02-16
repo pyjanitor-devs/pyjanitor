@@ -54,6 +54,7 @@ def pivot_longer(
     [`select_columns`][janitor.functions.select.select_columns] syntax.
 
     Examples:
+
         >>> import pandas as pd
         >>> import janitor
         >>> df = pd.DataFrame(
@@ -70,7 +71,7 @@ def pivot_longer(
         0           5.1          3.5           1.4          0.2     setosa
         1           5.9          3.0           5.1          1.8  virginica
 
-        Replicate pandas' melt:
+    Replicate pandas' melt:
 
         >>> df.pivot_longer(index = 'Species')
              Species      variable  value
@@ -83,8 +84,8 @@ def pivot_longer(
         6     setosa   Petal.Width    0.2
         7  virginica   Petal.Width    1.8
 
-        Convenient, flexible column selection in the `index` via the
-        [`select_columns`][janitor.functions.select.select_columns] syntax:
+    Convenient, flexible column selection in the `index` via the
+    [`select_columns`][janitor.functions.select.select_columns] syntax:
 
         >>> from pandas.api.types import is_string_dtype
         >>> df.pivot_longer(index = is_string_dtype)
@@ -98,7 +99,7 @@ def pivot_longer(
         6     setosa   Petal.Width    0.2
         7  virginica   Petal.Width    1.8
 
-        Split the column labels into parts:
+    Split the column labels into parts:
 
         >>> df.pivot_longer(
         ...     index = 'Species',
@@ -116,7 +117,7 @@ def pivot_longer(
         6  virginica  Petal    Length    5.1
         7  virginica  Petal     Width    1.8
 
-        Retain parts of the column names as headers:
+    Retain parts of the column names as headers:
 
         >>> df.pivot_longer(
         ...     index = 'Species',
@@ -130,7 +131,7 @@ def pivot_longer(
         2  virginica  Sepal     5.9    3.0
         3  virginica  Petal     5.1    1.8
 
-        Split the column labels based on regex:
+    Split the column labels based on regex:
 
         >>> df = pd.DataFrame({"id": [1], "new_sp_m5564": [2], "newrel_f65": [3]})
         >>> df
@@ -145,7 +146,7 @@ def pivot_longer(
         0   1        sp      m  5564      2
         1   1       rel      f    65      3
 
-        Split the column labels for the above dataframe using named groups in `names_pattern`:
+    Split the column labels for the above dataframe using named groups in `names_pattern`:
 
         >>> df.pivot_longer(
         ...     index = 'id',
@@ -155,7 +156,7 @@ def pivot_longer(
         0   1        sp      m  5564      2
         1   1       rel      f    65      3
 
-        Convert the dtypes of specific columns with `names_transform`:
+    Convert the dtypes of specific columns with `names_transform`:
 
         >>> result = (df
         ...          .pivot_longer(
@@ -171,7 +172,7 @@ def pivot_longer(
         value        int64
         dtype: object
 
-        Use multiple `.value` to reshape dataframe:
+    Use multiple `.value` to reshape dataframe:
 
         >>> df = pd.DataFrame(
         ...     [
@@ -196,7 +197,7 @@ def pivot_longer(
         0    50    1      10      30
         1    50    2      20      40
 
-        Replicate the above with named groups in `names_pattern` - use `_` instead of `.value`:
+    Replicate the above with named groups in `names_pattern` - use `_` instead of `.value`:
 
         >>> df.pivot_longer(
         ...     index="unit",
@@ -227,7 +228,7 @@ def pivot_longer(
         0    50    1      10      30
         1    50    2      20      40
 
-        Reshape dataframe by passing a sequence to `names_pattern`:
+    Reshape dataframe by passing a sequence to `names_pattern`:
 
         >>> df = pd.DataFrame({'hr1': [514, 573],
         ...                    'hr2': [545, 526],
@@ -249,7 +250,8 @@ def pivot_longer(
         2  Red Sox  545  2008
         3  Yankees  526  2008
 
-        Reshape above dataframe by passing a dictionary to `names_pattern`:
+
+    Reshape above dataframe by passing a dictionary to `names_pattern`:
 
         >>> df.pivot_longer(
         ...     index = 'team',
@@ -261,7 +263,7 @@ def pivot_longer(
         2  Red Sox  545  2008
         3  Yankees  526  2008
 
-        Multiple values_to:
+    Multiple values_to:
 
         >>> df = pd.DataFrame(
         ...         {
@@ -308,9 +310,9 @@ def pivot_longer(
         7   Austin    Texas  Watermelon      99   None     NaN
         8   Hoover  Alabama  Watermelon      43   None     NaN
 
-        Replicate the above transformation with a nested dictionary passed to `names_pattern`
-        - the outer keys in the `names_pattern` dictionary are passed to `names_to`,
-        while the inner keys are passed to `values_to`:
+    Replicate the above transformation with a nested dictionary passed to `names_pattern`
+    - the outer keys in the `names_pattern` dictionary are passed to `names_to`,
+    while the inner keys are passed to `values_to`:
 
         >>> df.pivot_longer(
         ...     index=["City", "State"],

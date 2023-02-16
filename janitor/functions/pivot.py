@@ -1442,6 +1442,58 @@ def pivot_wider(
         0  5.5       20       25       30       37
         1  6.1       22       18       19       29
 
+        Expand columns to expose implicit missing values
+        - this applies only to categorical columns:
+
+        >>> weekdays = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+        >>> daily = pd.DataFrame(
+        ...     {
+        ...         "day": pd.Categorical(
+        ...             values=("Tue", "Thu", "Fri", "Mon"), categories=weekdays
+        ...         ),
+        ...         "value": (2, 3, 1, 5),
+        ...     },
+        ... index=[0, 0, 0, 0],
+        ... )
+        >>> daily
+           day  value
+        0  Tue      2
+        0  Thu      3
+        0  Fri      1
+        0  Mon      5
+        >>> daily.pivot_wider(names_from='day', values_from='value')
+           Tue  Thu  Fri  Mon
+        0    2    3    1    5
+        >>> daily.pivot_wider(names_from='day', values_from='value', names_expand=True)
+           Mon  Tue  Wed  Thu  Fri  Sat  Sun
+        0    5    2  NaN    3    1  NaN  NaN
+
+        Expand the index to expose implicit missing values
+        - this applies only to categorical columns:
+        >>> daily = daily.assign(letter = list('ABBA'))
+        >>> daily
+           day  value letter
+        0  Tue      2      A
+        0  Thu      3      B
+        0  Fri      1      B
+        0  Mon      5      A
+        >>> daily.pivot_wider(index='day',names_from='letter',values_from='value')
+           day    A    B
+        0  Tue  2.0  NaN
+        1  Thu  NaN  3.0
+        2  Fri  NaN  1.0
+        3  Mon  5.0  NaN
+        >>> daily.pivot_wider(index='day',names_from='letter',values_from='value', index_expand=True)
+           day    A    B
+        0  Mon  5.0  NaN
+        1  Tue  2.0  NaN
+        2  Wed  NaN  NaN
+        3  Thu  NaN  3.0
+        4  Fri  NaN  1.0
+        5  Sat  NaN  NaN
+        6  Sun  NaN  NaN
+
+
     !!! abstract "Version Changed"
 
         - 0.24.0
@@ -1652,7 +1704,6 @@ def _data_checks_pivot_wider(
     names_expand,
     index_expand,
 ):
-
     """
     This function raises errors if the arguments have the wrong
     python type, or if the column does not exist in the dataframe.

@@ -34,6 +34,9 @@ def select_columns(
         >>> import pandas as pd
         >>> import janitor
         >>> from numpy import nan
+        >>> pd.set_option("display.max_columns", None)
+        >>> pd.set_option("display.expand_frame_repr", False)
+        >>> pd.set_option("max_colwidth", None)
         >>> data = {'name': ['Cheetah','Owl monkey','Mountain beaver',
         ...                  'Greater short-tailed shrew','Cow'],
         ...         'genus': ['Acinonyx', 'Aotus', 'Aplodontia', 'Blarina', 'Bos'],

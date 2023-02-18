@@ -67,7 +67,6 @@ def complete(
         4  2004      Agarum          8
 
         Expose missing pairings of `Year` and `Taxon`:
-
         >>> df.complete("Year", "Taxon", sort=True)
            Year       Taxon  Abundance
         0  1999      Agarum        1.0
@@ -78,7 +77,6 @@ def complete(
         5  2004  Saccharina        2.0
 
         Expose missing years from 1999 to 2004:
-
         >>> df.complete(
         ...     {"Year": range(df.Year.min(), df.Year.max() + 1)},
         ...     "Taxon",
@@ -99,7 +97,6 @@ def complete(
         11  2004  Saccharina        2.0
 
         Fill missing values:
-
         >>> df = pd.DataFrame(
         ...     dict(
         ...         group=(1, 2, 1, 2),
@@ -133,7 +130,6 @@ def complete(
 
         Limit the fill to only implicit missing values
         by setting explicit to `False`:
-
         >>> df.complete(
         ...     "group",
         ...     ("item_id", "item_name"),
@@ -152,7 +148,6 @@ def complete(
         7      2        3         b     4.0     7.0
 
         Expose missing values via the index:
-
         >>> index = pd.date_range('1/1/2000', periods=4, freq='T')
         >>> series = pd.Series([0.0, None, 2.0, 3.0], index=index)
         >>> DT = pd.DataFrame({'s': series})
@@ -164,7 +159,6 @@ def complete(
         2000-01-01 00:01:00  NaN
         2000-01-01 00:02:00  2.0
         2000-01-01 00:03:00  3.0
-
         >>> dates = {'dates':lambda f: pd.date_range(f.min(), f.max(), freq='30S')}
         >>> DT.complete(dates)
                                s

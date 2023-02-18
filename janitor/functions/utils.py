@@ -168,7 +168,7 @@ def patterns(regex_pattern: Union[str, Pattern]) -> Pattern:
     return re.compile(regex_pattern)
 
 
-def _computations_expand_grid(others: dict) -> pd.DataFrame:
+def _computations_expand_grid(others: dict) -> dict:
     """
     Creates a cartesian product of all the inputs in `others`.
     Uses numpy's `mgrid` to generate indices, which is used to
@@ -184,7 +184,7 @@ def _computations_expand_grid(others: dict) -> pd.DataFrame:
     This is particularly relevant for pandas' extension arrays `dtypes`
     (categoricals, nullable integers, ...).
 
-    A DataFrame of all possible combinations is returned.
+    A dictionary of all possible combinations is returned.
     """
 
     for key in others:
@@ -228,9 +228,8 @@ def _computations_expand_grid(others: dict) -> pd.DataFrame:
                 padding = [""] * (lengths - len_key)
                 key = (*key, *padding)
             others[key] = value
-    else:
-        others = contents
-    return others
+        return others
+    return contents
 
 
 @dispatch(pd.DataFrame, (list, tuple), str)

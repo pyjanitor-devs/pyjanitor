@@ -82,6 +82,8 @@ def expand_grid(
 
     Returns:
         A pandas DataFrame of the cartesian product.
+        If `df` is not provided, and `others` is not provided,
+        None is returned.
     """
 
     if df is not None:

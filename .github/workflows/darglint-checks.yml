@@ -39,4 +39,4 @@ jobs:
       - name: Run darglint only with pre-commit
         uses: pre-commit/action@v3.0.0
         with:
-          extra_args: darglint --from-ref=origin/dev --to-ref=HEAD
+          extra_args: darglint --from-ref=dev --to-ref=HEAD

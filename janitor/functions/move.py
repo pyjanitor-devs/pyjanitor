@@ -49,9 +49,8 @@ def move(
         Move a column:
         >>> import pandas as pd
         >>> import janitor
-        >>> data = [{'a': 1, 'b': 1, 'c': 1,
-        ...          'd': 'a', 'e': 'a',
-        ...          'f': 'a'}]
+        >>> data = [{"a": 1, "b": 1, "c": 1,
+        ...          "d": "a", "e": "a","f": "a"}]
         >>> df = pd.DataFrame(data)
         >>> df
            a  b  c  d  e  f
@@ -59,22 +58,22 @@ def move(
         >>> df.move(source="a", target="c", position="after", axis=1)
            b  c  a  d  e  f
         0  1  1  1  a  a  a
-        >>> df.move(source='f', target='b', position='before', axis=1)
+        >>> df.move(source="f", target="b", position="before", axis=1)
            a  f  b  c  d  e
         0  1  a  1  1  a  a
-        >>> df.move(source='a', target=None, position='after', axis=1)
+        >>> df.move(source="a", target=None, position="after", axis=1)
            b  c  d  e  f  a
         0  1  1  a  a  a  1
 
         Move columns:
         >>> from pandas.api.types import is_numeric_dtype, is_string_dtype
-        >>> df.move(source=is_string_dtype, target=None, position='before', axis=1)
+        >>> df.move(source=is_string_dtype, target=None, position="before", axis=1)
            d  e  f  a  b  c
         0  a  a  a  1  1  1
-        >>> df.move(source=is_numeric_dtype, target=None, position='after', axis=1)
+        >>> df.move(source=is_numeric_dtype, target=None, position="after", axis=1)
            d  e  f  a  b  c
         0  a  a  a  1  1  1
-        >>> df.move(source = ['d', 'f'], target=is_numeric_dtype, position='before', axis=1)
+        >>> df.move(source = ["d", "f"], target=is_numeric_dtype, position="before", axis=1)
            d  f  a  b  c  e
         0  a  a  1  1  1  a
 

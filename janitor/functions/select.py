@@ -201,7 +201,6 @@ def select_columns(
         num_legs        4     2
         num_wings       0     2
 
-
     Args:
         df: A pandas DataFrame.
         *args: Valid inputs include: an exact column name to look for,

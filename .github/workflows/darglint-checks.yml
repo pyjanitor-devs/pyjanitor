@@ -1,0 +1,42 @@
+# Temporarily run darglint using github actions rather than pre-commit CI because it is consistently
+# more than 5min to run. To be removed once ruff supports darglint rules.
+name: Darglint checks
+
+on:
+  # only run darglint checks when src-code changes
+  push:
+    branches:
+      - dev
+    paths:
+      - "janitor/**"
+      - ".github/workflows/darglint-checks.yml"
+  pull_request:
+    branches:
+      - dev
+    paths:
+      - "janitor/**"
+      - ".github/workflows/darglint-checks.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  run-darglint:
+    name: Run darglint checks manually
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+          check-latest: false
+
+      - name: Run darglint only with pre-commit
+        uses: pre-commit/action@v3.0.0
+        with:
+          extra_args: darglint

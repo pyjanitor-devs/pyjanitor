@@ -1652,7 +1652,6 @@ def _data_checks_pivot_wider(
     names_expand,
     index_expand,
 ):
-
     """
     This function raises errors if the arguments have the wrong
     python type, or if the column does not exist in the dataframe.

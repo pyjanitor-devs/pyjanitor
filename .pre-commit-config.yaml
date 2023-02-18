@@ -20,7 +20,7 @@ repos:
   #   hooks:
   #     - id: isort
   #       name: isort (python)
-  #
+
   - repo: https://github.com/econchick/interrogate
     rev: 1.5.0
     hooks:
@@ -41,5 +41,5 @@ repos:
 
 ci:
   skip:
-    # FIXME: darglint is timing out on pre-commit CI (cf. #1236)
+    # FIXME: darglint is timing out on pre-commit CI (cf. #1236, #1246)
     - darglint

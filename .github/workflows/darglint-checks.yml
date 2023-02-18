@@ -1,6 +1,6 @@
 # Temporarily run darglint using github actions rather than pre-commit CI because it is consistently
-# more than 5min to run. To be removed once ruff supports darglint rules.
-name: Darglint checks
+# more than 5min to run and timing out. To be removed once ruff supports darglint rules.
+name: darglint checks
 
 on:
   # only run darglint checks when src-code changes

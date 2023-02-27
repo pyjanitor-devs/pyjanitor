@@ -856,6 +856,7 @@ def _computations_pivot_longer(
     if len(column_names) != len(set(column_names)):
         column_names = pd.unique(column_names)
 
+    # creates a new object - essentially a copy
     out = df.loc[:, column_names]
 
     if all((names_pattern is None, names_sep is None)):

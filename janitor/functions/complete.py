@@ -209,7 +209,8 @@ def complete(
     if not columns:
         return df
 
-    # df = df.copy()
+    # no copy made of the original dataframe
+    # since pd.merge (computed some lines below) makes a copy
 
     return _computations_complete(df, columns, sort, by, fill_value, explicit)
 

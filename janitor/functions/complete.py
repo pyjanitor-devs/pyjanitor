@@ -209,7 +209,7 @@ def complete(
     if not columns:
         return df
 
-    df = df.copy()
+    # df = df.copy()
 
     return _computations_complete(df, columns, sort, by, fill_value, explicit)
 
@@ -280,7 +280,7 @@ def _computations_complete(
     if fill_value is not None and not explicit:
         # to get a name that does not exist in the columns
         indicator = "".join(columns)
-    df = pd.merge(
+    out = pd.merge(
         uniques,
         df,
         how="outer",
@@ -294,10 +294,10 @@ def _computations_complete(
         if is_scalar(fill_value):
             # faster when fillna operates on a Series basis
             fill_value = {
-                col: fill_value for col in columns if df[col].hasnans
+                col: fill_value for col in columns if out[col].hasnans
             }
         if explicit:
-            df = df.fillna(fill_value, downcast="infer")
+            out = out.fillna(fill_value, downcast="infer")
         else:
             # keep only columns that are not part of column_checker
             # IOW, we are excluding columns that were not used
@@ -312,8 +312,8 @@ def _computations_complete(
                 # use the indicator parameter to identify rows
                 # for `left_only`, and fill the relevant columns in fill_value
                 # with the associated value.
-                boolean_filter = df.loc[:, indicator] == "left_only"
-                df = df.drop(columns=indicator)
+                boolean_filter = out.loc[:, indicator] == "left_only"
+                out = out.drop(columns=indicator)
                 # iteration used here,
                 # instead of assign (which is also a for loop),
                 # to cater for scenarios where the column_name is not a string
@@ -323,18 +323,18 @@ def _computations_complete(
                 # user can always convert to int if required
                 for column_name, value in fill_value.items():
                     # for categorical dtypes, set the categories first
-                    if is_categorical_dtype(df[column_name]):
-                        df[column_name] = df[column_name].cat.add_categories(
+                    if is_categorical_dtype(out[column_name]):
+                        out[column_name] = out[column_name].cat.add_categories(
                             [value]
                         )
-                    df.loc[boolean_filter, column_name] = value
+                    out.loc[boolean_filter, column_name] = value
 
-    if index and (index_labels != df.index.names):
-        labels = [label for label in index_labels if label in df.index.names]
-        return df.reorder_levels(order=labels, axis="index")
-    if not df.columns.equals(columns):
-        return df.reindex(columns=columns)
-    return df
+    if index and (index_labels != out.index.names):
+        labels = [label for label in index_labels if label in out.index.names]
+        return out.reorder_levels(order=labels, axis="index")
+    if not out.columns.equals(columns):
+        return out.reindex(columns=columns)
+    return out
 
 
 def _generic_complete(

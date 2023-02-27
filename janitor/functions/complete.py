@@ -211,6 +211,8 @@ def complete(
 
     # no copy made of the original dataframe
     # since pd.merge (computed some lines below) makes a copy
+    # besides, we do not touch `df` -
+    # create a new variable
 
     return _computations_complete(df, columns, sort, by, fill_value, explicit)
 
@@ -264,17 +266,22 @@ def _computations_complete(
             sort=sort,
         )
     else:
-        uniques = df.groupby(by, group_keys=True)
-        uniques = uniques.apply(
-            _generic_complete,
-            columns=columns,
-            all_scalars=all_scalars,
-            index=index,
-            sort=sort,
-        )
-        uniques = uniques.droplevel(-1, axis=0)
         column_checker = by + column_checker
-
+        uniques = df.groupby(by, group_keys=True)
+        # apply is basically a for loop
+        uniques = {
+            key: _generic_complete(
+                df=value,
+                columns=columns,
+                all_scalars=all_scalars,
+                index=index,
+                sort=sort,
+            )
+            for key, value in uniques
+        }
+        uniques = pd.concat(uniques, names=column_checker).droplevel(
+            -1, axis=0
+        )
     columns = df.columns
     index_labels = df.index.names
     indicator = False

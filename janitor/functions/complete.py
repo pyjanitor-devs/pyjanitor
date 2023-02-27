@@ -210,10 +210,8 @@ def complete(
         return df
 
     # no copy made of the original dataframe
-    # since pd.merge (computed some lines below) makes a copy
-    # besides, we do not touch `df` -
-    # create a new variable
-
+    # since pd.merge (computed some lines below)
+    # makes a new object - essentially a copy
     return _computations_complete(df, columns, sort, by, fill_value, explicit)
 
 
@@ -228,7 +226,7 @@ def _computations_complete(
     """
     This function computes the final output for the `complete` function.
 
-    If `by` is present, then `groupby().apply()` is used.
+    If `by` is present, then `groupby()` is used.
 
     A DataFrame, with rows of missing values, if any, is returned.
     """
@@ -269,6 +267,8 @@ def _computations_complete(
         column_checker = by + column_checker
         uniques = df.groupby(by, group_keys=True)
         # apply is basically a for loop
+        # for scenarios where Pandas does not have
+        # a vectorized option
         uniques = {
             key: _generic_complete(
                 df=value,
@@ -279,9 +279,9 @@ def _computations_complete(
             )
             for key, value in uniques
         }
-        uniques = pd.concat(uniques, names=column_checker).droplevel(
-            -1, axis=0
-        )
+        uniques = pd.concat(uniques, names=column_checker, copy=False)
+        if not index:
+            uniques = uniques.droplevel(-1, axis=0)
     columns = df.columns
     index_labels = df.index.names
     indicator = False
@@ -624,11 +624,6 @@ def _data_checks_complete(
                 raise ValueError(
                     f"{label} not found in the dataframe's index names."
                 )
-        if by:
-            raise ValueError(
-                "Groupby not supported if complete "
-                "is applied on the dataframe's index."
-            )
 
     check("explicit", explicit, [bool])
 

@@ -761,16 +761,6 @@ def test_label_in_by(dt):
         dt.reset_index("d").complete("a", by="a")
 
 
-def test_index_and_by(dt):
-    """Raise if completing on index in a groupby"""
-    with pytest.raises(
-        ValueError,
-        match="Groupby not supported if complete "
-        "is applied on the dataframe's index.",
-    ):
-        dt.complete("d", by="a")
-
-
 def test_index_not_found(dt):
     """Raise if completing on index and label not found"""
     with pytest.raises(

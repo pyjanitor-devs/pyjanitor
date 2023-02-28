@@ -857,6 +857,12 @@ def _computations_pivot_longer(
         column_names = pd.unique(column_names)
 
     # creates a new object - essentially a copy
+    # for large dataframes, it would be more efficient
+    # to build a new dataframes from a dictionary comprehension
+    # with copy=False
+    # but that could have adverse effects downstream
+    # if the user executes a computation that mutates the
+    # original dataframe - how to act as a copy without being a copy?
     out = df.loc[:, column_names]
 
     if all((names_pattern is None, names_sep is None)):

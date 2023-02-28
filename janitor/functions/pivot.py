@@ -858,7 +858,7 @@ def _computations_pivot_longer(
 
     # creates a new object - essentially a copy
     # for large dataframes, it would be more efficient
-    # to build a new dataframes from a dictionary comprehension
+    # to build a new dataframe from a dictionary comprehension
     # with copy=False
     # but that could have adverse effects downstream
     # if the user executes a computation that mutates the

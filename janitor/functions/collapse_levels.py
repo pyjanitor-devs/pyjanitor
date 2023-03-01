@@ -81,24 +81,24 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_") -> pd.DataFrame:
 
     df = df[:]
     new_columns = df.columns
-    # take care of non-strings
-    # going down into the underlying array
-    # provides some perf gains
-    # for the astype call
-    new_columns = [
-        new_columns.get_level_values(num).array
-        for num in range(new_columns.nlevels)
+    levels = [
+        new_columns.get_level_values(num) for num in range(new_columns.nlevels)
     ]
-    new_columns = [
-        entry.astype(str) if not is_string_dtype(entry) else entry
-        for entry in new_columns
+    all_strings = all(map(is_string_dtype, levels))
+    if all_strings:
+        no_empty_string = all((entry != "").all() for entry in levels)
+        if no_empty_string:
+            start, *levels = levels
+            for entry in levels:
+                start = start + sep + entry
+            df.columns = start
+            return df
+    new_columns = (map(str, entry) for entry in new_columns)
+    df.columns = [
+        # faster to use a list comprehension within string.join
+        # compared to a generator
+        # https://stackoverflow.com/a/37782238
+        sep.join([entry for entry in word if entry != ""])
+        for word in new_columns
     ]
-    new_columns = pd.MultiIndex.from_arrays(new_columns)
-    # usually more efficient for large Pandas objects to use `pd.map`
-    # would love to use a for loop with a vectorized approach
-    # to sum the strings : array1 + "_" + array2 + ...
-    # however, having to check for non empty strings
-    # negatively affects the performance
-    func = lambda col: sep.join(filter(None, col))  # noqa: E731
-    df.columns = new_columns.map(func)
     return df

@@ -1605,16 +1605,8 @@ def _computations_pivot_wider(
 
     if isinstance(df.columns, pd.MultiIndex):
         new_columns = df.columns
-        all_strings = (
-            new_columns.get_level_values(num)
-            for num in range(new_columns.nlevels)
-        )
-        all_strings = all(map(is_string_dtype, all_strings))
-        if not all_strings:
-            new_columns = (tuple(map(str, entry)) for entry in new_columns)
-
         if names_glue is not None:
-            if ("_value" in names_from) and (None in df.columns.names):
+            if ("_value" in names_from) and (None in new_columns.names):
                 warnings.warn(
                     "For names_glue, _value is used as a placeholder "
                     "for the values_from section. "
@@ -1639,6 +1631,13 @@ def _computations_pivot_wider(
                     f"{error} is not a column label in names_from."
                 ) from error
         else:
+            all_strings = (
+                new_columns.get_level_values(num)
+                for num in range(new_columns.nlevels)
+            )
+            all_strings = all(map(is_string_dtype, all_strings))
+            if not all_strings:
+                new_columns = (tuple(map(str, entry)) for entry in new_columns)
             if names_sep is None:
                 names_sep = "_"
             new_columns = [names_sep.join(entry) for entry in new_columns]
@@ -1677,7 +1676,6 @@ def _data_checks_pivot_wider(
     names_expand,
     index_expand,
 ):
-
     """
     This function raises errors if the arguments have the wrong
     python type, or if the column does not exist in the dataframe.

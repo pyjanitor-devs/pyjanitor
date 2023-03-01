@@ -3,6 +3,7 @@ import pandas as pd
 import pandas_flavor as pf
 
 from janitor.utils import check
+from pandas.api.types import is_string_dtype
 
 
 @pf.register_dataframe_method
@@ -79,10 +80,25 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_") -> pd.DataFrame:
         return df
 
     df = df[:]
-
-    df.columns = [
-        sep.join(str(el) for el in tup if str(el) != "")
-        for tup in df  # noqa: PD011
+    new_columns = df.columns
+    # take care of non-strings
+    # going down into the underlying array
+    # provides some perf gains
+    # for the astype call
+    new_columns = [
+        new_columns.get_level_values(num).array
+        for num in range(new_columns.nlevels)
     ]
-
+    new_columns = [
+        entry.astype(str) if not is_string_dtype(entry) else entry
+        for entry in new_columns
+    ]
+    new_columns = pd.MultiIndex.from_arrays(new_columns)
+    # usually more efficient for large Pandas objects to use `pd.map`
+    # would love to use a for loop with a vectorized approach
+    # to sum the strings : array1 + "_" + array2 + ...
+    # however, having to check for non empty strings
+    # negatively affects the performance
+    func = lambda col: sep.join(filter(None, col))  # noqa: E731
+    df.columns = new_columns.map(func)
     return df

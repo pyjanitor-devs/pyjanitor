@@ -9,7 +9,6 @@ import pandas as pd
 import pandas_flavor as pf
 from pandas.api.types import (
     is_list_like,
-    is_string_dtype,
     is_categorical_dtype,
 )
 from pandas.core.dtypes.concat import concat_compat
@@ -1508,8 +1507,8 @@ def pivot_wider(
         A pandas DataFrame that has been unpivoted from long to wide form.
     """  # noqa: E501
 
-    df = df.copy()
-
+    # no need for an explicit copy --> df = df.copy()
+    # `pd.pivot` creates one
     return _computations_pivot_wider(
         df,
         index,
@@ -1570,19 +1569,19 @@ def _computations_pivot_wider(
         index_expand,
     )
 
-    df = df.pivot(  # noqa: PD010
+    out = df.pivot(  # noqa: PD010
         index=index, columns=names_from, values=values_from
     )
 
-    indexer = df.index
+    indexer = out.index
     if index_expand and index:
         any_categoricals = (indexer.get_level_values(name) for name in index)
         any_categoricals = any(map(is_categorical_dtype, any_categoricals))
         if any_categoricals:
             indexer = _expand(indexer, retain_categories=True)
-            df = df.reindex(index=indexer)
+            out = out.reindex(index=indexer)
 
-    indexer = df.columns
+    indexer = out.columns
     if names_expand:
         any_categoricals = (
             indexer.get_level_values(name) for name in names_from
@@ -1597,71 +1596,61 @@ def _computations_pivot_wider(
             ):
                 retain_categories = False
             indexer = _expand(indexer, retain_categories=retain_categories)
-            df = df.reindex(columns=indexer)
+            out = out.reindex(columns=indexer)
 
     indexer = None
-    if any((df.empty, not flatten_levels)):
-        return df
+    if any((out.empty, not flatten_levels)):
+        return out
 
-    if isinstance(df.columns, pd.MultiIndex):
-        new_columns = df.columns
-        if names_glue is not None:
-            if ("_value" in names_from) and (None in new_columns.names):
-                warnings.warn(
-                    "For names_glue, _value is used as a placeholder "
-                    "for the values_from section. "
-                    "However, there is a '_value' in names_from; "
-                    "this might result in incorrect output. "
-                    "If possible, kindly change the column label "
-                    "from '_value' to another name, "
-                    "to avoid erroneous results."
-                )
-            try:
-                # there'll only be one None
-                names_from = [
-                    "_value" if ent is None else ent
-                    for ent in df.columns.names
-                ]
-                new_columns = [
-                    names_glue.format_map(dict(zip(names_from, entry)))
-                    for entry in new_columns
-                ]
-            except KeyError as error:
-                raise KeyError(
-                    f"{error} is not a column label in names_from."
-                ) from error
-        else:
-            all_strings = (
-                new_columns.get_level_values(num)
-                for num in range(new_columns.nlevels)
+    if isinstance(out.columns, pd.MultiIndex) and names_glue:
+        new_columns = out.columns
+        if ("_value" in names_from) and (None in new_columns.names):
+            warnings.warn(
+                "For names_glue, _value is used as a placeholder "
+                "for the values_from section. "
+                "However, there is a '_value' in names_from; "
+                "this might result in incorrect output. "
+                "If possible, kindly change the column label "
+                "from '_value' to another name, "
+                "to avoid erroneous results."
             )
-            all_strings = all(map(is_string_dtype, all_strings))
-            if not all_strings:
-                new_columns = (tuple(map(str, entry)) for entry in new_columns)
-            if names_sep is None:
-                names_sep = "_"
-            new_columns = [names_sep.join(entry) for entry in new_columns]
+        try:
+            # there'll only be one None
+            names_from = [
+                "_value" if ent is None else ent for ent in new_columns.names
+            ]
+            new_columns = [
+                names_glue.format_map(dict(zip(names_from, entry)))
+                for entry in new_columns
+            ]
+        except KeyError as error:
+            raise KeyError(
+                f"{error} is not a column label in names_from."
+            ) from error
 
-        df.columns = new_columns
+        out.columns = new_columns
+    elif names_glue:
+        try:
+            new_columns = [
+                names_glue.format_map({names_from[0]: entry})
+                for entry in out.columns
+            ]
+        except KeyError as error:
+            raise KeyError(
+                f"{error} is not a column label in names_from."
+            ) from error
+        out.columns = new_columns
     else:
-        if names_glue is not None:
-            try:
-                df.columns = [
-                    names_glue.format_map({names_from[0]: entry})
-                    for entry in df.columns
-                ]
-            except KeyError as error:
-                raise KeyError(
-                    f"{error} is not a column label in names_from."
-                ) from error
+        names_sep = "_" if names_sep is None else names_sep
+        out = out.collapse_levels(sep=names_sep)
 
     if index and reset_index:
-        df = df.reset_index()
+        out = out.reset_index()
 
-    if df.columns.names:
-        df.columns.names = [None]
+    if out.columns.names:
+        out.columns.names = [None]
 
-    return df
+    return out
 
 
 def _data_checks_pivot_wider(

@@ -88,17 +88,15 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_") -> pd.DataFrame:
     if all_strings:
         no_empty_string = all((entry != "").all() for entry in levels)
         if no_empty_string:
-            start, *levels = levels
-            for entry in levels:
-                start = start + sep + entry
-            df.columns = start
+            df.columns = new_columns.map(sep.join)
             return df
     new_columns = (map(str, entry) for entry in new_columns)
-    df.columns = [
+    new_columns = [
         # faster to use a list comprehension within string.join
         # compared to a generator
         # https://stackoverflow.com/a/37782238
-        sep.join([entry for entry in word if entry != ""])
+        sep.join([entry for entry in word if entry])
         for word in new_columns
     ]
+    df.columns = new_columns
     return df

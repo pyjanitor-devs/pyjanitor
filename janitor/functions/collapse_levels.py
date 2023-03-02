@@ -82,6 +82,11 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_") -> pd.DataFrame:
     # TODO: Pyarrow offers faster string computations
     # future work should take this into consideration,
     # which would require a different route from python's string.join
+
+    # since work is only on the columns
+    # it is safe, and more efficient to slice/view the dataframe
+    # plus Pandas creates a new Index altogether
+    # as such, the original dataframe is not modified
     df = df[:]
     new_columns = df.columns
     levels = [

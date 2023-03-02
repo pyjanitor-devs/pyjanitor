@@ -477,7 +477,6 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
             )
         return np.asanyarray(arg)
     try:
-
         if isinstance(arg, pd.Series):
             arr = arg.array
         else:

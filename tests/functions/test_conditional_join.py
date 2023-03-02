@@ -28,6 +28,17 @@ def series():
     return pd.Series([2, 3, 4], name="B")
 
 
+def test_df_columns_right_columns_both_None(dummy, series):
+    """Raise if both df_columns and right_columns is None"""
+    with pytest.raises(
+        ValueError,
+        match="df_columns and right_columns " "cannot both be None.",
+    ):
+        dummy.conditional_join(
+            series, ("id", "B", ">"), df_columns=None, right_columns=None
+        )
+
+
 def test_df_multiindex(dummy, series):
     """Raise ValueError if `df` columns is a MultiIndex."""
     with pytest.raises(
@@ -66,6 +77,21 @@ def test_check_condition_type(dummy, series):
     """Raise TypeError if any condition in conditions is not a tuple."""
     with pytest.raises(TypeError, match="condition should be one of.+"):
         dummy.conditional_join(series, ("id", "B", ">"), ["A", "B"])
+
+
+def test_indicator_type(dummy, series):
+    """Raise TypeError if indicator is not a boolean/string."""
+    with pytest.raises(TypeError, match="indicator should be one of.+"):
+        dummy.conditional_join(series, ("id", "B", ">"), indicator=1)
+
+
+def test_indicator_exists(dummy, series):
+    """Raise ValueError if indicator is a dup of an existing column name."""
+    with pytest.raises(
+        ValueError,
+        match="Cannot use name of an " "existing column for indicator column",
+    ):
+        dummy.conditional_join(series, ("id", "B", ">"), indicator="id")
 
 
 def test_check_condition_length(dummy, series):
@@ -1187,7 +1213,14 @@ def test_how_left(df, right):
     expected.index.name = None
     expected = (
         df[["A"]]
-        .join(expected[["Integers"]], how="left", sort=False)
+        .merge(
+            expected[["Integers"]],
+            left_index=True,
+            right_index=True,
+            how="left",
+            indicator=True,
+            sort=False,
+        )
         .sort_values(["A", "Integers"], ignore_index=True)
         .reset_index(drop=True)
     )
@@ -1197,6 +1230,93 @@ def test_how_left(df, right):
             right[["Integers"]],
             ("A", "Integers", "<="),
             how="left",
+            indicator=True,
+        )
+        .sort_values(["A", "Integers"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_how_left_multiindex(df, right):
+    """Test output when `how==left`. "<="."""
+
+    expected = (
+        df[["A"]]
+        .assign(index=np.arange(len(df)))
+        .merge(right.Integers.rename("A"), how="cross")
+        .loc[lambda df: df.A_x <= df.A_y]
+    )
+    expected = expected.set_index("index")
+    expected.index.name = None
+    expected = (
+        df[["A"]]
+        .merge(
+            expected[["A_y"]],
+            left_index=True,
+            right_index=True,
+            how="left",
+            indicator=True,
+            sort=False,
+        )
+        .sort_values(["A", "A_y"], ignore_index=True)
+        .reset_index(drop=True)
+    )
+    actual = (
+        df[["A"]]
+        .conditional_join(
+            right.Integers.rename("A"),
+            ("A", "A", "<="),
+            how="left",
+            indicator=True,
+        )
+        .collapse_levels()
+        .rename(columns={"left_A": "A", "right_A": "A_y"})
+        .select_columns("A", "A_y", "_merge")
+        .sort_values(["A", "A_y"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_how_left_sort(df, right):
+    """Test output when `how==left`. "<="."""
+
+    expected = (
+        df[["A"]]
+        .assign(index=np.arange(len(df)))
+        .merge(right[["Integers"]], how="cross")
+        .loc[lambda df: df.A <= df.Integers]
+    )
+    expected = expected.set_index("index")
+    expected.index.name = None
+    expected = (
+        df[["A"]]
+        .merge(
+            expected[["Integers"]],
+            left_index=True,
+            right_index=True,
+            how="left",
+            indicator=True,
+            sort=False,
+        )
+        .sort_values(["A", "Integers"], ignore_index=True)
+        .reset_index(drop=True)
+    )
+    actual = (
+        df[["A"]]
+        .conditional_join(
+            right[["Integers"]],
+            ("A", "Integers", "<="),
+            how="left",
+            indicator=True,
+            sort_by_appearance=True,
         )
         .sort_values(["A", "Integers"], ignore_index=True)
     )
@@ -1217,7 +1337,49 @@ def test_how_right(df, right):
     expected.index.name = None
     expected = (
         expected[["E"]]
-        .join(right[["Dates"]], how="right", sort=False)
+        .merge(
+            right[["Dates"]],
+            how="right",
+            left_index=True,
+            right_index=True,
+            sort=False,
+            indicator=True,
+        )
+        .sort_values(["E", "Dates"], ignore_index=True)
+        .reset_index(drop=True)
+    )
+    actual = (
+        df[["E"]]
+        .conditional_join(
+            right[["Dates"]], ("E", "Dates", ">"), how="right", indicator=True
+        )
+        .sort_values(["E", "Dates"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
+def test_how_right_sort(df, right):
+    """Test output when `how==right`. ">"."""
+
+    expected = df.merge(
+        right.assign(index=np.arange(len(right))), how="cross"
+    ).loc[lambda df: df.E.gt(df.Dates)]
+    expected = expected.set_index("index")
+    expected.index.name = None
+    expected = (
+        expected[["E"]]
+        .merge(
+            right[["Dates"]],
+            how="right",
+            left_index=True,
+            right_index=True,
+            sort=False,
+            indicator=True,
+        )
         .sort_values(["E", "Dates"], ignore_index=True)
         .reset_index(drop=True)
     )
@@ -1227,6 +1389,8 @@ def test_how_right(df, right):
             right[["Dates"]],
             ("E", "Dates", ">"),
             how="right",
+            indicator=True,
+            sort_by_appearance=True,
         )
         .sort_values(["E", "Dates"], ignore_index=True)
     )
@@ -1527,7 +1691,14 @@ def test_dual_conditions_gt_and_lt_numbers_left_join(df, right):
     expected.index.name = None
     expected = (
         df[["B"]]
-        .join(expected[["Numeric", "Floats"]], how="left", sort=False)
+        .merge(
+            expected[["Numeric", "Floats"]],
+            left_index=True,
+            right_index=True,
+            indicator=True,
+            how="left",
+            sort=False,
+        )
         .reset_index(drop=True)
     ).sort_values(["B", "Numeric", "Floats"], ignore_index=True)
 
@@ -1539,6 +1710,7 @@ def test_dual_conditions_gt_and_lt_numbers_left_join(df, right):
             ("B", "Floats", "<"),
             how="left",
             sort_by_appearance=True,
+            indicator=True,
         )
         .sort_values(["B", "Numeric", "Floats"], ignore_index=True)
     )
@@ -1568,7 +1740,14 @@ def test_dual_conditions_gt_and_lt_numbers_right_join(df, right):
     expected.index.name = None
     expected = (
         expected[["B"]]
-        .join(right[["Numeric", "Floats"]], how="right", sort=False)
+        .merge(
+            right[["Numeric", "Floats"]],
+            left_index=True,
+            right_index=True,
+            indicator=True,
+            how="right",
+            sort=False,
+        )
         .sort_values(["Numeric", "Floats", "B"], ignore_index=True)
         .reset_index(drop=True)
     )
@@ -1580,6 +1759,7 @@ def test_dual_conditions_gt_and_lt_numbers_right_join(df, right):
             ("B", "Numeric", ">"),
             ("B", "Floats", "<"),
             how="right",
+            indicator=True,
         )
         .sort_values(["Numeric", "Floats", "B"], ignore_index=True)
     )
@@ -1700,7 +1880,7 @@ def test_dual_ne_dates(df, right):
     filters = ["A", "Integers", "E", "Dates"]
     expected = (
         df[["A", "E"]]
-        .merge(right[["Integers", "Dates"]], how="cross")
+        .merge(right[["Integers", "Dates"]], indicator=True, how="cross")
         .loc[lambda df: df.A.ne(df.Integers) & df.E.ne(df.Dates)]
         .sort_values(filters, ignore_index=True)
     )
@@ -1713,6 +1893,7 @@ def test_dual_ne_dates(df, right):
             ("E", "Dates", "!="),
             how="inner",
             sort_by_appearance=False,
+            indicator=True,
         )
         .sort_values(filters, ignore_index=True)
     )
@@ -2564,6 +2745,71 @@ def test_dual_ge_and_le_range_numbers_numba(df, right):
             ("A", "Integers", ">="),
             how="inner",
             use_numba=True,
+            sort_by_appearance=False,
+        )
+        .sort_values(columns, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_ge_and_le_range_numbers_df_columns_only(df, right):
+    """Test output for multiple conditions and select df only."""
+
+    columns = ["A", "E"]
+    expected = (
+        df.merge(
+            right,
+            how="cross",
+        )
+        .loc[lambda df: df.A.ge(df.Integers) & df.E.lt(df.Dates), columns]
+        .sort_values(columns, ignore_index=True)
+    )
+
+    actual = (
+        df[["A", "E"]]
+        .conditional_join(
+            right[["Integers", "Dates"]],
+            ("E", "Dates", "<"),
+            ("A", "Integers", ">="),
+            how="inner",
+            use_numba=False,
+            right_columns=None,
+            sort_by_appearance=False,
+        )
+        .sort_values(columns, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_ge_and_le_range_numbers_right_only(df, right):
+    """Test output for multiple conditions and select right only."""
+
+    columns = ["Integers", "Dates"]
+    expected = (
+        df.merge(
+            right,
+            how="cross",
+        )
+        .loc[lambda df: df.A.ge(df.Integers) & df.E.lt(df.Dates), columns]
+        .sort_values(columns, ignore_index=True)
+    )
+
+    actual = (
+        df[["A", "E"]]
+        .conditional_join(
+            right[["Integers", "Dates"]],
+            ("E", "Dates", "<"),
+            ("A", "Integers", ">="),
+            how="inner",
+            df_columns=None,
             sort_by_appearance=False,
         )
         .sort_values(columns, ignore_index=True)

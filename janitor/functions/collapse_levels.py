@@ -79,6 +79,9 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_") -> pd.DataFrame:
     if not isinstance(df.columns, pd.MultiIndex):
         return df
 
+    # TODO: Pyarrow offers faster string computations
+    # future work should take this into consideration,
+    # which would require a different route from python's string.join
     df = df[:]
     new_columns = df.columns
     levels = [

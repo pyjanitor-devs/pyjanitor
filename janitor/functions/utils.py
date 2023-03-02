@@ -19,7 +19,7 @@ from typing import (
 from pandas.core.dtypes.generic import ABCPandasArray, ABCExtensionArray
 from pandas.core.common import is_bool_indexer
 from dataclasses import dataclass
-
+from enum import Enum
 import pandas as pd
 from janitor.utils import check, _expand_grid
 from pandas.api.types import (
@@ -661,3 +661,366 @@ def _convert_to_numpy_array(
         left = left.to_numpy(copy=False)
         right = right.to_numpy(copy=False)
     return left, right
+
+
+class _JoinOperator(Enum):
+    """
+    List of operators used in conditional_join.
+    """
+
+    GREATER_THAN = ">"
+    LESS_THAN = "<"
+    GREATER_THAN_OR_EQUAL = ">="
+    LESS_THAN_OR_EQUAL = "<="
+    STRICTLY_EQUAL = "=="
+    NOT_EQUAL = "!="
+
+
+less_than_join_types = {
+    _JoinOperator.LESS_THAN.value,
+    _JoinOperator.LESS_THAN_OR_EQUAL.value,
+}
+greater_than_join_types = {
+    _JoinOperator.GREATER_THAN.value,
+    _JoinOperator.GREATER_THAN_OR_EQUAL.value,
+}
+
+
+def _less_than_indices(
+    left: pd.Series,
+    right: pd.Series,
+    strict: bool,
+    multiple_conditions: bool,
+    keep: str,
+) -> tuple:
+    """
+    Use binary search to get indices where left
+    is less than or equal to right.
+
+    If strict is True, then only indices
+    where `left` is less than
+    (but not equal to) `right` are returned.
+
+    A tuple of integer indexes
+    for left and right is returned.
+    """
+
+    # no point going through all the hassle
+    if left.min() > right.max():
+        return None
+
+    any_nulls = left.isna()
+    if any_nulls.all():
+        return None
+    if any_nulls.any():
+        left = left[~any_nulls]
+    any_nulls = right.isna()
+    if any_nulls.all():
+        return None
+    if any_nulls.any():
+        right = right[~any_nulls]
+    any_nulls = any_nulls.any()
+    right_is_sorted = right.is_monotonic_increasing
+    if not right_is_sorted:
+        right = right.sort_values(kind="stable")
+
+    left_index = left.index._values
+    left = left._values
+    right_index = right.index._values
+    right = right._values
+
+    search_indices = right.searchsorted(left, side="left")
+
+    # if any of the positions in `search_indices`
+    # is equal to the length of `right_keys`
+    # that means the respective position in `left`
+    # has no values from `right` that are less than
+    # or equal, and should therefore be discarded
+    len_right = right.size
+    rows_equal = search_indices == len_right
+
+    if rows_equal.any():
+        left = left[~rows_equal]
+        left_index = left_index[~rows_equal]
+        search_indices = search_indices[~rows_equal]
+
+    # the idea here is that if there are any equal values
+    # shift to the right to the immediate next position
+    # that is not equal
+    if strict:
+        rows_equal = right[search_indices]
+        rows_equal = left == rows_equal
+        # replace positions where rows are equal
+        # with positions from searchsorted('right')
+        # positions from searchsorted('right') will never
+        # be equal and will be the furthermost in terms of position
+        # example : right -> [2, 2, 2, 3], and we need
+        # positions where values are not equal for 2;
+        # the furthermost will be 3, and searchsorted('right')
+        # will return position 3.
+        if rows_equal.any():
+            replacements = right.searchsorted(left, side="right")
+            # now we can safely replace values
+            # with strictly less than positions
+            search_indices = np.where(rows_equal, replacements, search_indices)
+        # check again if any of the values
+        # have become equal to length of right
+        # and get rid of them
+        rows_equal = search_indices == len_right
+
+        if rows_equal.any():
+            left = left[~rows_equal]
+            left_index = left_index[~rows_equal]
+            search_indices = search_indices[~rows_equal]
+
+        if not search_indices.size:
+            return None
+
+    if multiple_conditions:
+        return left_index, right_index, search_indices
+    if right_is_sorted and (keep == "first"):
+        if any_nulls:
+            return left_index, right_index[search_indices]
+        return left_index, search_indices
+    right = [right_index[ind:len_right] for ind in search_indices]
+    if keep == "first":
+        right = [arr.min() for arr in right]
+        return left_index, right
+    if keep == "last":
+        right = [arr.max() for arr in right]
+        return left_index, right
+    right = np.concatenate(right)
+    left = np.repeat(left_index, len_right - search_indices)
+    return left, right
+
+
+def _greater_than_indices(
+    left: pd.Series,
+    right: pd.Series,
+    strict: bool,
+    multiple_conditions: bool,
+    keep: str,
+) -> tuple:
+    """
+    Use binary search to get indices where left
+    is greater than or equal to right.
+
+    If strict is True, then only indices
+    where `left` is greater than
+    (but not equal to) `right` are returned.
+
+    if multiple_conditions is False, a tuple of integer indexes
+    for left and right is returned;
+    else a tuple of the index for left, right, as well
+    as the positions of left in right is returned.
+    """
+
+    # quick break, avoiding the hassle
+    if left.max() < right.min():
+        return None
+
+    any_nulls = left.isna()
+    if any_nulls.all():
+        return None
+    if any_nulls.any():
+        left = left[~any_nulls]
+    any_nulls = right.isna()
+    if any_nulls.all():
+        return None
+    if any_nulls.any():
+        right = right[~any_nulls]
+    any_nulls = any_nulls.any()
+    right_is_sorted = right.is_monotonic_increasing
+    if not right_is_sorted:
+        right = right.sort_values(kind="stable")
+
+    left_index = left.index._values
+    left = left._values
+    right_index = right.index._values
+    right = right._values
+
+    search_indices = right.searchsorted(left, side="right")
+    # if any of the positions in `search_indices`
+    # is equal to 0 (less than 1), it implies that
+    # left[position] is not greater than any value
+    # in right
+    rows_equal = search_indices < 1
+    if rows_equal.any():
+        left = left[~rows_equal]
+        left_index = left_index[~rows_equal]
+        search_indices = search_indices[~rows_equal]
+
+    # the idea here is that if there are any equal values
+    # shift downwards to the immediate next position
+    # that is not equal
+    if strict:
+        rows_equal = right[search_indices - 1]
+        rows_equal = left == rows_equal
+        # replace positions where rows are equal with
+        # searchsorted('left');
+        # this works fine since we will be using the value
+        # as the right side of a slice, which is not included
+        # in the final computed value
+        if rows_equal.any():
+            replacements = right.searchsorted(left, side="left")
+            # now we can safely replace values
+            # with strictly greater than positions
+            search_indices = np.where(rows_equal, replacements, search_indices)
+        # any value less than 1 should be discarded
+        # since the lowest value for binary search
+        # with side='right' should be 1
+        rows_equal = search_indices < 1
+        if rows_equal.any():
+            left = left[~rows_equal]
+            left_index = left_index[~rows_equal]
+            search_indices = search_indices[~rows_equal]
+
+        if not search_indices.size:
+            return None
+
+    if multiple_conditions:
+        return left_index, right_index, search_indices
+    if right_is_sorted and (keep == "last"):
+        if any_nulls:
+            return left_index, right_index[search_indices - 1]
+        return left_index, search_indices - 1
+    right = [right_index[:ind] for ind in search_indices]
+    if keep == "first":
+        right = [arr.min() for arr in right]
+        return left_index, right
+    if keep == "last":
+        right = [arr.max() for arr in right]
+        return left_index, right
+    right = np.concatenate(right)
+    left = np.repeat(left_index, search_indices)
+    return left, right
+
+
+def _not_equal_indices(left: pd.Series, right: pd.Series, keep: str) -> tuple:
+    """
+    Use binary search to get indices where
+    `left` is exactly  not equal to `right`.
+
+    It is a combination of strictly less than
+    and strictly greater than indices.
+
+    A tuple of integer indexes for left and right
+    is returned.
+    """
+
+    dummy = np.array([], dtype=int)
+
+    # deal with nulls
+    l1_nulls = dummy
+    r1_nulls = dummy
+    l2_nulls = dummy
+    r2_nulls = dummy
+    any_left_nulls = left.isna()
+    any_right_nulls = right.isna()
+    if any_left_nulls.any():
+        l1_nulls = left.index[any_left_nulls.array]
+        l1_nulls = l1_nulls.to_numpy(copy=False)
+        r1_nulls = right.index
+        # avoid NAN duplicates
+        if any_right_nulls.any():
+            r1_nulls = r1_nulls[~any_right_nulls.array]
+        r1_nulls = r1_nulls.to_numpy(copy=False)
+        nulls_count = l1_nulls.size
+        # blow up nulls to match length of right
+        l1_nulls = np.tile(l1_nulls, r1_nulls.size)
+        # ensure length of right matches left
+        if nulls_count > 1:
+            r1_nulls = np.repeat(r1_nulls, nulls_count)
+    if any_right_nulls.any():
+        r2_nulls = right.index[any_right_nulls.array]
+        r2_nulls = r2_nulls.to_numpy(copy=False)
+        l2_nulls = left.index
+        nulls_count = r2_nulls.size
+        # blow up nulls to match length of left
+        r2_nulls = np.tile(r2_nulls, l2_nulls.size)
+        # ensure length of left matches right
+        if nulls_count > 1:
+            l2_nulls = np.repeat(l2_nulls, nulls_count)
+
+    l1_nulls = np.concatenate([l1_nulls, l2_nulls])
+    r1_nulls = np.concatenate([r1_nulls, r2_nulls])
+
+    outcome = _less_than_indices(
+        left, right, strict=True, multiple_conditions=False, keep=keep
+    )
+
+    if outcome is None:
+        lt_left = dummy
+        lt_right = dummy
+    else:
+        lt_left, lt_right = outcome
+
+    outcome = _greater_than_indices(
+        left, right, strict=True, multiple_conditions=False, keep=keep
+    )
+
+    if outcome is None:
+        gt_left = dummy
+        gt_right = dummy
+    else:
+        gt_left, gt_right = outcome
+
+    left = np.concatenate([lt_left, gt_left, l1_nulls])
+    right = np.concatenate([lt_right, gt_right, r1_nulls])
+
+    if (not left.size) & (not right.size):
+        return None
+    return _keep_output(keep, left, right)
+
+
+def _generic_func_cond_join(
+    left: pd.Series,
+    right: pd.Series,
+    op: str,
+    multiple_conditions: bool,
+    keep: str,
+) -> tuple:
+    """
+    Generic function to call any of the individual functions
+    (_less_than_indices, _greater_than_indices,
+    or _not_equal_indices).
+    """
+    strict = False
+
+    if op in {
+        _JoinOperator.GREATER_THAN.value,
+        _JoinOperator.LESS_THAN.value,
+        _JoinOperator.NOT_EQUAL.value,
+    }:
+        strict = True
+
+    if op in less_than_join_types:
+        return _less_than_indices(
+            left=left,
+            right=right,
+            strict=strict,
+            multiple_conditions=multiple_conditions,
+            keep=keep,
+        )
+    if op in greater_than_join_types:
+        return _greater_than_indices(
+            left=left,
+            right=right,
+            strict=strict,
+            multiple_conditions=multiple_conditions,
+            keep=keep,
+        )
+    if op == _JoinOperator.NOT_EQUAL.value:
+        return _not_equal_indices(left, right, keep)
+
+
+def _keep_output(keep: str, left: np.ndarray, right: np.ndarray):
+    """return indices for left and right index based on the value of `keep`."""
+    if keep == "all":
+        return left, right
+    grouped = pd.Series(right).groupby(left)
+    if keep == "first":
+        grouped = grouped.min()
+        return grouped.index, grouped.array
+    grouped = grouped.max()
+    return grouped.index, grouped.array

@@ -7,7 +7,6 @@ import janitor  # noqa: F401
 
 @pytest.mark.functions
 def test_deconcatenate_column_collection(dataframe: pd.DataFrame):
-
     column_names = ["a", "decorated-elephant", "cities"]
 
     lists = [dataframe[column_name] for column_name in column_names]

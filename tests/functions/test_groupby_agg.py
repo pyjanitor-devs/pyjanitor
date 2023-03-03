@@ -6,7 +6,6 @@ from pandas.testing import assert_frame_equal
 
 @pytest.mark.functions
 def test_groupby_agg():
-
     df = pd.DataFrame(
         {
             "date": [
@@ -34,7 +33,6 @@ def test_groupby_agg():
 
 @pytest.mark.functions
 def test_groupby_agg_multi():
-
     df = pd.DataFrame(
         {
             "date": [

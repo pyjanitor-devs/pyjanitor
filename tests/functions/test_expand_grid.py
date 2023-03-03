@@ -126,11 +126,14 @@ def test_series_multiindex_dataframe(df):
     others = {"A": A, "B": B}
     result = expand_grid(others=others)
     A = df.loc[:, ["a"]]
-    B.columns = B.columns.map("_".join)
-    expected = A.assign(key=1).merge(B.assign(key=1), on="key")
+    expected = A.assign(key=1).merge(B.droplevel(level=1, axis=1), how="cross")
     expected = expected.drop(columns="key")
-    expected.columns = pd.MultiIndex.from_arrays(
-        [["A", "B", "B"], expected.columns]
+    expected.columns = pd.MultiIndex.from_tuples(
+        [
+            ("A", "a", ""),
+            ("B", "C", "Bell__Chart"),
+            ("B", "D", "decorated-elephant"),
+        ],
     )
     assert_frame_equal(result, expected)
 
@@ -145,8 +148,7 @@ def test_numpy_1d(df):
     result = expand_grid(others=others)
     A = df.loc[:, ["a"]].rename(columns={"a": 0})
     B = df.loc[:, ["cities"]]
-    expected = A.assign(key=1).merge(B.assign(key=1), on="key")
-    expected = expected.drop(columns="key")
+    expected = A.merge(B, how="cross")
     expected.columns = pd.MultiIndex.from_arrays(
         [["A", "B"], expected.columns]
     )
@@ -164,8 +166,7 @@ def test_numpy_2d(df):
     result = expand_grid(others=others)
     A = df.loc[:, ["names"]]
     B = base.set_axis([0, 1], axis=1)
-    expected = A.assign(key=1).merge(B.assign(key=1), on="key")
-    expected = expected.drop(columns="key")
+    expected = A.merge(B, how="cross")
     expected.columns = pd.MultiIndex.from_arrays(
         [["A", "B", "B"], expected.columns]
     )
@@ -182,8 +183,7 @@ def test_index(df):
     result = expand_grid(others=others)
     A = df.loc[:, ["a"]]
     B = df.loc[:, ["cities"]]
-    expected = A.assign(key=1).merge(B.assign(key=1), on="key")
-    expected = expected.drop(columns="key")
+    expected = A.merge(B, how="cross")
     expected.columns = pd.MultiIndex.from_arrays(
         [["A", "B"], expected.columns]
     )
@@ -200,8 +200,7 @@ def test_index_name_none(df):
     result = expand_grid(others=others)
     A = df.loc[:, ["a"]]
     B = df.loc[:, ["cities"]]
-    expected = A.assign(key=1).merge(B.assign(key=1), on="key")
-    expected = expected.drop(columns="key")
+    expected = A.merge(B, how="cross")
     expected.columns = pd.MultiIndex.from_arrays([["A", "B"], [0, "cities"]])
     assert_frame_equal(result, expected)
 
@@ -217,8 +216,7 @@ def test_multiindex(df):
     result = expand_grid(others=others)
     A = df.loc[:, ["names"]]
     B = base.copy()
-    expected = A.assign(key=1).merge(B.assign(key=1), on="key")
-    expected = expected.drop(columns="key")
+    expected = A.merge(B, how="cross")
     expected.columns = pd.MultiIndex.from_arrays(
         [["A", "B", "B"], expected.columns]
     )
@@ -236,8 +234,7 @@ def test_multiindex_names_none(df):
     result = expand_grid(others=others)
     A = df.loc[:, ["names"]]
     B = base.copy()
-    expected = A.assign(key=1).merge(B.assign(key=1), on="key")
-    expected = expected.drop(columns="key")
+    expected = A.merge(B, how="cross")
     expected.columns = pd.MultiIndex.from_arrays(
         [["A", "B", "B"], ["names", 0, 1]]
     )
@@ -254,8 +251,7 @@ def test_pandas_extension_array(df):
     result = expand_grid(others=others)
     A = df.loc[:, ["a"]]
     B = df.loc[:, ["cities"]].astype("string").set_axis([0], axis=1)
-    expected = A.assign(key=1).merge(B.assign(key=1), on="key")
-    expected = expected.drop(columns="key")
+    expected = A.merge(B, how="cross")
     expected.columns = pd.MultiIndex.from_arrays(
         [["A", "B"], expected.columns]
     )
@@ -272,8 +268,7 @@ def test_sequence(df):
     result = expand_grid(others=others)
     A = df.loc[:, ["a"]].rename(columns={"a": 0})
     B = df.loc[:, ["cities"]]
-    expected = A.assign(key=1).merge(B.assign(key=1), on="key")
-    expected = expected.drop(columns="key")
+    expected = A.merge(B, how="cross")
     expected.columns = pd.MultiIndex.from_arrays(
         [["A", "B"], expected.columns]
     )

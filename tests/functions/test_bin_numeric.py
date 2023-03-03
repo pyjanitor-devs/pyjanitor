@@ -26,7 +26,6 @@ def test_bin_numeric_expected_columns(df):
 @given(df=df_strategy())
 @settings(deadline=None)
 def test_bin_numeric_kwargs_has_no_retbins(df):
-
     with pytest.raises(ValueError):
         labels = ["a", "b", "c", "d", "e"]
         df.bin_numeric(

@@ -377,7 +377,6 @@ def flag_jumps(
 
     columns_to_add = {}
     for col in sorted(cols):
-
         # Allow arguments to be a mix of dict and single instances
         s = scale.get(col, "percentage") if isinstance(scale, dict) else scale
         d = (

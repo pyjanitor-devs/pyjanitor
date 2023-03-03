@@ -519,7 +519,6 @@ def is_connected(url: str) -> bool:
             sock.close()
             return True
     except OSError as e:
-
         warn(
             "There was an issue connecting to the internet. "
             "Please see original error below."

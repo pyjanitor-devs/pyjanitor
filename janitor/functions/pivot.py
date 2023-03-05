@@ -399,8 +399,6 @@ def pivot_longer(
     # this code builds on the wonderful work of @benjaminjack’s PR
     # https://github.com/benjaminjack/pyjanitor/commit/e3df817903c20dd21634461c8a92aec137963ed0
 
-    df = df.copy()
-
     (
         df,
         index,
@@ -469,6 +467,10 @@ def _data_checks_pivot_longer(
     Type annotations are not provided because this function is where type
     checking happens.
     """
+
+    # checks here are only on the columns
+    # a slice is safe
+    df = df[:]
 
     if column_level is not None:
         check("column_level", column_level, [int, str])
@@ -780,11 +782,12 @@ def _data_checks_pivot_longer(
     if isinstance(df.columns, pd.MultiIndex):
         if not any(df.columns.names):
             if len(names_to) == 1:
-                df.columns.names = [
+                names = [
                     f"{names_to[0]}_{i}" for i in range(df.columns.nlevels)
                 ]
+                df.columns = df.columns.set_names(names)
             elif len(names_to) == df.columns.nlevels:
-                df.columns.names = names_to
+                df.columns = df.columns.set_names(names_to)
             else:
                 raise ValueError(
                     "The length of names_to does not match "
@@ -803,7 +806,7 @@ def _data_checks_pivot_longer(
         and not any((names_sep, names_pattern))
         and (not df.columns.names[0])
     ):
-        df.columns.names = names_to
+        df.columns = pd.Index(df.columns, name=names_to[0])
 
     return (
         df,
@@ -852,11 +855,15 @@ def _computations_pivot_longer(
 
     if len(column_names) != len(set(column_names)):
         column_names = pd.unique(column_names)
-    df = df.loc[:, column_names]
+
+    # this is the reason why there is no explicit copy (df.copy())
+    # at the very beginning for `pivot_longer`,
+    # because `.loc` makes a copy of the dataframe
+    out = df.loc[:, column_names]
 
     if all((names_pattern is None, names_sep is None)):
         return _base_melt(
-            df=df,
+            df=out,
             index=index,
             values_to=values_to,
             names_transform=names_transform,
@@ -867,7 +874,7 @@ def _computations_pivot_longer(
 
     if names_sep is not None:
         return _pivot_longer_names_sep(
-            df=df,
+            df=out,
             index=index,
             names_to=names_to,
             names_sep=names_sep,
@@ -880,7 +887,7 @@ def _computations_pivot_longer(
 
     if isinstance(names_pattern, (str, Pattern)):
         return _pivot_longer_names_pattern_str(
-            df=df,
+            df=out,
             index=index,
             names_to=names_to,
             names_pattern=names_pattern,
@@ -892,7 +899,7 @@ def _computations_pivot_longer(
         )
 
     return _pivot_longer_names_pattern_sequence(
-        df=df,
+        df=out,
         index=index,
         names_to=names_to,
         names_pattern=names_pattern,

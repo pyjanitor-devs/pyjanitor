@@ -17,7 +17,6 @@ from pandas.core.reshape.merge import _MergeOperation
 
 from janitor.utils import check, check_column
 from janitor.functions.utils import (
-    _convert_to_numpy_array,
     _JoinOperator,
     _generic_func_cond_join,
     _keep_output,
@@ -828,30 +827,26 @@ def _range_indices(
             search_indices = search_indices[keep_rows]
             left_index = left_c
     else:
-        left_c = left_c._values
-        right_c = right_c._values
-        op = operator_map[op]
-        left_c, right_c = _convert_to_numpy_array(left_c, right_c)
-        pos = np.copy(search_indices)
-        counter = np.arange(left_c.size)
-        # better than np.outer memory wise?
-        # using this for loop instead of np.outer
-        # allows us to break early and reduce the
-        # number of cartesian checks
-        # since as we iterate, we reduce the size of left_c
-        # speed wise, np.outer will be faster
-        # alternatively, the user can just use the numba option
-        # for more performance
-        for ind in range(right_c.size):
-            if not counter.size:
-                break
-            keep_rows = op(left_c, right_c[ind])
-            if not keep_rows.any():
-                continue
-            pos[counter[keep_rows]] = ind
-            counter = counter[~keep_rows]
-            left_c = left_c[~keep_rows]
-
+        # the aim here is to get the first match
+        # where the left array is </<= than the right array
+        # an efficient way to do that is via the
+        # cumulative max of the right array
+        # the initial route of a for loop was inefficient
+        # this is much more efficient
+        outcome = _generic_func_cond_join(
+            left=left_c,
+            right=right_c.cummax(),
+            op=op,
+            multiple_conditions=True,
+            keep="all",
+        )
+        if outcome is None:
+            return None
+        left_c, right_index, pos = outcome
+        if left_c.size < left_index.size:
+            keep_rows = np.isin(left_index, left_c, assume_unique=True)
+            search_indices = search_indices[keep_rows]
+            left_index = left_c
     # no point searching within (a, b)
     # if a == b
     # since range(a, b) yields none
@@ -891,6 +886,7 @@ def _range_indices(
     left_c = df[left_on]._values[left_index]
     right_c = right[right_on]._values[right_index]
     ext_arr = is_extension_array_dtype(left_c)
+    op = operator_map[op]
     mask = op(left_c, right_c)
 
     if ext_arr:

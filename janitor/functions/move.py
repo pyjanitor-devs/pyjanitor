@@ -108,7 +108,6 @@ def move(
     names = getattr(df, mapping[axis])
 
     assert names.is_unique
-    assert not isinstance(names, pd.MultiIndex)
 
     index = np.arange(names.size)
     source = _select_index([source], df, mapping[axis])

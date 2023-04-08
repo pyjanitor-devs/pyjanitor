@@ -829,10 +829,11 @@ def _range_indices(
     else:
         # the aim here is to get the first match
         # where the left array is </<= than the right array
-        # an efficient way to do that is via the
-        # cumulative max of the right array
-        # the initial route of a for loop was inefficient
-        # this is much more efficient
+        # this is solved by getting the cumulative max
+        # thus ensuring that the first match is obtained
+        # via a binary search
+        # this allows us to avoid the less efficient linear search
+        # of using a for loop with a break to get the first match
         outcome = _generic_func_cond_join(
             left=left_c,
             right=right_c.cummax(),
@@ -1016,6 +1017,7 @@ def _create_frame(
     arr_ = pd.DataFrame(arr_, copy=False)
     arr = _inner(df, right, left_index, right_index, indicator)
     df = pd.concat([arr, arr_], copy=False, sort=False)
+    df.index = range(len(df))
     return df
 
 
@@ -1027,8 +1029,10 @@ def _add_indicator(
     arr = pd.Categorical(
         [mapping[how]], categories=["left_only", "right_only", "both"]
     )
-    if isinstance(next(iter(df)), tuple):
-        indicator = (indicator, "")
+    first_key = next(iter(df))
+    if isinstance(first_key, tuple):
+        indicator = [indicator] + [""] * (len(first_key) - 1)
+        indicator = tuple(indicator)
     df[indicator] = arr.repeat(length)
     return df
 

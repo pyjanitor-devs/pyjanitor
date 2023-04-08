@@ -820,10 +820,6 @@ def _range_indices(
         if outcome is None:
             return None
         left_c, pos = outcome
-        if left_c.size < left_index.size:
-            keep_rows = np.isin(left_index, left_c, assume_unique=True)
-            search_indices = search_indices[keep_rows]
-            left_index = left_c
     else:
         # the aim here is to get the first match
         # where the left array is </<= than the right array
@@ -842,10 +838,10 @@ def _range_indices(
         if outcome is None:
             return None
         left_c, right_index, pos = outcome
-        if left_c.size < left_index.size:
-            keep_rows = np.isin(left_index, left_c, assume_unique=True)
-            search_indices = search_indices[keep_rows]
-            left_index = left_c
+    if left_c.size < left_index.size:
+        keep_rows = np.isin(left_index, left_c, assume_unique=True)
+        search_indices = search_indices[keep_rows]
+        left_index = left_c
     # no point searching within (a, b)
     # if a == b
     # since range(a, b) yields none

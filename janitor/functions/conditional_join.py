@@ -681,9 +681,6 @@ def _multiple_conditional_join_le_lt(
         # within this space, as far as I know,
         # so a blowup of all the rows is unavoidable.
 
-        # The numba version offers optimisations
-        # for all types of non-equi joins
-
         # first step is to get two conditions, if possible
         # where one has a less than operator
         # and the other has a greater than operator

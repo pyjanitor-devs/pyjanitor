@@ -494,13 +494,6 @@ def _get_indices_dual(
         # now we have our (pos_start, pos_end) -> (0, 1)
         # our search space is reduced, allowing us to do
         # less work with the comparison operation
-        # the advantage of this approach over a linear search ->
-        # the data is already sorted, we only need a binary search
-        # so we get a O(log n), compared to an O(n)
-        # this helps as the data size increases
-        # and the chunks (pos, pos_end) are relatively large
-        # a binary search will offer more performance
-        # relative to a linear search
         sliced = max_arr[slice(pos + 1, None)][::-1]
         pos_end = np.searchsorted(sliced, l2, side="left")
         pos_end = length - pos_end

@@ -55,7 +55,6 @@ def conditional_join(
 
     For strictly non-equi joins, particularly range joins,
     involving either `>`, `<`, `>=`, `<=` operators,
-    where the columns on the right are not both monotonically increasing,
     performance might be improved by setting `use_numba` to `True`.
     This assumes that `numba` is installed.
 

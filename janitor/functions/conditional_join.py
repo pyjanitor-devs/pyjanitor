@@ -683,7 +683,6 @@ def _multiple_conditional_join_le_lt(
 
         # The numba version offers optimisations
         # for all types of non-equi joins
-        # and is generally much faster
 
         # first step is to get two conditions, if possible
         # where one has a less than operator
@@ -741,7 +740,6 @@ def _multiple_conditional_join_le_lt(
                 multiple_conditions=False,
                 keep="all",
             )
-
     if not indices:
         return None
 

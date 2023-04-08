@@ -469,24 +469,47 @@ def _get_indices_dual(
     for num in prange(l_index.size):
         l2 = l_table2[num]
         pos = positions[num]
-        end = 0
-        pos_end = length
         # get the first point where l2
         # is greater than the cumulative max
         # that will serve as the range
         # (pos, pos_end)
         # within which to search for actual matches
-        for ind in range(pos + 1, length):
-            val = max_arr[ind]
-            if l2 > val:
-                pos_end = ind
-                break
+
+        # no point checking the first position
+        # as we already know that l2 <= r_table2[pos]
+        # what happens below?
+        # max_arr is a cumulative max in decreasing order
+        # e.g max_arr -> [4 3 3 2 1 1 1]
+        # slice it from pos+1, since we have established
+        # that l2 <= r_table2[pos]
+        # -> [3 3 2 1 1 1]
+        # flip it into increasing order
+        # -> [1 1 1 2 3 3]
+        # making it easy to do a binary search
+        # say l2 = 4
+        # binary search returns the lowest possible point
+        # which is 6
+        # subtract from the actual r_table2 length (7)
+        # -> 7 - 6 = 1
+        # now we have our (pos_start, pos_end) -> (0, 1)
+        # our search space is reduced, allowing us to do
+        # less work with the comparison operation
+        # the advantage of this approach over a linear search ->
+        # the data is already sorted, we only need a binary search
+        # so we get a O(log n), compared to an O(n)
+        # this helps as the data size increases
+        # and the chunks (pos, pos_end) are relatively large
+        # a binary search will offer more performance
+        # relative to a linear search
+        sliced = max_arr[slice(pos + 1, None)][::-1]
+        pos_end = np.searchsorted(sliced, l2, side="left")
+        pos_end = length - pos_end
         ends[num] = pos_end
         # get the total number of exact matches
         # for l2
+        end = 0
         for ind in range(pos, pos_end):
-            out = r_table2[ind]
-            out = l2 <= out
+            out = l2 <= r_table2[ind]
             end += out
         counts[num] = end
 

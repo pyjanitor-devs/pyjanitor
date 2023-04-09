@@ -309,10 +309,13 @@ def _conditional_join_type_check(
         is_datetime64_dtype,
         is_numeric_dtype,
         is_string_dtype,
-        is_categorical_dtype,
     }
     for func in permitted_types:
-        if func(left_column):
+        # change is based on this PR
+        # https://github.com/pandas-dev/pandas/pull/52527/files
+        if isinstance(left_column.dtype, pd.CategoricalDtype) or func(
+            left_column
+        ):
             break
     else:
         raise ValueError(

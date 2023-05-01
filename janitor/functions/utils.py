@@ -299,17 +299,21 @@ def _select_callable(arg, func: Callable, axis=None):
 class DropLabel:
     """Helper class for removing labels within the `select` syntax.
 
-    `label` can be any of the types supported in the `select`,
-    `select_rows` and `select_columns` functions.
+    `label` and `exclude` can be any of the types
+    supported in the `select`, `select_rows`
+    and `select_columns` functions.
     An array of integers not matching the labels is returned.
 
     !!! info "New in version 0.24.0"
 
     Args:
-        label: Label(s) to be dropped from the index.
+        label: Label(s) to be dropped from the index,
+              if `exclude` is not provided.
+        exclude: if not `None`, remove from `label`.
     """
 
     label: Any
+    exclude: Any = None
 
 
 @singledispatch
@@ -522,9 +526,14 @@ def _column_sel_dispatch(cols, df, axis):  # noqa: F811
 
     Returns an array of integers.
     """
+
     arr = _select_index(cols.label, df, axis)
     index = np.arange(getattr(df, axis).size)
     arr = _index_converter(arr, index)
+    if cols.exclude:
+        exclude = _select_index(cols.exclude, df, axis)
+        exclude = _index_converter(exclude, index)
+        return np.setdiff1d(arr, exclude)
     return np.delete(index, arr)
 
 
@@ -561,9 +570,19 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
     # treat multiple DropLabel instances as a single unit
     checks = (isinstance(entry, DropLabel) for entry in arg)
     if sum(checks) > 1:
+        labels = []
+        exclude = []
         drop_labels = (entry for entry in arg if isinstance(entry, DropLabel))
-        drop_labels = [entry.label for entry in drop_labels]
-        drop_labels = DropLabel(drop_labels)
+        for entry in drop_labels:
+            if entry.exclude:
+                labels.append(entry.label)
+                exclude.append(entry.exclude)
+            else:
+                exclude.append(entry.label)
+        if exclude:
+            drop_labels = DropLabel(labels, exclude)
+        else:
+            drop_labels = DropLabel(labels)
         arg = [entry for entry in arg if not isinstance(entry, DropLabel)]
         arg.append(drop_labels)
     indices = [_select_index(entry, df, axis) for entry in arg]

@@ -7,7 +7,7 @@ from pandas.testing import assert_frame_equal
 from itertools import product
 
 from janitor.functions.utils import patterns, DropLabel
-from pandas.api.types import is_numeric_dtype
+from pandas.api.types import is_numeric_dtype, is_datetime64_dtype
 
 
 @pytest.mark.functions
@@ -453,4 +453,13 @@ def test_droplabel_exclude(df_strings):
     """Test output if DropLabel has an exclude argument"""
     expected = df_strings.select_columns(DropLabel(is_numeric_dtype, "code"))
     actual = df_strings.select_dtypes("number").drop(columns=["code"])
+    assert_frame_equal(expected, actual)
+
+
+def test_droplabel_multiple_exclude(df_strings):
+    """Test output if DropLabel has an exclude argument"""
+    expected = df_strings.select_columns(
+        DropLabel("type*", "type2"), DropLabel(is_datetime64_dtype)
+    )
+    actual = df_strings.filter(like="type").drop(columns=["type2", "type3"])
     assert_frame_equal(expected, actual)

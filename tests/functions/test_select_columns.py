@@ -447,3 +447,10 @@ def test_regex_multi(multiindex):
     expected = multiindex.select_columns(re.compile("b.r"))
     actual = multiindex.loc(axis=1)[["bar"]]
     assert_frame_equal(expected, actual)
+
+
+def test_droplabel_exclude(df_strings):
+    """Test output if DropLabel has an exclude argument"""
+    expected = df_strings.select_columns(DropLabel(is_numeric_dtype, "code"))
+    actual = df_strings.select_dtypes("number").drop(columns=["code"])
+    assert_frame_equal(expected, actual)

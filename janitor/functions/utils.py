@@ -302,11 +302,19 @@ class DropLabel:
     `label` and `exclude` can be any of the types
     supported in the `select`, `select_rows`
     and `select_columns` functions.
-    An array of integers not matching the labels is returned.
+
     If `label` and no `exclude`, drop `label` from the Index.
     If `exclude`, drop `exclude` from `label`.
 
+    An array of integers is returned.
+
+
     !!! info "New in version 0.24.0"
+
+    !!! abstract "Version Changed"
+
+    - 0.24.1
+        - Added `exclude` parameter.
 
     Args:
         label: Label(s) to be dropped from the index,

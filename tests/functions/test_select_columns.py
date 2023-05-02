@@ -6,7 +6,7 @@ import pytest
 from pandas.testing import assert_frame_equal
 from itertools import product
 
-from janitor.functions.utils import patterns, DropLabel
+from janitor.functions.utils import patterns, DropLabel, select_by
 from pandas.api.types import is_numeric_dtype, is_datetime64_dtype
 
 
@@ -462,4 +462,11 @@ def test_droplabel_multiple_exclude(df_strings):
         DropLabel("type*", "type2"), DropLabel(is_datetime64_dtype)
     )
     actual = df_strings.filter(like="type").drop(columns=["type2", "type3"])
+    assert_frame_equal(expected, actual)
+
+
+def test_select_groupby(dataframe):
+    """Test output on a grouped object"""
+    expected = dataframe.select_dtypes("number").groupby(dataframe["a"]).sum()
+    actual = dataframe.groupby("a").pipe(select_by, is_numeric_dtype).sum()
     assert_frame_equal(expected, actual)

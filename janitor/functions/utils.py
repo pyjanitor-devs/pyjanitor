@@ -18,6 +18,7 @@ from typing import (
 )
 from pandas.core.dtypes.generic import ABCPandasArray, ABCExtensionArray
 from pandas.core.common import is_bool_indexer
+from pandas.core.groupby.generic import DataFrameGroupBy, SeriesGroupBy
 from dataclasses import dataclass
 from enum import Enum
 import pandas as pd
@@ -1066,3 +1067,24 @@ def _keep_output(keep: str, left: np.ndarray, right: np.ndarray):
         return grouped.index, grouped.array
     grouped = grouped.max()
     return grouped.index, grouped.array
+
+
+def select_by(group, label):
+    """
+    Helper function for selecting columns on a grouped object,
+    using the
+    [`select_columns`][janitor.functions.select.select_columns] syntax.
+
+    !!! info "New in version 0.25.0"
+
+    Args:
+        group: A Pandas GroupBy object.
+        label: column(s) to select.
+
+    Returns:
+        A pandas groupby object.
+    """
+    assert isinstance(group, (DataFrameGroupBy, SeriesGroupBy))
+    label = get_index_labels(label, group.obj, axis="columns")
+    label = label if is_scalar(label) else list(label)
+    return group[label]

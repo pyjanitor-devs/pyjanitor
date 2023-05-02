@@ -3,6 +3,7 @@ import pandas as pd
 import pandas_flavor as pf
 
 from janitor.utils import check
+from pandas.api.types import is_string_dtype
 
 
 @pf.register_dataframe_method
@@ -78,11 +79,32 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_") -> pd.DataFrame:
     if not isinstance(df.columns, pd.MultiIndex):
         return df
 
+    # TODO: Pyarrow offers faster string computations
+    # future work should take this into consideration,
+    # which would require a different route from python's string.join
+
+    # since work is only on the columns
+    # it is safe, and more efficient to slice/view the dataframe
+    # plus Pandas creates a new Index altogether
+    # as such, the original dataframe is not modified
     df = df[:]
-
-    df.columns = [
-        sep.join(str(el) for el in tup if str(el) != "")
-        for tup in df  # noqa: PD011
+    new_columns = df.columns
+    levels = [
+        new_columns.get_level_values(num) for num in range(new_columns.nlevels)
     ]
-
+    all_strings = all(map(is_string_dtype, levels))
+    if all_strings:
+        no_empty_string = all((entry != "").all() for entry in levels)
+        if no_empty_string:
+            df.columns = new_columns.map(sep.join)
+            return df
+    new_columns = (map(str, entry) for entry in new_columns)
+    new_columns = [
+        # faster to use a list comprehension within string.join
+        # compared to a generator
+        # https://stackoverflow.com/a/37782238
+        sep.join([entry for entry in word if entry])
+        for word in new_columns
+    ]
+    df.columns = new_columns
     return df

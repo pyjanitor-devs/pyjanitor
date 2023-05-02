@@ -594,8 +594,6 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
             drop_labels = DropLabel(labels, exclude)
         elif not labels and exclude:
             drop_labels = DropLabel(exclude)
-        elif labels:
-            drop_labels = DropLabel(labels)
         arg = [entry for entry in arg if not isinstance(entry, DropLabel)]
         arg.append(drop_labels)
     indices = [_select_index(entry, df, axis) for entry in arg]

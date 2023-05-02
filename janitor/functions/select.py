@@ -2,7 +2,7 @@ from typing import Any
 import pandas_flavor as pf
 import pandas as pd
 from janitor.utils import deprecated_alias
-from janitor.functions.utils import _select  # noqa: F401
+from janitor.functions.utils import _select, DropLabel  # noqa: F401
 
 
 @pf.register_dataframe_method

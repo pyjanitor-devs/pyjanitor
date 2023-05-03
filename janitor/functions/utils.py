@@ -307,9 +307,6 @@ class DropLabel:
     If `label` and no `exclude`, drop `label` from the Index.
     If `exclude`, drop `exclude` from `label`.
 
-    An array of integers is returned.
-
-
     !!! info "New in version 0.24.0"
 
     !!! abstract "Version Changed"
@@ -592,7 +589,7 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
                 exclude.append(entry.label)
         if labels and exclude:
             drop_labels = DropLabel(labels, exclude)
-        elif not labels and exclude:
+        else:
             drop_labels = DropLabel(exclude)
         arg = [entry for entry in arg if not isinstance(entry, DropLabel)]
         arg.append(drop_labels)

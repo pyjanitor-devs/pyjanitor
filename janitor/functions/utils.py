@@ -1064,7 +1064,7 @@ def _keep_output(keep: str, left: np.ndarray, right: np.ndarray):
     return grouped.index, grouped.array
 
 
-def select_by(group, label):
+def get_columns(group, label):
     """
     Helper function for selecting columns on a grouped object,
     using the

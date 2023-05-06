@@ -1039,12 +1039,13 @@ def _keep_output(keep: str, left: np.ndarray, right: np.ndarray):
 
 class col:
     """
-    An interface that allows for column
+    Helper class for column
     selection within an expression.
 
-    !!! This is experimental and subject to change.
-
     !!! info "New in version 0.25.0"
+
+    !!! warning This is experimental and subject to change.
+
     """
 
     def __init__(self, column):

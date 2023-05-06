@@ -1044,11 +1044,11 @@ class col:
 
     !!! info "New in version 0.25.0"
 
-    !!! warning
+    !!! warning ""
 
-        "`col` is currently considered experimental. "
-        "The implementation and parts of the API "
-        "may change without warning."
+        `col` is currently considered experimental.
+        The implementation and parts of the API
+        may change without warning.
 
     """
 

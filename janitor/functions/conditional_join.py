@@ -146,7 +146,8 @@ def conditional_join(
         conditions: Variable argument of tuple(s) of the form
             `(left_on, right_on, op)`, where `left_on` is the column
             label from `df`, `right_on` is the column label from `right`,
-            while `op` is the operator. The operator can be any of
+            while `op` is the operator.
+            The `col` class is also supported. The operator can be any of
             `==`, `!=`, `<=`, `<`, `>=`, `>`. For multiple conditions,
             the and(`&`) operator is used to combine the results
             of the individual conditions.

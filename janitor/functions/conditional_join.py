@@ -22,6 +22,7 @@ from janitor.functions.utils import (
     _keep_output,
     less_than_join_types,
     greater_than_join_types,
+    col,
 )
 
 
@@ -238,6 +239,10 @@ def _conditional_join_preliminary_checks(
     if not conditions:
         raise ValueError("Kindly provide at least one join condition.")
 
+    conditions = [
+        cond.join_args if isinstance(cond, col) else cond
+        for cond in conditions
+    ]
     for condition in conditions:
         check("condition", condition, [tuple])
         len_condition = len(condition)

@@ -1035,3 +1035,43 @@ def _keep_output(keep: str, left: np.ndarray, right: np.ndarray):
         return grouped.index, grouped.array
     grouped = grouped.max()
     return grouped.index, grouped.array
+
+
+class col:
+    """
+    An interface that allows for column
+    selection within an expression.
+
+    !!! This is experimental and subject to change.
+
+    !!! info "New in version 0.25.0"
+    """
+
+    def __init__(self, column):
+        self.cols = column
+        check("column", self.cols, [Hashable])
+        self.join_args = None
+
+    def __gt__(self, other):
+        self.join_args = (self.cols, other.cols, ">")
+        return self
+
+    def __ge__(self, other):
+        self.join_args = (self.cols, other.cols, ">=")
+        return self
+
+    def __lt__(self, other):
+        self.join_args = (self.cols, other.cols, "<")
+        return self
+
+    def __le__(self, other):
+        self.join_args = (self.cols, other.cols, "<=")
+        return self
+
+    def __ne__(self, other):
+        self.join_args = (self.cols, other.cols, "!=")
+        return self
+
+    def __eq__(self, other):
+        self.join_args = (self.cols, other.cols, "==")
+        return self

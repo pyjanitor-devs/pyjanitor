@@ -25,8 +25,7 @@ def move(
     This operation does not reset the index of the dataframe. User must
     explicitly do so.
 
-    This function does not apply to multilevel dataframes, and the dataframe
-    must have unique column names or indices.
+    The dataframe must have unique column names or indices.
 
     Examples:
         Move a row:
@@ -108,7 +107,6 @@ def move(
     names = getattr(df, mapping[axis])
 
     assert names.is_unique
-    assert not isinstance(names, pd.MultiIndex)
 
     index = np.arange(names.size)
     source = _select_index([source], df, mapping[axis])

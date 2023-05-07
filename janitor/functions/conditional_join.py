@@ -17,7 +17,6 @@ from pandas.core.reshape.merge import _MergeOperation
 
 from janitor.utils import check, check_column
 from janitor.functions.utils import (
-    _convert_to_numpy_array,
     _JoinOperator,
     _generic_func_cond_join,
     _keep_output,
@@ -56,8 +55,7 @@ def conditional_join(
 
     For strictly non-equi joins, particularly range joins,
     involving either `>`, `<`, `>=`, `<=` operators,
-    where the columns on the right are not both monotonically increasing,
-    performance could be improved by setting `use_numba` to `True`.
+    performance might be improved by setting `use_numba` to `True`.
     This assumes that `numba` is installed.
 
     To preserve row order, set `sort_by_appearance` to `True`.
@@ -311,10 +309,13 @@ def _conditional_join_type_check(
         is_datetime64_dtype,
         is_numeric_dtype,
         is_string_dtype,
-        is_categorical_dtype,
     }
     for func in permitted_types:
-        if func(left_column):
+        # change is based on this PR
+        # https://github.com/pandas-dev/pandas/pull/52527/files
+        if isinstance(left_column.dtype, pd.CategoricalDtype) or func(
+            left_column
+        ):
             break
     else:
         raise ValueError(
@@ -682,10 +683,6 @@ def _multiple_conditional_join_le_lt(
         # within this space, as far as I know,
         # so a blowup of all the rows is unavoidable.
 
-        # The numba version offers optimisations
-        # for all types of non-equi joins
-        # and is generally much faster
-
         # first step is to get two conditions, if possible
         # where one has a less than operator
         # and the other has a greater than operator
@@ -742,7 +739,6 @@ def _multiple_conditional_join_le_lt(
                 multiple_conditions=False,
                 keep="all",
             )
-
     if not indices:
         return None
 
@@ -823,35 +819,28 @@ def _range_indices(
         if outcome is None:
             return None
         left_c, pos = outcome
-        if left_c.size < left_index.size:
-            keep_rows = np.isin(left_index, left_c, assume_unique=True)
-            search_indices = search_indices[keep_rows]
-            left_index = left_c
     else:
-        left_c = left_c._values
-        right_c = right_c._values
-        op = operator_map[op]
-        left_c, right_c = _convert_to_numpy_array(left_c, right_c)
-        pos = np.copy(search_indices)
-        counter = np.arange(left_c.size)
-        # better than np.outer memory wise?
-        # using this for loop instead of np.outer
-        # allows us to break early and reduce the
-        # number of cartesian checks
-        # since as we iterate, we reduce the size of left_c
-        # speed wise, np.outer will be faster
-        # alternatively, the user can just use the numba option
-        # for more performance
-        for ind in range(right_c.size):
-            if not counter.size:
-                break
-            keep_rows = op(left_c, right_c[ind])
-            if not keep_rows.any():
-                continue
-            pos[counter[keep_rows]] = ind
-            counter = counter[~keep_rows]
-            left_c = left_c[~keep_rows]
-
+        # the aim here is to get the first match
+        # where the left array is </<= than the right array
+        # this is solved by getting the cumulative max
+        # thus ensuring that the first match is obtained
+        # via a binary search
+        # this allows us to avoid the less efficient linear search
+        # of using a for loop with a break to get the first match
+        outcome = _generic_func_cond_join(
+            left=left_c,
+            right=right_c.cummax(),
+            op=op,
+            multiple_conditions=True,
+            keep="all",
+        )
+        if outcome is None:
+            return None
+        left_c, right_index, pos = outcome
+    if left_c.size < left_index.size:
+        keep_rows = np.isin(left_index, left_c, assume_unique=True)
+        search_indices = search_indices[keep_rows]
+        left_index = left_c
     # no point searching within (a, b)
     # if a == b
     # since range(a, b) yields none
@@ -891,6 +880,7 @@ def _range_indices(
     left_c = df[left_on]._values[left_index]
     right_c = right[right_on]._values[right_index]
     ext_arr = is_extension_array_dtype(left_c)
+    op = operator_map[op]
     mask = op(left_c, right_c)
 
     if ext_arr:
@@ -1020,6 +1010,7 @@ def _create_frame(
     arr_ = pd.DataFrame(arr_, copy=False)
     arr = _inner(df, right, left_index, right_index, indicator)
     df = pd.concat([arr, arr_], copy=False, sort=False)
+    df.index = range(len(df))
     return df
 
 
@@ -1031,8 +1022,10 @@ def _add_indicator(
     arr = pd.Categorical(
         [mapping[how]], categories=["left_only", "right_only", "both"]
     )
-    if isinstance(next(iter(df)), tuple):
-        indicator = (indicator, "")
+    first_key = next(iter(df))
+    if isinstance(first_key, tuple):
+        indicator = [indicator] + [""] * (len(first_key) - 1)
+        indicator = tuple(indicator)
     df[indicator] = arr.repeat(length)
     return df
 

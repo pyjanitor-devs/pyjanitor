@@ -53,6 +53,7 @@ def test__get_missing_timestamps(timeseries_dataframe):
     """Test utility function for identifying the missing timestamps."""
     from random import sample
 
+    timeseries_dataframe.index.freq = None
     timestamps_to_drop = sample(timeseries_dataframe.index.tolist(), 3)
     df = timeseries_dataframe.drop(index=timestamps_to_drop)
     missing_timestamps = _get_missing_timestamps(df, "1H")

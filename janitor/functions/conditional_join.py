@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 import pandas_flavor as pf
 from pandas.core.dtypes.common import (
-    is_categorical_dtype,
     is_datetime64_dtype,
     is_dtype_equal,
     is_extension_array_dtype,
@@ -305,9 +304,9 @@ def _conditional_join_type_check(
     Raise error if column type is not any of numeric or datetime or string.
     """
 
-    is_permitted_type = isinstance(left_column.dtype, pd.CategoricalDtype)
+    is_categorical_dtype = isinstance(left_column.dtype, pd.CategoricalDtype)
 
-    if not is_permitted_type:
+    if not is_categorical_dtype:
         permitted_types = {
             is_datetime64_dtype,
             is_numeric_dtype,
@@ -325,10 +324,7 @@ def _conditional_join_type_check(
                 f"{left_column.dtype}."
             )
 
-    lk_is_cat = is_categorical_dtype(left_column)
-    rk_is_cat = is_categorical_dtype(right_column)
-
-    if lk_is_cat & rk_is_cat:
+    if is_categorical_dtype:
         if not left_column.array._categories_match_up_to_permutation(
             right_column.array
         ):

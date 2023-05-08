@@ -305,24 +305,25 @@ def _conditional_join_type_check(
     Raise error if column type is not any of numeric or datetime or string.
     """
 
-    permitted_types = {
-        is_datetime64_dtype,
-        is_numeric_dtype,
-        is_string_dtype,
-    }
-    for func in permitted_types:
-        # change is based on this PR
-        # https://github.com/pandas-dev/pandas/pull/52527/files
-        if isinstance(left_column.dtype, pd.CategoricalDtype) or func(
-            left_column
-        ):
-            break
-    else:
-        raise ValueError(
-            "conditional_join only supports "
-            "string, category, numeric, or date dtypes (without timezone) - "
-            f"'{left_column.name} is of type {left_column.dtype}."
-        )
+    is_permitted_type = isinstance(left_column.dtype, pd.CategoricalDtype)
+
+    if not is_permitted_type:
+        permitted_types = {
+            is_datetime64_dtype,
+            is_numeric_dtype,
+            is_string_dtype,
+        }
+        for func in permitted_types:
+            if func(left_column.dtype):
+                break
+        else:
+            raise ValueError(
+                "conditional_join only supports "
+                "string, category, numeric, or "
+                "date dtypes (without timezone) - "
+                f"'{left_column.name} is of type "
+                f"{left_column.dtype}."
+            )
 
     lk_is_cat = is_categorical_dtype(left_column)
     rk_is_cat = is_categorical_dtype(right_column)

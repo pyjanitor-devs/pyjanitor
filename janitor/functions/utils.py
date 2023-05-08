@@ -29,7 +29,6 @@ from pandas.api.types import (
     is_list_like,
     is_datetime64_dtype,
     is_string_dtype,
-    is_categorical_dtype,
     is_extension_array_dtype,
     is_bool_dtype,
 )
@@ -253,7 +252,7 @@ def _is_str_or_cat(index):
     Check if the column/index is a string,
     or categorical with strings.
     """
-    if is_categorical_dtype(index):
+    if isinstance(index.dtype, pd.CategoricalDtype):
         return is_string_dtype(index.categories)
     return is_string_dtype(index)
 

@@ -956,14 +956,6 @@ def _create_frame(
     if not df.columns.intersection(right.columns).empty:
         df, right = _create_multiindex_column(df, right)
 
-    if indicator:
-        if isinstance(indicator, bool):
-            indicator = "_merge"
-        if indicator in df.columns.union(right.columns):
-            raise ValueError(
-                "Cannot use name of an existing column for indicator column"
-            )
-
     if sort_by_appearance:
         if how in {"inner", "left"}:
             if not right.empty:
@@ -973,21 +965,26 @@ def _create_frame(
             if not df.empty:
                 df = df.take(left_index)
             df.index = right_index
-        df = df.join(right, how=how)
 
-        if indicator:
-            if how == "right":
-                df.loc[right_index, indicator] = 3
-                df[indicator] = df[indicator].fillna(2)
-            else:
-                df.loc[left_index, indicator] = 3
-                df[indicator] = df[indicator].fillna(1)
-            df[indicator] = pd.Categorical(df[indicator], categories=[1, 2, 3])
-            df[indicator] = df[indicator].cat.rename_categories(
-                ["left_only", "right_only", "both"]
-            )
+        df = df.merge(
+            right,
+            left_index=True,
+            right_index=True,
+            indicator=indicator,
+            how=how,
+            copy=False,
+            sort=False,
+        )
         df.index = range(len(df))
         return df
+
+    if indicator:
+        if isinstance(indicator, bool):
+            indicator = "_merge"
+        if indicator in df.columns.union(right.columns):
+            raise ValueError(
+                "Cannot use name of an existing column for indicator column"
+            )
 
     if how == "inner":
         return _inner(df, right, left_index, right_index, indicator)

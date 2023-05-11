@@ -135,7 +135,7 @@ def conditional_join(
             of the individual conditions.
         how: Indicates the type of join to be performed.
             It can be one of `inner`, `left`, `right`.
-            Full outer join is not supported. Defaults to `inner`.
+            Full outer join is not supported.
         sort_by_appearance: If `how = inner` and
             `sort_by_appearance = False`, there
             is no guarantee that the original order is preserved.
@@ -150,7 +150,7 @@ def conditional_join(
             It can be a single column or a list of columns.
             It is also possible to rename the output columns via a dictionary.
         keep: Choose whether to return the first match,
-            last match or all matches. Default is `all`.
+            last match or all matches.
         use_numba: Use numba, if installed, to access an alternative join algorithm.
             Applicable only to strictly non-equi joins.
         indicator: If `True`, adds a column to the output DataFrame

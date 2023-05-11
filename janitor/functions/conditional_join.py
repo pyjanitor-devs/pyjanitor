@@ -55,7 +55,8 @@ def conditional_join(
 
     For strictly non-equi joins, particularly range joins,
     involving either `>`, `<`, `>=`, `<=` operators,
-    performance might be improved by setting `use_numba` to `True`.
+    a different algorithm can be accessed
+    by setting `use_numba` to `True`.
     This assumes that `numba` is installed.
 
     This function returns rows, if any, where values from `df` meet the
@@ -135,9 +136,10 @@ def conditional_join(
         how: Indicates the type of join to be performed.
             It can be one of `inner`, `left`, `right`.
             Full outer join is not supported. Defaults to `inner`.
-        sort_by_appearance: Default is `False`.
-            If `how = inner` and `sort_by_appearance = False`, there
+        sort_by_appearance: If `how = inner` and
+            `sort_by_appearance = False`, there
             is no guarantee that the original order is preserved.
+            Usually, this offers more performance.
             If `how = left`, the row order from the left dataframe
             is preserved; if `how = right`, the row order
             from the right dataframe is preserved.
@@ -149,8 +151,8 @@ def conditional_join(
             It is also possible to rename the output columns via a dictionary.
         keep: Choose whether to return the first match,
             last match or all matches. Default is `all`.
-        use_numba: Use numba, if installed, to accelerate the computation.
-            Applicable only to strictly non-equi joins. Default is `False`.
+        use_numba: Use numba, if installed, to access an alternative join algorithm.
+            Applicable only to strictly non-equi joins.
         indicator: If `True`, adds a column to the output DataFrame
             called “_merge” with information on the source of each row.
             The column can be given a different name by providing a string argument.

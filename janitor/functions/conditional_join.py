@@ -56,9 +56,9 @@ def conditional_join(
     Column selection in `df_columns` and `right_columns` is possible using the
     [`select_columns`][janitor.functions.select.select_columns] syntax.
 
-    For strictly non-equi joins, particularly range joins,
+    For strictly non-equi joins,
     involving either `>`, `<`, `>=`, `<=` operators,
-    a different algorithm can be accessed
+    performance might be improved
     by setting `use_numba` to `True`.
     This assumes that `numba` is installed.
 
@@ -157,9 +157,8 @@ def conditional_join(
             [`select_columns`][janitor.functions.select.select_columns] syntax.
             It is also possible to rename the output columns via a dictionary.
         keep: Choose whether to return the first match, last match or all matches.
-        use_numba: Use numba, if installed, to access an alternative join algorithm,
-            that might offer more performance.
-            Applicable only to strictly non-equi joins.
+        use_numba: Uses numba, if installed. This might offer more performance,
+            and applies only to non-equi joins.
         indicator: If `True`, adds a column to the output DataFrame
             called `_merge` with information on the source of each row.
             The column can be given a different name by providing a string argument.

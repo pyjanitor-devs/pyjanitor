@@ -33,7 +33,7 @@ def conditional_join(
     df: pd.DataFrame,
     right: Union[pd.DataFrame, pd.Series],
     *conditions: Any,
-    how: Literal["inner", "left", "right"] = "inner",
+    how: Literal["inner", "left", "right", "outer"] = "inner",
     sort_by_appearance: bool = False,
     df_columns: Optional[Any] = slice(None),
     right_columns: Optional[Any] = slice(None),
@@ -148,14 +148,15 @@ def conditional_join(
             is preserved; if `how = right`, the row order
             from the right dataframe is preserved.
             !!!warning "Deprecated in 0.25.0"
-        df_columns: Columns to select from `df`.
-            It can be a single column or a list of columns.
+        df_columns: Columns to select from `df` in the final output dataframe.
+            Column selection is based on the
+            [`select_columns`][janitor.functions.select.select_columns] syntax.
             It is also possible to rename the output columns via a dictionary.
-        right_columns: Columns to select from `right`.
-            It can be a single column or a list of columns.
+        right_columns: Columns to select from `right` in the final output dataframe.
+            Column selection is based on the
+            [`select_columns`][janitor.functions.select.select_columns] syntax.
             It is also possible to rename the output columns via a dictionary.
-        keep: Choose whether to return the first match,
-            last match or all matches.
+        keep: Choose whether to return the first match, last match or all matches.
         use_numba: Use numba, if installed, to access an alternative join algorithm,
             that might offer more performance.
             Applicable only to strictly non-equi joins.

@@ -3185,20 +3185,26 @@ def test_multiple_eqs_outer(df, right):
         sort=False,
         indicator=True,
     ).loc[lambda df: df.E.ne(df.Dates), columns]
+    contents = [expected]
     top = df.loc(axis=1)[["B", "A", "E"]].merge(
         expected.loc(axis=1)[["B", "A", "E"]], indicator=True, how="left"
     )
     top = top.loc[top._merge == "left_only"]
-
+    if not top.empty:
+        contents.append(top)
     bottom = expected.loc(axis=1)[["Floats", "Integers", "Dates"]].merge(
         right.loc(axis=1)[["Floats", "Integers", "Dates"]],
         indicator=True,
         how="right",
     )
     bottom = bottom.loc[bottom._merge == "right_only"]
+    if not bottom.empty:
+        contents.append(bottom)
 
-    expected = pd.concat([top, expected, bottom])
-    expected = expected.sort_values(columns, ignore_index=True)
+    expected = pd.concat(contents)
+    expected = expected.sort_values(columns, ignore_index=True).sort_index(
+        axis="columns"
+    )
     actual = (
         df[["B", "A", "E"]]
         .conditional_join(
@@ -3211,6 +3217,7 @@ def test_multiple_eqs_outer(df, right):
             indicator=True,
         )
         .sort_values(columns, ignore_index=True)
+        .sort_index(axis="columns")
     )
 
     assert_frame_equal(expected, actual)

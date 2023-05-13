@@ -1038,9 +1038,13 @@ def _keep_output(keep: str, left: np.ndarray, right: np.ndarray):
 
 
 class col:
-    """
-    Helper class for column
-    selection within an expression.
+    """Helper class for column selection within an expression.
+
+    Args:
+        column (Hashable): The name of the column to be selected.
+
+    Raises:
+        TypeError: If the `column` parameter is not hashable.
 
     !!! info "New in version 0.25.0"
 
@@ -1052,31 +1056,87 @@ class col:
 
     """
 
-    def __init__(self, column):
+    def __init__(self, column: Hashable):
+        """Initialize a new instance of the `col` class.
+
+        Args:
+            column (Hashable): The name of the column to be selected.
+
+        Raises:
+            TypeError: If the `column` parameter is not hashable.
+        """
         self.cols = column
         check("column", self.cols, [Hashable])
         self.join_args = None
 
     def __gt__(self, other):
+        """Implements the greater-than comparison operator (`>`).
+
+        Args:
+            other (col): The other `col` object to compare to.
+
+        Returns:
+            col: The current `col` object.
+        """
         self.join_args = (self.cols, other.cols, ">")
         return self
 
     def __ge__(self, other):
+        """Implements the greater-than-or-equal-to comparison operator (`>=`).
+
+        Args:
+            other (col): The other `col` object to compare to.
+
+        Returns:
+            col: The current `col` object.
+        """
         self.join_args = (self.cols, other.cols, ">=")
         return self
 
     def __lt__(self, other):
+        """Implements the less-than comparison operator (`<`).
+
+        Args:
+            other (col): The other `col` object to compare to.
+
+        Returns:
+            col: The current `col` object.
+        """
         self.join_args = (self.cols, other.cols, "<")
         return self
 
     def __le__(self, other):
+        """Implements the less-than-or-equal-to comparison operator (`<=`).
+
+        Args:
+            other (col): The other `col` object to compare to.
+
+        Returns:
+            col: The current `col` object.
+        """
         self.join_args = (self.cols, other.cols, "<=")
         return self
 
     def __ne__(self, other):
+        """Implements the not-equal-to comparison operator (`!=`).
+
+        Args:
+            other (col): The other `col` object to compare to.
+
+        Returns:
+            col: The current `col` object.
+        """
         self.join_args = (self.cols, other.cols, "!=")
         return self
 
     def __eq__(self, other):
+        """Implements the equal-to comparison operator (`==`).
+
+        Args:
+            other (col): The other `col` object to compare to.
+
+        Returns:
+            col: The current `col` object.
+        """
         self.join_args = (self.cols, other.cols, "==")
         return self

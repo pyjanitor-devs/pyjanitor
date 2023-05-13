@@ -1066,8 +1066,6 @@ def _create_frame(
         right[r_indicator] = arr
         contents.append(right)
 
-    if len(contents) > 1:
-        return pd.concat(
-            contents, axis=0, copy=False, sort=False, ignore_index=True
-        )
-    return contents[0]
+    return pd.concat(
+        contents, axis=0, copy=False, sort=False, ignore_index=True
+    )

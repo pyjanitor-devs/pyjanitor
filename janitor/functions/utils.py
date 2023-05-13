@@ -622,7 +622,7 @@ def get_index_labels(
     return index[_select_index(arg, df, axis)]
 
 
-def get_columns(group, label):
+def get_columns(group: Union[DataFrameGroupBy, SeriesGroupBy], label):
     """
     Helper function for selecting columns on a grouped object,
     using the

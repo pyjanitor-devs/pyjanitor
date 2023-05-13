@@ -2,13 +2,24 @@
 from typing import Callable
 import pandas_flavor as pf
 import pandas as pd
+from janitor.utils import refactored_function
 
 
+@pf.register_dataframe_method
+@refactored_function(
+    message="This function will be deprecated in a 1.x release. "
+    "Kindly use `pd.DataFrame.pipe` instead."
+)
 @pf.register_dataframe_method
 def then(df: pd.DataFrame, func: Callable) -> pd.DataFrame:
     """Add an arbitrary function to run in the `pyjanitor` method chain.
 
     This method does not mutate the original DataFrame.
+
+    !!!note
+
+        This function will be deprecated in a 1.x release.
+        Please use `pd.DataFrame.pipe` instead.
 
     Examples:
         A trivial example using a lambda `func`.

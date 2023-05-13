@@ -1035,21 +1035,27 @@ def _create_frame(
         return df
 
     both = _inner(df, right, left_index, right_index, indicator)
-
+    contents = []
+    columns = df.columns.union(right.columns)
     left_index = np.setdiff1d(df.index, left_index)
-    df = df.take(left_index)
+    if left_index.size:
+        df = df.take(left_index)
+        if indicator:
+            l_indicator, arr = _add_indicator(
+                indicator=indicator,
+                how="left",
+                index_size=left_index.size,
+                nlevels=df.columns.nlevels,
+                columns=columns,
+            )
+            df[l_indicator] = arr
+        contents.append(df)
+
+    contents.append(both)
+
     right_index = np.setdiff1d(right.index, right_index)
-    right = right.take(right_index)
-    if indicator:
-        columns = df.columns.union(right.columns)
-        l_indicator, arr = _add_indicator(
-            indicator=indicator,
-            how="left",
-            index_size=left_index.size,
-            nlevels=df.columns.nlevels,
-            columns=columns,
-        )
-        df[l_indicator] = arr
+    if right_index.size:
+        right = right.take(right_index)
         r_indicator, arr = _add_indicator(
             indicator=indicator,
             how="right",
@@ -1058,7 +1064,10 @@ def _create_frame(
             columns=columns,
         )
         right[r_indicator] = arr
+        contents.append(right)
 
-    return pd.concat(
-        [df, both, right], axis=0, copy=False, sort=False, ignore_index=True
-    )
+    if len(contents) > 1:
+        return pd.concat(
+            contents, axis=0, copy=False, sort=False, ignore_index=True
+        )
+    return contents[0]

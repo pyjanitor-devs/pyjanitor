@@ -3184,7 +3184,7 @@ def test_multiple_eqs_outer(df, right):
         how="inner",
         sort=False,
         indicator=True,
-    ).loc[lambda df: df.E.ne(df.Dates), columns]
+    ).loc[lambda df: df.E.ne(df.Dates), columns + ["_merge"]]
     contents = [expected]
     top = df.loc(axis=1)[["B", "A", "E"]].merge(
         expected.loc(axis=1)[["B", "A", "E"]], indicator=True, how="left"
@@ -3208,14 +3208,17 @@ def test_multiple_eqs_outer(df, right):
     actual = (
         df[["B", "A", "E"]]
         .conditional_join(
-            right[["Floats", "Integers", "Dates"]],
+            right[["Floats", "Integers", "Dates"]].assign(B=right.Floats),
             ("E", "Dates", "!="),
-            ("B", "Floats", "=="),
+            ("B", "B", "=="),
             ("A", "Integers", "=="),
             how="outer",
             sort_by_appearance=False,
             indicator=True,
         )
+        .select_columns(("right", "B"), invert=True)
+        .droplevel(axis=1, level=0)
+        .rename(columns={"": "_merge"})
         .sort_values(columns, ignore_index=True)
         .sort_index(axis="columns")
     )

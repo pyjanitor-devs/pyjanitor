@@ -637,7 +637,7 @@ def get_columns(group: Union[DataFrameGroupBy, SeriesGroupBy], label):
     Returns:
         A pandas groupby object.
     """
-    assert isinstance(group, (DataFrameGroupBy, SeriesGroupBy))
+    check("groupby object", group, [DataFrameGroupBy, SeriesGroupBy])
     label = get_index_labels(label, group.obj, axis="columns")
     label = label if is_scalar(label) else list(label)
     return group[label]

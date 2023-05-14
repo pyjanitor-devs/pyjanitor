@@ -81,4 +81,5 @@ from .utils import (
     DropLabel,
     get_index_labels,
     col,
+    get_columns,
 )

@@ -6,7 +6,7 @@ import pytest
 from pandas.testing import assert_frame_equal
 from itertools import product
 
-from janitor.functions.utils import patterns, DropLabel
+from janitor.functions.utils import patterns, DropLabel, get_columns
 from pandas.api.types import is_numeric_dtype
 
 
@@ -446,4 +446,11 @@ def test_regex_multi(multiindex):
     """Test regex output on a MultiIndex"""
     expected = multiindex.select_columns(re.compile("b.r"))
     actual = multiindex.loc(axis=1)[["bar"]]
+    assert_frame_equal(expected, actual)
+
+
+def test_select_groupby(dataframe):
+    """Test output on a grouped object"""
+    expected = dataframe.select_dtypes("number").groupby(dataframe["a"]).sum()
+    actual = dataframe.groupby("a").pipe(get_columns, is_numeric_dtype).sum()
     assert_frame_equal(expected, actual)

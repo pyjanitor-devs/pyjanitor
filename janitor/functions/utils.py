@@ -17,6 +17,7 @@ from typing import (
     Any,
 )
 from pandas.core.dtypes.generic import ABCPandasArray, ABCExtensionArray
+from pandas.core.groupby.generic import DataFrameGroupBy, SeriesGroupBy
 from pandas.core.common import is_bool_indexer
 from dataclasses import dataclass
 from enum import Enum
@@ -28,7 +29,6 @@ from pandas.api.types import (
     is_list_like,
     is_datetime64_dtype,
     is_string_dtype,
-    is_categorical_dtype,
     is_extension_array_dtype,
     is_bool_dtype,
 )
@@ -252,7 +252,7 @@ def _is_str_or_cat(index):
     Check if the column/index is a string,
     or categorical with strings.
     """
-    if is_categorical_dtype(index):
+    if isinstance(index.dtype, pd.CategoricalDtype):
         return is_string_dtype(index.categories)
     return is_string_dtype(index)
 
@@ -620,6 +620,27 @@ def get_index_labels(
     assert axis in {"index", "columns"}
     index = getattr(df, axis)
     return index[_select_index(arg, df, axis)]
+
+
+def get_columns(group: Union[DataFrameGroupBy, SeriesGroupBy], label):
+    """
+    Helper function for selecting columns on a grouped object,
+    using the
+    [`select_columns`][janitor.functions.select.select_columns] syntax.
+
+    !!! info "New in version 0.25.0"
+
+    Args:
+        group: A Pandas GroupBy object.
+        label: column(s) to select.
+
+    Returns:
+        A pandas groupby object.
+    """
+    check("groupby object", group, [DataFrameGroupBy, SeriesGroupBy])
+    label = get_index_labels(label, group.obj, axis="columns")
+    label = label if is_scalar(label) else list(label)
+    return group[label]
 
 
 def _select(

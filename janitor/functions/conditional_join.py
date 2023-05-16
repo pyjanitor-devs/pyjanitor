@@ -16,7 +16,7 @@ from pandas.core.dtypes.common import (
 
 from pandas.core.reshape.merge import _MergeOperation
 
-from janitor.utils import check, check_column
+from janitor.utils import check, check_column, find_stack_level
 from janitor.functions.utils import (
     _JoinOperator,
     _generic_func_cond_join,
@@ -278,7 +278,7 @@ def _conditional_join_preliminary_checks(
             "The keyword argument "
             "'sort_by_appearance' of 'conditional_join' is deprecated.",
             DeprecationWarning,
-            stacklevel=2,
+            stacklevel=find_stack_level(),
         )
     check("sort_by_appearance", sort_by_appearance, [bool])
 

@@ -1165,7 +1165,7 @@ def _pivot_longer_dot_value(
     if np.count_nonzero(mapping.columns == ".value") > 1:
         outcome = mapping.pop(".value")
         outcome = outcome.sum(axis=1, numeric_only=False)
-        mapping[".value"] = outcome
+        mapping.insert(loc=0, column=".value", value=outcome)
 
     exclude = {
         word
@@ -1223,7 +1223,7 @@ def _pivot_longer_dot_value(
         indexer = pd.DataFrame(indexer, copy=False)
 
         indexer.columns = columns
-        df = df.reindex(columns=indexer)
+        df = df.reindex(columns=indexer, copy=False)
         df.columns = df.columns.get_level_values(".value")
         values = _dict_from_grouped_names(df=df)
         outcome = indexer.loc[indexer[".value"] == outcome[0], other]
@@ -1275,7 +1275,7 @@ def _headers_single_series(df: pd.DataFrame, mapping: pd.Series) -> tuple:
         df.columns = [mapping, positions]
         indexer = group_size.index, np.arange(group_max)
         indexer = pd.MultiIndex.from_product(indexer)
-        df = df.reindex(columns=indexer)
+        df = df.reindex(columns=indexer, copy=False)
         df.columns = df.columns.get_level_values(0)
     else:
         df.columns = mapping

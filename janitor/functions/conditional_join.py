@@ -39,7 +39,7 @@ def conditional_join(
     right_columns: Optional[Any] = slice(None),
     keep: Literal["first", "last", "all"] = "all",
     use_numba: bool = False,
-    indicator: Optional[bool, str] = False,
+    indicator: Optional[Union[bool, str]] = False,
 ) -> pd.DataFrame:
     """The conditional_join function operates similarly to `pd.merge`,
     but allows joins on inequality operators,

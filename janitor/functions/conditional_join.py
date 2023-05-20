@@ -1056,14 +1056,15 @@ def _create_frame(
     right_index = np.setdiff1d(right.index, right_index)
     if right_index.size:
         right = right.take(right_index)
-        r_indicator, arr = _add_indicator(
-            indicator=indicator,
-            how="right",
-            index_size=right_index.size,
-            nlevels=right.columns.nlevels,
-            columns=columns,
-        )
-        right[r_indicator] = arr
+        if indicator:
+            r_indicator, arr = _add_indicator(
+                indicator=indicator,
+                how="right",
+                index_size=right_index.size,
+                nlevels=right.columns.nlevels,
+                columns=columns,
+            )
+            right[r_indicator] = arr
         contents.append(right)
 
     return pd.concat(

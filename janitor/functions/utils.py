@@ -338,6 +338,8 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
     or a slice.
     """
     index = getattr(df, axis)
+    if isinstance(index, pd.MultiIndex):
+        index = index.get_level_values(0)
     if _is_str_or_cat(index) or is_datetime64_dtype(index):
         try:
             return index.get_loc(arg)
@@ -345,8 +347,6 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
             if _is_str_or_cat(index):
                 if arg == "*":
                     return slice(None)
-                if isinstance(index, pd.MultiIndex):
-                    index = index.get_level_values(0)
                 # label selection should be case sensitive
                 # fix for Github Issue 1160
                 # translating to regex solves the case sensitivity

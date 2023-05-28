@@ -9,6 +9,54 @@ from janitor.functions.utils import (
     greater_than_join_types,
 )
 from numba import njit, prange
+from pandas.api.types import is_extension_array_dtype
+
+
+def _numba_equi_join(df, right, eqs, ge_gt, le_lt):
+    """
+    Compute indices when an equi join is present.
+    """
+    left_arr = df[eqs[0]]._values
+    right_arr = right[eqs[-1]]._values
+    left_index = df.index._values
+    right_index = right.index._values
+    starts = right_arr.searchsorted(left_arr, side="left")
+    ends = right_arr.searchsorted(left_arr, side="right")
+    keep_rows = starts < ends
+    if not keep_rows.any():
+        return None
+    if not keep_rows.all():
+        left_index = left_index[~keep_rows]
+        starts = starts[~keep_rows]
+        ends = ends[~keep_rows]
+
+    ge_tuple = None
+    if ge_gt:
+        left_column, right_column, op = ge_gt
+        left_arr = df.loc[left_index, left_column]._values
+        right_arr = right.loc[right_index, right_column]._values
+        if is_extension_array_dtype(left_arr):
+            array_dtype = left_arr.dtype.numpy_dtype
+            left_arr = left_arr.astype(array_dtype)
+            right_arr = right_arr.astype(array_dtype)
+        strict = True if op == ">" else False
+        ge_tuple = left_arr, right_arr, strict
+
+    le_tuple = None
+    if le_lt:
+        left_column, right_column, op = le_lt
+        left_arr = df.loc[left_index, left_column]._values
+        right_arr = right.loc[right_index, right_column]._values
+        if is_extension_array_dtype(left_arr):
+            array_dtype = left_arr.dtype.numpy_dtype
+            left_arr = left_arr.astype(array_dtype)
+            right_arr = right_arr.astype(array_dtype)
+        strict = True if op == "<" else False
+        le_tuple = left_arr, right_arr, strict
+
+    return le_tuple, ge_tuple
+
+    return left_index, right_index, starts, ends
 
 
 def _numba_dual_join(df: pd.DataFrame, right: pd.DataFrame, pair: list):

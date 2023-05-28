@@ -299,11 +299,23 @@ def _conditional_join_preliminary_checks(
 
 
 def _conditional_join_type_check(
-    left_column: pd.Series, right_column: pd.Series, op: str
+    left_column: pd.Series, right_column: pd.Series, op: str, use_numba: bool
 ) -> None:
     """
     Raise error if column type is not any of numeric or datetime or string.
     """
+
+    if (
+        (op == _JoinOperator.STRICTLY_EQUAL.value)
+        and use_numba
+        and not is_numeric_dtype(left_column)
+        and not is_datetime64_dtype(left_column)
+    ):
+        raise ValueError(
+            "Only numeric and datetime types "
+            "are supported in an equi-join "
+            "when use_numba is set to True"
+        )
 
     permitted_types = {
         is_datetime64_dtype,
@@ -403,7 +415,9 @@ def _conditional_join_compute(
     le_lt_check = False
     for condition in conditions:
         left_on, right_on, op = condition
-        _conditional_join_type_check(df[left_on], right[right_on], op)
+        _conditional_join_type_check(
+            df[left_on], right[right_on], op, use_numba
+        )
         if op == _JoinOperator.STRICTLY_EQUAL.value:
             eq_check = True
         elif op in less_than_join_types.union(greater_than_join_types):
@@ -414,7 +428,9 @@ def _conditional_join_compute(
 
     if len(conditions) > 1:
         if eq_check:
-            result = _multiple_conditional_join_eq(df, right, conditions, keep)
+            result = _multiple_conditional_join_eq(
+                df, right, conditions, keep, use_numba
+            )
         elif le_lt_check:
             result = _multiple_conditional_join_le_lt(
                 df, right, conditions, keep, use_numba
@@ -443,6 +459,8 @@ def _conditional_join_compute(
 
     if result is None:
         result = np.array([], dtype=np.intp), np.array([], dtype=np.intp)
+
+    return result
 
     return _create_frame(
         df,
@@ -540,7 +558,11 @@ def _multiple_conditional_join_ne(
 
 
 def _multiple_conditional_join_eq(
-    df: pd.DataFrame, right: pd.DataFrame, conditions: list, keep: str
+    df: pd.DataFrame,
+    right: pd.DataFrame,
+    conditions: list,
+    keep: str,
+    use_numba: bool,
 ) -> tuple:
     """
     Get indices for multiple conditions,
@@ -553,6 +575,56 @@ def _multiple_conditional_join_eq(
         for left_on, right_on, op in conditions
         if op == _JoinOperator.STRICTLY_EQUAL.value
     ]
+
+    if use_numba:
+        from janitor.functions._numba import _numba_equi_join
+
+        if len(eqs) > 1:
+            raise ValueError(
+                "Only a single equi-join is supported "
+                "when use_numba is set to True."
+            )
+        eqs = eqs[0]
+        le_lt = None
+        ge_gt = None
+
+        for condition in conditions:
+            *_, op = condition
+            if op in less_than_join_types:
+                if le_lt:
+                    continue
+                le_lt = condition
+            elif op in greater_than_join_types:
+                if ge_gt:
+                    continue
+                ge_gt = condition
+            if le_lt and ge_gt:
+                break
+        if not le_lt and not ge_gt:
+            raise ValueError(
+                "At least one less than or greater than "
+                "join condition should be present when an equi-join "
+                "is present, and use_numba is set to True."
+            )
+        rest = [
+            condition
+            for condition in conditions
+            if condition not in {le_lt, ge_gt}
+        ]
+        sorter_columns = [eqs[-1]]
+        if ge_gt:
+            sorter_columns.append(ge_gt[1])
+        if le_lt:
+            sorter_columns.append(le_lt[1])
+
+        any_nulls = right.loc(axis=1)[sorter_columns].isna().any(axis=1)
+        if any_nulls.all(axis=None):
+            return None
+        if any_nulls.any():
+            right = right.loc[any_nulls]
+        right = right.sort_values(sorter_columns)
+        outcome = _numba_equi_join(df, right, eqs, ge_gt, le_lt)
+        return outcome
 
     left_on, right_on = zip(*eqs)
     left_on = [*left_on]

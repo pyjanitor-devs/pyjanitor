@@ -11,6 +11,7 @@ from pandas.core.dtypes.common import (
     is_extension_array_dtype,
     is_numeric_dtype,
     is_string_dtype,
+    is_integer_dtype,
 )
 
 from pandas.core.reshape.merge import _MergeOperation
@@ -308,11 +309,11 @@ def _conditional_join_type_check(
     if (
         (op == _JoinOperator.STRICTLY_EQUAL.value)
         and use_numba
-        and not is_numeric_dtype(left_column)
+        and not is_integer_dtype(left_column)
         and not is_datetime64_dtype(left_column)
     ):
         raise ValueError(
-            "Only numeric and datetime types "
+            "Only integer and datetime types "
             "are supported in an equi-join "
             "when use_numba is set to True"
         )
@@ -570,14 +571,15 @@ def _multiple_conditional_join_eq(
 
     Returns a tuple of (df_index, right_index)
     """
-    eqs = [
-        (left_on, right_on)
-        for left_on, right_on, op in conditions
-        if op == _JoinOperator.STRICTLY_EQUAL.value
-    ]
 
     if use_numba:
         from janitor.functions._numba import _numba_equi_join
+
+        eqs = [
+            (left_on, right_on, op)
+            for left_on, right_on, op in conditions
+            if op == _JoinOperator.STRICTLY_EQUAL.value
+        ]
 
         if len(eqs) > 1:
             raise ValueError(
@@ -609,23 +611,46 @@ def _multiple_conditional_join_eq(
         rest = [
             condition
             for condition in conditions
-            if condition not in {le_lt, ge_gt}
+            if condition not in {eqs, le_lt, ge_gt}
         ]
-        sorter_columns = [eqs[-1]]
+
+        sorter_columns = [eqs[1]]
         if ge_gt:
             sorter_columns.append(ge_gt[1])
-        if le_lt:
+        if le_lt and (le_lt[1] not in sorter_columns):
             sorter_columns.append(le_lt[1])
 
-        any_nulls = right.loc(axis=1)[sorter_columns].isna().any(axis=1)
+        right_df = right.loc(axis=1)[sorter_columns]
+        any_nulls = right_df.isna().any(axis=1)
         if any_nulls.all(axis=None):
             return None
         if any_nulls.any():
-            right = right.loc[any_nulls]
-        right = right.sort_values(sorter_columns)
-        outcome = _numba_equi_join(df, right, eqs, ge_gt, le_lt)
-        return outcome
+            right_df = right.loc[any_nulls]
+        right_df = right_df.sort_values(sorter_columns)
+        indices = _numba_equi_join(df, right_df, eqs, ge_gt, le_lt)
 
+        return indices
+
+        if not rest or (indices is None):
+            return indices
+
+        rest = (
+            (df[left_on], right[right_on], op)
+            for left_on, right_on, op in rest
+        )
+
+        indices = _generate_indices(*indices, rest)
+
+        if not indices:
+            return None
+
+        return _keep_output(keep, *indices)
+
+    eqs = [
+        (left_on, right_on)
+        for left_on, right_on, op in conditions
+        if op == _JoinOperator.STRICTLY_EQUAL.value
+    ]
     left_on, right_on = zip(*eqs)
     left_on = [*left_on]
     right_on = [*right_on]

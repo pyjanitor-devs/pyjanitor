@@ -108,7 +108,7 @@ def _numba_equi_join(df, right, eqs, ge_gt, le_lt):
     if l_index is None:
         return None
 
-    return l_index, right_index[r_index]
+    return l_index, r_index  # right_index[r_index]
 
 
 @njit(cache=True)
@@ -122,16 +122,13 @@ def _numba_equi_le_join(
     if left_index is None:
         return None, None
 
-    return left_index, slice_starts
+    return left_index, slice_ends - slice_starts
 
-    sizes = slice_ends - slice_starts
-    sizes = np.cumsum(sizes)
+    # return sizes, sizes
 
-    return sizes, sizes
-
-    return _numba_equi_final_indices(
-        left_index, sizes, slice_starts, slice_ends
-    )
+    # return _numba_equi_final_indices(
+    #     left_index, sizes, slice_starts, slice_ends
+    # )
 
 
 @njit(parallel=True)
@@ -150,7 +147,8 @@ def _numba_equi_le_slice_positions(
         l1 = le_arr1[num]
         slice_start = slice_starts[num]
         slice_end = slice_ends[num]
-        r1 = le_arr2[slice_start:slice_end]
+        slicer = slice(slice_start, slice_end)
+        r1 = le_arr2[slicer]
         start = np.searchsorted(r1, l1, side="left")
         if start == r1.size:
             start = -1
@@ -181,33 +179,36 @@ def _numba_equi_le_slice_positions(
 
 
 @njit(parallel=True)
-def _numba_equi_final_indices(left_index, sizes, slice_starts, slice_ends):
+def _numba_equi_final_indices(left_index, slice_starts, slice_ends):
     """
     Get final indices for equi join
     """
-    starts = np.empty(slice_ends.size, dtype=np.intp)
-    starts[0] = 0
-    starts[1:] = sizes[:-1]
-    r_index = np.empty(sizes[-1], dtype=np.intp)
-    l_index = np.empty(sizes[-1], dtype=np.intp)
-    for num in prange(slice_ends.size):
-        start = starts[num]
-        r_ind = slice_starts[num]
-        l_ind = left_index[num]
-        width = slice_ends[num] - slice_starts[num]
-        if width == 1:
-            r_index[start] = r_ind
-            l_index[start] = l_ind
-        else:
-            for n in range(width):
-                indexer = start + n
-                r_index[indexer] = r_ind + n
-                l_index[indexer] = l_ind
+    sizes = slice_ends - slice_starts
+    sizes = np.cumsum(sizes)
+    return sizes, sizes
+    # starts = np.empty(slice_ends.size, dtype=np.intp)
+    # starts[0] = 0
+    # starts[1:] = sizes[:-1]
+    # r_index = np.empty(sizes[-1], dtype=np.intp)
+    # l_index = np.empty(sizes[-1], dtype=np.intp)
+    # for num in prange(slice_ends.size):
+    #     start = starts[num]
+    #     r_ind = slice_starts[num]
+    #     l_ind = left_index[num]
+    #     width = slice_ends[num] - slice_starts[num]
+    #     if width == 1:
+    #         r_index[start] = r_ind
+    #         l_index[start] = l_ind
+    #     else:
+    #         for n in range(width):
+    #             indexer = start + n
+    #             r_index[indexer] = r_ind + n
+    #             l_index[indexer] = l_ind
 
-    return l_index, r_index
+    # return l_index, r_index
 
 
-@njit(cache=True)
+@njit(cache=True, parallel=True)
 def _numba_equi_ge_join(
     left_index, slice_starts, slice_ends, ge_arr1, ge_arr2, ge_strict
 ):
@@ -218,6 +219,7 @@ def _numba_equi_ge_join(
     length = left_index.size
     ends = np.empty(length, dtype=np.intp)
     booleans = np.ones(length, dtype=np.bool_)
+    sizes = np.empty(length, dtype=np.intp)
     counts = 0
     for num in prange(length):
         l1 = ge_arr1[num]
@@ -244,21 +246,30 @@ def _numba_equi_ge_join(
             booleans[num] = False
         else:
             ends[num] = slice_start + end
+            sizes[num] = end
     if counts == length:
         return None, None
     if counts > 0:
         left_index = left_index[booleans]
         ends = ends[booleans]
         slice_starts = slice_starts[booleans]
+        sizes = sizes[booleans]
     slice_ends = ends
     ends = None
 
-    sizes = np.cumsum(slice_ends - slice_starts)
+    return left_index, slice_ends
+
+    sizes = np.subtract(slice_ends, slice_starts)
+
+    return sizes, sizes
+    # sizes = np.cumsum(slice_ends - slice_starts)
+
+    # return sizes, sizes
     starts = np.empty(slice_ends.size, dtype=np.intp)
     starts[0] = 0
-    starts[1:] = sizes[:-1]
-    r_index = np.empty(sizes[-1], dtype=np.intp)
-    l_index = np.empty(sizes[-1], dtype=np.intp)
+    starts[1:] = slice_ends[:-1]
+    r_index = np.empty(slice_ends[-1], dtype=np.intp)
+    l_index = np.empty(slice_ends[-1], dtype=np.intp)
     for num in prange(slice_ends.size):
         start = starts[num]
         r_ind = slice_starts[num]

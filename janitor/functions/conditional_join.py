@@ -11,7 +11,6 @@ from pandas.core.dtypes.common import (
     is_extension_array_dtype,
     is_numeric_dtype,
     is_string_dtype,
-    is_integer_dtype,
 )
 
 from pandas.core.reshape.merge import _MergeOperation
@@ -54,9 +53,7 @@ def conditional_join(
     Column selection in `df_columns` and `right_columns` is possible using the
     [`select_columns`][janitor.functions.select.select_columns] syntax.
 
-    For strictly non-equi joins, particularly range joins,
-    involving either `>`, `<`, `>=`, `<=` operators,
-    performance might be improved by setting `use_numba` to `True`.
+    Performance might be improved by setting `use_numba` to `True`.
     This assumes that `numba` is installed.
 
     To preserve row order, set `sort_by_appearance` to `True`.
@@ -124,6 +121,8 @@ def conditional_join(
             - Added `df_columns`, `right_columns`, `keep` and `use_numba` parameters.
         - 0.24.1
             - Added `indicator` parameter.
+        - 0.25.0
+            - Numba support for equi join
 
     Args:
         df: A pandas DataFrame.
@@ -153,7 +152,6 @@ def conditional_join(
         keep: Choose whether to return the first match,
             last match or all matches. Default is `all`.
         use_numba: Use numba, if installed, to accelerate the computation.
-            Applicable only to strictly non-equi joins. Default is `False`.
         indicator: If `True`, adds a column to the output DataFrame
             called “_merge” with information on the source of each row.
             The column can be given a different name by providing a string argument.
@@ -309,11 +307,11 @@ def _conditional_join_type_check(
     if (
         (op == _JoinOperator.STRICTLY_EQUAL.value)
         and use_numba
-        and not is_integer_dtype(left_column)
+        and not is_numeric_dtype(left_column)
         and not is_datetime64_dtype(left_column)
     ):
-        raise ValueError(
-            "Only integer and datetime types "
+        raise TypeError(
+            "Only numeric and datetime types "
             "are supported in an equi-join "
             "when use_numba is set to True"
         )
@@ -331,7 +329,7 @@ def _conditional_join_type_check(
         ):
             break
     else:
-        raise ValueError(
+        raise TypeError(
             "conditional_join only supports "
             "string, category, numeric, or date dtypes (without timezone) - "
             f"'{left_column.name} is of type {left_column.dtype}."
@@ -344,22 +342,23 @@ def _conditional_join_type_check(
         if not left_column.array._categories_match_up_to_permutation(
             right_column.array
         ):
-            raise ValueError(
+            raise TypeError(
                 f"'{left_column.name}' and '{right_column.name}' "
                 "should have the same categories, and the same order."
             )
     elif not is_dtype_equal(left_column, right_column):
-        raise ValueError(
+        raise TypeError(
             f"Both columns should have the same type - "
             f"'{left_column.name}' has {left_column.dtype} type;"
             f"'{right_column.name}' has {right_column.dtype} type."
         )
 
-    number_or_date = is_numeric_dtype(left_column) or is_datetime64_dtype(
-        left_column
-    )
-    if (op != _JoinOperator.STRICTLY_EQUAL.value) & (not number_or_date):
-        raise ValueError(
+    if (
+        (op != _JoinOperator.STRICTLY_EQUAL.value)
+        and not is_numeric_dtype(left_column)
+        and not is_datetime64_dtype(left_column)
+    ):
+        raise TypeError(
             "non-equi joins are supported "
             "only for datetime and numeric dtypes. "
             f"{left_column.name} in condition "
@@ -385,7 +384,6 @@ def _conditional_join_compute(
     """
     This is where the actual computation
     for the conditional join takes place.
-    A pandas DataFrame is returned.
     """
 
     (
@@ -461,8 +459,6 @@ def _conditional_join_compute(
     if result is None:
         result = np.array([], dtype=np.intp), np.array([], dtype=np.intp)
 
-    return result
-
     return _create_frame(
         df,
         right,
@@ -528,7 +524,6 @@ def _multiple_conditional_join_ne(
 
     Returns a tuple of (left_index, right_index)
     """
-
     # currently, there is no optimization option here
     # not equal typically combines less than
     # and greater than, so a lot more rows are returned
@@ -569,7 +564,7 @@ def _multiple_conditional_join_eq(
     Get indices for multiple conditions,
     if any of the conditions has an `==` operator.
 
-    Returns a tuple of (df_index, right_index)
+    Returns a tuple of (left_index, right_index)
     """
 
     if use_numba:
@@ -614,22 +609,33 @@ def _multiple_conditional_join_eq(
             if condition not in {eqs, le_lt, ge_gt}
         ]
 
-        sorter_columns = [eqs[1]]
+        right_columns = [eqs[1]]
+        df_columns = [eqs[0]]
         if ge_gt:
-            sorter_columns.append(ge_gt[1])
-        if le_lt and (le_lt[1] not in sorter_columns):
-            sorter_columns.append(le_lt[1])
+            if ge_gt[1] not in right_columns:
+                right_columns.append(ge_gt[1])
+            if ge_gt[0] not in df_columns:
+                df_columns.append(ge_gt[0])
+        if le_lt:
+            if le_lt[1] not in right_columns:
+                right_columns.append(le_lt[1])
+            if le_lt[0] not in df_columns:
+                df_columns.append(le_lt[0])
 
-        right_df = right.loc(axis=1)[sorter_columns]
+        right_df = right.loc(axis=1)[right_columns]
+        left_df = df.loc(axis=1)[df_columns]
+        any_nulls = left_df.isna().any(axis=1)
+        if any_nulls.all(axis=None):
+            return None
+        if any_nulls.any():
+            left_df = left_df.loc[~any_nulls]
         any_nulls = right_df.isna().any(axis=1)
         if any_nulls.all(axis=None):
             return None
         if any_nulls.any():
-            right_df = right.loc[any_nulls]
-        right_df = right_df.sort_values(sorter_columns)
-        indices = _numba_equi_join(df, right_df, eqs, ge_gt, le_lt)
-
-        return indices
+            right_df = right.loc[~any_nulls]
+        right_df = right_df.sort_values(right_columns)
+        indices = _numba_equi_join(left_df, right_df, eqs, ge_gt, le_lt)
 
         if not rest or (indices is None):
             return indices

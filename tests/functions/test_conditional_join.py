@@ -221,11 +221,11 @@ def test_check_use_numba_type(dummy, series):
 
 def test_check_use_numba_equi_join(dummy):
     """
-    Raise ValueError if `use_numba` is True,
+    Raise TypeError if `use_numba` is True,
     there is an equi join,
-    and the dtype is not a datetime or integer.
+    and the dtype is not a datetime or number.
     """
-    with pytest.raises(ValueError, match="Only integer and datetime types.+"):
+    with pytest.raises(TypeError, match="Only numeric and datetime types.+"):
         dummy.conditional_join(
             dummy, ("S", "S", "=="), ("id", "id", ">"), use_numba=True
         )
@@ -270,12 +270,12 @@ def test_check_keep_value(dummy, series):
 
 def test_unequal_categories(dummy):
     """
-    Raise ValueError if the dtypes are both categories
+    Raise TypeError if the dtypes are both categories
     and do not match.
     """
     match = "'S' and 'Strings' should have the same categories,"
     match = match + " and the same order."
-    with pytest.raises(ValueError, match=match):
+    with pytest.raises(TypeError, match=match):
         dummy.astype({"S": "category"}).conditional_join(
             dummy.rename(columns={"S": "Strings"}).encode_categorical(
                 Strings="appearance"
@@ -287,36 +287,36 @@ def test_unequal_categories(dummy):
 
 def test_dtype_not_permitted(dummy, series):
     """
-    Raise ValueError if dtype of column in `df`
+    Raise TypeError if dtype of column in `df`
     is not an acceptable type.
     """
     dummy["F"] = pd.Timedelta("1 days")
     match = "conditional_join only supports string, "
     match = match + "category, numeric, or date dtypes.+"
-    with pytest.raises(ValueError, match=match):
+    with pytest.raises(TypeError, match=match):
         dummy.conditional_join(series, ("F", "B", "<"))
 
 
 def test_dtype_str(dummy, series):
     """
-    Raise ValueError if dtype of column in `df`
+    Raise TypeError if dtype of column in `df`
     does not match the dtype of column from `right`.
     """
     with pytest.raises(
-        ValueError, match="Both columns should have the same type.+"
+        TypeError, match="Both columns should have the same type.+"
     ):
         dummy.conditional_join(series, ("S", "B", "<"))
 
 
 def test_dtype_strings_non_equi(dummy):
     """
-    Raise ValueError if the dtypes are both strings
+    Raise TypeError if the dtypes are both strings
     on a non-equi operator.
     """
     match = "non-equi joins are supported only "
     match = match + "for datetime and numeric dtypes.+"
     with pytest.raises(
-        ValueError,
+        TypeError,
         match=match,
     ):
         dummy.conditional_join(
@@ -326,13 +326,13 @@ def test_dtype_strings_non_equi(dummy):
 
 def test_dtype_category_non_equi():
     """
-    Raise ValueError if dtype is category,
+    Raise TypeError if dtype is category,
     and op is non-equi.
     """
     match = (
         "non-equi joins are supported only for datetime and numeric dtypes.+"
     )
-    with pytest.raises(ValueError, match=match):
+    with pytest.raises(TypeError, match=match):
         left = pd.DataFrame({"A": [1, 2, 3]}, dtype="category")
         right = pd.DataFrame({"B": [1, 2, 3]}, dtype="category")
         left.conditional_join(right, ("A", "B", "<"))
@@ -2686,42 +2686,6 @@ def test_multiple_eqs_variant(df, right):
     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None)
-@given(df=conditional_df(), right=conditional_right())
-@pytest.mark.turtle
-def test_multiple_eqs_variant_numba(df, right):
-    """Test output for multiple conditions."""
-
-    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
-    expected = (
-        df.merge(
-            right,
-            left_on=["B", "A"],
-            right_on=["Floats", "Integers"],
-            how="inner",
-            sort=False,
-        )
-        .loc[lambda df: df.E.ne(df.Dates), columns]
-        .sort_values(columns, ignore_index=True)
-    )
-
-    actual = (
-        df[["B", "A", "E"]]
-        .conditional_join(
-            right[["Floats", "Integers", "Dates"]],
-            ("E", "Dates", "!="),
-            ("B", "Floats", "=="),
-            ("A", "Integers", "=="),
-            how="inner",
-            use_numba=True,
-            sort_by_appearance=False,
-        )
-        .sort_values(columns, ignore_index=True)
-    )
-
-    assert_frame_equal(expected, actual)
-
-
 @pytest.mark.turtle
 @settings(deadline=None)
 @given(df=conditional_df(), right=conditional_right())
@@ -2885,6 +2849,38 @@ def test_ge_eq_and_le_numbers(df, right):
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_ge_eq_and_le_numbers_numba(df, right):
+    """Test output for multiple conditions."""
+
+    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+    expected = (
+        df.merge(
+            right, left_on="B", right_on="Floats", how="inner", sort=False
+        )
+        .loc[lambda df: df.A.ge(df.Integers) & df.E.le(df.Dates), columns]
+        .sort_values(columns, ignore_index=True)
+    )
+
+    actual = (
+        df[["B", "A", "E"]]
+        .conditional_join(
+            right[["Floats", "Integers", "Dates"]],
+            ("A", "Integers", ">="),
+            ("E", "Dates", "<="),
+            ("B", "Floats", "=="),
+            how="inner",
+            use_numba=True,
+            sort_by_appearance=False,
+        )
+        .sort_values(columns, ignore_index=True)
+    )
+    actual = actual.filter(columns)
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
+def test_ge_eq_and_le_integers_numba(df, right):
     """Test output for multiple conditions."""
 
     columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
@@ -3272,6 +3268,41 @@ def test_extension_array_eq():
         ("id", "id", "=="),
         ("value_1", "value_2A", ">"),
         use_numba=False,
+        sort_by_appearance=False,
+    )
+    expected = (
+        expected.drop(columns=("right", "id"))
+        .droplevel(axis=1, level=0)
+        .sort_values(["id", "value_1", "value_2A"], ignore_index=True)
+    )
+    actual = (
+        df1.merge(df2, on="id")
+        .loc[lambda df: df.value_1.gt(df.value_2A)]
+        .sort_values(["id", "value_1", "value_2A"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+def test_extension_array_eq_numba():
+    """Extension arrays when matching on equality."""
+    df1 = pd.DataFrame(
+        {"id": [1, 1, 1, 2, 2, 3], "value_1": [2, 5, 7, 1, 3, 4]}
+    )
+    df1 = df1.astype({"value_1": "Int64"})
+    df2 = pd.DataFrame(
+        {
+            "id": [1, 1, 1, 1, 2, 2, 2, 3],
+            "value_2A": [0, 3, 7, 12, 0, 2, 3, 1],
+            "value_2B": [1, 5, 9, 15, 1, 4, 6, 3],
+        }
+    )
+    df2 = df2.astype({"value_2A": "Int64"})
+    expected = df1.conditional_join(
+        df2,
+        ("id", "id", "=="),
+        ("value_1", "value_2A", ">"),
+        use_numba=True,
         sort_by_appearance=False,
     )
     expected = (

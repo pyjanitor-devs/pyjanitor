@@ -80,5 +80,6 @@ from .utils import (
     unionize_dataframe_categories,
     DropLabel,
     get_index_labels,
+    col,
     get_columns,
 )

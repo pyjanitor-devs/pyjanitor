@@ -990,17 +990,25 @@ def _create_frame(
         df, right = _create_multiindex_column(df, right)
 
     def _add_indicator(
-        indicator: pd.DataFrame,
+        indicator: Union[bool, str],
         how: str,
-        index_size: int,
-        nlevels: int,
+        column_length: int,
         columns: pd.Index,
     ):
-        """
-        Adds a categorical column to the DataFrame,
+        """Adds a categorical column to the DataFrame,
         mapping the rows to either the left or right source DataFrames.
 
-        Returns a tuple with the column name, and the array
+        Args:
+        indicator: Indicator column name or True for default name "_merge".
+        how: Type of join operation ("inner", "left", "right").
+        column_length: Length of the categorical column.
+        columns: Columns of the final DataFrame.
+
+        Returns:
+            A tuple containing the indicator column name
+            and a Categorical array
+            representing the indicator values for each row.
+
         """
         mapping = {"left": "left_only", "right": "right_only", "inner": "both"}
         categories = ["left_only", "right_only", "both"]
@@ -1008,20 +1016,21 @@ def _create_frame(
             indicator = "_merge"
         if indicator in columns:
             raise ValueError(
-                "Cannot use name of an existing column " "for indicator column"
+                "Cannot use name of an existing column for indicator column"
             )
+        nlevels = columns.nlevels
         if nlevels > 1:
             indicator = [indicator] + [""] * (nlevels - 1)
             indicator = tuple(indicator)
-        if not index_size:
+        if not column_length:
             arr = pd.Categorical([], categories=categories)
         else:
             arr = pd.Categorical(
                 [mapping[how]],
                 categories=categories,
             )
-            if index_size > 1:
-                arr = arr.repeat(index_size)
+            if column_length > 1:
+                arr = arr.repeat(column_length)
         return indicator, arr
 
     def _inner(
@@ -1031,8 +1040,17 @@ def _create_frame(
         right_index: np.ndarray,
         indicator: Union[bool, str],
     ):
-        """
-        Computes an inner joined DataFrame
+        """Computes an inner joined DataFrame.
+
+        Args:
+        df: The left DataFrame to join.
+        right: The right DataFrame to join.
+        left_index: indices from df for rows that match right.
+        right_index: indices from right for rows that match df.
+        indicator: Indicator column name or True for default name "_merge".
+
+        Returns:
+            An inner joined DataFrame.
         """
         frame = {key: value._values[left_index] for key, value in df.items()}
         r_frame = {
@@ -1043,8 +1061,7 @@ def _create_frame(
             indicator, arr = _add_indicator(
                 indicator=indicator,
                 how="inner",
-                index_size=left_index.size,
-                nlevels=df.columns.nlevels,
+                column_length=left_index.size,
                 columns=df.columns.union(right.columns),
             )
             frame[indicator] = arr
@@ -1085,8 +1102,7 @@ def _create_frame(
             l_indicator, arr = _add_indicator(
                 indicator=indicator,
                 how="left",
-                index_size=left_index.size,
-                nlevels=df.columns.nlevels,
+                column_length=left_index.size,
                 columns=columns,
             )
             df[l_indicator] = arr
@@ -1101,8 +1117,7 @@ def _create_frame(
             r_indicator, arr = _add_indicator(
                 indicator=indicator,
                 how="right",
-                index_size=right_index.size,
-                nlevels=right.columns.nlevels,
+                column_length=right_index.size,
                 columns=columns,
             )
             right[r_indicator] = arr

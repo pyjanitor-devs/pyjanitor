@@ -20,14 +20,15 @@ def _numba_equi_join(df, right, eqs, ge_gt, le_lt):
     # while reducing the search space
     # to get the smallest possible search area
     # this serves as an alternative to pandas' hash join
-    # and in some cases can offer significant
-    # performance improvements
+    # and in some cases,
+    # usually for many to many joins,
+    # can offer significant performance improvements.
     # it relies on binary searches, within the groups,
     # and relies on the fact that sorting ensures the first
     # two columns from the right dataframe are in ascending order
     # per group - this gives us the opportunity to
     # only do a linear search, within the groups,
-    # for the last column (if any, )
+    # for the last column (if any)
     # (the third column is applicable only for range joins)
     # Example :
     #     df1:
@@ -433,6 +434,7 @@ def _numba_equi_join_range_join(
     # used to find the first possible match
     # for the less than section below
     max_arr = np.empty_like(le_arr2)
+    counter = 0  # are all groups monotonic increasing?
     for num in prange(length):
         slice_start = slice_starts[num]
         slice_end = slice_ends[num]
@@ -445,6 +447,8 @@ def _numba_equi_join_range_join(
                 check = start < new_value
                 if check:
                     start = new_value
+                else:
+                    counter += 1
                 max_arr[slice_start + n] = start
 
     if counts > 0:
@@ -458,6 +462,8 @@ def _numba_equi_join_range_join(
     length = left_index.size
     starts = np.empty(length, dtype=np.intp)
     booleans = np.ones(length, dtype=np.bool_)
+    if counter == 0:
+        sizes = np.empty(length, dtype=np.intp)
     counts = 0
     for num in prange(length):
         l1 = le_arr1[num]
@@ -484,6 +490,8 @@ def _numba_equi_join_range_join(
             booleans[num] = False
         else:
             starts[num] = slice_start + start
+            if counter == 0:
+                sizes[num] = r1.size - start
     if counts == length:
         return None, None
     if counts > 0:
@@ -491,9 +499,37 @@ def _numba_equi_join_range_join(
         le_arr1 = le_arr1[booleans]
         starts = starts[booleans]
         slice_ends = slice_ends[booleans]
+        if counter == 0:
+            sizes = sizes[booleans]
 
     slice_starts = starts
     starts = None
+
+    # no need to run a comparison
+    # since all groups are monotonic increasing
+    # simply create left and right indices
+    if counter == 0:
+        cum_sizes = np.cumsum(sizes)
+        starts = np.empty(slice_ends.size, dtype=np.intp)
+        starts[0] = 0
+        starts[1:] = cum_sizes[:-1]
+        r_index = np.empty(cum_sizes[-1], dtype=np.intp)
+        l_index = np.empty(cum_sizes[-1], dtype=np.intp)
+        for num in prange(slice_ends.size):
+            start = starts[num]
+            r_ind = slice_starts[num]
+            l_ind = left_index[num]
+            width = sizes[num]
+            if width == 1:
+                r_index[start] = right_index[r_ind]
+                l_index[start] = l_ind
+            else:
+                for n in range(width):
+                    indexer = start + n
+                    r_index[indexer] = right_index[r_ind + n]
+                    l_index[indexer] = l_ind
+
+        return l_index, r_index
 
     # get exact no of rows for left and right index
     # sizes is used to track the exact

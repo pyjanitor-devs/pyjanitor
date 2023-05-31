@@ -143,43 +143,36 @@ def _numba_equi_join(df, right, eqs, ge_gt, le_lt):
     if ge_gt:
         left_column, right_column, op = ge_gt
         ge_arr1 = df.loc[left_index, left_column]._values
-        ge_arr2 = right.loc[right_index, right_column]._values
+        ge_arr2 = right[right_column]._values
         if is_extension_array_dtype(ge_arr1):
             array_dtype = ge_arr1.dtype.numpy_dtype
             ge_arr1 = ge_arr1.astype(array_dtype)
             ge_arr2 = ge_arr2.astype(array_dtype)
         if is_datetime64_dtype(ge_arr1):
-            ge_arr1 = ge_arr1.view(np.int64) / 10**9
-            ge_arr2 = ge_arr2.view(np.int64) / 10**9
+            ge_arr1 = ge_arr1.view(np.int64)
+            ge_arr2 = ge_arr2.view(np.int64)
         ge_strict = True if op == ">" else False
 
     le_arr1 = None
     le_arr2 = None
     le_strict = None
-    max_arr = None
     if le_lt:
         left_column, right_column, op = le_lt
         le_arr1 = df.loc[left_index, left_column]._values
-        le_arr2 = right.loc[right_index, right_column]
-        if ge_gt:
-            max_arr = le_arr2.groupby(level=0).cummax()._values
-        le_arr2 = le_arr2._values
+        le_arr2 = right[right_column]._values
         if is_extension_array_dtype(le_arr1):
             array_dtype = le_arr1.dtype.numpy_dtype
             le_arr1 = le_arr1.astype(array_dtype)
             le_arr2 = le_arr2.astype(array_dtype)
-            if ge_gt:
-                max_arr = max_arr.astype(array_dtype)
         if is_datetime64_dtype(le_arr1):
-            le_arr1 = le_arr1.view(np.int64) / 10**9
-            le_arr2 = le_arr2.view(np.int64) / 10**9
-            if ge_gt:
-                max_arr = max_arr.view(np.int64) / 10**9
+            le_arr1 = le_arr1.view(np.int64)
+            le_arr2 = le_arr2.view(np.int64)
         le_strict = True if op == "<" else False
 
     if le_lt and ge_gt:
-        l_index, r_index = _numba_equi_join_range_join(
+        left_index, right_index = _numba_equi_join_range_join(
             left_index,
+            right_index,
             slice_starts,
             slice_ends,
             ge_arr1,
@@ -187,13 +180,13 @@ def _numba_equi_join(df, right, eqs, ge_gt, le_lt):
             ge_strict,
             le_arr1,
             le_arr2,
-            max_arr,
             le_strict,
         )
 
     elif le_lt:
-        l_index, r_index = _numba_equi_le_join(
+        left_index, right_index = _numba_equi_le_join(
             left_index,
+            right_index,
             slice_starts,
             slice_ends,
             le_arr1,
@@ -202,8 +195,9 @@ def _numba_equi_join(df, right, eqs, ge_gt, le_lt):
         )
 
     else:
-        l_index, r_index = _numba_equi_ge_join(
+        left_index, right_index = _numba_equi_ge_join(
             left_index,
+            right_index,
             slice_starts,
             slice_ends,
             ge_arr1,
@@ -211,15 +205,21 @@ def _numba_equi_join(df, right, eqs, ge_gt, le_lt):
             ge_strict,
         )
 
-    if l_index is None:
+    if left_index is None:
         return None
 
-    return l_index, right_index[r_index]
+    return left_index, right_index
 
 
 @njit(cache=True, parallel=True)
 def _numba_equi_le_join(
-    left_index, slice_starts, slice_ends, le_arr1, le_arr2, le_strict
+    left_index,
+    right_index,
+    slice_starts,
+    slice_ends,
+    le_arr1,
+    le_arr2,
+    le_strict,
 ):
     """
     Get indices for an equi join
@@ -285,12 +285,12 @@ def _numba_equi_le_join(
         l_ind = left_index[num]
         width = sizes[num]
         if width == 1:
-            r_index[start] = r_ind
+            r_index[start] = right_index[r_ind]
             l_index[start] = l_ind
         else:
             for n in range(width):
                 indexer = start + n
-                r_index[indexer] = r_ind + n
+                r_index[indexer] = right_index[r_ind + n]
                 l_index[indexer] = l_ind
 
     return l_index, r_index
@@ -298,7 +298,13 @@ def _numba_equi_le_join(
 
 @njit(cache=True, parallel=True)
 def _numba_equi_ge_join(
-    left_index, slice_starts, slice_ends, ge_arr1, ge_arr2, ge_strict
+    left_index,
+    right_index,
+    slice_starts,
+    slice_ends,
+    ge_arr1,
+    ge_arr2,
+    ge_strict,
 ):
     """
     Get indices for an equi join
@@ -364,12 +370,12 @@ def _numba_equi_ge_join(
         l_ind = left_index[num]
         width = sizes[num]
         if width == 1:
-            r_index[start] = r_ind
+            r_index[start] = right_index[r_ind]
             l_index[start] = l_ind
         else:
             for n in range(width):
                 indexer = start + n
-                r_index[indexer] = r_ind + n
+                r_index[indexer] = right_index[r_ind + n]
                 l_index[indexer] = l_ind
 
     return l_index, r_index
@@ -378,6 +384,7 @@ def _numba_equi_ge_join(
 @njit(cache=True, parallel=True)
 def _numba_equi_join_range_join(
     left_index,
+    right_index,
     slice_starts,
     slice_ends,
     ge_arr1,
@@ -385,14 +392,12 @@ def _numba_equi_join_range_join(
     ge_strict,
     le_arr1,
     le_arr2,
-    max_arr,
     le_strict,
 ):
     """
     Get indices for an equi join
     and a range join
     """
-
     length = left_index.size
     ends = np.empty(length, dtype=np.intp)
     booleans = np.ones(length, dtype=np.bool_)
@@ -424,6 +429,24 @@ def _numba_equi_join_range_join(
             ends[num] = slice_start + end
     if counts == length:
         return None, None
+    # cumulative array
+    # used to find the first possible match
+    # for the less than section below
+    max_arr = np.empty_like(le_arr2)
+    for num in prange(length):
+        slice_start = slice_starts[num]
+        slice_end = slice_ends[num]
+        r1 = le_arr2[slice_start:slice_end]
+        start = r1[0]
+        max_arr[slice_start] = start
+        if r1.size > 1:
+            for n in range(1, r1.size):
+                new_value = r1[n]
+                check = start < new_value
+                if check:
+                    start = new_value
+                max_arr[slice_start + n] = start
+
     if counts > 0:
         left_index = left_index[booleans]
         le_arr1 = le_arr1[booleans]
@@ -432,10 +455,6 @@ def _numba_equi_join_range_join(
     slice_ends = ends
     ends = None
 
-    if max_arr is not None:
-        arr = max_arr
-    else:
-        arr = le_arr2
     length = left_index.size
     starts = np.empty(length, dtype=np.intp)
     booleans = np.ones(length, dtype=np.bool_)
@@ -444,7 +463,7 @@ def _numba_equi_join_range_join(
         l1 = le_arr1[num]
         slice_start = slice_starts[num]
         slice_end = slice_ends[num]
-        r1 = arr[slice_start:slice_end]
+        r1 = max_arr[slice_start:slice_end]
         start = np.searchsorted(r1, l1, side="left")
         if start == r1.size:
             start = -1
@@ -523,9 +542,10 @@ def _numba_equi_join_range_join(
                 check = l1 < r1[n]
                 if not check:
                     continue
-                l_index[start + n] = l_ind
-                r_index[start + n] = starter + n
+                l_index[start] = l_ind
+                r_index[start] = right_index[starter + n]
                 counter -= 1
+                start += 1
         else:
             for n in range(r1.size):
                 if not counter:
@@ -533,9 +553,10 @@ def _numba_equi_join_range_join(
                 check = l1 <= r1[n]
                 if not check:
                     continue
-                l_index[start + n] = l_ind
-                r_index[start + n] = starter + n
+                l_index[start] = l_ind
+                r_index[start] = right_index[starter + n]
                 counter -= 1
+                start += 1
     return l_index, r_index
 
 

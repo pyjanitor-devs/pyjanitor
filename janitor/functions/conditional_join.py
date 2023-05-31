@@ -989,7 +989,19 @@ def _create_frame(
     if not df.columns.intersection(right.columns).empty:
         df, right = _create_multiindex_column(df, right)
 
-    def _add_indicator(indicator, how, index_size, nlevels, columns):
+    def _add_indicator(
+        indicator: pd.DataFrame,
+        how: str,
+        index_size: int,
+        nlevels: int,
+        columns: pd.Index,
+    ):
+        """
+        Adds a categorical column to the DataFrame,
+        mapping the rows to either the left or right source DataFrames.
+
+        Returns a tuple with the column name, and the array
+        """
         mapping = {"left": "left_only", "right": "right_only", "inner": "both"}
         categories = ["left_only", "right_only", "both"]
         if isinstance(indicator, bool):
@@ -1012,7 +1024,16 @@ def _create_frame(
                 arr = arr.repeat(index_size)
         return indicator, arr
 
-    def _inner(df, right, left_index, right_index, indicator):
+    def _inner(
+        df: pd.DataFrame,
+        right: pd.DataFrame,
+        left_index: np.ndarray,
+        right_index: np.ndarray,
+        indicator: Union[bool, str],
+    ):
+        """
+        Computes an inner joined DataFrame
+        """
         frame = {key: value._values[left_index] for key, value in df.items()}
         r_frame = {
             key: value._values[right_index] for key, value in right.items()

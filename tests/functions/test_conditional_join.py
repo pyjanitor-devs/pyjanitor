@@ -181,7 +181,7 @@ def test_check_how_value(dummy, series):
     `inner`, `left`, or `right`, or `outer`.
     """
     with pytest.raises(ValueError, match="'how' should be one of.+"):
-        dummy.conditional_join(series, ("id", "B", "<"), how="left-semi")
+        dummy.conditional_join(series, ("id", "B", "<"), how="INNER")
 
 
 def test_check_sort_by_appearance_type(dummy, series):

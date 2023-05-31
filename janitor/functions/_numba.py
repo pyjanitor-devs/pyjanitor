@@ -434,7 +434,7 @@ def _numba_equi_join_range_join(
     # used to find the first possible match
     # for the less than section below
     max_arr = np.empty_like(le_arr2)
-    counter = 0  # are all groups monotonic increasing?
+    counter = 1  # are all groups monotonic increasing?
     for num in prange(length):
         slice_start = slice_starts[num]
         slice_end = slice_ends[num]
@@ -448,7 +448,7 @@ def _numba_equi_join_range_join(
                 if check:
                     start = new_value
                 else:
-                    counter += 1
+                    counter = 0
                 max_arr[slice_start + n] = start
 
     if counts > 0:

@@ -22,6 +22,7 @@ from janitor.functions.utils import (
     _keep_output,
     less_than_join_types,
     greater_than_join_types,
+    col,
 )
 
 
@@ -63,7 +64,9 @@ def conditional_join(
     as a variable argument of tuples, where the tuple is of
     the form `(left_on, right_on, op)`; `left_on` is the column
     label from `df`, `right_on` is the column label from `right`,
-    while `op` is the operator. For multiple conditions, the and(`&`)
+    while `op` is the operator.
+    The `col` class is also supported in the `conditional_join` syntax.
+    For multiple conditions, the and(`&`)
     operator is used to combine the results of the individual conditions.
 
     The operator can be any of `==`, `!=`, `<=`, `<`, `>=`, `>`.
@@ -114,6 +117,17 @@ def conditional_join(
         2        3         2         4
         3        4         3         5
         4        4         3         6
+        >>> df1.conditional_join(
+        ...     df2,
+        ...     col("value_1") > col("value_2A"),
+        ...     col("value_1") < col("value_2B")
+        ... )
+           value_1  value_2A  value_2B
+        0        2         1         3
+        1        5         3         6
+        2        3         2         4
+        3        4         3         5
+        4        4         3         6
 
     !!! abstract "Version Changed"
 
@@ -122,6 +136,7 @@ def conditional_join(
         - 0.24.1
             - Added `indicator` parameter.
         - 0.25.0
+            - `col` class supported.
             - Numba support for equi join
 
     Args:
@@ -130,7 +145,8 @@ def conditional_join(
         conditions: Variable argument of tuple(s) of the form
             `(left_on, right_on, op)`, where `left_on` is the column
             label from `df`, `right_on` is the column label from `right`,
-            while `op` is the operator. The operator can be any of
+            while `op` is the operator.
+            The `col` class is also supported. The operator can be any of
             `==`, `!=`, `<=`, `<`, `>=`, `>`. For multiple conditions,
             the and(`&`) operator is used to combine the results
             of the individual conditions.
@@ -237,6 +253,10 @@ def _conditional_join_preliminary_checks(
     if not conditions:
         raise ValueError("Kindly provide at least one join condition.")
 
+    conditions = [
+        cond.join_args if isinstance(cond, col) else cond
+        for cond in conditions
+    ]
     for condition in conditions:
         check("condition", condition, [tuple])
         len_condition = len(condition)

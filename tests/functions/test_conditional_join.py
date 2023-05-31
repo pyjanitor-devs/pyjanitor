@@ -10,9 +10,7 @@ from janitor.testing_utils.strategies import (
     conditional_right,
 )
 
-pd.set_option("display.max_columns", None)
-pd.set_option("display.expand_frame_repr", False)
-pd.set_option("max_colwidth", None)
+from janitor import col
 
 
 @pytest.fixture
@@ -3144,6 +3142,44 @@ def test_multiple_non_equii(df, right):
     assert_frame_equal(expected, actual)
 
 
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
+def test_multiple_non_equii_col_syntax(df, right):
+    """Test output for multiple conditions."""
+
+    columns = ["B", "A", "E", "Floats", "Integers", "Dates", "Numeric"]
+    expected = (
+        df.merge(
+            right,
+            how="cross",
+        )
+        .loc[
+            lambda df: df.A.ge(df.Integers)
+            & df.E.le(df.Dates)
+            & df.B.lt(df.Floats)
+            & df.B.gt(df.Numeric)
+        ]
+        .sort_values(columns, ignore_index=True)
+    )
+    expected = expected.filter(columns)
+    actual = (
+        df[["B", "A", "E"]]
+        .conditional_join(
+            right[["Floats", "Integers", "Dates", "Numeric"]],
+            col("A") >= col("Integers"),
+            col("E") <= col("Dates"),
+            col("B") < col("Floats"),
+            col("B") > col("Numeric"),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(columns, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
 @pytest.mark.turtle
 @settings(deadline=None)
 @given(df=conditional_df(), right=conditional_right())
@@ -3339,6 +3375,41 @@ def test_multiple_eqs(df, right):
             ("E", "Dates", "!="),
             ("B", "Floats", "=="),
             ("A", "Integers", "=="),
+            how="inner",
+            sort_by_appearance=False,
+        )
+        .sort_values(columns, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_multiple_eqs_col_syntax(df, right):
+    """Test output for multiple conditions."""
+
+    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+    expected = (
+        df.merge(
+            right,
+            left_on=["B", "A"],
+            right_on=["Floats", "Integers"],
+            how="inner",
+            sort=False,
+        )
+        .loc[lambda df: df.E.ne(df.Dates), columns]
+        .sort_values(columns, ignore_index=True)
+    )
+    expected = expected.filter(columns)
+    actual = (
+        df[["B", "A", "E"]]
+        .conditional_join(
+            right[["Floats", "Integers", "Dates"]],
+            col("E") != col("Dates"),
+            col("B") == col("Floats"),
+            col("A") == col("Integers"),
             how="inner",
             sort_by_appearance=False,
         )

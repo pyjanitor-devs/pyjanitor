@@ -3265,6 +3265,9 @@ def test_multiple_eqs_outer(df, right):
     assert_frame_equal(expected, actual)
 
 
+@pytest.mark.turtle
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
 def test_multiple_eqs_col_syntax(df, right):
     """Test output for multiple conditions."""
 

@@ -3263,7 +3263,8 @@ def test_multiple_eqs_outer(df, right):
         .sort_index(axis="columns")
     )
     assert_frame_equal(expected, actual)
-    
+
+
 def test_multiple_eqs_col_syntax(df, right):
     """Test output for multiple conditions."""
 

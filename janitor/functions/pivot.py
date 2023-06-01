@@ -10,6 +10,7 @@ import pandas_flavor as pf
 from pandas.api.types import (
     is_list_like,
     is_categorical_dtype,
+    is_extension_array_dtype,
 )
 from pandas.core.dtypes.concat import concat_compat
 
@@ -17,7 +18,7 @@ from janitor.functions.utils import (
     get_index_labels,
     _computations_expand_grid,
 )
-from janitor.utils import check
+from janitor.utils import check, refactored_function
 
 
 @pf.register_dataframe_method
@@ -1123,13 +1124,8 @@ def _base_melt(
     reps = len(columns)
     outcome = {name: columns.get_level_values(name) for name in columns.names}
 
-    # offers a fast route
-    # while still returning the underlying array
-    # which could be an extension array
-    # thus helping in preserving dtypes where possible
-    if df._mgr.any_extension_types:
-        values = df._mgr
-        values = [values.iget_values(i) for i in range(df.columns.size)]
+    if df.dtypes.map(is_extension_array_dtype).any(axis=None):
+        values = [arr._values for _, arr in df.items()]
         values = concat_compat(values)
     else:
         values = df._values.ravel(order="F")
@@ -1168,15 +1164,8 @@ def _pivot_longer_dot_value(
     """
     if np.count_nonzero(mapping.columns == ".value") > 1:
         outcome = mapping.pop(".value")
-        out = outcome.iloc[:, 0]
-        # for loop preferred over agg
-        # primarily for speed
-        # if the column is a large array
-        # direct addition is surprisingly faster than
-        # the convenient agg(','.join, axis = 1) option
-        for _, val in outcome.iloc[:, 1:].items():
-            out += val
-        mapping[".value"] = out
+        outcome = outcome.sum(axis=1, numeric_only=False)
+        mapping.insert(loc=0, column=".value", value=outcome)
 
     exclude = {
         word
@@ -1234,7 +1223,7 @@ def _pivot_longer_dot_value(
         indexer = pd.DataFrame(indexer, copy=False)
 
         indexer.columns = columns
-        df = df.reindex(columns=indexer)
+        df = df.reindex(columns=indexer, copy=False)
         df.columns = df.columns.get_level_values(".value")
         values = _dict_from_grouped_names(df=df)
         outcome = indexer.loc[indexer[".value"] == outcome[0], other]
@@ -1286,7 +1275,7 @@ def _headers_single_series(df: pd.DataFrame, mapping: pd.Series) -> tuple:
         df.columns = [mapping, positions]
         indexer = group_size.index, np.arange(group_max)
         indexer = pd.MultiIndex.from_product(indexer)
-        df = df.reindex(columns=indexer)
+        df = df.reindex(columns=indexer, copy=False)
         df.columns = df.columns.get_level_values(0)
     else:
         df.columns = mapping
@@ -1394,6 +1383,12 @@ def _final_frame_longer(
 
 
 @pf.register_dataframe_method
+@refactored_function(
+    message=(
+        "This function will be deprecated in a 1.x release. "
+        "Please use `pd.DataFrame.pivot` instead."
+    )
+)
 def pivot_wider(
     df: pd.DataFrame,
     index: Optional[Union[list, str]] = None,
@@ -1407,6 +1402,11 @@ def pivot_wider(
     index_expand: bool = False,
 ) -> pd.DataFrame:
     """Reshapes data from *long* to *wide* form.
+
+    !!!note
+
+        This function will be deprecated in a 1.x release.
+        Please use `pd.DataFrame.pivot` instead.
 
     The number of columns are increased, while decreasing
     the number of rows. It is the inverse of the

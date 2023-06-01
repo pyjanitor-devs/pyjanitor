@@ -13,6 +13,7 @@
 -   [ENH] `pivot_longer` now supports named groups where `names_pattern` is a regular expression. A dictionary can now be passed to `names_pattern`, and is internally evaluated as a list/tuple of regular expressions. Issue #1209 @samukweku
 -   [ENH] Improve selection in `conditional_join`. Issue #1223 @samukweku
 -   [ENH] Add `col` class for selecting columns within an expression. Currently limited to use within `conditional_join`. PR #1260 @samukweku.
+
 -   [ENH] Performance improvement for range joins in `conditional_join`, when `use_numba = False`. Performance improvement for equi-join, when `use_numba = True`. PR #1256, #1267 @samukweku
 -   [DEPR] Add deprecation warning for `pivot_wider`. Issue #1045 @samukweku
 

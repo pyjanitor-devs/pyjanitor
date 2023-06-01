@@ -3235,7 +3235,14 @@ def test_ge_eq_and_le_datess_numba(df, right):
 
     columns = ["B", "A", "E", "Floats", "Integers", "Dates", "Numeric"]
     expected = (
-        df.merge(right, left_on="E", right_on="Dates", how="inner", sort=False)
+        df.dropna(subset=["E"])
+        .merge(
+            right.dropna(subset=["Dates"]),
+            left_on="E",
+            right_on="Dates",
+            how="inner",
+            sort=False,
+        )
         .loc[
             lambda df: df.B.gt(df.Floats)
             & df.A.lt(df.Integers)

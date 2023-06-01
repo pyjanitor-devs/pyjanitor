@@ -239,20 +239,11 @@ def _numba_equi_le_join(
         slice_end = slice_ends[num]
         r1 = le_arr2[slice_start:slice_end]
         start = np.searchsorted(r1, l1, side="left")
+        if start < r1.size:
+            if le_strict and (l1 == r1[start]):
+                start = np.searchsorted(r1, l1, side="right")
         if start == r1.size:
             start = -1
-        elif (start < r1.size) and le_strict and (l1 == r1[start]):
-            check = False
-            n = 0
-            for n in range(start, r1.size):
-                check = l1 < r1[n]
-                if check:
-                    break
-            if check:
-                start = n
-            else:
-                start = -1
-        if start == -1:
             starts[num] = start
             counts += 1
             booleans[num] = False
@@ -325,20 +316,11 @@ def _numba_equi_ge_join(
         slice_end = slice_ends[num]
         r1 = ge_arr2[slice_start:slice_end]
         end = np.searchsorted(r1, l1, side="right")
+        if end > 0:
+            if ge_strict and (l1 == r1[end - 1]):
+                end = np.searchsorted(r1, l1, side="left")
         if end == 0:
             end = -1
-        elif (end > 0) and ge_strict and (l1 == r1[end - 1]):
-            check = False
-            n = 0
-            for n in range(end - 1, 0, -1):
-                check = l1 > r1[n]
-                if check:
-                    break
-            if check:
-                end = n + 1
-            else:
-                end = -1
-        if end == -1:
             ends[num] = end
             counts += 1
             booleans[num] = False
@@ -409,20 +391,11 @@ def _numba_equi_join_range_join(
         slice_end = slice_ends[num]
         r1 = ge_arr2[slice_start:slice_end]
         end = np.searchsorted(r1, l1, side="right")
+        if end > 0:
+            if ge_strict and (l1 == r1[end - 1]):
+                end = np.searchsorted(r1, l1, side="left")
         if end == 0:
             end = -1
-        elif (end > 0) and ge_strict and (l1 == r1[end - 1]):
-            check = False
-            n = 0
-            for n in range(end - 1, -1, -1):
-                check = l1 > r1[n]
-                if check:
-                    break
-            if check:
-                end = n + 1
-            else:
-                end = -1
-        if end == -1:
             ends[num] = end
             counts += 1
             booleans[num] = False
@@ -471,20 +444,11 @@ def _numba_equi_join_range_join(
         slice_end = slice_ends[num]
         r1 = max_arr[slice_start:slice_end]
         start = np.searchsorted(r1, l1, side="left")
+        if start < r1.size:
+            if le_strict and (l1 == r1[start]):
+                start = np.searchsorted(r1, l1, side="right")
         if start == r1.size:
             start = -1
-        elif (start < r1.size) and le_strict and (l1 == r1[start]):
-            check = False
-            n = 0
-            for n in range(start, r1.size):
-                check = l1 < r1[n]
-                if check:
-                    break
-            if check:
-                start = n
-            else:
-                start = -1
-        if start == -1:
             starts[num] = start
             counts += 1
             booleans[num] = False

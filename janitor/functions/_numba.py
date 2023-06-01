@@ -9,6 +9,7 @@ from janitor.functions.utils import (
     greater_than_join_types,
 )
 from numba import njit, prange
+from pandas.api.types import is_extension_array_dtype, is_datetime64_dtype
 
 
 def _numba_dual_join(df: pd.DataFrame, right: pd.DataFrame, pair: list):
@@ -159,6 +160,61 @@ def _numba_dual_join(df: pd.DataFrame, right: pd.DataFrame, pair: list):
     # 3        4         3         5
     # 4        4         3         6
     ################################
+    left_arr1, right_arr1, op1 = pair[0]
+    left_arr1 = df[left_arr1].sort_values()
+    left_index1 = left_arr1.index._values
+    left_arr1 = left_arr1._values
+    right_arr1 = right[right_arr1]
+    right_index1 = right_arr1.index._values
+    right_arr1 = right_arr1._values
+    if is_extension_array_dtype(left_arr1):
+        arr_dtype = left_arr1.dtype.numpy_dtype
+        left_arr1 = left_arr1.astype(arr_dtype)
+        right_arr1 = right_arr1.astype(arr_dtype)
+    if is_datetime64_dtype(left_arr1):
+        left_arr1 = left_arr1.view(np.int64)
+        right_arr1 = right_arr1.view(np.int64)
+    if op1 in less_than_join_types:
+        op_1 = True
+    else:
+        op_1 = False
+    op1_strict = True if op1 in {"<", ">"} else False
+
+    left_arr2, right_arr2, op2 = pair[1]
+    left_arr2 = df[left_arr2].sort_values()
+    left_index2 = left_arr2.index._values
+    left_arr2 = left_arr2._values
+    right_arr2 = right[right_arr2]
+    right_index2 = right_arr2.index._values
+    right_arr2 = right_arr2._values
+    if is_extension_array_dtype(left_arr2):
+        arr_dtype = left_arr2.dtype.numpy_dtype
+        left_arr2 = left_arr2.astype(arr_dtype)
+        right_arr2 = right_arr2.astype(arr_dtype)
+    if is_datetime64_dtype(left_arr2):
+        left_arr2 = left_arr2.view(np.int64)
+        right_arr2 = right_arr2.view(np.int64)
+    if op2 in less_than_join_types:
+        op_2 = True
+    else:
+        op_2 = False
+    op2_strict = True if op2 in {"<", ">"} else False
+
+    return (
+        left_arr1,
+        right_arr1,
+        left_index1,
+        right_index1,
+        op_1,
+        op1_strict,
+        left_arr2,
+        right_arr2,
+        left_index2,
+        right_index2,
+        op_2,
+        op2_strict,
+    )
+
     mapping = {">=": "<=", ">": "<", "<=": ">=", "<": ">"}
     left_indices = []
     right_indices = []

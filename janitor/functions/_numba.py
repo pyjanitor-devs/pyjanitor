@@ -414,7 +414,7 @@ def _numba_equi_join_range_join(
         elif (end > 0) and ge_strict and (l1 == r1[end - 1]):
             check = False
             n = 0
-            for n in range(end - 1, 0, -1):
+            for n in range(end - 1, -1, -1):
                 check = l1 > r1[n]
                 if check:
                     break

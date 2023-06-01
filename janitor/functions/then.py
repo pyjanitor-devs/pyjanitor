@@ -10,7 +10,6 @@ from janitor.utils import refactored_function
     message="This function will be deprecated in a 1.x release. "
     "Kindly use `pd.DataFrame.pipe` instead."
 )
-@pf.register_dataframe_method
 def then(df: pd.DataFrame, func: Callable) -> pd.DataFrame:
     """Add an arbitrary function to run in the `pyjanitor` method chain.
 

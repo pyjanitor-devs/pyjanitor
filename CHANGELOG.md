@@ -9,11 +9,12 @@
 -   [INF] Update some `mkdocs` compatibility code. PR #1231 @thatlittleboy
 -   [INF] Migrated docstring style from Sphinx to Google for better compatibility with `mkdocstrings`. PR #1235 @thatlittleboy
 -   [INF] Prevent selection of chevrons (`>>>`) and outputs in Example code blocks. PR #1237 @thatlittleboy
--   [DEPR] Add deprecation warnings for `process_text`, `rename_column`, `rename_columns`, `filter_on`, `remove_columns`, `fill_direction`. #1045 @samukweku
+-   [DEPR] Add deprecation warnings for `process_text`, `rename_column`, `rename_columns`, `filter_on`, `remove_columns`, `fill_direction`. Issue #1045 @samukweku
 -   [ENH] `pivot_longer` now supports named groups where `names_pattern` is a regular expression. A dictionary can now be passed to `names_pattern`, and is internally evaluated as a list/tuple of regular expressions. Issue #1209 @samukweku
 -   [ENH] Improve selection in `conditional_join`. Issue #1223 @samukweku
 -   [ENH] Performance improvement for range joins in `conditional_join`, when `use_numba = False`. PR #1256 @samukweku
 -   [ENH] Add `col` class for selecting columns within an expression. Currently limited to use within `conditional_join`. PR #1260 @samukweku.
+-   [DEPR] Add deprecation warning for `pivot_wider`. Issue #1045 @samukweku
 
 ## [v0.24.0] - 2022-11-12
 

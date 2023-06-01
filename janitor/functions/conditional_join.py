@@ -999,10 +999,10 @@ def _create_frame(
         mapping the rows to either the left or right source DataFrames.
 
         Args:
-        indicator: Indicator column name or True for default name "_merge".
-        how: Type of join operation ("inner", "left", "right").
-        column_length: Length of the categorical column.
-        columns: Columns of the final DataFrame.
+            indicator: Indicator column name or True for default name "_merge".
+            how: Type of join operation ("inner", "left", "right").
+            column_length: Length of the categorical column.
+            columns: Columns of the final DataFrame.
 
         Returns:
             A tuple containing the indicator column name
@@ -1043,11 +1043,11 @@ def _create_frame(
         """Computes an inner joined DataFrame.
 
         Args:
-        df: The left DataFrame to join.
-        right: The right DataFrame to join.
-        left_index: indices from df for rows that match right.
-        right_index: indices from right for rows that match df.
-        indicator: Indicator column name or True for default name "_merge".
+            df: The left DataFrame to join.
+            right: The right DataFrame to join.
+            left_index: indices from df for rows that match right.
+            right_index: indices from right for rows that match df.
+            indicator: Indicator column name or True for default name "_merge".
 
         Returns:
             An inner joined DataFrame.

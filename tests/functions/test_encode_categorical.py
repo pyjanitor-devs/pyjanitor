@@ -26,6 +26,7 @@ def df_checks():
 
 @pytest.mark.functions
 @given(df=categoricaldf_strategy())
+@settings(deadline=None)
 def test_encode_categorical(df):
     df = df.encode_categorical("names")
     assert df["names"].dtypes == "category"

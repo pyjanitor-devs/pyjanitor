@@ -1,0 +1,33 @@
+name: pyjanitor-test
+channels:
+  - conda-forge
+dependencies:
+  # required
+  - pandas
+  - pandas-flavor
+  - multipledispatch
+  - lazy_loader
+  - scipy  # math, functions
+
+  # optional
+  - natsort  # functions
+  - numba  # functions
+  - biopython  # biology
+  - rdkit  # chemistry
+  - tqdm  # chemistry
+  - unyt  # engineering
+  - requests  # finance
+  - pyspark>=3.2.2
+  - xarray
+  # io
+  - openpyxl
+  - xlrd
+
+  # testing
+  - pytest
+  - pytest-cov
+  - pytest-xdist
+  - pytest-doctestplus
+  - hypothesis
+  - pandas-vet
+  - interrogate

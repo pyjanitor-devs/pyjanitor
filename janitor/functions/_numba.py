@@ -329,23 +329,24 @@ def _binary_search_exact_match(array: np.ndarray, value: Union[int, float]):
     return -1
 
 
-@njit(cache=True)
-def _numba_non_equi_dual_join(
-    left_arr1: np.ndarray,
-    right_arr1: np.ndarray,
-    left_index: np.ndarray,
-    left_index1: np.ndarray,
-    right_index1: np.ndarray,
-    op1: bool,
-    op1_strict: bool,
-    left_arr2: np.ndarray,
-    right_arr2: np.ndarray,
-    left_index2: np.ndarray,
-    right_index2: np.ndarray,
-    op2: bool,
-    op2_strict: bool,
+@njit(parallel=True)
+def _get_regions(
+    left_arr1,
+    right_arr1,
+    left_index1,
+    right_index1,
+    op1,
+    op1_strict,
+    left_arr2,
+    right_arr2,
+    left_index2,
+    right_index2,
+    op2,
+    op2_strict,
 ):
-    # get regions
+    """
+    Get left and right regions
+    """
     len_right_array = right_arr1.size
     len_left_array = left_arr1.size
     positions1 = np.empty(len_right_array, dtype=np.intp)
@@ -356,6 +357,7 @@ def _numba_non_equi_dual_join(
     bools2 = np.zeros(len_left_array, dtype=np.int8)
     counts1 = 0
     counts2 = 0
+
     for num in prange(len_right_array):
         if op1_strict:
             position1 = _region_strict(left_arr1, right_arr1[num], op1)
@@ -380,7 +382,7 @@ def _numba_non_equi_dual_join(
     # no matches -> there is no value
     # from left_arr1 that is ahead of right_arr1
     if (counts1 == len_right_array) or (counts2 == len_right_array):
-        return None, None
+        return (None,) * 8
 
     if counts1 > 0:
         right_index1 = right_index1[booleans1]
@@ -418,14 +420,58 @@ def _numba_non_equi_dual_join(
     for num in prange(right_index2.size):
         right_region2[num] = left_region2[positions2[num]]
 
-    positions1 = None
-    positions2 = None
-    bools1 = None
-    bools2 = None
-    booleans1 = None
-    booleans2 = None
-    counts1 = None
-    counts2 = None
+    return (
+        left_index1,
+        left_index2,
+        right_index1,
+        right_index2,
+        left_region1,
+        left_region2,
+        right_region1,
+        right_region2,
+    )
+
+
+@njit(cache=True)
+def _numba_non_equi_dual_join(
+    left_arr1: np.ndarray,
+    right_arr1: np.ndarray,
+    left_index: np.ndarray,
+    left_index1: np.ndarray,
+    right_index1: np.ndarray,
+    op1: bool,
+    op1_strict: bool,
+    left_arr2: np.ndarray,
+    right_arr2: np.ndarray,
+    left_index2: np.ndarray,
+    right_index2: np.ndarray,
+    op2: bool,
+    op2_strict: bool,
+):
+    # get regions
+    (
+        left_index1,
+        left_index2,
+        right_index1,
+        right_index2,
+        left_region1,
+        left_region2,
+        right_region1,
+        right_region2,
+    ) = _get_regions(
+        left_arr1,
+        right_arr1,
+        left_index1,
+        right_index1,
+        op1,
+        op1_strict,
+        left_arr2,
+        right_arr2,
+        left_index2,
+        right_index2,
+        op2,
+        op2_strict,
+    )
 
     # realign left index and left regions
     booleans = np.zeros(left_index.size, dtype=np.bool_)

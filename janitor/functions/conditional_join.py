@@ -462,8 +462,6 @@ def _conditional_join_compute(
     if result is None:
         result = np.array([], dtype=np.intp), np.array([], dtype=np.intp)
 
-    # return result
-
     return _create_frame(
         df,
         right,
@@ -759,8 +757,6 @@ def _multiple_conditional_join_le_lt(
                 multiple_conditions=False,
                 keep="all",
             )
-
-    # return indices
 
     if not indices:
         return None

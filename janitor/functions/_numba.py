@@ -167,13 +167,13 @@ def _numba_dual_join(df: pd.DataFrame, right: pd.DataFrame, pair: list):
     # sort if necessary
     # convert to numpy arrays
     left_columns, right_columns, (op1, op2) = zip(*pair)
-    left_df = df.loc(axis=1)[set(left_columns)]
+    left_df = df.loc(axis=1)[list(set(left_columns))]
     any_nulls = left_df.isna().any(axis=1)
     if any_nulls.all(axis=None):
         return None
     if any_nulls.any(axis=None):
         left_df = left_df.loc[~any_nulls]
-    right_df = right.loc(axis=1)[set(right_columns)]
+    right_df = right.loc(axis=1)[list(set(right_columns))]
     any_nulls = right_df.isna().any(axis=1)
     if any_nulls.all(axis=None):
         return None
@@ -329,7 +329,7 @@ def _binary_search_exact_match(array: np.ndarray, value: Union[int, float]):
     return -1
 
 
-@njit(cache=True, parallel=True)
+@njit(cache=True)
 def _numba_non_equi_dual_join(
     left_arr1: np.ndarray,
     right_arr1: np.ndarray,
@@ -491,7 +491,7 @@ def _numba_non_equi_dual_join(
 
     # cumulative decreasing
     cummin_arr = np.empty(left_region1.size, dtype=np.intp)
-    # is_monotonic_decreasing = True
+    is_monotonic_decreasing = True
     start = left_region1[0]
     cummin_arr[0] = start
     if left_region1.size > 1:
@@ -499,72 +499,57 @@ def _numba_non_equi_dual_join(
             new_value = left_region1[num]
             if start >= new_value:
                 start = new_value
-            # else:
-            # is_monotonic_decreasing = False
+            else:
+                is_monotonic_decreasing = False
             cummin_arr[num] = start
 
-    # TODO: what if left_region1 is cumulative decreasing?
-    # a faster option (binary search) is possible
-    # I implemented it, however it triggers
-    # a maximum recursion error in numba
-    # cant explain why ...
-    # besides a cumulative decreasing left_region1
-    # might not occur often
+    if is_monotonic_decreasing:
+        counts = 0
+        bool_count = 0
+        booleans = np.ones(right_region1.size, dtype=np.bool_)
+        sizes = np.empty(right_region1.size, dtype=np.intp)
+        for num in prange(right_region1.size):
+            value = right_region1[num]
+            high = positions[num] + 1
+            left_arr = left_region1[:high]
+            low = 0
+            while low < high:
+                mid = low + (high - low) // 2
+                if left_arr[mid] > value:
+                    low = mid + 1
+                else:
+                    high = mid
+            if low == left_arr.size:
+                booleans[num] = False
+                bool_count += 1
+            else:
+                size = left_arr.size - low
+                sizes[num] = size
+                counts += size
 
-    # find earliest point where left_region1 > right_region1
-    # that serves as our end boundary, and should reduce search space
+        if bool_count == right_region1.size:
+            return None, None
+        if bool_count > 0:
+            right_region1 = right_region1[booleans]
+            right_index2 = right_index2[booleans]
+            positions = positions[booleans]
+            sizes = sizes[booleans]
 
-    # commented out
-    # at the moment, I cant integrate this with parallel
-    # it raises a maximum recursion error in numba
-    # cant decipher the cause of the error
-    # if is_monotonic_decreasing:
-    #     counts = 0
-    #     bool_count = 0
-    #     booleans = np.ones(right_region1.size, dtype=np.bool_)
-    #     sizes = np.empty(right_region1.size, dtype=np.intp)
-    #     for num in prange(right_region1.size):
-    #         value = right_region1[num]
-    #         high = positions[num] + 1
-    #         left_arr = left_region1[:high]
-    #         low = 0
-    #         while low < high:
-    #             mid = low + (high - low) // 2
-    #             if left_arr[mid] > value:
-    #                 low = mid + 1
-    #             else:
-    #                 high = mid
-    #         if low == left_arr.size:
-    #             booleans[num] = False
-    #             bool_count += 1
-    #         else:
-    #             size = left_arr.size - low
-    #             sizes[num] = size
-    #             counts += size
-
-    #     if bool_count == right_region1.size:
-    #         return None, None
-    #     if bool_count > 0:
-    #         right_region1 = right_region1[booleans]
-    #         right_index2 = right_index2[booleans]
-    #         positions = positions[booleans]
-    #         sizes = sizes[booleans]
-
-    #     starts = np.empty(right_region1.size, dtype=np.intp)
-    #     starts[0] = 0
-    #     starts[1:] = np.cumsum(sizes)[:-1]
-    #     l_index = np.empty(counts, dtype=np.intp)
-    #     r_index = np.empty(counts, dtype=np.intp)
-    #     for num in prange(right_region1.size):
-    #         ind = starts[num]
-    #         start = positions[num]
-    #         size = sizes[num]
-    #         r_ind = right_index2[num]
-    #         for n in range(size):
-    #             indexer = ind + n
-    #             l_index[indexer] = left_index2[start - n]
-    #             r_index[indexer] = r_ind
-    #     return l_index, r_index
+        starts = np.empty(right_region1.size, dtype=np.intp)
+        starts[0] = 0
+        starts[1:] = np.cumsum(sizes)[:-1]
+        l_index = np.empty(counts, dtype=np.intp)
+        r_index = np.empty(counts, dtype=np.intp)
+        for num in prange(right_region1.size):
+            ind = starts[num]
+            start = positions[num]
+            size = sizes[num]
+            r_ind = right_index2[num]
+            for n in range(size):
+                indexer = ind + n
+                l_index[indexer] = left_index2[start - n]
+                r_index[indexer] = r_ind
+        return l_index, r_index
 
     # find earliest point where left_region1 > right_region1
     # that serves as our end boundary, and should reduce search space

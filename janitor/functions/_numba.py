@@ -10,6 +10,7 @@ from janitor.functions.utils import (
 )
 from numba import njit, prange
 from pandas.api.types import is_extension_array_dtype, is_datetime64_dtype
+from typing import Union
 
 
 def _numba_dual_join(df: pd.DataFrame, right: pd.DataFrame, pair: list):
@@ -160,11 +161,40 @@ def _numba_dual_join(df: pd.DataFrame, right: pd.DataFrame, pair: list):
     # 3        4         3         5
     # 4        4         3         6
     ################################
-    left_arr1, right_arr1, op1 = pair[0]
-    left_arr1 = df[left_arr1].sort_values()
+
+    # preparation phase
+    # get rid of nulls,
+    # sort if necessary
+    # convert to numpy arrays
+    left_columns, right_columns, (op1, op2) = zip(*pair)
+    left_df = df.loc(axis=1)[set(left_columns)]
+    any_nulls = left_df.isna().any(axis=1)
+    if any_nulls.all(axis=None):
+        return None
+    if any_nulls.any(axis=None):
+        left_df = left_df.loc[~any_nulls]
+    right_df = right.loc(axis=1)[set(right_columns)]
+    any_nulls = right_df.isna().any(axis=1)
+    if any_nulls.all(axis=None):
+        return None
+    if any_nulls.any(axis=None):
+        right_df = right_df.loc[~any_nulls]
+
+    left_index = left_df.index._values
+    left_arr1 = left_df[left_columns[0]]
+    op1_strict = True if op1 in {"<", ">"} else False
+    if op1 in less_than_join_types:
+        op1 = True
+        if not left_arr1.is_monotonic_increasing:
+            left_arr1 = left_arr1.sort_values(ascending=True)
+    else:
+        op1 = False
+        if not left_arr1.is_monotonic_decreasing:
+            left_arr1 = left_arr1.sort_values(ascending=False)
+
     left_index1 = left_arr1.index._values
     left_arr1 = left_arr1._values
-    right_arr1 = right[right_arr1]
+    right_arr1 = right_df[right_columns[0]]
     right_index1 = right_arr1.index._values
     right_arr1 = right_arr1._values
     if is_extension_array_dtype(left_arr1):
@@ -174,17 +204,21 @@ def _numba_dual_join(df: pd.DataFrame, right: pd.DataFrame, pair: list):
     if is_datetime64_dtype(left_arr1):
         left_arr1 = left_arr1.view(np.int64)
         right_arr1 = right_arr1.view(np.int64)
-    if op1 in less_than_join_types:
-        op_1 = True
-    else:
-        op_1 = False
-    op1_strict = True if op1 in {"<", ">"} else False
 
-    left_arr2, right_arr2, op2 = pair[1]
-    left_arr2 = df[left_arr2].sort_values()
+    left_arr2 = left_df[left_columns[1]]
+    op2_strict = True if op2 in {"<", ">"} else False
+    if op2 in less_than_join_types:
+        op2 = True
+        if not left_arr2.is_monotonic_increasing:
+            left_arr2 = left_arr2.sort_values(ascending=True)
+    else:
+        op2 = False
+        if not left_arr2.is_monotonic_decreasing:
+            left_arr2 = left_arr2.sort_values(ascending=False)
+
     left_index2 = left_arr2.index._values
     left_arr2 = left_arr2._values
-    right_arr2 = right[right_arr2]
+    right_arr2 = right_df[right_columns[1]]
     right_index2 = right_arr2.index._values
     right_arr2 = right_arr2._values
     if is_extension_array_dtype(left_arr2):
@@ -194,203 +228,382 @@ def _numba_dual_join(df: pd.DataFrame, right: pd.DataFrame, pair: list):
     if is_datetime64_dtype(left_arr2):
         left_arr2 = left_arr2.view(np.int64)
         right_arr2 = right_arr2.view(np.int64)
-    if op2 in less_than_join_types:
-        op_2 = True
-    else:
-        op_2 = False
-    op2_strict = True if op2 in {"<", ">"} else False
 
-    return (
-        left_arr1,
-        right_arr1,
-        left_index1,
-        right_index1,
-        op_1,
-        op1_strict,
-        left_arr2,
-        right_arr2,
-        left_index2,
-        right_index2,
-        op_2,
-        op2_strict,
+    left_index, right_index = _numba_non_equi_dual_join(
+        left_arr1=left_arr1,
+        right_arr1=right_arr1,
+        left_index=left_index,
+        left_index1=left_index1,
+        right_index1=right_index1,
+        op1=op1,
+        op1_strict=op1_strict,
+        left_arr2=left_arr2,
+        right_arr2=right_arr2,
+        left_index2=left_index2,
+        right_index2=right_index2,
+        op2=op2,
+        op2_strict=op2_strict,
     )
 
-    mapping = {">=": "<=", ">": "<", "<=": ">=", "<": ">"}
-    left_indices = []
-    right_indices = []
-    left_regions = []
-    right_regions = []
-    left_index = df.index
-    right_index = right.index
-    for num, pairing in enumerate(pair):
-        left_on, right_on, op = pairing
-        if num:
-            left_c = df.loc[left_index, left_on]
-            right_c = right.loc[right_index, right_on]
+    if left_index is None:
+        return None
+    return left_index, right_index
+
+
+# the binary search functions below are modifications
+# of python's bisect function, with a simple aim of
+# getting regions.
+# regions should always be at the far end left or right
+# e.g for [2, 3, 3, 4], 3 (if <) should be position 0
+# if (<=), position should be 1
+# for [4, 3, 2, 2], 3 (if >) should be position 0
+# if >=, position should be 1
+
+
+@njit()
+def _region_strict(
+    arr: np.ndarray, value: Union[int, float], op_code: bool
+) -> int:
+    """
+    Modification of Python's bisect_left function.
+    Used to get the region where the operator is
+    either > or <
+    """
+    high = len(arr)
+    low = 0
+    while low < high:
+        mid = low + (high - low) // 2
+        if op_code:
+            check = arr[mid] < value
         else:
-            left_c = df[left_on]
-            right_c = right[right_on]
-        left_on, right_on, op = pairing
-        # the flip is because the left Series
-        # is the control point
-        # and we can easily get the regions back
-        # by keeping track and using the logic
-        # explained below
-        outcome = _generic_func_cond_join(
-            left=right_c,
-            right=left_c,
-            op=mapping[op],
-            multiple_conditions=True,
-            keep="all",
-        )
-        if not outcome:
-            return None
-        right_index, left_index, search_indices = outcome
+            check = arr[mid] > value
+        if check:
+            low = mid + 1
+        else:
+            high = mid
+    return low - 1
 
-        if op in greater_than_join_types:
-            left_index = left_index[::-1]
-            search_indices = left_index.size - search_indices
-        # logic for computing regions
-        # relies on binary search
-        # subtract 1 from search indices
-        # to align it with the lowest value for left region
-        # say we had 2, 3, 5, 8, for the left region
-        # and 6 for the right region
-        # and is a < operation
-        # a binary search returns 3
-        # subtracting 1, yields 2,
-        # which pairs it correctly with 5
-        # since 2, 3, 5 are less than 6
-        # if it was a > operation
-        # first a subtraction from len(left) -> 4 - 3
-        # which yields 1
-        # flipping the left region in descending order
-        # -> 8, 3, 5 ,2
-        # subtract 1 from the search index yields 0
-        # which correctly pairs with 8,
-        # since 8 is the first closest number greater than 6
-        # from here on we can compute the regions
-        right_region, indexer = pd.factorize(search_indices - 1, sort=True)
-        length = indexer[-1] + 1
-        if length < left_index.size:
-            left_index = left_index[:length]
-        left_region = np.full(shape=length, dtype=np.intp, fill_value=-1)
-        indexer_pos = np.arange(indexer.size)
-        left_region[indexer] = indexer_pos
-        bools = left_region == -1
-        # spool through to fill up empty points
-        # with the immediate next region number
-        if bools.any():
-            fill_pos = bools.nonzero()[0]
-            fill_pos = indexer.searchsorted(fill_pos, side="left")
-            left_region[bools] = indexer_pos[fill_pos]
-        left_indices.append(left_index)
-        right_indices.append(right_index)
-        left_regions.append(left_region)
-        right_regions.append(right_region)
 
-    def _realign(indices, regions):
-        """
-        Realign the indices and regions
-        obtained from _get_regions.
-        """
-        # we've got two regions, since we have two pairs
-        # there might be region numbers missing from either
-        # or misalignment of the arrays
-        # this function ensures the regions are properly aligned
-        arr1, arr2 = indices
-        region1, region2 = regions
-        # arr2 is used as the reference point
-        # because we are certain that at the very least
-        # it has the same items as arr1, but not more
-        indexer = pd.Index(arr2).get_indexer(arr1)
-        mask = indexer == -1
-        if mask.any():
-            arr1 = arr1[~mask]
-            region1 = region1[~mask]
-            indexer = indexer[~mask]
-        region2 = region2[indexer]
-        return arr1, region1, region2
+@njit()
+def _region_not_strict(
+    arr: np.ndarray, value: Union[int, float], op_code: bool
+) -> int:
+    """
+    Modification of Python's bisect_right function.
+    Used to get the region where the operator is
+    either >= or <=
+    """
+    high = len(arr)
+    low = 0
+    while low < high:
+        mid = low + (high - low) // 2
+        if op_code:
+            check = value < arr[mid]
+        else:
+            check = value > arr[mid]
+        if check:
+            high = mid
+        else:
+            low = mid + 1
+    return low - 1
 
-    left_index, l_table1, l_table2 = _realign(left_indices, left_regions)
-    right_index, r_table1, r_table2 = _realign(right_indices, right_regions)
 
-    del (
-        left_indices,
-        left_regions,
-        right_indices,
-        right_regions,
-        left_region,
-        right_region,
-    )
+@njit()
+def _binary_search_exact_match(
+    array: np.ndarray, value: Union[int, float], exact_match: bool = True
+):
+    """
+    Modification of python's bisect_left.
+    Aim is to get position where there is an exact match.
 
-    # we'll be running a for-loop/binary search
-    # in r_table2 to get positions
-    # where l_table2 is less than or equal to r_table2
-    # sorting here allows us to search in the first level
-    # for positions where l_table1 <= r_table1
-    # efficiently with a binary search
-    if not pd.Series(r_table1).is_monotonic_increasing:
-        indexer = np.lexsort((r_table2, r_table1))
-        right_index, r_table1, r_table2 = (
-            right_index[indexer],
-            r_table1[indexer],
-            r_table2[indexer],
-        )
+    Returns an integer.
+    """
+    high = array.size
+    low = 0
+    while low < high:
+        mid = low + (high - low) // 2
+        if array[mid] == value:
+            return mid
+        if array[mid] < value:
+            low = mid + 1
+        else:
+            high = mid
+    if exact_match:
+        return -1
+    return low
 
-    indexer = None
 
-    positions = r_table1.searchsorted(l_table1, side="left")
-    # anything equal to the length of r_table1
-    # implies exclusion
-    bools = positions < r_table1.size
-    if not bools.any():
-        return None
-    if not bools.all():
-        positions = positions[bools]
-        left_index = left_index[bools]
-        l_table2 = l_table2[bools]
+@njit(cache=True)
+def _numba_non_equi_dual_join(
+    left_arr1: np.ndarray,
+    right_arr1: np.ndarray,
+    left_index: np.ndarray,
+    left_index1: np.ndarray,
+    right_index1: np.ndarray,
+    op1: bool,
+    op1_strict: bool,
+    left_arr2: np.ndarray,
+    right_arr2: np.ndarray,
+    left_index2: np.ndarray,
+    right_index2: np.ndarray,
+    op2: bool,
+    op2_strict: bool,
+):
+    # get regions for the first pair (left_arr1, right_arr1)
+    len_right_array = right_arr1.size
+    len_left_array = left_arr1.size
+    positions = np.empty(len_right_array, dtype=np.intp)
+    booleans = np.ones(len_right_array, dtype=np.bool_)
+    bools = np.zeros(len_left_array, dtype=np.int8)
+    counts = 0
+    for num in prange(len_right_array):
+        if op1_strict:
+            position = _region_strict(left_arr1, right_arr1[num], op1)
+        else:
+            position = _region_not_strict(left_arr1, right_arr1[num], op1)
+        if position == -1:
+            booleans[num] = False
+            counts += 1
+        else:
+            bools[position] = 1
+        positions[num] = position
+    # no matches -> there is no value
+    # from left_arr1 that is ahead of right_arr1
+    if counts == len_right_array:
+        return None, None
+    if counts > 0:
+        right_index1 = right_index1[booleans]
+        positions = positions[booleans]
+    # get rid of entries in the left_array
+    # that have no match
+    max_position = np.max(positions) + 1
+    if max_position < len_left_array:
+        left_index1 = left_index1[:max_position]
+        bools = bools[:max_position]
+    # generate left and right regions
+    counter = np.sum(bools)
+    left_region1 = np.empty(max_position, dtype=np.intp)
+    for num in range(len(bools) - 1, -1, -1):
+        counter = counter - bools[num]
+        left_region1[num] = counter
+    right_region1 = np.empty(right_index1.size, dtype=np.intp)
+    for num in prange(right_index1.size):
+        right_region1[num] = left_region1[positions[num]]
 
-    if pd.Series(r_table2).is_monotonic_decreasing:
-        # our work here is significantly easier
-        # as we can run a binary search to find exact positions
-        # which is better than running a linear search on every entry
-        # to check where l_table2 <= r_table2
-        ends = r_table2.size - r_table2[::-1].searchsorted(
-            l_table2, side="left"
-        )
-        keep_rows = positions < ends
-        if not keep_rows.all():
-            positions = positions[keep_rows]
-            ends = ends[keep_rows]
-            left_index = left_index[keep_rows]
-        if ((ends - positions) == 1).all():
-            return left_index, right_index[positions]
-        return _get_indices_single(
-            l_index=left_index,
-            r_index=right_index,
-            counts=ends - positions,
-            starts=positions,
-            ends=ends,
-        )
+    # get regions for the second pair (left_arr2, right_arr2)
+    len_right_array = right_arr2.size
+    len_left_array = left_arr2.size
+    positions = np.empty(len_right_array, dtype=np.intp)
+    booleans = np.ones(len_right_array, dtype=np.bool_)
+    bools = np.zeros(len_left_array, dtype=np.int8)
+    counts = 0
+    for num in prange(len_right_array):
+        if op2_strict:
+            position = _region_strict(left_arr2, right_arr2[num], op2)
+        else:
+            position = _region_not_strict(left_arr2, right_arr2[num], op2)
+        if position == -1:
+            booleans[num] = False
+            counts += 1
+        else:
+            bools[position] = 1
+        positions[num] = position
+    # no matches -> there is no value
+    # from left_arr2 that is ahead of right_arr2
+    if counts == len_right_array:
+        return None, None
+    if counts > 0:
+        right_index2 = right_index2[booleans]
+        positions = positions[booleans]
+    # get rid of entries in the left_array
+    # that have no match
+    max_position = np.max(positions) + 1
+    if max_position < len_left_array:
+        left_index2 = left_index2[:max_position]
+        bools = bools[:max_position]
+    # generate left and right regions
+    counter = np.sum(bools)
+    left_region2 = np.empty(max_position, dtype=np.intp)
+    for num in range(len(bools) - 1, -1, -1):
+        counter = counter - bools[num]
+        left_region2[num] = counter
+    right_region2 = np.empty(right_index2.size, dtype=np.intp)
+    for num in prange(right_index2.size):
+        right_region2[num] = left_region2[positions[num]]
 
-    # find the maximum from the bottom upwards
-    # if value from l_table2 is greater than the maximum
-    # there is no point searching within that space
-    max_arr = np.maximum.accumulate(r_table2[::-1])[::-1]
-    bools = l_table2 > max_arr[positions]
-    # there is no match
-    if bools.all():
-        return None
-    if bools.any():
-        positions = positions[~bools]
-        left_index = left_index[~bools]
-        l_table2 = l_table2[~bools]
-    # this is where numba comes in
-    # to improve performance for the for-loop
-    return _get_indices_dual(
-        left_index, l_table2, right_index, r_table2, positions, max_arr
-    )
+    # realign left index and left regions
+    booleans = np.zeros(left_index.size, dtype=np.bool_)
+    positions = np.empty(left_index.size, dtype=np.intp)
+    # get intersection of left_index and left_index1
+    for num in prange(left_index1.size):
+        position = _binary_search_exact_match(left_index, left_index1[num])
+        booleans[position] = True
+        positions[position] = num
+    if not np.all(booleans):  # find an alternative
+        positions = positions[booleans]
+        left_index = left_index[booleans]
+    left_region1 = left_region1[positions]
+    booleans = np.zeros(left_index2.size, dtype=np.bool_)
+    positions = np.empty(left_index2.size, dtype=np.intp)
+    counts = 0
+    # get the intersection of left_index2 and trimmed left_index
+    for num in prange(left_index2.size):
+        position = _binary_search_exact_match(left_index, left_index2[num])
+        if position == -1:
+            counts += 1
+        else:
+            booleans[num] = True
+        positions[num] = position
+    if counts == left_index2.size:
+        return None, None
+    if counts > 0:
+        positions = positions[booleans]
+        left_index2 = left_index2[booleans]
+        left_region2 = left_region2[booleans]
+    left_region1 = left_region1[positions]
+    left_index1 = None
+    left_index = None
+
+    # align right_index and right regions
+    booleans = np.zeros(right_index2.size, dtype=np.bool_)
+    positions = np.empty(right_index2.size, dtype=np.intp)
+    counts = 0
+    # get intersection of right_index1 and right_index2
+    for num in prange(right_index2.size):
+        position = _binary_search_exact_match(right_index1, right_index2[num])
+        if position == -1:
+            counts += 1
+        else:
+            booleans[num] = True
+        positions[num] = position
+    if counts == right_index2.size:
+        return None, None
+    if counts > 0:
+        positions = positions[booleans]
+        right_index2 = right_index2[booleans]
+        right_region2 = right_region2[booleans]
+    right_region1 = right_region1[positions]
+    right_index1 = None
+
+    # get positions where right_region2 is >= left_region2
+    # use these positions to count backwards
+    # and get positions where right_region1 >= left_region1
+    positions = np.empty(right_region2.size, dtype=np.intp)
+    for num in prange(right_region2.size):
+        position = _region_not_strict(left_region2, right_region2[num], True)
+        positions[num] = position
+
+    # cumulative decreasing
+    cummin_arr = np.empty(left_region1.size, dtype=np.intp)
+    is_monotonic_decreasing = True
+    start = left_region1[0]
+    cummin_arr[0] = start
+    if left_region1.size > 1:
+        for num in prange(1, left_region1.size):
+            new_value = left_region1[num]
+            if start >= new_value:
+                start = new_value
+            else:
+                is_monotonic_decreasing = False
+            cummin_arr[num] = start
+
+    if is_monotonic_decreasing:
+        counts = 0
+        bool_count = 0
+        booleans = np.ones(right_region1.size, dtype=np.bool_)
+        sizes = np.empty(right_region1.size, dtype=np.intp)
+        for num in prange(right_region1.size):
+            value = right_region1[num]
+            high = positions[num] + 1
+            left_arr = left_region1[:high]
+            low = 0
+            while low < high:
+                mid = low + (high - low) // 2
+                if left_arr[mid] > value:
+                    low = mid + 1
+                else:
+                    high = mid
+            if low == left_arr.size:
+                booleans[num] = False
+                bool_count += 1
+            else:
+                size = left_arr.size - low
+                sizes[num] = size
+                counts += size
+
+        if bool_count == right_region1.size:
+            return None, None
+        if bool_count > 0:
+            right_region1 = right_region1[booleans]
+            right_index2 = right_index2[booleans]
+            positions = positions[booleans]
+            sizes = sizes[booleans]
+
+        starts = np.empty(right_region1.size, dtype=np.intp)
+        starts[0] = 0
+        starts[1:] = np.cumsum(sizes)[:-1]
+        l_index = np.empty(counts, dtype=np.intp)
+        r_index = np.empty(counts, dtype=np.intp)
+        for num in prange(right_region1.size):
+            ind = starts[num]
+            start = positions[num]
+            size = sizes[num]
+            r_ind = right_index2[num]
+            for n in range(size):
+                indexer = ind + n
+                l_index[indexer] = left_index2[start - n]
+                r_index[indexer] = r_ind
+        return l_index, r_index
+
+    # find earliest point where left_region1 > right_region1
+    # that serves as our end boundary, and should reduce search space
+    countss = np.empty(right_region1.size, dtype=np.intp)
+    ends = np.empty(right_region1.size, dtype=np.intp)
+    total_length = 0
+    for num in prange(right_region1.size):
+        start = positions[num]
+        value = right_region1[num]
+        end = -1
+        for n in range(start, -1, -1):
+            check = cummin_arr[n] > value
+            if check:
+                end = n
+                break
+        # get actual counts
+        counts = 0
+        ends[num] = end
+        for ind in range(start, end, -1):
+            check = left_region1[ind] <= value
+            counts += check
+        countss[num] = counts
+        total_length += counts
+
+    # build left and right indices
+    starts = np.empty(right_region1.size, dtype=np.intp)
+    starts[0] = 0
+    starts[1:] = np.cumsum(countss)[:-1]
+    l_index = np.empty(total_length, dtype=np.intp)
+    r_index = np.empty(total_length, dtype=np.intp)
+
+    for num in prange(right_region1.size):
+        ind = starts[num]
+        pos = positions[num]
+        end = ends[num]
+        size = countss[num]
+        value = right_region1[num]
+        r_ind = right_index2[num]
+        for n in range(pos, end, -1):
+            if not size:
+                break
+            check = left_region1[n] > value
+            if check:
+                continue
+            l_index[ind] = left_index2[n]
+            r_index[ind] = r_ind
+            ind += 1
+            size -= 1
+
+    return l_index, r_index
 
 
 def _numba_single_join(
@@ -508,85 +721,56 @@ def _get_indices_single(l_index, r_index, counts, starts, ends):
     return left_index, right_index
 
 
-@njit(cache=True, parallel=True)
+@njit(parallel=True)
 def _get_indices_dual(
-    l_index, l_table2, r_index, r_table2, positions, max_arr
+    left_region1, right_region1, left_index, right_index, cummin_arr, positions
 ):
     """
     Retrieves the matching indices
     for the left and right regions.
     Strictly for non-equi joins (pairs).
     """
-    length = r_index.size
-    counts = np.empty(positions.size, dtype=np.intp)
-    ends = np.empty(positions.size, dtype=np.intp)
-
-    # first let's get the total number of matches
-    for num in prange(l_index.size):
-        l2 = l_table2[num]
-        pos = positions[num]
-        # get the first point where l2
-        # is greater than the cumulative max
-        # that will serve as the range
-        # (pos, pos_end)
-        # within which to search for actual matches
-
-        # no point checking the first position
-        # as we already know that l2 <= r_table2[pos]
-        # what happens below?
-        # max_arr is a cumulative max in decreasing order
-        # e.g max_arr -> [4 3 3 2 1 1 1]
-        # slice it from pos+1, since we have established
-        # that l2 <= r_table2[pos]
-        # -> [3 3 2 1 1 1]
-        # flip it into increasing order
-        # -> [1 1 1 2 3 3]
-        # making it easy to do a binary search
-        # say l2 = 4
-        # binary search returns the lowest possible point
-        # which is 6
-        # subtract from the actual r_table2 length (7)
-        # -> 7 - 6 = 1
-        # now we have our (pos_start, pos_end) -> (0, 1)
-        # our search space is reduced, allowing us to do
-        # less work with the comparison operation
-        sliced = max_arr[slice(pos + 1, None)][::-1]
-        pos_end = np.searchsorted(sliced, l2, side="left")
-        pos_end = length - pos_end
-        ends[num] = pos_end
-        # get the total number of exact matches
-        # for l2
-        end = 0
-        for ind in range(pos, pos_end):
-            out = l2 <= r_table2[ind]
-            end += out
-        counts[num] = end
-
-    start_indices = np.cumsum(counts)
-    starts = np.empty(counts.size, dtype=np.intp)
-    starts[0] = 0
-    starts[1:] = start_indices[:-1]
-
-    # create left and right indexes
-    left_index = np.empty(start_indices[-1], dtype=np.intp)
-    right_index = np.empty(start_indices[-1], dtype=np.intp)
-    start_indices = None
-
-    for num in prange(l_index.size):
-        pos = positions[num]
-        pos_end = ends[num]
-        l2 = l_table2[num]
-        l3 = l_index[num]
-        start = starts[num]
-        counter = counts[num]
-        for ind in range(pos, pos_end):
-            if not counter:
+    countss = np.empty(right_region1.size, dtype=np.intp)
+    ends = np.empty(right_region1.size, dtype=np.intp)
+    total_length = 0
+    for num in prange(right_region1.size):
+        start = positions[num]
+        value = right_region1[num]
+        end = -1
+        for n in range(start, -1, -1):
+            check = cummin_arr[n] > value
+            if check:
+                end = n
                 break
-            if r_table2[ind] < l2:
-                continue
-            left_index[start] = l3
-            right_index[start] = r_index[ind]
-            start += 1
-            counter -= 1
+        counts = 0
+        ends[num] = end
+        for ind in range(start, end, -1):
+            check = left_region1[ind] <= value
+            counts += check
+        countss[num] = counts
+        total_length += counts
+    starts = np.empty(right_region1.size, dtype=np.intp)
+    starts[0] = 0
+    starts[1:] = np.cumsum(countss)[:-1]
+    l_index = np.empty(total_length, dtype=np.intp)
+    r_index = np.empty(total_length, dtype=np.intp)
 
-    return left_index, right_index
+    for num in prange(right_region1.size):
+        ind = starts[num]
+        pos = positions[num]
+        end = ends[num]
+        size = countss[num]
+        value = right_region1[num]
+        r_ind = right_index[num]
+        for n in range(pos, end, -1):
+            if not size:
+                break
+            check = left_region1[n] > value
+            if check:
+                continue
+            l_index[ind] = left_index[n]
+            r_index[ind] = r_ind
+            ind += 1
+            size -= 1
+
+    return l_index, r_index

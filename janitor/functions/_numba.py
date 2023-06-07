@@ -159,7 +159,13 @@ def _numba_dual_join(df: pd.DataFrame, right: pd.DataFrame, pair: list):
     # 3        4         3         5
     # 4        4         3         6
     ################################
-    def _get_regions(df, right, left_on, right_on, op):
+    def _get_regions(
+        df: pd.DataFrame,
+        right: pd.DataFrame,
+        left_on: str,
+        right_on: str,
+        op: str,
+    ):
         mapping = {">=": "<=", ">": "<", "<=": ">=", "<": ">"}
         left_index = df.index._values
         right_index = right.index._values
@@ -220,7 +226,12 @@ def _numba_dual_join(df: pd.DataFrame, right: pd.DataFrame, pair: list):
         right_region = left_region[search_indices]
         return left_index, left_region, right_index, right_region
 
-    def _realign(index1, index2, region1, region2):
+    def _realign(
+        index1: np.ndarray,
+        index2: np.ndarray,
+        region1: np.ndarray,
+        region2: np.ndarray,
+    ):
         """
         Realign the indices and regions
         obtained from _get_regions.
@@ -271,46 +282,54 @@ def _numba_dual_join(df: pd.DataFrame, right: pd.DataFrame, pair: list):
     # shortcut if left_region1 is already cumulative_decreasing
     if pd.Series(left_region1).is_monotonic_decreasing:
         return _get_indices_dual_monotonic_decreasing(
-            left_region1,
-            right_region1,
-            left_index,
-            right_index,
-            search_indices,
+            left_region=left_region1,
+            right_region=right_region1,
+            left_index=left_index,
+            right_index=right_index,
+            search_indices=search_indices,
         )
 
     return _get_indices_dual(
-        left_region1,
-        right_region1,
-        left_index,
-        right_index,
-        search_indices,
+        left_region=left_region1,
+        right_region=right_region1,
+        left_index=left_index,
+        right_index=right_index,
+        search_indices=search_indices,
         cummin_arr=np.minimum.accumulate(left_region1),
     )
 
 
 @njit(parallel=True)
 def _get_indices_dual_monotonic_decreasing(
-    left_region1, right_region1, left_index, right_index, search_indices
+    left_region: np.ndarray,
+    right_region: np.ndarray,
+    left_index: np.ndarray,
+    right_index: np.ndarray,
+    search_indices: np.ndarray,
 ):
-    length = right_region1.size
+    """
+    Retrieve matching indices. Applies to dual non-equi joins.
+    It is assumed that the left_region is cumulative decreasing.
+    """
+    length = right_region.size
     sizes = np.empty(length, dtype=np.intp)
     counts = 0
     for num in prange(length):
         end = search_indices[num]
-        arr = left_region1[:end]
+        arr = left_region[:end]
         pos = arr.size - np.searchsorted(
-            arr[::-1], right_region1[num], side="right"
+            arr[::-1], right_region[num], side="right"
         )
         size = end - pos
         counts += size
         sizes[num] = size
 
-    starts = np.empty(right_region1.size, dtype=np.intp)
+    starts = np.empty(right_region.size, dtype=np.intp)
     starts[0] = 0
     starts[1:] = np.cumsum(sizes)[:-1]
     l_index = np.empty(counts, dtype=np.intp)
     r_index = np.empty(counts, dtype=np.intp)
-    for num in prange(right_region1.size):
+    for num in prange(right_region.size):
         ind = starts[num]
         start = search_indices[num] - 1
         size = sizes[num]
@@ -324,12 +343,12 @@ def _get_indices_dual_monotonic_decreasing(
 
 @njit(parallel=True)
 def _get_indices_dual(
-    left_region1,
-    right_region1,
-    left_index,
-    right_index,
-    search_indices,
-    cummin_arr,
+    left_region: np.ndarray,
+    right_region: np.ndarray,
+    left_index: np.ndarray,
+    right_index: np.ndarray,
+    search_indices: np.ndarray,
+    cummin_arr: np.ndarray,
 ):
     """
     Retrieves the matching indices
@@ -338,12 +357,12 @@ def _get_indices_dual(
     """
     # find earliest point where left_region1 > right_region1
     # that serves as our end boundary, and should reduce search space
-    countss = np.empty(right_region1.size, dtype=np.intp)
-    ends = np.empty(right_region1.size, dtype=np.intp)
+    countss = np.empty(right_region.size, dtype=np.intp)
+    ends = np.empty(right_region.size, dtype=np.intp)
     total_length = 0
-    for num in prange(right_region1.size):
+    for num in prange(right_region.size):
         start = search_indices[num]
-        value = right_region1[num]
+        value = right_region[num]
         end = -1
         for n in range(start - 1, -1, -1):
             check = cummin_arr[n] > value
@@ -354,29 +373,29 @@ def _get_indices_dual(
         counts = 0
         ends[num] = end
         for ind in range(start - 1, end, -1):
-            check = left_region1[ind] <= value
+            check = left_region[ind] <= value
             counts += check
         countss[num] = counts
         total_length += counts
 
     # build left and right indices
-    starts = np.empty(right_region1.size, dtype=np.intp)
+    starts = np.empty(right_region.size, dtype=np.intp)
     starts[0] = 0
     starts[1:] = np.cumsum(countss)[:-1]
     l_index = np.empty(total_length, dtype=np.intp)
     r_index = np.empty(total_length, dtype=np.intp)
 
-    for num in prange(right_region1.size):
+    for num in prange(right_region.size):
         ind = starts[num]
         pos = search_indices[num]
         end = ends[num]
         size = countss[num]
-        value = right_region1[num]
+        value = right_region[num]
         r_ind = right_index[num]
         for n in range(pos - 1, end, -1):
             if not size:
                 break
-            check = left_region1[n] > value
+            check = left_region[n] > value
             if check:
                 continue
             l_index[ind] = left_index[n]
@@ -454,7 +473,7 @@ def _numba_single_join(
 
 @njit(parallel=True)
 def _numba_single_non_equi_keep_first(
-    right_index: np.ndarray, starts, ends
+    right_index: np.ndarray, starts: np.ndarray, ends: np.ndarray
 ) -> np.ndarray:
     """
     Generate all indices when keep = `first`
@@ -469,7 +488,7 @@ def _numba_single_non_equi_keep_first(
 
 @njit(parallel=True)
 def _numba_single_non_equi_keep_last(
-    right_index: np.ndarray, starts, ends
+    right_index: np.ndarray, starts: np.ndarray, ends: np.ndarray
 ) -> np.ndarray:
     """
     Generate all indices when keep = `last`
@@ -483,7 +502,13 @@ def _numba_single_non_equi_keep_last(
 
 
 @njit(cache=True, parallel=True)
-def _get_indices_single(l_index, r_index, counts, starts, ends):
+def _get_indices_single(
+    l_index: np.ndarray,
+    r_index: np.ndarray,
+    counts: int,
+    starts: np.ndarray,
+    ends: np.ndarray,
+):
     """ "Compute indices when starts and ends are already known"""
     lengths = np.cumsum(counts)
     left_index = np.empty(lengths[-1], np.intp)

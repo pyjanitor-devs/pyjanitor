@@ -3169,7 +3169,14 @@ def test_lt_eq_dates_numba(df, right):
 
     columns = ["A", "E", "Integers", "Dates"]
     expected = (
-        df.merge(right, left_on="E", right_on="Dates", how="inner", sort=False)
+        df.dropna(subset=["E"])
+        .merge(
+            right.dropna(subset=["Dates"]),
+            left_on="E",
+            right_on="Dates",
+            how="inner",
+            sort=False,
+        )
         .loc[lambda df: df.A.lt(df.Integers), columns]
         .sort_values(columns, ignore_index=True)
     )

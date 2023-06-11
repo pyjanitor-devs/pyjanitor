@@ -454,3 +454,10 @@ def test_select_groupby(dataframe):
     expected = dataframe.select_dtypes("number").groupby(dataframe["a"]).sum()
     actual = dataframe.groupby("a").pipe(get_columns, is_numeric_dtype).sum()
     assert_frame_equal(expected, actual)
+
+
+def test_select_str_multiindex(multiindex):
+    """Test str selection on a MultiIndex - exact match"""
+    expected = multiindex.select_columns("bar")
+    actual = multiindex.loc(axis=1)[["bar"]]
+    assert_frame_equal(expected, actual)

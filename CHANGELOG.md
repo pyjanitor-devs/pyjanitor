@@ -15,6 +15,7 @@
 -   [ENH] Add `col` class for selecting columns within an expression. Currently limited to use within `conditional_join`. PR #1260 @samukweku.
 -   [ENH] Performance improvement for range joins in `conditional_join`, when `use_numba = False`. Performance improvement for equi-join and a range join, when `use_numba = True`, for many to many join with wide ranges. PR #1256, #1267 @samukweku
 -   [DEPR] Add deprecation warning for `pivot_wider`. Issue #1045 @samukweku
+-   [BUG] Fix string column selection on a MultiIndex. Issue #1265. @samukweku
 
 ## [v0.24.0] - 2022-11-12
 

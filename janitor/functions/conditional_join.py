@@ -4,6 +4,7 @@ from typing import Union, Any, Optional, Hashable, Literal
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
+import warnings
 from pandas.core.dtypes.common import (
     is_datetime64_dtype,
     is_dtype_equal,
@@ -14,7 +15,7 @@ from pandas.core.dtypes.common import (
 
 from pandas.core.reshape.merge import _MergeOperation
 
-from janitor.utils import check, check_column
+from janitor.utils import check, check_column, find_stack_level
 from janitor.functions.utils import (
     _JoinOperator,
     _generic_func_cond_join,
@@ -24,19 +25,21 @@ from janitor.functions.utils import (
     col,
 )
 
+warnings.simplefilter("always", DeprecationWarning)
+
 
 @pf.register_dataframe_method
 def conditional_join(
     df: pd.DataFrame,
     right: Union[pd.DataFrame, pd.Series],
     *conditions: Any,
-    how: Literal["inner", "left", "right"] = "inner",
+    how: Literal["inner", "left", "right", "outer"] = "inner",
     sort_by_appearance: bool = False,
     df_columns: Optional[Any] = slice(None),
     right_columns: Optional[Any] = slice(None),
     keep: Literal["first", "last", "all"] = "all",
     use_numba: bool = False,
-    indicator: Optional[bool, str] = False,
+    indicator: Optional[Union[bool, str]] = False,
 ) -> pd.DataFrame:
     """The conditional_join function operates similarly to `pd.merge`,
     but allows joins on inequality operators,
@@ -53,12 +56,11 @@ def conditional_join(
     Column selection in `df_columns` and `right_columns` is possible using the
     [`select_columns`][janitor.functions.select.select_columns] syntax.
 
-    For strictly non-equi joins, particularly range joins,
+    For strictly non-equi joins,
     involving either `>`, `<`, `>=`, `<=` operators,
-    performance might be improved by setting `use_numba` to `True`.
+    performance might be improved
+    by setting `use_numba` to `True`.
     This assumes that `numba` is installed.
-
-    To preserve row order, set `sort_by_appearance` to `True`.
 
     This function returns rows, if any, where values from `df` meet the
     condition(s) for values from `right`. The conditions are passed in
@@ -76,7 +78,7 @@ def conditional_join(
 
     For non-equi joins, only numeric and date columns are supported.
 
-    Only `inner`, `left`, and `right` joins are supported.
+    `inner`, `left`, `right` and `outer` joins are supported.
 
     If the columns from `df` and `right` have nothing in common,
     a single index column is returned; else, a MultiIndex column
@@ -138,6 +140,7 @@ def conditional_join(
             - Added `indicator` parameter.
         - 0.25.0
             - `col` class supported.
+            - Outer join supported. `sort_by_appearance` deprecated.
 
     Args:
         df: A pandas DataFrame.
@@ -151,31 +154,33 @@ def conditional_join(
             the and(`&`) operator is used to combine the results
             of the individual conditions.
         how: Indicates the type of join to be performed.
-            It can be one of `inner`, `left`, `right`.
-            Full outer join is not supported. Defaults to `inner`.
-        sort_by_appearance: Default is `False`.
-            This is useful for scenarios where the user wants
-            the original order maintained.
-            If `True` and `how = left`, the row order from the left dataframe
-            is preserved; if `True` and `how = right`, the row order
+            It can be one of `inner`, `left`, `right` or `outer`.
+        sort_by_appearance: If `how = inner` and
+            `sort_by_appearance = False`, there
+            is no guarantee that the original order is preserved.
+            Usually, this offers more performance.
+            If `how = left`, the row order from the left dataframe
+            is preserved; if `how = right`, the row order
             from the right dataframe is preserved.
-        df_columns: Columns to select from `df`.
-            It can be a single column or a list of columns.
+            !!!warning "Deprecated in 0.25.0"
+        df_columns: Columns to select from `df` in the final output dataframe.
+            Column selection is based on the
+            [`select_columns`][janitor.functions.select.select_columns] syntax.
             It is also possible to rename the output columns via a dictionary.
-        right_columns: Columns to select from `right`.
-            It can be a single column or a list of columns.
+        right_columns: Columns to select from `right` in the final output dataframe.
+            Column selection is based on the
+            [`select_columns`][janitor.functions.select.select_columns] syntax.
             It is also possible to rename the output columns via a dictionary.
-        keep: Choose whether to return the first match,
-            last match or all matches. Default is `all`.
-        use_numba: Use numba, if installed, to accelerate the computation.
-            Applicable only to strictly non-equi joins. Default is `False`.
+        keep: Choose whether to return the first match, last match or all matches.
+        use_numba: Uses numba, if installed. This might offer more performance,
+            and applies only to non-equi joins.
         indicator: If `True`, adds a column to the output DataFrame
-            called “_merge” with information on the source of each row.
+            called `_merge` with information on the source of each row.
             The column can be given a different name by providing a string argument.
-            The column will have a Categorical type with the value of “left_only”
+            The column will have a Categorical type with the value of `left_only`
             for observations whose merge key only appears in the left DataFrame,
-            “right_only” for observations whose merge key
-            only appears in the right DataFrame, and “both” if the observation’s
+            `right_only` for observations whose merge key
+            only appears in the right DataFrame, and `both` if the observation’s
             merge key is found in both DataFrames.
 
     Returns:
@@ -282,9 +287,18 @@ def _conditional_join_preliminary_checks(
 
     check("how", how, [str])
 
-    if how not in {"inner", "left", "right"}:
-        raise ValueError("'how' should be one of 'inner', 'left' or 'right'.")
+    if how not in {"inner", "left", "right", "outer"}:
+        raise ValueError(
+            "'how' should be one of 'inner', 'left', 'right' or 'outer'."
+        )
 
+    if sort_by_appearance:
+        warnings.warn(
+            "The keyword argument "
+            "'sort_by_appearance' of 'conditional_join' is deprecated.",
+            DeprecationWarning,
+            stacklevel=find_stack_level(),
+        )
     check("sort_by_appearance", sort_by_appearance, [bool])
 
     if (df.columns.nlevels > 1) and (
@@ -467,7 +481,6 @@ def _conditional_join_compute(
         right,
         *result,
         how,
-        sort_by_appearance,
         df_columns,
         right_columns,
         indicator,
@@ -952,7 +965,6 @@ def _create_frame(
     left_index: np.ndarray,
     right_index: np.ndarray,
     how: str,
-    sort_by_appearance: bool,
     df_columns: Any,
     right_columns: Any,
     indicator: Union[bool, str],
@@ -974,16 +986,89 @@ def _create_frame(
     if not df.columns.intersection(right.columns).empty:
         df, right = _create_multiindex_column(df, right)
 
-    if indicator:
+    def _add_indicator(
+        indicator: Union[bool, str],
+        how: str,
+        column_length: int,
+        columns: pd.Index,
+    ):
+        """Adds a categorical column to the DataFrame,
+        mapping the rows to either the left or right source DataFrames.
+
+        Args:
+            indicator: Indicator column name or True for default name "_merge".
+            how: Type of join operation ("inner", "left", "right").
+            column_length: Length of the categorical column.
+            columns: Columns of the final DataFrame.
+
+        Returns:
+            A tuple containing the indicator column name
+            and a Categorical array
+            representing the indicator values for each row.
+
+        """
+        mapping = {"left": "left_only", "right": "right_only", "inner": "both"}
+        categories = ["left_only", "right_only", "both"]
         if isinstance(indicator, bool):
             indicator = "_merge"
-        if indicator in df.columns.union(right.columns):
+        if indicator in columns:
             raise ValueError(
                 "Cannot use name of an existing column for indicator column"
             )
+        nlevels = columns.nlevels
+        if nlevels > 1:
+            indicator = [indicator] + [""] * (nlevels - 1)
+            indicator = tuple(indicator)
+        if not column_length:
+            arr = pd.Categorical([], categories=categories)
+        else:
+            arr = pd.Categorical(
+                [mapping[how]],
+                categories=categories,
+            )
+            if column_length > 1:
+                arr = arr.repeat(column_length)
+        return indicator, arr
 
-    if sort_by_appearance:
-        if how in {"inner", "left"}:
+    def _inner(
+        df: pd.DataFrame,
+        right: pd.DataFrame,
+        left_index: np.ndarray,
+        right_index: np.ndarray,
+        indicator: Union[bool, str],
+    ):
+        """Computes an inner joined DataFrame.
+
+        Args:
+            df: The left DataFrame to join.
+            right: The right DataFrame to join.
+            left_index: indices from df for rows that match right.
+            right_index: indices from right for rows that match df.
+            indicator: Indicator column name or True for default name "_merge".
+
+        Returns:
+            An inner joined DataFrame.
+        """
+        frame = {key: value._values[left_index] for key, value in df.items()}
+        r_frame = {
+            key: value._values[right_index] for key, value in right.items()
+        }
+        frame.update(r_frame)
+        if indicator:
+            indicator, arr = _add_indicator(
+                indicator=indicator,
+                how="inner",
+                column_length=left_index.size,
+                columns=df.columns.union(right.columns),
+            )
+            frame[indicator] = arr
+        return pd.DataFrame(frame, copy=False)
+
+    if how == "inner":
+        return _inner(df, right, left_index, right_index, indicator)
+
+    if how != "outer":
+        if how == "left":
             if not right.empty:
                 right = right.take(right_index)
             right.index = left_index
@@ -991,75 +1076,50 @@ def _create_frame(
             if not df.empty:
                 df = df.take(left_index)
             df.index = right_index
-        df = df.join(right, how=how)
 
-        if indicator:
-            if how == "right":
-                df.loc[right_index, indicator] = 3
-                df[indicator] = df[indicator].fillna(2)
-            else:
-                df.loc[left_index, indicator] = 3
-                df[indicator] = df[indicator].fillna(1)
-            df[indicator] = pd.Categorical(df[indicator], categories=[1, 2, 3])
-            df[indicator] = df[indicator].cat.rename_categories(
-                ["left_only", "right_only", "both"]
-            )
+        df = df.merge(
+            right,
+            left_index=True,
+            right_index=True,
+            indicator=indicator,
+            how=how,
+            copy=False,
+            sort=False,
+        )
         df.index = range(len(df))
         return df
 
-    if how == "inner":
-        return _inner(df, right, left_index, right_index, indicator)
+    both = _inner(df, right, left_index, right_index, indicator)
+    contents = []
+    columns = df.columns.union(right.columns)
+    left_index = np.setdiff1d(df.index, left_index)
+    if left_index.size:
+        df = df.take(left_index)
+        if indicator:
+            l_indicator, arr = _add_indicator(
+                indicator=indicator,
+                how="left",
+                column_length=left_index.size,
+                columns=columns,
+            )
+            df[l_indicator] = arr
+        contents.append(df)
 
-    if how == "left":
-        arr = df
-        arr_ = np.delete(df.index._values, left_index)
-    else:
-        arr = right
-        arr_ = np.delete(right.index._values, right_index)
-    if not arr_.size:
-        return _inner(df, right, left_index, right_index, indicator)
-    if indicator:
-        length = arr_.size
-    arr_ = {key: value._values[arr_] for key, value in arr.items()}
-    if indicator:
-        arr_ = _add_indicator(
-            df=arr_, indicator=indicator, how=how, length=length
-        )
-    arr_ = pd.DataFrame(arr_, copy=False)
-    arr = _inner(df, right, left_index, right_index, indicator)
-    df = pd.concat([arr, arr_], copy=False, sort=False)
-    df.index = range(len(df))
-    return df
+    contents.append(both)
 
+    right_index = np.setdiff1d(right.index, right_index)
+    if right_index.size:
+        right = right.take(right_index)
+        if indicator:
+            r_indicator, arr = _add_indicator(
+                indicator=indicator,
+                how="right",
+                column_length=right_index.size,
+                columns=columns,
+            )
+            right[r_indicator] = arr
+        contents.append(right)
 
-def _add_indicator(
-    df: dict, indicator: str, how: str, length: int
-) -> pd.DataFrame:
-    "Add indicator column to the DataFrame"
-    mapping = {"inner": "both", "left": "left_only", "right": "right_only"}
-    arr = pd.Categorical(
-        [mapping[how]], categories=["left_only", "right_only", "both"]
+    return pd.concat(
+        contents, axis=0, copy=False, sort=False, ignore_index=True
     )
-    first_key = next(iter(df))
-    if isinstance(first_key, tuple):
-        indicator = [indicator] + [""] * (len(first_key) - 1)
-        indicator = tuple(indicator)
-    df[indicator] = arr.repeat(length)
-    return df
-
-
-def _inner(
-    df: pd.DataFrame,
-    right: pd.DataFrame,
-    left_index: pd.DataFrame,
-    right_index: pd.DataFrame,
-    indicator: Union[bool, str],
-) -> pd.DataFrame:
-    """Create DataFrame for inner join"""
-
-    df = {key: value._values[left_index] for key, value in df.items()}
-    right = {key: value._values[right_index] for key, value in right.items()}
-    df.update(right)
-    if indicator:
-        df = _add_indicator(df, indicator, "inner", left_index.size)
-    return pd.DataFrame(df, copy=False)

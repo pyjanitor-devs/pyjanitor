@@ -629,9 +629,12 @@ def _multiple_conditional_join_le_lt(
     Returns a tuple of (df_index, right_index)
     """
     if use_numba:
-        from janitor.functions._numba import _numba_dual_join
+        from janitor.functions._numba import (
+            _numba_dual_join,
+            _numba_single_join,
+        )
 
-        pairs = [
+        gt_lt = [
             condition
             for condition in conditions
             if condition[-1] != _JoinOperator.NOT_EQUAL.value
@@ -641,58 +644,13 @@ def _multiple_conditional_join_le_lt(
             for condition in conditions
             if condition[-1] == _JoinOperator.NOT_EQUAL.value
         ]
-        if len(pairs) > 2:
-            patch = pairs[2:]
-            conditions.extend(patch)
-            pairs = pairs[:2]
-        if len(pairs) < 2:
-            # combine with != condition
-            # say we have ('start', 'ID', '<='), ('end', 'ID', '!=')
-            # we convert conditions to :
-            # ('start', 'ID', '<='), ('end', 'ID', '>'), ('end', 'ID', '<')
-            # subsequently we run the numba pair fn on the pairs:
-            # ('start', 'ID', '<=') & ('end', 'ID', '>')
-            # ('start', 'ID', '<=') & ('end', 'ID', '<')
-            # finally unionize the outcome of the pairs
-            # this only works if there is no null in the != condition
-            # thanks to Hypothesis tests for pointing this out
-            left_on, right_on, op = conditions[0]
-            # check for nulls in the patch
-            # and follow this path, only if there are no nulls
-            if df[left_on].notna().all() & right[right_on].notna().all():
-                patch = (
-                    left_on,
-                    right_on,
-                    _JoinOperator.GREATER_THAN.value,
-                ), (
-                    left_on,
-                    right_on,
-                    _JoinOperator.LESS_THAN.value,
-                )
-                pairs.extend(patch)
-                first, middle, last = pairs
-                pairs = [(first, middle), (first, last)]
-                indices = [_numba_dual_join(df, right, pair) for pair in pairs]
-                indices = [arr for arr in indices if arr is not None]
-                if not indices:
-                    indices = None
-                elif len(indices) == 1:
-                    indices = indices[0]
-                else:
-                    indices = zip(*indices)
-                    indices = map(np.concatenate, indices)
-                conditions = conditions[1:]
-            else:
-                left_on, right_on, op = pairs[0]
-                indices = _generic_func_cond_join(
-                    df[left_on],
-                    right[right_on],
-                    op,
-                    multiple_conditions=False,
-                    keep="all",
-                )
+        if len(gt_lt) == 1:
+            left_on, right_on, op = gt_lt[0]
+            indices = _numba_single_join(
+                df[left_on], right[right_on], op, keep="all"
+            )
         else:
-            indices = _numba_dual_join(df, right, pairs)
+            indices = _numba_dual_join(df, right, gt_lt)
     else:
         # there is an opportunity for optimization for range joins
         # which is usually `lower_value < value < upper_value`

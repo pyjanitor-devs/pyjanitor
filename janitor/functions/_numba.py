@@ -212,7 +212,7 @@ def _numba_equi_join(df, right, eqs, ge_gt, le_lt):
     return left_index, right_index
 
 
-@njit(cache=True, parallel=True)
+@njit(parallel=True)
 def _numba_equi_le_join(
     left_index,
     right_index,
@@ -288,7 +288,7 @@ def _numba_equi_le_join(
     return l_index, r_index
 
 
-@njit(cache=True, parallel=True)
+@njit(parallel=True)
 def _numba_equi_ge_join(
     left_index,
     right_index,
@@ -364,7 +364,7 @@ def _numba_equi_ge_join(
     return l_index, r_index
 
 
-@njit(cache=True, parallel=True)
+@njit(parallel=True)
 def _numba_equi_join_range_join(
     left_index,
     right_index,

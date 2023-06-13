@@ -179,7 +179,7 @@ def test_check_how_type(dummy, series):
 def test_check_how_value(dummy, series):
     """
     Raise ValueError if `how` is not one of
-    `inner`, `left`, or `right`.
+    `inner`, `left`, or `right`, or `outer`.
     """
     with pytest.raises(ValueError, match="'how' should be one of.+"):
         dummy.conditional_join(series, ("id", "B", "<"), how="INNER")
@@ -194,6 +194,16 @@ def test_check_sort_by_appearance_type(dummy, series):
     ):
         dummy.conditional_join(
             series, ("id", "B", "<"), sort_by_appearance="True"
+        )
+
+
+def test_sort_by_appearance_warning(dummy, series):
+    """
+    Test warning if sort_by_appearance = True.
+    """
+    with pytest.warns(DeprecationWarning):
+        dummy.conditional_join(
+            series, ("id", "B", "<"), sort_by_appearance=True
         )
 
 
@@ -3591,6 +3601,61 @@ def test_multiple_eqs(df, right):
         .sort_values(columns, ignore_index=True)
     )
 
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+def test_multiple_eqs_outer(df, right):
+    """Test output for multiple conditions."""
+
+    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+    expected = df.merge(
+        right,
+        left_on=["B", "A"],
+        right_on=["Floats", "Integers"],
+        how="inner",
+        sort=False,
+        indicator=True,
+    ).loc[lambda df: df.E.ne(df.Dates), columns + ["_merge"]]
+    contents = [expected]
+    top = df.loc(axis=1)[["B", "A", "E"]].merge(
+        expected.loc(axis=1)[["B", "A", "E"]], indicator=True, how="left"
+    )
+    top = top.loc[top._merge == "left_only"]
+    if not top.empty:
+        contents.append(top)
+    bottom = expected.loc(axis=1)[["Floats", "Integers", "Dates"]].merge(
+        right.loc(axis=1)[["Floats", "Integers", "Dates"]],
+        indicator=True,
+        how="right",
+    )
+    bottom = bottom.loc[bottom._merge == "right_only"]
+    if not bottom.empty:
+        contents.append(bottom)
+
+    expected = pd.concat(contents)
+    expected = expected.sort_values(columns, ignore_index=True).sort_index(
+        axis="columns"
+    )
+    actual = (
+        df[["B", "A", "E"]]
+        .conditional_join(
+            right[["Floats", "Integers", "Dates"]].assign(B=right.Floats),
+            ("E", "Dates", "!="),
+            ("B", "B", "=="),
+            ("A", "Integers", "=="),
+            how="outer",
+            sort_by_appearance=False,
+            indicator=True,
+        )
+        .select_columns(("right", "B"), invert=True)
+        .droplevel(axis=1, level=0)
+        .rename(columns={"": "_merge"})
+        .sort_values(columns, ignore_index=True)
+        .sort_index(axis="columns")
+    )
     assert_frame_equal(expected, actual)
 
 

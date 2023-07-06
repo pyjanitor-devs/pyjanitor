@@ -4,10 +4,12 @@
 #
 #    pip-compile .requirements/base.in
 #
+lazy-loader==0.3
+    # via -r base.in
 multipledispatch==0.6.0
-    # via -r .requirements/base.in
+    # via -r base.in
 natsort==8.1.0
-    # via -r .requirements/base.in
+    # via -r base.in
 numpy==1.22.3
     # via
     #   pandas
@@ -20,15 +22,15 @@ pandas==1.4.1
     #   pandas-flavor
     #   xarray
 pandas-flavor==0.2.0
-    # via -r .requirements/base.in
+    # via -r base.in
 pyparsing==3.0.7
     # via packaging
 python-dateutil==2.8.2
     # via pandas
 pytz==2021.3
     # via pandas
-scipy==1.8.0
-    # via -r .requirements/base.in
+scipy==1.10.0
+    # via -r base.in
 six==1.16.0
     # via
     #   multipledispatch

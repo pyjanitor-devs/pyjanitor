@@ -30,7 +30,7 @@ griffe==0.25.4
     # via mkdocstrings-python
 idna==3.4
     # via requests
-ipython==8.9.0
+ipython==8.10.0
     # via -r docs.in
 jedi==0.18.2
     # via ipython

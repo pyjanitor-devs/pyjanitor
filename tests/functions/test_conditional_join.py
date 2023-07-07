@@ -255,26 +255,6 @@ def test_check_use_numba_equi_join(dummy):
 @pytest.mark.turtle
 @settings(deadline=None)
 @given(df=conditional_df(), right=conditional_right())
-def test_check_use_numba_equi_join_multiple(df, right):
-    """
-    Raise ValueError if `use_numba` is True,
-    and there is more than one equi join.
-    """
-    with pytest.raises(
-        ValueError, match="Only a single equi-join is supported.+"
-    ):
-        df.conditional_join(
-            right,
-            ("E", "Dates", "=="),
-            ("A", "Integers", "=="),
-            ("B", "Numeric", "<="),
-            use_numba=True,
-        )
-
-
-@pytest.mark.turtle
-@settings(deadline=None)
-@given(df=conditional_df(), right=conditional_right())
 def test_check_use_numba_equi_join_no_le_or_ge(df, right):
     """
     Raise ValueError if `use_numba` is True,

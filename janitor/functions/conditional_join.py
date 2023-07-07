@@ -625,18 +625,11 @@ def _multiple_conditional_join_eq(
     if use_numba:
         from janitor.functions._numba import _numba_equi_join
 
-        eqs = [
-            (left_on, right_on, op)
-            for left_on, right_on, op in conditions
-            if op == _JoinOperator.STRICTLY_EQUAL.value
-        ]
+        eqs = None
+        for left_on, right_on, op in conditions:
+            if op == _JoinOperator.STRICTLY_EQUAL.value:
+                eqs = (left_on, right_on, op)
 
-        if len(eqs) > 1:
-            raise ValueError(
-                "Only a single equi-join is supported "
-                "when use_numba is set to True."
-            )
-        eqs = eqs[0]
         le_lt = None
         ge_gt = None
 

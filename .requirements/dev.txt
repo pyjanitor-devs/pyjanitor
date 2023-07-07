@@ -5,7 +5,7 @@
 #    pip-compile .requirements/dev.in
 #
 black==22.1.0
-    # via -r .requirements/dev.in
+    # via -r dev.in
 cfgv==3.3.1
     # via pre-commit
 click==8.0.4
@@ -13,17 +13,17 @@ click==8.0.4
     #   black
     #   pip-tools
 darglint==1.8.1
-    # via -r .requirements/dev.in
+    # via -r dev.in
 distlib==0.3.4
     # via virtualenv
 filelock==3.6.0
     # via virtualenv
 flake8==4.0.1
-    # via -r .requirements/dev.in
+    # via -r dev.in
 identify==2.4.11
     # via pre-commit
 isort==5.10.1
-    # via -r .requirements/dev.in
+    # via -r dev.in
 mccabe==0.6.1
     # via flake8
 mypy-extensions==0.4.3
@@ -35,13 +35,13 @@ pathspec==0.9.0
 pep517==0.12.0
     # via pip-tools
 pip-tools==6.5.1
-    # via -r .requirements/dev.in
+    # via -r dev.in
 platformdirs==2.5.1
     # via
     #   black
     #   virtualenv
 pre-commit==2.17.0
-    # via -r .requirements/dev.in
+    # via -r dev.in
 pycodestyle==2.8.0
     # via flake8
 pyflakes==2.4.0
@@ -56,11 +56,9 @@ tomli==2.0.1
     # via
     #   black
     #   pep517
-typing-extensions==4.1.1
-    # via black
 virtualenv==20.13.3
     # via pre-commit
-wheel==0.37.1
+wheel==0.38.1
     # via pip-tools
 
 # The following packages are considered to be unsafe in a requirements file:

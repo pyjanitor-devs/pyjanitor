@@ -62,7 +62,7 @@ iniconfig==1.1.1
     # via pytest
 interrogate==1.5.0
     # via -r testing.in
-ipython==8.1.1
+ipython==8.10.0
     # via -r docs.in
 isort==5.10.1
     # via -r dev.in
@@ -160,7 +160,7 @@ pluggy==1.0.0
     # via pytest
 pre-commit==2.17.0
     # via -r dev.in
-prompt-toolkit==3.0.28
+prompt-toolkit==3.0.39
     # via ipython
 ptyprocess==0.7.0
     # via pexpect

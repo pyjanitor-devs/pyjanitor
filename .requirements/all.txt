@@ -255,7 +255,7 @@ watchdog==2.1.6
     # via mkdocs
 wcwidth==0.2.5
     # via prompt-toolkit
-wheel==0.37.1
+wheel==0.38.1
     # via pip-tools
 xarray==2022.3.0
     # via pandas-flavor

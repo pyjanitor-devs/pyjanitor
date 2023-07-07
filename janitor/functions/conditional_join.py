@@ -49,8 +49,8 @@ def conditional_join(
     Joins solely on equality are not supported.
 
     If the join is solely on equality, `pd.merge` function
-    covers that; if you are interested in nearest joins, or rolling joins,
-    then `pd.merge_asof` covers that.
+    covers that; if you are interested in nearest joins, asof joins,
+    or rolling joins, then `pd.merge_asof` covers that.
     There is also pandas' IntervalIndex, which is efficient for range joins,
     especially if the intervals do not overlap.
 
@@ -66,7 +66,9 @@ def conditional_join(
     the form `(left_on, right_on, op)`; `left_on` is the column
     label from `df`, `right_on` is the column label from `right`,
     while `op` is the operator.
+
     The `col` class is also supported in the `conditional_join` syntax.
+
     For multiple conditions, the and(`&`)
     operator is used to combine the results of the individual conditions.
 

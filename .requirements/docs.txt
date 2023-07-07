@@ -98,7 +98,7 @@ pygments==2.14.0
     # via
     #   ipython
     #   mkdocs-material
-pymdown-extensions==9.9.2
+pymdown-extensions==10.0
     # via
     #   mkdocs-material
     #   mkdocstrings
@@ -109,6 +109,7 @@ python-dateutil==2.8.2
 pyyaml==6.0
     # via
     #   mkdocs
+    #   pymdown-extensions
     #   pyyaml-env-tag
 pyyaml-env-tag==0.1
     # via mkdocs

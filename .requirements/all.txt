@@ -182,7 +182,7 @@ pygments==2.11.2
     # via
     #   ipython
     #   mkdocs-material
-pymdown-extensions==9.2
+pymdown-extensions==10.0
     # via
     #   mkdocs-material
     #   mkdocstrings
@@ -212,6 +212,7 @@ pyyaml==6.0
     # via
     #   mkdocs
     #   pre-commit
+    #   pymdown-extensions
     #   pyyaml-env-tag
 pyyaml-env-tag==0.1
     # via mkdocs

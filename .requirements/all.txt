@@ -62,7 +62,7 @@ iniconfig==1.1.1
     # via pytest
 interrogate==1.5.0
     # via -r testing.in
-ipython==8.1.1
+ipython==8.10.0
     # via -r docs.in
 isort==5.10.1
     # via -r dev.in
@@ -110,7 +110,7 @@ mkdocstrings==0.20.0
     #   mkdocstrings-python
 mkdocstrings-python==0.8.3
     # via -r docs.in
-mpmath==1.2.1
+mpmath==1.3.0
     # via sympy
 multipledispatch==0.6.0
     # via -r base.in
@@ -160,7 +160,7 @@ pluggy==1.0.0
     # via pytest
 pre-commit==2.17.0
     # via -r dev.in
-prompt-toolkit==3.0.28
+prompt-toolkit==3.0.39
     # via ipython
 ptyprocess==0.7.0
     # via pexpect
@@ -182,7 +182,7 @@ pygments==2.11.2
     # via
     #   ipython
     #   mkdocs-material
-pymdown-extensions==9.2
+pymdown-extensions==10.0
     # via
     #   mkdocs-material
     #   mkdocstrings
@@ -212,6 +212,7 @@ pyyaml==6.0
     # via
     #   mkdocs
     #   pre-commit
+    #   pymdown-extensions
     #   pyyaml-env-tag
 pyyaml-env-tag==0.1
     # via mkdocs
@@ -255,7 +256,7 @@ watchdog==2.1.6
     # via mkdocs
 wcwidth==0.2.5
     # via prompt-toolkit
-wheel==0.37.1
+wheel==0.38.1
     # via pip-tools
 xarray==2022.3.0
     # via pandas-flavor

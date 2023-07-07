@@ -40,6 +40,7 @@ def conditional_join(
     keep: Literal["first", "last", "all"] = "all",
     use_numba: bool = False,
     indicator: Optional[Union[bool, str]] = False,
+    force: bool = False,
 ) -> pd.DataFrame:
     """The conditional_join function operates similarly to `pd.merge`,
     but allows joins on inequality operators,
@@ -68,6 +69,10 @@ def conditional_join(
     The `col` class is also supported in the `conditional_join` syntax.
     For multiple conditions, the and(`&`)
     operator is used to combine the results of the individual conditions.
+
+    In some scenarios there might be performance gains if the less than join,
+    or the greater than join condition, or the range condition
+    is executed before the equi join - pass `force=True` to force this.
 
     The operator can be any of `==`, `!=`, `<=`, `<`, `>=`, `>`.
 
@@ -179,6 +184,7 @@ def conditional_join(
             `right_only` for observations whose merge key
             only appears in the right DataFrame, and `both` if the observation’s
             merge key is found in both DataFrames.
+        force: If `True`, force the non-equi join conditions to execute before the equi join.
 
     Returns:
         A pandas DataFrame of the two merged Pandas objects.
@@ -195,6 +201,7 @@ def conditional_join(
         keep,
         use_numba,
         indicator,
+        force,
     )
 
 
@@ -224,6 +231,7 @@ def _conditional_join_preliminary_checks(
     keep: str,
     use_numba: bool,
     indicator: Union[bool, str],
+    force: bool,
 ) -> tuple:
     """
     Preliminary checks for conditional_join are conducted here.
@@ -315,6 +323,8 @@ def _conditional_join_preliminary_checks(
 
     check("indicator", indicator, [bool, str])
 
+    check("force", force, [bool])
+
     return (
         df,
         right,
@@ -326,6 +336,7 @@ def _conditional_join_preliminary_checks(
         keep,
         use_numba,
         indicator,
+        force,
     )
 
 
@@ -410,6 +421,7 @@ def _conditional_join_compute(
     keep: str,
     use_numba: bool,
     indicator: Union[bool, str],
+    force: bool,
 ) -> pd.DataFrame:
     """
     This is where the actual computation
@@ -427,6 +439,7 @@ def _conditional_join_compute(
         keep,
         use_numba,
         indicator,
+        force,
     ) = _conditional_join_preliminary_checks(
         df,
         right,
@@ -438,6 +451,7 @@ def _conditional_join_compute(
         keep,
         use_numba,
         indicator,
+        force,
     )
 
     eq_check = False
@@ -458,7 +472,7 @@ def _conditional_join_compute(
     if len(conditions) > 1:
         if eq_check:
             result = _multiple_conditional_join_eq(
-                df, right, conditions, keep, use_numba
+                df, right, conditions, keep, use_numba, force
             )
         elif le_lt_check:
             result = _multiple_conditional_join_le_lt(
@@ -588,6 +602,7 @@ def _multiple_conditional_join_eq(
     conditions: list,
     keep: str,
     use_numba: bool,
+    force: bool,
 ) -> tuple:
     """
     Get indices for multiple conditions,
@@ -595,6 +610,15 @@ def _multiple_conditional_join_eq(
 
     Returns a tuple of (left_index, right_index)
     """
+
+    if force:
+        return _multiple_conditional_join_le_lt(
+            df=df,
+            right=right,
+            conditions=conditions,
+            keep=keep,
+            use_numba=use_numba,
+        )
 
     if use_numba:
         from janitor.functions._numba import _numba_equi_join
@@ -738,12 +762,11 @@ def _multiple_conditional_join_le_lt(
         gt_lt = [
             condition
             for condition in conditions
-            if condition[-1] != _JoinOperator.NOT_EQUAL.value
+            if condition[-1]
+            in less_than_join_types.union(greater_than_join_types)
         ]
         conditions = [
-            condition
-            for condition in conditions
-            if condition[-1] == _JoinOperator.NOT_EQUAL.value
+            condition for condition in conditions if condition not in gt_lt
         ]
         if len(gt_lt) == 1:
             left_on, right_on, op = gt_lt[0]

@@ -176,6 +176,14 @@ def test_check_how_type(dummy, series):
         dummy.conditional_join(series, ("id", "B", "<"), how=1)
 
 
+def test_check_force_type(dummy, series):
+    """
+    Raise TypeError if `how` is not a string.
+    """
+    with pytest.raises(TypeError, match="force should be one of.+"):
+        dummy.conditional_join(series, ("id", "B", "<"), force=1)
+
+
 def test_check_how_value(dummy, series):
     """
     Raise ValueError if `how` is not one of
@@ -2956,6 +2964,38 @@ def test_ge_eq_and_le_numbers(df, right):
 @settings(deadline=None)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
+def test_ge_eq_and_le_numbers_force(df, right):
+    """Test output for multiple conditions."""
+
+    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+    expected = (
+        df.merge(
+            right, left_on="B", right_on="Floats", how="inner", sort=False
+        )
+        .loc[lambda df: df.A.ge(df.Integers) & df.E.le(df.Dates), columns]
+        .sort_values(columns, ignore_index=True)
+    )
+
+    actual = (
+        df[["B", "A", "E"]]
+        .conditional_join(
+            right[["Floats", "Integers", "Dates"]],
+            ("A", "Integers", ">="),
+            ("E", "Dates", "<="),
+            ("B", "Floats", "=="),
+            how="inner",
+            force=True,
+            sort_by_appearance=False,
+        )
+        .sort_values(columns, ignore_index=True)
+    )
+    actual = actual.filter(columns)
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
 def test_ge_eq_and_le_numbers_variant_numba(df, right):
     """Test output for multiple conditions."""
 
@@ -3744,6 +3784,42 @@ def test_extension_array_eq():
         ("id", "id", "=="),
         ("value_1", "value_2A", ">"),
         use_numba=False,
+        sort_by_appearance=False,
+    )
+    expected = (
+        expected.drop(columns=("right", "id"))
+        .droplevel(axis=1, level=0)
+        .sort_values(["id", "value_1", "value_2A"], ignore_index=True)
+    )
+    actual = (
+        df1.merge(df2, on="id")
+        .loc[lambda df: df.value_1.gt(df.value_2A)]
+        .sort_values(["id", "value_1", "value_2A"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+def test_extension_array_eq_force():
+    """Extension arrays when matching on equality."""
+    df1 = pd.DataFrame(
+        {"id": [1, 1, 1, 2, 2, 3], "value_1": [2, 5, 7, 1, 3, 4]}
+    )
+    df1 = df1.astype({"value_1": "Int64"})
+    df2 = pd.DataFrame(
+        {
+            "id": [1, 1, 1, 1, 2, 2, 2, 3],
+            "value_2A": [0, 3, 7, 12, 0, 2, 3, 1],
+            "value_2B": [1, 5, 9, 15, 1, 4, 6, 3],
+        }
+    )
+    df2 = df2.astype({"value_2A": "Int64"})
+    expected = df1.conditional_join(
+        df2,
+        ("id", "id", "=="),
+        ("value_1", "value_2A", ">"),
+        use_numba=False,
+        force=True,
         sort_by_appearance=False,
     )
     expected = (

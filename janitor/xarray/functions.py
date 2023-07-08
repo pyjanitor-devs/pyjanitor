@@ -4,11 +4,10 @@ functionality.
 """
 
 from typing import Union
-import lazy_loader
 
-np = lazy_loader.load("numpy")
-xr = lazy_loader.load("xarray")
-pf = lazy_loader.load("pandas_flavor")
+import numpy as np
+import pandas_flavor as pf
+import xarray as xr
 
 
 @pf.register_xarray_dataarray_method

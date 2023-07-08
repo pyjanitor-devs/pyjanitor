@@ -1,25 +1,16 @@
-"""Miscellaneous mathematical operators.
-
-Lazy loading used here to speed up imports.
-"""
+"""Miscellaneous utility functions."""
 
 from __future__ import annotations
+
 import os
-import sys
 import socket
-from typing import Any, Callable, Dict, Iterable, Union, List
+import sys
 from functools import singledispatch, wraps
+from typing import Any, Callable, Dict, Iterable, List, Union
 from warnings import warn
 
-
-import lazy_loader as lazy
-
-scipy_special = lazy.load("scipy.special")
-ss = lazy.load("scipy.stats")
-pf = lazy.load("pandas_flavor")
-pd = lazy.load("pandas")
-np = lazy.load("numpy")
-pdtypes = lazy.load("pandas.api.types")
+import numpy as np
+import pandas as pd
 
 
 def check(varname: str, value, expected_types: list):
@@ -536,8 +527,9 @@ def find_stack_level() -> int:
         Stack level number
     """
 
-    import janitor as jn
     import inspect
+
+    import janitor as jn
 
     pkg_dir = os.path.abspath(os.path.dirname(jn.__file__))
     test_dir = os.path.join(os.path.dirname(pkg_dir), "tests")

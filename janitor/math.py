@@ -1,24 +1,17 @@
-"""Miscellaneous mathematical operators.
-
-Lazy loading used here to speed up imports.
-"""
+"""Miscellaneous mathematical operators."""
 
 import warnings
-from typing import Tuple
+from typing import TYPE_CHECKING, Tuple
 
+import pandas_flavor as pf
 
-import lazy_loader as lazy
-
-scipy_special = lazy.load("scipy.special")
-ss = lazy.load("scipy.stats")
-pf = lazy.load("pandas_flavor")
-pd = lazy.load("pandas")
-np = lazy.load("numpy")
-pdtypes = lazy.load("pandas.api.types")
+if TYPE_CHECKING:
+    from numpy import ndarray
+    from pandas import Series
 
 
 @pf.register_series_method
-def log(s: pd.Series, error: str = "warn") -> pd.Series:
+def log(s: "Series", error: str = "warn") -> "Series":
     """
     Take natural logarithm of the Series.
 
@@ -49,6 +42,8 @@ def log(s: pd.Series, error: str = "warn") -> pd.Series:
     Returns:
         Transformed Series.
     """
+    import numpy as np
+
     s = s.copy()
     nonpositive = s <= 0
     if (nonpositive).any():
@@ -64,7 +59,7 @@ def log(s: pd.Series, error: str = "warn") -> pd.Series:
 
 
 @pf.register_series_method
-def exp(s: pd.Series) -> pd.Series:
+def exp(s: "Series") -> "Series":
     """Take the exponential transform of the series.
 
     Examples:
@@ -83,11 +78,13 @@ def exp(s: pd.Series) -> pd.Series:
     Returns:
         Transformed Series.
     """
+    import numpy as np
+
     return np.exp(s)
 
 
 @pf.register_series_method
-def sigmoid(s: pd.Series) -> pd.Series:
+def sigmoid(s: "Series") -> "Series":
     """Take the sigmoid transform of the series.
 
     The sigmoid function is defined:
@@ -112,11 +109,13 @@ def sigmoid(s: pd.Series) -> pd.Series:
     Returns:
         Transformed Series.
     """
-    return scipy_special.expit(s)
+    import scipy
+
+    return scipy.special.expit(s)
 
 
 @pf.register_series_method
-def softmax(s: pd.Series) -> pd.Series:
+def softmax(s: "Series") -> "Series":
     """Take the softmax transform of the series.
 
     The softmax function transforms each element of a collection by
@@ -145,12 +144,14 @@ def softmax(s: pd.Series) -> pd.Series:
     Returns:
         Transformed Series.
     """
+    import pandas as pd
+    import scipy
 
-    return pd.Series(scipy_special.softmax(s), index=s.index, name=s.name)
+    return pd.Series(scipy.special.softmax(s), index=s.index, name=s.name)
 
 
 @pf.register_series_method
-def logit(s: pd.Series, error: str = "warn") -> pd.Series:
+def logit(s: "Series", error: str = "warn") -> "Series":
     """Take logit transform of the Series.
 
     The logit transform is defined:
@@ -185,6 +186,9 @@ def logit(s: pd.Series, error: str = "warn") -> pd.Series:
     Returns:
         Transformed Series.
     """
+    import numpy as np
+    import scipy
+
     s = s.copy()
     outside_support = (s <= 0) | (s >= 1)
     if (outside_support).any():
@@ -196,11 +200,11 @@ def logit(s: pd.Series, error: str = "warn") -> pd.Series:
         else:
             pass
     s[outside_support] = np.nan
-    return scipy_special.logit(s)
+    return scipy.special.logit(s)
 
 
 @pf.register_series_method
-def normal_cdf(s: pd.Series) -> pd.Series:
+def normal_cdf(s: "Series") -> "Series":
     """Transforms the Series via the CDF of the Normal distribution.
 
     Examples:
@@ -219,11 +223,14 @@ def normal_cdf(s: pd.Series) -> pd.Series:
     Returns:
         Transformed Series.
     """
-    return pd.Series(ss.norm.cdf(s), index=s.index)
+    import pandas as pd
+    import scipy
+
+    return pd.Series(scipy.stats.norm.cdf(s), index=s.index)
 
 
 @pf.register_series_method
-def probit(s: pd.Series, error: str = "warn") -> pd.Series:
+def probit(s: "Series", error: str = "warn") -> "Series":
     """Transforms the Series via the inverse CDF of the Normal distribution.
 
     Each value in the series should be between 0 and 1. Use `error` to
@@ -253,6 +260,10 @@ def probit(s: pd.Series, error: str = "warn") -> pd.Series:
     Returns:
         Transformed Series
     """
+    import numpy as np
+    import pandas as pd
+    import scipy
+
     s = s.copy()
     outside_support = (s <= 0) | (s >= 1)
     if (outside_support).any():
@@ -265,16 +276,16 @@ def probit(s: pd.Series, error: str = "warn") -> pd.Series:
             pass
     s[outside_support] = np.nan
     with np.errstate(all="ignore"):
-        out = pd.Series(ss.norm.ppf(s), index=s.index)
+        out = pd.Series(scipy.stats.norm.ppf(s), index=s.index)
     return out
 
 
 @pf.register_series_method
 def z_score(
-    s: pd.Series,
+    s: "Series",
     moments_dict: dict = None,
     keys: Tuple[str, str] = ("mean", "std"),
-) -> pd.Series:
+) -> "Series":
     """Transforms the Series into z-scores.
 
     The z-score is defined:
@@ -316,7 +327,7 @@ def z_score(
 
 
 @pf.register_series_method
-def ecdf(s: pd.Series) -> Tuple[np.ndarray, np.ndarray]:
+def ecdf(s: "Series") -> Tuple["ndarray", "ndarray"]:
     """Return cumulative distribution of values in a series.
 
     Null values must be dropped from the series,
@@ -351,6 +362,9 @@ def ecdf(s: pd.Series) -> Tuple[np.ndarray, np.ndarray]:
         x: Sorted array of values.
         y: Cumulative fraction of data points with value `x` or lower.
     """
+    import numpy as np
+    import pandas.api.types as pdtypes
+
     if not pdtypes.is_numeric_dtype(s):
         raise TypeError(f"series {s.name} must be numeric!")
     if not s.isna().sum() == 0:

@@ -1,8 +1,8 @@
-import lazy_loader as lazy
+"""DataDescription class for the DataDescription accessor."""
 from typing import Dict, List, Union
 
-pf = lazy.load("pandas_flavor")
-pd = lazy.load("pandas")
+import pandas as pd
+import pandas_flavor as pf
 
 
 @pf.register_dataframe_accessor("data_description")

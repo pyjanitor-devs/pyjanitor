@@ -40,6 +40,7 @@ def conditional_join(
     keep: Literal["first", "last", "all"] = "all",
     use_numba: bool = False,
     indicator: Optional[Union[bool, str]] = False,
+    force: bool = False,
 ) -> pd.DataFrame:
     """The conditional_join function operates similarly to `pd.merge`,
     but allows joins on inequality operators,
@@ -48,18 +49,15 @@ def conditional_join(
     Joins solely on equality are not supported.
 
     If the join is solely on equality, `pd.merge` function
-    covers that; if you are interested in nearest joins, or rolling joins,
-    then `pd.merge_asof` covers that.
+    covers that; if you are interested in nearest joins, asof joins,
+    or rolling joins, then `pd.merge_asof` covers that.
     There is also pandas' IntervalIndex, which is efficient for range joins,
     especially if the intervals do not overlap.
 
     Column selection in `df_columns` and `right_columns` is possible using the
     [`select_columns`][janitor.functions.select.select_columns] syntax.
 
-    For strictly non-equi joins,
-    involving either `>`, `<`, `>=`, `<=` operators,
-    performance might be improved
-    by setting `use_numba` to `True`.
+    Performance might be improved by setting `use_numba` to `True`.
     This assumes that `numba` is installed.
 
     This function returns rows, if any, where values from `df` meet the
@@ -68,9 +66,15 @@ def conditional_join(
     the form `(left_on, right_on, op)`; `left_on` is the column
     label from `df`, `right_on` is the column label from `right`,
     while `op` is the operator.
+
     The `col` class is also supported in the `conditional_join` syntax.
+
     For multiple conditions, the and(`&`)
     operator is used to combine the results of the individual conditions.
+
+    In some scenarios there might be performance gains if the less than join,
+    or the greater than join condition, or the range condition
+    is executed before the equi join - pass `force=True` to force this.
 
     The operator can be any of `==`, `!=`, `<=`, `<`, `>=`, `>`.
 
@@ -141,6 +145,7 @@ def conditional_join(
         - 0.25.0
             - `col` class supported.
             - Outer join supported. `sort_by_appearance` deprecated.
+            - Numba support for equi join
 
     Args:
         df: A pandas DataFrame.
@@ -171,9 +176,8 @@ def conditional_join(
             Column selection is based on the
             [`select_columns`][janitor.functions.select.select_columns] syntax.
             It is also possible to rename the output columns via a dictionary.
+        use_numba: Use numba, if installed, to accelerate the computation.
         keep: Choose whether to return the first match, last match or all matches.
-        use_numba: Uses numba, if installed. This might offer more performance,
-            and applies only to non-equi joins.
         indicator: If `True`, adds a column to the output DataFrame
             called `_merge` with information on the source of each row.
             The column can be given a different name by providing a string argument.
@@ -182,6 +186,7 @@ def conditional_join(
             `right_only` for observations whose merge key
             only appears in the right DataFrame, and `both` if the observation’s
             merge key is found in both DataFrames.
+        force: If `True`, force the non-equi join conditions to execute before the equi join.
 
     Returns:
         A pandas DataFrame of the two merged Pandas objects.
@@ -198,6 +203,7 @@ def conditional_join(
         keep,
         use_numba,
         indicator,
+        force,
     )
 
 
@@ -227,6 +233,7 @@ def _conditional_join_preliminary_checks(
     keep: str,
     use_numba: bool,
     indicator: Union[bool, str],
+    force: bool,
 ) -> tuple:
     """
     Preliminary checks for conditional_join are conducted here.
@@ -318,6 +325,8 @@ def _conditional_join_preliminary_checks(
 
     check("indicator", indicator, [bool, str])
 
+    check("force", force, [bool])
+
     return (
         df,
         right,
@@ -329,15 +338,28 @@ def _conditional_join_preliminary_checks(
         keep,
         use_numba,
         indicator,
+        force,
     )
 
 
 def _conditional_join_type_check(
-    left_column: pd.Series, right_column: pd.Series, op: str
+    left_column: pd.Series, right_column: pd.Series, op: str, use_numba: bool
 ) -> None:
     """
     Raise error if column type is not any of numeric or datetime or string.
     """
+
+    if (
+        (op == _JoinOperator.STRICTLY_EQUAL.value)
+        and use_numba
+        and not is_numeric_dtype(left_column)
+        and not is_datetime64_dtype(left_column)
+    ):
+        raise TypeError(
+            "Only numeric and datetime types "
+            "are supported in an equi-join "
+            "when use_numba is set to True"
+        )
 
     is_categorical_dtype = isinstance(left_column.dtype, pd.CategoricalDtype)
 
@@ -351,7 +373,7 @@ def _conditional_join_type_check(
             if func(left_column.dtype):
                 break
         else:
-            raise ValueError(
+            raise TypeError(
                 "conditional_join only supports "
                 "string, category, numeric, or "
                 "date dtypes (without timezone) - "
@@ -363,22 +385,23 @@ def _conditional_join_type_check(
         if not left_column.array._categories_match_up_to_permutation(
             right_column.array
         ):
-            raise ValueError(
+            raise TypeError(
                 f"'{left_column.name}' and '{right_column.name}' "
                 "should have the same categories, and the same order."
             )
     elif not is_dtype_equal(left_column, right_column):
-        raise ValueError(
+        raise TypeError(
             f"Both columns should have the same type - "
             f"'{left_column.name}' has {left_column.dtype} type;"
             f"'{right_column.name}' has {right_column.dtype} type."
         )
 
-    number_or_date = is_numeric_dtype(left_column) or is_datetime64_dtype(
-        left_column
-    )
-    if (op != _JoinOperator.STRICTLY_EQUAL.value) & (not number_or_date):
-        raise ValueError(
+    if (
+        (op != _JoinOperator.STRICTLY_EQUAL.value)
+        and not is_numeric_dtype(left_column)
+        and not is_datetime64_dtype(left_column)
+    ):
+        raise TypeError(
             "non-equi joins are supported "
             "only for datetime and numeric dtypes. "
             f"{left_column.name} in condition "
@@ -400,11 +423,11 @@ def _conditional_join_compute(
     keep: str,
     use_numba: bool,
     indicator: Union[bool, str],
+    force: bool,
 ) -> pd.DataFrame:
     """
     This is where the actual computation
     for the conditional join takes place.
-    A pandas DataFrame is returned.
     """
 
     (
@@ -418,6 +441,7 @@ def _conditional_join_compute(
         keep,
         use_numba,
         indicator,
+        force,
     ) = _conditional_join_preliminary_checks(
         df,
         right,
@@ -429,13 +453,16 @@ def _conditional_join_compute(
         keep,
         use_numba,
         indicator,
+        force,
     )
 
     eq_check = False
     le_lt_check = False
     for condition in conditions:
         left_on, right_on, op = condition
-        _conditional_join_type_check(df[left_on], right[right_on], op)
+        _conditional_join_type_check(
+            df[left_on], right[right_on], op, use_numba
+        )
         if op == _JoinOperator.STRICTLY_EQUAL.value:
             eq_check = True
         elif op in less_than_join_types.union(greater_than_join_types):
@@ -446,7 +473,9 @@ def _conditional_join_compute(
 
     if len(conditions) > 1:
         if eq_check:
-            result = _multiple_conditional_join_eq(df, right, conditions, keep)
+            result = _multiple_conditional_join_eq(
+                df, right, conditions, keep, use_numba, force
+            )
         elif le_lt_check:
             result = _multiple_conditional_join_le_lt(
                 df, right, conditions, keep, use_numba
@@ -540,7 +569,6 @@ def _multiple_conditional_join_ne(
 
     Returns a tuple of (left_index, right_index)
     """
-
     # currently, there is no optimization option here
     # not equal typically combines less than
     # and greater than, so a lot more rows are returned
@@ -571,20 +599,112 @@ def _multiple_conditional_join_ne(
 
 
 def _multiple_conditional_join_eq(
-    df: pd.DataFrame, right: pd.DataFrame, conditions: list, keep: str
+    df: pd.DataFrame,
+    right: pd.DataFrame,
+    conditions: list,
+    keep: str,
+    use_numba: bool,
+    force: bool,
 ) -> tuple:
     """
     Get indices for multiple conditions,
     if any of the conditions has an `==` operator.
 
-    Returns a tuple of (df_index, right_index)
+    Returns a tuple of (left_index, right_index)
     """
+
+    if force:
+        return _multiple_conditional_join_le_lt(
+            df=df,
+            right=right,
+            conditions=conditions,
+            keep=keep,
+            use_numba=use_numba,
+        )
+
+    if use_numba:
+        from janitor.functions._numba import _numba_equi_join
+
+        eqs = None
+        for left_on, right_on, op in conditions:
+            if op == _JoinOperator.STRICTLY_EQUAL.value:
+                eqs = (left_on, right_on, op)
+
+        le_lt = None
+        ge_gt = None
+
+        for condition in conditions:
+            *_, op = condition
+            if op in less_than_join_types:
+                if le_lt:
+                    continue
+                le_lt = condition
+            elif op in greater_than_join_types:
+                if ge_gt:
+                    continue
+                ge_gt = condition
+            if le_lt and ge_gt:
+                break
+        if not le_lt and not ge_gt:
+            raise ValueError(
+                "At least one less than or greater than "
+                "join condition should be present when an equi-join "
+                "is present, and use_numba is set to True."
+            )
+        rest = [
+            condition
+            for condition in conditions
+            if condition not in {eqs, le_lt, ge_gt}
+        ]
+
+        right_columns = [eqs[1]]
+        df_columns = [eqs[0]]
+        if ge_gt:
+            if ge_gt[1] not in right_columns:
+                right_columns.append(ge_gt[1])
+            if ge_gt[0] not in df_columns:
+                df_columns.append(ge_gt[0])
+        if le_lt:
+            if le_lt[1] not in right_columns:
+                right_columns.append(le_lt[1])
+            if le_lt[0] not in df_columns:
+                df_columns.append(le_lt[0])
+
+        right_df = right.loc(axis=1)[right_columns]
+        left_df = df.loc(axis=1)[df_columns]
+        any_nulls = left_df.isna().any(axis=1)
+        if any_nulls.all(axis=None):
+            return None
+        if any_nulls.any():
+            left_df = left_df.loc[~any_nulls]
+        any_nulls = right_df.isna().any(axis=1)
+        if any_nulls.all(axis=None):
+            return None
+        if any_nulls.any():
+            right_df = right.loc[~any_nulls]
+        right_df = right_df.sort_values(right_columns)
+        indices = _numba_equi_join(left_df, right_df, eqs, ge_gt, le_lt)
+
+        if not rest or (indices is None):
+            return indices
+
+        rest = (
+            (df[left_on], right[right_on], op)
+            for left_on, right_on, op in rest
+        )
+
+        indices = _generate_indices(*indices, rest)
+
+        if not indices:
+            return None
+
+        return _keep_output(keep, *indices)
+
     eqs = [
         (left_on, right_on)
         for left_on, right_on, op in conditions
         if op == _JoinOperator.STRICTLY_EQUAL.value
     ]
-
     left_on, right_on = zip(*eqs)
     left_on = [*left_on]
     right_on = [*right_on]
@@ -637,12 +757,11 @@ def _multiple_conditional_join_le_lt(
         gt_lt = [
             condition
             for condition in conditions
-            if condition[-1] != _JoinOperator.NOT_EQUAL.value
+            if condition[-1]
+            in less_than_join_types.union(greater_than_join_types)
         ]
         conditions = [
-            condition
-            for condition in conditions
-            if condition[-1] == _JoinOperator.NOT_EQUAL.value
+            condition for condition in conditions if condition not in gt_lt
         ]
         if len(gt_lt) == 1:
             left_on, right_on, op = gt_lt[0]

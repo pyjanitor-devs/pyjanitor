@@ -661,15 +661,11 @@ def _select(
         if rows is None:
             rows = slice(None)
         else:
-            if not is_list_like(rows):
-                rows = [rows]
-            rows = _select_index(rows, df, axis="index")
+            rows = _select_index([rows], df, axis="index")
         if columns is None:
             columns = slice(None)
         else:
-            if not is_list_like(columns):
-                columns = [columns]
-            columns = _select_index(columns, df, axis="columns")
+            columns = _select_index([columns], df, axis="columns")
         return df.iloc[rows, columns]
     indices = _select_index(list(args), df, axis)
     if invert:

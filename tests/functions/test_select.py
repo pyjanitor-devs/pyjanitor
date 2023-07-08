@@ -55,6 +55,20 @@ def test_select_columns_only(dataframe):
     assert_frame_equal(actual, expected)
 
 
+def test_select_single_column(dataframe):
+    """Test output for columns only"""
+    actual = dataframe.select(columns="col1")
+    expected = dataframe.loc[:, ["col1"]]
+    assert_frame_equal(actual, expected)
+
+
+def test_select_single_row(dataframe):
+    """Test output for row only"""
+    actual = dataframe.select(rows=("bar", "one"))
+    expected = dataframe.loc[[("bar", "one")]]
+    assert_frame_equal(actual, expected)
+
+
 def test_select_columns_scalar(dataframe):
     """Test output for columns only"""
     actual = dataframe.select(columns="col*")

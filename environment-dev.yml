@@ -50,4 +50,3 @@ dependencies:
   - xorg-libxrender
   - pip:
       - mknotebooks
-      - lazy-loader

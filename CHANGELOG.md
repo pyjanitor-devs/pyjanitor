@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v0.25.0] - 2023-07-27
+
 -   [INF] Replace `pytest.ini` file with `pyproject.toml` file. PR #1204 @Zeroto521
 -   [INF] Extract docstrings tests from all tests. PR #1205 @Zeroto521
 -   [BUG] Address the `TypeError` when importing v0.24.0 (issue #1201 @xujiboy and @joranbeasley)
@@ -338,7 +340,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.24.0...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.25.0...HEAD
+
+[v0.25.0]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.24.0...v0.25.0
 
 [v0.24.0]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.23.1...v0.24.0
 

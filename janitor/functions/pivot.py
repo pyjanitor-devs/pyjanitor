@@ -874,6 +874,39 @@ def _computations_pivot_longer(
     out = df.loc[:, column_names]
 
     if all((names_pattern is None, names_sep is None)):
+        shape = out.shape
+        indexer = np.empty(shape, dtype=np.intp)
+        indexer[:, :] = np.arange(shape[0], dtype=np.intp)[:, np.newaxis]
+        indexer = indexer.ravel(order="F")
+        if index:
+            index = {name: arr[indexer] for name, arr in index.items()}
+        df_index = out.index[indexer]
+        if out.dtypes.map(is_extension_array_dtype).any(axis=None):
+            values = [arr._values for _, arr in out.items()]
+            values = concat_compat(values)
+        else:
+            values = out._values.ravel(order="F")
+        values = {values_to: values}
+        indexer = indexer.reshape(shape)
+        indexer[:, :] = np.arange(shape[1], dtype=np.intp)[np.newaxis, :]
+        indexer = indexer.ravel(order="F")
+        columns = {
+            name: out.columns.get_level_values(name)
+            for name in out.columns.names
+        }
+        if names_transform:
+            columns = _names_transform(
+                arg=names_transform, column_mapping=columns
+            )
+        columns = {name: arr[indexer] for name, arr in columns.items()}
+        out = {**index, **columns, **values}
+        out = pd.DataFrame(out, index=df_index)
+        if sort_by_appearance:
+            out = out.sort_index()
+        if ignore_index:
+            out.index = range(len(out))
+        return out
+
         return _base_melt(
             df=out,
             index=index,
@@ -921,6 +954,21 @@ def _computations_pivot_longer(
         values_to=values_to,
         ignore_index=ignore_index,
     )
+
+
+def _names_transform(arg, column_mapping):
+    """
+    Change data type of column labels
+    """
+    if isinstance(arg, dict):
+        return {
+            key: arr.astype(arg[key], copy=False)
+            for key, arr in column_mapping.items()
+            if key in arg
+        }
+    return {
+        key: arr.astype(arg, copy=False) for key, arr in column_mapping.items()
+    }
 
 
 def _pivot_longer_names_pattern_sequence(

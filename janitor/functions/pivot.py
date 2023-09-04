@@ -28,7 +28,7 @@ def pivot_longer(
     column_names: Optional[Union[list, tuple, str, Pattern]] = None,
     names_to: Optional[Union[list, tuple, str]] = None,
     values_to: Optional[str] = "value",
-    column_level: Optional[Union[int, str]] = None,
+    column_level: Optional[Union[int, str, list[int, str]]] = None,
     names_sep: Optional[Union[str, Pattern]] = None,
     names_pattern: Optional[Union[list, tuple, str, Pattern]] = None,
     names_transform: Optional[Union[str, Callable, dict]] = None,
@@ -347,7 +347,7 @@ def pivot_longer(
             were previously the values of the columns in `column_names`.
             values_to can also be a list/tuple
             and requires that names_pattern is also a list/tuple.
-        column_level: If columns are a MultiIndex, then use this level to
+        column_level: If columns are a MultiIndex, then use this level(s) to
             unpivot the DataFrame. Provided for compatibility with pandas' melt,
             and applies only if neither `names_sep` nor `names_pattern` is
             provided.
@@ -473,8 +473,20 @@ def _data_checks_pivot_longer(
     df = df[:]
 
     if column_level is not None:
-        check("column_level", column_level, [int, str])
-        df.columns = df.columns.get_level_values(column_level)
+        check("column_level", column_level, [int, str, list])
+        if isinstance(column_level, (int, str)):
+            df.columns = df.columns.get_level_values(column_level)
+        else:
+            all_str = all(isinstance(level, str) for level in column_level)
+            all_int = all(isinstance(level, int) for level in column_level)
+            if not all_str | all_int:
+                raise TypeError(
+                    "The levels in `column_level` should either be "
+                    "all strings or integers."
+                )
+            df.columns = [
+                df.columns.get_level_values(level) for level in column_level
+            ]
 
     if any((names_sep, names_pattern)) and (
         isinstance(df.columns, pd.MultiIndex)

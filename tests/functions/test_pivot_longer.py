@@ -40,6 +40,19 @@ def test_column_level_wrong_type(df_multi):
         df_multi.pivot_longer(index="name", column_level={0})
 
 
+def test_column_level_wrong_type_list(df_multi):
+    """
+    Raise TypeError if column_level is a list,
+    and within the list there is a mix of types.
+    """
+    with pytest.raises(
+        TypeError,
+        match="The levels in `column_level` "
+        "should either be all strings or integers.",
+    ):
+        df_multi.pivot_longer(index="name", column_level=[0, "string"])
+
+
 @pytest.mark.xfail(reason="checking is done within _select_columns")
 def test_type_index(df_checks):
     """Raise TypeError if wrong type is provided for the index."""
@@ -600,6 +613,16 @@ def test_multiindex_column_level(df_multi):
     expected_output = df_multi.melt(
         id_vars="name", value_vars="names", col_level=0
     )
+    assert_frame_equal(result, expected_output)
+
+
+def test_multiindex_column_level1(df_multi):
+    """
+    Test output from MultiIndex column,
+    when column_level is provided.
+    """
+    result = df_multi.pivot_longer(index=[("name", "a")], column_level=[0, 1])
+    expected_output = df_multi.melt(id_vars=[("name", "a")])
     assert_frame_equal(result, expected_output)
 
 

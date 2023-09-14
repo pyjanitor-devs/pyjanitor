@@ -80,6 +80,5 @@ def expand_column(
     """  # noqa: E501
     expanded_df = df[column_name].str.get_dummies(sep=sep)
     if concat:
-        df = df.join(expanded_df)
-        return df
+        return df.join(expanded_df)
     return expanded_df

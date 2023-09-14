@@ -16,13 +16,12 @@ from typing import (
     Callable,
     Any,
 )
-from pandas.core.dtypes.generic import ABCPandasArray, ABCExtensionArray
 from pandas.core.groupby.generic import DataFrameGroupBy, SeriesGroupBy
 from pandas.core.common import is_bool_indexer
 from dataclasses import dataclass
 from enum import Enum
 import pandas as pd
-from janitor.utils import check, _expand_grid
+from janitor.utils import check, _expand_grid, find_stack_level
 from pandas.api.types import (
     union_categoricals,
     is_scalar,
@@ -161,7 +160,7 @@ def patterns(regex_pattern: Union[str, Pattern]) -> Pattern:
     warnings.warn(
         "This function is deprecated. Kindly use `re.compile` instead.",
         DeprecationWarning,
-        stacklevel=2,
+        stacklevel=find_stack_level(),
     )
     check("regular expression", regex_pattern, [str, Pattern])
 
@@ -467,8 +466,7 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
 
 
 @_select_index.register(np.ndarray)  # noqa: F811
-@_select_index.register(ABCPandasArray)  # noqa: F811
-@_select_index.register(ABCExtensionArray)  # noqa: F811
+@_select_index.register(pd.api.extensions.ExtensionArray)  # noqa: F811
 @_select_index.register(pd.Index)  # noqa: F811
 @_select_index.register(pd.MultiIndex)  # noqa: F811
 @_select_index.register(pd.Series)  # noqa: F811
@@ -685,7 +683,7 @@ def _convert_to_numpy_array(
         numpy_dtype = left.dtype.numpy_dtype
         left = left.to_numpy(dtype=numpy_dtype, copy=False)
         right = right.to_numpy(dtype=numpy_dtype, copy=False)
-    elif isinstance(left, (ABCPandasArray, ABCExtensionArray)):
+    elif isinstance(left, pd.api.extensions.ExtensionArray):
         left = left.to_numpy(copy=False)
         right = right.to_numpy(copy=False)
     return left, right

@@ -6,7 +6,11 @@ from typing import Any, Dict, Hashable, Iterable, List, Optional
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
-from janitor.utils import deprecated_alias, refactored_function
+from janitor.utils import (
+    deprecated_alias,
+    refactored_function,
+    find_stack_level,
+)
 
 warnings.simplefilter("always", DeprecationWarning)
 
@@ -168,7 +172,7 @@ def filter_on(
         "This function will be deprecated in a 1.x release. "
         "Kindly use `pd.DataFrame.query` instead.",
         DeprecationWarning,
-        stacklevel=2,
+        stacklevel=find_stack_level(),
     )
 
     if complement:

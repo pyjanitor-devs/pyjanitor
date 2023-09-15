@@ -672,18 +672,6 @@ def _select(
     return df.iloc(axis=axis)[indices]
 
 
-def _convert_to_numpy_array(
-    left: np.ndarray, right: np.ndarray
-) -> tuple[np.ndarray, np.ndarray]:
-    """
-    Convert pandas object to numpy array
-    """
-    numpy_dtype = getattr(left.dtype, "numpy_dtype", left.dtype)
-    left = left.to_numpy(dtype=numpy_dtype, copy=False)
-    right = right.to_numpy(dtype=numpy_dtype, copy=False)
-    return left, right
-
-
 class _JoinOperator(Enum):
     """
     List of operators used in conditional_join.

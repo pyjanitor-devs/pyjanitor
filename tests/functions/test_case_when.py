@@ -167,6 +167,19 @@ def test_case_when_replacement_callable(df):
     assert_frame_equal(result, expected)
 
 
+@given(df=df_strategy())
+@settings(deadline=None)
+def test_case_when_series_replacement_callable(df):
+    """Test case_when for callable."""
+    result = df.assign(
+        bleh=df.a.case_when(df.a.gt(10), df.a.add(10), default=df.a.mul(2))
+    )
+
+    expected = np.where(df.a > 10, df.a + 10, df.a * 2)
+    expected = df.assign(bleh=expected)
+    assert_frame_equal(result, expected)
+
+
 @given(df=categoricaldf_strategy())
 @settings(deadline=None)
 def test_case_when_default_array(df):

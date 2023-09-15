@@ -158,8 +158,8 @@ def _min_max_value(df: pd.DataFrame, jointly: bool) -> tuple:
     """
 
     if jointly:
-        mmin = df.min().min()
-        mmax = df.max().max()
+        mmin = df.min(axis=None)
+        mmax = df.max(axis=None)
     else:
         mmin = df.min()
         mmax = df.max()

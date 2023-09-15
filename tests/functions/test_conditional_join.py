@@ -1839,6 +1839,7 @@ def test_dual_ne_extension(df, right):
         ]
         .reset_index(drop=True)
         .sort_values(filters, ignore_index=True)
+        .sort_index(axis="columns")
     )
 
     actual = (
@@ -1851,6 +1852,7 @@ def test_dual_ne_extension(df, right):
         )
         .filter(filters)
         .sort_values(filters, ignore_index=True)
+        .sort_index(axis="columns")
     )
     assert_frame_equal(expected, actual)
 
@@ -1906,6 +1908,7 @@ def test_dual_ne_numba_extension(df, right):
         ]
         .reset_index(drop=True)
         .sort_values(filters, ignore_index=True)
+        .sort_index(axis="columns")
     )
 
     actual = (
@@ -1919,6 +1922,7 @@ def test_dual_ne_numba_extension(df, right):
         )
         .filter(filters)
         .sort_values(filters, ignore_index=True)
+        .sort_index(axis="columns")
     )
     assert_frame_equal(expected, actual)
 
@@ -2037,6 +2041,7 @@ def test_dual_conditions_eq_and_ne(df, right):
         )
         .loc[lambda df: df.E.ne(df.Dates), columns]
         .sort_values(columns, ignore_index=True)
+        .sort_index(axis="columns")
     )
 
     actual = (
@@ -2050,6 +2055,7 @@ def test_dual_conditions_eq_and_ne(df, right):
         )
         .filter(columns)
         .sort_values(columns, ignore_index=True)
+        .sort_index(axis="columns")
     )
 
     assert_frame_equal(expected, actual)
@@ -2580,13 +2586,17 @@ def test_ge_lt_ne_extension_variant(df, right):
     right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
 
     expected = df.merge(right, how="cross")
-    expected = expected.loc[
-        expected.A.ne(expected.Integers)
-        & expected.B.lt(expected.Numeric)
-        & expected.E.ge(expected.Dates)
-        & expected.E.ne(expected.Dates_Right),
-        filters,
-    ].sort_values(filters, ignore_index=True)
+    expected = (
+        expected.loc[
+            expected.A.ne(expected.Integers)
+            & expected.B.lt(expected.Numeric)
+            & expected.E.ge(expected.Dates)
+            & expected.E.ne(expected.Dates_Right),
+            filters,
+        ]
+        .sort_values(filters, ignore_index=True)
+        .sort_index(axis="columns")
+    )
 
     actual = (
         df.conditional_join(
@@ -2600,6 +2610,7 @@ def test_ge_lt_ne_extension_variant(df, right):
         )
         .filter(filters)
         .sort_values(filters, ignore_index=True)
+        .sort_index(axis="columns")
     )
     assert_frame_equal(expected, actual)
 
@@ -2617,13 +2628,17 @@ def test_ge_lt_ne_extension_variant_numba(df, right):
     right = right.assign(Integers=right["Integers"].astype(pd.Int64Dtype()))
 
     expected = df.merge(right, how="cross")
-    expected = expected.loc[
-        expected.A.ne(expected.Integers)
-        & expected.B.lt(expected.Numeric)
-        & expected.E.ge(expected.Dates)
-        & expected.E.ne(expected.Dates_Right),
-        filters,
-    ].sort_values(filters, ignore_index=True)
+    expected = (
+        expected.loc[
+            expected.A.ne(expected.Integers)
+            & expected.B.lt(expected.Numeric)
+            & expected.E.ge(expected.Dates)
+            & expected.E.ne(expected.Dates_Right),
+            filters,
+        ]
+        .sort_values(filters, ignore_index=True)
+        .sort_index(axis="columns")
+    )
 
     actual = (
         df.conditional_join(
@@ -2638,6 +2653,7 @@ def test_ge_lt_ne_extension_variant_numba(df, right):
         )
         .filter(filters)
         .sort_values(filters, ignore_index=True)
+        .sort_index(axis="columns")
     )
     assert_frame_equal(expected, actual)
 
@@ -3370,6 +3386,7 @@ def test_multiple_non_equii(df, right):
             & df.B.gt(df.Numeric)
         ]
         .sort_values(columns, ignore_index=True)
+        .sort_index(axis="columns")
     )
     expected = expected.filter(columns)
     actual = (
@@ -3384,6 +3401,7 @@ def test_multiple_non_equii(df, right):
             sort_by_appearance=False,
         )
         .sort_values(columns, ignore_index=True)
+        .sort_index(axis="columns")
     )
 
     assert_frame_equal(expected, actual)
@@ -3408,6 +3426,7 @@ def test_multiple_non_equii_col_syntax(df, right):
             & df.B.gt(df.Numeric)
         ]
         .sort_values(columns, ignore_index=True)
+        .sort_index(axis="columns")
     )
     expected = expected.filter(columns)
     actual = (
@@ -3422,6 +3441,7 @@ def test_multiple_non_equii_col_syntax(df, right):
             sort_by_appearance=False,
         )
         .sort_values(columns, ignore_index=True)
+        .sort_index(axis="columns")
     )
 
     assert_frame_equal(expected, actual)
@@ -3447,23 +3467,28 @@ def test_multiple_non_eqi(df, right):
         .sort_values(columns, ignore_index=True)
         .filter(columns)
         .rename(columns={"B": "b", "Floats": "floats"})
+        .sort_index(axis="columns")
     )
 
-    actual = df.conditional_join(
-        right,
-        ("A", "Integers", ">="),
-        ("E", "Dates", ">"),
-        ("B", "Floats", ">"),
-        how="inner",
-        sort_by_appearance=False,
-        df_columns={"B": "b", "A": "A", "E": "E"},
-        right_columns={
-            "Floats": "floats",
-            "Integers": "Integers",
-            "Dates": "Dates",
-        },
-    ).sort_values(
-        ["b", "A", "E", "floats", "Integers", "Dates"], ignore_index=True
+    actual = (
+        df.conditional_join(
+            right,
+            ("A", "Integers", ">="),
+            ("E", "Dates", ">"),
+            ("B", "Floats", ">"),
+            how="inner",
+            sort_by_appearance=False,
+            df_columns={"B": "b", "A": "A", "E": "E"},
+            right_columns={
+                "Floats": "floats",
+                "Integers": "Integers",
+                "Dates": "Dates",
+            },
+        )
+        .sort_values(
+            ["b", "A", "E", "floats", "Integers", "Dates"], ignore_index=True
+        )
+        .sort_index(axis="columns")
     )
 
     assert_frame_equal(expected, actual)
@@ -3489,24 +3514,29 @@ def test_multiple_non_eqi_numba(df, right):
         .sort_values(columns, ignore_index=True)
         .filter(columns)
         .rename(columns={"B": "b", "Floats": "floats"})
+        .sort_index(axis="columns")
     )
 
-    actual = df.conditional_join(
-        right,
-        ("A", "Integers", ">="),
-        ("E", "Dates", ">"),
-        ("B", "Floats", ">"),
-        how="inner",
-        use_numba=True,
-        sort_by_appearance=False,
-        df_columns={"B": "b", "A": "A", "E": "E"},
-        right_columns={
-            "Floats": "floats",
-            "Integers": "Integers",
-            "Dates": "Dates",
-        },
-    ).sort_values(
-        ["b", "A", "E", "floats", "Integers", "Dates"], ignore_index=True
+    actual = (
+        df.conditional_join(
+            right,
+            ("A", "Integers", ">="),
+            ("E", "Dates", ">"),
+            ("B", "Floats", ">"),
+            how="inner",
+            use_numba=True,
+            sort_by_appearance=False,
+            df_columns={"B": "b", "A": "A", "E": "E"},
+            right_columns={
+                "Floats": "floats",
+                "Integers": "Integers",
+                "Dates": "Dates",
+            },
+        )
+        .sort_values(
+            ["b", "A", "E", "floats", "Integers", "Dates"], ignore_index=True
+        )
+        .sort_index(axis="columns")
     )
 
     assert_frame_equal(expected, actual)

@@ -28,7 +28,6 @@ from pandas.api.types import (
     is_list_like,
     is_datetime64_dtype,
     is_string_dtype,
-    is_extension_array_dtype,
     is_bool_dtype,
 )
 import numpy as np
@@ -679,11 +678,11 @@ def _convert_to_numpy_array(
     """
     Convert array to numpy array for use in numba
     """
-    if is_extension_array_dtype(left):
+    if isinstance(left, pd.api.extensions.ExtensionArray):
         numpy_dtype = left.dtype.numpy_dtype
         left = left.to_numpy(dtype=numpy_dtype, copy=False)
         right = right.to_numpy(dtype=numpy_dtype, copy=False)
-    elif isinstance(left, pd.api.extensions.ExtensionArray):
+    else:
         left = left.to_numpy(copy=False)
         right = right.to_numpy(copy=False)
     return left, right

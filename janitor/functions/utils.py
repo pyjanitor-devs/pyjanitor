@@ -676,15 +676,11 @@ def _convert_to_numpy_array(
     left: np.ndarray, right: np.ndarray
 ) -> tuple[np.ndarray, np.ndarray]:
     """
-    Convert array to numpy array for use in numba
+    Convert pandas object to numpy array
     """
-    if isinstance(left, pd.api.extensions.ExtensionArray):
-        numpy_dtype = left.dtype.numpy_dtype
-        left = left.to_numpy(dtype=numpy_dtype, copy=False)
-        right = right.to_numpy(dtype=numpy_dtype, copy=False)
-    else:
-        left = left.to_numpy(copy=False)
-        right = right.to_numpy(copy=False)
+    numpy_dtype = getattr(left.dtype, "numpy_dtype", left.dtype)
+    left = left.to_numpy(dtype=numpy_dtype, copy=False)
+    right = right.to_numpy(dtype=numpy_dtype, copy=False)
     return left, right
 
 

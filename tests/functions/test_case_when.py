@@ -134,7 +134,7 @@ def test_case_when_condition_callable(df):
     """Test case_when for callable."""
     result = df.case_when(
         lambda df: df.a < 10, "baby", default="bleh", column_name="bleh"
-    )
+    ).astype({"bleh": str})
     expected = np.where(df.a < 10, "baby", "bleh")
     expected = df.assign(bleh=expected)
     assert_frame_equal(result, expected)
@@ -144,7 +144,9 @@ def test_case_when_condition_callable(df):
 @settings(deadline=None)
 def test_case_when_condition_eval(df):
     """Test case_when for callable."""
-    result = df.case_when("a < 10", "baby", default="bleh", column_name="bleh")
+    result = df.case_when(
+        "a < 10", "baby", default="bleh", column_name="bleh"
+    ).astype({"bleh": str})
     expected = np.where(df.a < 10, "baby", "bleh")
     expected = df.assign(bleh=expected)
     assert_frame_equal(result, expected)
@@ -235,7 +237,7 @@ def test_case_when_multiple_args(df):
         "mature",
         default="grandpa",
         column_name="elderly",
-    )
+    ).astype({"elderly": str})
     conditions = [
         df["a"] < 10,
         (df["a"] >= 10) & (df["a"] < 20),

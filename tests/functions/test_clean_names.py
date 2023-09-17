@@ -49,7 +49,7 @@ def test_clean_names_uppercase(dataframe):
 @pytest.mark.functions
 def test_clean_names_original_columns(dataframe):
     """Tests clean_names `preserve_original_columns` parameter."""
-    df = dataframe.clean_names(preserve_original_columns=True)
+    df = dataframe.clean_names(preserve_original_labels=True)
     expected_columns = [
         "a",
         "Bell__Chart",
@@ -57,7 +57,7 @@ def test_clean_names_original_columns(dataframe):
         "animals@#$%^",
         "cities",
     ]
-    assert set(df.original_columns) == set(expected_columns)
+    assert set(df.original_labels) == set(expected_columns)
 
 
 @pytest.mark.functions

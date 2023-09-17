@@ -7,7 +7,7 @@ import pandas as pd
 import pandas_flavor as pf
 from pandas.api.types import is_list_like
 
-from janitor.utils import check_column, deprecated_alias
+from janitor.utils import check_column, deprecated_alias, find_stack_level
 from janitor.functions.utils import get_index_labels
 
 
@@ -245,7 +245,7 @@ def _as_categorical_checks(df: pd.DataFrame, **kwargs) -> dict:
                     f"for {column_name}; this may create nulls "
                     "in the new categorical column.",
                     UserWarning,
-                    stacklevel=2,
+                    stacklevel=find_stack_level(),
                 )
 
             elif uniques.equals(missing):
@@ -254,7 +254,7 @@ def _as_categorical_checks(df: pd.DataFrame, **kwargs) -> dict:
                     f"{value}; this might create nulls for all values "
                     f"in the new categorical column.",
                     UserWarning,
-                    stacklevel=2,
+                    stacklevel=find_stack_level(),
                 )
 
         elif isinstance(value, str):

@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+-   [ENH] `clean_names` can now be applied to column values. Issue #995 @samukweku
 
 ## [v0.25.0] - 2023-07-27
 

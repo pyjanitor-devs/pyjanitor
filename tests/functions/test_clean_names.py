@@ -202,3 +202,10 @@ def test_charac():
     df = df.clean_names(strip_underscores=True, case_type="lower")
 
     assert "current_accountbalance_in_%_of_gdp" in df.columns
+
+
+def test_clean_column_values():
+    """Clean column values"""
+    raw = pd.DataFrame({"raw": ["Abçdê fgí j"]})
+    outcome = raw.clean_names(axis=None, column_names="raw").squeeze()
+    assert outcome == "abcde_fgi_j"

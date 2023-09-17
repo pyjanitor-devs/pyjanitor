@@ -4,7 +4,7 @@ import numpy as np
 import pandas_flavor as pf
 import pandas as pd
 import functools
-from pandas.api.types import is_list_like, is_scalar, is_categorical_dtype
+from pandas.api.types import is_list_like, is_scalar
 
 from janitor.utils import check, check_column
 
@@ -331,7 +331,7 @@ def _computations_complete(
                 # user can always convert to int if required
                 for column_name, value in fill_value.items():
                     # for categorical dtypes, set the categories first
-                    if is_categorical_dtype(out[column_name]):
+                    if isinstance(out[column_name].dtype, pd.CategoricalDtype):
                         out[column_name] = out[column_name].cat.add_categories(
                             [value]
                         )

@@ -5,7 +5,7 @@ import pandas_flavor as pf
 import pandas as pd
 from pandas.api.types import is_scalar
 import warnings
-from janitor.utils import check
+from janitor.utils import check, find_stack_level
 
 warnings.simplefilter("always", DeprecationWarning)
 
@@ -143,7 +143,7 @@ def case_when(
                 "and pass the default argument to the `default` "
                 "parameter instead.",
                 DeprecationWarning,
-                stacklevel=2,
+                stacklevel=find_stack_level(),
             )
             *args, default = args
         else:

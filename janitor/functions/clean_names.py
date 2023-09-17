@@ -177,7 +177,7 @@ def _clean_names_single_object(
     if enforce_string and not (_is_str_or_cat(obj)):
         obj = obj.astype(str)
     obj = _change_case(obj, case_type)
-    obj = _normalize_1(obj)
+    obj = obj.map(_normalize_1)
     if remove_special:
         obj = obj.map(_remove_special)
     if strip_accents:

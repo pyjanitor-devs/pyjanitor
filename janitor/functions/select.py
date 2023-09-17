@@ -1,12 +1,18 @@
 from typing import Any
 import pandas_flavor as pf
 import pandas as pd
-from janitor.utils import deprecated_alias
+from janitor.utils import refactored_function
+from janitor.utils import check
 from janitor.functions.utils import _select, DropLabel  # noqa: F401
 
 
 @pf.register_dataframe_method
-@deprecated_alias(search_cols="search_column_names")
+@refactored_function(
+    message=(
+        "This function will be deprecated in a 1.x release. "
+        "Please use `jn.select` instead."
+    )
+)
 def select_columns(
     df: pd.DataFrame,
     *args: Any,
@@ -29,6 +35,11 @@ def select_columns(
         The preferred option when selecting columns or rows in a Pandas DataFrame
         is with `.loc` or `.iloc` methods.
         `select_columns` is primarily for convenience.
+
+    !!!note
+
+        This function will be deprecated in a 1.x release.
+        Please use `jn.select` instead.
 
     Examples:
         >>> import pandas as pd
@@ -209,19 +220,26 @@ def select_columns(
             a callable,
             or variable arguments of all the aforementioned.
             A sequence of booleans is also acceptable.
-            A dictionary can be used for selection on a MultiIndex on different levels.
+            A dictionary can be used for selection
+            on a MultiIndex on different levels.
         invert: Whether or not to invert the selection.
-            This will result in the selection of the complement of the columns
-            provided.
+            This will result in the selection
+            of the complement of the columns provided.
 
     Returns:
         A pandas DataFrame with the specified columns selected.
     """  # noqa: E501
 
-    return _select(df, args=args, invert=invert, axis="columns")
+    return _select(df, columns=list(args), invert=invert)
 
 
 @pf.register_dataframe_method
+@refactored_function(
+    message=(
+        "This function will be deprecated in a 1.x release. "
+        "Please use `jn.select` instead."
+    )
+)
 def select_rows(
     df: pd.DataFrame,
     *args: Any,
@@ -242,12 +260,16 @@ def select_rows(
 
     !!! info "New in version 0.24.0"
 
-
     !!!note
 
         The preferred option when selecting columns or rows in a Pandas DataFrame
         is with `.loc` or `.iloc` methods, as they are generally performant.
         `select_rows` is primarily for convenience.
+
+    !!!note
+
+        This function will be deprecated in a 1.x release.
+        Please use `jn.select` instead.
 
     Examples:
         >>> import pandas as pd
@@ -275,20 +297,26 @@ def select_rows(
             a callable,
             or variable arguments of all the aforementioned.
             A sequence of booleans is also acceptable.
-            A dictionary can be used for selection on a MultiIndex on different levels.
+            A dictionary can be used for selection
+            on a MultiIndex on different levels.
         invert: Whether or not to invert the selection.
-            This will result in the selection of the complement of the rows
-            provided.
+            This will result in the selection
+            of the complement of the rows provided.
 
     Returns:
         A pandas DataFrame with the specified rows selected.
     """  # noqa: E501
-    return _select(df, args=args, invert=invert, axis="index")
+    return _select(df, rows=list(args), invert=invert)
 
 
 @pf.register_dataframe_method
 def select(
-    df: pd.DataFrame, *, rows: Any = None, columns: Any = None
+    df: pd.DataFrame,
+    *args,
+    rows: Any = None,
+    columns: Any = None,
+    axis: str = "columns",
+    invert: bool = False,
 ) -> pd.DataFrame:
     """Method-chainable selection of rows and columns.
 
@@ -302,6 +330,8 @@ def select(
 
     Selection can be inverted with the `DropLabel` class.
 
+    Optional ability to invert selection of rows/columns available as well.
+
 
     !!! info "New in version 0.24.0"
 
@@ -311,6 +341,11 @@ def select(
         The preferred option when selecting columns or rows in a Pandas DataFrame
         is with `.loc` or `.iloc` methods, as they are generally performant.
         `select` is primarily for convenience.
+
+    !!! abstract "Version Changed"
+
+        - 0.26.0
+            - Added variable `args`, `invert` and `axis` parameters.
 
     Examples:
         >>> import pandas as pd
@@ -339,23 +374,58 @@ def select(
 
     Args:
         df: A pandas DataFrame.
+        *args: Valid inputs include: an exact index name to look for,
+            a shell-style glob string (e.g. `*_thing_*`),
+            a regular expression,
+            a callable,
+            or variable arguments of all the aforementioned.
+            A sequence of booleans is also acceptable.
+            A dictionary can be used for selection
+            on a MultiIndex on different levels.
         rows: Valid inputs include: an exact label to look for,
             a shell-style glob string (e.g. `*_thing_*`),
             a regular expression,
             a callable,
             or variable arguments of all the aforementioned.
             A sequence of booleans is also acceptable.
-            A dictionary can be used for selection on a MultiIndex on different levels.
+            A dictionary can be used for selection
+            on a MultiIndex on different levels.
         columns: Valid inputs include: an exact label to look for,
             a shell-style glob string (e.g. `*_thing_*`),
             a regular expression,
             a callable,
             or variable arguments of all the aforementioned.
             A sequence of booleans is also acceptable.
-            A dictionary can be used for selection on a MultiIndex on different levels.
+            A dictionary can be used for selection
+            on a MultiIndex on different levels.
+        invert: Whether or not to invert the selection.
+            This will result in the selection
+            of the complement of the rows/columns provided.
+        axis: Should the selection be on the index('index'),
+            or columns('columns')?
+            Applicable only for the variable args parameter.
+
+    Raises:
+        ValueError: If args and rows and columns are provided.
 
     Returns:
         A pandas DataFrame with the specified rows and/or columns selected.
     """  # noqa: E501
 
-    return _select(df, args=None, rows=rows, columns=columns, axis="both")
+    if args:
+        check("invert", invert, [bool])
+        if (rows is not None) or (columns is not None):
+            raise ValueError(
+                "Either provide variable args with the axis parameter, "
+                "or provide arguments to the rows and/or columns parameters."
+            )
+        assert axis in {"index", "columns"}
+        if axis == "index":
+            return _select(df, rows=list(args), columns=columns, invert=invert)
+        return _select(df, columns=list(args), rows=rows, invert=invert)
+    if invert:
+        raise ValueError(
+            "`invert` is applicable only for the variable args parameter."
+        )
+
+    return _select(df, rows=rows, columns=columns, invert=invert)

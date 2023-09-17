@@ -645,9 +645,7 @@ def get_columns(group: Union[DataFrameGroupBy, SeriesGroupBy], label):
 
 def _select(
     df: pd.DataFrame,
-    args: tuple,
     invert: bool = False,
-    axis: str = "index",
     rows=None,
     columns=None,
 ) -> pd.DataFrame:
@@ -656,23 +654,22 @@ def _select(
 
     Returns a DataFrame.
     """
-    assert axis in {"both", "index", "columns"}
-    if axis == "both":
-        if rows is None:
-            rows = slice(None)
-        else:
-            rows = _select_index([rows], df, axis="index")
-        if columns is None:
-            columns = slice(None)
-        else:
-            columns = _select_index([columns], df, axis="columns")
+    if rows is None:
+        rows = slice(None)
+    else:
+        axis = "index"
+        rows = _select_index([rows], df, axis=axis)
+    if columns is None:
+        columns = slice(None)
+    else:
+        axis = "columns"
+        columns = _select_index([columns], df, axis=axis)
+    mapping = {"index": rows, "columns": columns}
+    if not invert:
         return df.iloc[rows, columns]
-    indices = _select_index(list(args), df, axis)
-    if invert:
-        rev = np.ones(getattr(df, axis).size, dtype=np.bool_)
-        rev[indices] = False
-        return df.iloc(axis=axis)[rev]
-    return df.iloc(axis=axis)[indices]
+    rev = np.ones(getattr(df, axis).size, dtype=np.bool_)
+    rev[mapping[axis]] = False
+    return df.iloc(axis=axis)[rev]
 
 
 def _convert_to_numpy_array(

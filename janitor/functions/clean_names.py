@@ -234,9 +234,11 @@ def _strip_accents(label: Hashable) -> str:
     """  # noqa: E501
 
     return "".join(
-        letter
-        for letter in unicodedata.normalize("NFD", str(label))
-        if not unicodedata.combining(letter)
+        [
+            letter
+            for letter in unicodedata.normalize("NFD", str(label))
+            if not unicodedata.combining(letter)
+        ]
     )
 
 

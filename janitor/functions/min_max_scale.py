@@ -157,12 +157,13 @@ def _min_max_value(df: pd.DataFrame, jointly: bool) -> tuple:
     .. # noqa: DAR201
     """
 
+    mmin = df.min()
+    mmax = df.max()
     if jointly:
-        mmin = df.min().min()
-        mmax = df.max().max()
-    else:
-        mmin = df.min()
-        mmax = df.max()
+        if not isinstance(mmin, int):
+            mmin = mmin.min()
+        if not isinstance(mmax, int):
+            mmax = mmax.max()
 
     return mmin, mmax
 

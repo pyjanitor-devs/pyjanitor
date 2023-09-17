@@ -219,3 +219,10 @@ def test_clean_column_values():
     raw = pd.DataFrame({"raw": ["Abçdê fgí j"]})
     outcome = raw.clean_names(axis=None, column_names="raw").squeeze()
     assert outcome == "abcde_fgi_j"
+
+
+def test_clean_names_enforce_str():
+    """Test enforce_strings on non string columns"""
+    df = pd.DataFrame({1: [3, 4], 11: [5, 6]})
+    outcome = df.clean_names().columns.tolist()
+    assert outcome == ["1", "11"]

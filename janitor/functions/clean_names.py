@@ -60,6 +60,11 @@ def clean_names(
         1      1           1        1
         2      2           2        2
 
+    !!! summary "Version Changed"
+
+        - 0.26.0
+             - Added `axis` and `column_names` parameters.
+
     Args:
         df: The pandas DataFrame object.
         axis: Whether to clean the labels on the index or columns.

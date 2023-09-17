@@ -177,7 +177,7 @@ def _clean_names_single_object(
     if enforce_string and not (_is_str_or_cat(obj)):
         obj = obj.astype(str)
     obj = _change_case(obj, case_type)
-    obj = obj.map(_normalize_1)
+    obj = _normalize_1(obj)
     if remove_special:
         obj = obj.map(_remove_special)
     if strip_accents:
@@ -225,7 +225,7 @@ def _normalize_1(col: Union[pd.Index, pd.Series]) -> str:
     return col
 
 
-def _strip_accents(label: str) -> str:
+def _strip_accents(label: Hashable) -> str:
     """Remove accents from a label.
 
     Inspired from [StackOverflow][so].
@@ -235,7 +235,7 @@ def _strip_accents(label: str) -> str:
 
     return "".join(
         letter
-        for letter in unicodedata.normalize("NFD", label)
+        for letter in unicodedata.normalize("NFD", str(label))
         if not unicodedata.combining(letter)
     )
 

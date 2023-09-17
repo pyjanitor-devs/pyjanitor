@@ -16,20 +16,18 @@ from typing import (
     Callable,
     Any,
 )
-from pandas.core.dtypes.generic import ABCPandasArray, ABCExtensionArray
 from pandas.core.groupby.generic import DataFrameGroupBy, SeriesGroupBy
 from pandas.core.common import is_bool_indexer
 from dataclasses import dataclass
 from enum import Enum
 import pandas as pd
-from janitor.utils import check, _expand_grid
+from janitor.utils import check, _expand_grid, find_stack_level
 from pandas.api.types import (
     union_categoricals,
     is_scalar,
     is_list_like,
     is_datetime64_dtype,
     is_string_dtype,
-    is_extension_array_dtype,
     is_bool_dtype,
 )
 import numpy as np
@@ -161,7 +159,7 @@ def patterns(regex_pattern: Union[str, Pattern]) -> Pattern:
     warnings.warn(
         "This function is deprecated. Kindly use `re.compile` instead.",
         DeprecationWarning,
-        stacklevel=2,
+        stacklevel=find_stack_level(),
     )
     check("regular expression", regex_pattern, [str, Pattern])
 
@@ -467,8 +465,7 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
 
 
 @_select_index.register(np.ndarray)  # noqa: F811
-@_select_index.register(ABCPandasArray)  # noqa: F811
-@_select_index.register(ABCExtensionArray)  # noqa: F811
+@_select_index.register(pd.api.extensions.ExtensionArray)  # noqa: F811
 @_select_index.register(pd.Index)  # noqa: F811
 @_select_index.register(pd.MultiIndex)  # noqa: F811
 @_select_index.register(pd.Series)  # noqa: F811
@@ -670,22 +667,6 @@ def _select(
     rev = np.ones(getattr(df, axis).size, dtype=np.bool_)
     rev[mapping[axis]] = False
     return df.iloc(axis=axis)[rev]
-
-
-def _convert_to_numpy_array(
-    left: np.ndarray, right: np.ndarray
-) -> tuple[np.ndarray, np.ndarray]:
-    """
-    Convert array to numpy array for use in numba
-    """
-    if is_extension_array_dtype(left):
-        numpy_dtype = left.dtype.numpy_dtype
-        left = left.to_numpy(dtype=numpy_dtype, copy=False)
-        right = right.to_numpy(dtype=numpy_dtype, copy=False)
-    elif isinstance(left, (ABCPandasArray, ABCExtensionArray)):
-        left = left.to_numpy(copy=False)
-        right = right.to_numpy(copy=False)
-    return left, right
 
 
 class _JoinOperator(Enum):

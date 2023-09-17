@@ -79,7 +79,6 @@ def _sub_expand_grid(value, grid_index, key):  # noqa: F811
 
 
 @_expand_grid.register(pd.api.extensions.ExtensionArray)
-@_expand_grid.register(pd.arrays.PandasArray)
 def _sub_expand_grid(value, grid_index, key):  # noqa: F811
     """
     Expands the pandas array based on `grid_index`.

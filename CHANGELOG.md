@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+-   [BUG] Fix ImportError - Issue #1285 @samukweku
 
 ## [v0.25.0] - 2023-07-27
 

@@ -204,6 +204,16 @@ def test_charac():
     assert "current_accountbalance_in_%_of_gdp" in df.columns
 
 
+def test_clean_column_values_error():
+    """Raise if both axis and column_names are None"""
+    raw = pd.DataFrame({"raw": ["Abçdê fgí j"]})
+    with pytest.raises(
+        ValueError,
+        match="Kindly provide an argument to `column_names`, if axis is None.",
+    ):
+        raw.clean_names(axis=None, column_names=None)
+
+
 def test_clean_column_values():
     """Clean column values"""
     raw = pd.DataFrame({"raw": ["Abçdê fgí j"]})

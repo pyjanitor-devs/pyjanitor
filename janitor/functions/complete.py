@@ -110,14 +110,14 @@ def complete(
         ...     sort=True
         ... )
            group  item_id item_name  value1  value2
-        0      1        1         a       1       4
-        1      1        2         a       0      99
-        2      1        2         b       3       6
-        3      1        3         b       0      99
-        4      2        1         a       0      99
-        5      2        2         a       0       5
-        6      2        2         b       0      99
-        7      2        3         b       4       7
+        0      1        1         a     1.0     4.0
+        1      1        2         a     0.0    99.0
+        2      1        2         b     3.0     6.0
+        3      1        3         b     0.0    99.0
+        4      2        1         a     0.0    99.0
+        5      2        2         a     0.0     5.0
+        6      2        2         b     0.0    99.0
+        7      2        3         b     4.0     7.0
 
         Limit the fill to only implicit missing values
         by setting explicit to `False`:

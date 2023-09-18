@@ -11,6 +11,48 @@ from janitor.testing_utils.strategies import categoricaldf_strategy
 
 
 @pytest.fixture
+def MI():
+    """MultiIndex fixture. Adapted from Pandas MultiIndexing docs"""
+
+    def mklbl(prefix, n):
+        return ["%s%s" % (prefix, i) for i in range(n)]
+
+    miindex = pd.MultiIndex.from_product(
+        [mklbl("A", 1), mklbl("B", 2), mklbl("C", 1), mklbl("D", 2)]
+    )
+
+    micolumns = pd.MultiIndex.from_tuples(
+        [("a", "foo"), ("a", "bar"), ("b", "foo"), ("b", "bah")],
+        names=["lvl0", "lvl1"],
+    )
+
+    dfmi = (
+        pd.DataFrame(
+            np.arange(len(miindex) * len(micolumns)).reshape(
+                (len(miindex), len(micolumns))
+            ),
+            index=miindex,
+            columns=micolumns,
+        )
+        .sort_index()
+        .sort_index(axis=1)
+    )
+
+    return dfmi
+
+
+def test_multiindex_names_not_found(MI):
+    """
+    Raise ValueError if the passed label is not found
+    """
+    MI.index.names = list("ABCD")
+    with pytest.raises(
+        ValueError, match="group not present in dataframe columns!"
+    ):
+        MI.complete("group")
+
+
+@pytest.fixture
 def fill_df():
     """pytest fixture"""
     return pd.DataFrame(
@@ -731,3 +773,18 @@ def test_groupby_tuple():
         df.groupby("Grid Cell", group_keys=False).apply(reindex).reset_index()
     )
     assert_frame_equal(expected, actual)
+
+
+def test_MI_1(MI):
+    """
+    Test output on multiindex columns
+    """
+    expected = pd.merge(
+        MI.iloc[:2],
+        pd.DataFrame({("a", "bar"): range(1, 6)}),
+        on=[("a", "bar")],
+        how="outer",
+        sort=True,
+    ).rename_axis(columns=[None, None])
+    actual = MI.iloc[:2].complete({("a", "bar"): range(1, 5)})
+    assert_frame_equal(actual, expected)

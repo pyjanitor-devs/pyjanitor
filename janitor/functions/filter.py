@@ -260,31 +260,28 @@ def filter_date(
         """Taken from: https://stackoverflow.com/a/13616382."""
         return reduce(np.logical_and, conditions)
 
-    if column_date_options:
-        df.loc[:, column_name] = pd.to_datetime(
-            df.loc[:, column_name], **column_date_options
-        )
-    else:
-        df.loc[:, column_name] = pd.to_datetime(df.loc[:, column_name])
+    if column_date_options is None:
+        column_date_options = {}
+    date_column = pd.to_datetime(df[column_name], **column_date_options)
 
     _filter_list = []
 
     if start_date:
         start_date = pd.to_datetime(start_date, format=format)
-        _filter_list.append(df.loc[:, column_name] >= start_date)
+        _filter_list.append(date_column >= start_date)
 
     if end_date:
         end_date = pd.to_datetime(end_date, format=format)
-        _filter_list.append(df.loc[:, column_name] <= end_date)
+        _filter_list.append(date_column <= end_date)
 
     if years:
-        _filter_list.append(df.loc[:, column_name].dt.year.isin(years))
+        _filter_list.append(date_column.dt.year.isin(years))
 
     if months:
-        _filter_list.append(df.loc[:, column_name].dt.month.isin(months))
+        _filter_list.append(date_column.dt.month.isin(months))
 
     if days:
-        _filter_list.append(df.loc[:, column_name].dt.day.isin(days))
+        _filter_list.append(date_column.dt.day.isin(days))
 
     if start_date and end_date and start_date > end_date:
         warnings.warn(

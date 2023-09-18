@@ -22,6 +22,38 @@ def dataframe():
     )
 
 
+def test_args_and_rows_and_columns(dataframe):
+    """
+    Raise if args and rows/columns are provided.
+    """
+    with pytest.raises(
+        ValueError,
+        match="Either provide variable args with the axis parameter,.+",
+    ):
+        dataframe.select("*", columns="*")
+
+
+def test_args_invert(dataframe):
+    """Raise if args and invert is not a boolean"""
+    with pytest.raises(TypeError, match="invert should be one of.+"):
+        dataframe.select("col1", invert=1, axis="columns")
+
+
+def test_args_axis(dataframe):
+    """Raise assertionerror if args and axis is not index/columns"""
+    with pytest.raises(AssertionError):
+        dataframe.select("col1", axis=1)
+
+
+def test_invert_no_args(dataframe):
+    """Raise Error if no args and invert is True"""
+    with pytest.raises(
+        ValueError,
+        match="`invert` is applicable only for the variable args parameter.",
+    ):
+        dataframe.select(columns="col1", invert=True)
+
+
 def test_select_all_columns(dataframe):
     """Test output for select"""
     actual = dataframe.select(columns="*")
@@ -41,6 +73,13 @@ def test_select_rows_only(dataframe):
     assert_frame_equal(actual, expected)
 
 
+def test_select_rows_only_args(dataframe):
+    """Test output for rows only"""
+    actual = dataframe.select({"B": "two"}, axis="index")
+    expected = dataframe.loc(axis=0)[(slice(None), "two")]
+    assert_frame_equal(actual, expected)
+
+
 def test_select_rows_scalar_(dataframe):
     """Test output for rows only"""
     actual = dataframe.select(rows="bar")
@@ -51,6 +90,13 @@ def test_select_rows_scalar_(dataframe):
 def test_select_columns_only(dataframe):
     """Test output for columns only"""
     actual = dataframe.select(columns=["col1", "col2"])
+    expected = dataframe.loc[:, :]
+    assert_frame_equal(actual, expected)
+
+
+def test_select_columns_only_args(dataframe):
+    """Test output for columns only"""
+    actual = dataframe.select("col1", "col2", axis="columns")
     expected = dataframe.loc[:, :]
     assert_frame_equal(actual, expected)
 

@@ -92,10 +92,16 @@ def currency_column_to_numeric(
 
     column_series = df[column_name]
     if cleaning_style == "accounting":
-        df.loc[:, column_name] = df[column_name].apply(
-            _clean_accounting_column
+        outcome = (
+            df[column_name]
+            .str.strip()
+            .str.replace(",", "", regex=False)
+            .str.replace(")", "", regex=False)
+            .str.replace("(", "-", regex=False)
+            .replace({"-": 0.0})
+            .astype(float)
         )
-        return df
+        return df.assign(**{column_name: outcome})
     if cleaning_style is not None:
         raise ValueError(
             "`cleaning_style` is expected to be one of ('accounting', None). "

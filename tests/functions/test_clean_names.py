@@ -49,7 +49,7 @@ def test_clean_names_uppercase(dataframe):
 @pytest.mark.functions
 def test_clean_names_original_columns(dataframe):
     """Tests clean_names `preserve_original_columns` parameter."""
-    df = dataframe.clean_names(preserve_original_columns=True)
+    df = dataframe.clean_names(preserve_original_labels=True)
     expected_columns = [
         "a",
         "Bell__Chart",
@@ -57,7 +57,7 @@ def test_clean_names_original_columns(dataframe):
         "animals@#$%^",
         "cities",
     ]
-    assert set(df.original_columns) == set(expected_columns)
+    assert set(df.original_labels) == set(expected_columns)
 
 
 @pytest.mark.functions
@@ -202,3 +202,27 @@ def test_charac():
     df = df.clean_names(strip_underscores=True, case_type="lower")
 
     assert "current_accountbalance_in_%_of_gdp" in df.columns
+
+
+def test_clean_column_values_error():
+    """Raise if both axis and column_names are None"""
+    raw = pd.DataFrame({"raw": ["Abçdê fgí j"]})
+    with pytest.raises(
+        ValueError,
+        match="Kindly provide an argument to `column_names`, if axis is None.",
+    ):
+        raw.clean_names(axis=None, column_names=None)
+
+
+def test_clean_column_values():
+    """Clean column values"""
+    raw = pd.DataFrame({"raw": ["Abçdê fgí j"]})
+    outcome = raw.clean_names(axis=None, column_names="raw").squeeze()
+    assert outcome == "abcde_fgi_j"
+
+
+def test_clean_names_enforce_str():
+    """Test enforce_strings on non string columns"""
+    df = pd.DataFrame({1: [3, 4], 11: [5, 6]})
+    outcome = df.clean_names().columns.tolist()
+    assert outcome == ["1", "11"]

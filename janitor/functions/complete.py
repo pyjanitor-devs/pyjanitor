@@ -140,8 +140,7 @@ def complete(
 
     Args:
         df: A pandas DataFrame.
-        *columns: This refers to the columns to be
-            completed. It can also refer to the names of the index.
+        *columns: This refers to the columns to be completed.
             It could be column labels (string type),
             a list/tuple of column labels, or a dictionary that pairs
             column labels with new values.

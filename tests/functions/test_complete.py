@@ -656,3 +656,78 @@ def test_nulls(fill_df):
         ind, on=["value1", "value2"], how="outer", sort=True
     )
     assert_frame_equal(actual, expected)
+
+
+def test_groupby_tuple():
+    """Test output for groupby on a tuple of columns."""
+    # https://stackoverflow.com/q/77123843/7175713
+    data_dict = {
+        "Grid Cell": [1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2],
+        "Site": [
+            "A",
+            "A",
+            "A",
+            "A",
+            "B",
+            "B",
+            "B",
+            "C",
+            "C",
+            "C",
+            "D",
+            "D",
+            "D",
+            "D",
+        ],
+        "Date": [
+            "1999-01-01",
+            "1999-02-01",
+            "1999-03-01",
+            "1999-04-01",
+            "1999-01-01",
+            "1999-02-01",
+            "1999-03-01",
+            "2000-01-01",
+            "2000-02-01",
+            "2000-03-01",
+            "2000-01-01",
+            "2000-02-01",
+            "2000-03-01",
+            "2000-04-01",
+        ],
+        "Value": [
+            -2.45,
+            -3.72,
+            1.34,
+            4.56,
+            0.23,
+            3.26,
+            6.76,
+            -7.45,
+            -6.43,
+            -2.18,
+            -10.72,
+            -8.97,
+            -5.32,
+            -1.73,
+        ],
+    }
+    df = pd.DataFrame.from_dict(data_dict)
+    expected = df.complete("Date", "Site", by="Grid Cell").sort_values(
+        ["Grid Cell", "Site", "Date"], ignore_index=True
+    )
+
+    # https://stackoverflow.com/a/77123963/7175713
+    def reindex(g):
+        idx = pd.MultiIndex.from_product(
+            [g["Grid Cell"].unique(), g["Site"].unique(), g["Date"].unique()],
+            names=["Grid Cell", "Site", "Date"],
+        )
+        return g.set_index(["Grid Cell", "Site", "Date"]).reindex(
+            idx, fill_value=np.nan
+        )
+
+    actual = (
+        df.groupby("Grid Cell", group_keys=False).apply(reindex).reset_index()
+    )
+    assert_frame_equal(expected, actual)

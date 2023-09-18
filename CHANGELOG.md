@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+-   [BUG] Fix logic for groupby in complete. Index support deprecated. Fix deprecation warning for fillna in `complete` PR # @samukweku
 
 ## [v0.26.0] - 2023-09-18
 

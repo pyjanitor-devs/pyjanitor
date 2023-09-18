@@ -286,7 +286,7 @@ def _computations_complete(
                             ].cat.add_categories([value])
                         out.loc[boolean_filter, column_name] = value
     if not out.columns.equals(columns):
-        return out.reindex(columns=columns)
+        return out.loc(axis=1)[columns]
     return out
 
 

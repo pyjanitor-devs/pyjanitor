@@ -1,6 +1,9 @@
 # Changelog
 
 ## [Unreleased]
+
+## [v0.26.0] - 2023-09-18
+
 -   [ENH] `clean_names` can now be applied to column values. Issue #995 @samukweku
 -   [BUG] Fix ImportError - Issue #1285 @samukweku
 
@@ -342,7 +345,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.25.0...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.26.0...HEAD
+
+[v0.26.0]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.25.0...v0.26.0
 
 [v0.25.0]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.24.0...v0.25.0
 

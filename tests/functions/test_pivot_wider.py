@@ -217,7 +217,7 @@ def test_pivot_long_wide_long():
     assert_frame_equal(result, df_in)
 
 
-@pytest.mark.xfail(reason="doesnt match, since pivot implicitly sorts")
+@pytest.mark.xfail(reason="doesn't match, since pivot implicitly sorts")
 def test_pivot_wide_long_wide():
     """
     Test that transformation from pivot_longer to wider and

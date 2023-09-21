@@ -2,7 +2,7 @@
 Below, company_sales and company_sales_2 are both dfs.
 
 company_sales_2 is inverted, April is the first month
-    where in comapny_sales Jan is the first month
+    where in company_sales Jan is the first month
 
 The values found in each row are the same
     company_sales's Jan row contains the
@@ -14,7 +14,7 @@ Test 2 asserts that column cannot be blank
 
 Test 3 asserts that company_sales_2 and
     company_sales with columns sorted
-    will become equivilent, meaning
+    will become equivalent, meaning
     the columns have been successfully ordered.
 """
 

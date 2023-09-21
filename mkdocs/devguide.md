@@ -35,7 +35,7 @@ and mount the repository directory inside your Docker container.
 Follow best practices to submit a pull request by making a feature branch.
 Now, hack away, and submit in your pull request!
 
-You shouln't be able to access the cloned repo
+You shouldn't be able to access the cloned repo
 on your local hard drive.
 If you do want local access, then clone the repo locally first
 before selecting "Remote Containers: Open Folder In Container".
@@ -153,7 +153,7 @@ Now you can make your changes locally.
 
 ### Check your environment
 
-To ensure that your environemnt is properly set up, run the following command:
+To ensure that your environment is properly set up, run the following command:
 
 ```bash
 python -m pytest -m "not turtle"
@@ -165,7 +165,7 @@ development and you are ready to contribute 🥳.
 ### Check your code
 
 When you're done making changes, commit your staged files with a meaningful message.
-While we have automated checks that run before code is commited via pre-commit and GitHub Actions
+While we have automated checks that run before code is committed via pre-commit and GitHub Actions
 to run tests before code can be merged,
 you can still manually run the following commands to check that your changes are properly
 formatted and that all tests still pass.
@@ -188,7 +188,7 @@ To do so:
     the optional dependencies (e.g. `rdkit`) installed.
 
 !!! info
-    * pre-commit **does not run** your tests locally rather all tests are run in continous integration (CI).
+    * pre-commit **does not run** your tests locally rather all tests are run in continuous integration (CI).
     * All tests must pass in CI before the pull request is accepted,
     and the continuous integration system up on GitHub Actions
     will help run all of the tests before they are committed to the repository.

@@ -798,7 +798,7 @@ def _multiple_conditional_join_le_lt(
         # and then build the remaining indices,
         # using _generate_indices function
         # the aim of this for loop is to see if there is
-        # the possiblity of a range join, and if there is,
+        # the possibility of a range join, and if there is,
         # then use the optimised path
         le_lt = None
         ge_gt = None

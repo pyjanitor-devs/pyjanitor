@@ -56,7 +56,7 @@ def test_coalesce_without_target(df):
 
 @pytest.mark.functions
 def test_coalesce_without_delete():
-    """Test ouptut if nulls remain and `default_value` is provided."""
+    """Test output if nulls remain and `default_value` is provided."""
     df = pd.DataFrame(
         {"s1": [np.nan, np.nan, 6, 9, 9], "s2": [np.nan, 8, 7, 9, 9]}
     )

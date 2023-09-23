@@ -17,7 +17,7 @@ def factorize_columns(
 
     This method will create a new column with the string `_enc` appended
     after the original column's name.
-    This can be overriden with the suffix parameter.
+    This can be overridden with the suffix parameter.
 
     Internally, this method uses pandas `factorize` method.
     It takes in an optional suffix and keyword arguments also.

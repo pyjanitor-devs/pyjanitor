@@ -382,7 +382,7 @@ def test_callable_length(numbers):
 
 @pytest.mark.functions
 def test_callable_dtype(dataframe):
-    """Test output when selecting columnns based on dtype"""
+    """Test output when selecting columns based on dtype"""
     expected = dataframe.select_dtypes("number")
     actual = dataframe.select_columns(is_numeric_dtype)
     assert_frame_equal(expected, actual)

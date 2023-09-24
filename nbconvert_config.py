@@ -269,7 +269,7 @@ c.Exporter.default_preprocessors = [
 #
 #  you can overwrite :meth:`preprocess_cell` to apply a transformation
 #  independently on each cell or :meth:`preprocess` if you prefer your own logic.
-#  See corresponding docstring for informations.
+#  See corresponding docstring for information.
 #
 #  Disabled by default and can be enabled via the config by
 #      'c.YourPreprocessorName.enabled = True'
@@ -430,7 +430,7 @@ c.ExecutePreprocessor.timeout = None
 # DebugWriter(WriterBase) configuration
 # ------------------------------------------------------------------------------
 
-## Consumes output from nbconvert export...() methods and writes usefull
+## Consumes output from nbconvert export...() methods and writes useful
 #  debugging information to the stdout.  The information includes a list of
 #  resources that were extracted from the notebook(s) during export.
 

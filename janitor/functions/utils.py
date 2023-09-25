@@ -652,21 +652,24 @@ def _select(
     Returns a DataFrame.
     """
     if rows is None:
-        rows = slice(None)
+        row_indexer = slice(None)
     else:
-        axis = "index"
-        rows = _select_index([rows], df, axis=axis)
+        outcome = _select_index([rows], df, axis="index")
+        if invert:
+            row_indexer = np.ones(df.index.size, dtype=np.bool_)
+            row_indexer[outcome] = False
+        else:
+            row_indexer = outcome
     if columns is None:
-        columns = slice(None)
+        column_indexer = slice(None)
     else:
-        axis = "columns"
-        columns = _select_index([columns], df, axis=axis)
-    mapping = {"index": rows, "columns": columns}
-    if not invert:
-        return df.iloc[rows, columns]
-    rev = np.ones(getattr(df, axis).size, dtype=np.bool_)
-    rev[mapping[axis]] = False
-    return df.iloc(axis=axis)[rev]
+        outcome = _select_index([columns], df, axis="columns")
+        if invert:
+            column_indexer = np.ones(df.columns.size, dtype=np.bool_)
+            column_indexer[outcome] = False
+        else:
+            column_indexer = outcome
+    return df.iloc[row_indexer, column_indexer]
 
 
 class _JoinOperator(Enum):

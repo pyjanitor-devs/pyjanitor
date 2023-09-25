@@ -401,12 +401,12 @@ def select(
         invert: Whether or not to invert the selection.
             This will result in the selection
             of the complement of the rows/columns provided.
-        axis: Should the selection be on the index('index'),
-            or columns('columns')?
+        axis: Whether the selection should be on the index('index'),
+            or columns('columns')
             Applicable only for the variable args parameter.
 
     Raises:
-        ValueError: If args and rows and columns are provided.
+        ValueError: If args and rows/columns are provided.
 
     Returns:
         A pandas DataFrame with the specified rows and/or columns selected.
@@ -419,13 +419,9 @@ def select(
                 "Either provide variable args with the axis parameter, "
                 "or provide arguments to the rows and/or columns parameters."
             )
-        assert axis in {"index", "columns"}
         if axis == "index":
             return _select(df, rows=list(args), columns=columns, invert=invert)
-        return _select(df, columns=list(args), rows=rows, invert=invert)
-    if invert:
-        raise ValueError(
-            "`invert` is applicable only for the variable args parameter."
-        )
-
+        elif axis == "columns":
+            return _select(df, columns=list(args), rows=rows, invert=invert)
+        raise ValueError("axis should be either 'index' or 'columns'.")
     return _select(df, rows=rows, columns=columns, invert=invert)

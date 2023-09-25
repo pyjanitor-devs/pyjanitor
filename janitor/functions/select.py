@@ -402,7 +402,7 @@ def select(
             This will result in the selection
             of the complement of the rows/columns provided.
         axis: Whether the selection should be on the index('index'),
-            or columns('columns')
+            or columns('columns').
             Applicable only for the variable args parameter.
 
     Raises:

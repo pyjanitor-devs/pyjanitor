@@ -136,29 +136,6 @@ def currency_column_to_numeric(
     return df
 
 
-def _clean_accounting_column(x: str) -> float:
-    """Perform the logic for the "accounting" cleaning style.
-
-    This is a private function, not intended to be used outside of
-    `currency_column_to_numeric``.
-
-    It is intended to be used in a pandas `apply` method.
-
-    Args:
-        x: A string representing currency.
-
-    Returns:
-        A float representing currency.
-    """
-    y = x.strip()
-    y = y.replace(",", "")
-    y = y.replace(")", "")
-    y = y.replace("(", "-")
-    if y == "-":
-        return 0.00
-    return float(y)
-
-
 def _currency_column_to_numeric(
     x: str,
     cast_non_numeric: Optional[dict] = None,

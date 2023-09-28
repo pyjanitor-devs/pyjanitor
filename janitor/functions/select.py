@@ -422,7 +422,7 @@ def select(
             )
         if axis == "index":
             return _select(df, rows=list(args), columns=columns, invert=invert)
-        elif axis == "columns":
+        if axis == "columns":
             return _select(df, columns=list(args), rows=index, invert=invert)
         raise ValueError("axis should be either 'index' or 'columns'.")
     return _select(df, rows=index, columns=columns, invert=invert)

@@ -134,7 +134,7 @@ def test_select_columns_scalar(dataframe):
 def test_select_rows_and_columns(dataframe):
     """Test output for both rows and columns"""
     actual = dataframe.select(
-        rows=DropLabel(lambda df: df.eval('A == "foo"')),
+        index=DropLabel(lambda df: df.eval('A == "foo"')),
         columns=DropLabel(slice("col2", None)),
     )
     expected = dataframe.loc[["bar", "baz", "qux"], ["col1"]]

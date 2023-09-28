@@ -2,7 +2,7 @@ from typing import Any
 import pandas_flavor as pf
 import pandas as pd
 from janitor.utils import refactored_function
-from janitor.utils import check
+from janitor.utils import check, deprecated_alias
 from janitor.functions.utils import _select, DropLabel  # noqa: F401
 
 
@@ -310,10 +310,11 @@ def select_rows(
 
 
 @pf.register_dataframe_method
+@deprecated_alias(rows="index")
 def select(
     df: pd.DataFrame,
     *args,
-    rows: Any = None,
+    index: Any = None,
     columns: Any = None,
     axis: str = "columns",
     invert: bool = False,
@@ -330,7 +331,7 @@ def select(
 
     Selection can be inverted with the `DropLabel` class.
 
-    Optional ability to invert selection of rows/columns available as well.
+    Optional ability to invert selection of index/columns available as well.
 
 
     !!! info "New in version 0.24.0"
@@ -358,13 +359,13 @@ def select(
         cobra               1       2
         viper               4       5
         sidewinder          7       8
-        >>> df.select(rows='cobra', columns='shield')
+        >>> df.select(index='cobra', columns='shield')
                shield
         cobra       2
 
         Labels can be dropped with the `DropLabel` class:
 
-        >>> df.select(rows=DropLabel('cobra'))
+        >>> df.select(index=DropLabel('cobra'))
                     max_speed  shield
         viper               4       5
         sidewinder          7       8
@@ -382,7 +383,7 @@ def select(
             A sequence of booleans is also acceptable.
             A dictionary can be used for selection
             on a MultiIndex on different levels.
-        rows: Valid inputs include: an exact label to look for,
+        index: Valid inputs include: an exact label to look for,
             a shell-style glob string (e.g. `*_thing_*`),
             a regular expression,
             a callable,
@@ -406,7 +407,7 @@ def select(
             Applicable only for the variable args parameter.
 
     Raises:
-        ValueError: If args and rows/columns are provided.
+        ValueError: If args and index/columns are provided.
 
     Returns:
         A pandas DataFrame with the specified rows and/or columns selected.
@@ -414,7 +415,7 @@ def select(
 
     if args:
         check("invert", invert, [bool])
-        if (rows is not None) or (columns is not None):
+        if (index is not None) or (columns is not None):
             raise ValueError(
                 "Either provide variable args with the axis parameter, "
                 "or provide arguments to the rows and/or columns parameters."
@@ -422,6 +423,6 @@ def select(
         if axis == "index":
             return _select(df, rows=list(args), columns=columns, invert=invert)
         elif axis == "columns":
-            return _select(df, columns=list(args), rows=rows, invert=invert)
+            return _select(df, columns=list(args), rows=index, invert=invert)
         raise ValueError("axis should be either 'index' or 'columns'.")
-    return _select(df, rows=rows, columns=columns, invert=invert)
+    return _select(df, rows=index, columns=columns, invert=invert)

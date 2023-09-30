@@ -50,7 +50,7 @@ def test_args_axis(dataframe):
 def test_invert(dataframe):
     "Test output if invert is provided."
     actual = dataframe.select(
-        columns=["col1"], rows=("bar", "one"), invert=True
+        columns=["col1"], index=("bar", "one"), invert=True
     )
     expected = dataframe.loc[("bar", "two"):, ["col2"]]
     assert_frame_equal(actual, expected)
@@ -71,13 +71,13 @@ def test_select_all_columns(dataframe):
 
 def test_select_all_rows(dataframe):
     """Test output for select"""
-    actual = dataframe.select(rows="*")
+    actual = dataframe.select(index="*")
     assert_frame_equal(actual, dataframe)
 
 
 def test_select_rows_only(dataframe):
     """Test output for rows only"""
-    actual = dataframe.select(rows={"B": "two"})
+    actual = dataframe.select(index={"B": "two"})
     expected = dataframe.loc(axis=0)[(slice(None), "two")]
     assert_frame_equal(actual, expected)
 
@@ -91,7 +91,7 @@ def test_select_rows_only_args(dataframe):
 
 def test_select_rows_scalar_(dataframe):
     """Test output for rows only"""
-    actual = dataframe.select(rows="bar")
+    actual = dataframe.select(index="bar")
     expected = dataframe.xs("bar", axis=0, level=0, drop_level=False)
     assert_frame_equal(actual, expected)
 
@@ -119,7 +119,7 @@ def test_select_single_column(dataframe):
 
 def test_select_single_row(dataframe):
     """Test output for row only"""
-    actual = dataframe.select(rows=("bar", "one"))
+    actual = dataframe.select(index=("bar", "one"))
     expected = dataframe.loc[[("bar", "one")]]
     assert_frame_equal(actual, expected)
 

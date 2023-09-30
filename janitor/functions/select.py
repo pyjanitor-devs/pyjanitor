@@ -347,6 +347,7 @@ def select(
 
         - 0.26.0
             - Added variable `args`, `invert` and `axis` parameters.
+            - `rows` keyword deprecated in favour of `index`.
 
     Examples:
         >>> import pandas as pd

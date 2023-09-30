@@ -418,7 +418,7 @@ def select(
         if (index is not None) or (columns is not None):
             raise ValueError(
                 "Either provide variable args with the axis parameter, "
-                "or provide arguments to the rows and/or columns parameters."
+                "or provide arguments to the index and/or columns parameters."
             )
         if axis == "index":
             return _select(df, rows=list(args), columns=columns, invert=invert)

@@ -1,7 +1,7 @@
 # Changelog
 
 ## [Unreleased]
-
+-   [ENH] `select` function now supports variable arguments - PR #1288 @samukweku
 ## [v0.26.0] - 2023-09-18
 
 -   [ENH] `clean_names` can now be applied to column values. Issue #995 @samukweku

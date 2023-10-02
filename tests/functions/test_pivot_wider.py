@@ -176,7 +176,7 @@ def test_non_unique_index_names_from_combination():
         {"A": ["A", "A", "A"], "L": ["L", "L", "L"], "numbers": [30, 54, 25]}
     )
     with pytest.raises(ValueError):
-        df.pivot_wider(index="A", names_from="L")
+        df.pivot_wider(index="A", names_from="L", values_from="numbers")
 
 
 def test_pivot_long_wide_long():
@@ -206,7 +206,10 @@ def test_pivot_long_wide_long():
     )
 
     result = df_in.pivot_wider(
-        index=["a", "b"], names_from="name", names_sep=None
+        index=["a", "b"],
+        names_from="name",
+        values_from=["points", "marks", "sets"],
+        names_sep=None,
     )
 
     result = result.pivot_longer(
@@ -271,6 +274,10 @@ def test_flatten_levels_false():
     )
 
 
+# some changes have been made to pd.pivot
+# which affects this test
+# ultimately pivot_wider will be deprecated in 1.x release
+# users are already advised to use pd.pivot instead
 def test_no_index():
     """Test output if no `index` is supplied."""
     df_in = pd.DataFrame(
@@ -278,21 +285,30 @@ def test_no_index():
             "gender": ["Male", "Female", "Female", "Male", "Male"],
             "contVar": [22379, 24523, 23421, 23831, 29234],
         },
-        index=pd.Int64Index([0, 0, 1, 1, 2], dtype="int64"),
+        index=[0, 0, 1, 1, 2],
     )
 
     expected_output = pd.DataFrame(
         {
-            "contVar_Female": [24523.0, 23421.0, np.nan],
-            "contVar_Male": [22379.0, 23831.0, 29234.0],
+            "Female": [24523.0, 23421.0, np.nan],
+            "Male": [22379.0, 23831.0, 29234.0],
         }
     )
 
-    result = df_in.pivot_wider(names_from="gender")
+    result = (
+        df_in.reset_index()
+        .pivot_wider(names_from="gender", values_from="contVar", index="index")
+        .set_index("index")
+        .rename_axis(index=None)
+    )
 
     assert_frame_equal(result, expected_output)
 
 
+# some changes have been made to pd.pivot
+# which affects this test
+# ultimately pivot_wider will be deprecated in 1.x release
+# users are already advised to use pd.pivot instead
 def test_no_index_names_from_order():
     """Test output if no `index` is supplied and column order is maintained."""
     df_in = pd.DataFrame(
@@ -300,18 +316,22 @@ def test_no_index_names_from_order():
             "gender": ["Male", "Female", "Female", "Male", "Male"],
             "contVar": [22379, 24523, 23421, 23831, 29234],
         },
-        index=pd.Int64Index([0, 0, 1, 1, 2], dtype="int64"),
+        index=[0, 0, 1, 1, 2],
     )
 
     expected_output = pd.DataFrame(
         {
-            "contVar_Male": [22379.0, 23831.0, 29234.0],
-            "contVar_Female": [24523.0, 23421.0, np.nan],
+            "Male": [22379.0, 23831.0, 29234.0],
+            "Female": [24523.0, 23421.0, np.nan],
         }
     )
 
-    result = df_in.encode_categorical(gender="appearance").pivot_wider(
-        names_from="gender"
+    result = (
+        df_in.encode_categorical(gender="appearance")
+        .reset_index()
+        .pivot_wider(names_from="gender", values_from="contVar", index="index")
+        .set_index("index")
+        .rename_axis(index=None)
     )
 
     assert_frame_equal(result, expected_output)
@@ -426,7 +446,9 @@ def test_names_glue_single_column(df_checks_output):
     """
 
     df_out = (
-        df_checks_output.pivot(["geoid", "name"], "variable", "estimate")
+        df_checks_output.pivot(
+            index=["geoid", "name"], columns="variable", values="estimate"
+        )
         .add_suffix("_estimate")
         .rename_axis(columns=None)
         .reset_index()
@@ -494,9 +516,9 @@ def df_expand():
 
 def test_names_expand(df_expand):
     """Test output if `names_expand`"""
-    actual = df_expand.pivot("year", "id", "percentage").reindex(
-        columns=pd.Categorical([1, 2, 3], ordered=True)
-    )
+    actual = df_expand.pivot(
+        index="year", columns="id", values="percentage"
+    ).reindex(columns=pd.Categorical([1, 2, 3], ordered=True))
     expected = df_expand.pivot_wider(
         "year", "id", "percentage", names_expand=True, flatten_levels=False
     )
@@ -506,7 +528,7 @@ def test_names_expand(df_expand):
 def test_names_expand_flatten_levels(df_expand):
     """Test output if `names_expand`"""
     actual = (
-        df_expand.pivot("year", "id", "percentage")
+        df_expand.pivot(index="year", columns="id", values="percentage")
         .reindex(columns=[1, 2, 3])
         .rename_axis(columns=None)
         .reset_index()
@@ -519,9 +541,9 @@ def test_names_expand_flatten_levels(df_expand):
 
 def test_index_expand(df_expand):
     """Test output if `index_expand`"""
-    actual = df_expand.pivot("id", "year", "percentage").reindex(
-        pd.Categorical([1, 2, 3], ordered=True)
-    )
+    actual = df_expand.pivot(
+        index="id", columns="year", values="percentage"
+    ).reindex(pd.Categorical([1, 2, 3], ordered=True))
     expected = df_expand.pivot_wider(
         "id", "year", "percentage", index_expand=True, flatten_levels=False
     )
@@ -531,7 +553,7 @@ def test_index_expand(df_expand):
 def test_index_expand_flatten_levels(df_expand):
     """Test output if `index_expand`"""
     actual = (
-        df_expand.pivot("id", "year", "percentage")
+        df_expand.pivot(index="id", columns="year", values="percentage")
         .reindex(pd.Categorical([1, 2, 3], ordered=True))
         .rename_axis(columns=None)
         .reset_index()
@@ -552,7 +574,7 @@ def test_expand_multiple_levels(df_expand):
         flatten_levels=False,
     )
     actual = df_expand.complete("year", "gender", "id").pivot(
-        "id", ("year", "gender"), "percentage"
+        index="id", columns=("year", "gender"), values="percentage"
     )
     assert_frame_equal(actual, expected)
 
@@ -568,7 +590,7 @@ def test_expand_multiple_levels_flatten_levels(df_expand):
     )
     actual = (
         df_expand.complete("year", "gender", "id")
-        .pivot("id", ("year", "gender"), "percentage")
+        .pivot(index="id", columns=("year", "gender"), values="percentage")
         .collapse_levels()
         .reset_index()
     )

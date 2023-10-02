@@ -92,10 +92,16 @@ def currency_column_to_numeric(
 
     column_series = df[column_name]
     if cleaning_style == "accounting":
-        df.loc[:, column_name] = df[column_name].apply(
-            _clean_accounting_column
+        outcome = (
+            df[column_name]
+            .str.strip()
+            .str.replace(",", "", regex=False)
+            .str.replace(")", "", regex=False)
+            .str.replace("(", "-", regex=False)
+            .replace({"-": 0.0})
+            .astype(float)
         )
-        return df
+        return df.assign(**{column_name: outcome})
     if cleaning_style is not None:
         raise ValueError(
             "`cleaning_style` is expected to be one of ('accounting', None). "
@@ -128,29 +134,6 @@ def currency_column_to_numeric(
     df = df.assign(**{column_name: pd.to_numeric(column_series)})
 
     return df
-
-
-def _clean_accounting_column(x: str) -> float:
-    """Perform the logic for the "accounting" cleaning style.
-
-    This is a private function, not intended to be used outside of
-    `currency_column_to_numeric``.
-
-    It is intended to be used in a pandas `apply` method.
-
-    Args:
-        x: A string representing currency.
-
-    Returns:
-        A float representing currency.
-    """
-    y = x.strip()
-    y = y.replace(",", "")
-    y = y.replace(")", "")
-    y = y.replace("(", "-")
-    if y == "-":
-        return 0.00
-    return float(y)
 
 
 def _currency_column_to_numeric(

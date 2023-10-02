@@ -16,19 +16,13 @@ def test_filter_date_column_name(date_dataframe):
 def test_filter_date_year(date_dataframe):
     df = date_dataframe.filter_date(column_name="DATE", years=[2020])
 
-    def _get_year(x):
-        return x.year
-
-    assert df.DATE.apply(_get_year).unique()[0] == 2020
+    assert df.DATE.dt.year.unique()[0] == 2020
 
 
 def test_filter_date_years(date_dataframe):
     df = date_dataframe.filter_date(column_name="DATE", years=[2020, 2021])
 
-    def _get_year(x):
-        return x.year
-
-    test_result = df.DATE.apply(_get_year).unique()
+    test_result = df.DATE.dt.year.unique()
     expected_result = np.array([2020, 2021])
 
     assert np.array_equal(test_result, expected_result)
@@ -37,11 +31,17 @@ def test_filter_date_years(date_dataframe):
 def test_filter_date_month(date_dataframe):
     df = date_dataframe.filter_date(column_name="DATE", months=range(10, 12))
 
-    def _get_month(x):
-        return x.month
-
-    test_result = df.DATE.apply(_get_month).unique()
+    test_result = df.DATE.dt.month.unique()
     expected_result = np.array([10, 11])
+
+    assert np.array_equal(test_result, expected_result)
+
+
+def test_filter_date_days(date_dataframe):
+    df = date_dataframe.filter_date(column_name="DATE", days=range(1, 5))
+
+    test_result = df.DATE.dt.day.unique()
+    expected_result = np.arange(1, 5)
 
     assert np.array_equal(test_result, expected_result)
 
@@ -52,7 +52,7 @@ def test_filter_date_start(date_dataframe):
     df = date_dataframe.filter_date(column_name="DATE", start_date=start_date)
 
     test_date = pd.to_datetime("01/31/19")
-    test_result = df[df.DATE <= test_date]
+    test_result = df[pd.to_datetime(df.DATE) <= test_date]
 
     assert test_result.empty
 

@@ -133,7 +133,7 @@ traitlets==5.8.1
     #   matplotlib-inline
 unyt==2.9.3
     # via -r engineering.in
-urllib3==1.26.14
+urllib3==1.26.17
     # via requests
 watchdog==2.2.1
     # via mkdocs

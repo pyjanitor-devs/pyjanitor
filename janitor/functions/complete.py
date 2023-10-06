@@ -383,7 +383,7 @@ def _sub_complete_column(column, df, sort):  # noqa: F811
 
     collection = {}
     for ind, (key, value) in enumerate(column.items()):
-        arr = apply_if_callable(value, df[key])
+        arr = apply_if_callable(value, df)
         if not is_list_like(arr):
             raise ValueError(f"value for {key} should be a 1-D array.")
         if not hasattr(arr, "shape"):

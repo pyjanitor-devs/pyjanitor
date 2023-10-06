@@ -231,14 +231,16 @@ def test_all_strings_no_nulls(df):
 
 @given(df=categoricaldf_strategy())
 @settings(deadline=None)
-def test_dict(df):
+def test_dict_callable(df):
     """
     Test `complete` output when *columns
     is a dictionary.
     """
     cols = ["names", "numbers"]
     df = df.assign(names=[*ascii_lowercase[: len(df)]])
-    new_numbers = {"numbers": lambda df: range(df.min(), df.max() + 1)}
+    new_numbers = {
+        "numbers": lambda df: range(df.numbers.min(), df.numbers.max() + 1)
+    }
     cols = ["numbers", "names"]
     result = df.complete(new_numbers, "names", sort=True)
     columns = df.columns
@@ -457,7 +459,7 @@ def test_dict_tuple_callable(taxonomy_df):
     """
 
     result = taxonomy_df.complete(
-        {"Year": lambda x: range(x.min(), x.max() + 1)},
+        {"Year": lambda x: range(x.Year.min(), x.Year.max() + 1)},
         ("Taxon", "Abundance"),
         sort=True,
     )
@@ -517,7 +519,9 @@ def test_complete_groupby():
     )
 
     result = df.complete(
-        {"year": lambda x: range(x.min(), x.max() + 1)}, by="state", sort=True
+        {"year": lambda x: range(x.year.min(), x.year.max() + 1)},
+        by="state",
+        sort=True,
     )
 
     expected = (
@@ -663,7 +667,7 @@ def test_explicit_(fill_df):
     and the columns used for the combination
     are reused in the fill_value.
     """
-    trimmed = fill_df.select_columns("value*", invert=True)
+    trimmed = fill_df.select("value*", axis="columns", invert=True)
     result = trimmed.complete(
         "group",
         ("item_id", "item_name"),

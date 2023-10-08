@@ -435,7 +435,7 @@ def skipna(f: Callable) -> Callable:
     """
 
     def _wrapped(x, *args, **kwargs):
-        if (type(x) is float and np.isnan(x)) or x is None:
+        if (isinstance(x, float) and np.isnan(x)) or x is None:
             return np.nan
         return f(x, *args, **kwargs)
 

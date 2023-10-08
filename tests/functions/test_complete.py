@@ -41,6 +41,17 @@ def MI():
     return dfmi
 
 
+def test_multiindex_names_not_found(MI):
+    """
+    Raise ValueError if the passed label is not found
+    """
+    MI.index.names = list("ABCD")
+    with pytest.raises(
+        ValueError, match="group not present in dataframe columns!"
+    ):
+        MI.complete("group")
+
+
 @pytest.fixture
 def fill_df():
     """pytest fixture"""
@@ -94,17 +105,6 @@ def test_dict_not_list_like(fill_df):
     """
     with pytest.raises(ValueError):
         fill_df.complete("group", {"item_id": "cities"})
-
-
-def test_multiindex_names_not_found(MI):
-    """
-    Raise ValueError if the passed label is not found
-    """
-    MI.index.names = list("ABCD")
-    with pytest.raises(
-        ValueError, match="group is neither in the dataframe's columns.+"
-    ):
-        MI.complete("group")
 
 
 def test_dict_not_1D(fill_df):
@@ -231,14 +231,16 @@ def test_all_strings_no_nulls(df):
 
 @given(df=categoricaldf_strategy())
 @settings(deadline=None)
-def test_dict(df):
+def test_dict_callable(df):
     """
     Test `complete` output when *columns
     is a dictionary.
     """
     cols = ["names", "numbers"]
     df = df.assign(names=[*ascii_lowercase[: len(df)]])
-    new_numbers = {"numbers": lambda df: range(df.min(), df.max() + 1)}
+    new_numbers = {
+        "numbers": lambda df: range(df.numbers.min(), df.numbers.max() + 1)
+    }
     cols = ["numbers", "names"]
     result = df.complete(new_numbers, "names", sort=True)
     columns = df.columns
@@ -428,13 +430,15 @@ def test_complete_multiple_groupings():
         ("project_id", "question_count"),
         fill_value={"tag_count": 0},
         sort=True,
-    )
+    ).astype({"tag_count": int})
     assert_frame_equal(result, output3)
 
 
 def test_fill_value_scalar(taxonomy_df):
     """Test output if the fill_value is a scalar."""
-    result = taxonomy_df.complete("Year", "Taxon", fill_value=0, sort=False)
+    result = taxonomy_df.complete(
+        "Year", "Taxon", fill_value=0, sort=False
+    ).astype({"Abundance": int})
     expected = (
         taxonomy_df.encode_categorical(Taxon="appearance")
         .set_index(["Year", "Taxon"])
@@ -455,7 +459,7 @@ def test_dict_tuple_callable(taxonomy_df):
     """
 
     result = taxonomy_df.complete(
-        {"Year": lambda x: range(x.min(), x.max() + 1)},
+        {"Year": lambda x: range(x.Year.min(), x.Year.max() + 1)},
         ("Taxon", "Abundance"),
         sort=True,
     )
@@ -515,7 +519,9 @@ def test_complete_groupby():
     )
 
     result = df.complete(
-        {"year": lambda x: range(x.min(), x.max() + 1)}, by="state", sort=True
+        {"year": lambda x: range(x.year.min(), x.year.max() + 1)},
+        by="state",
+        sort=True,
     )
 
     expected = (
@@ -661,7 +667,7 @@ def test_explicit_(fill_df):
     and the columns used for the combination
     are reused in the fill_value.
     """
-    trimmed = fill_df.select_columns("value*", invert=True)
+    trimmed = fill_df.select("value*", axis="columns", invert=True)
     result = trimmed.complete(
         "group",
         ("item_id", "item_name"),
@@ -684,99 +690,93 @@ def test_explicit_(fill_df):
     assert_frame_equal(result, expected)
 
 
-@pytest.fixture
-def dt():
-    """Fixture for testing on index"""
-    # copied from https://stackoverflow.com/q/63271274/7175713
-    dt = pd.DataFrame(
-        zip(
-            ["x"] * 4 + ["y"] * 4,
-            range(8),
-            list(
-                pd.period_range(
-                    "2020-08-02T00:00:00", "2020-08-02T03:00:00", freq="H"
-                )
-            )
-            * 2,
-        ),
-        columns=["a", "b", "d"],
-    ).set_index(["a", "d"])
-    dt = dt.drop(
-        [
-            ("x", pd.Period("2020-08-02 01:00", "H")),
-            ("y", pd.Period("2020-08-02 01:00", "H")),
-        ]
-    )
-    return dt
-
-
-def test_index_only(dt):
+def test_nulls(fill_df):
     """
-    Test output if completing on index
+    Test output if nulls are present
     """
-    # https://stackoverflow.com/a/63273339/7175713
-    expected = dt.reindex(
-        pd.MultiIndex.from_product(
-            [
-                dt.index.get_level_values("a").unique(),
-                pd.period_range(
-                    dt.index.get_level_values("d").min(),
-                    dt.index.get_level_values("d").max(),
-                    freq="H",
-                ),
-            ],
-            names=dt.index.names,
-        )
+    actual = fill_df.complete(["value1"], "value2", sort=True)
+    ind = [fill_df.value1.dropna().unique(), fill_df.value2.unique()]
+    ind = pd.MultiIndex.from_product(ind, names=["value1", "value2"])
+    ind = pd.DataFrame([], index=ind)
+    expected = fill_df.merge(
+        ind, on=["value1", "value2"], how="outer", sort=True
     )
-
-    period = dict(d=lambda f: pd.period_range(f.min(), f.max()))
-    actual = dt.complete("a", period)
     assert_frame_equal(actual, expected)
 
 
-def test_index_groupby(dt):
-    """Test grouping, with index as the grouper"""
-    expected = dt.reindex(
-        pd.MultiIndex.from_product(
-            [
-                dt.index.get_level_values("a").unique(),
-                pd.period_range(
-                    dt.index.get_level_values("d").min(),
-                    dt.index.get_level_values("d").max(),
-                    freq="H",
-                ),
-            ],
-            names=dt.index.names,
-        )
+def test_groupby_tuple():
+    """Test output for groupby on a tuple of columns."""
+    # https://stackoverflow.com/q/77123843/7175713
+    data_dict = {
+        "Grid Cell": [1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2],
+        "Site": [
+            "A",
+            "A",
+            "A",
+            "A",
+            "B",
+            "B",
+            "B",
+            "C",
+            "C",
+            "C",
+            "D",
+            "D",
+            "D",
+            "D",
+        ],
+        "Date": [
+            "1999-01-01",
+            "1999-02-01",
+            "1999-03-01",
+            "1999-04-01",
+            "1999-01-01",
+            "1999-02-01",
+            "1999-03-01",
+            "2000-01-01",
+            "2000-02-01",
+            "2000-03-01",
+            "2000-01-01",
+            "2000-02-01",
+            "2000-03-01",
+            "2000-04-01",
+        ],
+        "Value": [
+            -2.45,
+            -3.72,
+            1.34,
+            4.56,
+            0.23,
+            3.26,
+            6.76,
+            -7.45,
+            -6.43,
+            -2.18,
+            -10.72,
+            -8.97,
+            -5.32,
+            -1.73,
+        ],
+    }
+    df = pd.DataFrame.from_dict(data_dict)
+    expected = df.complete("Date", "Site", by="Grid Cell").sort_values(
+        ["Grid Cell", "Site", "Date"], ignore_index=True
     )
 
-    period = dict(d=lambda f: pd.period_range(f.min(), f.max()))
-    actual = dt.reset_index("d").complete(period, by="a")
-    assert_frame_equal(actual, expected.reset_index("d"))
+    # https://stackoverflow.com/a/77123963/7175713
+    def reindex(g):
+        idx = pd.MultiIndex.from_product(
+            [g["Grid Cell"].unique(), g["Site"].unique(), g["Date"].unique()],
+            names=["Grid Cell", "Site", "Date"],
+        )
+        return g.set_index(["Grid Cell", "Site", "Date"]).reindex(
+            idx, fill_value=np.nan
+        )
 
-
-def test_label_in_by(dt):
-    """Raise if label already in by"""
-    with pytest.raises(ValueError, match="a already exists in by."):
-        dt.reset_index("d").complete("a", by="a")
-
-
-def test_index_not_found(dt):
-    """Raise if completing on index and label not found"""
-    with pytest.raises(
-        ValueError, match="b not found in the dataframe's index names."
-    ):
-        dt.complete("b", "d")
-
-
-def test_MI(MI):
-    """
-    Test output on multiindex index
-    """
-    MI.index.names = list("ABCD")
-    expected = MI.iloc[[0, -1]].unstack("D").stack("D", dropna=False)
-    actual = MI.iloc[[0, -1]].complete(("A", "B", "C"), {"D": ["D0", "D1"]})
-    assert_frame_equal(actual, expected)
+    actual = (
+        df.groupby("Grid Cell", group_keys=False).apply(reindex).reset_index()
+    )
+    assert_frame_equal(expected, actual)
 
 
 def test_MI_1(MI):
@@ -792,77 +792,3 @@ def test_MI_1(MI):
     ).rename_axis(columns=[None, None])
     actual = MI.iloc[:2].complete({("a", "bar"): range(1, 5)})
     assert_frame_equal(actual, expected)
-
-
-def test_MI_2(MI):
-    """
-    Test output on multiindex columns
-    """
-    MI.index.names = list("ABCD")
-    frame = MI.iloc[[0, -1]].droplevel(["A", "C"], axis=0)
-    actual = frame.complete("D", "B").sort_index(level="B")
-    expected = frame.unstack("D").stack("D", dropna=False)
-    assert_frame_equal(actual, expected)
-
-
-def test_nulls(fill_df):
-    """
-    Test output if nulls are present
-    """
-    actual = fill_df.complete(["value1"], "value2", sort=True)
-    ind = [fill_df.value1.dropna().unique(), fill_df.value2.unique()]
-    ind = pd.MultiIndex.from_product(ind, names=["value1", "value2"])
-    ind = pd.DataFrame([], index=ind)
-    expected = fill_df.merge(
-        ind, on=["value1", "value2"], how="outer", sort=True
-    )
-    assert_frame_equal(actual, expected)
-
-
-def test_nulls_index(fill_df):
-    """
-    Test output if nulls are present
-    """
-    actual = (
-        fill_df.set_index(["value1", "value2"])
-        .complete(["value1"], "value2", sort=True)
-        .reset_index()
-    )
-    ind = [fill_df.value1.dropna().unique(), fill_df.value2.unique()]
-    ind = pd.MultiIndex.from_product(ind, names=["value1", "value2"])
-    ind = pd.DataFrame([], index=ind)
-    expected = ind.merge(
-        fill_df, on=["value1", "value2"], how="outer", sort=True
-    )
-    assert_frame_equal(actual, expected)
-
-
-def test_nulls_index_1(fill_df):
-    """
-    Test output if nulls are present
-    """
-    actual = (
-        fill_df.set_index(["value1", "value2"])
-        .complete("value1", "value2", sort=True)
-        .reset_index()
-    )
-    ind = [fill_df.value1.dropna().unique(), fill_df.value2.unique()]
-    ind = pd.MultiIndex.from_product(ind, names=["value1", "value2"])
-    ind = pd.DataFrame([], index=ind)
-    expected = ind.merge(
-        fill_df, on=["value1", "value2"], how="outer", sort=True
-    )
-    assert_frame_equal(actual, expected)
-
-
-def test_single_index_dict():
-    """Test output on a single index with a dictionary"""
-    # https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.asfreq.html
-    index = pd.date_range("1/1/2000", periods=4, freq="T")
-    series = pd.Series([0.0, None, 2.0, 3.0], index=index)
-    df = pd.DataFrame({"s": series})
-    df.index.name = "dates"
-    dates = {"dates": lambda f: pd.date_range(f.min(), f.max(), freq="30S")}
-    assert_frame_equal(
-        df.complete(dates), df.asfreq(freq="30S"), check_freq=False
-    )

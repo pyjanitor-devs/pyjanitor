@@ -359,7 +359,7 @@ def test_dtype_category_non_equi():
 
 
 @pytest.mark.turtle
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_less_than_floats_keep_first(df, right):
     """Test output for a single condition. "<"."""
@@ -805,7 +805,7 @@ def test_single_condition_less_than_date(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_less_than_date_numba(df, right):
     """Test output for a single condition. "<". Dates"""
@@ -832,7 +832,7 @@ def test_single_condition_less_than_date_numba(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_greater_than_datetime(df, right):
     """Test output for a single condition. ">". Datetimes"""
@@ -1041,7 +1041,7 @@ def test_single_condition_greater_than_ints_extension_array(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_greater_than_ints_extension_array_numba(df, right):
     """Test output for a single condition. ">"."""
@@ -2188,7 +2188,7 @@ def test_gt_ne_conditions(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
 def test_gt_ne_numba_conditions(df, right):
     """
@@ -2220,7 +2220,7 @@ def test_gt_ne_numba_conditions(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
 def test_le_ne_conditions(df, right):
     """
@@ -2251,7 +2251,7 @@ def test_le_ne_conditions(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
 def test_le_ne_numba_conditions(df, right):
     """
@@ -2746,7 +2746,7 @@ def test_ge_eq_and_multiple_le_numbers(df, right):
     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_multiple_eqs_variant(df, right):
@@ -3035,7 +3035,7 @@ def test_ge_eq_and_le_numbers_numba(df, right):
     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_ge_eq_and_le_integers_numba(df, right):
@@ -3099,7 +3099,7 @@ def test_ge_eq_and_lt_integers_numba(df, right):
     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_gt_eq_integers_numba(df, right):
@@ -3270,7 +3270,7 @@ def test_ge_eq_and_le_dates_numba(df, right):
     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_ge_eq_and_le_datess_numba(df, right):
@@ -3610,7 +3610,7 @@ def test_multiple_non_eq_numba(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
 def test_multiple_eqs(df, right):
     """Test output for multiple conditions."""

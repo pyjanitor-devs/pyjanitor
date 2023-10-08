@@ -42,7 +42,7 @@ def expand_grid(
     Examples:
 
         >>> import pandas as pd
-        >>> import janitor as jn
+        >>> from janitor.functions.expand_grid import expand_grid
         >>> df = pd.DataFrame({"x": [1, 2], "y": [2, 1]})
         >>> data = {"z": [1, 2, 3]}
         >>> df.expand_grid(df_key="df", others=data)
@@ -58,7 +58,7 @@ def expand_grid(
         `expand_grid` works with non-pandas objects:
 
         >>> data = {"x": [1, 2, 3], "y": [1, 2]}
-        >>> jn.expand_grid(others=data)
+        >>> expand_grid(others=data)
            x  y
            0  0
         0  1  1

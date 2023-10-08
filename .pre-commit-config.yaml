@@ -18,6 +18,8 @@ repos:
     hooks:
       - id: interrogate
         args: [-c, pyproject.toml]
+  # Taking out darglint because it takes too long to run.
+  # It may be superseded by ruff: https://github.com/astral-sh/ruff/issues/458
   # - repo: https://github.com/terrencepreilly/darglint
   #   rev: v1.8.1
   #   hooks:
@@ -29,7 +31,3 @@ repos:
     hooks:
       - id: ruff
         args: [--fix]
-ci:
-  skip:
-    # FIXME: darglint is timing out on pre-commit CI (cf. #1236, #1246)
-    - darglint

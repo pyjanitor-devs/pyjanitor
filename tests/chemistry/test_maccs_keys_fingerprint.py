@@ -3,6 +3,8 @@ import importlib
 import pytest
 from helpers import running_on_ci
 
+import janitor.chemistry  # noqa: F401
+
 # Skip all tests if rdkit not installed
 pytestmark = pytest.mark.skipif(
     (importlib.util.find_spec("rdkit") is None) & ~running_on_ci(),

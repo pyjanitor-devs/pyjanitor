@@ -1,11 +1,12 @@
 """Miscellaneous utility functions."""
-
 from __future__ import annotations
 
+import importlib
 import os
 import socket
 import sys
 from functools import singledispatch, wraps
+from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Union
 from warnings import warn
 
@@ -544,3 +545,25 @@ def find_stack_level() -> int:
         else:
             break
     return n
+
+
+def dynamic_import(file_path: Path):
+    """Dynamically import all modules in a directory.
+
+    :param file_path: The path to the file
+        containing the modules to import.
+    """
+    # Iterate through all files in the current directory
+    for filename in file_path.glob("*.py"):
+        # Check if the file is a Python file and it's not the current __init__.py
+        if filename != "__init__.py":
+            # Get the module name (without the .py extension)
+            module_name = filename.name
+            # Dynamically import the module
+            module = importlib.import_module(
+                f".{module_name}", package=__name__
+            )
+            # Import all symbols from the module into the current namespace
+            for name in dir(module):
+                if not name.startswith("_"):  # avoid importing private symbols
+                    globals()[name] = getattr(module, name)

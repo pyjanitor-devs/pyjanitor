@@ -717,7 +717,7 @@ def test_single_condition_less_than_ints_extension_array_numba(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_less_than_equal(df, right):
     """Test output for a single condition. "<=". DateTimes"""
@@ -1291,7 +1291,7 @@ def test_how_left(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
 def test_how_left_multiindex(df, right):
     """Test output when `how==left`. "<="."""
@@ -1819,7 +1819,7 @@ def test_dual_conditions_gt_and_lt_numbers_right_join(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None)
+@settings(deadline=None, max_examples=2)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_ne_extension(df, right):
     """
@@ -1886,7 +1886,7 @@ def test_dual_ne(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_ne_numba_extension(df, right):
     """

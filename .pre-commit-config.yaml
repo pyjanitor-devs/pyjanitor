@@ -2,7 +2,7 @@
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v4.5.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -25,6 +25,14 @@ repos:
   #   hooks:
   #     - id: darglint
   #       args: [-v 2] # this config makes the error messages a bit less cryptic.
+
+  # The interim replacement for darglint is pydoclint.
+  - repo: https://github.com/jsh9/pydoclint
+    rev: 0.3.3
+    hooks:
+      - id: pydoclint
+        args:
+          - "--config=pyproject.toml"
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
     rev: v0.0.292

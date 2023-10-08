@@ -14,3 +14,6 @@ please refactor it out to `janitor.functions.utils`.
 6. Try to group related functions together (e.g. see `convert_date.py`)
 7. Never import utils.
 """
+from janitor.utils import dynamic_import
+
+dynamic_import(__name__)

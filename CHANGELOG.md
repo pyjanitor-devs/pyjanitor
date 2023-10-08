@@ -1,7 +1,10 @@
 # Changelog
 
 ## [Unreleased]
+
+-   [BUG] Fix logic for groupby in complete. Index support deprecated. Fix deprecation warning for fillna in `complete` PR #1289 @samukweku
 -   [ENH] `select` function now supports variable arguments - PR #1288 @samukweku
+
 ## [v0.26.0] - 2023-09-18
 
 -   [ENH] `clean_names` can now be applied to column values. Issue #995 @samukweku

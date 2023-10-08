@@ -1057,14 +1057,6 @@ class col:
     """
 
     def __init__(self, column: Hashable):
-        """Initialize a new instance of the `col` class.
-
-        Args:
-            column (Hashable): The name of the column to be selected.
-
-        Raises:
-            TypeError: If the `column` parameter is not hashable.
-        """
         self.cols = column
         check("column", self.cols, [Hashable])
         self.join_args = None

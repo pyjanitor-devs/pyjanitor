@@ -1,10 +1,8 @@
-import pytest
 import numpy as np
 import pandas as pd
-
-from pandas.testing import assert_series_equal, assert_index_equal
-from hypothesis import given
-from hypothesis import settings
+import pytest
+from hypothesis import given, settings
+from pandas.testing import assert_index_equal, assert_series_equal
 
 from janitor.testing_utils.strategies import df_strategy
 

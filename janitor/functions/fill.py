@@ -5,13 +5,14 @@ from typing import Any, Hashable, Iterable, Union
 
 import pandas as pd
 import pandas_flavor as pf
+from multipledispatch import dispatch
+
 from janitor.utils import (
     check,
     check_column,
     deprecated_alias,
     refactored_function,
 )
-from multipledispatch import dispatch
 
 
 @pf.register_dataframe_method

@@ -7,7 +7,6 @@ import pandas_flavor as pf
 
 from .utils import check, import_message
 
-
 try:
     import unyt
 except ImportError:

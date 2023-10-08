@@ -1,13 +1,13 @@
-from typing import Optional, Union, List, Tuple, Dict, Any
-from pandas.core.common import apply_if_callable
-import pandas_flavor as pf
-import pandas as pd
 import functools
-from pandas.api.types import is_list_like, is_scalar
+from typing import Any, Dict, List, Optional, Tuple, Union
 
-from janitor.utils import check, check_column
+import pandas as pd
+import pandas_flavor as pf
+from pandas.api.types import is_list_like, is_scalar
+from pandas.core.common import apply_if_callable
 
 from janitor.functions.utils import _computations_expand_grid
+from janitor.utils import check, check_column
 
 
 @pf.register_dataframe_method

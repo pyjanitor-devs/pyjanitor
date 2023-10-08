@@ -1,7 +1,8 @@
 """Implementation of the `factorize_columns` function"""
 from typing import Any, Hashable, Iterable, Union
-import pandas_flavor as pf
+
 import pandas as pd
+import pandas_flavor as pf
 
 from janitor.functions.utils import _factorize
 

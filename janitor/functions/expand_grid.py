@@ -1,11 +1,11 @@
 """Implementation source for `expand_grid`."""
 from typing import Dict, Optional, Union
-import pandas_flavor as pf
-import pandas as pd
 
-from janitor.utils import check
+import pandas as pd
+import pandas_flavor as pf
 
 from janitor.functions.utils import _computations_expand_grid
+from janitor.utils import check
 
 
 @pf.register_dataframe_method

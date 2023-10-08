@@ -2,7 +2,6 @@
 
 from functools import wraps
 
-
 try:
     from pyspark.pandas.extensions import register_dataframe_accessor
 

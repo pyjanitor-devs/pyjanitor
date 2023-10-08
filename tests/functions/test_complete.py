@@ -3,8 +3,7 @@ from string import ascii_lowercase
 import numpy as np
 import pandas as pd
 import pytest
-from hypothesis import given
-from hypothesis import settings
+from hypothesis import given, settings
 from pandas.testing import assert_frame_equal
 
 from janitor.testing_utils.strategies import categoricaldf_strategy

@@ -1,18 +1,18 @@
 from __future__ import annotations
+
+import inspect
 import os
 import subprocess
+from collections import defaultdict
 from glob import glob
 from io import StringIO
-from typing import Any, Iterable, Union, TYPE_CHECKING, NamedTuple
-
+from itertools import chain
+from typing import TYPE_CHECKING, Any, Iterable, NamedTuple, Union
 
 import pandas as pd
-import inspect
 
 from .errors import JanitorError
-from .utils import deprecated_alias, check, import_message
-from collections import defaultdict
-from itertools import chain
+from .utils import check, deprecated_alias, import_message
 
 
 @deprecated_alias(seperate_df="separate_df", filespath="files_path")
@@ -385,8 +385,8 @@ def xlsx_cells(
 
     try:
         from openpyxl import load_workbook
-        from openpyxl.cell.read_only import ReadOnlyCell
         from openpyxl.cell.cell import Cell
+        from openpyxl.cell.read_only import ReadOnlyCell
         from openpyxl.workbook.workbook import Workbook
     except ImportError:
         import_message(

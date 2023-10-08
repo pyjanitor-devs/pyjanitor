@@ -1,8 +1,9 @@
 """Implementation source for `process_text`."""
 import inspect
 from typing import Any
-import pandas_flavor as pf
+
 import pandas as pd
+import pandas_flavor as pf
 
 from janitor.utils import (
     check,

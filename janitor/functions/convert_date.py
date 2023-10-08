@@ -1,9 +1,10 @@
-from pandas.errors import OutOfBoundsDatetime
 import datetime as dt
 from typing import Hashable
-import pandas_flavor as pf
+
 import pandas as pd
+import pandas_flavor as pf
 from pandas.api.types import is_numeric_dtype
+from pandas.errors import OutOfBoundsDatetime
 
 from janitor.utils import deprecated_alias
 

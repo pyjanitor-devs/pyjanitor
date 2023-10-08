@@ -1,7 +1,8 @@
 """Implementation for `drop_duplicate_columns`."""
 from typing import Hashable
-import pandas_flavor as pf
+
 import pandas as pd
+import pandas_flavor as pf
 
 
 @pf.register_dataframe_method

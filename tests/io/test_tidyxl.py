@@ -1,10 +1,10 @@
-import pytest
-
-from janitor import io
 from pathlib import Path
+
+import pytest
 from openpyxl import load_workbook
 from pandas.testing import assert_series_equal
 
+from janitor import io
 
 TEST_DATA_DIR = "tests/test_data"
 filename = Path(TEST_DATA_DIR).joinpath("worked-examples.xlsx").resolve()

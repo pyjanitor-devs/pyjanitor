@@ -1,13 +1,12 @@
 """Implementation of `impute` function"""
+from itertools import product
 from typing import Any, Optional
 
-
-import pandas_flavor as pf
 import pandas as pd
+import pandas_flavor as pf
 
-from janitor.utils import deprecated_alias
 from janitor.functions.utils import get_index_labels
-from itertools import product
+from janitor.utils import deprecated_alias
 
 
 @pf.register_dataframe_method

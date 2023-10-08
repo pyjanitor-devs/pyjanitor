@@ -1,7 +1,8 @@
 """Implementation of `shuffle` functions."""
 from typing import Any
-import pandas_flavor as pf
+
 import pandas as pd
+import pandas_flavor as pf
 
 
 @pf.register_dataframe_method

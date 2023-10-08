@@ -1,7 +1,8 @@
 """Implementation of remove_columns."""
 from typing import Hashable, Iterable, Union
-import pandas_flavor as pf
+
 import pandas as pd
+import pandas_flavor as pf
 
 from janitor.utils import deprecated_alias, refactored_function
 

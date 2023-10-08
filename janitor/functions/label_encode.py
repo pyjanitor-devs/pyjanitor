@@ -1,11 +1,12 @@
 """Implementation of `label_encode` function"""
-from typing import Hashable, Iterable, Union
 import warnings
-import pandas_flavor as pf
-import pandas as pd
+from typing import Hashable, Iterable, Union
 
-from janitor.utils import deprecated_alias
+import pandas as pd
+import pandas_flavor as pf
+
 from janitor.functions.utils import _factorize
+from janitor.utils import deprecated_alias
 
 
 @pf.register_dataframe_method

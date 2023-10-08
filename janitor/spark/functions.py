@@ -4,13 +4,14 @@ import re
 from typing import Union
 
 from janitor import utils as janitor_utils
-from . import backend
 from janitor.functions.clean_names import (
     _change_case,
     _normalize_1,
     _remove_special,
     _strip_underscores_func,
 )
+
+from . import backend
 
 try:
     from pyspark.sql import DataFrame

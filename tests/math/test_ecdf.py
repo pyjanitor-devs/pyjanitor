@@ -1,7 +1,6 @@
 import numpy as np
 import pytest
-from hypothesis import given
-from hypothesis import settings
+from hypothesis import given, settings
 from hypothesis.extra.pandas import series
 
 

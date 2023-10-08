@@ -1,13 +1,14 @@
 """Functions for cleaning columns names."""
-from janitor.utils import deprecated_alias
-from janitor.functions.utils import get_index_labels, _is_str_or_cat
-from pandas.api.types import is_scalar
+import unicodedata
 from typing import Hashable, Optional, Union
+
 import pandas as pd
 import pandas_flavor as pf
+from pandas.api.types import is_scalar
 
 from janitor.errors import JanitorError
-import unicodedata
+from janitor.functions.utils import _is_str_or_cat, get_index_labels
+from janitor.utils import deprecated_alias
 
 
 @pf.register_dataframe_method

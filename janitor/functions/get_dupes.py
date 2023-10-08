@@ -1,7 +1,8 @@
 """Implementation of the `get_dupes` function"""
 from typing import Hashable, Iterable, Optional, Union
-import pandas_flavor as pf
+
 import pandas as pd
+import pandas_flavor as pf
 
 from janitor.utils import deprecated_alias
 

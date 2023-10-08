@@ -1,10 +1,8 @@
 import numpy as np
 import pandas as pd
 import pytest
-
-from pandas.testing import assert_frame_equal
 from pandas import NA
-
+from pandas.testing import assert_frame_equal
 
 df = [1, 2, 3]
 

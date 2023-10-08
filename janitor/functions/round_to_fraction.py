@@ -4,6 +4,7 @@ from typing import Hashable
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
+
 from janitor.utils import check, check_column, deprecated_alias
 
 

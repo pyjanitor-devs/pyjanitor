@@ -1,7 +1,8 @@
 """Implementation source for `groupby_agg`."""
 from typing import Callable, List, Union
-import pandas_flavor as pf
+
 import pandas as pd
+import pandas_flavor as pf
 
 from janitor.utils import deprecated_alias, refactored_function
 

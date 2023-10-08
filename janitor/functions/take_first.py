@@ -1,7 +1,8 @@
 """Implementation of take_first function."""
 from typing import Hashable, Iterable, Union
-import pandas_flavor as pf
+
 import pandas as pd
+import pandas_flavor as pf
 
 
 @pf.register_dataframe_method

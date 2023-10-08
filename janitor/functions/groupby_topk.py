@@ -1,10 +1,10 @@
 """Implementation of the `groupby_topk` function"""
 from typing import Hashable, Union
-import pandas_flavor as pf
-import pandas as pd
 
-from janitor.utils import check_column
-from janitor.utils import check, deprecated_alias
+import pandas as pd
+import pandas_flavor as pf
+
+from janitor.utils import check, check_column, deprecated_alias
 
 
 @pf.register_dataframe_method

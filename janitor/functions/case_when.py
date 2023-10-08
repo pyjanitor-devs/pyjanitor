@@ -1,10 +1,12 @@
 """Implementation source for `case_when`."""
-from pandas.core.common import apply_if_callable
-from typing import Any
-import pandas_flavor as pf
-import pandas as pd
-from pandas.api.types import is_scalar
 import warnings
+from typing import Any
+
+import pandas as pd
+import pandas_flavor as pf
+from pandas.api.types import is_scalar
+from pandas.core.common import apply_if_callable
+
 from janitor.utils import check, find_stack_level
 
 warnings.simplefilter("always", DeprecationWarning)

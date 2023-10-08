@@ -3,9 +3,6 @@ import importlib
 import pytest
 from helpers import running_on_ci
 
-import janitor.chemistry  # noqa: disable=unused-import
-
-# Skip all tests if rdkit not installed
 pytestmark = pytest.mark.skipif(
     (importlib.util.find_spec("rdkit") is None) & ~running_on_ci(),
     reason="rdkit tests only required for CI",

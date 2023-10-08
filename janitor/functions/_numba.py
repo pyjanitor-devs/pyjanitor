@@ -2,14 +2,15 @@
 
 import numpy as np
 import pandas as pd
+from numba import njit, prange
+from pandas.api.types import is_datetime64_dtype, is_extension_array_dtype
+
 from janitor.functions.utils import (
     _generic_func_cond_join,
     _JoinOperator,
-    less_than_join_types,
     greater_than_join_types,
+    less_than_join_types,
 )
-from numba import njit, prange
-from pandas.api.types import is_extension_array_dtype, is_datetime64_dtype
 
 
 def _numba_equi_join(df, right, eqs, ge_gt, le_lt):

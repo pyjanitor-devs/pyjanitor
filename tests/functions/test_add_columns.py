@@ -1,8 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
-from hypothesis import given
-from hypothesis import settings
+from hypothesis import given, settings
 from hypothesis import strategies as st
 from pandas.testing import assert_series_equal
 

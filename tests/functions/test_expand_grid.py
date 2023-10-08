@@ -6,7 +6,8 @@ import pytest
 from hypothesis import given, settings
 from pandas.testing import assert_frame_equal
 
-from janitor.functions import expand_grid
+import janitor  # noqa: F401
+from janitor.functions.expand_grid import expand_grid
 from janitor.testing_utils.strategies import (
     categoricaldf_strategy,
     df_strategy,

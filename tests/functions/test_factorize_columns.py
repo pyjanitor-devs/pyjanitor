@@ -10,6 +10,8 @@ That would be duplicating the tests from what the `pandas` library provides.
 import pandas as pd
 import pytest
 
+import janitor  # noqa: F401
+
 
 @pytest.mark.functions
 def test_single_column_factorize_columns():

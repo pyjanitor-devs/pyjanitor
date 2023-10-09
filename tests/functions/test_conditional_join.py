@@ -29,6 +29,23 @@ def series():
     return pd.Series([2, 3, 4], name="B")
 
 
+def test_conditional_join():
+    """Execution test for conditional_join.
+
+    This example is lifted directly from the conditional_join docstring.
+    """
+    df1 = pd.DataFrame({"value_1": [2, 5, 7, 1, 3, 4]})
+    df2 = pd.DataFrame(
+        {
+            "value_2A": [0, 3, 7, 12, 0, 2, 3, 1],
+            "value_2B": [1, 5, 9, 15, 1, 4, 6, 3],
+        }
+    )
+    df1.conditional_join(
+        df2, col("value_1") > col("value_2A"), col("value_1") < col("value_2B")
+    )
+
+
 def test_df_columns_right_columns_both_None(dummy, series):
     """Raise if both df_columns and right_columns is None"""
     with pytest.raises(

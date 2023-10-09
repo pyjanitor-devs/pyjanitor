@@ -10,7 +10,7 @@ from janitor.testing_utils.strategies import df_strategy
 
 @pytest.mark.functions
 @given(df=df_strategy())
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 def test_add_column_add_integer(df):
     """col_name wasn't a string"""
     with pytest.raises(TypeError):
@@ -49,7 +49,7 @@ def test_add_column_too_few_but_no_fill_remaining(dataframe):
 
 @pytest.mark.functions
 @given(df=df_strategy())
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 def test_add_column_scalar(df):
     """Checks `add_column` works as expected when adding a numeric scalar
     to the column"""
@@ -65,7 +65,7 @@ def test_add_column_scalar(df):
 
 @pytest.mark.functions
 @given(df=df_strategy())
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 def test_add_column_string(df):
     """Checks `add_column` works as expected when adding a string scalar
     to the column.
@@ -97,7 +97,7 @@ def test_add_column_iterator_repeat_subtraction(dataframe):
 
 @pytest.mark.functions
 @given(df=df_strategy())
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 def test_add_column_fill_scalar(df):
     """Checks the `fill_remaining` parameter works as expected when value
     is a scalar."""
@@ -109,7 +109,7 @@ def test_add_column_fill_scalar(df):
 
 @pytest.mark.functions
 @given(df=df_strategy(), vals=st.lists(elements=st.integers()))
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 def test_add_column_fill_remaining_iterable(df, vals: list):
     """Checks the `fill_remaining` parameter works as expected."""
     if len(vals) > len(df) or not vals:

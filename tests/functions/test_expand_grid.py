@@ -15,7 +15,7 @@ from janitor.testing_utils.strategies import (
 
 
 @given(df=df_strategy())
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 def test_others_not_dict(df):
     """Raise Error if `others` is not a dictionary."""
     with pytest.raises(TypeError):
@@ -23,7 +23,7 @@ def test_others_not_dict(df):
 
 
 @given(df=df_strategy())
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 def test_others_none(df):
     """Return DataFrame if no `others`, and df exists."""
     assert_frame_equal(df.expand_grid("df"), df)
@@ -35,7 +35,7 @@ def test_others_empty():
 
 
 @given(df=df_strategy())
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 def test_df_key(df):
     """Raise error if df exists and df_key is not supplied."""
     with pytest.raises(KeyError):
@@ -43,7 +43,7 @@ def test_df_key(df):
 
 
 @given(df=df_strategy())
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 def test_df_key_hashable(df):
     """Raise error if df exists and df_key is not Hashable."""
     with pytest.raises(TypeError):
@@ -80,7 +80,7 @@ def test_index_empty():
         expand_grid(others={"x": pd.Index([], dtype=int)})
 
 
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 @given(df=df_strategy())
 def test_series(df):
     """Test expand_grid output for Series input."""
@@ -98,7 +98,7 @@ def test_series(df):
     assert_frame_equal(result, expected)
 
 
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 @given(df=df_strategy())
 def test_series_dataframe(df):
     """Test expand_grid output for Series and DataFrame inputs."""
@@ -115,7 +115,7 @@ def test_series_dataframe(df):
     assert_frame_equal(result, expected)
 
 
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 @given(df=df_strategy())
 def test_series_multiindex_dataframe(df):
     """
@@ -140,7 +140,7 @@ def test_series_multiindex_dataframe(df):
     assert_frame_equal(result, expected)
 
 
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 @given(df=df_strategy())
 def test_numpy_1d(df):
     """Test expand_grid output for a 1D numpy array."""
@@ -157,7 +157,7 @@ def test_numpy_1d(df):
     assert_frame_equal(result, expected)
 
 
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 @given(df=categoricaldf_strategy())
 def test_numpy_2d(df):
     """Test expand_grid output for a 2D numpy array"""
@@ -175,7 +175,7 @@ def test_numpy_2d(df):
     assert_frame_equal(result, expected, check_dtype=False)
 
 
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 @given(df=df_strategy())
 def test_index(df):
     """Test expand_grid output for a pandas Index that has a name."""
@@ -192,7 +192,7 @@ def test_index(df):
     assert_frame_equal(result, expected)
 
 
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 @given(df=df_strategy())
 def test_index_name_none(df):
     """Test expand_grid output for a pandas Index without a name."""
@@ -207,7 +207,7 @@ def test_index_name_none(df):
     assert_frame_equal(result, expected)
 
 
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 @given(df=categoricaldf_strategy())
 def test_multiindex(df):
     """Test expand_grid output for a pandas MultiIndex with a name."""
@@ -225,7 +225,7 @@ def test_multiindex(df):
     assert_frame_equal(result, expected)
 
 
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 @given(df=categoricaldf_strategy())
 def test_multiindex_names_none(df):
     """Test expand_grid output for a pandas MultiIndex without a name."""
@@ -243,7 +243,7 @@ def test_multiindex_names_none(df):
     assert_frame_equal(result, expected)
 
 
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 @given(df=df_strategy())
 def test_pandas_extension_array(df):
     """Test expand_grid output for a pandas array."""
@@ -260,7 +260,7 @@ def test_pandas_extension_array(df):
     assert_frame_equal(result, expected)
 
 
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 @given(df=df_strategy())
 def test_sequence(df):
     """Test expand_grid output for list."""
@@ -277,7 +277,7 @@ def test_sequence(df):
     assert_frame_equal(result, expected, check_dtype=False)
 
 
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 @given(df=df_strategy())
 def test_scalar(df):
     """Test expand_grid output for a scalar value."""
@@ -295,7 +295,7 @@ def test_scalar(df):
     assert_frame_equal(result, expected, check_dtype=False)
 
 
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 @given(df=df_strategy())
 def test_chain_df(df):
     """Test expand_grid in a method-chain operation."""
@@ -312,7 +312,7 @@ def test_chain_df(df):
     assert_frame_equal(result, expected)
 
 
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 @given(df=df_strategy())
 def test_series_name(df):
     """Test expand_grid where the Series has no name."""

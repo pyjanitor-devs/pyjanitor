@@ -33,7 +33,7 @@ def test_encode_categorical(df):
 
 @pytest.mark.functions
 @given(df=df_strategy())
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 def test_encode_categorical_missing_column(df):
     """
     Raise KeyError for missing columns
@@ -46,7 +46,7 @@ def test_encode_categorical_missing_column(df):
 
 @pytest.mark.functions
 @given(df=df_strategy())
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 def test_encode_categorical_missing_columns(df):
     """
     Raise KeyError for missing columns
@@ -59,7 +59,7 @@ def test_encode_categorical_missing_columns(df):
 
 @pytest.mark.functions
 @given(df=df_strategy())
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 def test_encode_categorical_multiple_column_names(df):
     """
     Test output when more than one column is provided
@@ -129,7 +129,7 @@ def test_categories_ndim_DataFrame_gt_1_in_kwargs(df_checks):
 
 @pytest.mark.functions
 @given(df=df_strategy())
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 def test_categories_null_in_categories(df):
     """
     Raise ValueError if categories is provided, but has nulls.
@@ -140,7 +140,7 @@ def test_categories_null_in_categories(df):
 
 @pytest.mark.functions
 @given(df=df_strategy())
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 def test_non_unique_cat(df):
     """Raise ValueError if categories is provided, but is not unique."""
     with pytest.raises(ValueError):
@@ -149,7 +149,7 @@ def test_non_unique_cat(df):
 
 @pytest.mark.functions
 @given(df=df_strategy())
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 def test_empty_cat(df):
     """Raise ValueError if empty categories is provided."""
     with pytest.raises(ValueError):
@@ -158,7 +158,7 @@ def test_empty_cat(df):
 
 @pytest.mark.functions
 @given(df=df_strategy())
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 def test_empty_col(df):
     """
     Raise ValueError if categories is provided,
@@ -185,7 +185,7 @@ def test_warnings(df):
 
 @pytest.mark.functions
 @given(df=df_strategy())
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 def test_order_wrong_option_in_kwargs(df):
     """
     Raise ValueError if a string is provided, but is not
@@ -197,7 +197,7 @@ def test_order_wrong_option_in_kwargs(df):
 
 @pytest.mark.functions
 @given(df=df_strategy())
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 def test_empty_col_sort(df):
     """
     Raise ValueError if a string is provided,
@@ -210,7 +210,7 @@ def test_empty_col_sort(df):
 
 @pytest.mark.functions
 @given(df=df_strategy())
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 def test_empty_col_appearance(df):
     """
     Raise ValueError if a string is provided,

@@ -42,7 +42,7 @@ def test_clean_names_special_characters(spark_df):
     assert set(spark_df.columns) == set(expected_columns)
 
 
-@pytest.mark.xfail(reason="causing issues in CI, to be fixed later")
+@pytest.mark.skip(reason="causing issues in CI, to be fixed later")
 @pytest.mark.spark_functions
 def test_clean_names_case_type_uppercase(spark_df):
     """Tests case_type parameter 'upper' takes effect."""

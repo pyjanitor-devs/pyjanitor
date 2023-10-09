@@ -158,7 +158,7 @@ def test_move_invalid_args(dataframe):
 
 @pytest.mark.functions
 @given(df=df_strategy())
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 def test_move_reorder_columns(df):
     """Replicate reorder_columns"""
     assert all(

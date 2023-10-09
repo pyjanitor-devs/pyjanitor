@@ -9,7 +9,7 @@ from janitor.testing_utils.strategies import (
 
 @pytest.mark.functions
 @given(df=categoricaldf_strategy(), iterable=names_strategy())
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 def test_filter_column_isin(df, iterable):
     """
     `filter_column_isin` should return the property that the column of

@@ -1344,7 +1344,7 @@ def test_how_left_multiindex(df, right):
         )
         .collapse_levels()
         .rename(columns={"left_A": "A", "right_A": "A_y"})
-        .select_columns("A", "A_y", "_merge")
+        .select("A", "A_y", "_merge", axis="columns")
         .sort_values(["A", "A_y"], ignore_index=True)
     )
 
@@ -3707,7 +3707,7 @@ def test_multiple_eqs_outer(df, right):
             sort_by_appearance=False,
             indicator=True,
         )
-        .select_columns(("right", "B"), invert=True)
+        .select(("right", "B"), axis="columns", invert=True)
         .droplevel(axis=1, level=0)
         .rename(columns={"": "_merge"})
         .sort_values(columns, ignore_index=True)

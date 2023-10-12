@@ -146,7 +146,7 @@ def test_clean_names_preserve_case_true(multiindex_dataframe):
 def test_clean_names_camelcase_to_snake(dataframe):
     """Tests clean_names `case_type` parameter = snake."""
     df = (
-        dataframe.select_columns(["a"])
+        dataframe.select(columns=["a"])
         .rename_column("a", "AColumnName")
         .clean_names(case_type="snake")
     )

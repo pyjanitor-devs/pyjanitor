@@ -1146,26 +1146,43 @@ def _create_frame(
         return _inner(df, right, left_index, right_index, indicator)
 
     if how != "outer":
+        if indicator:
+            columns = df.columns.union(right.columns)
         if how == "left":
-            if not right.empty:
-                right = right.take(right_index)
-            right.index = left_index
+            right = {
+                key: value._values[right_index] for key, value in right.items()
+            }
+            if indicator:
+                indicator, arr = _add_indicator(
+                    indicator=indicator,
+                    how="inner",
+                    column_length=right_index.size,
+                    columns=columns,
+                )
+                right[indicator] = arr
+            right = pd.DataFrame(right, index=left_index, copy=False)
         else:
-            if not df.empty:
-                df = df.take(left_index)
-            df.index = right_index
+            df = {key: value._values[left_index] for key, value in df.items()}
+            if indicator:
+                indicator, arr = _add_indicator(
+                    indicator=indicator,
+                    how="inner",
+                    column_length=left_index.size,
+                    columns=columns,
+                )
+                df[indicator] = arr
+            df = pd.DataFrame(df, index=right_index, copy=False)
+        df, right = df.align(other=right, join=how, axis=0)
+        if indicator:
+            if (how == "left") and right[indicator].hasnans:
+                right[indicator] = right[indicator].fillna("left_only")
+            elif (how == "right") and df[indicator].hasnans:
+                df[indicator] = df[indicator].fillna("right_only")
+        indexer = range(len(df))
+        df.index = indexer
+        right.index = indexer
 
-        df = df.merge(
-            right,
-            left_index=True,
-            right_index=True,
-            indicator=indicator,
-            how=how,
-            copy=False,
-            sort=False,
-        )
-        df.index = range(len(df))
-        return df
+        return pd.concat([df, right], axis=1, sort=False, copy=False)
 
     both = _inner(df, right, left_index, right_index, indicator)
     contents = []

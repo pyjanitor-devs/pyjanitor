@@ -1415,6 +1415,7 @@ def test_how_right(df, right):
             indicator=True,
         )
         .sort_values(["E", "Dates"], ignore_index=True)
+        .sort_index(axis="columns")
         .reset_index(drop=True)
     )
     actual = (
@@ -1423,6 +1424,7 @@ def test_how_right(df, right):
             right[["Dates"]], ("E", "Dates", ">"), how="right", indicator=True
         )
         .sort_values(["E", "Dates"], ignore_index=True)
+        .sort_index(axis="columns")
     )
 
     assert_frame_equal(expected, actual)
@@ -1450,6 +1452,7 @@ def test_how_right_sort(df, right):
             indicator=True,
         )
         .sort_values(["E", "Dates"], ignore_index=True)
+        .sort_index(axis="columns")
         .reset_index(drop=True)
     )
     actual = (
@@ -1462,6 +1465,7 @@ def test_how_right_sort(df, right):
             sort_by_appearance=True,
         )
         .sort_values(["E", "Dates"], ignore_index=True)
+        .sort_index(axis="columns")
     )
 
     assert_frame_equal(expected, actual)
@@ -1818,6 +1822,7 @@ def test_dual_conditions_gt_and_lt_numbers_right_join(df, right):
             sort=False,
         )
         .sort_values(["Numeric", "Floats", "B"], ignore_index=True)
+        .sort_index(axis="columns")
         .reset_index(drop=True)
     )
 
@@ -1831,6 +1836,7 @@ def test_dual_conditions_gt_and_lt_numbers_right_join(df, right):
             indicator=True,
         )
         .sort_values(["Numeric", "Floats", "B"], ignore_index=True)
+        .sort_index(axis="columns")
     )
     assert_frame_equal(expected, actual)
 

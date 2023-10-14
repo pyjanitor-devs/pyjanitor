@@ -1,8 +1,9 @@
 """Implementation of the `jitter` function."""
 from typing import Hashable, Iterable, Optional
+
 import numpy as np
-import pandas_flavor as pf
 import pandas as pd
+import pandas_flavor as pf
 
 from janitor.utils import check
 

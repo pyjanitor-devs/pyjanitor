@@ -6,8 +6,8 @@ from typing import Dict, Union
 import pandas as pd
 import pandas_flavor as pf
 
-from .utils import check
 from .errors import JanitorError
+from .utils import check
 
 
 @pf.register_dataframe_method

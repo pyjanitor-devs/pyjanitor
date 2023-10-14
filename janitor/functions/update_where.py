@@ -1,10 +1,12 @@
 """Function for updating values based on other column values."""
 
 from typing import Any, Hashable
-import pandas_flavor as pf
+
 import pandas as pd
-from janitor.utils import deprecated_alias
+import pandas_flavor as pf
 from pandas.api.types import is_bool_dtype
+
+from janitor.utils import deprecated_alias
 
 
 @pf.register_dataframe_method

@@ -1,10 +1,11 @@
 """Function for performing coalesce."""
 from typing import Any, Optional, Union
+
 import pandas as pd
 import pandas_flavor as pf
 
-from janitor.utils import check, deprecated_alias
 from janitor.functions.utils import get_index_labels
+from janitor.utils import check, deprecated_alias
 
 
 @pf.register_dataframe_method

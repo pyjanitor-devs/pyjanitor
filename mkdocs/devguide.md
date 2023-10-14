@@ -121,6 +121,7 @@ source activate pyjanitor-dev || conda activate pyjanitor-dev
 ### Plan out the change you'd like to contribute
 
 The old adage rings true:
+
 > failing to plan means planning to fail.
 
 We'd encourage you to flesh out the idea you'd like to contribute
@@ -149,7 +150,24 @@ To create a new branch:
 git checkout -b <name-of-your-bugfix-or-feature> dev
 ```
 
-Now you can make your changes locally.
+### Write the Code
+
+As you work, remember to adhere to the coding standards and practices that pyjanitor follows. If in doubt, refer to existing code or bring up your questions in the GitHub issue you created. Some tips for writing code:
+
+**Commit Early, Commit Often:** Make frequent, smaller commits. This helps to track progress and makes it easier for maintainers to follow your work. Include useful commit messages that describe the changes you're making:
+
+**Stay Updated with dev branch:** Regularly pull the latest changes from the dev branch to ensure your feature branch is up-to-date, reducing the likelihood of merge conflicts:
+
+```bash
+git fetch origin dev
+git rebase origin/dev
+```
+
+**Write Tests:** For every feature or bugfix, accompanying tests are essential.
+They ensure the feature works as expected or the bug is truly fixed.
+Tests should ideally run in less than 2 seconds.
+If using Hypothesis for testing,
+apply the `@settings(max_examples=10, timeout=None)` decorator.
 
 ### Check your environment
 
@@ -164,19 +182,18 @@ development and you are ready to contribute 🥳.
 
 ### Check your code
 
-When you're done making changes, commit your staged files with a meaningful message.
-While we have automated checks that run before code is committed via pre-commit and GitHub Actions
-to run tests before code can be merged,
-you can still manually run the following commands to check that your changes are properly
-formatted and that all tests still pass.
-
-To do so:
-
-* Run `make lint` to check code styling problems.
-* Run `make format` to format your code.
-* Run `python -m interrogate -c pyproject.toml` to check your code for missing docstring.
-* Run `darglint -v 2` to check quality of your docstrings.
-* Run `python -m pytest` to run all unit tests.
+When you're done making changes,
+commit your staged files with a meaningful message.
+If installed correctly, you will automatically run pre-commit hooks
+that check code for code style adherence.
+These same checks will be run on GitHub Actions,
+so no worries if you don't have the running locally.
+If the pre-commit hooks fail,
+be sure to fix the issues (as raised by them) before committing.
+If you feel lost on how to fix the code,
+please feel free to ping the maintainers on GitHub -
+we can take things slowly to get it right,
+and make this an educational opportunity for all who come by!
 
 !!! tip
     You can run `python -m pytest -m "not turtle"` to run the fast tests.

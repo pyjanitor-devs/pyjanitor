@@ -7,8 +7,8 @@ import pandas as pd
 import pandas_flavor as pf
 from pandas.api.types import is_list_like
 
-from janitor.utils import check_column, deprecated_alias, find_stack_level
 from janitor.functions.utils import get_index_labels
+from janitor.utils import check_column, deprecated_alias, find_stack_level
 
 
 @pf.register_dataframe_method

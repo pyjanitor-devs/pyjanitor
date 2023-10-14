@@ -1,6 +1,7 @@
 from typing import Callable, Dict, Hashable, List, Optional, Tuple, Union
-import pandas_flavor as pf
+
 import pandas as pd
+import pandas_flavor as pf
 
 from janitor.utils import check, check_column, deprecated_alias
 

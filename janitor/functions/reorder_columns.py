@@ -1,7 +1,8 @@
 """Implementation source for `reorder_columns`."""
 from typing import Hashable, Iterable, Union
-import pandas_flavor as pf
+
 import pandas as pd
+import pandas_flavor as pf
 
 from janitor.utils import check
 

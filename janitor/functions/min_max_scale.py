@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-import pandas_flavor as pf
 import pandas as pd
+import pandas_flavor as pf
 
-from janitor.utils import deprecated_alias
-from janitor.utils import deprecated_kwargs
+from janitor.utils import deprecated_alias, deprecated_kwargs
 
 
 @pf.register_dataframe_method

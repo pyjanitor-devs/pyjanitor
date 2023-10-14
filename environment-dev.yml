@@ -2,7 +2,7 @@ name: pyjanitor-dev
 channels:
   - conda-forge
 dependencies:
-  - python=3.9
+  - python=3.10
   - biopython
   - black=22.12.0 # keep this in sync with `.pre-commit-config.yaml`
   - bump2version=1.0.1
@@ -40,7 +40,7 @@ dependencies:
   - pytest-xdist
   - pytest-doctestplus
   - python-language-server
-  - rdkit=2021.09.3
+  - rdkit
   - recommonmark
   - seaborn
   - twine

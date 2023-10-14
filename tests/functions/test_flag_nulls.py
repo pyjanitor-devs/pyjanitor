@@ -1,6 +1,6 @@
 """Tests for `flag_nulls` function."""
-import pytest
 import pandas as pd
+import pytest
 from pandas.testing import assert_frame_equal
 
 from janitor.functions import flag_nulls

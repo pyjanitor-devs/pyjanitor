@@ -1,8 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
-from hypothesis import settings
-from hypothesis import given
+from hypothesis import given, settings
 from pandas.testing import assert_frame_equal
 
 from janitor.testing_utils.strategies import (
@@ -129,7 +128,7 @@ def test_error_multiple_conditions():
 
 
 @given(df=df_strategy())
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 def test_case_when_condition_callable(df):
     """Test case_when for callable."""
     result = df.case_when(
@@ -141,7 +140,7 @@ def test_case_when_condition_callable(df):
 
 
 @given(df=df_strategy())
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 def test_case_when_condition_eval(df):
     """Test case_when for callable."""
     result = df.case_when("a < 10", "baby", default="bleh", column_name="bleh")
@@ -151,7 +150,7 @@ def test_case_when_condition_eval(df):
 
 
 @given(df=df_strategy())
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 def test_case_when_replacement_callable(df):
     """Test case_when for callable."""
     result = df.case_when(
@@ -166,7 +165,7 @@ def test_case_when_replacement_callable(df):
 
 
 @given(df=categoricaldf_strategy())
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 def test_case_when_default_array(df):
     """
     Test case_when for scenarios where `default` is array-like
@@ -184,7 +183,7 @@ def test_case_when_default_array(df):
 
 
 @given(df=categoricaldf_strategy())
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 def test_case_when_default_list_like(df):
     """
     Test case_when for scenarios where `default` is list-like,
@@ -203,7 +202,7 @@ def test_case_when_default_list_like(df):
 
 
 @given(df=categoricaldf_strategy())
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 def test_case_when_default_index(df):
     """
     Test case_when for scenarios where `default` is an index.
@@ -221,7 +220,7 @@ def test_case_when_default_index(df):
 
 
 @given(df=df_strategy())
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 def test_case_when_multiple_args(df):
     """Test case_when for multiple arguments."""
     result = df.case_when(

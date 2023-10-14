@@ -6,10 +6,11 @@ from typing import Any, Dict, Hashable, Iterable, List, Optional
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
+
 from janitor.utils import (
     deprecated_alias,
-    refactored_function,
     find_stack_level,
+    refactored_function,
 )
 
 warnings.simplefilter("always", DeprecationWarning)

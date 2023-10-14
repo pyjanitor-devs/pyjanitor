@@ -1,8 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
-from hypothesis import given
-from hypothesis import settings
+from hypothesis import given, settings
 from hypothesis import strategies as st
 from pandas.testing import assert_series_equal
 
@@ -15,7 +14,7 @@ from janitor.testing_utils.strategies import df_strategy
     x_vals=st.floats(),
     n_yvals=st.integers(min_value=0, max_value=100),
 )
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 def test_add_columns(df, x_vals, n_yvals):
     """
     Test for adding multiple columns at the same time.

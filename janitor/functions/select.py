@@ -1,9 +1,10 @@
 from typing import Any
-import pandas_flavor as pf
+
 import pandas as pd
-from janitor.utils import refactored_function
-from janitor.utils import check, deprecated_alias
-from janitor.functions.utils import _select, DropLabel  # noqa: F401
+import pandas_flavor as pf
+
+from janitor.functions.utils import DropLabel, _select  # noqa: F401
+from janitor.utils import check, deprecated_alias, refactored_function
 
 
 @pf.register_dataframe_method

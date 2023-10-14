@@ -1,10 +1,10 @@
 """Implementation source for `bin_numeric`."""
-from typing import Any, Optional, Union, Sequence
-import pandas_flavor as pf
+from typing import Any, Optional, Sequence, Union
+
 import pandas as pd
+import pandas_flavor as pf
 
 from janitor.utils import check, check_column, deprecated_alias
-
 
 ScalarSequence = Sequence[float]
 

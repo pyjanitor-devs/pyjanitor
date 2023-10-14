@@ -1,8 +1,8 @@
 """Implementation of the `truncate_datetime` family of functions."""
 import datetime as dt
 
-import pandas_flavor as pf
 import pandas as pd
+import pandas_flavor as pf
 from pandas.api.types import is_datetime64_any_dtype
 
 

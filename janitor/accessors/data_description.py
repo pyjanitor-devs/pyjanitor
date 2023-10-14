@@ -13,11 +13,14 @@ class DataDescription:
     """
 
     def __init__(self, data):
-        """Initialize DataDescription class."""
         self._data = data
         self._desc = {}
 
     def _get_data_df(self) -> pd.DataFrame:
+        """Get a table of descriptive information in a DataFrame format.
+
+        :returns: A DataFrame containing the descriptive information.
+        """
         df = self._data
 
         data_dict = {}

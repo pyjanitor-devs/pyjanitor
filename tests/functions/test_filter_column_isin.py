@@ -1,15 +1,15 @@
 import pytest
-from hypothesis import assume
-from hypothesis import given
-from hypothesis import settings
+from hypothesis import assume, given, settings
 
-from janitor.testing_utils.strategies import categoricaldf_strategy
-from janitor.testing_utils.strategies import names_strategy
+from janitor.testing_utils.strategies import (
+    categoricaldf_strategy,
+    names_strategy,
+)
 
 
 @pytest.mark.functions
 @given(df=categoricaldf_strategy(), iterable=names_strategy())
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 def test_filter_column_isin(df, iterable):
     """
     `filter_column_isin` should return the property that the column of

@@ -1,7 +1,8 @@
 """Implementation of the `sort_naturally` function."""
 from typing import Any
-import pandas_flavor as pf
+
 import pandas as pd
+import pandas_flavor as pf
 from natsort import index_natsorted
 
 

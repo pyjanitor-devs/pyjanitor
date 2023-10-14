@@ -1,6 +1,6 @@
 """Implementation of limit_column_characters."""
-import pandas_flavor as pf
 import pandas as pd
+import pandas_flavor as pf
 
 from janitor.utils import check
 

@@ -1,11 +1,11 @@
+from pathlib import Path
+
 import pandas as pd
 import pytest
+from openpyxl import load_workbook
+from pandas.testing import assert_frame_equal
 
 from janitor import io
-from pandas.testing import assert_frame_equal
-from pathlib import Path
-from openpyxl import load_workbook
-
 
 TEST_DATA_DIR = "tests/test_data"
 filename = Path(TEST_DATA_DIR).joinpath("016-MSPTDA-Excel.xlsx").resolve()

@@ -1,9 +1,9 @@
 """Implementation of the `collapse_levels` function."""
 import pandas as pd
 import pandas_flavor as pf
+from pandas.api.types import is_string_dtype
 
 from janitor.utils import check
-from pandas.api.types import is_string_dtype
 
 
 @pf.register_dataframe_method

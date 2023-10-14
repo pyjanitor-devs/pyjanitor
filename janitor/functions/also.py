@@ -1,7 +1,8 @@
 """Implementation source for chainable function `also`."""
 from typing import Any, Callable
-import pandas_flavor as pf
+
 import pandas as pd
+import pandas_flavor as pf
 
 
 @pf.register_dataframe_method

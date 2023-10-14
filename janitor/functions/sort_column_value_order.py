@@ -1,7 +1,9 @@
 """Implementation of the `sort_column_value_order` function."""
-import pandas_flavor as pf
 import pandas as pd
+import pandas_flavor as pf
+
 from janitor.utils import check, check_column
+
 from .remove_columns import remove_columns  # noqa: F401
 
 

@@ -1,10 +1,12 @@
 from __future__ import annotations
+
 import operator
-from typing import Union, Any, Optional, Hashable, Literal
+import warnings
+from typing import Any, Hashable, Literal, Optional, Union
+
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
-import warnings
 from pandas.core.dtypes.common import (
     is_datetime64_dtype,
     is_dtype_equal,
@@ -12,18 +14,17 @@ from pandas.core.dtypes.common import (
     is_numeric_dtype,
     is_string_dtype,
 )
-
 from pandas.core.reshape.merge import _MergeOperation
 
-from janitor.utils import check, check_column, find_stack_level
 from janitor.functions.utils import (
-    _JoinOperator,
     _generic_func_cond_join,
+    _JoinOperator,
     _keep_output,
-    less_than_join_types,
-    greater_than_join_types,
     col,
+    greater_than_join_types,
+    less_than_join_types,
 )
+from janitor.utils import check, check_column, find_stack_level
 
 warnings.simplefilter("always", DeprecationWarning)
 

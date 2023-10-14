@@ -1,22 +1,22 @@
-from collections import defaultdict
-from itertools import zip_longest, chain
 import re
 import warnings
-from typing import Optional, Pattern, Union, Callable
+from collections import defaultdict
+from itertools import chain, zip_longest
+from typing import Callable, Optional, Pattern, Union
 
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
 from pandas.api.types import (
-    is_list_like,
     is_categorical_dtype,
     is_extension_array_dtype,
+    is_list_like,
 )
 from pandas.core.dtypes.concat import concat_compat
 
 from janitor.functions.utils import (
-    get_index_labels,
     _computations_expand_grid,
+    get_index_labels,
 )
 from janitor.utils import check, refactored_function
 

@@ -1,7 +1,8 @@
 """Implementation of the `row_to_names` function."""
 import warnings
-import pandas_flavor as pf
+
 import pandas as pd
+import pandas_flavor as pf
 
 from janitor.utils import check
 

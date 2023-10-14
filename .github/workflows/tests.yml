@@ -27,8 +27,6 @@ jobs:
   run-tests:
     strategy:
       fail-fast: false
-      matrix:
-        test-subset: ["turtle", "not turtle"]
     runs-on: ubuntu-latest
     name: Run pyjanitor test suite
 
@@ -39,7 +37,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       # See: https://github.com/marketplace/actions/setup-miniconda
       - name: Setup miniconda
@@ -58,7 +56,7 @@ jobs:
         run: pytest -v -r a -n auto --color=yes --durations=0 --cov=janitor --cov-append --cov-report term-missing --cov-report xml --doctest-only janitor
 
       - name: Run unit tests
-        run: pytest -v -r a -n auto --color=yes --durations=0 --cov=janitor --cov-append --cov-report term-missing --cov-report xml tests -m "${{ matrix.test-subset }}"
+        run: pytest -v -r a -n auto --color=yes --durations=0 --cov=janitor --cov-append --cov-report term-missing --cov-report xml tests
 
       # https://github.com/codecov/codecov-action
       - name: Upload code coverage

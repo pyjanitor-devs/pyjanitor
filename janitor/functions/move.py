@@ -1,10 +1,11 @@
 """Implementation of move."""
-import pandas_flavor as pf
-import pandas as pd
-import numpy as np
-
 from typing import Any
-from janitor.functions.utils import _select_index, _index_converter
+
+import numpy as np
+import pandas as pd
+import pandas_flavor as pf
+
+from janitor.functions.utils import _index_converter, _select_index
 
 
 @pf.register_dataframe_method

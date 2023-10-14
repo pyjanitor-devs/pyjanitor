@@ -1,13 +1,14 @@
-import pandas as pd
 import datetime
-import numpy as np
 import re
-import pytest
-from pandas.testing import assert_frame_equal
 from itertools import product
 
-from janitor.functions.utils import patterns, DropLabel, get_columns
+import numpy as np
+import pandas as pd
+import pytest
 from pandas.api.types import is_numeric_dtype
+from pandas.testing import assert_frame_equal
+
+from janitor.functions.utils import DropLabel, get_columns, patterns
 
 
 @pytest.mark.functions

@@ -1,11 +1,11 @@
 """Implementation source for `expand_grid`."""
 from typing import Dict, Optional, Union
-import pandas_flavor as pf
-import pandas as pd
 
-from janitor.utils import check
+import pandas as pd
+import pandas_flavor as pf
 
 from janitor.functions.utils import _computations_expand_grid
+from janitor.utils import check
 
 
 @pf.register_dataframe_method
@@ -42,7 +42,7 @@ def expand_grid(
     Examples:
 
         >>> import pandas as pd
-        >>> import janitor as jn
+        >>> from janitor.functions.expand_grid import expand_grid
         >>> df = pd.DataFrame({"x": [1, 2], "y": [2, 1]})
         >>> data = {"z": [1, 2, 3]}
         >>> df.expand_grid(df_key="df", others=data)
@@ -58,7 +58,7 @@ def expand_grid(
         `expand_grid` works with non-pandas objects:
 
         >>> data = {"x": [1, 2, 3], "y": [1, 2]}
-        >>> jn.expand_grid(others=data)
+        >>> expand_grid(others=data)
            x  y
            0  0
         0  1  1

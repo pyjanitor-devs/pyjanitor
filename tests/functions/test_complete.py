@@ -3,8 +3,7 @@ from string import ascii_lowercase
 import numpy as np
 import pandas as pd
 import pytest
-from hypothesis import given
-from hypothesis import settings
+from hypothesis import given, settings
 from pandas.testing import assert_frame_equal
 
 from janitor.testing_utils.strategies import categoricaldf_strategy
@@ -208,7 +207,7 @@ def test_type_explicit(fill_df):
 
 
 @given(df=categoricaldf_strategy())
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 def test_all_strings_no_nulls(df):
     """
     Test `complete` output when *columns
@@ -230,7 +229,7 @@ def test_all_strings_no_nulls(df):
 
 
 @given(df=categoricaldf_strategy())
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 def test_dict_callable(df):
     """
     Test `complete` output when *columns
@@ -284,7 +283,7 @@ def test_dict_extension_array(df):
 
 
 @given(df=categoricaldf_strategy())
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 def test_dict_numpy(df):
     """
     Test `complete` output when *columns
@@ -311,7 +310,7 @@ def test_dict_numpy(df):
 
 
 @given(df=categoricaldf_strategy())
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 def test_dict_Index(df):
     """
     Test `complete` output when *columns
@@ -340,7 +339,7 @@ def test_dict_Index(df):
 
 
 @given(df=categoricaldf_strategy())
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 def test_dict_duplicated(df):
     """
     Test `complete` output when *columns

@@ -9,8 +9,8 @@ import pandas_flavor as pf
 import requests
 
 from janitor.errors import JanitorError
-from .utils import check, deprecated_alias, is_connected
 
+from .utils import check, deprecated_alias, is_connected
 
 currency_set = {
     "AUD",

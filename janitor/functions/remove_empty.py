@@ -1,6 +1,6 @@
 """Implementation of remove_empty."""
-import pandas_flavor as pf
 import pandas as pd
+import pandas_flavor as pf
 
 
 @pf.register_dataframe_method

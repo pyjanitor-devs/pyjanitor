@@ -1,9 +1,10 @@
+from typing import Any, List, Tuple, Union
+
+import numpy as np
+import pandas as pd
 import pandas_flavor as pf
 
 from janitor.utils import check, deprecated_alias, refactored_function
-import pandas as pd
-from typing import Union, List, Any, Tuple
-import numpy as np
 
 
 @pf.register_dataframe_method

@@ -1,9 +1,10 @@
 """Implementation for find_replace."""
-from typing import Dict, Any
-from janitor.utils import refactored_function
+from typing import Any, Dict
 
 import pandas as pd
 import pandas_flavor as pf
+
+from janitor.utils import refactored_function
 
 
 @pf.register_dataframe_method

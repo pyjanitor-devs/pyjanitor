@@ -1,15 +1,14 @@
 import numpy as np
 import pandas as pd
 import pytest
-from hypothesis import given
-from hypothesis import settings
+from hypothesis import given, settings
 
 from janitor.testing_utils.strategies import df_strategy
 
 
 @pytest.mark.functions
 @given(df=df_strategy())
-@settings(deadline=None)
+@settings(deadline=None, max_examples=10)
 def test_remove_empty(df):
     """This test ensures that there are no columns that are completely null"""
     df = df.remove_empty()

@@ -1,13 +1,12 @@
 import os
 import sys
+import tempfile
 from subprocess import CalledProcessError
-
 
 import pandas as pd
 import pytest
 
 import janitor.io
-import tempfile
 
 
 def test_read_commandline(dataframe):

@@ -1,8 +1,9 @@
 from typing import Hashable, List
-import pandas_flavor as pf
-import pandas as pd
-from janitor.errors import JanitorError
 
+import pandas as pd
+import pandas_flavor as pf
+
+from janitor.errors import JanitorError
 from janitor.utils import deprecated_alias
 
 

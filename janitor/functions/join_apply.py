@@ -1,7 +1,9 @@
 """Implementation of the `join_apply` function"""
 from typing import Callable
-import pandas_flavor as pf
+
 import pandas as pd
+import pandas_flavor as pf
+
 from janitor.utils import refactored_function
 
 

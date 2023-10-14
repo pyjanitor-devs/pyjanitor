@@ -8,38 +8,34 @@ repos:
       - id: end-of-file-fixer
       - id: check-yaml
       - id: check-added-large-files
-
   - repo: https://github.com/psf/black
     rev: 23.9.1
     hooks:
       - id: black
         args: [--config, pyproject.toml]
-
-  # - repo: https://github.com/pycqa/isort
-  #   rev: 5.11.2
-  #   hooks:
-  #     - id: isort
-  #       name: isort (python)
-
   - repo: https://github.com/econchick/interrogate
     rev: 1.5.0
     hooks:
       - id: interrogate
         args: [-c, pyproject.toml]
+  # Taking out darglint because it takes too long to run.
+  # It may be superseded by ruff: https://github.com/astral-sh/ruff/issues/458
+  # - repo: https://github.com/terrencepreilly/darglint
+  #   rev: v1.8.1
+  #   hooks:
+  #     - id: darglint
+  #       args: [-v 2] # this config makes the error messages a bit less cryptic.
 
-  - repo: https://github.com/terrencepreilly/darglint
-    rev: v1.8.1
+  # The interim replacement for darglint is pydoclint.
+  - repo: https://github.com/jsh9/pydoclint
+    rev: 0.3.3
     hooks:
-      - id: darglint
-        args: [-v 2] # this config makes the error messages a bit less cryptic.
-
-  - repo: https://github.com/PyCQA/flake8
-    rev: 6.1.0
+      - id: pydoclint
+        args:
+          - "--config=pyproject.toml"
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    # Ruff version.
+    rev: v0.0.292
     hooks:
-      - id: flake8
-        args: [--exclude, nbconvert_config.py]
-
-ci:
-  skip:
-    # FIXME: darglint is timing out on pre-commit CI (cf. #1236, #1246)
-    - darglint
+      - id: ruff
+        args: [--fix]

@@ -13,6 +13,7 @@ from pandas.core.dtypes.common import (
     is_extension_array_dtype,
     is_numeric_dtype,
     is_string_dtype,
+    is_timedelta64_dtype,
 )
 from pandas.core.reshape.merge import _MergeOperation
 
@@ -81,7 +82,7 @@ def conditional_join(
 
     The join is done only on the columns.
 
-    For non-equi joins, only numeric and date columns are supported.
+    For non-equi joins, only numeric, timedelta and date columns are supported.
 
     `inner`, `left`, `right` and `outer` joins are supported.
 
@@ -347,7 +348,8 @@ def _conditional_join_type_check(
     left_column: pd.Series, right_column: pd.Series, op: str, use_numba: bool
 ) -> None:
     """
-    Raise error if column type is not any of numeric or datetime or string.
+    Raise error if column type is not any of
+    numeric or timedelta or datetime or string.
     """
 
     if (
@@ -355,9 +357,10 @@ def _conditional_join_type_check(
         and use_numba
         and not is_numeric_dtype(left_column)
         and not is_datetime64_dtype(left_column)
+        and not is_timedelta64_dtype(left_column)
     ):
         raise TypeError(
-            "Only numeric and datetime types "
+            "Only numeric, timedelta and datetime types "
             "are supported in an equi-join "
             "when use_numba is set to True"
         )
@@ -369,6 +372,7 @@ def _conditional_join_type_check(
             is_datetime64_dtype,
             is_numeric_dtype,
             is_string_dtype,
+            is_timedelta64_dtype,
         }
         for func in permitted_types:
             if func(left_column.dtype):
@@ -376,10 +380,11 @@ def _conditional_join_type_check(
         else:
             raise TypeError(
                 "conditional_join only supports "
-                "string, category, numeric, or "
-                "date dtypes (without timezone) - "
+                "string, category, numeric, "
+                "date (without timezone) - ",
+                "or timedelta dtypes."
                 f"'{left_column.name} is of type "
-                f"{left_column.dtype}."
+                f"{left_column.dtype}.",
             )
 
     if is_categorical_dtype:
@@ -401,10 +406,11 @@ def _conditional_join_type_check(
         (op != _JoinOperator.STRICTLY_EQUAL.value)
         and not is_numeric_dtype(left_column)
         and not is_datetime64_dtype(left_column)
+        and not is_timedelta64_dtype(left_column)
     ):
         raise TypeError(
             "non-equi joins are supported "
-            "only for datetime and numeric dtypes. "
+            "only for datetime, timedelta and numeric dtypes. "
             f"{left_column.name} in condition "
             f"({left_column.name}, {right_column.name}, {op}) "
             f"has a dtype {left_column.dtype}."

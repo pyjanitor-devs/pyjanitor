@@ -115,6 +115,7 @@ def conditional_join(
         5         2         4
         6         3         6
         7         1         3
+
         >>> df1.conditional_join(
         ...     df2,
         ...     ("value_1", "value_2A", ">"),
@@ -126,6 +127,8 @@ def conditional_join(
         2        3         2         4
         3        4         3         5
         4        4         3         6
+
+        Use the `col` class:
         >>> df1.conditional_join(
         ...     df2,
         ...     col("value_1") > col("value_2A"),
@@ -137,6 +140,92 @@ def conditional_join(
         2        3         2         4
         3        4         3         5
         4        4         3         6
+
+        Select specific columns, after the join:
+        >>> df1.conditional_join(
+        ...     df2,
+        ...     col("value_1") > col("value_2A"),
+        ...     col("value_1") < col("value_2B"),
+        ...     right_columns='value_2B',
+        ...     how='left'
+        ... )
+           value_1  value_2B
+        0        2       3.0
+        1        5       6.0
+        2        7       NaN
+        3        1       NaN
+        4        3       4.0
+        5        4       5.0
+        6        4       6.0
+
+        Rename columns, after the join:
+        >>> df1.conditional_join(
+        ...     df2,
+        ...     ("value_1", "value_2A", ">"),
+        ...     ("value_1", "value_2B", "<"),
+        ...     df_columns={'value_1':'left_column'},
+        ...     right_columns='value_2B',
+        ...     how='outer'
+        ... )
+            left_column  value_2B
+        0           7.0       NaN
+        1           1.0       NaN
+        2           2.0       3.0
+        3           5.0       6.0
+        4           3.0       4.0
+        5           4.0       5.0
+        6           4.0       6.0
+        7           NaN       1.0
+        8           NaN       9.0
+        9           NaN      15.0
+        10          NaN       1.0
+
+        Get the first match:
+        >>> df1.conditional_join(
+        ...     df2,
+        ...     col("value_1") > col("value_2A"),
+        ...     col("value_1") < col("value_2B"),
+        ...     keep='first'
+        ... )
+           value_1  value_2A  value_2B
+        0        2         1         3
+        1        5         3         6
+        2        3         2         4
+        3        4         3         5
+
+        Get the last match:
+        >>> df1.conditional_join(
+        ...     df2,
+        ...     col("value_1") > col("value_2A"),
+        ...     col("value_1") < col("value_2B"),
+        ...     keep='last'
+        ... )
+           value_1  value_2A  value_2B
+        0        2         1         3
+        1        5         3         6
+        2        3         2         4
+        3        4         3         6
+
+        Add an indicator column:
+        >>> df1.conditional_join(
+        ...     df2,
+        ...     ("value_1", "value_2A", ">"),
+        ...     ("value_1", "value_2B", "<"),
+        ...     how='outer',
+        ...     indicator=True
+        ... )
+            value_1      _merge  value_2A  value_2B
+        0       7.0   left_only       NaN       NaN
+        1       1.0   left_only       NaN       NaN
+        2       2.0        both       1.0       3.0
+        3       5.0        both       3.0       6.0
+        4       3.0        both       2.0       4.0
+        5       4.0        both       3.0       5.0
+        6       4.0        both       3.0       6.0
+        7       NaN  right_only       0.0       1.0
+        8       NaN  right_only       7.0       9.0
+        9       NaN  right_only      12.0      15.0
+        10      NaN  right_only       0.0       1.0
 
     !!! abstract "Version Changed"
 

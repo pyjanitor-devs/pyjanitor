@@ -45,7 +45,7 @@ def conditional_join(
     force: bool = False,
 ) -> pd.DataFrame:
     """The conditional_join function operates similarly to `pd.merge`,
-    but allows joins on inequality operators,
+    but supports efficient joins on inequality operators,
     or a combination of equi and non-equi joins.
 
     Joins solely on equality are not supported.
@@ -57,7 +57,7 @@ def conditional_join(
     especially if the intervals do not overlap.
 
     Column selection in `df_columns` and `right_columns` is possible using the
-    [`select_columns`][janitor.functions.select.select_columns] syntax.
+    [`select`][janitor.functions.select.select] syntax.
 
     Performance might be improved by setting `use_numba` to `True`.
     This assumes that `numba` is installed.
@@ -148,6 +148,8 @@ def conditional_join(
             - `col` class supported.
             - Outer join supported. `sort_by_appearance` deprecated.
             - Numba support for equi join
+        - 0.27.0
+            - Added support for timedelta dtype.
 
     Args:
         df: A pandas DataFrame.
@@ -172,11 +174,11 @@ def conditional_join(
             !!!warning "Deprecated in 0.25.0"
         df_columns: Columns to select from `df` in the final output dataframe.
             Column selection is based on the
-            [`select_columns`][janitor.functions.select.select_columns] syntax.
+            [`select`][janitor.functions.select.select] syntax.
             It is also possible to rename the output columns via a dictionary.
         right_columns: Columns to select from `right` in the final output dataframe.
             Column selection is based on the
-            [`select_columns`][janitor.functions.select.select_columns] syntax.
+            [`select`][janitor.functions.select.select] syntax.
             It is also possible to rename the output columns via a dictionary.
         use_numba: Use numba, if installed, to accelerate the computation.
         keep: Choose whether to return the first match, last match or all matches.

@@ -159,7 +159,7 @@ def test_clean_names_camelcase_to_snake_multi(dataframe):
     dataframe.
     """
     df = (
-        dataframe.select_columns(["a", "Bell__Chart", "decorated-elephant"])
+        dataframe.select(columns=["a", "Bell__Chart", "decorated-elephant"])
         .rename_column("a", "snakesOnAPlane")
         .rename_column("Bell__Chart", "SnakesOnAPlane2")
         .rename_column("decorated-elephant", "snakes_on_a_plane3")

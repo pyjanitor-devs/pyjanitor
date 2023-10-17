@@ -36,7 +36,7 @@ def impute(
     of other non-null values.
 
     Column selection in `column_names` is possible using the
-    [`select_columns`][janitor.functions.select.select_columns] syntax.
+    [`select`][janitor.functions.select.select] syntax.
 
     Currently supported statistics include:
 

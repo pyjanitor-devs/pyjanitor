@@ -7,10 +7,24 @@ from pandas.api.types import is_datetime64_dtype, is_extension_array_dtype
 
 from janitor.functions.utils import (
     _generic_func_cond_join,
-    _JoinOperator,
+    _null_checks_cond_join,
     greater_than_join_types,
     less_than_join_types,
 )
+
+
+def _convert_to_numpy(left: np.ndarray, right: np.ndarray) -> tuple:
+    """
+    Ensure array is a numpy array.
+    """
+    if is_extension_array_dtype(left):
+        array_dtype = left.dtype.numpy_dtype
+        left = left.astype(array_dtype)
+        right = right.astype(array_dtype)
+    if is_datetime64_dtype(left):
+        left = left.view(np.int64)
+        right = right.view(np.int64)
+    return left, right
 
 
 def _numba_equi_join(df, right, eqs, ge_gt, le_lt):
@@ -146,13 +160,7 @@ def _numba_equi_join(df, right, eqs, ge_gt, le_lt):
         left_column, right_column, op = ge_gt
         ge_arr1 = df.loc[left_index, left_column]._values
         ge_arr2 = right[right_column]._values
-        if is_extension_array_dtype(ge_arr1):
-            array_dtype = ge_arr1.dtype.numpy_dtype
-            ge_arr1 = ge_arr1.astype(array_dtype)
-            ge_arr2 = ge_arr2.astype(array_dtype)
-        if is_datetime64_dtype(ge_arr1):
-            ge_arr1 = ge_arr1.view(np.int64)
-            ge_arr2 = ge_arr2.view(np.int64)
+        ge_arr1, ge_arr2 = _convert_to_numpy(left=ge_arr1, right=ge_arr2)
         ge_strict = True if op == ">" else False
 
     le_arr1 = None
@@ -162,13 +170,7 @@ def _numba_equi_join(df, right, eqs, ge_gt, le_lt):
         left_column, right_column, op = le_lt
         le_arr1 = df.loc[left_index, left_column]._values
         le_arr2 = right[right_column]._values
-        if is_extension_array_dtype(le_arr1):
-            array_dtype = le_arr1.dtype.numpy_dtype
-            le_arr1 = le_arr1.astype(array_dtype)
-            le_arr2 = le_arr2.astype(array_dtype)
-        if is_datetime64_dtype(le_arr1):
-            le_arr1 = le_arr1.view(np.int64)
-            le_arr2 = le_arr2.view(np.int64)
+        le_arr1, le_arr2 = _convert_to_numpy(left=le_arr1, right=le_arr2)
         le_strict = True if op == "<" else False
 
     if le_lt and ge_gt:
@@ -1099,6 +1101,218 @@ def _get_indices_multiple(
     return l_index, r_index
 
 
+@njit()
+def _less_than_index_numba(arr: np.ndarray, value, low, high) -> int:
+    """
+    Get the index position of a value in an array.
+    """
+    while low < high:
+        mid = low + (high - low) // 2
+        if arr[mid] < value:
+            low = mid + 1
+        else:
+            high = mid
+    return low
+
+
+@njit()
+def _greater_than_index_numba(arr: np.ndarray, value, low, high) -> int:
+    """
+    Get the index position of a value in an array.
+    """
+    while low < high:
+        mid = low + (high - low) // 2
+        if value < arr[mid]:
+            high = mid
+        else:
+            low = mid + 1
+    return low
+
+
+@njit(parallel=True)
+def _greater_than_indices_numba(
+    left_array: np.ndarray,
+    right_array: np.ndarray,
+    left_index: np.ndarray,
+    right_index: np.ndarray,
+    right_is_sorted: bool,
+    keep: str,
+    any_nulls: bool,
+    strict: bool = False,
+) -> np.ndarray:
+    """
+    Get indices for greater than join
+    """
+    low = 0
+    high = len(right_array)
+    length = len(left_array)
+    counts = 0
+    exclude = 0
+    positions = np.empty(length, dtype=np.intp)
+    for num in prange(length):
+        value = left_array[num]
+        pos = _greater_than_index_numba(right_array, value, low, high)
+        if pos == low:
+            positions[num] = pos
+            exclude += 1
+            continue
+        if strict and (right_array[pos - 1] == value):
+            pos = _less_than_index_numba(right_array, value, low, pos - 1)
+            if pos == low:
+                positions[num] = pos
+                exclude += 1
+                continue
+        positions[num] = pos
+        counts += pos
+    if counts == 0:
+        return None, None
+
+    if exclude > 0:
+        booleans = positions == low
+        positions = positions[~booleans]
+        left_index = left_index[~booleans]
+        booleans = None
+    length = len(positions)
+    if right_is_sorted and (keep == "last"):
+        right_arr = np.empty(length, dtype=np.intp)
+        if any_nulls:
+            for num in prange(length):
+                right_arr[num] = right_index[positions[num] - 1]
+            return left_index, right_arr
+        return left_index, positions - 1
+
+    if keep == "first":
+        right_arr = np.empty(length, dtype=np.intp)
+        for num in prange(length):
+            pos = positions[num]
+            minimum = right_index[0]
+            for n in range(pos):
+                value = right_index[n]
+                if value < minimum:
+                    minimum = value
+            right_arr[num] = minimum
+        return left_index, right_arr
+
+    if keep == "last":
+        right_arr = np.empty(length, dtype=np.intp)
+        for num in prange(length):
+            pos = positions[num]
+            maximum = right_index[0]
+            for n in range(pos):
+                value = right_index[n]
+                if value > maximum:
+                    maximum = value
+            right_arr[num] = maximum
+        return left_index, right_arr
+
+    starts = np.empty(length, dtype=np.intp)
+    starts[0] = 0
+    starts[1:] = np.cumsum(positions[:-1])
+    left_arr = np.empty(counts, dtype=np.intp)
+    right_arr = np.empty(counts, dtype=np.intp)
+    for num in prange(length):
+        start = starts[num]
+        pos = positions[num]
+        l_index = left_index[num]
+        for n in range(pos):
+            left_arr[start + n] = l_index
+            right_arr[start + n] = right_index[n]
+
+    return left_arr, right_arr
+
+
+@njit(parallel=True)
+def _less_than_indices_numba(
+    left_array: np.ndarray,
+    right_array: np.ndarray,
+    left_index: np.ndarray,
+    right_index: np.ndarray,
+    right_is_sorted: bool,
+    keep: str,
+    any_nulls: bool,
+    strict: bool = False,
+) -> np.ndarray:
+    """
+    Get indices for less than join
+    """
+    low = 0
+    high = len(right_array)
+    length = len(left_array)
+    positions = np.empty(length, dtype=np.intp)
+    counts = 0
+    exclude = 0
+    for num in prange(length):
+        value = left_array[num]
+        pos = _less_than_index_numba(right_array, value, low, high)
+        if pos == high:
+            positions[num] = pos
+            exclude += 1
+            continue
+        if strict and (right_array[pos] == value):
+            pos = _greater_than_index_numba(right_array, value, pos + 1, high)
+            if pos == high:
+                positions[num] = pos
+                exclude += 1
+                continue
+        positions[num] = pos
+        counts += high - pos
+    if counts == 0:
+        return None, None
+
+    if exclude > 0:
+        booleans = positions == high
+        positions = positions[~booleans]
+        left_index = left_index[~booleans]
+        booleans = None
+    length = len(positions)
+    if right_is_sorted and (keep == "first"):
+        right_arr = np.empty(length, dtype=np.intp)
+        if any_nulls:
+            for num in prange(length):
+                right_arr[num] = right_index[positions[num]]
+            return left_index, right_arr
+        return left_index, positions
+
+    if keep == "first":
+        right_arr = np.empty(length, dtype=np.intp)
+        for num in prange(length):
+            pos = positions[num]
+            minimum = right_index[pos]
+            for n in range(pos, high):
+                value = right_index[n]
+                if value < minimum:
+                    minimum = value
+            right_arr[num] = minimum
+        return left_index, right_arr
+
+    if keep == "last":
+        right_arr = np.empty(length, dtype=np.intp)
+        for num in prange(length):
+            pos = positions[num]
+            maximum = right_index[pos]
+            for n in range(pos, high):
+                value = right_index[n]
+                if value > maximum:
+                    maximum = value
+            right_arr[num] = maximum
+        return left_index, right_arr
+
+    starts = np.empty(length, dtype=np.intp)
+    starts[0] = 0
+    starts[1:] = np.cumsum((high - positions)[:-1])
+    left_arr = np.empty(counts, dtype=np.intp)
+    right_arr = np.empty(counts, dtype=np.intp)
+    for num in prange(length):
+        start = starts[num]
+        pos = positions[num]
+        l_index = left_index[num]
+        for n in range(high - pos):
+            left_arr[start + n] = l_index
+            right_arr[start + n] = right_index[pos + n]
+
+    return left_arr, right_arr
+
+
 def _numba_single_join(
     left: pd.Series,
     right: pd.Series,
@@ -1107,114 +1321,75 @@ def _numba_single_join(
 ) -> tuple:
     """Return matching indices for single non-equi join."""
 
-    outcome = _generic_func_cond_join(
-        left=left,
-        right=right,
-        op=op,
-        multiple_conditions=True,
-        keep=keep,
-    )
-
-    if (outcome is None) or (op == _JoinOperator.NOT_EQUAL.value):
-        return outcome
-
-    left_index, right_index, search_indices = outcome
-
-    if op in greater_than_join_types:
-        starts = np.zeros(shape=search_indices.size, dtype=np.int8)
-        ends = search_indices
-        counts = search_indices
-    else:
-        ends = np.full(
-            shape=search_indices.size,
-            dtype=np.intp,
-            fill_value=right_index.size,
-        )
-        starts = search_indices
-        counts = ends - starts
-    if keep == "all":
-        return _get_indices_single(
-            l_index=left_index,
-            r_index=right_index,
-            counts=counts,
-            starts=starts,
-            ends=ends,
+    if op == "!=":
+        return _generic_func_cond_join(
+            left=left,
+            right=right,
+            op=op,
+            multiple_conditions=True,
+            keep=keep,
         )
 
-    if (
-        (keep == "first")
-        and (op in less_than_join_types)
-        and pd.Series(right_index).is_monotonic_increasing
-    ):
-        return left_index, right_index[search_indices]
-    if (
-        (keep == "last")
-        and (op in greater_than_join_types)
-        and pd.Series(right_index).is_monotonic_increasing
-    ):
-        return left_index, right_index[search_indices - 1]
-    if keep == "first":
-        right_index = _numba_single_non_equi_keep_first(
-            right_index, starts, ends
+    strict = True if op in {"<", ">"} else False
+
+    if op in less_than_join_types:
+        # quick break, avoiding the hassle
+        if left.min() > right.max():
+            return None
+
+        outcome = _null_checks_cond_join(left=left, right=right)
+        if not outcome:
+            return None
+        (
+            left,
+            right,
+            left_index,
+            right_index,
+            right_is_sorted,
+            any_nulls,
+        ) = outcome
+
+        left, right = _convert_to_numpy(left=left, right=right)
+        outcome = _less_than_indices_numba(
+            left_array=left,
+            right_array=right,
+            strict=strict,
+            left_index=left_index,
+            right_index=right_index,
+            keep=keep,
+            right_is_sorted=right_is_sorted,
+            any_nulls=any_nulls,
         )
-    else:
-        right_index = _numba_single_non_equi_keep_last(
-            right_index, starts, ends
+
+    elif op in greater_than_join_types:
+        # quick break, avoiding the hassle
+        if left.max() < right.min():
+            return None
+
+        outcome = _null_checks_cond_join(left=left, right=right)
+        if not outcome:
+            return None
+        (
+            left,
+            right,
+            left_index,
+            right_index,
+            right_is_sorted,
+            any_nulls,
+        ) = outcome
+
+        left, right = _convert_to_numpy(left=left, right=right)
+        outcome = _greater_than_indices_numba(
+            left_array=left,
+            right_array=right,
+            strict=strict,
+            left_index=left_index,
+            right_index=right_index,
+            keep=keep,
+            right_is_sorted=right_is_sorted,
+            any_nulls=any_nulls,
         )
-    return left_index, right_index
 
-
-@njit(parallel=True)
-def _numba_single_non_equi_keep_first(
-    right_index: np.ndarray, starts: np.ndarray, ends: np.ndarray
-) -> np.ndarray:
-    """
-    Generate all indices when keep = `first`
-    Applies only to >, >= , <, <= operators.
-    """
-    r_index = np.empty(starts.size, np.intp)
-    for num in prange(starts.size):
-        indexer = slice(starts[num], ends[num])
-        r_index[num] = right_index[indexer].min()
-    return r_index
-
-
-@njit(parallel=True)
-def _numba_single_non_equi_keep_last(
-    right_index: np.ndarray, starts: np.ndarray, ends: np.ndarray
-) -> np.ndarray:
-    """
-    Generate all indices when keep = `last`
-    Applies only to >, >= , <, <= operators.
-    """
-    r_index = np.empty(starts.size, np.intp)
-    for num in prange(starts.size):
-        indexer = slice(starts[num], ends[num])
-        r_index[num] = right_index[indexer].max()
-    return r_index
-
-
-@njit(cache=True, parallel=True)
-def _get_indices_single(
-    l_index: np.ndarray,
-    r_index: np.ndarray,
-    counts: int,
-    starts: np.ndarray,
-    ends: np.ndarray,
-):
-    """Compute indices when starts and ends are already known"""
-    lengths = np.cumsum(counts)
-    left_index = np.empty(lengths[-1], np.intp)
-    right_index = np.empty(lengths[-1], np.intp)
-    start_indices = np.empty(lengths.size, np.intp)
-    start_indices[0] = 0
-    start_indices[1:] = lengths[:-1]
-    for num in prange(lengths.size):
-        start = start_indices[num]
-        width = counts[num]
-        l_indexer = slice(start, start + width)
-        left_index[l_indexer] = l_index[num]
-        r_indexer = slice(starts[num], ends[num])
-        right_index[l_indexer] = r_index[r_indexer]
-
-    return left_index, right_index
+    if outcome[0] is None:
+        return None
+    return outcome

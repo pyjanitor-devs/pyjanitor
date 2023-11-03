@@ -697,6 +697,37 @@ greater_than_join_types = {
 }
 
 
+def _null_checks_cond_join(
+    left: pd.Series, right: pd.Series
+) -> Union[tuple, None]:
+    """
+    Checks for nulls in the arrays before conducting binary search.
+
+    Relevant to _less_than_indices and _greater_than_indices
+    """
+    any_nulls = left.isna()
+    if any_nulls.all():
+        return None
+    if any_nulls.any():
+        left = left[~any_nulls]
+    any_nulls = right.isna()
+    if any_nulls.all():
+        return None
+    if any_nulls.any():
+        right = right[~any_nulls]
+    any_nulls = any_nulls.any()
+    right_is_sorted = right.is_monotonic_increasing
+    if not right_is_sorted:
+        right = right.sort_values(kind="stable")
+
+    left_index = left.index._values
+    left = left._values
+    right_index = right.index._values
+    right = right._values
+
+    return left, right, left_index, right_index, right_is_sorted, any_nulls
+
+
 def _less_than_indices(
     left: pd.Series,
     right: pd.Series,
@@ -720,25 +751,10 @@ def _less_than_indices(
     if left.min() > right.max():
         return None
 
-    any_nulls = left.isna()
-    if any_nulls.all():
+    outcome = _null_checks_cond_join(left=left, right=right)
+    if not outcome:
         return None
-    if any_nulls.any():
-        left = left[~any_nulls]
-    any_nulls = right.isna()
-    if any_nulls.all():
-        return None
-    if any_nulls.any():
-        right = right[~any_nulls]
-    any_nulls = any_nulls.any()
-    right_is_sorted = right.is_monotonic_increasing
-    if not right_is_sorted:
-        right = right.sort_values(kind="stable")
-
-    left_index = left.index._values
-    left = left._values
-    right_index = right.index._values
-    right = right._values
+    left, right, left_index, right_index, right_is_sorted, any_nulls = outcome
 
     search_indices = right.searchsorted(left, side="left")
 
@@ -830,25 +846,10 @@ def _greater_than_indices(
     if left.max() < right.min():
         return None
 
-    any_nulls = left.isna()
-    if any_nulls.all():
+    outcome = _null_checks_cond_join(left=left, right=right)
+    if not outcome:
         return None
-    if any_nulls.any():
-        left = left[~any_nulls]
-    any_nulls = right.isna()
-    if any_nulls.all():
-        return None
-    if any_nulls.any():
-        right = right[~any_nulls]
-    any_nulls = any_nulls.any()
-    right_is_sorted = right.is_monotonic_increasing
-    if not right_is_sorted:
-        right = right.sort_values(kind="stable")
-
-    left_index = left.index._values
-    left = left._values
-    right_index = right.index._values
-    right = right._values
+    left, right, left_index, right_index, right_is_sorted, any_nulls = outcome
 
     search_indices = right.searchsorted(left, side="right")
     # if any of the positions in `search_indices`
@@ -1022,7 +1023,7 @@ def _generic_func_cond_join(
             keep=keep,
         )
     if op == _JoinOperator.NOT_EQUAL.value:
-        return _not_equal_indices(left, right, keep)
+        return _not_equal_indices(left=left, right=right, keep=keep)
 
 
 def _keep_output(keep: str, left: np.ndarray, right: np.ndarray):

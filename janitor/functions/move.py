@@ -19,8 +19,7 @@ def move(
     """Changes rows or columns positions in the dataframe.
 
     It uses the
-    [`select_columns`][janitor.functions.select.select_columns] or
-    [`select_rows`][janitor.functions.select.select_rows] syntax,
+    [`select`][janitor.functions.select.select] syntax,
     making it easy to move blocks of rows or columns at once.
 
     This operation does not reset the index of the dataframe. User must

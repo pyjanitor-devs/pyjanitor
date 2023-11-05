@@ -51,7 +51,7 @@ def pivot_longer(
     row axis.
 
     Column selection in `index` and `column_names` is possible using the
-    [`select_columns`][janitor.functions.select.select_columns] syntax.
+    [`select`][janitor.functions.select.select] syntax.
 
     Examples:
         >>> import pandas as pd
@@ -83,7 +83,7 @@ def pivot_longer(
         7  virginica   Petal.Width    1.8
 
         Convenient, flexible column selection in the `index` via the
-        [`select_columns`][janitor.functions.select.select_columns] syntax:
+        [`select`][janitor.functions.select.select] syntax:
         >>> from pandas.api.types import is_string_dtype
         >>> df.pivot_longer(index = is_string_dtype)
              Species      variable  value
@@ -198,7 +198,7 @@ def pivot_longer(
         1    50    2      20      40
 
         Convenient, flexible column selection in the `column_names` via
-        [`select_columns`][janitor.functions.select.select_columns] syntax:
+        [`select`][janitor.functions.select.select] syntax:
         >>> df.pivot_longer(
         ...     column_names="*mean",
         ...     names_to=(".value", "time", ".value"),
@@ -1417,7 +1417,7 @@ def pivot_wider(
 
     Column selection in `index`, `names_from` and `values_from`
     is possible using the
-    [`select_columns`][janitor.functions.select.select_columns] syntax.
+    [`select`][janitor.functions.select.select] syntax.
 
     A ValueError is raised if the combination
     of the `index` and `names_from` is not unique.

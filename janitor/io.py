@@ -319,7 +319,7 @@ def xlsx_cells(
 
         Access cell formatting such as fill:
 
-        >>> out=xlsx_cells(filename, sheetnames="highlights", fill=True).select_columns("value", "fill")
+        >>> out=xlsx_cells(filename, sheetnames="highlights", fill=True).select("value", "fill", axis='columns')
         >>> out
             value                                                                                                                                              fill
         0     Age     {'patternType': None, 'fgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}}

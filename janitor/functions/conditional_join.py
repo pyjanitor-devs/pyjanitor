@@ -13,6 +13,7 @@ from pandas.core.dtypes.common import (
     is_extension_array_dtype,
     is_numeric_dtype,
     is_string_dtype,
+    is_timedelta64_dtype,
 )
 from pandas.core.reshape.merge import _MergeOperation
 
@@ -44,7 +45,7 @@ def conditional_join(
     force: bool = False,
 ) -> pd.DataFrame:
     """The conditional_join function operates similarly to `pd.merge`,
-    but allows joins on inequality operators,
+    but supports efficient joins on inequality operators,
     or a combination of equi and non-equi joins.
 
     Joins solely on equality are not supported.
@@ -56,7 +57,7 @@ def conditional_join(
     especially if the intervals do not overlap.
 
     Column selection in `df_columns` and `right_columns` is possible using the
-    [`select_columns`][janitor.functions.select.select_columns] syntax.
+    [`select`][janitor.functions.select.select] syntax.
 
     Performance might be improved by setting `use_numba` to `True`.
     This assumes that `numba` is installed.
@@ -81,7 +82,7 @@ def conditional_join(
 
     The join is done only on the columns.
 
-    For non-equi joins, only numeric and date columns are supported.
+    For non-equi joins, only numeric, timedelta and date columns are supported.
 
     `inner`, `left`, `right` and `outer` joins are supported.
 
@@ -114,6 +115,7 @@ def conditional_join(
         5         2         4
         6         3         6
         7         1         3
+
         >>> df1.conditional_join(
         ...     df2,
         ...     ("value_1", "value_2A", ">"),
@@ -125,6 +127,8 @@ def conditional_join(
         2        3         2         4
         3        4         3         5
         4        4         3         6
+
+        Use the `col` class:
         >>> df1.conditional_join(
         ...     df2,
         ...     col("value_1") > col("value_2A"),
@@ -137,6 +141,92 @@ def conditional_join(
         3        4         3         5
         4        4         3         6
 
+        Select specific columns, after the join:
+        >>> df1.conditional_join(
+        ...     df2,
+        ...     col("value_1") > col("value_2A"),
+        ...     col("value_1") < col("value_2B"),
+        ...     right_columns='value_2B',
+        ...     how='left'
+        ... )
+           value_1  value_2B
+        0        2       3.0
+        1        5       6.0
+        2        7       NaN
+        3        1       NaN
+        4        3       4.0
+        5        4       5.0
+        6        4       6.0
+
+        Rename columns, after the join:
+        >>> df1.conditional_join(
+        ...     df2,
+        ...     ("value_1", "value_2A", ">"),
+        ...     ("value_1", "value_2B", "<"),
+        ...     df_columns={'value_1':'left_column'},
+        ...     right_columns='value_2B',
+        ...     how='outer'
+        ... )
+            left_column  value_2B
+        0           7.0       NaN
+        1           1.0       NaN
+        2           2.0       3.0
+        3           5.0       6.0
+        4           3.0       4.0
+        5           4.0       5.0
+        6           4.0       6.0
+        7           NaN       1.0
+        8           NaN       9.0
+        9           NaN      15.0
+        10          NaN       1.0
+
+        Get the first match:
+        >>> df1.conditional_join(
+        ...     df2,
+        ...     col("value_1") > col("value_2A"),
+        ...     col("value_1") < col("value_2B"),
+        ...     keep='first'
+        ... )
+           value_1  value_2A  value_2B
+        0        2         1         3
+        1        5         3         6
+        2        3         2         4
+        3        4         3         5
+
+        Get the last match:
+        >>> df1.conditional_join(
+        ...     df2,
+        ...     col("value_1") > col("value_2A"),
+        ...     col("value_1") < col("value_2B"),
+        ...     keep='last'
+        ... )
+           value_1  value_2A  value_2B
+        0        2         1         3
+        1        5         3         6
+        2        3         2         4
+        3        4         3         6
+
+        Add an indicator column:
+        >>> df1.conditional_join(
+        ...     df2,
+        ...     ("value_1", "value_2A", ">"),
+        ...     ("value_1", "value_2B", "<"),
+        ...     how='outer',
+        ...     indicator=True
+        ... )
+            value_1      _merge  value_2A  value_2B
+        0       7.0   left_only       NaN       NaN
+        1       1.0   left_only       NaN       NaN
+        2       2.0        both       1.0       3.0
+        3       5.0        both       3.0       6.0
+        4       3.0        both       2.0       4.0
+        5       4.0        both       3.0       5.0
+        6       4.0        both       3.0       6.0
+        7       NaN  right_only       0.0       1.0
+        8       NaN  right_only       7.0       9.0
+        9       NaN  right_only      12.0      15.0
+        10      NaN  right_only       0.0       1.0
+
     !!! abstract "Version Changed"
 
         - 0.24.0
@@ -147,6 +237,8 @@ def conditional_join(
             - `col` class supported.
             - Outer join supported. `sort_by_appearance` deprecated.
             - Numba support for equi join
+        - 0.27.0
+            - Added support for timedelta dtype.
 
     Args:
         df: A pandas DataFrame.
@@ -171,11 +263,11 @@ def conditional_join(
             !!!warning "Deprecated in 0.25.0"
         df_columns: Columns to select from `df` in the final output dataframe.
             Column selection is based on the
-            [`select_columns`][janitor.functions.select.select_columns] syntax.
+            [`select`][janitor.functions.select.select] syntax.
             It is also possible to rename the output columns via a dictionary.
         right_columns: Columns to select from `right` in the final output dataframe.
             Column selection is based on the
-            [`select_columns`][janitor.functions.select.select_columns] syntax.
+            [`select`][janitor.functions.select.select] syntax.
             It is also possible to rename the output columns via a dictionary.
         use_numba: Use numba, if installed, to accelerate the computation.
         keep: Choose whether to return the first match, last match or all matches.
@@ -347,7 +439,8 @@ def _conditional_join_type_check(
     left_column: pd.Series, right_column: pd.Series, op: str, use_numba: bool
 ) -> None:
     """
-    Raise error if column type is not any of numeric or datetime or string.
+    Raise error if column type is not any of
+    numeric or timedelta or datetime or string.
     """
 
     if (
@@ -355,9 +448,10 @@ def _conditional_join_type_check(
         and use_numba
         and not is_numeric_dtype(left_column)
         and not is_datetime64_dtype(left_column)
+        and not is_timedelta64_dtype(left_column)
     ):
         raise TypeError(
-            "Only numeric and datetime types "
+            "Only numeric, timedelta and datetime types "
             "are supported in an equi-join "
             "when use_numba is set to True"
         )
@@ -369,6 +463,7 @@ def _conditional_join_type_check(
             is_datetime64_dtype,
             is_numeric_dtype,
             is_string_dtype,
+            is_timedelta64_dtype,
         }
         for func in permitted_types:
             if func(left_column.dtype):
@@ -376,10 +471,11 @@ def _conditional_join_type_check(
         else:
             raise TypeError(
                 "conditional_join only supports "
-                "string, category, numeric, or "
-                "date dtypes (without timezone) - "
+                "string, category, numeric, "
+                "date (without timezone) - ",
+                "or timedelta dtypes."
                 f"'{left_column.name} is of type "
-                f"{left_column.dtype}."
+                f"{left_column.dtype}.",
             )
 
     if is_categorical_dtype:
@@ -401,10 +497,11 @@ def _conditional_join_type_check(
         (op != _JoinOperator.STRICTLY_EQUAL.value)
         and not is_numeric_dtype(left_column)
         and not is_datetime64_dtype(left_column)
+        and not is_timedelta64_dtype(left_column)
     ):
         raise TypeError(
             "non-equi joins are supported "
-            "only for datetime and numeric dtypes. "
+            "only for datetime, timedelta and numeric dtypes. "
             f"{left_column.name} in condition "
             f"({left_column.name}, {right_column.name}, {op}) "
             f"has a dtype {left_column.dtype}."
@@ -1024,10 +1121,10 @@ def _cond_join_select_columns(columns: Any, df: pd.DataFrame):
     """
 
     if isinstance(columns, dict):
-        df = df.select_columns([*columns])
+        df = df.select(columns=[*columns])
         df.columns = [columns.get(name, name) for name in df]
     else:
-        df = df.select_columns(columns)
+        df = df.select(columns=columns)
 
     return df
 
@@ -1036,13 +1133,17 @@ def _create_multiindex_column(df: pd.DataFrame, right: pd.DataFrame):
     """
     Create a MultiIndex column for conditional_join.
     """
-    header = [np.array(["left"]).repeat(df.columns.size)]
+    header = np.empty(df.columns.size, dtype="U4")
+    header[:] = "left"
+    header = [header]
     columns = [
         df.columns.get_level_values(n) for n in range(df.columns.nlevels)
     ]
     header.extend(columns)
     df.columns = pd.MultiIndex.from_arrays(header)
-    header = [np.array(["right"]).repeat(right.columns.size)]
+    header = np.empty(right.columns.size, dtype="U5")
+    header[:] = "right"
+    header = [header]
     columns = [
         right.columns.get_level_values(n) for n in range(right.columns.nlevels)
     ]
@@ -1160,26 +1261,43 @@ def _create_frame(
         return _inner(df, right, left_index, right_index, indicator)
 
     if how != "outer":
+        if indicator:
+            columns = df.columns.union(right.columns)
         if how == "left":
-            if not right.empty:
-                right = right.take(right_index)
-            right.index = left_index
+            right = {
+                key: value._values[right_index] for key, value in right.items()
+            }
+            if indicator:
+                indicator, arr = _add_indicator(
+                    indicator=indicator,
+                    how="inner",
+                    column_length=right_index.size,
+                    columns=columns,
+                )
+                right[indicator] = arr
+            right = pd.DataFrame(right, index=left_index, copy=False)
         else:
-            if not df.empty:
-                df = df.take(left_index)
-            df.index = right_index
+            df = {key: value._values[left_index] for key, value in df.items()}
+            if indicator:
+                indicator, arr = _add_indicator(
+                    indicator=indicator,
+                    how="inner",
+                    column_length=left_index.size,
+                    columns=columns,
+                )
+                df[indicator] = arr
+            df = pd.DataFrame(df, index=right_index, copy=False)
+        df, right = df.align(other=right, join=how, axis=0)
+        if indicator:
+            if (how == "left") and right[indicator].hasnans:
+                right[indicator] = right[indicator].fillna("left_only")
+            elif (how == "right") and df[indicator].hasnans:
+                df[indicator] = df[indicator].fillna("right_only")
+        indexer = range(len(df))
+        df.index = indexer
+        right.index = indexer
 
-        df = df.merge(
-            right,
-            left_index=True,
-            right_index=True,
-            indicator=indicator,
-            how=how,
-            copy=False,
-            sort=False,
-        )
-        df.index = range(len(df))
-        return df
+        return pd.concat([df, right], axis=1, sort=False, copy=False)
 
     both = _inner(df, right, left_index, right_index, indicator)
     contents = []

@@ -630,6 +630,7 @@ def _multiple_conditional_join_eq(
         for left_on, right_on, op in conditions:
             if op == _JoinOperator.STRICTLY_EQUAL.value:
                 eqs = (left_on, right_on, op)
+                break
 
         le_lt = None
         ge_gt = None
@@ -683,7 +684,20 @@ def _multiple_conditional_join_eq(
             return None
         if any_nulls.any():
             right_df = right.loc[~any_nulls]
-        right_df = right_df.sort_values(right_columns)
+        equi_col = right_columns[0]
+        sort_frame = not right_df[equi_col].is_monotonic_increasing
+        if not sort_frame:
+            grp = right_df.groupby(equi_col, sort=False)
+            non_equi_col = right_columns[1]
+            # groupby.is_monotonic_increasing uses apply under the hood
+            # this circumvents the Series creation (which isn't required here)
+            # and just gets a sequence of booleans, before calling `all`
+            # to get a single True or False.
+            sort_frame = all(
+                arr.is_monotonic_increasing for _, arr in grp[non_equi_col]
+            )
+        if sort_frame:
+            right_df = right_df.sort_values(right_columns)
         indices = _numba_equi_join(left_df, right_df, eqs, ge_gt, le_lt)
 
         if not rest or (indices is None):

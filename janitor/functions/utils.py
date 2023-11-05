@@ -625,7 +625,7 @@ def get_columns(group: Union[DataFrameGroupBy, SeriesGroupBy], label):
     """
     Helper function for selecting columns on a grouped object,
     using the
-    [`select_columns`][janitor.functions.select.select_columns] syntax.
+    [`select`][janitor.functions.select.select] syntax.
 
     !!! info "New in version 0.25.0"
 

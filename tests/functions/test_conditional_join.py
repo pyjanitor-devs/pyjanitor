@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from hypothesis import given, settings
+from pandas import Timedelta
 from pandas.testing import assert_frame_equal
 
 from janitor import col
@@ -261,7 +262,9 @@ def test_check_use_numba_equi_join(dummy):
     there is an equi join,
     and the dtype is not a datetime or number.
     """
-    with pytest.raises(TypeError, match="Only numeric and datetime types.+"):
+    with pytest.raises(
+        TypeError, match="Only numeric, timedelta and datetime types.+"
+    ):
         dummy.conditional_join(
             dummy, ("S", "S", "=="), ("id", "id", ">"), use_numba=True
         )
@@ -327,9 +330,11 @@ def test_dtype_not_permitted(dummy, series):
     Raise TypeError if dtype of column in `df`
     is not an acceptable type.
     """
-    dummy["F"] = pd.Timedelta("1 days")
+    dummy["F"] = pd.IntervalIndex.from_tuples(
+        [(0, 10), (10, 20), (20, 30), (30, 40), (40, 50), (50, 60)]
+    )
     match = "conditional_join only supports string, "
-    match = match + "category, numeric, or date dtypes.+"
+    match = match + "category, numeric, date.+"
     with pytest.raises(TypeError, match=match):
         dummy.conditional_join(series, ("F", "B", "<"))
 
@@ -351,7 +356,7 @@ def test_dtype_strings_non_equi(dummy):
     on a non-equi operator.
     """
     match = "non-equi joins are supported only "
-    match = match + "for datetime and numeric dtypes.+"
+    match = match + "for datetime, timedelta and numeric dtypes.+"
     with pytest.raises(
         TypeError,
         match=match,
@@ -367,7 +372,8 @@ def test_dtype_category_non_equi():
     and op is non-equi.
     """
     match = (
-        "non-equi joins are supported only for datetime and numeric dtypes.+"
+        "non-equi joins are supported only for datetime, "
+        "timedelta and numeric dtypes.+"
     )
     with pytest.raises(TypeError, match=match):
         left = pd.DataFrame({"A": [1, 2, 3]}, dtype="category")
@@ -1344,7 +1350,7 @@ def test_how_left_multiindex(df, right):
         )
         .collapse_levels()
         .rename(columns={"left_A": "A", "right_A": "A_y"})
-        .select_columns("A", "A_y", "_merge")
+        .select("A", "A_y", "_merge", axis="columns")
         .sort_values(["A", "A_y"], ignore_index=True)
     )
 
@@ -1415,6 +1421,7 @@ def test_how_right(df, right):
             indicator=True,
         )
         .sort_values(["E", "Dates"], ignore_index=True)
+        .sort_index(axis="columns")
         .reset_index(drop=True)
     )
     actual = (
@@ -1423,6 +1430,7 @@ def test_how_right(df, right):
             right[["Dates"]], ("E", "Dates", ">"), how="right", indicator=True
         )
         .sort_values(["E", "Dates"], ignore_index=True)
+        .sort_index(axis="columns")
     )
 
     assert_frame_equal(expected, actual)
@@ -1450,6 +1458,7 @@ def test_how_right_sort(df, right):
             indicator=True,
         )
         .sort_values(["E", "Dates"], ignore_index=True)
+        .sort_index(axis="columns")
         .reset_index(drop=True)
     )
     actual = (
@@ -1462,6 +1471,7 @@ def test_how_right_sort(df, right):
             sort_by_appearance=True,
         )
         .sort_values(["E", "Dates"], ignore_index=True)
+        .sort_index(axis="columns")
     )
 
     assert_frame_equal(expected, actual)
@@ -1818,6 +1828,7 @@ def test_dual_conditions_gt_and_lt_numbers_right_join(df, right):
             sort=False,
         )
         .sort_values(["Numeric", "Floats", "B"], ignore_index=True)
+        .sort_index(axis="columns")
         .reset_index(drop=True)
     )
 
@@ -1831,6 +1842,7 @@ def test_dual_conditions_gt_and_lt_numbers_right_join(df, right):
             indicator=True,
         )
         .sort_values(["Numeric", "Floats", "B"], ignore_index=True)
+        .sort_index(axis="columns")
     )
     assert_frame_equal(expected, actual)
 
@@ -3707,7 +3719,7 @@ def test_multiple_eqs_outer(df, right):
             sort_by_appearance=False,
             indicator=True,
         )
-        .select_columns(("right", "B"), invert=True)
+        .select(("right", "B"), axis="columns", invert=True)
         .droplevel(axis=1, level=0)
         .rename(columns={"": "_merge"})
         .sort_values(columns, ignore_index=True)
@@ -4035,5 +4047,54 @@ def test_no_match_equi_numba():
         df2, ("A", "A", "=="), ("B", "B", ">"), use_numba=True
     ).drop(columns=("right", "A"))
     expected.columns = list("ABC")
+
+    assert_frame_equal(expected, actual)
+
+
+def test_timedelta_dtype():
+    """
+    Test output on timedelta
+    """
+    A = {
+        "l": {
+            0: Timedelta("0 days 00:00:00"),
+            1: Timedelta("0 days 00:51:00"),
+            2: Timedelta("0 days 00:57:00"),
+            3: Timedelta("0 days 01:16:00"),
+            4: Timedelta("0 days 01:29:00"),
+        },
+        "r": {
+            0: Timedelta("0 days 00:51:00"),
+            1: Timedelta("0 days 00:57:00"),
+            2: Timedelta("0 days 01:16:00"),
+            3: Timedelta("0 days 01:29:00"),
+            4: Timedelta("0 days 01:30:00"),
+        },
+    }
+
+    A = pd.DataFrame(A)
+
+    B = {
+        "ll": {
+            0: Timedelta("0 days 00:00:00"),
+            1: Timedelta("0 days 00:19:00"),
+            2: Timedelta("0 days 00:28:00"),
+            3: Timedelta("0 days 01:21:00"),
+            4: Timedelta("0 days 01:23:00"),
+        },
+        "rr": {
+            0: Timedelta("0 days 00:19:00"),
+            1: Timedelta("0 days 00:28:00"),
+            2: Timedelta("0 days 01:21:00"),
+            3: Timedelta("0 days 01:23:00"),
+            4: Timedelta("0 days 01:30:00"),
+        },
+    }
+
+    B = pd.DataFrame(B)
+
+    expected = A.conditional_join(B, ("l", "ll", ">="), ("r", "rr", "<="))
+    actual = A.merge(B, how="cross").loc[lambda f: f.l.ge(f.ll) & f.r.le(f.rr)]
+    actual.index = range(len(actual))
 
     assert_frame_equal(expected, actual)

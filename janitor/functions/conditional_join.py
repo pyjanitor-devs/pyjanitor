@@ -1119,13 +1119,17 @@ def _create_multiindex_column(df: pd.DataFrame, right: pd.DataFrame):
     """
     Create a MultiIndex column for conditional_join.
     """
-    header = [np.array(["left"]).repeat(df.columns.size)]
+    header = np.empty(df.columns.size, dtype="U4")
+    header[:] = "left"
+    header = [header]
     columns = [
         df.columns.get_level_values(n) for n in range(df.columns.nlevels)
     ]
     header.extend(columns)
     df.columns = pd.MultiIndex.from_arrays(header)
-    header = [np.array(["right"]).repeat(right.columns.size)]
+    header = np.empty(right.columns.size, dtype="U5")
+    header[:] = "right"
+    header = [header]
     columns = [
         right.columns.get_level_values(n) for n in range(right.columns.nlevels)
     ]

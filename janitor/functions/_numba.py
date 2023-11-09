@@ -246,8 +246,6 @@ def _numba_equi_le_join(
             if le_strict and (l1 == r1[start]):
                 start = np.searchsorted(r1, l1, side="right")
         if start == r1.size:
-            start = -1
-            starts[num] = start
             counts += 1
             booleans[num] = False
         else:
@@ -323,8 +321,6 @@ def _numba_equi_ge_join(
             if ge_strict and (l1 == r1[end - 1]):
                 end = np.searchsorted(r1, l1, side="left")
         if end == 0:
-            end = -1
-            ends[num] = end
             counts += 1
             booleans[num] = False
         else:
@@ -398,8 +394,6 @@ def _numba_equi_join_range_join(
             if ge_strict and (l1 == r1[end - 1]):
                 end = np.searchsorted(r1, l1, side="left")
         if end == 0:
-            end = -1
-            ends[num] = end
             counts += 1
             booleans[num] = False
         else:
@@ -451,8 +445,6 @@ def _numba_equi_join_range_join(
             if le_strict and (l1 == r1[start]):
                 start = np.searchsorted(r1, l1, side="right")
         if start == r1.size:
-            start = -1
-            starts[num] = start
             counts += 1
             booleans[num] = False
         else:
@@ -1149,17 +1141,18 @@ def _greater_than_indices_numba(
     counts = 0
     exclude = 0
     positions = np.empty(length, dtype=np.intp)
+    booleans = np.ones(length, dtype=np.bool_)
     for num in prange(length):
         value = left_array[num]
         pos = _greater_than_index_numba(right_array, value, low, high)
         if pos == low:
-            positions[num] = pos
             exclude += 1
+            booleans[num] = False
             continue
         if strict and (right_array[pos - 1] == value):
             pos = _less_than_index_numba(right_array, value, low, pos - 1)
             if pos == low:
-                positions[num] = pos
+                booleans[num] = False
                 exclude += 1
                 continue
         positions[num] = pos
@@ -1168,9 +1161,8 @@ def _greater_than_indices_numba(
         return None, None
 
     if exclude > 0:
-        booleans = positions == low
-        positions = positions[~booleans]
-        left_index = left_index[~booleans]
+        positions = positions[booleans]
+        left_index = left_index[booleans]
         booleans = None
     length = len(positions)
     if right_is_sorted and (keep == "last"):
@@ -1239,19 +1231,20 @@ def _less_than_indices_numba(
     high = len(right_array)
     length = len(left_array)
     positions = np.empty(length, dtype=np.intp)
+    booleans = np.ones(length, dtype=np.bool_)
     counts = 0
     exclude = 0
     for num in prange(length):
         value = left_array[num]
         pos = _less_than_index_numba(right_array, value, low, high)
         if pos == high:
-            positions[num] = pos
+            booleans[num] = False
             exclude += 1
             continue
         if strict and (right_array[pos] == value):
             pos = _greater_than_index_numba(right_array, value, pos + 1, high)
             if pos == high:
-                positions[num] = pos
+                booleans[num] = False
                 exclude += 1
                 continue
         positions[num] = pos
@@ -1260,9 +1253,8 @@ def _less_than_indices_numba(
         return None, None
 
     if exclude > 0:
-        booleans = positions == high
-        positions = positions[~booleans]
-        left_index = left_index[~booleans]
+        positions = positions[booleans]
+        left_index = left_index[booleans]
         booleans = None
     length = len(positions)
     if right_is_sorted and (keep == "first"):

@@ -415,6 +415,69 @@ def test_single_condition_less_than_floats_keep_first(df, right):
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
+def test_single_condition_greater_than_floats_keep_last(df, right):
+    """Test output for a single condition. "<"."""
+
+    df = df.sort_values("B").dropna(subset=["B"])
+    expected = pd.merge_asof(
+        df[["B"]],
+        right[["Numeric"]].sort_values("Numeric").dropna(subset=["Numeric"]),
+        left_on="B",
+        right_on="Numeric",
+        direction="backward",
+        allow_exact_matches=False,
+    )
+    expected.index = range(len(expected))
+    actual = (
+        df[["B"]]
+        .conditional_join(
+            right[["Numeric"]].sort_values("Numeric"),
+            ("B", "Numeric", ">"),
+            how="left",
+            sort_by_appearance=False,
+            keep="last",
+        )
+        .sort_values(["B", "Numeric"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_greater_than_floats_keep_last_numba(df, right):
+    """Test output for a single condition. "<"."""
+
+    df = df.sort_values("B").dropna(subset=["B"])
+    expected = pd.merge_asof(
+        df[["B"]],
+        right[["Numeric"]].sort_values("Numeric").dropna(subset=["Numeric"]),
+        left_on="B",
+        right_on="Numeric",
+        direction="backward",
+        allow_exact_matches=False,
+    )
+    expected.index = range(len(expected))
+    actual = (
+        df[["B"]]
+        .conditional_join(
+            right[["Numeric"]].sort_values("Numeric"),
+            ("B", "Numeric", ">"),
+            how="left",
+            sort_by_appearance=False,
+            keep="last",
+            use_numba=True,
+        )
+        .sort_values(["B", "Numeric"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
 def test_single_condition_less_than_floats_keep_last(df, right):
     """Test output for a single condition. "<"."""
 

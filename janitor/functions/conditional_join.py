@@ -444,40 +444,28 @@ def _conditional_join_type_check(
     """
 
     if (
-        (op == _JoinOperator.STRICTLY_EQUAL.value)
-        and use_numba
+        ((op != _JoinOperator.STRICTLY_EQUAL.value) or use_numba)
         and not is_numeric_dtype(left_column)
         and not is_datetime64_dtype(left_column)
         and not is_timedelta64_dtype(left_column)
     ):
         raise TypeError(
             "Only numeric, timedelta and datetime types "
-            "are supported in an equi-join "
-            "when use_numba is set to True"
+            "are supported in a non equi-join, "
+            "or if use_numba is set to True. "
+            f"{left_column.name} in condition "
+            f"({left_column.name}, {right_column.name}, {op}) "
+            f"has a dtype {left_column.dtype}."
         )
 
-    if (op != _JoinOperator.STRICTLY_EQUAL.value) or use_numba:
-        for func in {
-            is_datetime64_dtype,
-            is_numeric_dtype,
-            is_timedelta64_dtype,
-        }:
-            if func(left_column.dtype):
-                break
-        else:
-            raise TypeError(
-                "non-equi joins are supported "
-                "only for datetime, timedelta and numeric dtypes. "
-                f"{left_column.name} in condition "
-                f"({left_column.name}, {right_column.name}, {op}) "
-                f"has a dtype {left_column.dtype}."
-            )
-        if not is_dtype_equal(left_column, right_column):
-            raise TypeError(
-                f"Both columns should have the same type - "
-                f"'{left_column.name}' has {left_column.dtype} type;"
-                f"'{right_column.name}' has {right_column.dtype} type."
-            )
+    if (
+        (op != _JoinOperator.STRICTLY_EQUAL.value) or use_numba
+    ) and not is_dtype_equal(left_column, right_column):
+        raise TypeError(
+            f"Both columns should have the same type - "
+            f"'{left_column.name}' has {left_column.dtype} type;"
+            f"'{right_column.name}' has {right_column.dtype} type."
+        )
 
     return None
 

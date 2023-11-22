@@ -316,8 +316,9 @@ def test_dtype_not_permitted(dummy, series):
     dummy["F"] = pd.IntervalIndex.from_tuples(
         [(0, 10), (10, 20), (20, 30), (30, 40), (40, 50), (50, 60)]
     )
-    match = "non-equi joins are supported only "
-    match = match + "for datetime, timedelta and numeric dtypes.+"
+    match = "Only numeric, timedelta and datetime types "
+    match = "are supported in a non equi-join, "
+    match = "or if use_numba is set to True.+"
     with pytest.raises(TypeError, match=match):
         dummy.conditional_join(series, ("F", "B", "<"))
 
@@ -327,8 +328,9 @@ def test_dtype_str(dummy, series):
     Raise TypeError if dtype of column in `df`
     does not match the dtype of column from `right`.
     """
-    match = "non-equi joins are supported only "
-    match = match + "for datetime, timedelta and numeric dtypes.+"
+    match = "Only numeric, timedelta and datetime types "
+    match = "are supported in a non equi-join, "
+    match = "or if use_numba is set to True.+"
     with pytest.raises(TypeError, match=match):
         dummy.conditional_join(series, ("S", "B", "<"))
 
@@ -338,8 +340,9 @@ def test_dtype_strings_non_equi(dummy):
     Raise TypeError if the dtypes are both strings
     on a non-equi operator.
     """
-    match = "non-equi joins are supported only "
-    match = match + "for datetime, timedelta and numeric dtypes.+"
+    match = "Only numeric, timedelta and datetime types "
+    match = "are supported in a non equi-join, "
+    match = "or if use_numba is set to True.+"
     with pytest.raises(
         TypeError,
         match=match,
@@ -354,13 +357,24 @@ def test_dtype_category_non_equi():
     Raise TypeError if dtype is category,
     and op is non-equi.
     """
-    match = (
-        "non-equi joins are supported only for datetime, "
-        "timedelta and numeric dtypes.+"
-    )
+    match = "Only numeric, timedelta and datetime types "
+    match = "are supported in a non equi-join, "
+    match = "or if use_numba is set to True.+"
     with pytest.raises(TypeError, match=match):
         left = pd.DataFrame({"A": [1, 2, 3]}, dtype="category")
         right = pd.DataFrame({"B": [1, 2, 3]}, dtype="category")
+        left.conditional_join(right, ("A", "B", "<"))
+
+
+def test_dtype_different_non_equi():
+    """
+    Raise TypeError if dtype is different,
+    and op is non-equi.
+    """
+    match = "Both columns should have the same type.+"
+    with pytest.raises(TypeError, match=match):
+        left = pd.DataFrame({"A": [1, 2, 3]}, dtype="int64")
+        right = pd.DataFrame({"B": [1, 2, 3]}, dtype="int8")
         left.conditional_join(right, ("A", "B", "<"))
 
 

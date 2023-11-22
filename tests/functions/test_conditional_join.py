@@ -430,7 +430,32 @@ def test_single_condition_greater_than_floats_keep_last(df, right):
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_greater_than_floats_keep_last_numba(df, right):
-    """Test output for a single condition. "<"."""
+    """
+    Test the functionality of conditional_join with a single
+    'greater than' condition on floating-point data,
+    while keeping the last match using Numba.
+
+    This test sorts and filters dataframes 'df' and 'right'
+    by columns 'B' and 'Numeric' respectively,
+    removing NaN values.
+    It then performs a backward merge_asof operation
+    on these sorted dataframes.
+    The expected outcome is a dataframe
+    where each row from 'df' is merged
+    with the last row from 'right'
+      where 'Numeric' is greater than 'B'.
+
+    The actual outcome is produced
+    by the conditional_join method
+    with a 'greater than' condition,
+    left join type, sorted by appearance,
+    keeping the last match,
+    and utilizing Numba for performance optimization.
+    The test asserts that the actual dataframe matches
+    the expected dataframe,
+    ensuring correct functionality of the conditional_join
+    under these specific parameters.
+    """
 
     df = df.sort_values("B").dropna(subset=["B"])
     expected = pd.merge_asof(
@@ -462,7 +487,24 @@ def test_single_condition_greater_than_floats_keep_last_numba(df, right):
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_less_than_floats_keep_last(df, right):
-    """Test output for a single condition. "<"."""
+    """
+    Test the functionality of conditional_join
+    with a single 'greater than' condition on floating-point data,
+    while keeping the last match using Numba.
+
+    This test sorts and filters dataframes 'df' and 'right'
+    by columns 'B' and 'Numeric' respectively, removing NaN values.
+    It then performs a backward merge_asof operation on these sorted dataframes.
+    The expected outcome is a dataframe where each row from 'df'
+    is merged with the last row from 'right' where 'Numeric' is greater than 'B'.
+
+    The actual outcome is produced by the conditional_join method
+    with a 'greater than' condition, left join type, sorted by appearance,
+    keeping the last match, without utilizing Numba for performance optimization.
+    The test asserts that the actual dataframe matches the expected dataframe,
+    ensuring correct functionality of the conditional_join
+    under these specific parameters.
+    """
 
     df = df.sort_values("B").dropna(subset=["B"])
     right = right.sort_values("Numeric").dropna(subset=["Numeric"])

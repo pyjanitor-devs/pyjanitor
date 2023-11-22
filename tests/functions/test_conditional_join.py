@@ -308,23 +308,6 @@ def test_check_keep_value(dummy, series):
         dummy.conditional_join(series, ("id", "B", "<"), keep="ALL")
 
 
-def test_unequal_categories(dummy):
-    """
-    Raise TypeError if the dtypes are both categories
-    and do not match.
-    """
-    match = "'S' and 'Strings' should have the same categories,"
-    match = match + " and the same order."
-    with pytest.raises(TypeError, match=match):
-        dummy.astype({"S": "category"}).conditional_join(
-            dummy.rename(columns={"S": "Strings"}).encode_categorical(
-                Strings="appearance"
-            ),
-            ("S", "Strings", "=="),
-            ("id", "value_1", "<="),
-        )
-
-
 def test_dtype_not_permitted(dummy, series):
     """
     Raise TypeError if dtype of column in `df`
@@ -333,8 +316,8 @@ def test_dtype_not_permitted(dummy, series):
     dummy["F"] = pd.IntervalIndex.from_tuples(
         [(0, 10), (10, 20), (20, 30), (30, 40), (40, 50), (50, 60)]
     )
-    match = "conditional_join only supports string, "
-    match = match + "category, numeric, date.+"
+    match = "non-equi joins are supported only "
+    match = match + "for datetime, timedelta and numeric dtypes.+"
     with pytest.raises(TypeError, match=match):
         dummy.conditional_join(series, ("F", "B", "<"))
 
@@ -344,9 +327,9 @@ def test_dtype_str(dummy, series):
     Raise TypeError if dtype of column in `df`
     does not match the dtype of column from `right`.
     """
-    with pytest.raises(
-        TypeError, match="Both columns should have the same type.+"
-    ):
+    match = "non-equi joins are supported only "
+    match = match + "for datetime, timedelta and numeric dtypes.+"
+    with pytest.raises(TypeError, match=match):
         dummy.conditional_join(series, ("S", "B", "<"))
 
 

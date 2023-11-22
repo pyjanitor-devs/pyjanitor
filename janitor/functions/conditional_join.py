@@ -7,12 +7,11 @@ from typing import Any, Hashable, Literal, Optional, Union
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
-from pandas.core.dtypes.common import (
+from pandas.api.types import (
     is_datetime64_dtype,
     is_dtype_equal,
     is_extension_array_dtype,
     is_numeric_dtype,
-    is_string_dtype,
     is_timedelta64_dtype,
 )
 from pandas.core.reshape.merge import _MergeOperation
@@ -439,8 +438,9 @@ def _conditional_join_type_check(
     left_column: pd.Series, right_column: pd.Series, op: str, use_numba: bool
 ) -> None:
     """
-    Raise error if column type is not any of
-    numeric or timedelta or datetime or string.
+    Dtype check for columns in the join.
+    Checks are not conducted for the equi-join columns,
+    except when use_numba is set to True.
     """
 
     if (
@@ -456,56 +456,28 @@ def _conditional_join_type_check(
             "when use_numba is set to True"
         )
 
-    is_categorical_dtype = isinstance(left_column.dtype, pd.CategoricalDtype)
-
-    if not is_categorical_dtype:
-        permitted_types = {
+    if op != _JoinOperator.STRICTLY_EQUAL.value:
+        for func in {
             is_datetime64_dtype,
             is_numeric_dtype,
-            is_string_dtype,
             is_timedelta64_dtype,
-        }
-        for func in permitted_types:
+        }:
             if func(left_column.dtype):
                 break
         else:
             raise TypeError(
-                "conditional_join only supports "
-                "string, category, numeric, "
-                "date (without timezone) - ",
-                "or timedelta dtypes."
-                f"'{left_column.name} is of type "
-                f"{left_column.dtype}.",
+                "non-equi joins are supported "
+                "only for datetime, timedelta and numeric dtypes. "
+                f"{left_column.name} in condition "
+                f"({left_column.name}, {right_column.name}, {op}) "
+                f"has a dtype {left_column.dtype}."
             )
-
-    if is_categorical_dtype:
-        if not left_column.array._categories_match_up_to_permutation(
-            right_column.array
-        ):
+        if not is_dtype_equal(left_column, right_column):
             raise TypeError(
-                f"'{left_column.name}' and '{right_column.name}' "
-                "should have the same categories, and the same order."
+                f"Both columns should have the same type - "
+                f"'{left_column.name}' has {left_column.dtype} type;"
+                f"'{right_column.name}' has {right_column.dtype} type."
             )
-    elif not is_dtype_equal(left_column, right_column):
-        raise TypeError(
-            f"Both columns should have the same type - "
-            f"'{left_column.name}' has {left_column.dtype} type;"
-            f"'{right_column.name}' has {right_column.dtype} type."
-        )
-
-    if (
-        (op != _JoinOperator.STRICTLY_EQUAL.value)
-        and not is_numeric_dtype(left_column)
-        and not is_datetime64_dtype(left_column)
-        and not is_timedelta64_dtype(left_column)
-    ):
-        raise TypeError(
-            "non-equi joins are supported "
-            "only for datetime, timedelta and numeric dtypes. "
-            f"{left_column.name} in condition "
-            f"({left_column.name}, {right_column.name}, {op}) "
-            f"has a dtype {left_column.dtype}."
-        )
 
     return None
 

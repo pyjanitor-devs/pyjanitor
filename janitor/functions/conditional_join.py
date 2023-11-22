@@ -456,7 +456,7 @@ def _conditional_join_type_check(
             "when use_numba is set to True"
         )
 
-    if op != _JoinOperator.STRICTLY_EQUAL.value:
+    if (op != _JoinOperator.STRICTLY_EQUAL.value) or use_numba:
         for func in {
             is_datetime64_dtype,
             is_numeric_dtype,

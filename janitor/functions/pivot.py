@@ -853,7 +853,7 @@ def _computations_pivot_longer(
     if index:
         index = {name: df[name]._values for name in index}
     if len(column_names) != len(set(column_names)):
-        column_names = list(dict.fromkeys(column_names))
+        column_names = pd.unique(np.array(column_names))
 
     # this is the reason why there is no explicit copy (df.copy())
     # at the very beginning for `pivot_longer`,

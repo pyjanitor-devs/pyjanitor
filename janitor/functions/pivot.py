@@ -852,9 +852,8 @@ def _computations_pivot_longer(
 
     if index:
         index = {name: df[name]._values for name in index}
-
     if len(column_names) != len(set(column_names)):
-        column_names = pd.unique(column_names)
+        column_names = list(dict.fromkeys(column_names))
 
     # this is the reason why there is no explicit copy (df.copy())
     # at the very beginning for `pivot_longer`,
@@ -1213,7 +1212,9 @@ def _pivot_longer_dot_value(
             cumcount = mapping.groupby(
                 mapping.columns.tolist(), sort=False, observed=True
             ).cumcount()
-            df.columns = [arr for _, arr in mapping.items()] + [cumcount]
+            arrays = [arr for _, arr in mapping.items()]
+            arrays.append(cumcount)
+            df.columns = pd.MultiIndex.from_arrays(arrays)
             indexer = {
                 ".value": outcome,
                 "other": others,
@@ -1272,7 +1273,7 @@ def _headers_single_series(df: pd.DataFrame, mapping: pd.Series) -> tuple:
     # to get equal numbers for each label
     if group_size.nunique() > 1:
         positions = outcome.cumcount()
-        df.columns = [mapping, positions]
+        df.columns = pd.MultiIndex.from_arrays([mapping, positions])
         indexer = group_size.index, np.arange(group_max)
         indexer = pd.MultiIndex.from_product(indexer)
         df = df.reindex(columns=indexer, copy=False)

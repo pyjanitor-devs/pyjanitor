@@ -4102,7 +4102,7 @@ def test_right_empty():
     )
     actual.columns = list("ABC")
     expected = df1.conditional_join(
-        df2, ("A", "A", "=="), ("B", "B", "<="), validate="m:m"
+        df2, ("A", "A", "=="), ("B", "B", "<=")
     ).drop(columns=("right", "A"))
     expected.columns = list("ABC")
 

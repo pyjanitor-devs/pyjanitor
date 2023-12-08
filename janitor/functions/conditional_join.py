@@ -42,6 +42,7 @@ def conditional_join(
     use_numba: bool = False,
     indicator: Optional[Union[bool, str]] = False,
     force: bool = False,
+    validate: Union[str, None] = None,
 ) -> pd.DataFrame:
     """The conditional_join function operates similarly to `pd.merge`,
     but supports efficient joins on inequality operators,
@@ -279,6 +280,12 @@ def conditional_join(
             only appears in the right DataFrame, and `both` if the observation’s
             merge key is found in both DataFrames.
         force: If `True`, force the non-equi join conditions to execute before the equi join.
+        validate: Applies only to the equi-join.
+            If specified, checks if merge is of specified type.
+            - “one_to_one” or “1:1”: check if merge keys are unique in both left and right dataframes.
+            - “one_to_many” or “1:m”: check if merge keys are unique in left dataframes.
+            - “many_to_one” or “m:1”: check if merge keys are unique in right dataframes.
+            - “many_to_many” or “m:m”: allowed, but does not result in checks.
 
     Returns:
         A pandas DataFrame of the two merged Pandas objects.
@@ -296,6 +303,7 @@ def conditional_join(
         use_numba,
         indicator,
         force,
+        validate,
     )
 
 
@@ -482,6 +490,7 @@ def _conditional_join_compute(
     use_numba: bool,
     indicator: Union[bool, str],
     force: bool,
+    validate: Union[str, None],
 ) -> pd.DataFrame:
     """
     This is where the actual computation
@@ -532,7 +541,7 @@ def _conditional_join_compute(
     if len(conditions) > 1:
         if eq_check:
             result = _multiple_conditional_join_eq(
-                df, right, conditions, keep, use_numba, force
+                df, right, conditions, keep, use_numba, force, validate
             )
         elif le_lt_check:
             result = _multiple_conditional_join_le_lt(
@@ -663,6 +672,7 @@ def _multiple_conditional_join_eq(
     keep: str,
     use_numba: bool,
     force: bool,
+    validate: Union[str, None],
 ) -> tuple:
     """
     Get indices for multiple conditions,
@@ -790,13 +800,18 @@ def _multiple_conditional_join_eq(
         if op != _JoinOperator.STRICTLY_EQUAL.value
     )
 
-    left_index, right_index = _MergeOperation(
+    merger = _MergeOperation(
         df,
         right,
         left_on=left_on,
         right_on=right_on,
         sort=False,
-    )._get_join_indexers()
+    )
+
+    if validate is not None:
+        merger._validate_validate_kwd(validate)
+
+    left_index, right_index = merger._get_join_indexers()
 
     if not left_index.size:
         return None

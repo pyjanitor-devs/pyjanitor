@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 from hypothesis import given, settings
 from pandas import Timedelta
-from pandas.testing import assert_frame_equal
+from pandas.testing import assert_frame_equal, assert_index_equal
 
 from janitor import col
 from janitor.testing_utils.strategies import (
@@ -194,10 +194,29 @@ def test_check_how_type(dummy, series):
 
 def test_check_force_type(dummy, series):
     """
-    Raise TypeError if `how` is not a string.
+    Raise TypeError if `force` is not boolean.
     """
     with pytest.raises(TypeError, match="force should be one of.+"):
         dummy.conditional_join(series, ("id", "B", "<"), force=1)
+
+
+def test_check_return_indices_type(dummy, series):
+    """
+    Raise TypeError if `return_indices` is not a boolean.
+    """
+    with pytest.raises(TypeError, match="return_indices should be one of.+"):
+        dummy.conditional_join(series, ("id", "B", "<"), return_indices=1)
+
+
+def test_check_return_indices_how(dummy, series):
+    """
+    Raise ValueError if `return_indices` and how != 'inner'.
+    """
+    msg = "return_indices is applied only if how = 'inner'."
+    with pytest.raises(ValueError, match=msg):
+        dummy.conditional_join(
+            series, ("id", "B", "<"), return_indices=True, how="left"
+        )
 
 
 def test_check_how_value(dummy, series):
@@ -3340,6 +3359,83 @@ def test_ge_eq_and_le_datess_numba(df, right):
     )
     actual = actual.filter(columns)
     assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
+def test_ge_eq_and_le_datess_numba_indices(df, right):
+    """Test output for multiple conditions."""
+
+    expected = (
+        df.reset_index()
+        .dropna(subset=["E"])
+        .merge(
+            right.dropna(subset=["Dates"]),
+            left_on="E",
+            right_on="Dates",
+            how="inner",
+            sort=False,
+        )
+        .loc[
+            lambda df: df.B.gt(df.Floats)
+            & df.A.lt(df.Integers)
+            & df.B.ne(df.Numeric),
+            "index",
+        ]
+    )
+    expected = pd.Index(expected)
+
+    actual, _ = df[["B", "A", "E"]].conditional_join(
+        right[["Floats", "Integers", "Dates", "Numeric"]],
+        ("A", "Integers", "<"),
+        ("E", "Dates", "=="),
+        ("B", "Floats", ">"),
+        ("B", "Numeric", "!="),
+        how="inner",
+        use_numba=True,
+        return_indices=True,
+    )
+    actual = df.index[actual]
+    assert_index_equal(expected, actual, check_names=False)
+
+
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
+def test_ge_eq_and_le_datess_indices(df, right):
+    """Test output for multiple conditions."""
+
+    expected = (
+        df.reset_index()
+        .dropna(subset=["E"])
+        .merge(
+            right.dropna(subset=["Dates"]),
+            left_on="E",
+            right_on="Dates",
+            how="inner",
+            sort=False,
+        )
+        .loc[
+            lambda df: df.B.gt(df.Floats)
+            & df.A.lt(df.Integers)
+            & df.B.ne(df.Numeric),
+            "index",
+        ]
+    )
+    expected = pd.Index(expected)
+
+    actual, _ = df[["B", "A", "E"]].conditional_join(
+        right[["Floats", "Integers", "Dates", "Numeric"]],
+        ("A", "Integers", "<"),
+        ("E", "Dates", "=="),
+        ("B", "Floats", ">"),
+        ("B", "Numeric", "!="),
+        how="inner",
+        return_indices=True,
+    )
+    actual = df.index[actual]
+    assert_index_equal(expected, actual, check_names=False)
 
 
 @pytest.mark.turtle

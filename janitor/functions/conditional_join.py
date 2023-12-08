@@ -43,6 +43,7 @@ def conditional_join(
     use_numba: bool = False,
     indicator: Optional[Union[bool, str]] = False,
     force: bool = False,
+    return_indices: bool = False,
 ) -> pd.DataFrame:
     """The conditional_join function operates similarly to `pd.merge`,
     but supports efficient joins on inequality operators,
@@ -280,6 +281,8 @@ def conditional_join(
             only appears in the right DataFrame, and `both` if the observation’s
             merge key is found in both DataFrames.
         force: If `True`, force the non-equi join conditions to execute before the equi join.
+        return_indices: Returns only the matching indices for the left and right dataframes.
+            Applicable only for `how='inner'`.
 
     Returns:
         A pandas DataFrame of the two merged Pandas objects.
@@ -297,6 +300,7 @@ def conditional_join(
         use_numba,
         indicator,
         force,
+        return_indices,
     )
 
 
@@ -327,6 +331,7 @@ def _conditional_join_preliminary_checks(
     use_numba: bool,
     indicator: Union[bool, str],
     force: bool,
+    return_indices,
 ) -> tuple:
     """
     Preliminary checks for conditional_join are conducted here.
@@ -420,6 +425,11 @@ def _conditional_join_preliminary_checks(
 
     check("force", force, [bool])
 
+    check("return_indices", return_indices, [bool])
+
+    if return_indices and (how != "inner"):
+        raise ValueError("return_indices is applied only if how = 'inner'.")
+
     return (
         df,
         right,
@@ -432,6 +442,7 @@ def _conditional_join_preliminary_checks(
         use_numba,
         indicator,
         force,
+        return_indices,
     )
 
 
@@ -522,6 +533,7 @@ def _conditional_join_compute(
     use_numba: bool,
     indicator: Union[bool, str],
     force: bool,
+    return_indices: bool,
 ) -> pd.DataFrame:
     """
     This is where the actual computation
@@ -540,6 +552,7 @@ def _conditional_join_compute(
         use_numba,
         indicator,
         force,
+        return_indices,
     ) = _conditional_join_preliminary_checks(
         df,
         right,
@@ -552,6 +565,7 @@ def _conditional_join_compute(
         use_numba,
         indicator,
         force,
+        return_indices,
     )
 
     eq_check = False
@@ -602,6 +616,9 @@ def _conditional_join_compute(
 
     if result is None:
         result = np.array([], dtype=np.intp), np.array([], dtype=np.intp)
+
+    if return_indices:
+        return result
 
     return _create_frame(
         df,

@@ -240,6 +240,7 @@ def conditional_join(
             - Numba support for equi join
         - 0.27.0
             - Added support for timedelta dtype.
+            - Added `return_indices` parameter.
 
     Args:
         df: A pandas DataFrame.

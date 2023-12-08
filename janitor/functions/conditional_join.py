@@ -281,10 +281,10 @@ def conditional_join(
             merge key is found in both DataFrames.
         force: If `True`, force the non-equi join conditions to execute before the equi join.
         validate: Applies only to the equi-join.
-            If specified, checks if merge is of specified type.
-            - “one_to_one” or “1:1”: check if merge keys are unique in both left and right dataframes.
-            - “one_to_many” or “1:m”: check if merge keys are unique in left dataframes.
-            - “many_to_one” or “m:1”: check if merge keys are unique in right dataframes.
+            If specified, checks if the equi-join is of the specified type.
+            - “one_to_one” or “1:1”: check if the equi-join keys are unique in both left and right dataframes.
+            - “one_to_many” or “1:m”: check if the equi-join keys are unique in the left dataframe.
+            - “many_to_one” or “m:1”: check if the equi-join keys are unique in the right dataframe.
             - “many_to_many” or “m:m”: allowed, but does not result in checks.
 
     Returns:

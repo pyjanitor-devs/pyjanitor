@@ -239,6 +239,7 @@ def conditional_join(
             - Numba support for equi join
         - 0.27.0
             - Added support for timedelta dtype.
+            - Added validate keyword for equi-joins.
 
     Args:
         df: A pandas DataFrame.
@@ -282,6 +283,7 @@ def conditional_join(
         force: If `True`, force the non-equi join conditions to execute before the equi join.
         validate: Applies only to the equi-join.
             If specified, checks if the equi-join is of the specified type.
+
             - “one_to_one” or “1:1”: check if the equi-join keys are unique in both left and right dataframes.
             - “one_to_many” or “1:m”: check if the equi-join keys are unique in the left dataframe.
             - “many_to_one” or “m:1”: check if the equi-join keys are unique in the right dataframe.

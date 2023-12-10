@@ -1162,9 +1162,12 @@ def _pivot_longer_dot_value(
     Returns a DataFrame.
     """
     if np.count_nonzero(mapping.columns == ".value") > 1:
-        outcome = mapping.pop(".value")
-        outcome = outcome.sum(axis=1, numeric_only=False)
+        out = mapping.pop(".value")
+        outcome = out.iloc[:, 0]
+        for _, ser in out.iloc[:, 1:].items():
+            outcome += ser
         mapping.insert(loc=0, column=".value", value=outcome)
+        out = None
 
     exclude = {
         word

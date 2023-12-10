@@ -53,7 +53,8 @@ def explode_index(
         0            267.333333  389.0
         1             50.500000   50.5
         >>> df.explode_index(
-        ...     names_sep='_',axis='columns',
+        ...     names_sep='_',
+        ...     axis='columns',
         ...     level_names = ['min or max', 'measurement','aggregation']
         ... ) # doctest: +NORMALIZE_WHITESPACE
         min or max          max

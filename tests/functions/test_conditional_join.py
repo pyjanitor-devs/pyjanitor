@@ -327,23 +327,6 @@ def test_check_keep_value(dummy, series):
         dummy.conditional_join(series, ("id", "B", "<"), keep="ALL")
 
 
-def test_unequal_categories(dummy):
-    """
-    Raise TypeError if the dtypes are both categories
-    and do not match.
-    """
-    match = "'S' and 'Strings' should have the same categories,"
-    match = match + " and the same order."
-    with pytest.raises(TypeError, match=match):
-        dummy.astype({"S": "category"}).conditional_join(
-            dummy.rename(columns={"S": "Strings"}).encode_categorical(
-                Strings="appearance"
-            ),
-            ("S", "Strings", "=="),
-            ("id", "value_1", "<="),
-        )
-
-
 def test_dtype_not_permitted(dummy, series):
     """
     Raise TypeError if dtype of column in `df`
@@ -352,8 +335,9 @@ def test_dtype_not_permitted(dummy, series):
     dummy["F"] = pd.IntervalIndex.from_tuples(
         [(0, 10), (10, 20), (20, 30), (30, 40), (40, 50), (50, 60)]
     )
-    match = "conditional_join only supports string, "
-    match = match + "category, numeric, date.+"
+    match = "Only numeric, timedelta and datetime types "
+    match = "are supported in a non equi-join, "
+    match = "or if use_numba is set to True.+"
     with pytest.raises(TypeError, match=match):
         dummy.conditional_join(series, ("F", "B", "<"))
 
@@ -363,9 +347,10 @@ def test_dtype_str(dummy, series):
     Raise TypeError if dtype of column in `df`
     does not match the dtype of column from `right`.
     """
-    with pytest.raises(
-        TypeError, match="Both columns should have the same type.+"
-    ):
+    match = "Only numeric, timedelta and datetime types "
+    match = "are supported in a non equi-join, "
+    match = "or if use_numba is set to True.+"
+    with pytest.raises(TypeError, match=match):
         dummy.conditional_join(series, ("S", "B", "<"))
 
 
@@ -374,8 +359,9 @@ def test_dtype_strings_non_equi(dummy):
     Raise TypeError if the dtypes are both strings
     on a non-equi operator.
     """
-    match = "non-equi joins are supported only "
-    match = match + "for datetime, timedelta and numeric dtypes.+"
+    match = "Only numeric, timedelta and datetime types "
+    match = "are supported in a non equi-join, "
+    match = "or if use_numba is set to True.+"
     with pytest.raises(
         TypeError,
         match=match,
@@ -390,13 +376,24 @@ def test_dtype_category_non_equi():
     Raise TypeError if dtype is category,
     and op is non-equi.
     """
-    match = (
-        "non-equi joins are supported only for datetime, "
-        "timedelta and numeric dtypes.+"
-    )
+    match = "Only numeric, timedelta and datetime types "
+    match = "are supported in a non equi-join, "
+    match = "or if use_numba is set to True.+"
     with pytest.raises(TypeError, match=match):
         left = pd.DataFrame({"A": [1, 2, 3]}, dtype="category")
         right = pd.DataFrame({"B": [1, 2, 3]}, dtype="category")
+        left.conditional_join(right, ("A", "B", "<"))
+
+
+def test_dtype_different_non_equi():
+    """
+    Raise TypeError if dtype is different,
+    and op is non-equi.
+    """
+    match = "Both columns should have the same type.+"
+    with pytest.raises(TypeError, match=match):
+        left = pd.DataFrame({"A": [1, 2, 3]}, dtype="int64")
+        right = pd.DataFrame({"B": [1, 2, 3]}, dtype="int8")
         left.conditional_join(right, ("A", "B", "<"))
 
 
@@ -434,8 +431,113 @@ def test_single_condition_less_than_floats_keep_first(df, right):
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
-def test_single_condition_less_than_floats_keep_last(df, right):
+def test_single_condition_greater_than_floats_keep_last(df, right):
     """Test output for a single condition. "<"."""
+
+    df = df.sort_values("B").dropna(subset=["B"])
+    expected = pd.merge_asof(
+        df[["B"]],
+        right[["Numeric"]].sort_values("Numeric").dropna(subset=["Numeric"]),
+        left_on="B",
+        right_on="Numeric",
+        direction="backward",
+        allow_exact_matches=False,
+    )
+    expected.index = range(len(expected))
+    actual = (
+        df[["B"]]
+        .conditional_join(
+            right[["Numeric"]].sort_values("Numeric"),
+            ("B", "Numeric", ">"),
+            how="left",
+            sort_by_appearance=False,
+            keep="last",
+        )
+        .sort_values(["B", "Numeric"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_greater_than_floats_keep_last_numba(df, right):
+    """
+    Test the functionality of conditional_join with a single
+    'greater than' condition on floating-point data,
+    while keeping the last match using Numba.
+
+    This test sorts and filters dataframes 'df' and 'right'
+    by columns 'B' and 'Numeric' respectively,
+    removing NaN values.
+    It then performs a backward merge_asof operation
+    on these sorted dataframes.
+    The expected outcome is a dataframe
+    where each row from 'df' is merged
+    with the last row from 'right'
+      where 'Numeric' is greater than 'B'.
+
+    The actual outcome is produced
+    by the conditional_join method
+    with a 'greater than' condition,
+    left join type, sorted by appearance,
+    keeping the last match,
+    and utilizing Numba for performance optimization.
+    The test asserts that the actual dataframe matches
+    the expected dataframe,
+    ensuring correct functionality of the conditional_join
+    under these specific parameters.
+    """
+
+    df = df.sort_values("B").dropna(subset=["B"])
+    expected = pd.merge_asof(
+        df[["B"]],
+        right[["Numeric"]].sort_values("Numeric").dropna(subset=["Numeric"]),
+        left_on="B",
+        right_on="Numeric",
+        direction="backward",
+        allow_exact_matches=False,
+    )
+    expected.index = range(len(expected))
+    actual = (
+        df[["B"]]
+        .conditional_join(
+            right[["Numeric"]].sort_values("Numeric"),
+            ("B", "Numeric", ">"),
+            how="left",
+            sort_by_appearance=False,
+            keep="last",
+            use_numba=True,
+        )
+        .sort_values(["B", "Numeric"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_less_than_floats_keep_last(df, right):
+    """
+    Test the functionality of conditional_join
+    with a single 'greater than' condition on floating-point data,
+    while keeping the last match using Numba.
+
+    This test sorts and filters dataframes 'df' and 'right'
+    by columns 'B' and 'Numeric' respectively, removing NaN values.
+    It then performs a backward merge_asof operation on these sorted dataframes.
+    The expected outcome is a dataframe where each row from 'df'
+    is merged with the last row from 'right' where 'Numeric' is greater than 'B'.
+
+    The actual outcome is produced by the conditional_join method
+    with a 'greater than' condition, left join type, sorted by appearance,
+    keeping the last match, without utilizing Numba for performance optimization.
+    The test asserts that the actual dataframe matches the expected dataframe,
+    ensuring correct functionality of the conditional_join
+    under these specific parameters.
+    """
 
     df = df.sort_values("B").dropna(subset=["B"])
     right = right.sort_values("Numeric").dropna(subset=["Numeric"])

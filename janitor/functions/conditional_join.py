@@ -7,12 +7,11 @@ from typing import Any, Hashable, Literal, Optional, Union
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
-from pandas.core.dtypes.common import (
+from pandas.api.types import (
     is_datetime64_dtype,
     is_dtype_equal,
     is_extension_array_dtype,
     is_numeric_dtype,
-    is_string_dtype,
     is_timedelta64_dtype,
 )
 from pandas.core.reshape.merge import _MergeOperation
@@ -281,6 +280,7 @@ def conditional_join(
             merge key is found in both DataFrames.
         force: If `True`, force the non-equi join conditions to execute before the equi join.
 
+
     Returns:
         A pandas DataFrame of the two merged Pandas objects.
     """  # noqa: E501
@@ -439,72 +439,33 @@ def _conditional_join_type_check(
     left_column: pd.Series, right_column: pd.Series, op: str, use_numba: bool
 ) -> None:
     """
-    Raise error if column type is not any of
-    numeric or timedelta or datetime or string.
+    Dtype check for columns in the join.
+    Checks are not conducted for the equi-join columns,
+    except when use_numba is set to True.
     """
 
     if (
-        (op == _JoinOperator.STRICTLY_EQUAL.value)
-        and use_numba
+        ((op != _JoinOperator.STRICTLY_EQUAL.value) or use_numba)
         and not is_numeric_dtype(left_column)
         and not is_datetime64_dtype(left_column)
         and not is_timedelta64_dtype(left_column)
     ):
         raise TypeError(
             "Only numeric, timedelta and datetime types "
-            "are supported in an equi-join "
-            "when use_numba is set to True"
+            "are supported in a non equi-join, "
+            "or if use_numba is set to True. "
+            f"{left_column.name} in condition "
+            f"({left_column.name}, {right_column.name}, {op}) "
+            f"has a dtype {left_column.dtype}."
         )
 
-    is_categorical_dtype = isinstance(left_column.dtype, pd.CategoricalDtype)
-
-    if not is_categorical_dtype:
-        permitted_types = {
-            is_datetime64_dtype,
-            is_numeric_dtype,
-            is_string_dtype,
-            is_timedelta64_dtype,
-        }
-        for func in permitted_types:
-            if func(left_column.dtype):
-                break
-        else:
-            raise TypeError(
-                "conditional_join only supports "
-                "string, category, numeric, "
-                "date (without timezone) - ",
-                "or timedelta dtypes."
-                f"'{left_column.name} is of type "
-                f"{left_column.dtype}.",
-            )
-
-    if is_categorical_dtype:
-        if not left_column.array._categories_match_up_to_permutation(
-            right_column.array
-        ):
-            raise TypeError(
-                f"'{left_column.name}' and '{right_column.name}' "
-                "should have the same categories, and the same order."
-            )
-    elif not is_dtype_equal(left_column, right_column):
+    if (
+        (op != _JoinOperator.STRICTLY_EQUAL.value) or use_numba
+    ) and not is_dtype_equal(left_column, right_column):
         raise TypeError(
             f"Both columns should have the same type - "
             f"'{left_column.name}' has {left_column.dtype} type;"
             f"'{right_column.name}' has {right_column.dtype} type."
-        )
-
-    if (
-        (op != _JoinOperator.STRICTLY_EQUAL.value)
-        and not is_numeric_dtype(left_column)
-        and not is_datetime64_dtype(left_column)
-        and not is_timedelta64_dtype(left_column)
-    ):
-        raise TypeError(
-            "non-equi joins are supported "
-            "only for datetime, timedelta and numeric dtypes. "
-            f"{left_column.name} in condition "
-            f"({left_column.name}, {right_column.name}, {op}) "
-            f"has a dtype {left_column.dtype}."
         )
 
     return None
@@ -572,7 +533,12 @@ def _conditional_join_compute(
     if len(conditions) > 1:
         if eq_check:
             result = _multiple_conditional_join_eq(
-                df, right, conditions, keep, use_numba, force
+                df,
+                right,
+                conditions,
+                keep,
+                use_numba,
+                force,
             )
         elif le_lt_check:
             result = _multiple_conditional_join_le_lt(
@@ -727,6 +693,7 @@ def _multiple_conditional_join_eq(
         for left_on, right_on, op in conditions:
             if op == _JoinOperator.STRICTLY_EQUAL.value:
                 eqs = (left_on, right_on, op)
+                break
 
         le_lt = None
         ge_gt = None
@@ -780,7 +747,23 @@ def _multiple_conditional_join_eq(
             return None
         if any_nulls.any():
             right_df = right.loc[~any_nulls]
-        right_df = right_df.sort_values(right_columns)
+        equi_col = right_columns[0]
+        # check if the first column is sorted
+        # if sorted, check if the second column is sorted
+        # per group in the first column
+        right_is_sorted = right_df[equi_col].is_monotonic_increasing
+        if right_is_sorted:
+            grp = right_df.groupby(equi_col, sort=False)
+            non_equi_col = right_columns[1]
+            # groupby.is_monotonic_increasing uses apply under the hood
+            # this circumvents the Series creation (which isn't required here)
+            # and just gets a sequence of booleans, before calling `all`
+            # to get a single True or False.
+            right_is_sorted = all(
+                arr.is_monotonic_increasing for _, arr in grp[non_equi_col]
+            )
+        if not right_is_sorted:
+            right_df = right_df.sort_values(right_columns)
         indices = _numba_equi_join(left_df, right_df, eqs, ge_gt, le_lt)
 
         if not rest or (indices is None):

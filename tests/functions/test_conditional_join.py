@@ -200,22 +200,26 @@ def test_check_force_type(dummy, series):
         dummy.conditional_join(series, ("id", "B", "<"), force=1)
 
 
-def test_check_return_indices_type(dummy, series):
+def test_check_return_matching_indices_type(dummy, series):
     """
-    Raise TypeError if `return_indices` is not a boolean.
+    Raise TypeError if `return_matching_indices` is not a boolean.
     """
-    with pytest.raises(TypeError, match="return_indices should be one of.+"):
-        dummy.conditional_join(series, ("id", "B", "<"), return_indices=1)
+    with pytest.raises(
+        TypeError, match="return_matching_indices should be one of.+"
+    ):
+        dummy.conditional_join(
+            series, ("id", "B", "<"), return_matching_indices=1
+        )
 
 
-def test_check_return_indices_how(dummy, series):
+def test_check_return_matching_indices_how(dummy, series):
     """
-    Raise ValueError if `return_indices` and how != 'inner'.
+    Raise ValueError if `return_matching_indices` and how != 'inner'.
     """
-    msg = "return_indices is applied only if how = 'inner'."
+    msg = "return_matching_indices is applied only if how = 'inner'."
     with pytest.raises(ValueError, match=msg):
         dummy.conditional_join(
-            series, ("id", "B", "<"), return_indices=True, how="left"
+            series, ("id", "B", "<"), return_matching_indices=True, how="left"
         )
 
 
@@ -3496,7 +3500,7 @@ def test_ge_eq_and_le_datess_numba_indices(df, right):
         ("B", "Numeric", "!="),
         how="inner",
         use_numba=True,
-        return_indices=True,
+        return_matching_indices=True,
     )
     actual = df.index[actual]
     assert_index_equal(expected, actual, check_names=False)
@@ -3534,7 +3538,7 @@ def test_ge_eq_and_le_datess_indices(df, right):
         ("B", "Floats", ">"),
         ("B", "Numeric", "!="),
         how="inner",
-        return_indices=True,
+        return_matching_indices=True,
     )
     actual = df.index[actual]
     assert_index_equal(expected, actual, check_names=False)

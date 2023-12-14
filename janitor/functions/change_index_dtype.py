@@ -1,28 +1,17 @@
 """Implementation of the `change_index_dtype` function."""
 import pandas as pd
 import pandas_flavor as pf
-from pandas.api.types import is_string_dtype
 
 from janitor.utils import check
 
 
 @pf.register_dataframe_method
-def collapse_levels(df: pd.DataFrame, sep: str = "_") -> pd.DataFrame:
-    """Flatten multi-level column dataframe to a single level.
+def change_index_dtype(
+    df: pd.DataFrame, dtype, axis: str = "index"
+) -> pd.DataFrame:
+    """Cast an index to a specified dtype ``dtype``.
 
     This method does not mutate the original DataFrame.
-
-    Given a DataFrame containing multi-level columns, flatten to single-level
-    by string-joining the column labels in each level.
-
-    After a `groupby` / `aggregate` operation where `.agg()` is passed a
-    list of multiple aggregation functions, a multi-level DataFrame is
-    returned with the name of the function applied in the second level.
-
-    It is sometimes convenient for later indexing to flatten out this
-    multi-level configuration back into a single level. This function does
-    this through a simple string-joining of all the names across different
-    levels in a single column.
 
     Examples:
         >>> import pandas as pd
@@ -68,43 +57,68 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_") -> pd.DataFrame:
 
     Args:
         df: A pandas DataFrame.
-        sep: String separator used to join the column level names.
+        dtype : str, data type or Mapping
+            of index name/position -> data type.
+            Use a str, numpy.dtype, pandas.ExtensionDtype,
+            Python type to cast the entire Index
+            to the same type.
+            Alternatively, use a mapping, e.g. {index_name: dtype, ...},
+            where index_name is an index name/position and dtype is a numpy.dtype
+            or Python type to cast one or more of the DataFrame's
+            Index to specific types.
+        axis: 'index/columns'. Determines which axis to change the dtype(s).
 
     Returns:
-        A pandas DataFrame with single-level column index.
+        A pandas DataFrame with new Index.
     """  # noqa: E501
-    check("sep", sep, [str])
 
-    # if already single-level, just return the DataFrame
-    if not isinstance(df.columns, pd.MultiIndex):
+    check("axis", axis, [str])
+    if axis not in {"index", "columns"}:
+        raise ValueError("axis should be either index or columns.")
+
+    df = df[:]
+    current_index = getattr(df, axis)
+    if not isinstance(current_index, pd.MultiIndex):
+        current_index = current_index.astype(dtype)
+        setattr(df, axis, current_index)
         return df
 
-    # TODO: Pyarrow offers faster string computations
-    # future work should take this into consideration,
-    # which would require a different route from python's string.join
+    if not isinstance(dtype, dict):
+        dtype = {
+            level_number: dtype
+            for level_number in range(current_index.nlevels)
+        }
 
-    # since work is only on the columns
-    # it is safe, and more efficient to slice/view the dataframe
-    # plus Pandas creates a new Index altogether
-    # as such, the original dataframe is not modified
-    df = df[:]
-    new_columns = df.columns
-    levels = [
-        new_columns.get_level_values(num) for num in range(new_columns.nlevels)
-    ]
-    all_strings = all(map(is_string_dtype, levels))
-    if all_strings:
-        no_empty_string = all((entry != "").all() for entry in levels)
-        if no_empty_string:
-            df.columns = new_columns.map(sep.join)
-            return df
-    new_columns = (map(str, entry) for entry in new_columns)
-    new_columns = [
-        # faster to use a list comprehension within string.join
-        # compared to a generator
-        # https://stackoverflow.com/a/37782238
-        sep.join([entry for entry in word if entry])
-        for word in new_columns
-    ]
-    df.columns = new_columns
+    all_str = all(isinstance(level, str) for level in dtype)
+    all_int = all(isinstance(level, int) for level in dtype)
+    if not all_str | all_int:
+        raise TypeError(
+            "The levels in the dictionary "
+            "should be either all strings or all integers."
+        )
+
+    dtype = {
+        current_index._get_level_number(label): _dtype
+        for label, _dtype in dtype.items()
+    }
+
+    new_levels = []
+    codes = current_index.codes
+    levels = current_index.levels
+
+    for level_number in range(current_index.nlevels):
+        _index = levels[level_number]
+        if level_number in dtype:
+            _dtype = dtype[level_number]
+            _index = _index.astype(_dtype)
+        new_levels.append(_index)
+
+    current_index = pd.MultiIndex(
+        levels=new_levels,
+        codes=codes,
+        names=current_index.names,
+        copy=False,
+        verify_integrity=False,
+    )
+    setattr(df, axis, current_index)
     return df

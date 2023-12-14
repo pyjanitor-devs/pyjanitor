@@ -2,8 +2,6 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal
 
-df = [1, 2, 3]
-
 
 @pytest.fixture
 def df_checks():

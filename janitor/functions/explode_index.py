@@ -94,10 +94,7 @@ def explode_index(
     new_index = getattr(df, axis)
     if isinstance(new_index, pd.MultiIndex):
         return df
-    # since work is only on the columns
-    # it is safe, and more efficient to slice/view the dataframe
-    # plus Pandas creates a new Index altogether
-    # as such, the original dataframe is not modified
+    # avoid a copy - Index is immutable; a slice is safe to use.
     df = df[:]
     if names_sep:
         new_index = new_index.str.split(names_sep, expand=True)
@@ -110,5 +107,6 @@ def explode_index(
         new_index = pd.MultiIndex.from_arrays(new_index)
     if level_names:
         new_index.names = level_names
+
     setattr(df, axis, new_index)
     return df

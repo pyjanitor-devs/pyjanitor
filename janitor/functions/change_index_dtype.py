@@ -1,4 +1,8 @@
 """Implementation of the `change_index_dtype` function."""
+from __future__ import annotations
+
+from typing import Union
+
 import pandas as pd
 import pandas_flavor as pf
 
@@ -7,7 +11,7 @@ from janitor.utils import check
 
 @pf.register_dataframe_method
 def change_index_dtype(
-    df: pd.DataFrame, dtype, axis: str = "index"
+    df: pd.DataFrame, *, dtype: Union[str, dict], axis: str = "index"
 ) -> pd.DataFrame:
     """Cast an index to a specified dtype ``dtype``.
 
@@ -16,57 +20,73 @@ def change_index_dtype(
     Examples:
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame({
-        ...     "class": ["bird", "bird", "bird", "mammal", "mammal"],
-        ...     "max_speed": [389, 389, 24, 80, 21],
-        ...     "type": ["falcon", "falcon", "parrot", "Lion", "Monkey"],
-        ... })
         >>> df
-            class  max_speed    type
-        0    bird        389  falcon
-        1    bird        389  falcon
-        2    bird         24  parrot
-        3  mammal         80    Lion
-        4  mammal         21  Monkey
-        >>> grouped_df = df.groupby("class").agg(["mean", "median"])
-        >>> grouped_df  # doctest: +NORMALIZE_WHITESPACE
-                 max_speed
-                      mean median
-        class
-        bird    267.333333  389.0
-        mammal   50.500000   50.5
-        >>> grouped_df.collapse_levels(sep="_")  # doctest: +NORMALIZE_WHITESPACE
-                max_speed_mean  max_speed_median
-        class
-        bird        267.333333             389.0
-        mammal       50.500000              50.5
-
-    Before applying `.collapse_levels`, the `.agg` operation returns a
-    multi-level column DataFrame whose columns are `(level 1, level 2)`:
-
-    ```python
-    [("max_speed", "mean"), ("max_speed", "median")]
-    ```
-
-    `.collapse_levels` then flattens the column MultiIndex into a single
-    level index with names:
-
-    ```python
-    ["max_speed_mean", "max_speed_median"]
-    ```
+                             A         B
+        first second
+        bar   1.0     1.764052  0.400157
+              2.0     0.978738  2.240893
+        baz   1.0     1.867558 -0.977278
+              2.0     0.950088 -0.151357
+        foo   1.0    -0.103219  0.410599
+              2.0     0.144044  1.454274
+        qux   1.0     0.761038  0.121675
+              2.0     0.443863  0.333674
+        >>> outcome=df.change_index_dtype(dtype=str)
+        >>> outcome
+                             A         B
+        first second
+        bar   1.0     1.764052  0.400157
+              2.0     0.978738  2.240893
+        baz   1.0     1.867558 -0.977278
+              2.0     0.950088 -0.151357
+        foo   1.0    -0.103219  0.410599
+              2.0     0.144044  1.454274
+        qux   1.0     0.761038  0.121675
+              2.0     0.443863  0.333674
+        >>> outcome.index.dtypes
+        first     object
+        second    object
+        dtype: object
+        >>> outcome=df.change_index_dtype(dtype={'second':int})
+        >>> outcome
+                             A         B
+        first second
+        bar   1       1.764052  0.400157
+              2       0.978738  2.240893
+        baz   1       1.867558 -0.977278
+              2       0.950088 -0.151357
+        foo   1      -0.103219  0.410599
+              2       0.144044  1.454274
+        qux   1       0.761038  0.121675
+              2       0.443863  0.333674
+        >>> outcome.index.dtypes
+        first     object
+        second     int64
+        >>> outcome=df.change_index_dtype(dtype={0:'category',1:int})
+        >>> outcome
+                             A         B
+        first second
+        bar   1       1.764052  0.400157
+              2       0.978738  2.240893
+        baz   1       1.867558 -0.977278
+              2       0.950088 -0.151357
+        foo   1      -0.103219  0.410599
+              2       0.144044  1.454274
+        qux   1       0.761038  0.121675
+              2       0.443863  0.333674
+        >>> outcome.index.dtypes
+        first     category
+        second       int64
+        dtype: object
 
     Args:
         df: A pandas DataFrame.
-        dtype : str, data type or Mapping
-            of index name/position -> data type.
-            Use a str, numpy.dtype, pandas.ExtensionDtype,
-            Python type to cast the entire Index
+        dtype : Use a str or dtype to cast the entire Index
             to the same type.
-            Alternatively, use a mapping, e.g. {index_name: dtype, ...},
-            where index_name is an index name/position and dtype is a numpy.dtype
-            or Python type to cast one or more of the DataFrame's
-            Index to specific types.
-        axis: 'index/columns'. Determines which axis to change the dtype(s).
+            Alternatively, use a dictionary to change the MultiIndex
+            to new dtypes.
+        axis: Determines which axis to change the dtype(s).
+            Should be either 'index' or 'columns'.
 
     Returns:
         A pandas DataFrame with new Index.
@@ -79,6 +99,11 @@ def change_index_dtype(
     df = df[:]
     current_index = getattr(df, axis)
     if not isinstance(current_index, pd.MultiIndex):
+        if isinstance(dtype, dict):
+            raise TypeError(
+                "Changing the dtype via a dictionary "
+                "is not supported for a single index."
+            )
         current_index = current_index.astype(dtype)
         setattr(df, axis, current_index)
         return df

@@ -19,6 +19,7 @@ def change_index_dtype(
 
     Examples:
         >>> import pandas as pd
+        >>> import numpy as np
         >>> import janitor
         >>> np.random.seed(0)
         ... tuples = list(zip(*[['bar', 'bar', 'baz', 'baz',

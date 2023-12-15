@@ -71,6 +71,7 @@ def change_index_dtype(
         >>> outcome.index.dtypes
         first     object
         second     int64
+        dtype: object
         >>> outcome=df.change_index_dtype(dtype={0:'category',1:int})
         >>> outcome
                              A         B

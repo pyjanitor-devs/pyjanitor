@@ -11,7 +11,7 @@ from janitor.utils import check
 
 @pf.register_dataframe_method
 def change_index_dtype(
-    df: pd.DataFrame, *, dtype: Union[str, dict], axis: str = "index"
+    df: pd.DataFrame, dtype: Union[str, dict], axis: str = "index"
 ) -> pd.DataFrame:
     """Cast an index to a specified dtype ``dtype``.
 

@@ -22,7 +22,7 @@ def change_index_dtype(
         >>> import numpy as np
         >>> import janitor
         >>> np.random.seed(0)
-        ... tuples = list(zip(*[['bar', 'bar', 'baz', 'baz',
+        >>> tuples = list(zip(*[['bar', 'bar', 'baz', 'baz',
         ...             'foo', 'foo', 'qux', 'qux'],
         ...              [1.0, 2.0, 1.0, 2.0,
         ...               1.0, 2.0, 1.0, 2.0]]))

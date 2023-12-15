@@ -20,6 +20,13 @@ def change_index_dtype(
     Examples:
         >>> import pandas as pd
         >>> import janitor
+        >>> np.random.seed(0)
+        ... tuples = list(zip(*[['bar', 'bar', 'baz', 'baz',
+        ...             'foo', 'foo', 'qux', 'qux'],
+        ...              [1.0, 2.0, 1.0, 2.0,
+        ...               1.0, 2.0, 1.0, 2.0]]))
+        ... idx = pd.MultiIndex.from_tuples(tuples, names=['first', 'second'])
+        ... df = pd.DataFrame(np.random.randn(8, 2), index=idx, columns=['A', 'B'])
         >>> df
                              A         B
         first second

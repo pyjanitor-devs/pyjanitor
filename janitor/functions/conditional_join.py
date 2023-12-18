@@ -160,7 +160,7 @@ def conditional_join(
 
         Rename columns, before the join:
         >>> (df1
-        ...  .rename({'value_1':'left_column'})
+        ...  .rename(columns={'value_1':'left_column'})
         ...  .conditional_join(
         ...      df2,
         ...      ("left_column", "value_2A", ">"),

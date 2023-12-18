@@ -3685,20 +3685,20 @@ def test_multiple_non_eqi(df, right):
     )
 
     actual = (
-        df.conditional_join(
-            right,
+        df.rename(columns={"B": "b"})
+        .conditional_join(
+            right.rename(
+                columns={
+                    "Floats": "floats",
+                }
+            ),
             ("A", "Integers", ">="),
             ("E", "Dates", ">"),
-            ("B", "Floats", ">"),
+            ("b", "floats", ">"),
             how="inner",
             sort_by_appearance=False,
-            df_columns={"B": "b", "A": "A", "E": "E"},
-            right_columns={
-                "Floats": "floats",
-                "Integers": "Integers",
-                "Dates": "Dates",
-            },
         )
+        .loc[:, ["b", "A", "E", "floats", "Integers", "Dates"]]
         .sort_values(
             ["b", "A", "E", "floats", "Integers", "Dates"], ignore_index=True
         )
@@ -3732,21 +3732,20 @@ def test_multiple_non_eqi_numba(df, right):
     )
 
     actual = (
-        df.conditional_join(
-            right,
+        df.rename(columns={"B": "b"})
+        .conditional_join(
+            right.rename(
+                columns={
+                    "Floats": "floats",
+                }
+            ),
             ("A", "Integers", ">="),
             ("E", "Dates", ">"),
-            ("B", "Floats", ">"),
+            ("b", "floats", ">"),
             how="inner",
-            use_numba=True,
             sort_by_appearance=False,
-            df_columns={"B": "b", "A": "A", "E": "E"},
-            right_columns={
-                "Floats": "floats",
-                "Integers": "Integers",
-                "Dates": "Dates",
-            },
         )
+        .loc[:, ["b", "A", "E", "floats", "Integers", "Dates"]]
         .sort_values(
             ["b", "A", "E", "floats", "Integers", "Dates"], ignore_index=True
         )

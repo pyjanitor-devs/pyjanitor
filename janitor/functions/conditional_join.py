@@ -158,14 +158,15 @@ def conditional_join(
         5        4       5.0
         6        4       6.0
 
-        Rename columns, after the join:
-        >>> df1.conditional_join(
-        ...     df2,
-        ...     ("value_1", "value_2A", ">"),
-        ...     ("value_1", "value_2B", "<"),
-        ...     df_columns={'value_1':'left_column'},
-        ...     right_columns='value_2B',
-        ...     how='outer'
+        Rename columns, before the join:
+        >>> (df1.
+        ...  .rename({'value_1':'left_column'})
+        ...  .conditional_join(
+        ...      df2,
+        ...      ("left_column", "value_2A", ">"),
+        ...      ("left_column", "value_2B", "<"),
+        ...      right_columns='value_2B',
+        ...      how='outer')
         ... )
             left_column  value_2B
         0           7.0       NaN
@@ -265,11 +266,9 @@ def conditional_join(
         df_columns: Columns to select from `df` in the final output dataframe.
             Column selection is based on the
             [`select`][janitor.functions.select.select] syntax.
-            It is also possible to rename the output columns via a dictionary.
         right_columns: Columns to select from `right` in the final output dataframe.
             Column selection is based on the
             [`select`][janitor.functions.select.select] syntax.
-            It is also possible to rename the output columns via a dictionary.
         use_numba: Use numba, if installed, to accelerate the computation.
         keep: Choose whether to return the first match, last match or all matches.
         indicator: If `True`, adds a column to the output DataFrame
@@ -1102,22 +1101,6 @@ def _range_indices(
     return left_index, right_index
 
 
-def _cond_join_select_columns(columns: Any, df: pd.DataFrame):
-    """
-    Select columns in a DataFrame.
-    Optionally rename the columns while selecting.
-    Returns a Pandas DataFrame.
-    """
-
-    if isinstance(columns, dict):
-        df = df.select(columns=[*columns])
-        df.columns = [columns.get(name, name) for name in df]
-    else:
-        df = df.select(columns=columns)
-
-    return df
-
-
 def _create_multiindex_column(df: pd.DataFrame, right: pd.DataFrame):
     """
     Create a MultiIndex column for conditional_join.
@@ -1157,9 +1140,9 @@ def _create_frame(
     if (df_columns is None) and (right_columns is None):
         raise ValueError("df_columns and right_columns cannot both be None.")
     if (df_columns is not None) and (df_columns != slice(None)):
-        df = _cond_join_select_columns(df_columns, df)
+        df = df.select(columns=df_columns)
     if (right_columns is not None) and (right_columns != slice(None)):
-        right = _cond_join_select_columns(right_columns, right)
+        right = right.select(columns=right_columns)
     if df_columns is None:
         df = pd.DataFrame([])
     elif right_columns is None:

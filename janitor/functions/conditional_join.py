@@ -44,7 +44,7 @@ def conditional_join(
     force: bool = False,
 ) -> pd.DataFrame:
     """The conditional_join function operates similarly to `pd.merge`,
-    but supports efficient joins on inequality operators,
+    but supports joins on inequality operators,
     or a combination of equi and non-equi joins.
 
     Joins solely on equality are not supported.

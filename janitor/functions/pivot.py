@@ -485,28 +485,6 @@ def _data_checks_pivot_longer(
             "is not supported."
         )
 
-    if all((names_sep is None, names_pattern is None)):
-        # adapted from pandas' melt source code
-        if (
-            (index is not None)
-            and isinstance(df.columns, pd.MultiIndex)
-            and (not isinstance(index, list))
-        ):
-            raise ValueError(
-                "index must be a list of tuples "
-                "when the columns are a MultiIndex."
-            )
-
-        if (
-            (column_names is not None)
-            and isinstance(df.columns, pd.MultiIndex)
-            and (not isinstance(column_names, list))
-        ):
-            raise ValueError(
-                "column_names must be a list of tuples "
-                "when the columns are a MultiIndex."
-            )
-
     is_multi_index = isinstance(df.columns, pd.MultiIndex)
     if column_names is not None:
         if is_multi_index:

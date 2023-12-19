@@ -26,7 +26,7 @@ from .coalesce import coalesce
 from .collapse_levels import collapse_levels
 from .complete import complete
 from .concatenate_columns import concatenate_columns
-from .conditional_join import conditional_join
+from .conditional_join import conditional_join, get_join_indices
 from .convert_date import (
     convert_excel_date,
     convert_matlab_date,
@@ -118,6 +118,7 @@ __all__ = [
     "find_replace",
     "flag_nulls",
     "get_dupes",
+    "get_join_indices",
     "groupby_agg",
     "groupby_topk",
     "impute",

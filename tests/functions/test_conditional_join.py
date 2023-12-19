@@ -5,7 +5,7 @@ from hypothesis import given, settings
 from pandas import Timedelta
 from pandas.testing import assert_frame_equal, assert_index_equal
 
-from janitor import col
+from janitor import col, get_join_indices
 from janitor.testing_utils.strategies import (
     conditional_df,
     conditional_right,
@@ -198,29 +198,6 @@ def test_check_force_type(dummy, series):
     """
     with pytest.raises(TypeError, match="force should be one of.+"):
         dummy.conditional_join(series, ("id", "B", "<"), force=1)
-
-
-def test_check_return_matching_indices_type(dummy, series):
-    """
-    Raise TypeError if `return_matching_indices` is not a boolean.
-    """
-    with pytest.raises(
-        TypeError, match="return_matching_indices should be one of.+"
-    ):
-        dummy.conditional_join(
-            series, ("id", "B", "<"), return_matching_indices=1
-        )
-
-
-def test_check_return_matching_indices_how(dummy, series):
-    """
-    Raise ValueError if `return_matching_indices` and how != 'inner'.
-    """
-    msg = "return_matching_indices is applied only if how = 'inner'."
-    with pytest.raises(ValueError, match=msg):
-        dummy.conditional_join(
-            series, ("id", "B", "<"), return_matching_indices=True, how="left"
-        )
 
 
 def test_check_how_value(dummy, series):
@@ -3471,7 +3448,7 @@ def test_ge_eq_and_le_datess_numba(df, right):
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_ge_eq_and_le_datess_numba_indices(df, right):
-    """Test output for multiple conditions."""
+    """compare join indices for multiple conditions."""
 
     expected = (
         df.reset_index()
@@ -3492,15 +3469,16 @@ def test_ge_eq_and_le_datess_numba_indices(df, right):
     )
     expected = pd.Index(expected)
 
-    actual, _ = df[["B", "A", "E"]].conditional_join(
+    actual, _ = get_join_indices(
+        df[["B", "A", "E"]],
         right[["Floats", "Integers", "Dates", "Numeric"]],
-        ("A", "Integers", "<"),
-        ("E", "Dates", "=="),
-        ("B", "Floats", ">"),
-        ("B", "Numeric", "!="),
-        how="inner",
+        [
+            ("A", "Integers", "<"),
+            ("E", "Dates", "=="),
+            ("B", "Floats", ">"),
+            ("B", "Numeric", "!="),
+        ],
         use_numba=True,
-        return_matching_indices=True,
     )
     actual = df.index[actual]
     assert_index_equal(expected, actual, check_names=False)
@@ -3510,7 +3488,7 @@ def test_ge_eq_and_le_datess_numba_indices(df, right):
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_ge_eq_and_le_datess_indices(df, right):
-    """Test output for multiple conditions."""
+    """compare join indices for multiple conditions."""
 
     expected = (
         df.reset_index()
@@ -3531,14 +3509,15 @@ def test_ge_eq_and_le_datess_indices(df, right):
     )
     expected = pd.Index(expected)
 
-    actual, _ = df[["B", "A", "E"]].conditional_join(
+    actual, _ = get_join_indices(
+        df[["B", "A", "E"]],
         right[["Floats", "Integers", "Dates", "Numeric"]],
-        ("A", "Integers", "<"),
-        ("E", "Dates", "=="),
-        ("B", "Floats", ">"),
-        ("B", "Numeric", "!="),
-        how="inner",
-        return_matching_indices=True,
+        [
+            ("A", "Integers", "<"),
+            ("E", "Dates", "=="),
+            ("B", "Floats", ">"),
+            ("B", "Numeric", "!="),
+        ],
     )
     actual = df.index[actual]
     assert_index_equal(expected, actual, check_names=False)

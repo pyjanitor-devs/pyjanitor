@@ -16,6 +16,7 @@ from pandas.core.dtypes.concat import concat_compat
 
 from janitor.functions.utils import (
     _computations_expand_grid,
+    _select_index,
     get_index_labels,
 )
 from janitor.utils import check, refactored_function
@@ -485,63 +486,22 @@ def _data_checks_pivot_longer(
             "is not supported."
         )
 
-    if all((names_sep is None, names_pattern is None)):
-        # adapted from pandas' melt source code
-        if (
-            (index is not None)
-            and isinstance(df.columns, pd.MultiIndex)
-            and (not isinstance(index, list))
-        ):
-            raise ValueError(
-                "index must be a list of tuples "
-                "when the columns are a MultiIndex."
-            )
-
-        if (
-            (column_names is not None)
-            and isinstance(df.columns, pd.MultiIndex)
-            and (not isinstance(column_names, list))
-        ):
-            raise ValueError(
-                "column_names must be a list of tuples "
-                "when the columns are a MultiIndex."
-            )
-
-    is_multi_index = isinstance(df.columns, pd.MultiIndex)
     if column_names is not None:
-        if is_multi_index:
-            column_names = _check_tuples_multiindex(
-                df.columns, column_names, "column_names"
-            )
-        else:
-            if is_list_like(column_names):
-                column_names = list(column_names)
-            column_names = get_index_labels(column_names, df, axis="columns")
-            if not is_list_like(column_names):
-                column_names = [column_names]
-            else:
-                column_names = list(column_names)
+        column_names = _select_index([column_names], df, axis="columns")
+        column_names = df.columns[column_names]
 
     if index is not None:
-        if is_multi_index:
-            index = _check_tuples_multiindex(df.columns, index, "index")
-        else:
-            if is_list_like(index):
-                index = list(index)
-            index = get_index_labels(index, df, axis="columns")
-            if not is_list_like(index):
-                index = [index]
-            else:
-                index = list(index)
+        index = _select_index([index], df, axis="columns")
+        index = df.columns[index]
 
-    if index is None:
-        if column_names is None:
-            column_names = df.columns.tolist()
-        else:
-            index = df.columns.difference(column_names, sort=False).tolist()
-    else:
-        if column_names is None:
-            column_names = df.columns.difference(index, sort=False).tolist()
+    if (index is None) and (column_names is None):
+        column_names = df.columns
+    elif (index is None) and (column_names is not None):
+        index = df.columns.difference(column_names, sort=False)
+    elif (index is not None) and (column_names is None):
+        column_names = df.columns.difference(index, sort=False)
+        if column_names.empty:
+            column_names = None
 
     if names_to is not None:
         if isinstance(names_to, str):
@@ -569,26 +529,22 @@ def _data_checks_pivot_longer(
                 "values_to can be a list/tuple only "
                 "if names_pattern is a list/tuple."
             )
-        if index:
-            exclude = set(values_to).intersection(index)
+        if index is not None:
+            exclude = set(names_to).intersection(index)
             if exclude:
                 raise ValueError(
                     f"Labels {*exclude, } in values_to already exist as "
                     "column labels assigned to the dataframe's "
                     "index parameter. Kindly use unique labels."
                 )
-    if (
-        (names_sep is None)
-        and (names_pattern is None)
-        and index
-        and (values_to in index)
-    ):
-        raise ValueError(
-            "The argument provided to values_to "
-            "already exist as a column label "
-            "assigned to the dataframe's index parameter. "
-            "Kindly use a unique label."
-        )
+    if (names_sep is None) and (names_pattern is None) and (index is not None):
+        if values_to in index:
+            raise ValueError(
+                "The argument provided to values_to "
+                "already exist as a column label "
+                "assigned to the dataframe's index parameter. "
+                "Kindly use a unique label."
+            )
 
     if names_sep and names_pattern:
         raise ValueError(
@@ -679,13 +635,14 @@ def _data_checks_pivot_longer(
                 )
             for key, value in names_pattern.items():
                 check(f"'{key}' in names_pattern", key, [str])
-                if index and (key in index):
-                    raise ValueError(
-                        f"'{key}' in the names_pattern dictionary "
-                        "already exists as a column label "
-                        "assigned to the index parameter. "
-                        "Kindly use a unique name"
-                    )
+                if index is not None:
+                    if key in index:
+                        raise ValueError(
+                            f"'{key}' in the names_pattern dictionary "
+                            "already exists as a column label "
+                            "assigned to the index parameter. "
+                            "Kindly use a unique name"
+                        )
             names_to = list(names_pattern)
             is_dict = (
                 isinstance(arg, dict) for _, arg in names_pattern.items()
@@ -714,13 +671,14 @@ def _data_checks_pivot_longer(
                                 "already exists as one of the main "
                                 "keys in names_pattern"
                             )
-                        if index and (k in index):
-                            raise ValueError(
-                                f"'{k}' in the nested dictionary "
-                                "already exists as a column label "
-                                "assigned to the index parameter. "
-                                "Kindly use a unique name"
-                            )
+                        if index is not None:
+                            if k in index:
+                                raise ValueError(
+                                    f"'{k}' in the nested dictionary "
+                                    "already exists as a column label "
+                                    "assigned to the index parameter. "
+                                    "Kindly use a unique name"
+                                )
                         check(
                             f"The value paired with '{k}' "
                             "in the nested dictionary in names_pattern",
@@ -764,7 +722,7 @@ def _data_checks_pivot_longer(
         # then the label should not exist in the index
         # there is no need to check the columns
         # since that is what we are replacing with names_to
-        if index:
+        if index is not None:
             exclude = set(names_to).intersection(index)
             if exclude:
                 raise ValueError(
@@ -846,20 +804,21 @@ def _computations_pivot_longer(
     # for column names, if it is [1,2,3], then repeats [1,1,1,2,2,2,3,3,3]
     # dump down into arrays, and build a new dataframe, with copy = False
     # since we already have made a copy of the original df
-
-    if not column_names:
+    if column_names is None:
         return df
 
-    if index:
+    if index is not None:
         index = {name: df[name]._values for name in index}
 
-    if len(column_names) != len(set(column_names)):
+    if column_names.size != column_names.nunique():
         column_names = pd.unique(column_names)
 
     # this is the reason why there is no explicit copy (df.copy())
     # at the very beginning for `pivot_longer`,
     # because `.loc` makes a copy of the dataframe
     out = df.loc[:, column_names]
+    # return column_names, df, out
+    out.columns.names = df.columns.names
 
     if all((names_pattern is None, names_sep is None)):
         return _base_melt(
@@ -1363,6 +1322,7 @@ def _final_frame_longer(
         # helps with reordering the data
         # and is much faster than having to use `.loc`
         # after the DataFrame is created
+        print(df)
         df = {name: df[name] for name in names_to}
 
     df = pd.DataFrame(df, copy=False, index=df_index)

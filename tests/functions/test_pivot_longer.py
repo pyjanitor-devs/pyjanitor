@@ -298,26 +298,6 @@ def test_column_multiindex_names_pattern(df_multi):
         )
 
 
-def test_index_tuple_multiindex(df_multi):
-    """
-    Raise ValueError if index is a tuple,
-    instead of a list of tuples,
-    and the dataframe's column is a MultiIndex.
-    """
-    with pytest.raises(ValueError):
-        df_multi.pivot_longer(index=("name", "a"))
-
-
-def test_column_names_tuple_multiindex(df_multi):
-    """
-    Raise ValueError if column_names is a tuple,
-    instead of a list of tuples,
-    and the dataframe's column is a MultiIndex.
-    """
-    with pytest.raises(ValueError):
-        df_multi.pivot_longer(column_names=("names", "aa"))
-
-
 def test_column_names_missing_multiindex(df_multi):
     """
     Raise ValueError if column_names is a list of tuples,
@@ -336,26 +316,6 @@ def test_index_missing_multiindex(df_multi):
     """
     with pytest.raises(KeyError):
         df_multi.pivot_longer(index=[("names", "bb")])
-
-
-def test_column_names_not_all_tuples_multiindex(df_multi):
-    """
-    Raise ValueError if column_names is a list of tuples,
-    the dataframe's column is a MultiIndex,
-    and one of the entries is not a tuple.
-    """
-    with pytest.raises(TypeError):
-        df_multi.pivot_longer(column_names=[("names", "aa"), "a"])
-
-
-def test_index_not_all_tuples_multiindex(df_multi):
-    """
-    Raise ValueError if index is a list of tuples,
-    the dataframe's column is a MultiIndex,
-    and one of the entries is not a tuple.
-    """
-    with pytest.raises(TypeError):
-        df_multi.pivot_longer(index=[("names", "aa"), "a"])
 
 
 def test_sort_by_appearance(df_checks):

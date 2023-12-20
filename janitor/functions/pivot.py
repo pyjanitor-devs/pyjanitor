@@ -798,7 +798,7 @@ def _computations_pivot_longer(
     # if index is [1,2,3] then tiling makes it [1,2,3,1,2,3,...]
     # for column names, if it is [1,2,3], then repeats [1,1,1,2,2,2,3,3,3]
     # dump down into arrays, and build a new dataframe, with copy = False
-    # since we already have made a copy of the original df
+    # since we have already made a copy of the original df
 
     checks = _data_checks_pivot_longer(
         df=df,

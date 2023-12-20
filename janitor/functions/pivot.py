@@ -950,11 +950,21 @@ def _pivot_longer_names_pattern_sequence(
         )
     else:
         mapping = np.select(mapping, names_to, None)
-
     # only matched columns are retained
     values = pd.notna(mapping)
     df = df.loc[:, values]
     mapping = mapping[values]
+    # return pd.Series(mapping).value_counts().array[0]
+    df.columns = mapping
+    if dropna:  # create a function for this
+        nulls = [
+            df.loc[:, name].isna().any(axis=1).to_numpy(copy=False)
+            for name in df.columns.unique()
+        ]
+        nulls = np.column_stack(nulls).all(axis=1)
+        df = df.loc[~nulls]
+    # return index, _dict_from_grouped_names(df)
+    # return mapping, df.columns
     if values_to_is_a_sequence:
         names_to = zip(names_to, values_to)
         names_to = [*chain.from_iterable(names_to)]
@@ -967,13 +977,15 @@ def _pivot_longer_names_pattern_sequence(
         outcome = arr.keys()
         arr = (entry for _, entry in arr.items())
         arr = zip(*zip_longest(*arr))
-        arr = map(pd.Series, arr)
+        # arr = map(pd.Series, arr)
         outcome = dict(zip(outcome, arr))
     else:
         outcome = None
         names_to = None
 
+    # return df, mapping
     mapping = pd.Series(mapping)
+    # return df, index, outcome, mapping
     values, group_max = _headers_single_series(df=df, mapping=mapping)
 
     df = _final_frame_longer(

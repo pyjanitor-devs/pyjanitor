@@ -16,6 +16,8 @@ from pandas.core.dtypes.concat import concat_compat
 
 from janitor.functions.utils import (
     _computations_expand_grid,
+    _index_converter,
+    _select_index,
     get_index_labels,
 )
 from janitor.utils import check, refactored_function
@@ -399,45 +401,19 @@ def pivot_longer(
     # this code builds on the wonderful work of @benjaminjack’s PR
     # https://github.com/benjaminjack/pyjanitor/commit/e3df817903c20dd21634461c8a92aec137963ed0
 
-    (
-        df,
-        index,
-        column_names,
-        names_to,
-        values_to,
-        names_sep,
-        names_pattern,
-        names_transform,
-        dropna,
-        sort_by_appearance,
-        ignore_index,
-    ) = _data_checks_pivot_longer(
-        df,
-        index,
-        column_names,
-        names_to,
-        values_to,
-        column_level,
-        names_sep,
-        names_pattern,
-        names_transform,
-        dropna,
-        sort_by_appearance,
-        ignore_index,
-    )
-
     return _computations_pivot_longer(
-        df,
-        index,
-        column_names,
-        names_to,
-        values_to,
-        names_sep,
-        names_pattern,
-        names_transform,
-        dropna,
-        sort_by_appearance,
-        ignore_index,
+        df=df,
+        index=index,
+        column_names=column_names,
+        column_level=column_level,
+        names_to=names_to,
+        values_to=values_to,
+        names_sep=names_sep,
+        names_pattern=names_pattern,
+        names_transform=names_transform,
+        dropna=dropna,
+        sort_by_appearance=sort_by_appearance,
+        ignore_index=ignore_index,
     )
 
 
@@ -485,41 +461,40 @@ def _data_checks_pivot_longer(
             "is not supported."
         )
 
-    is_multi_index = isinstance(df.columns, pd.MultiIndex)
-    if column_names is not None:
-        if is_multi_index:
-            column_names = _check_tuples_multiindex(
-                df.columns, column_names, "column_names"
-            )
-        else:
-            if is_list_like(column_names):
-                column_names = list(column_names)
-            column_names = get_index_labels(column_names, df, axis="columns")
-            if not is_list_like(column_names):
-                column_names = [column_names]
-            else:
-                column_names = list(column_names)
+    if (index is None) and (column_names is None):
+        column_names = slice(None)
+        index = []
 
-    if index is not None:
-        if is_multi_index:
-            index = _check_tuples_multiindex(df.columns, index, "index")
-        else:
-            if is_list_like(index):
-                index = list(index)
-            index = get_index_labels(index, df, axis="columns")
-            if not is_list_like(index):
-                index = [index]
-            else:
-                index = list(index)
+    elif (index is not None) and (column_names is not None):
+        column_names = _select_index([column_names], df, axis="columns")
+        index = _select_index([index], df, axis="columns")
+        index = df.columns[index]
 
-    if index is None:
-        if column_names is None:
-            column_names = df.columns.tolist()
-        else:
-            index = df.columns.difference(column_names, sort=False).tolist()
-    else:
-        if column_names is None:
-            column_names = df.columns.difference(index, sort=False).tolist()
+    elif (index is None) and (column_names is not None):
+        column_names = _select_index([column_names], df, axis="columns")
+        index = np.setdiff1d(
+            np.arange(df.columns.size),
+            pd.unique(_index_converter(column_names, df.columns)),
+            assume_unique=True,
+        )
+        index = df.columns[index]
+
+    elif (index is not None) and (column_names is None):
+        index = _select_index([index], df, axis="columns")
+        column_names = np.setdiff1d(
+            np.arange(df.columns.size),
+            pd.unique(_index_converter(index, df.columns)),
+            assume_unique=True,
+        )
+        if not column_names.size:
+            column_names = None
+        index = df.columns[index]
+
+    if column_names is None:
+        return None
+
+    index = {name: df[name]._values for name in index}
+    df = df.iloc[:, column_names]
 
     if names_to is not None:
         if isinstance(names_to, str):
@@ -789,7 +764,6 @@ def _data_checks_pivot_longer(
     return (
         df,
         index,
-        column_names,
         names_to,
         values_to,
         names_sep,
@@ -805,6 +779,7 @@ def _computations_pivot_longer(
     df: pd.DataFrame,
     index: Union[list, None],
     column_names: Union[list, None],
+    column_level: Union[int, str, None],
     names_to: Union[list, None],
     values_to: Union[list, str, None],
     names_sep: Union[str, Pattern],
@@ -825,23 +800,40 @@ def _computations_pivot_longer(
     # dump down into arrays, and build a new dataframe, with copy = False
     # since we already have made a copy of the original df
 
-    if not column_names:
+    checks = _data_checks_pivot_longer(
+        df=df,
+        index=index,
+        column_names=column_names,
+        column_level=column_level,
+        names_to=names_to,
+        values_to=values_to,
+        names_sep=names_sep,
+        names_pattern=names_pattern,
+        names_transform=names_transform,
+        dropna=dropna,
+        sort_by_appearance=sort_by_appearance,
+        ignore_index=ignore_index,
+    )
+
+    if checks is None:
         return df
 
-    if index:
-        index = {name: df[name]._values for name in index}
-
-    if len(column_names) != len(set(column_names)):
-        column_names = pd.unique(column_names)
-
-    # this is the reason why there is no explicit copy (df.copy())
-    # at the very beginning for `pivot_longer`,
-    # because `.loc` makes a copy of the dataframe
-    out = df.loc[:, column_names]
+    (
+        df,
+        index,
+        names_to,
+        values_to,
+        names_sep,
+        names_pattern,
+        names_transform,
+        dropna,
+        sort_by_appearance,
+        ignore_index,
+    ) = checks
 
     if all((names_pattern is None, names_sep is None)):
         return _base_melt(
-            df=out,
+            df=df,
             index=index,
             values_to=values_to,
             names_transform=names_transform,
@@ -852,7 +844,7 @@ def _computations_pivot_longer(
 
     if names_sep is not None:
         return _pivot_longer_names_sep(
-            df=out,
+            df=df,
             index=index,
             names_to=names_to,
             names_sep=names_sep,
@@ -865,7 +857,7 @@ def _computations_pivot_longer(
 
     if isinstance(names_pattern, (str, Pattern)):
         return _pivot_longer_names_pattern_str(
-            df=out,
+            df=df,
             index=index,
             names_to=names_to,
             names_pattern=names_pattern,
@@ -877,7 +869,7 @@ def _computations_pivot_longer(
         )
 
     return _pivot_longer_names_pattern_sequence(
-        df=out,
+        df=df,
         index=index,
         names_to=names_to,
         names_pattern=names_pattern,

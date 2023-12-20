@@ -958,7 +958,10 @@ def _pivot_longer_names_pattern_sequence(
     df.columns = mapping
     if dropna:  # create a function for this
         nulls = [
-            df.loc[:, name].isna().any(axis=1).to_numpy(copy=False)
+            df.loc[:, name]
+            .isna()
+            .any(axis=1)
+            .to_numpy(copy=False, na_value=False)
             for name in df.columns.unique()
         ]
         nulls = np.column_stack(nulls).all(axis=1)

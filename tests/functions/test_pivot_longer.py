@@ -1672,6 +1672,7 @@ def test_preserve_extension_types():
     assert_frame_equal(expected, actual)
 
 
+@pytest.mark.xfail(reason="dropna deprecated")
 def test_dropna_sort_by_appearance():
     """
     Test output when `dropna=True` and

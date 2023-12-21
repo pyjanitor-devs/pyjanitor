@@ -18,7 +18,9 @@ from janitor.functions.utils import (
     _computations_expand_grid,
     get_index_labels,
 )
-from janitor.utils import check, refactored_function
+from janitor.utils import check, find_stack_level, refactored_function
+
+warnings.simplefilter("always", DeprecationWarning)
 
 
 @pf.register_dataframe_method
@@ -384,6 +386,7 @@ def pivot_longer(
             Accepts any argument that is acceptable by `pd.astype`.
         dropna: Determines whether or not to drop nulls
             from the values columns. Default is `False`.
+            !!!warning "Deprecated in 0.27.0"
         sort_by_appearance: Boolean value that determines
             the final look of the DataFrame. If `True`, the unpivoted DataFrame
             will be stacked in order of first appearance.
@@ -774,6 +777,13 @@ def _data_checks_pivot_longer(
                 )
 
     check("dropna", dropna, [bool])
+    if dropna:
+        warnings.warn(
+            "The keyword argument "
+            "'dropna' of 'pivot_longer' is deprecated.",
+            DeprecationWarning,
+            stacklevel=find_stack_level(),
+        )
 
     check("sort_by_appearance", sort_by_appearance, [bool])
 
@@ -904,29 +914,10 @@ def _computations_pivot_longer(
         names_to=names_to,
         names_pattern=names_pattern,
         names_transform=names_transform,
-        dropna=dropna,
         sort_by_appearance=sort_by_appearance,
         values_to=values_to,
         ignore_index=ignore_index,
     )
-
-
-def _null_positions(df: pd.DataFrame) -> np.ndarray:
-    """
-    Find the null positions, if any
-    """
-    nulls = [
-        df.loc[:, name].isna().to_numpy(copy=False, na_value=False)
-        for name in df.columns.unique()
-    ]
-    # return nulls
-    nulls = (np.nonzero(np.ravel(null, order="F"))[0] for null in nulls)
-    from functools import reduce
-
-    nulls = reduce(
-        lambda x, y: np.intersect1d(x, y, assume_unique=True), nulls
-    )
-    return nulls
 
 
 def _names_transform(dtype: Union[str, Callable, dict], object: dict):
@@ -939,73 +930,12 @@ def _names_transform(dtype: Union[str, Callable, dict], object: dict):
     return {key: arr.astype(dtype) for key, arr in object.items()}
 
 
-def _dict_from_grouped_names_sequence(
-    df: pd.DataFrame,
-    index: dict,
-    other: Union[np.ndarray, None] = None,
-    index_labels: Union[dict, None] = None,
-    names_transform: Union[str, Callable, dict, None] = None,
-) -> tuple[dict, pd.Index]:
-    """
-    Create dictionary from multiple same names.
-    Applicable when collating the values for `.value`,
-    or when names_pattern is a list/tuple.
-    """
-    # ensure columns are same size
-    df_columns = df.columns
-    count_of_columns = df_columns.value_counts(sort=False)
-    different_column_sizes = count_of_columns.nunique() > 1
-    max_count = count_of_columns.max()
-
-    outcome = defaultdict(list)
-
-    for num in range(df_columns.size):
-        name = df_columns[num]
-        arr = df.iloc[:, num]._values
-        outcome[name].append(arr)
-
-    if other is not None:
-        result = {label: other.loc[label] for _, label in index_labels.items()}
-        if names_transform is not None:
-            result = _names_transform(dtype=names_transform, object=result)
-        result = {
-            label: [arr._values.repeat(len(df))]
-            for label, arr in result.items()
-        }
-        outcome.update(result)
-
-    if different_column_sizes:
-        na_array = np.empty(len(df), dtype=float)
-        na_array[:] = np.nan
-        count_of_columns = max_count - count_of_columns
-        for label in count_of_columns.index:
-            value = count_of_columns[label]
-            arr = None
-            if value:
-                arr = [na_array] * value
-                outcome[label].extend(arr)
-            if (other is not None) and value:
-                col_name = index_labels[label]
-                outcome[col_name].extend(arr)
-
-    outcome = {name: concat_compat(arr) for name, arr in outcome.items()}
-
-    if index:
-        index = {name: [arr] * max_count for name, arr in index.items()}
-        index = {name: concat_compat(arr) for name, arr in index.items()}
-        outcome.update(index)
-    df_index = df.index.repeat(max_count)
-
-    return outcome, df_index
-
-
 def _pivot_longer_names_pattern_sequence(
     df: pd.DataFrame,
     index: Union[dict, None],
     names_to: list,
     names_pattern: Union[list, tuple],
     names_transform: Union[str, Callable, dict, None],
-    dropna: bool,
     sort_by_appearance: bool,
     values_to: Union[str, list, tuple],
     ignore_index: bool,
@@ -1017,6 +947,13 @@ def _pivot_longer_names_pattern_sequence(
     in the new dataframe, while names_to become columns
     in the new dataframe.
     """
+    # logic breakdown
+    # index, values in df: tile -> [1,2,3] ->[1,2,3,1,2,3,1,2,3]
+    # if names_pattern is a list/tuple
+    # it means there are columns labels
+    # that have to be aggregated into columns
+    # these columns have to be repeated ->
+    # [1,2,3]->[1,1,1,2,2,2,3,3,3]
     values_to_is_a_sequence = isinstance(values_to, (list, tuple))
     values = df.columns
 
@@ -1034,11 +971,12 @@ def _pivot_longer_names_pattern_sequence(
                 "No match was returned for the regex "
                 f"at position {position} -> {names_pattern[position]}."
             )
-    # these are column header mappings
+
+    other = None
+    # `other` contain column labels
     # associated with names_to
     # that will be flipped into columns
     # in the new dataframe
-    other = None
     if values_to_is_a_sequence:
         mapping, other = np.select(mapping, values_to, None), np.select(
             mapping, names_to, None
@@ -1049,44 +987,74 @@ def _pivot_longer_names_pattern_sequence(
     values = pd.notna(mapping)
     df = df.loc[:, values]
     mapping = mapping[values]
-    if other is not None:
-        other = other[values]
-        other = pd.Series(df.columns, index=other)
-
-    df.columns = mapping
-
-    index_labels = None
     if values_to_is_a_sequence:
-        index_labels = dict(zip(values_to, names_to))
+        # pair column labels with names_to labels
+        other = other[values]
+        other = df.columns.groupby(other)
+        # for column ordering in the final dataframe
+        # each names_to column precedes the paired values_to
+        # if index, index precedes names_to
         names_to = zip(names_to, values_to)
         names_to = chain.from_iterable(names_to)
         if index:
             names_to = chain.from_iterable((index, names_to))
     elif index and not values_to_is_a_sequence:
         names_to = list(index) + names_to
+    # ensure that the groups contain the same number of entries
+    count_of_columns = pd.Series(mapping).value_counts(sort=False)
+    different_column_sizes = count_of_columns.nunique() > 1
+    max_count = count_of_columns.max()
 
-    outcome, df_index = _dict_from_grouped_names_sequence(
-        df=df,
-        index=index,
-        other=other,
-        index_labels=index_labels,
-        names_transform=names_transform,
-    )
+    outcome = defaultdict(list)
+    for num in range(mapping.size):
+        name = mapping[num]
+        arr = df.iloc[:, num]._values
+        outcome[name].append(arr)
+
+    if values_to_is_a_sequence and different_column_sizes:
+        maybe_other_with_nulls = {}
+        for index_name, index_obj in other.items():
+            null_count = max_count - len(index_obj)
+            if null_count:
+                null_index = [np.nan] * null_count
+                null_index = pd.Index(null_index)
+                index_obj = index_obj.append(null_index)
+            maybe_other_with_nulls[index_name] = index_obj
+        other = maybe_other_with_nulls
+    if values_to_is_a_sequence:
+        if names_transform is not None:
+            other = _names_transform(dtype=names_transform, object=other)
+        other = {
+            label: [arr._values.repeat(len(df))]
+            for label, arr in other.items()
+        }
+        outcome.update(other)
+
+    if different_column_sizes:
+        na_array = np.empty(len(df), dtype=float)
+        na_array[:] = np.nan
+        count_of_columns = max_count - count_of_columns
+        for label in count_of_columns.index:
+            value = count_of_columns[label]
+            if value:
+                arr = [na_array] * value
+                outcome[label].extend(arr)
+
+    outcome = {name: concat_compat(arr) for name, arr in outcome.items()}
+
+    if index:
+        index = {name: [arr] * max_count for name, arr in index.items()}
+        index = {name: concat_compat(arr) for name, arr in index.items()}
+        outcome.update(index)
+    df_index = concat_compat([df.index] * max_count)
 
     outcome = {key: outcome[key] for key in names_to}
 
     outcome = pd.DataFrame(outcome, index=df_index)
 
     if sort_by_appearance:
-        indexer = df_index.argsort(kind="stable")
+        indexer = np.tile(np.arange(len(df)), max_count).argsort(kind="stable")
         outcome = outcome.take(indexer)
-
-    if dropna:
-        null_positions = _null_positions(df)
-        if null_positions.size:
-            booleans = np.ones(len(outcome), dtype=np.bool_)
-            booleans[null_positions] = False
-        outcome = outcome.loc[booleans]
 
     if ignore_index:
         outcome.index = range(len(outcome))

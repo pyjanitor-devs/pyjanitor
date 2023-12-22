@@ -231,8 +231,8 @@ def pivot_longer(
         1  573  526  Yankees   2007   2008
         >>> df.pivot_longer(
         ...     index = 'team',
-        ...     names_to = ['year', 'hr'],
-        ...     names_pattern = ['year', 'hr']
+        ...     names_to = ['hr', 'year'],
+        ...     names_pattern = ['hr', 'year']
         ... )
               team   hr  year
         0  Red Sox  514  2007

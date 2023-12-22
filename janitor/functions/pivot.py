@@ -955,17 +955,17 @@ def _pivot_longer_names_pattern_sequence(
     # these columns have to be repeated ->
     # [1,2,3]->[1,1,1,2,2,2,3,3,3]
     values_to_is_a_sequence = isinstance(values_to, (list, tuple))
-    values = df.columns
+    mapping = df.columns
 
     mapping = [
-        values.str.contains(regex, na=False, regex=True)
+        mapping.str.contains(regex, na=False, regex=True)
         for regex in names_pattern
     ]
 
-    values = (arr.any() for arr in mapping)
+    boolean_checks = (arr.any() for arr in mapping)
     # within each match, check the individual matches
     # and raise an error if any is False
-    for position, boolean in enumerate(values):
+    for position, boolean in enumerate(boolean_checks):
         if not boolean.item():
             raise ValueError(
                 "No match was returned for the regex "
@@ -1021,6 +1021,7 @@ def _pivot_longer_names_pattern_sequence(
                 index_obj = index_obj.append(null_index)
             maybe_other_with_nulls[index_name] = index_obj
         other = maybe_other_with_nulls
+        maybe_other_with_nulls = None
     if values_to_is_a_sequence:
         if names_transform is not None:
             other = _names_transform(dtype=names_transform, object=other)

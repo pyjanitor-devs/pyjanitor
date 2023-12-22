@@ -244,7 +244,7 @@ def pivot_longer(
         Reshape above dataframe by passing a dictionary to `names_pattern`:
         >>> df.pivot_longer(
         ...     index = 'team',
-        ...     names_pattern = {"year":"year", "hr":"hr"}
+        ...     names_pattern = {"hr":"hr", "year":"year"}
         ... )
               team   hr  year
         0  Red Sox  514  2007

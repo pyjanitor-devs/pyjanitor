@@ -2,7 +2,7 @@ import re
 import warnings
 from collections import defaultdict
 from itertools import chain
-from typing import Callable, Optional, Pattern, Union
+from typing import Any, Callable, Optional, Pattern, Union
 
 import numpy as np
 import pandas as pd
@@ -920,7 +920,10 @@ def _computations_pivot_longer(
     )
 
 
-def _names_transform(dtype: Union[str, Callable, dict], object: dict):
+def _names_transform(dtype: Any, object: dict) -> dict:
+    """
+    Cast column labels to specified dtype.
+    """
     if isinstance(dtype, dict):
         return {
             key: arr.astype(dtype[key])

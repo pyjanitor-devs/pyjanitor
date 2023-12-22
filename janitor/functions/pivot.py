@@ -1057,7 +1057,9 @@ def _pivot_longer_names_pattern_sequence(
     outcome = pd.DataFrame(outcome, index=df_index)
 
     if sort_by_appearance:
-        indexer = np.tile(np.arange(len(df)), max_count).argsort(kind="stable")
+        indexer = np.arange(len(df))
+        indexer = np.tile(indexer, max_count)
+        indexer = indexer.argsort(kind="stable")
         outcome = outcome.take(indexer)
 
     if ignore_index:

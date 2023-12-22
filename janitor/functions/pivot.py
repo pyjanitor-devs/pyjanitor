@@ -1,6 +1,7 @@
 import re
 import warnings
 from collections import defaultdict
+from functools import reduce
 from itertools import chain, zip_longest
 from typing import Any, Callable, Optional, Pattern, Union
 
@@ -1146,8 +1147,21 @@ def _pivot_longer_names_sep(
             index=index,
         )
     outcome = (mapping.get_level_values(num) for num in range(mapping.nlevels))
-    outcome = dict(zip(names_to, outcome))
-    return outcome, mapping, names_to
+    if names_to.count(".value") == 1:
+        outcome = dict(zip(names_to, outcome))
+    else:
+        outcome = [*zip(names_to, outcome)]
+        _value = [entry for name, entry in outcome if name == ".value"]
+        _value = reduce(lambda x, y: x + y, _value)
+        outcome = {name: entry for name, entry in outcome if name != ".value"}
+        outcome[".value"] = _value
+
+    # ensure groups have same size
+    # count_of_columns = outcome[".value"].value_counts(sort=False)
+    # different_column_sizes = count_of_columns.nunique() > 1
+    # max_count = count_of_columns.max()
+
+    return df
     return _pivot_longer_dot_value(
         df=df,
         index=index,

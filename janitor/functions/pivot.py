@@ -2,7 +2,7 @@ import re
 import warnings
 from collections import defaultdict
 from itertools import chain, zip_longest
-from typing import Callable, Optional, Pattern, Union
+from typing import Any, Callable, Optional, Pattern, Union
 
 import numpy as np
 import pandas as pd
@@ -1049,6 +1049,65 @@ def _pivot_longer_names_pattern_str(
     )
 
 
+def _names_transform(dtype: Any, object: dict) -> dict:
+    """
+    Cast column labels to specified dtype.
+    """
+    if isinstance(dtype, dict):
+        return {
+            key: arr.astype(dtype[key])
+            for key, arr in object.items()
+            if key in dtype
+        }
+    return {key: arr.astype(dtype) for key, arr in object.items()}
+
+
+def _create_dataframe_no_dot_value(
+    df: pd.DataFrame,
+    mapping: Union[pd.Index, pd.DataFrame],
+    names_to: list,
+    values_to: str,
+    sort_by_appearance: bool,
+    ignore_index: bool,
+    names_transform: Any,
+    index: Union[dict, None],
+):
+    """
+    Create DataFrame if there is no .value
+    """
+    outcome = (mapping.get_level_values(num) for num in range(mapping.nlevels))
+    outcome = dict(zip(names_to, outcome))
+    if names_transform:
+        outcome = _names_transform(dtype=names_transform, object=outcome)
+    outcome = {name: arr.repeat(len(df)) for name, arr in outcome.items()}
+
+    if index:
+        index = {name: [arr] * len(mapping) for name, arr in index.items()}
+        index = {name: concat_compat(arr) for name, arr in index.items()}
+    df_index = concat_compat([df.index] * len(mapping))
+
+    if df.dtypes.map(is_extension_array_dtype).any(axis=None):
+        values = [arr._values for _, arr in df.items()]
+        values = concat_compat(values)
+    else:
+        values = df._values.ravel(order="F")
+    values_to = {values_to: values}
+
+    outcome = {**index, **outcome, **values_to}
+    outcome = pd.DataFrame(outcome, index=df_index)
+
+    if sort_by_appearance:
+        indexer = np.arange(len(df))
+        indexer = np.tile(indexer, len(mapping))
+        indexer = indexer.argsort(kind="stable")
+        outcome = outcome.take(indexer)
+
+    if ignore_index:
+        outcome.index = range(len(outcome))
+
+    return outcome
+
+
 def _pivot_longer_names_sep(
     df: pd.DataFrame,
     index: Union[dict, None],
@@ -1065,36 +1124,30 @@ def _pivot_longer_names_sep(
     names_sep is provided.
     """
 
-    mapping = pd.Series(df.columns).str.split(names_sep, expand=True)
-    len_mapping_columns = len(mapping.columns)
-    len_names_to = len(names_to)
-
-    if len_names_to != len_mapping_columns:
+    mapping = df.columns.str.split(names_sep, expand=True)
+    if len(names_to) != mapping.nlevels:
         raise ValueError(
             f"The length of names_to does not match "
             "the number of levels extracted. "
-            f"The length of names_to is {len_names_to} "
+            f"The length of names_to is {len(names_to)} "
             "while the number of levels extracted is "
-            f"{len_mapping_columns}."
+            f"{mapping.nlevels}."
         )
-
-    mapping.columns = names_to
 
     if ".value" not in names_to:
-        if len(names_to) == 1:
-            df.columns = mapping.iloc[:, 0]
-        else:
-            df.columns = pd.MultiIndex.from_frame(mapping)
-        return _base_melt(
+        return _create_dataframe_no_dot_value(
             df=df,
-            index=index,
+            mapping=mapping,
+            names_to=names_to,
             values_to=values_to,
-            names_transform=names_transform,
-            dropna=dropna,
             sort_by_appearance=sort_by_appearance,
             ignore_index=ignore_index,
+            names_transform=names_transform,
+            index=index,
         )
-
+    outcome = (mapping.get_level_values(num) for num in range(mapping.nlevels))
+    outcome = dict(zip(names_to, outcome))
+    return outcome, mapping, names_to
     return _pivot_longer_dot_value(
         df=df,
         index=index,

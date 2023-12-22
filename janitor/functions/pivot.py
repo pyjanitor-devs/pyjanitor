@@ -316,9 +316,9 @@ def pivot_longer(
         3  Houston    Texas      Orange      10  Vodka    20.0
         4   Austin    Texas      Orange       8  Vodka    33.0
         5   Hoover  Alabama      Orange      14  Vodka    18.0
-        6  Houston    Texas  Watermelon      40   None     NaN
-        7   Austin    Texas  Watermelon      99   None     NaN
-        8   Hoover  Alabama  Watermelon      43   None     NaN
+        6  Houston    Texas  Watermelon      40    NaN     NaN
+        7   Austin    Texas  Watermelon      99    NaN     NaN
+        8   Hoover  Alabama  Watermelon      43    NaN     NaN
 
     !!! abstract "Version Changed"
 

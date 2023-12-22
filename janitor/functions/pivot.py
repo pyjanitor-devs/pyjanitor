@@ -1134,7 +1134,7 @@ def _pivot_longer_names_sep(
             "while the number of levels extracted is "
             f"{mapping.nlevels}."
         )
-
+    mapping.names = names_to
     if ".value" not in names_to:
         return _create_dataframe_no_dot_value(
             df=df,
@@ -1155,13 +1155,21 @@ def _pivot_longer_names_sep(
         _value = reduce(lambda x, y: x + y, _value)
         outcome = {name: entry for name, entry in outcome if name != ".value"}
         outcome[".value"] = _value
-
+    df.columns = mapping
     # ensure groups have same size
     # count_of_columns = outcome[".value"].value_counts(sort=False)
     # different_column_sizes = count_of_columns.nunique() > 1
     # max_count = count_of_columns.max()
+    return mapping.droplevel(".value").groupby(outcome[".value"])
+    out = defaultdict(list)
+    _value = outcome[".value"]
+    for num in range(mapping.size):
+        name = _value[num]
+        arr = df.iloc[:, num]._values
+        out[name].append(arr)
+    return {key: len(arr) for key, arr in out.items()}
+    return out
 
-    return df
     return _pivot_longer_dot_value(
         df=df,
         index=index,

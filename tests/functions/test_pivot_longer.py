@@ -1455,8 +1455,10 @@ def test_output_values_to_seq(multiple_values_to):
     assert_frame_equal(expected, actual)
 
 
-def test_output_values_to_seq1(multiple_values_to):
-    """Test output when values_to is a list/tuple."""
+def compute_output_multiple_values_to(multiple_values_to):
+    """
+    wide to long for `multiple_values_to`.
+    """
     # https://stackoverflow.com/a/51520155/7175713
     df1 = multiple_values_to.melt(
         id_vars=["City", "State"],
@@ -1478,13 +1480,19 @@ def test_output_values_to_seq1(multiple_values_to):
         ["City", "State", df2.groupby(["City", "State"]).cumcount()]
     )
 
-    actual = (
+    return (
         pd.concat([df1, df2], axis=1)
         .sort_index(level=2)
         .reset_index(level=2, drop=True)
         .reset_index()
         .astype({"Fruit": "category", "Drink": "category"})
     )
+
+
+def test_output_values_to_seq1(multiple_values_to):
+    """Test output when values_to is a list/tuple."""
+
+    actual = compute_output_multiple_values_to(multiple_values_to)
 
     expected = multiple_values_to.pivot_longer(
         index=["City", "State"],
@@ -1498,36 +1506,27 @@ def test_output_values_to_seq1(multiple_values_to):
     assert_frame_equal(expected, actual)
 
 
+def test_output_values_to_seq2(multiple_values_to):
+    """Test output when values_to is a list/tuple."""
+
+    actual = compute_output_multiple_values_to(multiple_values_to)
+
+    expected = multiple_values_to.pivot_longer(
+        index=["City", "State"],
+        column_names=slice("Mango", "Vodka"),
+        names_to=("Fruit", "Drink"),
+        values_to=("Pounds", "Ounces"),
+        names_pattern=[r"M|O|W", r"G|V"],
+        names_transform="category",
+    ).sort_values(["Fruit", "City", "State"], ignore_index=True)
+
+    assert_frame_equal(expected, actual)
+
+
 def test_output_names_pattern_nested_dictionary(multiple_values_to):
     """Test output when names_pattern is a nested dictionary."""
-    # https://stackoverflow.com/a/51520155/7175713
-    df1 = multiple_values_to.melt(
-        id_vars=["City", "State"],
-        value_vars=["Mango", "Orange", "Watermelon"],
-        var_name="Fruit",
-        value_name="Pounds",
-    )
-    df2 = multiple_values_to.melt(
-        id_vars=["City", "State"],
-        value_vars=["Gin", "Vodka"],
-        var_name="Drink",
-        value_name="Ounces",
-    )
 
-    df1 = df1.set_index(
-        ["City", "State", df1.groupby(["City", "State"]).cumcount()]
-    )
-    df2 = df2.set_index(
-        ["City", "State", df2.groupby(["City", "State"]).cumcount()]
-    )
-
-    actual = (
-        pd.concat([df1, df2], axis=1)
-        .sort_index(level=2)
-        .reset_index(level=2, drop=True)
-        .reset_index()
-        .astype({"Fruit": "category", "Drink": "category"})
-    )
+    actual = compute_output_multiple_values_to(multiple_values_to)
 
     expected = multiple_values_to.pivot_longer(
         index=["City", "State"],

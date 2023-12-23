@@ -1709,3 +1709,45 @@ def test_dropna_sort_by_appearance():
     )
 
     assert_frame_equal(actual, expected)
+
+
+def test_dropna_sort_by_appearance_values_to_sequence():
+    """
+    Test output when `dropna=True` and
+    `sort_by_appearance=True`
+    and `values_to` is a sequence
+    """
+    # GH PR #1169, Issue #1168
+
+    treatments = dict(
+        id=range(1, 6),
+        A=("A", NA, "A", NA, NA),
+        A_date=(1, NA, 2, NA, NA),
+        B=(NA, "B", "B", NA, NA),
+        B_date=(NA, 3, 2, NA, NA),
+        other=(NA, NA, NA, "C", "D"),
+        other_date=(NA, NA, NA, 1, 5),
+    )
+    treatments = pd.DataFrame(treatments)
+    actual = treatments.pivot_longer(
+        index="id",
+        values_to=["date", "treatment"],
+        names_to=["col1", "col2"],
+        names_pattern=[".+date$", ".+"],
+        dropna=True,
+        sort_by_appearance=True,
+    ).drop(columns=["col1", "col2"])
+
+    expected = (
+        pd.lreshape(
+            treatments,
+            {
+                "treatment": ["A", "B", "other"],
+                "date": ["A_date", "B_date", "other_date"],
+            },
+        )
+        .loc[:, ["id", "date", "treatment"]]
+        .sort_values(["id", "date", "treatment"], ignore_index=True)
+    )
+
+    assert_frame_equal(actual, expected)

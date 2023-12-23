@@ -18,9 +18,7 @@ from janitor.functions.utils import (
     _computations_expand_grid,
     get_index_labels,
 )
-from janitor.utils import check, find_stack_level, refactored_function
-
-warnings.simplefilter("always", DeprecationWarning)
+from janitor.utils import check, refactored_function
 
 
 @pf.register_dataframe_method
@@ -386,7 +384,6 @@ def pivot_longer(
             Accepts any argument that is acceptable by `pd.astype`.
         dropna: Determines whether or not to drop nulls
             from the values columns. Default is `False`.
-            !!!warning "Deprecated in 0.27.0"
         sort_by_appearance: Boolean value that determines
             the final look of the DataFrame. If `True`, the unpivoted DataFrame
             will be stacked in order of first appearance.
@@ -777,13 +774,6 @@ def _data_checks_pivot_longer(
                 )
 
     check("dropna", dropna, [bool])
-    if dropna:
-        warnings.warn(
-            "The keyword argument "
-            "'dropna' of 'pivot_longer' is deprecated.",
-            DeprecationWarning,
-            stacklevel=find_stack_level(),
-        )
 
     check("sort_by_appearance", sort_by_appearance, [bool])
 
@@ -914,6 +904,7 @@ def _computations_pivot_longer(
         names_to=names_to,
         names_pattern=names_pattern,
         names_transform=names_transform,
+        dropna=dropna,
         sort_by_appearance=sort_by_appearance,
         values_to=values_to,
         ignore_index=ignore_index,
@@ -939,6 +930,7 @@ def _pivot_longer_names_pattern_sequence(
     names_to: list,
     names_pattern: Union[list, tuple],
     names_transform: Union[str, Callable, dict, None],
+    dropna: bool,
     sort_by_appearance: bool,
     values_to: Union[str, list, tuple],
     ignore_index: bool,
@@ -958,14 +950,14 @@ def _pivot_longer_names_pattern_sequence(
     # these columns have to be repeated ->
     # [1,2,3]->[1,1,1,2,2,2,3,3,3]
     values_to_is_a_sequence = isinstance(values_to, (list, tuple))
-    mapping = df.columns
+    booleans = df.columns
 
-    mapping = [
-        mapping.str.contains(regex, na=False, regex=True)
+    booleans = [
+        booleans.str.contains(regex, na=False, regex=True)
         for regex in names_pattern
     ]
 
-    boolean_checks = (arr.any() for arr in mapping)
+    boolean_checks = (arr.any() for arr in booleans)
     # within each match, check the individual matches
     # and raise an error if any is False
     for position, boolean in enumerate(boolean_checks):
@@ -981,32 +973,22 @@ def _pivot_longer_names_pattern_sequence(
     # that will be flipped into columns
     # in the new dataframe
     if values_to_is_a_sequence:
-        mapping, other = np.select(mapping, values_to, None), np.select(
-            mapping, names_to, None
-        )
+        mapping = np.select(booleans, values_to, None)
+        other = np.select(booleans, names_to, None)
     else:
-        mapping = np.select(mapping, names_to, None)
+        mapping = np.select(booleans, names_to, None)
     # only matched columns are retained
-    values = pd.notna(mapping)
-    df = df.loc[:, values]
-    mapping = mapping[values]
+    booleans = pd.notna(mapping)
+    df = df.loc[:, booleans]
+    mapping = mapping[booleans]
     if values_to_is_a_sequence:
         # pair column labels with names_to labels
-        other = other[values]
+        other = other[booleans]
         other = df.columns.groupby(other)
-        # for column ordering in the final dataframe
-        # each names_to column precedes the paired values_to
-        # if index, index precedes names_to
-        names_to = zip(names_to, values_to)
-        names_to = chain.from_iterable(names_to)
-        if index:
-            names_to = chain.from_iterable((index, names_to))
-    elif index and not values_to_is_a_sequence:
-        names_to = list(index) + names_to
     # ensure that the groups contain the same number of entries
-    count_of_columns = pd.Series(mapping).value_counts(sort=False)
-    different_column_sizes = count_of_columns.nunique() > 1
-    max_count = count_of_columns.max()
+    size_per_group = pd.Series(mapping).value_counts(sort=False)
+    groups_are_not_the_same_size = size_per_group.nunique() > 1
+    max_group_size = size_per_group.max()
 
     outcome = defaultdict(list)
     for num in range(mapping.size):
@@ -1014,17 +996,17 @@ def _pivot_longer_names_pattern_sequence(
         arr = df.iloc[:, num]._values
         outcome[name].append(arr)
 
-    if values_to_is_a_sequence and different_column_sizes:
-        maybe_other_with_nulls = {}
+    if values_to_is_a_sequence and groups_are_not_the_same_size:
+        nulls_mapping = {}
         for index_name, index_obj in other.items():
-            null_count = max_count - len(index_obj)
+            null_count = max_group_size - len(index_obj)
             if null_count:
                 null_index = [np.nan] * null_count
                 null_index = pd.Index(null_index)
                 index_obj = index_obj.append(null_index)
-            maybe_other_with_nulls[index_name] = index_obj
-        other = maybe_other_with_nulls
-        maybe_other_with_nulls = None
+            nulls_mapping[index_name] = index_obj
+        other = nulls_mapping
+        nulls_mapping = None
     if values_to_is_a_sequence:
         if names_transform is not None:
             other = _names_transform(dtype=names_transform, object=other)
@@ -1034,33 +1016,59 @@ def _pivot_longer_names_pattern_sequence(
         }
         outcome.update(other)
 
-    if different_column_sizes:
+    if groups_are_not_the_same_size:
         na_array = np.empty(len(df), dtype=float)
         na_array[:] = np.nan
-        count_of_columns = max_count - count_of_columns
-        for label in count_of_columns.index:
-            value = count_of_columns[label]
+        null_size_per_group = max_group_size - size_per_group
+        for label in null_size_per_group.index:
+            value = null_size_per_group[label]
             if value:
                 arr = [na_array] * value
                 outcome[label].extend(arr)
 
     outcome = {name: concat_compat(arr) for name, arr in outcome.items()}
 
+    not_null_booleans = None
+    if dropna and values_to_is_a_sequence:
+        not_null_booleans = [pd.notna(outcome[label]) for label in values_to]
+    elif dropna:
+        not_null_booleans = [pd.notna(outcome[label]) for label in names_to]
+    if not_null_booleans:
+        not_null_booleans = np.logical_and.reduce(not_null_booleans)
+
     if index:
-        index = {name: [arr] * max_count for name, arr in index.items()}
+        index = {name: [arr] * max_group_size for name, arr in index.items()}
         index = {name: concat_compat(arr) for name, arr in index.items()}
         outcome.update(index)
-    df_index = concat_compat([df.index] * max_count)
+    df_index = concat_compat([df.index._values] * max_group_size)
 
+    if values_to_is_a_sequence:
+        # for column ordering in the final dataframe
+        # each names_to column precedes the paired values_to
+        # if index, index precedes names_to
+        names_to = zip(names_to, values_to)
+        names_to = chain.from_iterable(names_to)
+        if index:
+            names_to = chain.from_iterable((index, names_to))
+    elif index and not values_to_is_a_sequence:
+        names_to = list(index) + names_to
     outcome = {key: outcome[key] for key in names_to}
 
     outcome = pd.DataFrame(outcome, index=df_index)
 
     if sort_by_appearance:
-        indexer = np.arange(len(df))
-        indexer = np.tile(indexer, max_count)
-        indexer = indexer.argsort(kind="stable")
+        indexer = np.arange(len(df) * max_group_size, dtype=np.intp)
+        indexer = indexer.reshape((len(df), -1), order="F")
+        indexer = indexer.ravel(order="C")
         outcome = outcome.take(indexer)
+
+    if dropna:
+        if sort_by_appearance:
+            not_null_booleans = not_null_booleans.reshape(
+                (len(df), -1), order="F"
+            )
+            not_null_booleans = not_null_booleans.ravel(order="C")
+        outcome = outcome.loc[not_null_booleans]
 
     if ignore_index:
         outcome.index = range(len(outcome))

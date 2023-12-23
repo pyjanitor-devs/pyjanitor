@@ -1671,7 +1671,6 @@ def test_preserve_extension_types():
     assert_frame_equal(expected, actual)
 
 
-@pytest.mark.xfail(reason="dropna deprecated")
 def test_dropna_sort_by_appearance():
     """
     Test output when `dropna=True` and
@@ -1697,12 +1696,16 @@ def test_dropna_sort_by_appearance():
         sort_by_appearance=True,
     )
 
-    expected = pd.lreshape(
-        treatments,
-        {
-            "treatment": ["A", "B", "other"],
-            "date": ["A_date", "B_date", "other_date"],
-        },
-    ).sort_values(["id", "treatment", "date"], ignore_index=True)
+    expected = (
+        pd.lreshape(
+            treatments,
+            {
+                "treatment": ["A", "B", "other"],
+                "date": ["A_date", "B_date", "other_date"],
+            },
+        )
+        .loc[:, ["id", "date", "treatment"]]
+        .sort_values(["id", "date", "treatment"], ignore_index=True)
+    )
 
     assert_frame_equal(actual, expected)

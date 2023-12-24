@@ -1637,6 +1637,32 @@ def test_duplicated_columns():
     assert_frame_equal(actual, expected)
 
 
+def test_duplicated_columns_unequal_groups():
+    """Test output for duplicated columns."""
+    rows = [
+        [
+            "credit",
+            1,
+            1,
+            2,
+        ]
+    ]
+    columns = ["Type", "amount", "active", "amount"]
+
+    df = pd.DataFrame(rows, columns=columns)
+    df = df.set_index("Type")
+
+    actual = pd.DataFrame(
+        {"amount": [1, 2], "active": [1, np.nan]},
+        index=pd.Index(["credit", "credit"], name="Type"),
+    )
+    expected = df.pivot_longer(
+        names_to=".value", names_pattern="(.+)", ignore_index=False
+    )
+
+    assert_frame_equal(actual, expected)
+
+
 def test_dot_value_duplicated_sub_columns():
     """Test output when the column extracts are not unique."""
     # https://stackoverflow.com/q/64061588/7175713

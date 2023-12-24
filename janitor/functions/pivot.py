@@ -1433,8 +1433,9 @@ def _final_frame_longer(
         if isinstance(names_transform, dict):
             outcome = {
                 key: arr.astype(names_transform[key], copy=False)
-                for key, arr in outcome.items()
                 if key in names_transform
+                else arr
+                for key, arr in outcome.items()
             }
         else:
             outcome = {

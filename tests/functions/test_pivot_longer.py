@@ -1509,7 +1509,7 @@ def test_output_values_to_seq1(multiple_values_to):
         .sort_index(level=2)
         .reset_index(level=2, drop=True)
         .reset_index()
-        .astype({"Fruit": "category", "Drink": "category"})
+        .astype({"Fruit": "category"})
     )
 
     expected = multiple_values_to.pivot_longer(
@@ -1518,7 +1518,7 @@ def test_output_values_to_seq1(multiple_values_to):
         names_to=("Fruit", "Drink"),
         values_to=("Pounds", "Ounces"),
         names_pattern=[r"M|O|W", r"G|V"],
-        names_transform={"Fruit": "category", "Drink": "category"},
+        names_transform={"Fruit": "category"},
     ).sort_values(["Fruit", "City", "State"], ignore_index=True)
 
     assert_frame_equal(expected, actual)

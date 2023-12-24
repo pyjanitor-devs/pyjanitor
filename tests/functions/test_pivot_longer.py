@@ -1236,6 +1236,32 @@ def test_dropna_single_column():
     assert_frame_equal(expected, actual)
 
 
+def test_dropna_single_column_dot_value():
+    """
+    Test output if dropna = True,
+    '.value' in names_to,
+    and a single value column is returned.
+    """
+    df = pd.DataFrame(
+        [
+            {"a": 1.0, "b": np.nan, "c": np.nan, "d": np.nan},
+            {"a": np.nan, "b": 2.0, "c": np.nan, "d": np.nan},
+            {"a": np.nan, "b": np.nan, "c": 3.0, "d": 2.0},
+            {"a": np.nan, "b": np.nan, "c": 1.0, "d": np.nan},
+        ]
+    )
+    df.columns = ["a", "a", "a", "a"]
+
+    expected = df.pivot_longer(
+        names_to=".value",
+        names_pattern=r"(.)",
+        dropna=True,
+        sort_by_appearance=True,
+    )
+    actual = pd.DataFrame({"a": df.stack().array})
+    assert_frame_equal(expected, actual)
+
+
 @pytest.fixture
 def multiple_values_to():
     """fixture for multiple values_to"""

@@ -1481,8 +1481,10 @@ def test_output_values_to_seq(multiple_values_to):
     assert_frame_equal(expected, actual)
 
 
-def test_output_values_to_seq1(multiple_values_to):
-    """Test output when values_to is a list/tuple."""
+def compute_output_multiple_values_to(multiple_values_to):
+    """
+    wide to long for `multiple_values_to`.
+    """
     # https://stackoverflow.com/a/51520155/7175713
     df1 = multiple_values_to.melt(
         id_vars=["City", "State"],
@@ -1504,50 +1506,7 @@ def test_output_values_to_seq1(multiple_values_to):
         ["City", "State", df2.groupby(["City", "State"]).cumcount()]
     )
 
-    actual = (
-        pd.concat([df1, df2], axis=1)
-        .sort_index(level=2)
-        .reset_index(level=2, drop=True)
-        .reset_index()
-        .astype({"Fruit": "category"})
-    )
-
-    expected = multiple_values_to.pivot_longer(
-        index=["City", "State"],
-        column_names=slice("Mango", "Vodka"),
-        names_to=("Fruit", "Drink"),
-        values_to=("Pounds", "Ounces"),
-        names_pattern=[r"M|O|W", r"G|V"],
-        names_transform={"Fruit": "category"},
-    ).sort_values(["Fruit", "City", "State"], ignore_index=True)
-
-    assert_frame_equal(expected, actual)
-
-
-def test_output_names_pattern_nested_dictionary(multiple_values_to):
-    """Test output when names_pattern is a nested dictionary."""
-    # https://stackoverflow.com/a/51520155/7175713
-    df1 = multiple_values_to.melt(
-        id_vars=["City", "State"],
-        value_vars=["Mango", "Orange", "Watermelon"],
-        var_name="Fruit",
-        value_name="Pounds",
-    )
-    df2 = multiple_values_to.melt(
-        id_vars=["City", "State"],
-        value_vars=["Gin", "Vodka"],
-        var_name="Drink",
-        value_name="Ounces",
-    )
-
-    df1 = df1.set_index(
-        ["City", "State", df1.groupby(["City", "State"]).cumcount()]
-    )
-    df2 = df2.set_index(
-        ["City", "State", df2.groupby(["City", "State"]).cumcount()]
-    )
-
-    actual = (
+    return (
         pd.concat([df1, df2], axis=1)
         .sort_index(level=2)
         .reset_index(level=2, drop=True)
@@ -1555,14 +1514,36 @@ def test_output_names_pattern_nested_dictionary(multiple_values_to):
         .astype({"Fruit": "category", "Drink": "category"})
     )
 
+
+def test_output_values_to_seq1(multiple_values_to):
+    """Test output when values_to is a list/tuple."""
+
+    actual = compute_output_multiple_values_to(multiple_values_to)
+
     expected = multiple_values_to.pivot_longer(
         index=["City", "State"],
         column_names=slice("Mango", "Vodka"),
-        names_pattern={
-            "Fruit": {"Pounds": r"M|O|W"},
-            "Drink": {"Ounces": r"G|V"},
-        },
+        names_to=("Fruit", "Drink"),
+        values_to=("Pounds", "Ounces"),
+        names_pattern=[r"M|O|W", r"G|V"],
         names_transform={"Fruit": "category", "Drink": "category"},
+    ).sort_values(["Fruit", "City", "State"], ignore_index=True)
+
+    assert_frame_equal(expected, actual)
+
+
+def test_output_values_to_seq2(multiple_values_to):
+    """Test output when values_to is a list/tuple."""
+
+    actual = compute_output_multiple_values_to(multiple_values_to)
+
+    expected = multiple_values_to.pivot_longer(
+        index=["City", "State"],
+        column_names=slice("Mango", "Vodka"),
+        names_to=("Fruit", "Drink"),
+        values_to=("Pounds", "Ounces"),
+        names_pattern=[r"M|O|W", r"G|V"],
+        names_transform="category",
     ).sort_values(["Fruit", "City", "State"], ignore_index=True)
 
     assert_frame_equal(expected, actual)
@@ -1749,13 +1730,59 @@ def test_dropna_sort_by_appearance():
         sort_by_appearance=True,
     )
 
-    expected = pd.lreshape(
-        treatments,
-        {
-            "treatment": ["A", "B", "other"],
-            "date": ["A_date", "B_date", "other_date"],
-        },
-    ).sort_values(["id", "treatment", "date"], ignore_index=True)
+    expected = (
+        pd.lreshape(
+            treatments,
+            {
+                "treatment": ["A", "B", "other"],
+                "date": ["A_date", "B_date", "other_date"],
+            },
+        )
+        .loc[:, ["id", "date", "treatment"]]
+        .sort_values(["id", "date", "treatment"], ignore_index=True)
+    )
+
+    assert_frame_equal(actual, expected)
+
+
+def test_dropna_sort_by_appearance_values_to_sequence():
+    """
+    Test output when `dropna=True` and
+    `sort_by_appearance=True`
+    and `values_to` is a sequence
+    """
+    # GH PR #1169, Issue #1168
+
+    treatments = dict(
+        id=range(1, 6),
+        A=("A", NA, "A", NA, NA),
+        A_date=(1, NA, 2, NA, NA),
+        B=(NA, "B", "B", NA, NA),
+        B_date=(NA, 3, 2, NA, NA),
+        other=(NA, NA, NA, "C", "D"),
+        other_date=(NA, NA, NA, 1, 5),
+    )
+    treatments = pd.DataFrame(treatments)
+    actual = treatments.pivot_longer(
+        index="id",
+        values_to=["date", "treatment"],
+        names_to=["col1", "col2"],
+        names_pattern=[".+date$", ".+"],
+        dropna=True,
+        sort_by_appearance=True,
+    ).drop(columns=["col1", "col2"])
+
+    expected = (
+        pd.lreshape(
+            treatments,
+            {
+                "treatment": ["A", "B", "other"],
+                "date": ["A_date", "B_date", "other_date"],
+            },
+        )
+        .loc[:, ["id", "date", "treatment"]]
+        .sort_values(["id", "date", "treatment"], ignore_index=True)
+    )
 
     assert_frame_equal(actual, expected)
 
@@ -1789,4 +1816,29 @@ def test_dropna_sort_by_appearance_dot_value():
     )
     expected = expected.stack("treatment").reset_index()
 
+    assert_frame_equal(actual, expected)
+
+
+def test_names_transform_dict():
+    """
+    Test that all columns are returned
+    in a names_transform
+    """
+    df = pd.DataFrame({"id": [1], "new_sp_m5564": [2], "newrel_f65": [3]})
+    expected = df.pivot_longer(
+        index="id",
+        names_to=("diagnosis", "gender", "age"),
+        names_pattern=r"new_?(.+)_(.)(\d+)",
+        names_transform={"gender": "category", "age": "int"},
+    )
+    actual = df.melt("id")
+    temporary = actual.pop("variable")
+    temporary = (
+        temporary.str.extract(r"new_?(.+)_(.)(\d+)")
+        .set_axis(["diagnosis", "gender", "age"], axis=1)
+        .astype({"gender": "category", "age": int})
+    )
+    actual = actual.assign(**temporary).loc[
+        :, ["id", "diagnosis", "gender", "age", "value"]
+    ]
     assert_frame_equal(actual, expected)

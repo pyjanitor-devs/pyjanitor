@@ -1706,3 +1706,35 @@ def test_dropna_sort_by_appearance():
     ).sort_values(["id", "treatment", "date"], ignore_index=True)
 
     assert_frame_equal(actual, expected)
+
+
+def test_dropna_sort_by_appearance_dot_value():
+    """
+    Test output when `dropna=True` and
+    `sort_by_appearance=True`
+    and `.value` present in names_to
+    """
+
+    treatments = dict(
+        id=range(1, 6),
+        A_date=(1, NA, 2, NA, NA),
+        B_date=(NA, 3, 2, NA, NA),
+        other_date=(NA, NA, NA, 1, 5),
+    )
+    treatments = pd.DataFrame(treatments)
+    actual = treatments.pivot_longer(
+        "id",
+        column_names="*date",
+        names_pattern=r"(.+)_(.+)",
+        names_to=("treatment", ".value"),
+        dropna=True,
+        sort_by_appearance=True,
+    )
+
+    expected = treatments.set_index("id")
+    expected.columns = expected.columns.str.split("_", expand=True).set_names(
+        ["treatment", None]
+    )
+    expected = expected.stack("treatment").reset_index()
+
+    assert_frame_equal(actual, expected)

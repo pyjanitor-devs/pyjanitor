@@ -996,7 +996,10 @@ def _names_transform(dtype: Any, object: dict) -> dict:
     Cast column labels to specified dtype.
     """
     if isinstance(dtype, dict):
-        return {key: arr.astype(dtype.get(key)) for key, arr in object.items()}
+        return {
+            key: arr.astype(dtype[key]) if key in dtype else arr
+            for key, arr in object.items()
+        }
     return {key: arr.astype(dtype) for key, arr in object.items()}
 
 

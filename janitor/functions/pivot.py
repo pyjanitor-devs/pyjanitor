@@ -860,14 +860,15 @@ def _computations_pivot_longer(
     out = df.loc[:, column_names]
 
     if all((names_pattern is None, names_sep is None)):
-        return _base_melt(
+        return _create_dataframe_no_dot_value(
             df=out,
-            index=index,
+            mapping=out.columns,
             values_to=values_to,
-            names_transform=names_transform,
-            dropna=dropna,
             sort_by_appearance=sort_by_appearance,
             ignore_index=ignore_index,
+            names_transform=names_transform,
+            index=index,
+            dropna=dropna,
         )
 
     if names_sep is not None:
@@ -990,6 +991,265 @@ def _pivot_longer_names_pattern_sequence(
     return df
 
 
+def _names_transform(dtype: Any, object: dict) -> dict:
+    """
+    Cast column labels to specified dtype.
+    """
+    if isinstance(dtype, dict):
+        return {
+            key: arr.astype(dtype[key])
+            for key, arr in object.items()
+            if key in dtype
+        }
+    return {key: arr.astype(dtype) for key, arr in object.items()}
+
+
+def _finalize(
+    df: pd.DataFrame,
+    outcome: dict,
+    max_group_size: int,
+    sort_by_appearance: bool,
+    not_null_booleans: Union[np.ndarray, None],
+    ignore_index: bool,
+):
+    """
+    Final touches to the dataframe created from pivot_longer
+    """
+    df_index = concat_compat([df.index._values] * max_group_size)
+    df_index = pd.Index(df_index)
+    df_index.names = df.index.names
+
+    outcome = pd.DataFrame(outcome, index=df_index)
+
+    if sort_by_appearance:
+        indexer = np.arange(len(df) * max_group_size, dtype=np.intp)
+        indexer = indexer.reshape((len(df), -1), order="F")
+        indexer = indexer.ravel(order="C")
+        outcome = outcome.take(indexer)
+
+    if not_null_booleans is not None:
+        if sort_by_appearance:
+            not_null_booleans = not_null_booleans.reshape(
+                (len(df), -1), order="F"
+            )
+            not_null_booleans = not_null_booleans.ravel(order="C")
+        outcome = outcome.loc[not_null_booleans]
+
+    if ignore_index:
+        outcome.index = range(len(outcome))
+
+    return outcome
+
+
+def _create_dataframe_no_dot_value(
+    df: pd.DataFrame,
+    mapping: Union[pd.Index, pd.DataFrame],
+    values_to: str,
+    sort_by_appearance: bool,
+    ignore_index: bool,
+    names_transform: Any,
+    dropna: bool,
+    index: Union[dict, None],
+):
+    """
+    Create DataFrame if there is no .value
+    """
+    if isinstance(mapping, pd.Index):
+        outcome = {
+            name: mapping.get_level_values(name) for name in mapping.names
+        }
+    else:
+        outcome = {name: ser._values for name, ser in mapping.items()}
+    if names_transform:
+        outcome = _names_transform(dtype=names_transform, object=outcome)
+    outcome = {name: arr.repeat(len(df)) for name, arr in outcome.items()}
+
+    if index:
+        index = {name: [arr] * len(mapping) for name, arr in index.items()}
+        index = {name: concat_compat(arr) for name, arr in index.items()}
+        outcome = {**index, **outcome}
+
+    if df.dtypes.map(is_extension_array_dtype).any(axis=None):
+        values = [arr._values for _, arr in df.items()]
+        values = concat_compat(values)
+    else:
+        values = df._values.ravel(order="F")
+    not_null_booleans = None
+    if dropna:
+        not_null_booleans = pd.notna(values)
+    values_to = {values_to: values}
+    outcome.update(values_to)
+
+    return _finalize(
+        df=df,
+        outcome=outcome,
+        max_group_size=len(mapping),
+        sort_by_appearance=sort_by_appearance,
+        not_null_booleans=not_null_booleans,
+        ignore_index=ignore_index,
+    )
+
+
+def _create_dataframe_dot_value(
+    df: pd.DataFrame,
+    mapping: Union[pd.Index, pd.DataFrame],
+    names_to: list,
+    sort_by_appearance: bool,
+    ignore_index: bool,
+    names_transform: Any,
+    dropna: bool,
+    index: Union[dict, None],
+):
+    """
+    Create dataframe if .value is present in names_to.
+    """
+    multiple_dot_value = names_to.count(".value") > 1
+    _value = mapping.pop(".value")
+    if multiple_dot_value:
+        _value = [arr for _, arr in _value.items()]
+        _value = reduce(lambda x, y: x + y, _value)
+
+    exclude = {
+        word
+        for word in _value.array
+        if (word in names_to) and (word != ".value")
+    }
+    if exclude:
+        raise ValueError(
+            f"Labels {*exclude, } in names_to already exist "
+            "in the new dataframe's columns. "
+            "Kindly provide unique label(s)."
+        )
+
+    if index:
+        exclude = set(index).intersection(_value.array)
+        if exclude:
+            raise ValueError(
+                f"Labels {*exclude, } already exist "
+                "as column labels assigned to the dataframe's "
+                "index parameter. Kindly provide unique label(s)."
+            )
+
+    if mapping.empty:  # contains only .value
+        # groups must have the same size
+        # if they do not, pad the relevant group with nulls
+        size_per_group = _value.value_counts(sort=False)
+        groups_are_not_the_same_size = size_per_group.nunique() > 1
+        max_group_size = size_per_group.max()
+
+        outcome = defaultdict(list)
+        for num in range(_value.size):
+            name = _value[num]
+            arr = df.iloc[:, num]._values
+            outcome[name].append(arr)
+
+        if groups_are_not_the_same_size:
+            na_array = np.empty(len(df), dtype=float)
+            na_array[:] = np.nan
+            null_size_per_group = max_group_size - size_per_group
+            for label in null_size_per_group.index:
+                value = null_size_per_group[label]
+                if value:
+                    arr = [na_array] * value
+                    outcome[label].extend(arr)
+
+        outcome = {name: concat_compat(arr) for name, arr in outcome.items()}
+
+        not_null_booleans = None
+        if dropna:
+            not_null_booleans = [pd.notna(arr) for _, arr in outcome.items()]
+            not_null_booleans = np.logical_and.reduce(not_null_booleans)
+
+        if index:
+            index = {
+                name: [arr] * max_group_size for name, arr in index.items()
+            }
+            index = {name: concat_compat(arr) for name, arr in index.items()}
+            outcome = {**index, **outcome}
+
+        return _finalize(
+            df=df,
+            outcome=outcome,
+            max_group_size=max_group_size,
+            sort_by_appearance=sort_by_appearance,
+            not_null_booleans=not_null_booleans,
+            ignore_index=ignore_index,
+        )
+
+    headers = pd.concat([_value, mapping], axis=1)
+    # For multiple columns, the labels in `.value`
+    # should have every value in others
+    # and in the same order
+    # reindex ensures that, after getting a Cartesian of the uniques
+    indexer_columns = headers.columns.tolist()
+    others = mapping.drop_duplicates()
+    dot_value_uniques = _value.drop_duplicates()
+    if not headers.duplicated().any(axis=None):
+        df.columns = pd.MultiIndex.from_frame(headers)
+        indexer = {".value": dot_value_uniques, "other": others}
+    else:
+        # reindexing requires uniqueness in the index
+        # hence the groupby.cumcount pattern
+        indexer_columns.append("".join(indexer_columns))
+        cumcount = headers.groupby(
+            headers.columns.tolist(), sort=False, observed=True
+        ).cumcount()
+        headers = [arr for _, arr in headers.items()]
+        headers.append(cumcount)
+        df.columns = pd.MultiIndex.from_arrays(headers)
+        indexer = {
+            ".value": dot_value_uniques,
+            "other": others,
+            "cumcount": cumcount.unique(),
+        }
+    indexer = _computations_expand_grid(indexer)
+    indexer = pd.DataFrame(indexer, copy=False)
+    indexer.columns = indexer_columns
+    df = df.reindex(columns=indexer, copy=False)
+    df.columns = df.columns.get_level_values(".value")
+    # this contains all possible combinations
+    # for labels in `names_to` that are not `.value`
+    # this becomes the contents of the new columns
+    # in the new dataframe
+    others = indexer.loc[
+        indexer[".value"] == dot_value_uniques.iloc[0], others.columns
+    ]
+    group_size = len(others)
+
+    outcome = defaultdict(list)
+    mapping = df.columns
+    for num in range(mapping.size):
+        name = mapping[num]
+        arr = df.iloc[:, num]._values
+        outcome[name].append(arr)
+    outcome = {name: concat_compat(arr) for name, arr in outcome.items()}
+
+    not_null_booleans = None
+    if dropna:
+        not_null_booleans = [pd.notna(arr) for _, arr in outcome.items()]
+        not_null_booleans = np.logical_and.reduce(not_null_booleans)
+
+    others = {name: arr._values for name, arr in others.items()}
+    if names_transform is not None:
+        others = _names_transform(dtype=names_transform, object=others)
+    others = {name: arr.repeat(len(df)) for name, arr in others.items()}
+    outcome = {**others, **outcome}
+
+    if index:
+        index = {name: [arr] * group_size for name, arr in index.items()}
+        index = {name: concat_compat(arr) for name, arr in index.items()}
+        outcome = {**index, **outcome}
+
+    return _finalize(
+        df=df,
+        outcome=outcome,
+        max_group_size=group_size,
+        sort_by_appearance=sort_by_appearance,
+        not_null_booleans=not_null_booleans,
+        ignore_index=ignore_index,
+    )
+
+
 def _pivot_longer_names_pattern_str(
     df: pd.DataFrame,
     index: Union[dict, None],
@@ -1021,90 +1281,27 @@ def _pivot_longer_names_pattern_str(
     mapping.columns = names_to
 
     if ".value" not in names_to:
-        if len(names_to) == 1:
-            df.columns = mapping.iloc[:, 0]
-        else:
-            df.columns = pd.MultiIndex.from_frame(mapping)
-        return _base_melt(
+        return _create_dataframe_no_dot_value(
             df=df,
-            index=index,
+            mapping=mapping,
             values_to=values_to,
-            names_transform=names_transform,
-            dropna=dropna,
             sort_by_appearance=sort_by_appearance,
             ignore_index=ignore_index,
+            names_transform=names_transform,
+            index=index,
+            dropna=dropna,
         )
 
-    return _pivot_longer_dot_value(
+    return _create_dataframe_dot_value(
         df=df,
-        index=index,
+        mapping=mapping,
+        names_to=names_to,
         sort_by_appearance=sort_by_appearance,
         ignore_index=ignore_index,
-        names_to=names_to,
-        dropna=dropna,
         names_transform=names_transform,
-        mapping=mapping,
+        index=index,
+        dropna=dropna,
     )
-
-
-def _names_transform(dtype: Any, object: dict) -> dict:
-    """
-    Cast column labels to specified dtype.
-    """
-    if isinstance(dtype, dict):
-        return {
-            key: arr.astype(dtype[key])
-            for key, arr in object.items()
-            if key in dtype
-        }
-    return {key: arr.astype(dtype) for key, arr in object.items()}
-
-
-def _create_dataframe_no_dot_value(
-    df: pd.DataFrame,
-    mapping: Union[pd.Index, pd.DataFrame],
-    names_to: list,
-    values_to: str,
-    sort_by_appearance: bool,
-    ignore_index: bool,
-    names_transform: Any,
-    index: Union[dict, None],
-):
-    """
-    Create DataFrame if there is no .value
-    """
-    return mapping
-    outcome = (mapping.get_level_values(num) for num in range(mapping.nlevels))
-    outcome = dict(zip(names_to, outcome))
-    if names_transform:
-        outcome = _names_transform(dtype=names_transform, object=outcome)
-    outcome = {name: arr.repeat(len(df)) for name, arr in outcome.items()}
-
-    if index:
-        index = {name: [arr] * len(mapping) for name, arr in index.items()}
-        index = {name: concat_compat(arr) for name, arr in index.items()}
-    df_index = concat_compat([df.index] * len(mapping))
-
-    if df.dtypes.map(is_extension_array_dtype).any(axis=None):
-        values = [arr._values for _, arr in df.items()]
-        values = concat_compat(values)
-    else:
-        values = df._values.ravel(order="F")
-    values_to = {values_to: values}
-
-    outcome = {**index, **outcome, **values_to}
-    outcome = pd.DataFrame(outcome, index=df_index)
-
-    if sort_by_appearance:
-        indexer = np.arange(len(df))
-        indexer = np.tile(indexer, len(mapping))
-        indexer = indexer.argsort(kind="stable")
-        outcome = outcome.take(indexer)
-
-    if ignore_index:
-        outcome.index = range(len(outcome))
-
-    return outcome
 
 
 def _pivot_longer_names_sep(
@@ -1139,260 +1336,23 @@ def _pivot_longer_names_sep(
         return _create_dataframe_no_dot_value(
             df=df,
             mapping=mapping,
-            names_to=names_to,
             values_to=values_to,
             sort_by_appearance=sort_by_appearance,
             ignore_index=ignore_index,
             names_transform=names_transform,
             index=index,
+            dropna=dropna,
         )
 
-    multiple_dot_value = names_to.count(".value") > 1
-    _value = mapping.pop(".value")
-    if multiple_dot_value:
-        _value = [arr for _, arr in _value.items()]
-        _value = reduce(lambda x, y: x + y, _value)
-
-    exclude = {
-        word
-        for word in _value.array
-        if (word in names_to) and (word != ".value")
-    }
-    if exclude:
-        raise ValueError(
-            f"Labels {*exclude, } in names_to already exist "
-            "in the new dataframe's columns. "
-            "Kindly provide unique label(s)."
-        )
-
-    if index:
-        exclude = set(index).intersection(_value.array)
-        if exclude:
-            raise ValueError(
-                f"Labels {*exclude, } already exist "
-                "as column labels assigned to the dataframe's "
-                "index parameter. Kindly provide unique label(s)."
-            )
-    headers = pd.concat([_value, mapping], axis=1)
-    # For multiple columns, the labels in `.value`
-    # should have every value in others
-    # and in the same order
-    # reindex ensures that, after getting a Cartesian of the uniques
-    indexer_columns = headers.columns.tolist()
-    others = mapping.drop_duplicates()
-    dot_value_uniques = _value.drop_duplicates()
-    if not headers.duplicated().any(axis=None):
-        df.columns = pd.MultiIndex.from_frame(headers)
-        indexer = {".value": dot_value_uniques, "other": others}
-    else:
-        # reindexing requires uniqueness in the index
-        # hence the groupby.cumcount pattern
-        indexer_columns.append("".join(indexer_columns))
-        cumcount = headers.groupby(
-            headers.columns.tolist(), sort=False, observed=True
-        ).cumcount()
-        headers = [arr for _, arr in mapping.items()]
-        headers.append(cumcount)
-        df.columns = pd.MultiIndex.from_arrays(headers)
-        indexer = {
-            ".value": dot_value_uniques,
-            "other": others,
-            "cumcount": cumcount.unique(),
-        }
-
-    indexer = _computations_expand_grid(indexer)
-    indexer = pd.DataFrame(indexer, copy=False)
-    indexer.columns = indexer_columns
-    df = df.reindex(columns=indexer, copy=False)
-    df.columns = df.columns.get_level_values(".value")
-    # this becomes the contents of the new columns
-    # in the new dataframe
-    others = indexer.loc[
-        indexer[".value"] == dot_value_uniques.iloc[0], others.columns
-    ]
-    group_size = len(others)
-
-    outcome = defaultdict(list)
-    mapping = df.columns
-    for num in range(mapping.size):
-        name = mapping[num]
-        arr = df.iloc[:, num]._values
-        outcome[name].append(arr)
-    outcome = {name: concat_compat(arr) for name, arr in outcome.items()}
-
-    not_null_booleans = None
-    if dropna:
-        not_null_booleans = [pd.notna(arr) for _, arr in outcome.items()]
-        not_null_booleans = np.logical_and.reduce(not_null_booleans)
-
-    others = {name: arr._values for name, arr in others.items()}
-    if names_transform is not None:
-        others = _names_transform(dtype=names_transform, object=others)
-    others = {name: arr.repeat(len(df)) for name, arr in others.items()}
-    outcome = {**others, **outcome}
-
-    if index:
-        index = {name: [arr] * group_size for name, arr in index.items()}
-        index = {name: concat_compat(arr) for name, arr in index.items()}
-        outcome = {**index, **outcome}
-
-    df_index = concat_compat([df.index._values] * group_size)
-
-    outcome = pd.DataFrame(outcome, index=df_index)
-
-    if sort_by_appearance:
-        indexer = np.arange(len(df) * group_size, dtype=np.intp)
-        indexer = indexer.reshape((len(df), -1), order="F")
-        indexer = indexer.ravel(order="C")
-        outcome = outcome.take(indexer)
-
-    if dropna:
-        if sort_by_appearance:
-            not_null_booleans = not_null_booleans.reshape(
-                (len(df), -1), order="F"
-            )
-            not_null_booleans = not_null_booleans.ravel(order="C")
-        outcome = outcome.loc[not_null_booleans]
-
-    if ignore_index:
-        outcome.index = range(len(outcome))
-
-    return outcome
-
-
-def _base_melt(
-    df: pd.DataFrame,
-    index: Union[dict, None],
-    values_to: str,
-    names_transform: Union[str, Callable, dict, None],
-    dropna: bool,
-    sort_by_appearance: bool,
-    ignore_index: bool,
-) -> pd.DataFrame:
-    """
-    Applicable where there is no `.value` in names_to.
-    """
-
-    columns = df.columns
-    reps = len(columns)
-    outcome = {name: columns.get_level_values(name) for name in columns.names}
-
-    if df.dtypes.map(is_extension_array_dtype).any(axis=None):
-        values = [arr._values for _, arr in df.items()]
-        values = concat_compat(values)
-    else:
-        values = df._values.ravel(order="F")
-    values = {values_to: values}
-
-    return _final_frame_longer(
+    return _create_dataframe_dot_value(
         df=df,
-        reps=reps,
-        index=index,
-        outcome=outcome,
-        values=values,
-        names_to=None,
-        dropna=dropna,
-        names_transform=names_transform,
+        mapping=mapping,
+        names_to=names_to,
         sort_by_appearance=sort_by_appearance,
         ignore_index=ignore_index,
-    )
-
-
-def _pivot_longer_dot_value(
-    df: pd.DataFrame,
-    index: Union[dict, None],
-    sort_by_appearance: bool,
-    ignore_index: bool,
-    names_to: list,
-    dropna: bool,
-    names_transform: Union[str, Callable, dict, None],
-    mapping: pd.DataFrame,
-) -> pd.DataFrame:
-    """
-    Pivots the dataframe into the final form,
-    for scenarios where names_pattern is a string/regex,
-    or names_sep is provided, and .value is in names_to.
-
-    Returns a DataFrame.
-    """
-    if np.count_nonzero(mapping.columns == ".value") > 1:
-        outcome = mapping.pop(".value")
-        outcome = outcome.sum(axis=1, numeric_only=False)
-        mapping.insert(loc=0, column=".value", value=outcome)
-
-    exclude = {
-        word
-        for word in mapping[".value"].array
-        if (word in names_to) and (word != ".value")
-    }
-    if exclude:
-        raise ValueError(
-            f"Labels {*exclude, } in names_to already exist "
-            "in the new dataframe's columns. "
-            "Kindly provide unique label(s)."
-        )
-
-    if index:
-        exclude = set(index).intersection(mapping[".value"])
-        if exclude:
-            raise ValueError(
-                f"Labels {*exclude, } already exist "
-                "as column labels assigned to the dataframe's "
-                "index parameter. Kindly provide unique label(s)."
-            )
-    if mapping.columns[0] != ".value":
-        outcome = mapping.pop(".value")
-        mapping.insert(loc=0, column=".value", value=outcome)
-
-    if len(mapping.columns) == 1:
-        mapping = mapping.iloc[:, 0]
-        values, group_max = _headers_single_series(df=df, mapping=mapping)
-        outcome = None
-
-    else:
-        # For multiple columns, the labels in `.value`
-        # should have every value in other
-        # and in the same order
-        # reindex ensures that, after getting a MultiIndex.from_product
-        other = [entry for entry in names_to if entry != ".value"]
-        columns = mapping.columns.tolist()
-        others = mapping.loc[:, other].drop_duplicates()
-        outcome = mapping.loc[:, ".value"].unique()
-        if not mapping.duplicated().any(axis=None):
-            df.columns = pd.MultiIndex.from_frame(mapping)
-            indexer = {".value": outcome, "other": others}
-        else:
-            columns.append("".join(columns))
-            cumcount = mapping.groupby(
-                mapping.columns.tolist(), sort=False, observed=True
-            ).cumcount()
-            df.columns = [arr for _, arr in mapping.items()] + [cumcount]
-            indexer = {
-                ".value": outcome,
-                "other": others,
-                "cumcount": cumcount.unique(),
-            }
-        indexer = _computations_expand_grid(indexer)
-        indexer = pd.DataFrame(indexer, copy=False)
-
-        indexer.columns = columns
-        df = df.reindex(columns=indexer, copy=False)
-        df.columns = df.columns.get_level_values(".value")
-        values = _dict_from_grouped_names(df=df)
-        outcome = indexer.loc[indexer[".value"] == outcome[0], other]
-        group_max = len(outcome)
-
-    return _final_frame_longer(
-        df=df,
-        reps=group_max,
-        index=index,
-        outcome=outcome,
-        values=values,
-        names_to=None,
-        dropna=dropna,
         names_transform=names_transform,
-        sort_by_appearance=sort_by_appearance,
-        ignore_index=ignore_index,
+        index=index,
+        dropna=dropna,
     )
 
 

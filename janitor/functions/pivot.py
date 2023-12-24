@@ -1059,10 +1059,12 @@ def _create_dataframe_no_dot_value(
             name: mapping.get_level_values(name) for name in mapping.names
         }
     else:
-        outcome = {name: ser._values for name, ser in mapping.items()}
-    if names_transform:
+        outcome = {name: ser for name, ser in mapping.items()}
+    if names_transform is not None:
         outcome = _names_transform(dtype=names_transform, object=outcome)
-    outcome = {name: arr.repeat(len(df)) for name, arr in outcome.items()}
+    outcome = {
+        name: arr._values.repeat(len(df)) for name, arr in outcome.items()
+    }
 
     if index:
         index = {name: [arr] * len(mapping) for name, arr in index.items()}

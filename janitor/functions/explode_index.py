@@ -102,7 +102,7 @@ def explode_index(
         named_groups = re.compile(names_pattern).groupindex
         if named_groups and not level_names:
             level_names = list(named_groups)
-        new_index = new_index.str.extractall(names_pattern)
+        new_index = new_index.str.extract(names_pattern)
         new_index = [arr.array for _, arr in new_index.items()]
         new_index = pd.MultiIndex.from_arrays(new_index)
     if level_names:

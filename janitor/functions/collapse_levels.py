@@ -19,8 +19,8 @@ def collapse_levels(
 
     This method does not mutate the original DataFrame.
 
-    Given a DataFrame containing multi-level columns, flatten to single-level
-    by string-joining the column labels in each level.
+    Given a DataFrame containing multi-level index/columns, flatten to single-level
+    by string-joining the labels in each level.
 
     After a `groupby` / `aggregate` operation where `.agg()` is passed a
     list of multiple aggregation functions, a multi-level DataFrame is
@@ -59,36 +59,40 @@ def collapse_levels(
         bird        267.333333             389.0
         mammal       50.500000              50.5
 
-    Before applying `.collapse_levels`, the `.agg` operation returns a
-    multi-level column DataFrame whose columns are `(level 1, level 2)`:
+        Before applying `.collapse_levels`, the `.agg` operation returns a
+        multi-level column DataFrame whose columns are `(level 1, level 2)`:
 
-    ```python
-    [("max_speed", "mean"), ("max_speed", "median")]
-    ```
+        ```python
+        [("max_speed", "mean"), ("max_speed", "median")]
+        ```
 
-    `.collapse_levels` then flattens the column MultiIndex into a single
-    level index with names:
+        `.collapse_levels` then flattens the column MultiIndex into a single
+        level index with names:
 
-    ```python
-    ["max_speed_mean", "max_speed_median"]
+        ```python
+        ["max_speed_mean", "max_speed_median"]
+        ```
 
-    For more control, a `glue` specification can be passed,
-    where the names of the levels are used to control the output of the
-    flattened index.
-
-    >>> (grouped_df
-    ...  .rename_axis(columns=['column_name', 'agg_name'])
-    ...  .collapse_levels(glue="{agg_name}_{column_name}")
-    ... )
+        For more control, a `glue` specification can be passed,
+        where the names of the levels are used to control the output of the
+        flattened index:
+        >>> (grouped_df
+        ...  .rename_axis(columns=['column_name', 'agg_name'])
+        ...  .collapse_levels(glue="{agg_name}_{column_name}")
+        ... )
                 mean_max_speed  median_max_speed
         class
         bird        267.333333             389.0
         mammal       50.500000              50.5
 
-    Note that for `glue` to work, the keyword arguments
-    in the glue specification
-    should be names of the MultiIndex.
-    ```
+        Note that for `glue` to work, the keyword arguments
+        in the glue specification
+        should be the names of the levels in the MultiIndex.
+
+    !!! abstract "Version Changed"
+
+        - 0.27.0
+            - Added `glue` and `axis` parameters.
 
     Args:
         df: A pandas DataFrame.
@@ -96,7 +100,8 @@ def collapse_levels(
         glue: A specification on how the column levels should be combined.
             It allows for a more granular composition,
             and serves as an alternative to `sep`.
-        axis: index/columns.
+        axis: Determines whether to collapse the
+            levels on the index or columns.
 
     Returns:
         A pandas DataFrame with single-level column index.

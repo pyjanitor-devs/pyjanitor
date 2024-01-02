@@ -161,6 +161,7 @@ def pivot_longer(
         ... )
         >>> result.dtypes
         id           int64
+        diagnosis   object
         gender    category
         age          int64
         value        int64

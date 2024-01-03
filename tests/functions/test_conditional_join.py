@@ -3487,6 +3487,37 @@ def test_ge_eq_and_le_datess_numba_indices(df, right):
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
+def test_eq_indices(df, right):
+    """compare join indices for multiple conditions."""
+
+    expected = (
+        df.reset_index()
+        .dropna(subset=["E"])
+        .merge(
+            right.dropna(subset=["Dates"]),
+            left_on="E",
+            right_on="Dates",
+            how="inner",
+            sort=False,
+        )
+        .loc[:, "index"]
+    )
+    expected = pd.Index(expected)
+
+    actual, _ = get_join_indices(
+        df.dropna(subset=["E"]),
+        right.dropna(subset=["Dates"]),
+        [
+            ("E", "Dates", "=="),
+        ],
+    )
+    actual = df.index[actual]
+    assert_index_equal(expected, actual, check_names=False)
+
+
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
 def test_ge_eq_and_le_datess_indices(df, right):
     """compare join indices for multiple conditions."""
 

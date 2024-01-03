@@ -531,11 +531,10 @@ def _conditional_join_compute(
             eq_check = True
         elif op in less_than_join_types.union(greater_than_join_types):
             le_lt_check = True
-
     df.index = range(len(df))
     right.index = range(len(right))
 
-    if len(conditions) > 1:
+    if (len(conditions) > 1) or eq_check:
         if eq_check:
             result = _multiple_conditional_join_eq(
                 df,
@@ -798,12 +797,6 @@ def _multiple_conditional_join_eq(
     left_on = [*left_on]
     right_on = [*right_on]
 
-    rest = (
-        (left_on, right_on, op)
-        for left_on, right_on, op in conditions
-        if op != _JoinOperator.STRICTLY_EQUAL.value
-    )
-
     left_index, right_index = _MergeOperation(
         df,
         right,
@@ -812,17 +805,19 @@ def _multiple_conditional_join_eq(
         sort=False,
     )._get_join_indexers()
 
-    if not left_index.size or not rest:
+    if not left_index.size:
         return None
 
-    rest = (
+    rest = [
         (df[left_on], right[right_on], op)
         for left_on, right_on, op in conditions
         if op != _JoinOperator.STRICTLY_EQUAL.value
-    )
+    ]
+
+    if not rest:
+        return _keep_output(keep, left_index, right_index)
 
     indices = _generate_indices(left_index, right_index, rest)
-
     if not indices:
         return None
 
@@ -1305,7 +1300,7 @@ def _create_frame(
 def get_join_indices(
     df: pd.DataFrame,
     right: Union[pd.DataFrame, pd.Series],
-    conditions: list,
+    conditions: list[tuple[str]],
     keep: Literal["first", "last", "all"] = "all",
     use_numba: bool = False,
     force: bool = False,

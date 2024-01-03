@@ -1184,7 +1184,10 @@ def _pivot_longer_dot_value(
             cumcount = mapping.groupby(
                 mapping.columns.tolist(), sort=False, observed=True
             ).cumcount()
-            df.columns = [arr for _, arr in mapping.items()] + [cumcount]
+            new_columns = [arr for _, arr in mapping.items()]
+            new_columns.append(cumcount)
+            new_columns = pd.MultiIndex.from_arrays(new_columns)
+            df.columns = new_columns
             indexer = {
                 ".value": outcome,
                 "other": others,
@@ -1243,7 +1246,7 @@ def _headers_single_series(df: pd.DataFrame, mapping: pd.Series) -> tuple:
     # to get equal numbers for each label
     if group_size.nunique() > 1:
         positions = outcome.cumcount()
-        df.columns = [mapping, positions]
+        df.columns = pd.MultiIndex.from_arrays([mapping, positions])
         indexer = group_size.index, np.arange(group_max)
         indexer = pd.MultiIndex.from_product(indexer)
         df = df.reindex(columns=indexer, copy=False)

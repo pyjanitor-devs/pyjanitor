@@ -1165,15 +1165,14 @@ def _pivot_longer_dot_value(
         outcome = None
 
     else:
+        others = mapping.drop_duplicates()
         mapping = pd.concat([outcome, mapping], axis=1, sort=False, copy=False)
         # For multiple columns, the labels in `.value`
         # should have every value in other
         # and in the same order
         # reindex ensures that, after getting a MultiIndex.from_product
-        other = [entry for entry in names_to if entry != ".value"]
         columns = mapping.columns.tolist()
-        others = mapping.loc[:, other].drop_duplicates()
-        outcome = mapping.loc[:, ".value"].unique()
+        outcome = outcome.drop_duplicates()
         if not mapping.duplicated().any(axis=None):
             df.columns = pd.MultiIndex.from_frame(mapping)
             indexer = {".value": outcome, "other": others}
@@ -1198,7 +1197,7 @@ def _pivot_longer_dot_value(
         df = df.reindex(columns=indexer, copy=False)
         df.columns = df.columns.get_level_values(".value")
         values = _dict_from_grouped_names(df=df)
-        outcome = indexer.loc[indexer[".value"] == outcome[0], other]
+        outcome = indexer.loc[indexer[".value"] == outcome[0], others.columns]
         group_max = len(outcome)
 
     return _final_frame_longer(

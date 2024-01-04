@@ -1,6 +1,7 @@
 import re
 import warnings
 from collections import defaultdict
+from functools import reduce
 from itertools import chain, zip_longest
 from typing import Callable, Optional, Pattern, Union
 
@@ -1133,14 +1134,14 @@ def _pivot_longer_dot_value(
 
     Returns a DataFrame.
     """
-    if np.count_nonzero(mapping.columns == ".value") > 1:
-        outcome = mapping.pop(".value")
-        outcome = outcome.sum(axis=1, numeric_only=False)
-        mapping.insert(loc=0, column=".value", value=outcome)
+    outcome = mapping.pop(".value")
+    if names_to.count(".value") > 1:
+        outcome = [arr for _, arr in outcome.items()]
+        outcome = reduce(lambda x, y: x + y, outcome)
 
     exclude = {
         word
-        for word in mapping[".value"].array
+        for word in outcome.array
         if (word in names_to) and (word != ".value")
     }
     if exclude:
@@ -1151,23 +1152,20 @@ def _pivot_longer_dot_value(
         )
 
     if index:
-        exclude = set(index).intersection(mapping[".value"])
+        exclude = set(index).intersection(outcome.array)
         if exclude:
             raise ValueError(
                 f"Labels {*exclude, } already exist "
                 "as column labels assigned to the dataframe's "
                 "index parameter. Kindly provide unique label(s)."
             )
-    if mapping.columns[0] != ".value":
-        outcome = mapping.pop(".value")
-        mapping.insert(loc=0, column=".value", value=outcome)
 
-    if len(mapping.columns) == 1:
-        mapping = mapping.iloc[:, 0]
-        values, group_max = _headers_single_series(df=df, mapping=mapping)
+    if mapping.empty:
+        values, group_max = _headers_single_series(df=df, mapping=outcome)
         outcome = None
 
     else:
+        mapping = pd.concat([outcome, mapping], axis=1, sort=False, copy=False)
         # For multiple columns, the labels in `.value`
         # should have every value in other
         # and in the same order

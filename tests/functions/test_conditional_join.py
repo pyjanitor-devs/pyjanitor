@@ -3,9 +3,9 @@ import pandas as pd
 import pytest
 from hypothesis import given, settings
 from pandas import Timedelta
-from pandas.testing import assert_frame_equal
+from pandas.testing import assert_frame_equal, assert_index_equal
 
-from janitor import col
+from janitor import col, get_join_indices
 from janitor.testing_utils.strategies import (
     conditional_df,
     conditional_right,
@@ -194,7 +194,7 @@ def test_check_how_type(dummy, series):
 
 def test_check_force_type(dummy, series):
     """
-    Raise TypeError if `how` is not a string.
+    Raise TypeError if `force` is not boolean.
     """
     with pytest.raises(TypeError, match="force should be one of.+"):
         dummy.conditional_join(series, ("id", "B", "<"), force=1)
@@ -3444,6 +3444,116 @@ def test_ge_eq_and_le_datess_numba(df, right):
     assert_frame_equal(expected, actual)
 
 
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
+def test_ge_eq_and_le_datess_numba_indices(df, right):
+    """compare join indices for multiple conditions."""
+
+    expected = (
+        df.reset_index()
+        .dropna(subset=["E"])
+        .merge(
+            right.dropna(subset=["Dates"]),
+            left_on="E",
+            right_on="Dates",
+            how="inner",
+            sort=False,
+        )
+        .loc[
+            lambda df: df.B.gt(df.Floats)
+            & df.A.lt(df.Integers)
+            & df.B.ne(df.Numeric),
+            "index",
+        ]
+    )
+    expected = pd.Index(expected)
+
+    actual, _ = get_join_indices(
+        df[["B", "A", "E"]],
+        right[["Floats", "Integers", "Dates", "Numeric"]],
+        [
+            ("A", "Integers", "<"),
+            ("E", "Dates", "=="),
+            ("B", "Floats", ">"),
+            ("B", "Numeric", "!="),
+        ],
+        use_numba=True,
+    )
+    actual = df.index[actual]
+    assert_index_equal(expected, actual, check_names=False)
+
+
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
+def test_eq_indices(df, right):
+    """compare join indices for multiple conditions."""
+
+    expected = (
+        df.reset_index()
+        .dropna(subset=["E"])
+        .merge(
+            right.dropna(subset=["Dates"]),
+            left_on="E",
+            right_on="Dates",
+            how="inner",
+            sort=False,
+        )
+        .loc[:, "index"]
+    )
+    expected = pd.Index(expected)
+
+    actual, _ = get_join_indices(
+        df.dropna(subset=["E"]),
+        right.dropna(subset=["Dates"]),
+        [
+            ("E", "Dates", "=="),
+        ],
+    )
+    actual = df.index[actual]
+    assert_index_equal(expected, actual, check_names=False)
+
+
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
+def test_ge_eq_and_le_datess_indices(df, right):
+    """compare join indices for multiple conditions."""
+
+    expected = (
+        df.reset_index()
+        .dropna(subset=["E"])
+        .merge(
+            right.dropna(subset=["Dates"]),
+            left_on="E",
+            right_on="Dates",
+            how="inner",
+            sort=False,
+        )
+        .loc[
+            lambda df: df.B.gt(df.Floats)
+            & df.A.lt(df.Integers)
+            & df.B.ne(df.Numeric),
+            "index",
+        ]
+    )
+    expected = pd.Index(expected)
+
+    actual, _ = get_join_indices(
+        df[["B", "A", "E"]],
+        right[["Floats", "Integers", "Dates", "Numeric"]],
+        [
+            ("A", "Integers", "<"),
+            ("E", "Dates", "=="),
+            ("B", "Floats", ">"),
+            ("B", "Numeric", "!="),
+        ],
+    )
+    actual = df.index[actual]
+    assert_index_equal(expected, actual, check_names=False)
+
+
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
@@ -3585,20 +3695,20 @@ def test_multiple_non_eqi(df, right):
     )
 
     actual = (
-        df.conditional_join(
-            right,
+        df.rename(columns={"B": "b"})
+        .conditional_join(
+            right.rename(
+                columns={
+                    "Floats": "floats",
+                }
+            ),
             ("A", "Integers", ">="),
             ("E", "Dates", ">"),
-            ("B", "Floats", ">"),
+            ("b", "floats", ">"),
             how="inner",
             sort_by_appearance=False,
-            df_columns={"B": "b", "A": "A", "E": "E"},
-            right_columns={
-                "Floats": "floats",
-                "Integers": "Integers",
-                "Dates": "Dates",
-            },
         )
+        .loc[:, ["b", "A", "E", "floats", "Integers", "Dates"]]
         .sort_values(
             ["b", "A", "E", "floats", "Integers", "Dates"], ignore_index=True
         )
@@ -3632,21 +3742,20 @@ def test_multiple_non_eqi_numba(df, right):
     )
 
     actual = (
-        df.conditional_join(
-            right,
+        df.rename(columns={"B": "b"})
+        .conditional_join(
+            right.rename(
+                columns={
+                    "Floats": "floats",
+                }
+            ),
             ("A", "Integers", ">="),
             ("E", "Dates", ">"),
-            ("B", "Floats", ">"),
+            ("b", "floats", ">"),
             how="inner",
-            use_numba=True,
             sort_by_appearance=False,
-            df_columns={"B": "b", "A": "A", "E": "E"},
-            right_columns={
-                "Floats": "floats",
-                "Integers": "Integers",
-                "Dates": "Dates",
-            },
         )
+        .loc[:, ["b", "A", "E", "floats", "Integers", "Dates"]]
         .sort_values(
             ["b", "A", "E", "floats", "Integers", "Dates"], ignore_index=True
         )

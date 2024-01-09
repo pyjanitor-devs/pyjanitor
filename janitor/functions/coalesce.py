@@ -118,7 +118,7 @@ def coalesce(
         outcome = outcome.fillna(default_value)
 
     if target_column_name is None:
-        df = df.copy()
+        df = df.copy(deep=None)
         df.iloc[:, 0] = outcome
         return df
 

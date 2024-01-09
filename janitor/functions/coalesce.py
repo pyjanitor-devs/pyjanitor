@@ -117,7 +117,7 @@ def coalesce(
 
     outcome = df.iloc[:, indexers[0]]
 
-    for num in range(1, indexers.size):
+    for num in range(1, len(indexers)):
         position = indexers[num]
         replacement = df.iloc[:, position]
         outcome = outcome.fillna(replacement)

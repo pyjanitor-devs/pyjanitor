@@ -126,7 +126,7 @@ def coalesce(
         outcome = outcome.fillna(default_value)
 
     if target_column_name is None:
-        df.iloc[:, 0] = outcome
+        df.iloc[:, indexers[0]] = outcome
     else:
         df[target_column_name] = outcome
 

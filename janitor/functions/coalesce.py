@@ -113,7 +113,7 @@ def coalesce(
     if default_value:
         check("default_value", default_value, [int, float, str])
 
-    df = df.copy(deep=None)
+    df = df.copy()
 
     outcome = df.iloc[:, indexers[0]]
 

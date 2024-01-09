@@ -4,7 +4,7 @@ from typing import Any, Optional, Union
 import pandas as pd
 import pandas_flavor as pf
 
-from janitor.functions.utils import get_index_labels
+from janitor.functions.utils import _select_index
 from janitor.utils import check, deprecated_alias
 
 
@@ -100,9 +100,9 @@ def coalesce(
     if not column_names:
         return df
 
-    column_names = get_index_labels([*column_names], df, axis="columns")
+    indexers = _select_index([*column_names], df, axis="columns")
 
-    if len(column_names) < 2:
+    if len(indexers) < 2:
         raise ValueError(
             "The number of columns to coalesce should be a minimum of 2."
         )
@@ -115,7 +115,13 @@ def coalesce(
 
     df = df.copy(deep=None)
 
-    outcome = df.loc(axis=1)[column_names].bfill(axis="columns").iloc[:, 0]
+    outcome = df.iloc[:, 0]
+
+    for num in range(1, indexers.size):
+        position = indexers[num]
+        replacement = df.iloc[:, position]
+        outcome = outcome.fillna(replacement)
+
     if outcome.hasnans and (default_value is not None):
         outcome = outcome.fillna(default_value)
 

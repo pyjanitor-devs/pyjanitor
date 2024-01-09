@@ -115,7 +115,7 @@ def coalesce(
 
     df = df.copy(deep=None)
 
-    outcome = df.iloc[:, 0]
+    outcome = df.iloc[:, indexers[0]]
 
     for num in range(1, indexers.size):
         position = indexers[num]

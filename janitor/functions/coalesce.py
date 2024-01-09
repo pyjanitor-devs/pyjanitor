@@ -113,11 +113,13 @@ def coalesce(
     if default_value:
         check("default_value", default_value, [int, float, str])
 
-    if target_column_name is None:
-        target_column_name = column_names[0]
-
     outcome = df.loc(axis=1)[column_names].bfill(axis="columns").iloc[:, 0]
     if outcome.hasnans and (default_value is not None):
         outcome = outcome.fillna(default_value)
+
+    if target_column_name is None:
+        df = df.copy()
+        df.iloc[:, 0] = outcome
+        return df
 
     return df.assign(**{target_column_name: outcome})

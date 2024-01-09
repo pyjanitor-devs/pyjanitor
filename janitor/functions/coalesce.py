@@ -29,6 +29,9 @@ def coalesce(
 
     This method does not mutate the original DataFrame.
 
+    The [`select`][janitor.functions.select.select] syntax
+    can be used in `column_names`.
+
     Examples:
         Use `coalesce` with 3 columns, "a", "b" and "c".
 
@@ -97,12 +100,12 @@ def coalesce(
     if not column_names:
         return df
 
+    column_names = get_index_labels([*column_names], df, axis="columns")
+
     if len(column_names) < 2:
         raise ValueError(
             "The number of columns to coalesce should be a minimum of 2."
         )
-
-    column_names = get_index_labels([*column_names], df, axis="columns")
 
     if target_column_name:
         check("target_column_name", target_column_name, [str])

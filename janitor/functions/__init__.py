@@ -20,6 +20,7 @@ from .add_columns import add_columns
 from .also import also
 from .bin_numeric import bin_numeric
 from .case_when import case_when
+from .change_index_dtype import change_index_dtype
 from .change_type import change_type
 from .clean_names import clean_names
 from .coalesce import coalesce
@@ -91,6 +92,7 @@ __all__ = [
     "bin_numeric",
     "case_when",
     "change_type",
+    "change_index_dtype",
     "clean_names",
     "coalesce",
     "collapse_levels",

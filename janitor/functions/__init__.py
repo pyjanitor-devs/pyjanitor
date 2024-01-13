@@ -26,7 +26,7 @@ from .coalesce import coalesce
 from .collapse_levels import collapse_levels
 from .complete import complete
 from .concatenate_columns import concatenate_columns
-from .conditional_join import conditional_join
+from .conditional_join import conditional_join, get_join_indices
 from .convert_date import (
     convert_excel_date,
     convert_matlab_date,
@@ -41,6 +41,7 @@ from .dropnotnull import dropnotnull
 from .encode_categorical import encode_categorical
 from .expand_column import expand_column
 from .expand_grid import expand_grid
+from .explode_index import explode_index
 from .factorize_columns import factorize_columns
 from .fill import fill_direction, fill_empty
 from .filter import filter_column_isin, filter_date, filter_on, filter_string
@@ -108,6 +109,7 @@ __all__ = [
     "encode_categorical",
     "expand_column",
     "expand_grid",
+    "explode_index",
     "factorize_columns",
     "fill_direction",
     "fill_empty",
@@ -118,6 +120,7 @@ __all__ = [
     "find_replace",
     "flag_nulls",
     "get_dupes",
+    "get_join_indices",
     "groupby_agg",
     "groupby_topk",
     "impute",

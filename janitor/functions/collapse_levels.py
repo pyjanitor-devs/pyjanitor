@@ -46,7 +46,7 @@ def collapse_levels(
         2    bird         24  parrot
         3  mammal         80    Lion
         4  mammal         21  Monkey
-        >>> grouped_df = df.groupby("class").agg(["mean", "median"])
+        >>> grouped_df = df.groupby("class")[['max_speed']].agg(["mean", "median"])
         >>> grouped_df  # doctest: +NORMALIZE_WHITESPACE
                  max_speed
                       mean median

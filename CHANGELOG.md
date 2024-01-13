@@ -5,6 +5,8 @@
 -   [BUG] Fix logic for groupby in complete. Index support deprecated. Fix deprecation warning for fillna in `complete` PR #1289 @samukweku
 -   [ENH] `select` function now supports variable arguments - PR #1288 @samukweku
 -   [ENH] `conditional_join` now supports timedelta dtype. - PR #1297 @samukweku
+-   [ENH]  `get_join_indices` function added - returns only join indices between two dataframes. Issue #1310 @samukweku
+-   [ENH] `explode_index` function added. - Issue #1283
 -   [ENH] Add `glue` and `axis` parameters to `collapse_levels`. - Issue #211 @samukweku
 
 ## [v0.26.0] - 2023-09-18

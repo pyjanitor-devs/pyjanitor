@@ -44,7 +44,7 @@ def conditional_join(
     force: bool = False,
 ) -> pd.DataFrame:
     """The conditional_join function operates similarly to `pd.merge`,
-    but supports efficient joins on inequality operators,
+    but supports joins on inequality operators,
     or a combination of equi and non-equi joins.
 
     Joins solely on equality are not supported.
@@ -157,14 +157,15 @@ def conditional_join(
         5        4       5.0
         6        4       6.0
 
-        Rename columns, after the join:
-        >>> df1.conditional_join(
-        ...     df2,
-        ...     ("value_1", "value_2A", ">"),
-        ...     ("value_1", "value_2B", "<"),
-        ...     df_columns={'value_1':'left_column'},
-        ...     right_columns='value_2B',
-        ...     how='outer'
+        Rename columns, before the join:
+        >>> (df1
+        ...  .rename(columns={'value_1':'left_column'})
+        ...  .conditional_join(
+        ...      df2,
+        ...      ("left_column", "value_2A", ">"),
+        ...      ("left_column", "value_2B", "<"),
+        ...      right_columns='value_2B',
+        ...      how='outer')
         ... )
             left_column  value_2B
         0           7.0       NaN
@@ -263,11 +264,9 @@ def conditional_join(
         df_columns: Columns to select from `df` in the final output dataframe.
             Column selection is based on the
             [`select`][janitor.functions.select.select] syntax.
-            It is also possible to rename the output columns via a dictionary.
         right_columns: Columns to select from `right` in the final output dataframe.
             Column selection is based on the
             [`select`][janitor.functions.select.select] syntax.
-            It is also possible to rename the output columns via a dictionary.
         use_numba: Use numba, if installed, to accelerate the computation.
         keep: Choose whether to return the first match, last match or all matches.
         indicator: If `True`, adds a column to the output DataFrame
@@ -327,6 +326,7 @@ def _conditional_join_preliminary_checks(
     use_numba: bool,
     indicator: Union[bool, str],
     force: bool,
+    return_matching_indices: bool = False,
 ) -> tuple:
     """
     Preliminary checks for conditional_join are conducted here.
@@ -380,8 +380,11 @@ def _conditional_join_preliminary_checks(
         check_column(right, [right_on])
         _check_operator(op)
 
-    if all(
-        (op == _JoinOperator.STRICTLY_EQUAL.value for *_, op in conditions)
+    if (
+        all(
+            (op == _JoinOperator.STRICTLY_EQUAL.value for *_, op in conditions)
+        )
+        and not return_matching_indices
     ):
         raise ValueError("Equality only joins are not supported.")
 
@@ -483,6 +486,7 @@ def _conditional_join_compute(
     use_numba: bool,
     indicator: Union[bool, str],
     force: bool,
+    return_matching_indices=False,
 ) -> pd.DataFrame:
     """
     This is where the actual computation
@@ -513,6 +517,7 @@ def _conditional_join_compute(
         use_numba,
         indicator,
         force,
+        return_matching_indices,
     )
 
     eq_check = False
@@ -526,11 +531,10 @@ def _conditional_join_compute(
             eq_check = True
         elif op in less_than_join_types.union(greater_than_join_types):
             le_lt_check = True
-
     df.index = range(len(df))
     right.index = range(len(right))
 
-    if len(conditions) > 1:
+    if (len(conditions) > 1) or eq_check:
         if eq_check:
             result = _multiple_conditional_join_eq(
                 df,
@@ -568,6 +572,9 @@ def _conditional_join_compute(
 
     if result is None:
         result = np.array([], dtype=np.intp), np.array([], dtype=np.intp)
+
+    if return_matching_indices:
+        return result
 
     return _create_frame(
         df,
@@ -790,12 +797,6 @@ def _multiple_conditional_join_eq(
     left_on = [*left_on]
     right_on = [*right_on]
 
-    rest = (
-        (df[left_on], right[right_on], op)
-        for left_on, right_on, op in conditions
-        if op != _JoinOperator.STRICTLY_EQUAL.value
-    )
-
     left_index, right_index = _MergeOperation(
         df,
         right,
@@ -807,8 +808,16 @@ def _multiple_conditional_join_eq(
     if not left_index.size:
         return None
 
-    indices = _generate_indices(left_index, right_index, rest)
+    rest = [
+        (df[left_on], right[right_on], op)
+        for left_on, right_on, op in conditions
+        if op != _JoinOperator.STRICTLY_EQUAL.value
+    ]
 
+    if not rest:
+        return _keep_output(keep, left_index, right_index)
+
+    indices = _generate_indices(left_index, right_index, rest)
     if not indices:
         return None
 
@@ -1082,22 +1091,6 @@ def _range_indices(
     return left_index, right_index
 
 
-def _cond_join_select_columns(columns: Any, df: pd.DataFrame):
-    """
-    Select columns in a DataFrame.
-    Optionally rename the columns while selecting.
-    Returns a Pandas DataFrame.
-    """
-
-    if isinstance(columns, dict):
-        df = df.select(columns=[*columns])
-        df.columns = [columns.get(name, name) for name in df]
-    else:
-        df = df.select(columns=columns)
-
-    return df
-
-
 def _create_multiindex_column(df: pd.DataFrame, right: pd.DataFrame):
     """
     Create a MultiIndex column for conditional_join.
@@ -1137,9 +1130,9 @@ def _create_frame(
     if (df_columns is None) and (right_columns is None):
         raise ValueError("df_columns and right_columns cannot both be None.")
     if (df_columns is not None) and (df_columns != slice(None)):
-        df = _cond_join_select_columns(df_columns, df)
+        df = df.select(columns=df_columns)
     if (right_columns is not None) and (right_columns != slice(None)):
-        right = _cond_join_select_columns(right_columns, right)
+        right = right.select(columns=right_columns)
     if df_columns is None:
         df = pd.DataFrame([])
     elif right_columns is None:
@@ -1301,4 +1294,51 @@ def _create_frame(
 
     return pd.concat(
         contents, axis=0, copy=False, sort=False, ignore_index=True
+    )
+
+
+def get_join_indices(
+    df: pd.DataFrame,
+    right: Union[pd.DataFrame, pd.Series],
+    conditions: list[tuple[str]],
+    keep: Literal["first", "last", "all"] = "all",
+    use_numba: bool = False,
+    force: bool = False,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Convenience function to return the matching indices from an inner join.
+
+    !!! info "New in version 0.27.0"
+
+    Args:
+        df: A pandas DataFrame.
+        right: Named Series or DataFrame to join to.
+        conditions: List of arguments of tuple(s) of the form
+            `(left_on, right_on, op)`, where `left_on` is the column
+            label from `df`, `right_on` is the column label from `right`,
+            while `op` is the operator.
+            The `col` class is also supported. The operator can be any of
+            `==`, `!=`, `<=`, `<`, `>=`, `>`. For multiple conditions,
+            the and(`&`) operator is used to combine the results
+            of the individual conditions.
+        use_numba: Use numba, if installed, to accelerate the computation.
+        keep: Choose whether to return the first match, last match or all matches.
+        force: If `True`, force the non-equi join conditions
+            to execute before the equi join.
+
+    Returns:
+        A tuple of indices for the rows in the dataframes that match.
+    """
+    return _conditional_join_compute(
+        df=df,
+        right=right,
+        conditions=conditions,
+        how="inner",
+        sort_by_appearance=False,
+        df_columns=None,
+        right_columns=None,
+        keep=keep,
+        use_numba=use_numba,
+        indicator=False,
+        force=force,
+        return_matching_indices=True,
     )

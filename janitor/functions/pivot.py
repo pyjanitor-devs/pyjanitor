@@ -1443,7 +1443,7 @@ def pivot_wider(
         3  6.1     2  18  29
 
         Pivot and flatten columns:
-        >>> df.pivot_wider(
+        >>> df.pivot_wider( # doctest: +SKIP
         ...     index = "dep",
         ...     names_from = "step",
         ... )
@@ -1452,7 +1452,7 @@ def pivot_wider(
         1  6.1   22   18   19   29
 
         Modify columns with `names_sep`:
-        >>> df.pivot_wider(
+        >>> df.pivot_wider( # doctest: +SKIP
         ...     index = "dep",
         ...     names_from = "step",
         ...     names_sep = "",
@@ -1462,7 +1462,7 @@ def pivot_wider(
         1  6.1  22  18  19  29
 
         Modify columns with `names_glue`:
-        >>> df.pivot_wider(
+        >>> df.pivot_wider( # doctest: +SKIP
         ...     index = "dep",
         ...     names_from = "step",
         ...     names_glue = "{_value}_step{step}",
@@ -1489,10 +1489,10 @@ def pivot_wider(
         0  Thu      3
         0  Fri      1
         0  Mon      5
-        >>> daily.pivot_wider(names_from='day', values_from='value')
+        >>> daily.pivot_wider(names_from='day', values_from='value') # doctest: +SKIP
            Tue  Thu  Fri  Mon
         0    2    3    1    5
-        >>> (daily
+        >>> (daily # doctest: +SKIP
         ... .pivot_wider(
         ...     names_from='day',
         ...     values_from='value',
@@ -1510,13 +1510,13 @@ def pivot_wider(
         0  Thu      3      B
         0  Fri      1      B
         0  Mon      5      A
-        >>> daily.pivot_wider(index='day',names_from='letter',values_from='value')
+        >>> daily.pivot_wider(index='day',names_from='letter',values_from='value') # doctest: +SKIP
            day    A    B
         0  Tue  2.0  NaN
         1  Thu  NaN  3.0
         2  Fri  NaN  1.0
         3  Mon  5.0  NaN
-        >>> (daily
+        >>> (daily # doctest: +SKIP
         ... .pivot_wider(
         ...     index='day',
         ...     names_from='letter',

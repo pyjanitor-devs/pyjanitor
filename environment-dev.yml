@@ -29,7 +29,7 @@ dependencies:
   - openpyxl
   - pandas-flavor
   - pandas-vet
-  - pandas=1.3.5
+  - pandas
   - pip
   - pipreqs
   - pip-tools

@@ -4,7 +4,7 @@ from typing import Any, Optional, Union
 import pandas as pd
 import pandas_flavor as pf
 
-from janitor.functions.utils import get_index_labels
+from janitor.functions.utils import _select_index
 from janitor.utils import check, deprecated_alias
 
 
@@ -28,6 +28,9 @@ def coalesce(
     then the first column is coalesced.
 
     This method does not mutate the original DataFrame.
+
+    The [`select`][janitor.functions.select.select] syntax
+    can be used in `column_names`.
 
     Examples:
         Use `coalesce` with 3 columns, "a", "b" and "c".
@@ -97,12 +100,12 @@ def coalesce(
     if not column_names:
         return df
 
-    if len(column_names) < 2:
+    indexers = _select_index([*column_names], df, axis="columns")
+
+    if len(indexers) < 2:
         raise ValueError(
             "The number of columns to coalesce should be a minimum of 2."
         )
-
-    column_names = get_index_labels([*column_names], df, axis="columns")
 
     if target_column_name:
         check("target_column_name", target_column_name, [str])
@@ -110,11 +113,21 @@ def coalesce(
     if default_value:
         check("default_value", default_value, [int, float, str])
 
-    if target_column_name is None:
-        target_column_name = column_names[0]
+    df = df.copy()
 
-    outcome = df.loc(axis=1)[column_names].bfill(axis="columns").iloc[:, 0]
+    outcome = df.iloc[:, indexers[0]]
+
+    for num in range(1, len(indexers)):
+        position = indexers[num]
+        replacement = df.iloc[:, position]
+        outcome = outcome.fillna(replacement)
+
     if outcome.hasnans and (default_value is not None):
         outcome = outcome.fillna(default_value)
 
-    return df.assign(**{target_column_name: outcome})
+    if target_column_name is None:
+        df.iloc[:, indexers[0]] = outcome
+    else:
+        df[target_column_name] = outcome
+
+    return df

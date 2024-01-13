@@ -7,6 +7,8 @@
 -   [ENH] `conditional_join` now supports timedelta dtype. - PR #1297 @samukweku
 -   [ENH]  `get_join_indices` function added - returns only join indices between two dataframes. Issue #1310 @samukweku
 -   [ENH] `explode_index` function added. - Issue #1283
+-   [ENH] `conditional_join` now supports timedelta dtype. - PR #1297
+-   [ENH] `change_index_dtype` added. - @samukweku Issue #1314
 
 ## [v0.26.0] - 2023-09-18
 

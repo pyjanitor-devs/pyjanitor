@@ -772,7 +772,6 @@ def _multiple_conditional_join_eq(
         if not right_is_sorted:
             right_df = right_df.sort_values(right_columns)
         indices = _numba_equi_join(left_df, right_df, eqs, ge_gt, le_lt)
-
         if not rest or (indices is None):
             return indices
 

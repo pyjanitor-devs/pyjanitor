@@ -181,7 +181,7 @@ def _numba_equi_join(df, right, eqs, ge_gt, le_lt):
             arr.is_monotonic_increasing for _, arr in group
         )
         if all_monotonic_increasing:
-            cum_max_arr = le_arr2.copy()
+            cum_max_arr = le_arr2[:]
         else:
             cum_max_arr = group.cummax()._values
             if is_extension_array_dtype(cum_max_arr):

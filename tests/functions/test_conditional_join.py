@@ -3856,6 +3856,8 @@ def test_multiple_eqs(df, right):
     """Test output for multiple conditions."""
 
     columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+    df["B"] = df["B"].astype(pd.Float64Dtype())
+    right["Floats"] = right["Floats"].astype(pd.Float64Dtype())
     expected = (
         df.merge(
             right,

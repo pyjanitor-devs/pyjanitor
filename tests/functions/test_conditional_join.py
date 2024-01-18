@@ -3856,8 +3856,6 @@ def test_multiple_eqs(df, right):
     """Test output for multiple conditions."""
 
     columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
-    df["B"] = df["B"].astype(pd.Float64Dtype())
-    right["Floats"] = right["Floats"].astype(pd.Float64Dtype())
     expected = (
         df.merge(
             right,
@@ -3879,6 +3877,41 @@ def test_multiple_eqs(df, right):
             ("A", "Integers", "=="),
             how="inner",
             sort_by_appearance=False,
+        )
+        .sort_values(columns, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_multiple_eqs_numba_range(df, right):
+    """Test output for multiple conditions."""
+
+    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+    expected = (
+        df.merge(
+            right,
+            left_on=["A"],
+            right_on=["Integers"],
+            how="inner",
+            sort=False,
+        )
+        .loc[lambda df: df.E.lt(df.Dates) & df.B.gt(df.Floats), columns]
+        .sort_values(columns, ignore_index=True)
+    )
+    expected = expected.filter(columns)
+    actual = (
+        df[["B", "A", "E"]]
+        .conditional_join(
+            right[["Floats", "Integers", "Dates"]],
+            ("E", "Dates", "<"),
+            ("B", "Floats", ">"),
+            ("A", "Integers", "=="),
+            how="inner",
+            use_numba=True,
         )
         .sort_values(columns, ignore_index=True)
     )
@@ -4313,6 +4346,7 @@ def test_timedelta_dtype():
     assert_frame_equal(expected, actual)
 
 
+# https://stackoverflow.com/q/61948103/7175713
 def test_numba_equi_extension_array():
     """
     Test output for equi join and numba
@@ -4338,6 +4372,7 @@ def test_numba_equi_extension_array():
         ("value_1", "value_2A", ">"),
         ("value_1", "value_2B", "<"),
         right_columns="value*",
+        use_numba=True,
     )
 
     assert_frame_equal(expected, actual)

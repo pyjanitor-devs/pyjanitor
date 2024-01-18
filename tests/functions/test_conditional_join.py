@@ -4311,3 +4311,33 @@ def test_timedelta_dtype():
     actual.index = range(len(actual))
 
     assert_frame_equal(expected, actual)
+
+
+def test_numba_equi_extension_array():
+    """
+    Test output for equi join and numba
+    """
+    df1 = pd.DataFrame(
+        {"id": [1, 1, 1, 2, 2, 3], "value_1": [2, 5, 7, 1, 3, 4]}
+    )
+    df2 = pd.DataFrame(
+        {
+            "id": [1, 1, 1, 1, 2, 2, 2, 3],
+            "value_2A": [0, 3, 7, 12, 0, 2, 3, 1],
+            "value_2B": [1, 9, 5, 15, 1, 6, 4, 3],
+        }
+    )
+    df1["value_1"] = df1["value_1"].astype(pd.Int64Dtype())
+    df2["value_2A"] = df2["value_2A"].astype(pd.Int64Dtype())
+    df2["value_2B"] = df2["value_2B"].astype(pd.Int64Dtype())
+    expected = df1.merge(df2, on="id").query("value_2A < value_1 < value_2B")
+    expected.index = range(expected.index.size)
+    actual = df1.conditional_join(
+        df2,
+        ("id", "id", "=="),
+        ("value_1", "value_2A", ">"),
+        ("value_1", "value_2B", "<"),
+        right_columns="value*",
+    )
+
+    assert_frame_equal(expected, actual)

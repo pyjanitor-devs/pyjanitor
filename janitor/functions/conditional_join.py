@@ -804,7 +804,9 @@ def _multiple_conditional_join_eq(
         sort=False,
     )._get_join_indexers()
 
-    if not left_index.size:
+    # logic seems to have been changed in pandas 2.2
+    # from empty array to None
+    if left_index is None:
         return None
 
     rest = [

@@ -220,7 +220,7 @@ def test_all_strings_no_nulls(df):
     expected = (
         df.set_index(cols)  # noqa: PD013, PD010
         .unstack(cols[-1])  # noqa: PD010
-        .stack(dropna=False)  # noqa: PD013
+        .stack(future_stack=True)  # noqa: PD013
         .reset_index()
         .reindex(columns=columns)
     )
@@ -393,7 +393,7 @@ def test_tuple_column():
     expected = (
         df.set_index(columns)
         .unstack("group")
-        .stack(dropna=False)
+        .stack(future_stack=True)
         .reset_index()
         .reindex(columns=df.columns)
         .sort_values(columns, ignore_index=True)
@@ -439,10 +439,9 @@ def test_fill_value_scalar(taxonomy_df):
         "Year", "Taxon", fill_value=0, sort=False
     ).astype({"Abundance": int})
     expected = (
-        taxonomy_df.encode_categorical(Taxon="appearance")
-        .set_index(["Year", "Taxon"])
+        taxonomy_df.set_index(["Year", "Taxon"])
         .unstack(fill_value=0)
-        .stack(dropna=False)
+        .stack(future_stack=True)
         .reset_index()
         .astype({"Taxon": "object"})
     )
@@ -469,7 +468,7 @@ def test_dict_tuple_callable(taxonomy_df):
         .unstack("Year")
         .droplevel(0, 1)
         .reindex(columns=range(1999, 2005))
-        .stack(dropna=False)
+        .stack(future_stack=True)
         .reset_index()
         .iloc[:, :-1]
         .reindex(columns=["Year", "Taxon", "Abundance"])
@@ -497,7 +496,7 @@ def test_dict_tuple(taxonomy_df):
         .unstack("Year")
         .droplevel(0, 1)
         .reindex(columns=range(1999, 2005))
-        .stack(dropna=False)
+        .stack(future_stack=True)
         .reset_index()
         .iloc[:, :-1]
         .reindex(columns=["Year", "Taxon", "Abundance"])
@@ -546,7 +545,7 @@ def test_explicit_scalar(fill_df):
     expected = (
         fill_df.set_index(columns)
         .unstack("group", fill_value=0)
-        .stack(dropna=False)
+        .stack(future_stack=True)
         .reset_index()
         .reindex(columns=fill_df.columns)
         .sort_values(columns, ignore_index=True)
@@ -571,7 +570,7 @@ def test_explicit_scalar_cat(fill_df):
     expected = (
         fill_df.set_index(columns)
         .unstack("group", fill_value=0)
-        .stack(dropna=False)
+        .stack(future_stack=True)
         .reset_index()
         .reindex(columns=fill_df.columns)
         .sort_values(columns, ignore_index=True)

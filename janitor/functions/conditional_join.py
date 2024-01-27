@@ -804,9 +804,15 @@ def _multiple_conditional_join_eq(
         sort=False,
     )._get_join_indexers()
 
-    # logic seems to have been changed in pandas 2.2
-    # from empty array to None
+    # patch based on updates in internal code
+    # pandas/core/reshape/merge.py#L1692
+    # for pandas 2.2
     if left_index is None:
+        left_index = df.index._values
+    if right_index is None:
+        right_index = right.index._values
+
+    if not left_index.size:
         return None
 
     rest = [

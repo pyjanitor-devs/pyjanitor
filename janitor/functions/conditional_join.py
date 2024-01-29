@@ -763,7 +763,8 @@ def _multiple_conditional_join_eq(
             grp = right_df.groupby(equi_col, sort=False)
             non_equi_col = right_columns[1]
             # groupby.is_monotonic_increasing uses apply under the hood
-            # this circumvents the Series creation (which isn't required here)
+            # the approach used below circumvents the Series creation
+            # (which isn't required here)
             # and just gets a sequence of booleans, before calling `all`
             # to get a single True or False.
             right_is_sorted = all(

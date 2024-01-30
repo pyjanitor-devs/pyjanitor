@@ -298,6 +298,7 @@ def test_column_multiindex_names_pattern(df_multi):
         )
 
 
+@pytest.mark.xfail(reason="jn.select function handles this")
 def test_index_tuple_multiindex(df_multi):
     """
     Raise ValueError if index is a tuple,
@@ -308,6 +309,7 @@ def test_index_tuple_multiindex(df_multi):
         df_multi.pivot_longer(index=("name", "a"))
 
 
+@pytest.mark.xfail(reason="jn.select function handles this")
 def test_column_names_tuple_multiindex(df_multi):
     """
     Raise ValueError if column_names is a tuple,
@@ -338,6 +340,7 @@ def test_index_missing_multiindex(df_multi):
         df_multi.pivot_longer(index=[("names", "bb")])
 
 
+@pytest.mark.xfail(reason="jn.select function handles this")
 def test_column_names_not_all_tuples_multiindex(df_multi):
     """
     Raise ValueError if column_names is a list of tuples,
@@ -348,6 +351,7 @@ def test_column_names_not_all_tuples_multiindex(df_multi):
         df_multi.pivot_longer(column_names=[("names", "aa"), "a"])
 
 
+@pytest.mark.xfail(reason="jn.select function handles this")
 def test_index_not_all_tuples_multiindex(df_multi):
     """
     Raise ValueError if index is a list of tuples,

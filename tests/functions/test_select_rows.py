@@ -12,7 +12,7 @@ def dates():
     """pytest fixture"""
     start = datetime.datetime(2011, 1, 1)
     end = datetime.datetime(2012, 1, 1)
-    rng = pd.date_range(start, end, freq="BM")
+    rng = pd.date_range(start, end, freq="BME")
     return pd.DataFrame({"numbers": np.random.randn(len(rng))}, index=rng)
 
 

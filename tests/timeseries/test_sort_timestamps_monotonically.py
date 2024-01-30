@@ -12,7 +12,7 @@ def timeseries_dataframe() -> pd.DataFrame:
     """
     Returns a time series dataframe
     """
-    ts_index = pd.date_range("1/1/2019", periods=1000, freq="1H")
+    ts_index = pd.date_range("1/1/2019", periods=1000, freq="1h")
     v1 = [randint(1, 2000) for i in range(1000)]
     test_df = pd.DataFrame({"v1": v1}, index=ts_index)
     return test_df

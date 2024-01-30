@@ -439,8 +439,7 @@ def test_fill_value_scalar(taxonomy_df):
         "Year", "Taxon", fill_value=0, sort=False
     ).astype({"Abundance": int})
     expected = (
-        taxonomy_df.encode_categorical(Taxon="appearance")
-        .set_index(["Year", "Taxon"])
+        taxonomy_df.set_index(["Year", "Taxon"])
         .unstack(fill_value=0)
         .stack(dropna=False)
         .reset_index()

@@ -1,3 +1,5 @@
+import warnings
+
 import pytest
 
 from janitor.utils import deprecated_alias
@@ -23,9 +25,10 @@ def test_new_aliases():
     """
     Using new aliases should not result in errors or warnings
     """
-    with pytest.warns(None) as record:
+    # https://github.com/scikit-learn/scikit-learn/issues/22572#issuecomment-1047316960
+    with warnings.catch_warnings(record=True) as record:
         simple_sum(alpha=2, beta=6)
-    assert not record.list
+    assert not record
 
     assert simple_sum(alpha=2, beta=6)
 

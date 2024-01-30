@@ -144,10 +144,10 @@ def _numba_equi_join(df, right, eqs, ge_gt, le_lt):
     right_arr = right[right_column]._values
     left_index = df.index._values
     right_index = right.index._values
-    slice_starts = right_arr.searchsorted(left_arr, side="left")[
-        left_positions
-    ]
-    slice_ends = right_arr.searchsorted(left_arr, side="right")[left_positions]
+    slice_starts = right_arr.searchsorted(left_arr, side="left")
+    slice_starts = slice_starts[left_positions]
+    slice_ends = right_arr.searchsorted(left_arr, side="right")
+    slice_ends = slice_ends[left_positions]
     # check if there is a search space
     # this also lets us know if there are equi matches
     keep_rows = slice_starts < slice_ends

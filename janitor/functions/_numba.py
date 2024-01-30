@@ -137,12 +137,17 @@ def _numba_equi_join(df, right, eqs, ge_gt, le_lt):
     # 	2	  3	    2	   2	       4
     #
     left_column, right_column, _ = eqs
-    left_arr = df[left_column]._values
+    # steal some perf here within the binary search
+    # search for uniques
+    # and later index them with left_positions
+    left_positions, left_arr = df[left_column].factorize(sort=False)
     right_arr = right[right_column]._values
     left_index = df.index._values
     right_index = right.index._values
-    slice_starts = right_arr.searchsorted(left_arr, side="left")
-    slice_ends = right_arr.searchsorted(left_arr, side="right")
+    slice_starts = right_arr.searchsorted(left_arr, side="left")[
+        left_positions
+    ]
+    slice_ends = right_arr.searchsorted(left_arr, side="right")[left_positions]
     # check if there is a search space
     # this also lets us know if there are equi matches
     keep_rows = slice_starts < slice_ends

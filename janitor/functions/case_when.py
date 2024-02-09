@@ -7,12 +7,18 @@ import pandas_flavor as pf
 from pandas.api.types import is_scalar
 from pandas.core.common import apply_if_callable
 
-from janitor.utils import check, find_stack_level
+from janitor.utils import check, find_stack_level, refactored_function
 
 warnings.simplefilter("always", DeprecationWarning)
 
 
 @pf.register_dataframe_method
+@refactored_function(
+    message=(
+        "This function will be deprecated in a 1.x release. "
+        "Please use `pd.Series.case_when` instead."
+    )
+)
 def case_when(
     df: pd.DataFrame, *args: Any, default: Any = None, column_name: str
 ) -> pd.DataFrame:

@@ -1,3 +1,43 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyjanitor"
+version = "0.26.0"
+description="Tools for cleaning pandas DataFrames"
+url="https://github.com/pyjanitor-devs/pyjanitor"
+license = {text = "MIT License"}
+requires-python = ">= 3.8"
+readme = 'README.md'
+dependencies = [
+    "pandas >= 2.0.0",
+    "pandas_flavor",
+    "multiple_dispatch",
+    "scipy"
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python"
+]
+authors = [
+  {name = "pyjanitor devs"},
+  {email = "ericmajinglong@gmail.com"},
+]
+
+[project.urls]
+Homepage = "https://pyjanitor-devs.github.io/pyjanitor"
+Documentation = "https://mkdocs.org"
+Repository = "https://github.com/pyjanitor-devs/pyjanitor.git"
+Issues = "https://github.com/pyjanitor-devs/pyjanitor/issues"
+Changelog = "https://github.com/pyjanitor-devs/pyjanitor/blob/dev/CHANGELOG.md"
+
+[project.optional-dependencies]
+biology = ["biopython"]
+engineering = ["unyt"]
+spark = ["pyspark"]
+chemistry = ['tqdm']
+
 [tool.black]
 exclude = '''
 /(

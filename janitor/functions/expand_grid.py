@@ -1,4 +1,5 @@
 """Implementation source for `expand_grid`."""
+
 from typing import Dict, Optional, Union
 
 import pandas as pd

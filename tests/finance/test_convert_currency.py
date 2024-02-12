@@ -1,4 +1,5 @@
 """Tests for convert_currency() in finance module."""
+
 from datetime import date, datetime
 
 import pytest

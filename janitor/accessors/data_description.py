@@ -1,4 +1,5 @@
 """DataDescription class for the DataDescription accessor."""
+
 from typing import Dict, List, Union
 
 import pandas as pd

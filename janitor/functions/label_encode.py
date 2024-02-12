@@ -1,4 +1,5 @@
 """Implementation of `label_encode` function"""
+
 import warnings
 from typing import Hashable, Iterable, Union
 

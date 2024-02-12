@@ -1,4 +1,5 @@
 """Tests for `to_datetime` function."""
+
 import numpy as np
 import pandas as pd
 import pytest

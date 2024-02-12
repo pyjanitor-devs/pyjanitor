@@ -1,4 +1,5 @@
 """Implementation of `impute` function"""
+
 from itertools import product
 from typing import Any, Optional
 

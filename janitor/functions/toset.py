@@ -1,4 +1,5 @@
 """Implementation of the `toset` function."""
+
 from typing import Set
 
 import pandas as pd

@@ -43,6 +43,10 @@ def row_to_names(
           nums chars
         0    6     x
         1    9     y
+        >>> df.row_to_names([0,1], remove_rows=True, reset_index=True)
+          nums chars
+          6    x
+        0    9     y
 
         Remove rows above the elevated row and the elevated row itself.
 

@@ -13,8 +13,30 @@ def test_row_to_names(dataframe):
 
 
 @pytest.mark.functions
+def test_row_to_names_single_list(dataframe):
+    "Test output if row_numbers is a list, and contains a single item."
+    df = dataframe.row_to_names([2])
+    assert df.columns[0] == 3
+    assert df.columns[1] == 3.234_612_5
+    assert df.columns[2] == 3
+    assert df.columns[3] == "lion"
+    assert df.columns[4] == "Basel"
+
+
+@pytest.mark.functions
+def test_row_to_names_list(dataframe):
+    "Test output if row_numbers is a list."
+    df = dataframe.row_to_names([1, 2])
+    assert df.columns[0] == (2, 3)
+    assert df.columns[1] == (2.456_234, 3.234_612_5)
+    assert df.columns[2] == (2, 3)
+    assert df.columns[3] == ("leopard", "lion")
+    assert df.columns[4] == ("Shanghai", "Basel")
+
+
+@pytest.mark.functions
 def test_row_to_names_delete_this_row(dataframe):
-    df = dataframe.row_to_names(2, remove_row=True)
+    df = dataframe.row_to_names(2, remove_rows=True)
     assert df.iloc[2, 0] == 1
     assert df.iloc[2, 1] == 1.234_523_45
     assert df.iloc[2, 2] == 1
@@ -26,7 +48,7 @@ def test_row_to_names_delete_this_row(dataframe):
 def test_row_to_names_delete_the_row_without_resetting_index(dataframe):
     """Test that executes row_to_names while deleting the given row
     index while not resetting the index"""
-    df = dataframe.row_to_names(2, remove_row=True)
+    df = dataframe.row_to_names(2, remove_rows=True)
     expected_index = pd.Index([0, 1, 3, 4, 5, 6, 7, 8])
     pd.testing.assert_index_equal(df.index, expected_index)
 
@@ -39,6 +61,28 @@ def test_row_to_names_delete_above(dataframe):
     assert df.iloc[0, 2] == 3
     assert df.iloc[0, 3] == "lion"
     assert df.iloc[0, 4] == "Basel"
+
+
+@pytest.mark.functions
+def test_row_to_names_delete_above_list(dataframe):
+    "Test output if row_numbers is a list"
+    df = dataframe.row_to_names([2, 3], remove_rows_above=True)
+    assert df.iloc[0, 0] == 3
+    assert df.iloc[0, 1] == 3.234_612_5
+    assert df.iloc[0, 2] == 3
+    assert df.iloc[0, 3] == "lion"
+    assert df.iloc[0, 4] == "Basel"
+
+
+@pytest.mark.functions
+def test_row_to_names_delete_above_list_non_consecutive(dataframe):
+    "Raise if row_numbers is a list, but non consecutive"
+    msg = "The remove_rows_above argument is applicable "
+    msg += "only if the row_numbers argument is an integer, "
+    msg += "or the integers in a list are consecutive increasing, "
+    msg += "with a difference of 1."
+    with pytest.raises(ValueError, match=msg):
+        dataframe.row_to_names([1, 3], remove_rows_above=True)
 
 
 @pytest.mark.functions
@@ -63,6 +107,6 @@ def test_row_to_names_delete_above_with_resetting_index(dataframe):
 def test_row_to_names_delete_the_row_with_resetting_index(dataframe):
     """Test that executes row_to_names while deleting the given row
     index while resetting the index"""
-    df = dataframe.row_to_names(2, remove_row=True, reset_index=True)
+    df = dataframe.row_to_names(2, remove_rows=True, reset_index=True)
     expected_index = pd.RangeIndex(start=0, stop=8, step=1)
     pd.testing.assert_index_equal(df.index, expected_index)

@@ -1,4 +1,5 @@
 """Setup script."""
+
 import codecs
 import os
 import re

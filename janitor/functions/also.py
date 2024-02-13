@@ -1,4 +1,5 @@
 """Implementation source for chainable function `also`."""
+
 from typing import Any, Callable
 
 import pandas as pd

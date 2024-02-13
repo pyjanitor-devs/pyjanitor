@@ -1,4 +1,5 @@
 """Implementation of the `sort_column_value_order` function."""
+
 import pandas as pd
 import pandas_flavor as pf
 

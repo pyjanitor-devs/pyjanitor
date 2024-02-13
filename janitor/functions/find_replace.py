@@ -1,4 +1,5 @@
 """Implementation for find_replace."""
+
 from typing import Any, Dict
 
 import pandas as pd

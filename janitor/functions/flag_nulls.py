@@ -1,4 +1,5 @@
 """Implementation source for `flag_nulls`."""
+
 from typing import Hashable, Iterable, Optional, Union
 
 import numpy as np

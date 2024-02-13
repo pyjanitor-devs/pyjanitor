@@ -1,4 +1,5 @@
 """Implementation of the `change_index_dtype` function."""
+
 from __future__ import annotations
 
 from typing import Union

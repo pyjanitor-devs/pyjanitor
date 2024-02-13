@@ -1,4 +1,5 @@
 """Implementation source for `case_when`."""
+
 import warnings
 from typing import Any
 

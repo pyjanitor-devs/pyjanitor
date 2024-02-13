@@ -1,4 +1,5 @@
 """Implementation of `shuffle` functions."""
+
 from typing import Any
 
 import pandas as pd

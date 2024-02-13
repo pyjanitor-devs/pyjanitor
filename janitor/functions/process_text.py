@@ -1,4 +1,5 @@
 """Implementation source for `process_text`."""
+
 import inspect
 from typing import Any
 

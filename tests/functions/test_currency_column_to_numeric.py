@@ -1,4 +1,5 @@
 """Tests for `currency_column_to_numeric` function."""
+
 import numpy as np
 import pandas as pd
 import pytest

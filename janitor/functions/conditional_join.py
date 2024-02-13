@@ -772,7 +772,6 @@ def _multiple_conditional_join_eq(
         if not right_is_sorted:
             right_df = right_df.sort_values(right_columns)
         indices = _numba_equi_join(left_df, right_df, eqs, ge_gt, le_lt)
-
         if not rest or (indices is None):
             return indices
 
@@ -1073,10 +1072,7 @@ def _range_indices(
     ]
 
     right_index = np.concatenate(right_index)
-    left_index = np.repeat(left_index, repeater)
-
-    if fastpath:
-        return left_index, right_index
+    left_index = left_index.repeat(repeater)
     # here we search for actual positions
     # where left_c is </<= right_c
     # safe to index the arrays, since we are picking the positions

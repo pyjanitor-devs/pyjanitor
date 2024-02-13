@@ -27,7 +27,7 @@ authors = [
 
 [project.urls]
 Homepage = "https://pyjanitor-devs.github.io/pyjanitor"
-Documentation = "https://mkdocs.org"
+Documentation = "https://pyjanitor-devs.github.io/pyjanitor"
 Repository = "https://github.com/pyjanitor-devs/pyjanitor.git"
 Issues = "https://github.com/pyjanitor-devs/pyjanitor/issues"
 Changelog = "https://github.com/pyjanitor-devs/pyjanitor/blob/dev/CHANGELOG.md"

@@ -69,23 +69,11 @@ def test_collapse_levels_functionality_3level(
     )
 
 
-def mklbl(prefix, n):
-    return ["%s%s" % (prefix, i) for i in range(n)]
-
-
-miindex = pd.MultiIndex.from_product(
-    [mklbl("A", 4), mklbl("B", 2), mklbl("C", 4), mklbl("D", 2)]
-)
-
-
-micolumns = pd.MultiIndex.from_tuples(
-    [("a", "foo"), ("a", "bar"), ("b", "foo"), ("b", "bah")],
-    names=["lvl0", "lvl1"],
-)
-
-
 @pytest.fixture
 def mi_index():
+    """Create a MultiIndex DataFrame"""
+
+    # https://pandas.pydata.org/docs/user_guide/advanced.html#using-slicers
     def mklbl(prefix, n):
         return ["%s%s" % (prefix, i) for i in range(n)]
 

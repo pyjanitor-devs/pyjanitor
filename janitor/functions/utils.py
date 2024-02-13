@@ -817,7 +817,7 @@ def _less_than_indices(
         right = [arr.max() for arr in right]
         return left_index, right
     right = np.concatenate(right)
-    left = np.repeat(left_index, len_right - search_indices)
+    left = left_index.repeat(len_right - search_indices)
     return left, right
 
 
@@ -904,7 +904,7 @@ def _greater_than_indices(
         right = [arr.max() for arr in right]
         return left_index, right
     right = np.concatenate(right)
-    left = np.repeat(left_index, search_indices)
+    left = left_index.repeat(search_indices)
     return left, right
 
 

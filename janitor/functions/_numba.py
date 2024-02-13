@@ -137,12 +137,17 @@ def _numba_equi_join(df, right, eqs, ge_gt, le_lt):
     # 	2	  3	    2	   2	       4
     #
     left_column, right_column, _ = eqs
-    left_arr = df[left_column]._values
+    # steal some perf here within the binary search
+    # search for uniques
+    # and later index them with left_positions
+    left_positions, left_arr = df[left_column].factorize(sort=False)
     right_arr = right[right_column]._values
     left_index = df.index._values
     right_index = right.index._values
     slice_starts = right_arr.searchsorted(left_arr, side="left")
+    slice_starts = slice_starts[left_positions]
     slice_ends = right_arr.searchsorted(left_arr, side="right")
+    slice_ends = slice_ends[left_positions]
     # check if there is a search space
     # this also lets us know if there are equi matches
     keep_rows = slice_starts < slice_ends
@@ -174,6 +179,22 @@ def _numba_equi_join(df, right, eqs, ge_gt, le_lt):
         le_strict = True if op == "<" else False
 
     if le_lt and ge_gt:
+        group = right.groupby(eqs[1])[le_lt[1]]
+        # is the last column (le_lt) monotonic increasing?
+        # fast path if it is
+        all_monotonic_increasing = all(
+            arr.is_monotonic_increasing for _, arr in group
+        )
+        if all_monotonic_increasing:
+            cum_max_arr = le_arr2[:]
+        else:
+            cum_max_arr = group.cummax()._values
+            if is_extension_array_dtype(cum_max_arr):
+                array_dtype = cum_max_arr.dtype.numpy_dtype
+                cum_max_arr = cum_max_arr.astype(array_dtype)
+            if is_datetime64_dtype(cum_max_arr):
+                cum_max_arr = cum_max_arr.view(np.int64)
+
         left_index, right_index = _numba_equi_join_range_join(
             left_index,
             right_index,
@@ -185,6 +206,8 @@ def _numba_equi_join(df, right, eqs, ge_gt, le_lt):
             le_arr1,
             le_arr2,
             le_strict,
+            all_monotonic_increasing,
+            cum_max_arr,
         )
 
     elif le_lt:
@@ -375,6 +398,8 @@ def _numba_equi_join_range_join(
     le_arr1,
     le_arr2,
     le_strict,
+    all_monotonic_increasing,
+    cum_max_arr,
 ):
     """
     Get indices for an equi join
@@ -400,26 +425,6 @@ def _numba_equi_join_range_join(
             ends[num] = slice_start + end
     if counts == length:
         return None, None
-    # cumulative array
-    # used to find the first possible match
-    # for the less than section below
-    max_arr = np.empty_like(le_arr2)
-    counter = 0  # are all groups monotonic increasing?
-    for num in prange(length):
-        slice_start = slice_starts[num]
-        slice_end = slice_ends[num]
-        r1 = le_arr2[slice_start:slice_end]
-        start = r1[0]
-        max_arr[slice_start] = start
-        if r1.size > 1:
-            for n in range(1, r1.size):
-                new_value = r1[n]
-                check = start < new_value
-                if check:
-                    start = new_value
-                else:
-                    counter += 1
-                max_arr[slice_start + n] = start
 
     if counts > 0:
         left_index = left_index[booleans]
@@ -432,14 +437,14 @@ def _numba_equi_join_range_join(
     length = left_index.size
     starts = np.empty(length, dtype=np.intp)
     booleans = np.ones(length, dtype=np.bool_)
-    if counter == 0:
+    if all_monotonic_increasing:
         sizes = np.empty(length, dtype=np.intp)
     counts = 0
     for num in prange(length):
         l1 = le_arr1[num]
         slice_start = slice_starts[num]
         slice_end = slice_ends[num]
-        r1 = max_arr[slice_start:slice_end]
+        r1 = cum_max_arr[slice_start:slice_end]
         start = np.searchsorted(r1, l1, side="left")
         if start < r1.size:
             if le_strict and (l1 == r1[start]):
@@ -449,7 +454,7 @@ def _numba_equi_join_range_join(
             booleans[num] = False
         else:
             starts[num] = slice_start + start
-            if counter == 0:
+            if all_monotonic_increasing:
                 sizes[num] = r1.size - start
     if counts == length:
         return None, None
@@ -458,7 +463,7 @@ def _numba_equi_join_range_join(
         le_arr1 = le_arr1[booleans]
         starts = starts[booleans]
         slice_ends = slice_ends[booleans]
-        if counter == 0:
+        if all_monotonic_increasing:
             sizes = sizes[booleans]
 
     slice_starts = starts
@@ -467,7 +472,7 @@ def _numba_equi_join_range_join(
     # no need to run a comparison
     # since all groups are monotonic increasing
     # simply create left and right indices
-    if counter == 0:
+    if all_monotonic_increasing:
         cum_sizes = np.cumsum(sizes)
         starts = np.empty(slice_ends.size, dtype=np.intp)
         starts[0] = 0

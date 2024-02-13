@@ -3887,6 +3887,41 @@ def test_multiple_eqs(df, right):
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
+def test_multiple_eqs_numba_range(df, right):
+    """Test output for multiple conditions."""
+
+    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+    expected = (
+        df.merge(
+            right,
+            left_on=["A"],
+            right_on=["Integers"],
+            how="inner",
+            sort=False,
+        )
+        .loc[lambda df: df.E.lt(df.Dates) & df.B.gt(df.Floats), columns]
+        .sort_values(columns, ignore_index=True)
+    )
+    expected = expected.filter(columns)
+    actual = (
+        df[["B", "A", "E"]]
+        .conditional_join(
+            right[["Floats", "Integers", "Dates"]],
+            ("E", "Dates", "<"),
+            ("B", "Floats", ">"),
+            ("A", "Integers", "=="),
+            how="inner",
+            use_numba=True,
+        )
+        .sort_values(columns, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
 def test_multiple_eqs_outer(df, right):
     """Test output for multiple conditions."""
 
@@ -4307,5 +4342,37 @@ def test_timedelta_dtype():
     expected = A.conditional_join(B, ("l", "ll", ">="), ("r", "rr", "<="))
     actual = A.merge(B, how="cross").loc[lambda f: f.l.ge(f.ll) & f.r.le(f.rr)]
     actual.index = range(len(actual))
+
+    assert_frame_equal(expected, actual)
+
+
+# https://stackoverflow.com/q/61948103/7175713
+def test_numba_equi_extension_array():
+    """
+    Test output for equi join and numba
+    """
+    df1 = pd.DataFrame(
+        {"id": [1, 1, 1, 2, 2, 3], "value_1": [2, 5, 7, 1, 3, 4]}
+    )
+    df2 = pd.DataFrame(
+        {
+            "id": [1, 1, 1, 1, 2, 2, 2, 3],
+            "value_2A": [0, 3, 7, 12, 0, 2, 3, 1],
+            "value_2B": [1, 9, 5, 15, 1, 6, 4, 3],
+        }
+    )
+    df1["value_1"] = df1["value_1"].astype(pd.Int64Dtype())
+    df2["value_2A"] = df2["value_2A"].astype(pd.Int64Dtype())
+    df2["value_2B"] = df2["value_2B"].astype(pd.Int64Dtype())
+    expected = df1.merge(df2, on="id").query("value_2A < value_1 < value_2B")
+    expected.index = range(expected.index.size)
+    actual = df1.conditional_join(
+        df2,
+        ("id", "id", "=="),
+        ("value_1", "value_2A", ">"),
+        ("value_1", "value_2B", "<"),
+        right_columns="value*",
+        use_numba=True,
+    )
 
     assert_frame_equal(expected, actual)

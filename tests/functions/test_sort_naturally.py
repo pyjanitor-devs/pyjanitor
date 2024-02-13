@@ -8,6 +8,7 @@ with Hypothesis-generated property-based test. [intermediate]
 - Provide another example-based test of something
 that needs to be naturally rather than lexiographically sorted.
 """
+
 import pandas as pd
 import pytest
 from natsort import natsorted

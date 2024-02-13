@@ -1,4 +1,5 @@
 """Implementation source for `bin_numeric`."""
+
 from typing import Any, Optional, Sequence, Union
 
 import pandas as pd

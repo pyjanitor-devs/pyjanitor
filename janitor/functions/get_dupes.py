@@ -1,4 +1,5 @@
 """Implementation of the `get_dupes` function"""
+
 from typing import Hashable, Iterable, Optional, Union
 
 import pandas as pd

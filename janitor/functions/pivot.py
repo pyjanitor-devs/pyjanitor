@@ -560,9 +560,11 @@ def _data_checks_pivot_longer(
                 if regex.groupindex:
                     names_to = regex.groupindex.keys()
                     names_to = [
-                        ".value"
-                        if ("_" in name) and (len(set(name)) == 1)
-                        else name
+                        (
+                            ".value"
+                            if ("_" in name) and (len(set(name)) == 1)
+                            else name
+                        )
                         for name in names_to
                     ]
                     len_names_to = len(names_to)
@@ -1288,9 +1290,11 @@ def _final_frame_longer(
     if (names_transform is not None) & (outcome is not None):
         if isinstance(names_transform, dict):
             outcome = {
-                key: arr.astype(names_transform[key], copy=False)
-                if key in names_transform
-                else arr
+                key: (
+                    arr.astype(names_transform[key], copy=False)
+                    if key in names_transform
+                    else arr
+                )
                 for key, arr in outcome.items()
             }
         else:
@@ -1824,13 +1828,15 @@ def _expand(indexer, retain_categories):
                 indexer.get_level_values(n) for n in range(indexer.nlevels)
             ]
             indexer = [
-                pd.Categorical(
-                    values=arr.categories,
-                    categories=arr.categories,
-                    ordered=arr.ordered,
+                (
+                    pd.Categorical(
+                        values=arr.categories,
+                        categories=arr.categories,
+                        ordered=arr.ordered,
+                    )
+                    if is_categorical_dtype(arr)
+                    else arr.unique()
                 )
-                if is_categorical_dtype(arr)
-                else arr.unique()
                 for arr in indexer
             ]
             indexer = pd.MultiIndex.from_product(indexer, names=names)

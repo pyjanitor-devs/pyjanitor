@@ -1,4 +1,5 @@
 """Implementation of the `groupby_topk` function"""
+
 from typing import Hashable, Union
 
 import pandas as pd

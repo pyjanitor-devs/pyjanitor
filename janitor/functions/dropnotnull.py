@@ -1,4 +1,5 @@
 """Implementation source for `dropnotnull`."""
+
 from typing import Hashable
 
 import pandas as pd

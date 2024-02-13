@@ -1,4 +1,5 @@
 """Finance-specific data cleaning functions."""
+
 import json
 from datetime import date
 from functools import lru_cache

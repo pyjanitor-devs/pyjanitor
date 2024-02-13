@@ -1,4 +1,5 @@
 """Implementation of remove_empty."""
+
 import pandas as pd
 import pandas_flavor as pf
 

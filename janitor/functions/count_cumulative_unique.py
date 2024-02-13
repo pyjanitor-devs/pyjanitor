@@ -1,4 +1,5 @@
 """Implementation of count_cumulative_unique."""
+
 from typing import Hashable
 
 import numpy as np

@@ -1,4 +1,5 @@
 """Implementation of the `join_apply` function"""
+
 from typing import Callable
 
 import pandas as pd

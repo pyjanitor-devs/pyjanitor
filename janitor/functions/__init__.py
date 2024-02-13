@@ -15,7 +15,6 @@ please refactor it out to `janitor.functions.utils`.
 7. Never import utils.
 """
 
-
 from .add_columns import add_columns
 from .also import also
 from .bin_numeric import bin_numeric

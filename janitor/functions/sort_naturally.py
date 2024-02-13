@@ -1,4 +1,5 @@
 """Implementation of the `sort_naturally` function."""
+
 from typing import Any
 
 import pandas as pd

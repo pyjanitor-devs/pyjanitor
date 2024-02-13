@@ -1,4 +1,5 @@
 """Implementation of the `factorize_columns` function"""
+
 from typing import Any, Hashable, Iterable, Union
 
 import pandas as pd

@@ -1,4 +1,5 @@
 """Implementation of deconcatenating columns."""
+
 from typing import Hashable, List, Optional, Tuple, Union
 
 import pandas as pd

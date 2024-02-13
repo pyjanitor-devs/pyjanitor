@@ -1,4 +1,5 @@
 """Implementation for `drop_duplicate_columns`."""
+
 from typing import Hashable
 
 import pandas as pd

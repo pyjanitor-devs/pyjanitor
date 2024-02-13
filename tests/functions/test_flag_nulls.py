@@ -1,4 +1,5 @@
 """Tests for `flag_nulls` function."""
+
 import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal

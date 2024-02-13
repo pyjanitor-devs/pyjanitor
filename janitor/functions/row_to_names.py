@@ -1,4 +1,5 @@
 """Implementation of the `row_to_names` function."""
+
 import warnings
 
 import pandas as pd

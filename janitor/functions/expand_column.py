@@ -1,4 +1,5 @@
 """Implementation for expand_column."""
+
 from typing import Hashable
 
 import pandas as pd

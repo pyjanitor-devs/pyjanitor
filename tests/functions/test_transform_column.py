@@ -1,6 +1,7 @@
 """
 Tests referring to the method transform_column of the module functions.
 """
+
 import numpy as np
 import pandas as pd
 import pytest

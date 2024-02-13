@@ -1,4 +1,5 @@
 """Tests for _replace_empty_string_with_none helper function."""
+
 import pandas as pd
 import pytest
 from pandas.testing import assert_series_equal

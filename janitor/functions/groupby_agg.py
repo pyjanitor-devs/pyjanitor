@@ -1,4 +1,5 @@
 """Implementation source for `groupby_agg`."""
+
 from typing import Callable, List, Union
 
 import pandas as pd

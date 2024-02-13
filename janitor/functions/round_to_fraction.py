@@ -1,4 +1,5 @@
 """Implementation of `round_to_fraction`"""
+
 from typing import Hashable
 
 import numpy as np

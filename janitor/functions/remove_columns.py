@@ -1,4 +1,5 @@
 """Implementation of remove_columns."""
+
 from typing import Hashable, Iterable, Union
 
 import pandas as pd

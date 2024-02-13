@@ -1,4 +1,5 @@
 """Tests for concatenate_columns."""
+
 import pytest
 
 from janitor.errors import JanitorError

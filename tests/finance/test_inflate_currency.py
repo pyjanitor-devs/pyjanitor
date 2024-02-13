@@ -1,4 +1,5 @@
 """Tests for inflate_currency() in finance module."""
+
 import pytest
 import requests
 

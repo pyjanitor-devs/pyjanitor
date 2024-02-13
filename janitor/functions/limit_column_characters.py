@@ -1,4 +1,5 @@
 """Implementation of limit_column_characters."""
+
 import pandas as pd
 import pandas_flavor as pf
 

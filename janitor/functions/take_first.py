@@ -1,4 +1,5 @@
 """Implementation of take_first function."""
+
 from typing import Hashable, Iterable, Union
 
 import pandas as pd

@@ -1,4 +1,5 @@
 """Function for performing coalesce."""
+
 from typing import Any, Optional, Union
 
 import pandas as pd

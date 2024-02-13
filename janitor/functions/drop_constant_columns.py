@@ -1,4 +1,5 @@
 """Implementation of drop_constant_columns."""
+
 import pandas as pd
 import pandas_flavor as pf
 

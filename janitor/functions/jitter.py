@@ -1,4 +1,5 @@
 """Implementation of the `jitter` function."""
+
 from typing import Hashable, Iterable, Optional
 
 import numpy as np

@@ -1,4 +1,5 @@
 """Functions for cleaning columns names."""
+
 import unicodedata
 from typing import Hashable, Optional, Union
 

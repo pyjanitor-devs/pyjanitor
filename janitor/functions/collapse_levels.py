@@ -1,4 +1,5 @@
 """Implementation of the `collapse_levels` function."""
+
 from typing import Union
 
 import pandas as pd

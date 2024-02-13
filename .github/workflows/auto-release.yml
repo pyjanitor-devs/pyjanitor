@@ -51,10 +51,7 @@ jobs:
           python-version: "3.x"
       - name: Install pypa/build
         run: >-
-          python3 -m
-          pip install
-          build
-          --user
+          python3 -m pip install build --user
 
       - name: Install bump2version and wheel
         run: python -m pip install bumpversion wheel # "bumpversion" installs bump2version

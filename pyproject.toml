@@ -36,7 +36,7 @@ Changelog = "https://github.com/pyjanitor-devs/pyjanitor/blob/dev/CHANGELOG.md"
 biology = ["biopython"]
 engineering = ["unyt"]
 spark = ["pyspark"]
-chemistry = ['tqdm']
+chemistry = ["tqdm", "rdkit"]
 
 [tool.black]
 exclude = '''

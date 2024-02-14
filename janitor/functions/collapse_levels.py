@@ -1,5 +1,7 @@
 """Implementation of the `collapse_levels` function."""
 
+from typing import Union
+
 import pandas as pd
 import pandas_flavor as pf
 from pandas.api.types import is_string_dtype
@@ -8,13 +10,18 @@ from janitor.utils import check
 
 
 @pf.register_dataframe_method
-def collapse_levels(df: pd.DataFrame, sep: str = "_") -> pd.DataFrame:
-    """Flatten multi-level column dataframe to a single level.
+def collapse_levels(
+    df: pd.DataFrame,
+    sep: Union[str, None] = None,
+    glue: Union[str, None] = None,
+    axis="columns",
+) -> pd.DataFrame:
+    """Flatten multi-level index/column dataframe to a single level.
 
     This method does not mutate the original DataFrame.
 
-    Given a DataFrame containing multi-level columns, flatten to single-level
-    by string-joining the column labels in each level.
+    Given a DataFrame containing multi-level index/columns, flatten to single-level
+    by string-joining the labels in each level.
 
     After a `groupby` / `aggregate` operation where `.agg()` is passed a
     list of multiple aggregation functions, a multi-level DataFrame is
@@ -53,59 +60,98 @@ def collapse_levels(df: pd.DataFrame, sep: str = "_") -> pd.DataFrame:
         bird        267.333333             389.0
         mammal       50.500000              50.5
 
-    Before applying `.collapse_levels`, the `.agg` operation returns a
-    multi-level column DataFrame whose columns are `(level 1, level 2)`:
+        Before applying `.collapse_levels`, the `.agg` operation returns a
+        multi-level column DataFrame whose columns are `(level 1, level 2)`:
 
-    ```python
-    [("max_speed", "mean"), ("max_speed", "median")]
-    ```
+        ```python
+        [("max_speed", "mean"), ("max_speed", "median")]
+        ```
 
-    `.collapse_levels` then flattens the column MultiIndex into a single
-    level index with names:
+        `.collapse_levels` then flattens the column MultiIndex into a single
+        level index with names:
 
-    ```python
-    ["max_speed_mean", "max_speed_median"]
-    ```
+        ```python
+        ["max_speed_mean", "max_speed_median"]
+        ```
+
+        For more control, a `glue` specification can be passed,
+        where the names of the levels are used to control the output of the
+        flattened index:
+        >>> (grouped_df
+        ...  .rename_axis(columns=['column_name', 'agg_name'])
+        ...  .collapse_levels(glue="{agg_name}_{column_name}")
+        ... )
+                mean_max_speed  median_max_speed
+        class
+        bird        267.333333             389.0
+        mammal       50.500000              50.5
+
+        Note that for `glue` to work, the keyword arguments
+        in the glue specification
+        should be the names of the levels in the MultiIndex.
+
+    !!! abstract "Version Changed"
+
+        - 0.27.0
+            - Added `glue` and `axis` parameters.
 
     Args:
         df: A pandas DataFrame.
         sep: String separator used to join the column level names.
+        glue: A specification on how the column levels should be combined.
+            It allows for a more granular composition,
+            and serves as an alternative to `sep`.
+        axis: Determines whether to collapse the
+            levels on the index or columns.
 
     Returns:
         A pandas DataFrame with single-level column index.
     """  # noqa: E501
-    check("sep", sep, [str])
+    if (sep is not None) and (glue is not None):
+        raise ValueError("Only one of sep or glue should be provided.")
+    if sep is not None:
+        check("sep", sep, [str])
+    if glue is not None:
+        check("glue", glue, [str])
+    check("axis", axis, [str])
+    if axis not in {"index", "columns"}:
+        raise ValueError(
+            "axis argument should be either 'index' or 'columns'."
+        )
 
-    # if already single-level, just return the DataFrame
-    if not isinstance(df.columns, pd.MultiIndex):
+    if not isinstance(getattr(df, axis), pd.MultiIndex):
         return df
 
     # TODO: Pyarrow offers faster string computations
     # future work should take this into consideration,
     # which would require a different route from python's string.join
-
     # since work is only on the columns
     # it is safe, and more efficient to slice/view the dataframe
     # plus Pandas creates a new Index altogether
     # as such, the original dataframe is not modified
     df = df[:]
-    new_columns = df.columns
-    levels = [
-        new_columns.get_level_values(num) for num in range(new_columns.nlevels)
-    ]
+    new_index = getattr(df, axis)
+    if glue is not None:
+        new_index = [dict(zip(new_index.names, entry)) for entry in new_index]
+        new_index = [glue.format_map(mapping) for mapping in new_index]
+        setattr(df, axis, new_index)
+        return df
+    sep = "_" if sep is None else sep
+    levels = [level for level in new_index.levels]
     all_strings = all(map(is_string_dtype, levels))
     if all_strings:
         no_empty_string = all((entry != "").all() for entry in levels)
         if no_empty_string:
-            df.columns = new_columns.map(sep.join)
+            new_index = new_index.map(sep.join)
+            setattr(df, axis, new_index)
             return df
-    new_columns = (map(str, entry) for entry in new_columns)
-    new_columns = [
+    new_index = (map(str, entry) for entry in new_index)
+    new_index = [
         # faster to use a list comprehension within string.join
         # compared to a generator
         # https://stackoverflow.com/a/37782238
         sep.join([entry for entry in word if entry])
-        for word in new_columns
+        for word in new_index
     ]
-    df.columns = new_columns
+    setattr(df, axis, new_index)
     return df

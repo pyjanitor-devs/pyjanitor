@@ -11,6 +11,7 @@
 -   [ENH] `change_index_dtype` added. - @samukweku Issue #1314
 -   [ENH] Add `glue` and `axis` parameters to `collapse_levels`. - Issue #211 @samukweku
 -   [ENH] `row_to_names` now supports multiple rows conversion to columns. - @samukweku Issue #1333
+-   [ENH] `truncate_datetime` now uses a vectorized option. -@samukweku #1337
 
 ## [v0.26.0] - 2023-09-18
 

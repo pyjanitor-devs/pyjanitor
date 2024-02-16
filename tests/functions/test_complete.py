@@ -435,15 +435,18 @@ def test_complete_multiple_groupings():
 
 def test_fill_value_scalar(taxonomy_df):
     """Test output if the fill_value is a scalar."""
-    result = taxonomy_df.complete(
-        "Year", "Taxon", fill_value=0, sort=False
-    ).astype({"Abundance": int})
+    result = (
+        taxonomy_df.complete("Year", "Taxon", fill_value=0, sort=False)
+        .sort_values("Taxon", ignore_index=True)
+        .astype({"Abundance": int})
+    )
     expected = (
         taxonomy_df.set_index(["Year", "Taxon"])
         .unstack(fill_value=0)
         .stack(future_stack=True)
         .reset_index()
         .astype({"Taxon": "object"})
+        .sort_values("Taxon", ignore_index=True)
     )
 
     assert_frame_equal(result, expected)

@@ -97,7 +97,7 @@ def change_type(
     elif ignore_exception == "fillna":
         if isinstance(column_name, Hashable):
             column_name = [column_name]
-        df[column_name] = df[column_name].applymap(_convert, dtype=dtype)
+        df[column_name] = df[column_name].map(_convert, dtype=dtype)
     else:
         raise ValueError("Unknown option for ignore_exception")
 

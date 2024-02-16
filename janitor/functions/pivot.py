@@ -9,7 +9,6 @@ import numpy as np
 import pandas as pd
 import pandas_flavor as pf
 from pandas.api.types import (
-    is_categorical_dtype,
     is_extension_array_dtype,
     is_list_like,
 )
@@ -1619,7 +1618,11 @@ def _computations_pivot_wider(
     indexer = out.index
     if index_expand and index:
         any_categoricals = (indexer.get_level_values(name) for name in index)
-        any_categoricals = any(map(is_categorical_dtype, any_categoricals))
+        any_categoricals = (
+            isinstance(entry, pd.CategoricalIndex)
+            for entry in any_categoricals
+        )
+        any_categoricals = any(any_categoricals)
         if any_categoricals:
             indexer = _expand(indexer, retain_categories=True)
             out = out.reindex(index=indexer)
@@ -1629,7 +1632,11 @@ def _computations_pivot_wider(
         any_categoricals = (
             indexer.get_level_values(name) for name in names_from
         )
-        any_categoricals = any(map(is_categorical_dtype, any_categoricals))
+        any_categoricals = (
+            isinstance(entry, pd.CategoricalIndex)
+            for entry in any_categoricals
+        )
+        any_categoricals = any(any_categoricals)
         if any_categoricals:
             retain_categories = True
             if flatten_levels & (
@@ -1834,7 +1841,7 @@ def _expand(indexer, retain_categories):
                         categories=arr.categories,
                         ordered=arr.ordered,
                     )
-                    if is_categorical_dtype(arr)
+                    if isinstance(arr, pd.CategoricalIndex)
                     else arr.unique()
                 )
                 for arr in indexer

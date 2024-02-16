@@ -24,7 +24,7 @@ def test_groupby_agg():
         by="date",
         new_column_name="date_average",
         agg_column_name="values",
-        agg=np.mean,
+        agg="mean",
     )
     assert df.shape[0] == df_new.shape[0]
     assert "date_average" in df_new.columns

@@ -18,6 +18,14 @@ no_headers = (
     .resolve()
 )
 
+no_tables = (
+    Path(
+        TEST_DATA_DIR,
+    )
+    .joinpath("file_example_XLSX_10.xlsx")
+    .resolve()
+)
+
 
 @pytest.mark.xfail(reason="sheetname parameter deprecated.")
 def test_check_sheetname():
@@ -38,13 +46,12 @@ def test_check_filename():
         io.xlsx_table("excel.xlsx", table=None)
 
 
-@pytest.mark.xfail(reason="sheetname parameter deprecated.")
 def test_table_exists():
     """Raise error if there is no table in the workbook."""
     with pytest.raises(
         ValueError, match="There are no tables in the Workbook."
     ):
-        io.xlsx_table(filename, table="Cover")
+        io.xlsx_table(no_tables, table="Cover")
 
 
 def test_check_table_name_str():

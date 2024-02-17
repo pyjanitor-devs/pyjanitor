@@ -5,7 +5,7 @@ import pandas_flavor as pf
 
 from janitor.utils import check, check_column
 
-from .remove_columns import remove_columns  # noqa: F401
+pd.set_option("future.no_silent_downcasting", True)
 
 
 @pf.register_dataframe_method

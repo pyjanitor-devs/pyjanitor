@@ -528,7 +528,9 @@ def test_complete_groupby():
     expected = (
         df.set_index("year")
         .groupby("state")
-        .apply(lambda x: x.reindex(range(x.index.min(), x.index.max() + 1)))
+        .value.apply(
+            lambda x: x.reindex(range(x.index.min(), x.index.max() + 1))
+        )
         .drop(columns="state")
         .reset_index()
     )

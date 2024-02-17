@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 import pandas as pd
@@ -18,24 +19,46 @@ no_headers = (
 )
 
 
+@pytest.mark.xfail(reason="sheetname parameter deprecated.")
 def test_check_sheetname():
     """Raise KeyError if sheetname does not exist."""
     with pytest.raises(KeyError):
-        io.xlsx_table(filename, 1, None)
+        io.xlsx_table(filename, table=None)
+
+
+def test_check_sheetname_warning():
+    """Raise Warning if sheetnameis provided."""
+    with pytest.warns(DeprecationWarning):
+        io.xlsx_table(filename, sheetname="rar")
 
 
 def test_check_filename():
     """Raise error if file does not exist."""
     with pytest.raises(FileNotFoundError):
-        io.xlsx_table("excel.xlsx", 1, None)
+        io.xlsx_table("excel.xlsx", table=None)
 
 
+@pytest.mark.xfail(reason="sheetname parameter deprecated.")
 def test_table_exists():
-    """Raise error if there is no table in the sheet."""
+    """Raise error if there is no table in the workbook."""
     with pytest.raises(
-        ValueError, match="There is no table in 'Cover' sheet."
+        ValueError, match="There are no tables in the Workbook."
     ):
-        io.xlsx_table(filename, "Cover")
+        io.xlsx_table(filename, table="Cover")
+
+
+def test_check_table_name_str():
+    """Raise error if table name is not a string."""
+    with pytest.raises(TypeError, match="table should be one of.+"):
+        io.xlsx_table(filename, table=1)
+
+
+def test_check_table_name_list():
+    """Raise error if table name is not a string."""
+    with pytest.raises(
+        TypeError, match="entry0 in the table argument should be one of.+"
+    ):
+        io.xlsx_table(filename, table=[1, "rar"])
 
 
 def test_table_name():
@@ -44,9 +67,10 @@ def test_table_name():
     and the table name cannot be found.
     """
     with pytest.raises(
-        KeyError, match="Table 'fake' is not in the 'Tables' sheet."
+        KeyError,
+        match=re.escape("Tables ('fake',) do not exist in the Workbook."),
     ):
-        io.xlsx_table(filename, "Tables", table="fake")
+        io.xlsx_table(filename, table="fake")
 
 
 def test_wb_read_only():
@@ -55,16 +79,16 @@ def test_wb_read_only():
     """
     wb = load_workbook(filename, read_only=True)
     with pytest.raises(
-        AttributeError,
-        match="Accessing the tables.+",
+        ValueError,
+        match="xlsx_table does not work in read only mode.",
     ):
-        io.xlsx_table(wb, "Tables")
+        io.xlsx_table(wb)
     wb.close()
 
 
 def test_table_str():
     """Test output for single table."""
-    expected = io.xlsx_table(filename, "Tables", "dSupplier")
+    expected = io.xlsx_table(filename, table="dSupplier")
     actual = (
         pd.read_excel(
             filename, engine="openpyxl", sheet_name="Tables", usecols="N:R"
@@ -77,7 +101,7 @@ def test_table_str():
 
 def test_table_no_header():
     """Test output for single table, without header."""
-    expected = io.xlsx_table(no_headers, "Tables", "dSalesReps")
+    expected = io.xlsx_table(no_headers, table="dSalesReps")
     actual = pd.read_excel(
         no_headers,
         engine="openpyxl",
@@ -91,7 +115,7 @@ def test_table_no_header():
 def test_tables():
     """Test output for multiple tables."""
     wb = load_workbook(filename, read_only=False)
-    expected = io.xlsx_table(wb, "Tables", ("dSalesReps", "dSupplier"))
+    expected = io.xlsx_table(wb, table=("dSalesReps", "dSupplier"))
     actual = {
         "dSalesReps": pd.read_excel(
             filename, engine="openpyxl", sheet_name="Tables", usecols="A:C"
@@ -108,7 +132,7 @@ def test_tables():
 
 def test_tables_none():
     """Test output for multiple tables."""
-    expected = io.xlsx_table(filename, "Tables")
+    expected = io.xlsx_table(filename)
     actual = {
         "dSalesReps": pd.read_excel(
             filename, engine="openpyxl", sheet_name="Tables", usecols="A:C"

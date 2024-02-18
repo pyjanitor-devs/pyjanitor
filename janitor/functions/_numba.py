@@ -708,6 +708,42 @@ def _numba_dual_join(df: pd.DataFrame, right: pd.DataFrame, gt_lt: list):
     # 3        4         3         5
     # 4        4         3         6
     ################################
+    def _fetch_regions(
+        df: pd.DataFrame,
+        right: pd.DataFrame,
+        left_on: str,
+        right_on: str,
+        op: str,
+    ) -> tuple:
+        left_c = df[left_on]
+        right_c = right[right_on]
+        outcome = _generic_func_cond_join(
+            left=left_c,
+            right=right_c,
+            op=op,
+            multiple_conditions=True,
+            keep="all",
+        )
+        if not outcome:
+            return None
+        left_index, right_index, search_indices = outcome
+        if op in greater_than_join_types:
+            right_index = right_index[::-1]
+            search_indices = right_index.size - search_indices
+        right_region = np.zeros(right_index.size, dtype=np.intp)
+        right_region[search_indices] = 1
+        right_region = right_region.cumsum() - 1
+        left_region = right_region[search_indices]
+        right_region = right_region[search_indices.min() :]
+        right_index = right_index[search_indices.min() :]
+        return (
+            left_index,
+            right_index,
+            search_indices,
+            left_region,
+            right_region,
+        )
+
     def _get_regions(
         df: pd.DataFrame,
         right: pd.DataFrame,
@@ -815,20 +851,22 @@ def _numba_dual_join(df: pd.DataFrame, right: pd.DataFrame, gt_lt: list):
 
     left_indices_and_regions = []
     right_indices_and_regions = []
+    A = []
+
     for condition in gt_lt:
-        result = _get_regions(df, right, *condition)
+        result = _fetch_regions(df, right, *condition)
         if result is None:
             return None
-        left_indices_and_regions.append(result[:2])
-        right_indices_and_regions.append(result[2:])
-
+        A.append(result)
+    return A
+    # left_indices_and_regions.append(result[:2])
+    # right_indices_and_regions.append(result[2:])
     left_indices_and_regions = _realign(left_indices_and_regions)
     if not left_indices_and_regions:
         return None
     right_indices_and_regions = _realign(right_indices_and_regions)
     if not right_indices_and_regions:
         return None
-
     # left_indices_and_regions[0] is sorted ascending
     # use this to get the base line positions for right_indices_and_regions
     # it marks the highest possible point, beyond which there are no matches
@@ -846,11 +884,24 @@ def _numba_dual_join(df: pd.DataFrame, right: pd.DataFrame, gt_lt: list):
         right_region = [array[~booleans] for array in right_region]
         right_index = right_index[~booleans]
 
+    index_sorter = np.lexsort((right_region[0], region_right))
+    print("\n\n")
+    return [
+        region_left,
+        region_right[index_sorter],
+        # search_indices,
+        left_region[0],
+        right_region[0][index_sorter],
+        # np.sort(right_region[0]),
+        # right_region[0].argsort(),
+    ]
     if len(left_region) == 1:
         left_region = left_region[0]
         right_region = right_region[0]
         # shortcut
         if pd.Series(left_region).is_monotonic_decreasing:
+            print("yaaayyy")
+            return 2
             return _get_indices_dual_monotonic_decreasing(
                 left_region=left_region,
                 right_region=right_region,
@@ -859,6 +910,7 @@ def _numba_dual_join(df: pd.DataFrame, right: pd.DataFrame, gt_lt: list):
                 search_indices=search_indices,
             )
 
+        return 1
         cummin_arr = np.minimum.accumulate(left_region)
         # no point searching if right_region is not greater
         # than the minimum at that point

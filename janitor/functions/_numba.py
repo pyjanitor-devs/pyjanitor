@@ -726,8 +726,8 @@ def _numba_multiple_non_equi_join(
             left_region,
             right_region,
         ) = result
-        left_indices.append(left_index)
-        right_indices.append(right_index)
+        left_indices.append(pd.Index(left_index))
+        right_indices.append(pd.Index(right_index))
         left_regions.append(left_region)
         right_regions.append(right_region)
     aligned_indices_and_regions = _align_indices_and_regions(
@@ -837,8 +837,8 @@ def _numba_multiple_non_equi_join(
 
     if (len(left_regions) == 1) and is_monotonic:
         return _get_indices_monotonic_non_equi(
-            left_index=left_index._values,
-            right_index=right_index._values,
+            left_index=left_index,
+            right_index=right_index,
             starts=starts,
             counts=counts,
         )
@@ -846,8 +846,8 @@ def _numba_multiple_non_equi_join(
         return _get_indices_dual_non_monotonic_non_equi(
             left_region=left_region2,
             right_region=right_region2,
-            left_index=left_index._values,
-            right_index=right_index._values,
+            left_index=left_index,
+            right_index=right_index,
             starts=starts,
             counts=counts,
         )
@@ -858,8 +858,8 @@ def _numba_multiple_non_equi_join(
     return _get_indices_multiple_non_equi(
         left_region=left_regionn,
         right_region=right_regionn,
-        left_index=left_index._values,
-        right_index=right_index._values,
+        left_index=left_index,
+        right_index=right_index,
         starts=starts,
         counts=counts,
     )
@@ -917,7 +917,7 @@ def _align_indices_and_regions(indices, regions):
         return None
     indices = [index.get_indexer(indexer) for index in indices]
     regions = [region[index] for region, index in zip(regions, indices)]
-    return indexer, regions
+    return indexer._values, regions
 
 
 @njit(parallel=True)
@@ -1107,8 +1107,8 @@ def _numba_single_non_equi_join(
         counts = starts[:]
         starts = np.zeros(starts.size, dtype=np.intp)
     return _get_indices_monotonic_non_equi(
-        left_index=left_index._values,
-        right_index=right_index._values,
+        left_index=left_index,
+        right_index=right_index,
         starts=starts,
         counts=counts,
     )

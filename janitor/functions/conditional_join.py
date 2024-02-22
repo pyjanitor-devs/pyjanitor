@@ -1042,8 +1042,8 @@ def _range_indices(
             return None
         left_c, right_index, pos = outcome
     if left_c.size < left_index.size:
-        keep_rows = left_c.get_indexer(left_index)
-        search_indices = search_indices[keep_rows != -1]
+        keep_rows = np.isin(left_index, left_c, assume_unique=True)
+        search_indices = search_indices[keep_rows]
         left_index = left_c
     # no point searching within (a, b)
     # if a == b
@@ -1081,7 +1081,7 @@ def _range_indices(
     # which are all in the original `df` and `right`
     # doing this allows some speed gains
     # while still ensuring correctness
-    left_c = df[left_on]._values[left_index._values]
+    left_c = df[left_on]._values[left_index]
     right_c = right[right_on]._values[right_index]
     ext_arr = is_extension_array_dtype(left_c)
     op = operator_map[op]

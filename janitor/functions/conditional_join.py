@@ -553,9 +553,9 @@ def _conditional_join_compute(
     else:
         left_on, right_on, op = conditions[0]
         if use_numba:
-            from janitor.functions._numba import _numba_single_join
+            from janitor.functions._numba import _numba_single_non_equi_join
 
-            result = _numba_single_join(
+            result = _numba_single_non_equi_join(
                 left=df[left_on],
                 right=right[right_on],
                 op=op,
@@ -847,8 +847,8 @@ def _multiple_conditional_join_le_lt(
     """
     if use_numba:
         from janitor.functions._numba import (
-            _numba_dual_join,
-            _numba_single_join,
+            _numba_multiple_non_equi_join,
+            _numba_single_non_equi_join,
         )
 
         gt_lt = [
@@ -862,11 +862,11 @@ def _multiple_conditional_join_le_lt(
         ]
         if len(gt_lt) == 1:
             left_on, right_on, op = gt_lt[0]
-            indices = _numba_single_join(
+            indices = _numba_single_non_equi_join(
                 df[left_on], right[right_on], op, keep="all"
             )
         else:
-            indices = _numba_dual_join(df, right, gt_lt)
+            indices = _numba_multiple_non_equi_join(df, right, gt_lt)
     else:
         # there is an opportunity for optimization for range joins
         # which is usually `lower_value < value < upper_value`

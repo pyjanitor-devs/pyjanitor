@@ -9,7 +9,6 @@ from pandas.api.types import is_datetime64_dtype, is_extension_array_dtype
 
 from janitor.functions.utils import (
     _generic_func_cond_join,
-    _null_checks_cond_join,
     greater_than_join_types,
     less_than_join_types,
 )
@@ -562,7 +561,9 @@ def _numba_equi_join_range_join(
     return l_index, r_index
 
 
-def _numba_dual_join(df: pd.DataFrame, right: pd.DataFrame, gt_lt: list):
+def _numba_multiple_non_equi_join(
+    df: pd.DataFrame, right: pd.DataFrame, gt_lt: list
+):
     """
     # https://www.scitepress.org/papers/2018/68268/68268.pdf
     An alternative to the _range_indices algorithm
@@ -710,71 +711,13 @@ def _numba_dual_join(df: pd.DataFrame, right: pd.DataFrame, gt_lt: list):
     # 3        4         3         5
     # 4        4         3         6
     ################################
-    def _get_regions(
-        df: pd.DataFrame,
-        right: pd.DataFrame,
-        left_on: str,
-        right_on: str,
-        op: str,
-    ) -> tuple:
-        """
-        Get the regions for df[left_on] and right[right_on].
-        Strictly for non-equi joins,
-        specifically the  >, >= , <, <= operators.
-
-        Returns a tuple of indices and regions.
-        """
-        left_c = df[left_on]
-        right_c = right[right_on]
-        outcome = _generic_func_cond_join(
-            left=left_c,
-            right=right_c,
-            op=op,
-            multiple_conditions=True,
-            keep="all",
-        )
-        if not outcome:
-            return None
-        left_index, right_index, search_indices = outcome
-        if op in greater_than_join_types:
-            right_index = right_index[::-1]
-            search_indices = right_index.size - search_indices
-        right_region = np.zeros(right_index.size, dtype=np.intp)
-        right_region[search_indices] = 1
-        right_region = right_region.cumsum() - 1
-        left_region = right_region[search_indices]
-        right_region = right_region[search_indices.min() :]
-        right_index = right_index[search_indices.min() :]
-        return (
-            left_index,
-            right_index,
-            left_region,
-            right_region,
-        )
-
-    def _align_indices_and_regions(indices, regions):
-        """
-        align the indices and regions
-        obtained from _get_regions.
-
-        A single index is returned, with the regions
-        properly aligned with the index.
-        """
-        indexer = reduce(
-            lambda x, y: x.join(y, how="inner", sort=False), indices
-        )
-        if indexer.empty:
-            return None
-        indices = [index.get_indexer(indexer) for index in indices]
-        regions = [region[index] for region, index in zip(regions, indices)]
-        return indexer, regions
 
     left_indices = []
     left_regions = []
     right_indices = []
     right_regions = []
-    for condition in gt_lt:
-        result = _get_regions(df, right, *condition)
+    for left_on, right_on, op in gt_lt:
+        result = _get_regions(left=df[left_on], right=right[right_on], op=op)
         if result is None:
             return None
         (
@@ -839,6 +782,9 @@ def _numba_dual_join(df: pd.DataFrame, right: pd.DataFrame, gt_lt: list):
 
     is_monotonic = False
     ser = pd.Series(right_region2)
+    # there is a fast path if is_monotonic is True
+    # we can get the matches via binary search
+    # which is preferable to a linear search
     if ser.is_monotonic_increasing:
         is_monotonic = True
         ends = right_region2.searchsorted(left_region2, side="left")
@@ -890,14 +836,14 @@ def _numba_dual_join(df: pd.DataFrame, right: pd.DataFrame, gt_lt: list):
         counts = ends - starts
 
     if (len(left_regions) == 1) and is_monotonic:
-        return _get_indices_dual_monotonic(
+        return _get_indices_monotonic_non_equi(
             left_index=left_index._values,
             right_index=right_index._values,
             starts=starts,
             counts=counts,
         )
     if len(left_regions) == 1:
-        return _get_indices_dual_non_monotonic(
+        return _get_indices_dual_non_monotonic_non_equi(
             left_region=left_region2,
             right_region=right_region2,
             left_index=left_index._values,
@@ -909,7 +855,7 @@ def _numba_dual_join(df: pd.DataFrame, right: pd.DataFrame, gt_lt: list):
     if is_monotonic:
         left_regionn = left_regionn[:, 1:]
         right_regionn = right_regionn[:, 1:]
-    return _get_indices_multiple(
+    return _get_indices_multiple_non_equi(
         left_region=left_regionn,
         right_region=right_regionn,
         left_index=left_index._values,
@@ -919,8 +865,63 @@ def _numba_dual_join(df: pd.DataFrame, right: pd.DataFrame, gt_lt: list):
     )
 
 
+def _get_regions(
+    left: pd.Series,
+    right: pd.Series,
+    op: str,
+) -> tuple:
+    """
+    Get the regions for df[left_on] and right[right_on].
+    Strictly for non-equi joins,
+    specifically the  >, >= , <, <= operators.
+
+    Returns a tuple of indices and regions.
+    """
+    outcome = _generic_func_cond_join(
+        left=left,
+        right=right,
+        op=op,
+        multiple_conditions=True,
+        keep="all",
+    )
+    if not outcome:
+        return None
+    left_index, right_index, search_indices = outcome
+    if op in greater_than_join_types:
+        right_index = right_index[::-1]
+        search_indices = right_index.size - search_indices
+    right_region = np.zeros(right_index.size, dtype=np.intp)
+    right_region[search_indices] = 1
+    right_region = right_region.cumsum() - 1
+    left_region = right_region[search_indices]
+    right_region = right_region[search_indices.min() :]
+    right_index = right_index[search_indices.min() :]
+    return (
+        left_index,
+        right_index,
+        left_region,
+        right_region,
+    )
+
+
+def _align_indices_and_regions(indices, regions):
+    """
+    align the indices and regions
+    obtained from _get_regions.
+
+    A single index is returned, with the regions
+    properly aligned with the index.
+    """
+    indexer = reduce(lambda x, y: x.join(y, how="inner", sort=False), indices)
+    if indexer.empty:
+        return None
+    indices = [index.get_indexer(indexer) for index in indices]
+    regions = [region[index] for region, index in zip(regions, indices)]
+    return indexer, regions
+
+
 @njit(parallel=True)
-def _get_indices_multiple(
+def _get_indices_multiple_non_equi(
     left_region: np.ndarray,
     right_region: np.ndarray,
     left_index: np.ndarray,
@@ -931,7 +932,8 @@ def _get_indices_multiple(
     """
     Retrieves the matching indices
     for the left and right regions.
-    Strictly for non-equi joins (multiple regions).
+    Strictly for non-equi joins,
+    where the join conditions are more than two.
     """
     # two step pass
     # first pass gets the length of the final indices
@@ -988,15 +990,19 @@ def _get_indices_multiple(
 
 
 @njit(parallel=True)
-def _get_indices_dual_monotonic(
+def _get_indices_monotonic_non_equi(
     left_index: np.ndarray,
     right_index: np.ndarray,
     starts: np.ndarray,
     counts: np.ndarray,
 ) -> tuple:
     """
-    Retrieve matching indices.
-    Applies to dual non-equi joins.
+    Retrieves the matching indices
+    for the left and right regions.
+    Strictly for non-equi joins,
+    where at most, only two join conditions are present.
+    This is a fast path, compared to
+    _get_indices_dual_non_monotonic_non_equi.
     """
     # compute the starting positions in the left index
     # e.g if counts is [2, 4, 6]
@@ -1021,7 +1027,7 @@ def _get_indices_dual_monotonic(
 
 
 @njit(parallel=True)
-def _get_indices_dual_non_monotonic(
+def _get_indices_dual_non_monotonic_non_equi(
     left_region: np.ndarray,
     right_region: np.ndarray,
     left_index: np.ndarray,
@@ -1032,7 +1038,8 @@ def _get_indices_dual_non_monotonic(
     """
     Retrieves the matching indices
     for the left and right regions.
-    Strictly for non-equi joins (two regions).
+    Strictly for non-equi joins,
+    where only two join conditions are present.
     """
     # TODO: use a balanced binary tree for more perf?
     # two step pass
@@ -1076,295 +1083,32 @@ def _get_indices_dual_non_monotonic(
     return l_index, r_index
 
 
-@njit()
-def _less_than_index_numba(arr: np.ndarray, value, low, high) -> int:
-    """
-    Get the index position of a value in an array.
-    """
-    while low < high:
-        mid = low + (high - low) // 2
-        if arr[mid] < value:
-            low = mid + 1
-        else:
-            high = mid
-    return low
-
-
-@njit()
-def _greater_than_index_numba(arr: np.ndarray, value, low, high) -> int:
-    """
-    Get the index position of a value in an array.
-    """
-    while low < high:
-        mid = low + (high - low) // 2
-        if value < arr[mid]:
-            high = mid
-        else:
-            low = mid + 1
-    return low
-
-
-@njit(parallel=True)
-def _greater_than_indices_numba(
-    left_array: np.ndarray,
-    right_array: np.ndarray,
-    left_index: np.ndarray,
-    right_index: np.ndarray,
-    right_is_sorted: bool,
-    keep: str,
-    any_nulls: bool,
-    strict: bool = False,
-) -> np.ndarray:
-    """
-    Get indices for greater than join
-    """
-    low = 0
-    high = len(right_array)
-    length = len(left_array)
-    counts = 0
-    exclude = 0
-    positions = np.empty(length, dtype=np.intp)
-    booleans = np.ones(length, dtype=np.bool_)
-    for num in prange(length):
-        value = left_array[num]
-        pos = _greater_than_index_numba(right_array, value, low, high)
-        if pos == low:
-            exclude += 1
-            booleans[num] = False
-            continue
-        if strict and (right_array[pos - 1] == value):
-            pos = _less_than_index_numba(right_array, value, low, pos - 1)
-            if pos == low:
-                booleans[num] = False
-                exclude += 1
-                continue
-        positions[num] = pos
-        counts += pos
-    if counts == 0:
-        return None, None
-
-    if exclude > 0:
-        positions = positions[booleans]
-        left_index = left_index[booleans]
-        booleans = None
-    length = len(positions)
-    if right_is_sorted and (keep == "last"):
-        right_arr = np.empty(length, dtype=np.intp)
-        if any_nulls:
-            for num in prange(length):
-                right_arr[num] = right_index[positions[num] - 1]
-            return left_index, right_arr
-        return left_index, positions - 1
-
-    if keep == "first":
-        right_arr = np.empty(length, dtype=np.intp)
-        for num in prange(length):
-            pos = positions[num]
-            minimum = right_index[0]
-            for n in range(pos):
-                value = right_index[n]
-                if value < minimum:
-                    minimum = value
-            right_arr[num] = minimum
-        return left_index, right_arr
-
-    if keep == "last":
-        right_arr = np.empty(length, dtype=np.intp)
-        for num in prange(length):
-            pos = positions[num]
-            maximum = right_index[0]
-            for n in range(pos):
-                value = right_index[n]
-                if value > maximum:
-                    maximum = value
-            right_arr[num] = maximum
-        return left_index, right_arr
-
-    starts = np.empty(length, dtype=np.intp)
-    starts[0] = 0
-    starts[1:] = np.cumsum(positions[:-1])
-    left_arr = np.empty(counts, dtype=np.intp)
-    right_arr = np.empty(counts, dtype=np.intp)
-    for num in prange(length):
-        start = starts[num]
-        pos = positions[num]
-        l_index = left_index[num]
-        for n in range(pos):
-            left_arr[start + n] = l_index
-            right_arr[start + n] = right_index[n]
-
-    return left_arr, right_arr
-
-
-@njit(parallel=True)
-def _less_than_indices_numba(
-    left_array: np.ndarray,
-    right_array: np.ndarray,
-    left_index: np.ndarray,
-    right_index: np.ndarray,
-    right_is_sorted: bool,
-    keep: str,
-    any_nulls: bool,
-    strict: bool = False,
-) -> np.ndarray:
-    """
-    Get indices for less than join
-    """
-    low = 0
-    high = len(right_array)
-    length = len(left_array)
-    positions = np.empty(length, dtype=np.intp)
-    booleans = np.ones(length, dtype=np.bool_)
-    counts = 0
-    exclude = 0
-    for num in prange(length):
-        value = left_array[num]
-        pos = _less_than_index_numba(right_array, value, low, high)
-        if pos == high:
-            booleans[num] = False
-            exclude += 1
-            continue
-        if strict and (right_array[pos] == value):
-            pos = _greater_than_index_numba(right_array, value, pos + 1, high)
-            if pos == high:
-                booleans[num] = False
-                exclude += 1
-                continue
-        positions[num] = pos
-        counts += high - pos
-    if counts == 0:
-        return None, None
-
-    if exclude > 0:
-        positions = positions[booleans]
-        left_index = left_index[booleans]
-        booleans = None
-    length = len(positions)
-    if right_is_sorted and (keep == "first"):
-        right_arr = np.empty(length, dtype=np.intp)
-        if any_nulls:
-            for num in prange(length):
-                right_arr[num] = right_index[positions[num]]
-            return left_index, right_arr
-        return left_index, positions
-
-    if keep == "first":
-        right_arr = np.empty(length, dtype=np.intp)
-        for num in prange(length):
-            pos = positions[num]
-            minimum = right_index[pos]
-            for n in range(pos, high):
-                value = right_index[n]
-                if value < minimum:
-                    minimum = value
-            right_arr[num] = minimum
-        return left_index, right_arr
-
-    if keep == "last":
-        right_arr = np.empty(length, dtype=np.intp)
-        for num in prange(length):
-            pos = positions[num]
-            maximum = right_index[pos]
-            for n in range(pos, high):
-                value = right_index[n]
-                if value > maximum:
-                    maximum = value
-            right_arr[num] = maximum
-        return left_index, right_arr
-
-    starts = np.empty(length, dtype=np.intp)
-    starts[0] = 0
-    starts[1:] = np.cumsum((high - positions)[:-1])
-    left_arr = np.empty(counts, dtype=np.intp)
-    right_arr = np.empty(counts, dtype=np.intp)
-    for num in prange(length):
-        start = starts[num]
-        pos = positions[num]
-        l_index = left_index[num]
-        for n in range(high - pos):
-            left_arr[start + n] = l_index
-            right_arr[start + n] = right_index[pos + n]
-
-    return left_arr, right_arr
-
-
-def _numba_single_join(
+def _numba_single_non_equi_join(
     left: pd.Series,
     right: pd.Series,
     op: str,
     keep: str,
 ) -> tuple:
     """Return matching indices for single non-equi join."""
-
-    if op == "!=":
+    if (op == "!=") or (keep != "all"):
         return _generic_func_cond_join(
-            left=left,
-            right=right,
-            op=op,
-            multiple_conditions=True,
-            keep=keep,
+            left=left, right=right, op=op, multiple_conditions=False, keep=keep
         )
 
-    strict = True if op in {"<", ">"} else False
-
-    if op in less_than_join_types:
-        # quick break, avoiding the hassle
-        if left.min() > right.max():
-            return None
-
-        outcome = _null_checks_cond_join(left=left, right=right)
-        if not outcome:
-            return None
-        (
-            left,
-            right,
-            left_index,
-            right_index,
-            right_is_sorted,
-            any_nulls,
-        ) = outcome
-
-        left, right = _convert_to_numpy(left=left, right=right)
-        outcome = _less_than_indices_numba(
-            left_array=left,
-            right_array=right,
-            strict=strict,
-            left_index=left_index,
-            right_index=right_index,
-            keep=keep,
-            right_is_sorted=right_is_sorted,
-            any_nulls=any_nulls,
-        )
-
-    elif op in greater_than_join_types:
-        # quick break, avoiding the hassle
-        if left.max() < right.min():
-            return None
-
-        outcome = _null_checks_cond_join(left=left, right=right)
-        if not outcome:
-            return None
-        (
-            left,
-            right,
-            left_index,
-            right_index,
-            right_is_sorted,
-            any_nulls,
-        ) = outcome
-
-        left, right = _convert_to_numpy(left=left, right=right)
-        outcome = _greater_than_indices_numba(
-            left_array=left,
-            right_array=right,
-            strict=strict,
-            left_index=left_index,
-            right_index=right_index,
-            keep=keep,
-            right_is_sorted=right_is_sorted,
-            any_nulls=any_nulls,
-        )
-
-    if outcome[0] is None:
+    outcome = _generic_func_cond_join(
+        left=left, right=right, op=op, multiple_conditions=True, keep="all"
+    )
+    if outcome is None:
         return None
-    return outcome
+    left_index, right_index, starts = outcome
+    if op in less_than_join_types:
+        counts = right_index.size - starts
+    else:
+        counts = starts[:]
+        starts = np.zeros(starts.size, dtype=np.intp)
+    return _get_indices_monotonic_non_equi(
+        left_index=left_index._values,
+        right_index=right_index._values,
+        starts=starts,
+        counts=counts,
+    )

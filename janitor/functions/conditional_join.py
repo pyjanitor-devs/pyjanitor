@@ -1074,6 +1074,9 @@ def _range_indices(
 
     right_index = np.concatenate(right_index)
     left_index = left_index.repeat(repeater)
+
+    if fastpath:
+        return left_index, right_index
     # here we search for actual positions
     # where left_c is </<= right_c
     # safe to index the arrays, since we are picking the positions

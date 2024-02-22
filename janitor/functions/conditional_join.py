@@ -569,7 +569,7 @@ def _conditional_join_compute(
                 multiple_conditions=False,
                 keep=keep,
             )
-    return result
+    # return result
     if result is None:
         result = np.array([], dtype=np.intp), np.array([], dtype=np.intp)
 
@@ -944,7 +944,7 @@ def _multiple_conditional_join_le_lt(
                 multiple_conditions=False,
                 keep="all",
             )
-    return indices
+    # return indices
     if not indices:
         return None
 
@@ -957,6 +957,8 @@ def _multiple_conditional_join_le_lt(
         indices = _generate_indices(*indices, conditions)
         if not indices:
             return None
+
+    # return indices
 
     return _keep_output(keep, *indices)
 
@@ -1061,6 +1063,7 @@ def _range_indices(
         search_indices = search_indices[keep_rows]
 
     repeater = search_indices - pos
+    # return repeater.sum()
     if (repeater == 1).all():
         # no point running a comparison op
         # if the width is all 1

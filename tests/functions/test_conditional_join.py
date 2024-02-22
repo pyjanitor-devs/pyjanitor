@@ -1261,18 +1261,22 @@ def test_single_condition_not_equal_floats_only(df, right):
         .assign(index=df.index)
         .merge(right[["Numeric"]], how="cross")
         .loc[lambda df: df.B != df.Numeric]
-        .groupby("index")
+        .groupby("index", sort=False)
         .tail(1)
         .drop(columns="index")
-        .reset_index(drop=True)
+        .sort_values(["B", "Numeric"], ignore_index=True)
     )
 
-    actual = df[["B"]].conditional_join(
-        right[["Numeric"]],
-        ("B", "Numeric", "!="),
-        how="inner",
-        keep="last",
-        sort_by_appearance=False,
+    actual = (
+        df[["B"]]
+        .conditional_join(
+            right[["Numeric"]],
+            ("B", "Numeric", "!="),
+            how="inner",
+            keep="last",
+            sort_by_appearance=False,
+        )
+        .sort_values(["B", "Numeric"], ignore_index=True)
     )
 
     assert_frame_equal(expected, actual)
@@ -1326,15 +1330,19 @@ def test_single_condition_not_equal_datetime(df, right):
         .groupby("index")
         .head(1)
         .drop(columns="index")
-        .reset_index(drop=True)
+        .sort_values(["E", "Dates"], ignore_index=True)
     )
 
-    actual = df[["E"]].conditional_join(
-        right[["Dates"]],
-        ("E", "Dates", "!="),
-        how="inner",
-        keep="first",
-        sort_by_appearance=False,
+    actual = (
+        df[["E"]]
+        .conditional_join(
+            right[["Dates"]],
+            ("E", "Dates", "!="),
+            how="inner",
+            keep="first",
+            sort_by_appearance=False,
+        )
+        .sort_values(["E", "Dates"], ignore_index=True)
     )
 
     assert_frame_equal(expected, actual)
@@ -3823,7 +3831,6 @@ def test_multiple_non_eq_numba(df, right):
         .groupby("index")
         .head(1)
         .drop(columns="index")
-        .reset_index(drop=True)
         .sort_values(
             ["B", "A", "E", "Floats", "Integers", "Dates"], ignore_index=True
         )

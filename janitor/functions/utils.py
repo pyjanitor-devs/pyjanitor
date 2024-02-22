@@ -720,9 +720,9 @@ def _null_checks_cond_join(
     if not right_is_sorted:
         right = right.sort_values(kind="stable")
 
-    left_index = left.index._values
+    left_index = left.index
     left = left._values
-    right_index = right.index._values
+    right_index = right.index
     right = right._values
 
     return left, right, left_index, right_index, right_is_sorted, any_nulls
@@ -816,7 +816,8 @@ def _less_than_indices(
     if keep == "last":
         right = [arr.max() for arr in right]
         return left_index, right
-    right = np.concatenate(right)
+    start, *right = right
+    right = start.append(right)
     left = left_index.repeat(len_right - search_indices)
     return left, right
 
@@ -903,7 +904,8 @@ def _greater_than_indices(
     if keep == "last":
         right = [arr.max() for arr in right]
         return left_index, right
-    right = np.concatenate(right)
+    start, *right = right
+    right = start.append(right)
     left = left_index.repeat(search_indices)
     return left, right
 
@@ -920,7 +922,7 @@ def _not_equal_indices(left: pd.Series, right: pd.Series, keep: str) -> tuple:
     is returned.
     """
 
-    dummy = np.array([], dtype=int)
+    dummy = np.array([], dtype=np.intp)
 
     # deal with nulls
     l1_nulls = dummy
@@ -930,13 +932,12 @@ def _not_equal_indices(left: pd.Series, right: pd.Series, keep: str) -> tuple:
     any_left_nulls = left.isna()
     any_right_nulls = right.isna()
     if any_left_nulls.any():
-        l1_nulls = left.index[any_left_nulls.array]
-        l1_nulls = l1_nulls.to_numpy(copy=False)
-        r1_nulls = right.index
+        l1_nulls = left.index[any_left_nulls]
+        l1_nulls = l1_nulls._values
+        r1_nulls = right.index._values
         # avoid NAN duplicates
         if any_right_nulls.any():
-            r1_nulls = r1_nulls[~any_right_nulls.array]
-        r1_nulls = r1_nulls.to_numpy(copy=False)
+            r1_nulls = r1_nulls[~any_right_nulls]
         nulls_count = l1_nulls.size
         # blow up nulls to match length of right
         l1_nulls = np.tile(l1_nulls, r1_nulls.size)
@@ -944,9 +945,9 @@ def _not_equal_indices(left: pd.Series, right: pd.Series, keep: str) -> tuple:
         if nulls_count > 1:
             r1_nulls = np.repeat(r1_nulls, nulls_count)
     if any_right_nulls.any():
-        r2_nulls = right.index[any_right_nulls.array]
-        r2_nulls = r2_nulls.to_numpy(copy=False)
-        l2_nulls = left.index
+        r2_nulls = right.index[any_right_nulls]
+        r2_nulls = r2_nulls._values
+        l2_nulls = left.index._values
         nulls_count = r2_nulls.size
         # blow up nulls to match length of left
         r2_nulls = np.tile(r2_nulls, l2_nulls.size)
@@ -960,12 +961,14 @@ def _not_equal_indices(left: pd.Series, right: pd.Series, keep: str) -> tuple:
     outcome = _less_than_indices(
         left, right, strict=True, multiple_conditions=False, keep=keep
     )
-
     if outcome is None:
         lt_left = dummy
         lt_right = dummy
     else:
         lt_left, lt_right = outcome
+        if keep == "all":
+            lt_left = lt_left._values
+            lt_right = lt_right._values
 
     outcome = _greater_than_indices(
         left, right, strict=True, multiple_conditions=False, keep=keep
@@ -976,6 +979,9 @@ def _not_equal_indices(left: pd.Series, right: pd.Series, keep: str) -> tuple:
         gt_right = dummy
     else:
         gt_left, gt_right = outcome
+        if keep == all:
+            gt_left = gt_left._values
+            gt_right = gt_right._values
 
     left = np.concatenate([lt_left, gt_left, l1_nulls])
     right = np.concatenate([lt_right, gt_right, r1_nulls])
@@ -1030,7 +1036,7 @@ def _keep_output(keep: str, left: np.ndarray, right: np.ndarray):
     """return indices for left and right index based on the value of `keep`."""
     if keep == "all":
         return left, right
-    grouped = pd.Series(right).groupby(left)
+    grouped = pd.Series(right).groupby(left, sort=False)
     if keep == "first":
         grouped = grouped.min()
         return grouped.index, grouped.array

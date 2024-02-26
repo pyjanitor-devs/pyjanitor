@@ -4019,6 +4019,42 @@ def test_multiple_eqs_col_syntax(df, right):
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
+def test_multiple_eqs_col_syntax_numba(df, right):
+    """Test output for multiple conditions."""
+
+    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+    expected = (
+        df.merge(
+            right,
+            left_on=["B", "A"],
+            right_on=["Floats", "Integers"],
+            how="inner",
+            sort=False,
+        )
+        .loc[lambda df: df.E.ne(df.Dates), columns]
+        .sort_values(columns, ignore_index=True)
+    )
+    expected = expected.filter(columns)
+    actual = (
+        df[["B", "A", "E"]]
+        .conditional_join(
+            right[["Floats", "Integers", "Dates"]],
+            col("E") > col("Dates"),
+            col("B") == col("Floats"),
+            col("A") == col("Integers"),
+            how="inner",
+            sort_by_appearance=False,
+            use_numba=True,
+        )
+        .sort_values(columns, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
 def test_eq_strings(df, right):
     """Test output for joins on strings."""
 

@@ -133,7 +133,7 @@ def convert_datetime_to_number(
         <xarray.DataArray (time: 6)> Size: 48B
         array([2, 8, 0, 1, 7, 7])
         Coordinates:
-          * time     (time) float64 0.0 60.0 120.0 180.0 240.0 300.0
+          * time     (time) float64 48B 0.0 60.0 120.0 180.0 240.0 300.0
 
     Args:
         da_or_ds: XArray object.

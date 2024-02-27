@@ -3470,8 +3470,10 @@ def test_ge_eq_and_le_datess_numba_indices(df, right):
     expected = pd.Index(expected)
 
     actual, _ = get_join_indices(
-        df[["B", "A", "E"]],
-        right[["Floats", "Integers", "Dates", "Numeric"]],
+        df[["B", "A", "E"]].dropna(subset=["E"]),
+        right[["Floats", "Integers", "Dates", "Numeric"]].dropna(
+            subset=["Dates"]
+        ),
         [
             ("A", "Integers", "<"),
             ("E", "Dates", "=="),

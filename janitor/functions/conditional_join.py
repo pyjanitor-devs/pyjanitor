@@ -58,8 +58,13 @@ def conditional_join(
     Column selection in `df_columns` and `right_columns` is possible using the
     [`select`][janitor.functions.select.select] syntax.
 
-    Performance might be improved by setting `use_numba` to `True`.
+    Performance might be improved by setting `use_numba` to `True` -
+    this can be handy for equi joins that have lots of duplicated keys.
     This assumes that `numba` is installed.
+
+    Noticeable performance can be observed for range joins,
+    if both join columns from the right dataframe
+    are monotonically increasing.
 
     This function returns rows, if any, where values from `df` meet the
     condition(s) for values from `right`. The conditions are passed in

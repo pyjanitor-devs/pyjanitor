@@ -3520,12 +3520,10 @@ def test_eq_indices(df, right):
 @pytest.mark.turtle
 def test_ge_eq_and_le_datess_indices(df, right):
     """compare join indices for multiple conditions."""
-
     expected = (
         df.reset_index()
-        .dropna(subset=["E"])
         .merge(
-            right.dropna(subset=["Dates"]),
+            right,
             left_on="E",
             right_on="Dates",
             how="inner",

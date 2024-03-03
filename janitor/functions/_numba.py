@@ -561,6 +561,37 @@ def _numba_equi_join_range_join(
     return l_index, r_index
 
 
+def _numba_single_non_equi_join(
+    left: pd.Series,
+    right: pd.Series,
+    op: str,
+    keep: str,
+) -> tuple:
+    """Return matching indices for single non-equi join."""
+    if (op == "!=") or (keep != "all"):
+        return _generic_func_cond_join(
+            left=left, right=right, op=op, multiple_conditions=False, keep=keep
+        )
+
+    outcome = _generic_func_cond_join(
+        left=left, right=right, op=op, multiple_conditions=True, keep="all"
+    )
+    if outcome is None:
+        return None
+    left_index, right_index, starts = outcome
+    if op in less_than_join_types:
+        counts = right_index.size - starts
+    else:
+        counts = starts[:]
+        starts = np.zeros(starts.size, dtype=np.intp)
+    return _get_indices_monotonic_non_equi(
+        left_index=left_index,
+        right_index=right_index,
+        starts=starts,
+        counts=counts,
+    )
+
+
 def _numba_multiple_non_equi_join(
     df: pd.DataFrame, right: pd.DataFrame, gt_lt: list
 ):
@@ -751,8 +782,7 @@ def _numba_multiple_non_equi_join(
     left_regions = np.column_stack(left_regions)
     right_regions = np.column_stack(right_regions)
     starts = right_regions[:, 0].searchsorted(left_regions[:, 0])
-    no_of_rows, no_of_cols = right_regions.shape
-    booleans = starts == no_of_rows
+    booleans = starts == right_regions.shape[0]
     if booleans.all(axis=None):
         return None
     if booleans.any(axis=None):
@@ -807,14 +837,14 @@ def _numba_multiple_non_equi_join(
         ends = right_region.size - ends
         counts = ends - starts
 
-    if (no_of_cols == 1) and is_monotonic:
+    if (len(gt_lt) == 1) and is_monotonic:
         return _get_indices_monotonic_non_equi(
             left_index=left_index,
             right_index=right_index,
             starts=starts,
             counts=counts,
         )
-    if no_of_cols == 1:
+    if len(gt_lt) == 1:
         return _get_indices_dual_non_monotonic_non_equi(
             left_region=left_region,
             right_region=right_region,
@@ -1017,6 +1047,8 @@ def _get_indices_dual_non_monotonic_non_equi(
     # two step pass
     # first pass gets the length of the final indices
     # second pass populates the final indices with actual values
+    # a linear search is used here, which works great for small arrays
+    # TODO : find a more performant approach (maintainable as well)
     count_indices = np.empty(counts.size, dtype=np.intp)
     total_length = 0
     for num in prange(counts.size):
@@ -1054,34 +1086,3 @@ def _get_indices_dual_non_monotonic_non_equi(
             indexer += 1
             width -= 1
     return l_index, r_index
-
-
-def _numba_single_non_equi_join(
-    left: pd.Series,
-    right: pd.Series,
-    op: str,
-    keep: str,
-) -> tuple:
-    """Return matching indices for single non-equi join."""
-    if (op == "!=") or (keep != "all"):
-        return _generic_func_cond_join(
-            left=left, right=right, op=op, multiple_conditions=False, keep=keep
-        )
-
-    outcome = _generic_func_cond_join(
-        left=left, right=right, op=op, multiple_conditions=True, keep="all"
-    )
-    if outcome is None:
-        return None
-    left_index, right_index, starts = outcome
-    if op in less_than_join_types:
-        counts = right_index.size - starts
-    else:
-        counts = starts[:]
-        starts = np.zeros(starts.size, dtype=np.intp)
-    return _get_indices_monotonic_non_equi(
-        left_index=left_index,
-        right_index=right_index,
-        starts=starts,
-        counts=counts,
-    )

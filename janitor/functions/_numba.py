@@ -837,14 +837,18 @@ def _numba_multiple_non_equi_join(
         ends = right_region.size - ends
         counts = ends - starts
 
-    if (len(gt_lt) == 1) and is_monotonic:
+    if (len(gt_lt) == 2) and (counts.max() == 1):
+        # no point running a comparison op
+        # if the width is all 1
+        return left_index, right_index[starts]
+    if (len(gt_lt) == 2) and is_monotonic:
         return _get_indices_monotonic_non_equi(
             left_index=left_index,
             right_index=right_index,
             starts=starts,
             counts=counts,
         )
-    if len(gt_lt) == 1:
+    if len(gt_lt) == 2:
         return _get_indices_dual_non_monotonic_non_equi(
             left_region=left_region,
             right_region=right_region,
@@ -1047,8 +1051,6 @@ def _get_indices_dual_non_monotonic_non_equi(
     # two step pass
     # first pass gets the length of the final indices
     # second pass populates the final indices with actual values
-    # a linear search is used here, which works great for small arrays
-    # TODO : find a more performant approach (maintainable as well)
     count_indices = np.empty(counts.size, dtype=np.intp)
     total_length = 0
     for num in prange(counts.size):
@@ -1058,10 +1060,9 @@ def _get_indices_dual_non_monotonic_non_equi(
         counter = 0
         for n in range(size):
             r_region = right_region[start + n]
-            if l_region > r_region:
-                continue
-            total_length += 1
-            counter += 1
+            out = l_region <= r_region
+            total_length += out
+            counter += out
         count_indices[num] = counter
     start_indices = np.zeros(starts.size, dtype=np.intp)
     start_indices[1:] = np.cumsum(count_indices)[:-1]
@@ -1074,15 +1075,22 @@ def _get_indices_dual_non_monotonic_non_equi(
         r_indexer = starts[num]
         l_region = left_region[num]
         width = count_indices[num]
-        for n in range(size):
-            if not width:
-                break
-            pos_right = r_indexer + n
-            r_region = right_region[pos_right]
-            if l_region > r_region:
-                continue
-            l_index[indexer] = l_ind
-            r_index[indexer] = right_index[pos_right]
-            indexer += 1
-            width -= 1
+        # if width == size,
+        # no need for comparision within the iteration
+        if width == size:
+            for n in range(size):
+                l_index[indexer + n] = l_ind
+                r_index[indexer + n] = right_index[r_indexer + n]
+        else:
+            for n in range(size):
+                if not width:
+                    break
+                pos_right = r_indexer + n
+                r_region = right_region[pos_right]
+                if l_region > r_region:
+                    continue
+                l_index[indexer] = l_ind
+                r_index[indexer] = right_index[pos_right]
+                indexer += 1
+                width -= 1
     return l_index, r_index

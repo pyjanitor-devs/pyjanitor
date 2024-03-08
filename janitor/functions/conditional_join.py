@@ -574,7 +574,7 @@ def _conditional_join_compute(
                 multiple_conditions=False,
                 keep=keep,
             )
-
+    return result
     if result is None:
         result = np.array([], dtype=np.intp), np.array([], dtype=np.intp)
 
@@ -950,7 +950,7 @@ def _multiple_conditional_join_le_lt(
                 multiple_conditions=False,
                 keep="all",
             )
-
+    return indices
     if not indices:
         return None
 
@@ -1067,13 +1067,12 @@ def _range_indices(
         search_indices = search_indices[keep_rows]
 
     repeater = search_indices - pos
-    if (repeater == 1).all():
+    if repeater.max() == 1:
         # no point running a comparison op
         # if the width is all 1
         # this also implies that the intervals
         # do not overlap on the right side
         return left_index, right_index[pos]
-
     right_index = [
         right_index[start:end] for start, end in zip(pos, search_indices)
     ]

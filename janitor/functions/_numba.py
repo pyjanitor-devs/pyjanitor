@@ -4,7 +4,7 @@ from functools import reduce
 
 import numpy as np
 import pandas as pd
-from numba import njit, prange
+from numba import njit, prange, typed, types
 from pandas.api.types import is_datetime64_dtype, is_extension_array_dtype
 
 from janitor.functions.utils import (
@@ -764,24 +764,25 @@ def _numba_multiple_non_equi_join(
         right_indices.append(right_index)
         left_regions.append(left_region)
         right_regions.append(right_region)
-
-    aligned_indices_and_regions = _align_indices_and_regions(
-        indices=left_indices, regions=left_regions
-    )
-    if not aligned_indices_and_regions:
-        return None
-    left_index, left_regions = aligned_indices_and_regions
-
+    # aligned_indices_and_regions = _align_indices_and_regions(
+    #     indices=left_indices, regions=left_regions
+    # )
+    # if not aligned_indices_and_regions:
+    #     return None
+    # left_index, left_regions = aligned_indices_and_regions
+    return right_indices, right_regions
     aligned_indices_and_regions = _align_indices_and_regions(
         indices=right_indices, regions=right_regions
     )
+    return aligned_indices_and_regions
     if not aligned_indices_and_regions:
         return None
     right_index, right_regions = aligned_indices_and_regions
-
     left_regions = np.column_stack(left_regions)
     right_regions = np.column_stack(right_regions)
-    starts = right_regions[:, 0].searchsorted(left_regions[:, 0])
+    left_region1 = left_regions[:, 0]
+    right_region1 = right_regions[:, 0]
+    starts = right_region1.searchsorted(left_region1)
     booleans = starts == right_regions.shape[0]
     if booleans.all(axis=None):
         return None
@@ -796,6 +797,7 @@ def _numba_multiple_non_equi_join(
     # since the left region should be <= right region
     # no need to include the first columns in the check,
     # since that is already sorted above with the binary search
+
     left_regions = left_regions[:, 1:]
     right_regions = right_regions[:, 1:]
     cum_max_arr = np.maximum.accumulate(right_regions[::-1])[::-1]
@@ -808,6 +810,7 @@ def _numba_multiple_non_equi_join(
         left_regions = left_regions[booleans]
         left_index = left_index[booleans]
         starts = starts[booleans]
+    booleans = booleans.sum(axis=None)
 
     cum_max_arr = cum_max_arr[:, 0]
     left_region = left_regions[:, 0]
@@ -849,6 +852,26 @@ def _numba_multiple_non_equi_join(
             counts=counts,
         )
     if len(gt_lt) == 2:
+        return 1111111
+        # return a, left_region, b, right_region, starts, starts+counts
+        if not pd.Series(left_region1).is_monotonic_increasing:
+            sorter = left_region1.argsort()
+            left_region = left_region[sorter]
+            starts = starts[sorter]
+            left_index = left_index[sorter]
+            counts = counts[sorter]
+        list_type = types.ListType(right_index.dtype)
+        return list_type
+        return _get_indices_dual_non_monotonic_non_equii(
+            left_region=left_region,
+            right_region=right_region,
+            left_index=left_index,
+            right_index=right_index,
+            starts=starts,
+            counts=counts,
+            list_type=list_type,
+        )
+
         return _get_indices_dual_non_monotonic_non_equi(
             left_region=left_region,
             right_region=right_region,
@@ -898,7 +921,7 @@ def _get_regions_non_equi(
         search_indices = right_index.size - search_indices
     right_region = np.zeros(right_index.size, dtype=np.intp)
     right_region[search_indices] = 1
-    right_region = right_region.cumsum()
+    right_region = right_region.cumsum() - 1
     left_region = right_region[search_indices]
     right_region = right_region[search_indices.min() :]
     right_index = right_index[search_indices.min() :]
@@ -919,6 +942,7 @@ def _align_indices_and_regions(indices, regions):
     properly aligned with the index.
     """
     indexer = reduce(lambda x, y: x.join(y, how="inner", sort=False), indices)
+    return indexer
     if indexer.empty:
         return None
     indices = [index.get_indexer(indexer) for index in indices]
@@ -1064,6 +1088,7 @@ def _get_indices_dual_non_monotonic_non_equi(
             total_length += out
             counter += out
         count_indices[num] = counter
+    return count_indices
     start_indices = np.zeros(starts.size, dtype=np.intp)
     start_indices[1:] = np.cumsum(count_indices)[:-1]
     l_index = np.empty(total_length, dtype=np.intp)
@@ -1094,3 +1119,101 @@ def _get_indices_dual_non_monotonic_non_equi(
                 indexer += 1
                 width -= 1
     return l_index, r_index
+
+
+@njit()
+def _get_indices_dual_non_monotonic_non_equii(
+    left_region: np.ndarray,
+    right_region: np.ndarray,
+    left_index: np.ndarray,
+    right_index: np.ndarray,
+    starts: np.ndarray,
+    counts: np.ndarray,
+    list_type,
+):
+    """
+    Retrieves the matching indices
+    for the left and right regions.
+    Strictly for non-equi joins,
+    where only two join conditions are present.
+    """
+    return 1
+    # two step pass
+    # first pass gets the length of the final indices
+    # second pass populates the final indices with actual values
+    # value_counts = np.zeros(right_region.max()+1, dtype=np.intp)
+    # indices = np.arange(right_region.max()+1, dtype=right_region.dtype)
+    # count_indices = np.empty(counts.size, dtype=np.intp)
+    # total_length = 0
+    # end = starts[-1] + counts[-1]
+    # for num in range(counts.size-1, -1, -1):
+    #     l_region = left_region[num]
+    #     start = starts[num]
+    #     # size = counts[num]
+    #     # print('rarrrrr', start, end)
+    #     for n in range(start, end):
+    #         r_region = right_region[n]
+    #         value_counts[r_region] += 1
+    #         # print('r_region',r_region, start, end)
+    #     # print('value_counts', value_counts)
+    #     end = start
+    #     pos = np.searchsorted(indices, l_region, side='left')
+    #     # print('pos', l_region, indices, pos)
+    #     counter = 0
+    #     for nn in range(pos, indices.size):
+    #         counter += value_counts[nn]
+    #         total_length += value_counts[nn]
+    #     count_indices[num] = counter
+
+    container = typed.Dict.empty(
+        key_type=right_region.dtype, value_type=list_type
+    )
+    # for num in range(counts.size):
+    #     container.append((1,2))
+    return container
+
+    # return value_counts, count_indices,
+    # left_region, right_region, starts,
+    #  total_length, count_indices
+    # total_length = 0
+    # for num in prange(counts.size):
+    #     l_region = left_region[num]
+    #     size = counts[num]
+    #     start = starts[num]
+    #     counter = 0
+    #     for n in range(size):
+    #         r_region = right_region[start + n]
+    #         out = l_region <= r_region
+    #         total_length += out
+    #         counter += out
+    #     count_indices[num] = counter
+    # start_indices = np.zeros(starts.size, dtype=np.intp)
+    # start_indices[1:] = np.cumsum(count_indices)[:-1]
+    # l_index = np.empty(total_length, dtype=np.intp)
+    # r_index = np.empty(total_length, np.intp)
+    # for num in prange(starts.size):
+    #     indexer = start_indices[num]
+    #     size = counts[num]
+    #     l_ind = left_index[num]
+    #     r_indexer = starts[num]
+    #     l_region = left_region[num]
+    #     width = count_indices[num]
+    # if width == size,
+    # no need for comparision within the iteration
+    #     if width == size:
+    #         for n in range(size):
+    #             l_index[indexer + n] = l_ind
+    #             r_index[indexer + n] = right_index[r_indexer + n]
+    #     else:
+    #         for n in range(size):
+    #             if not width:
+    #                 break
+    #             pos_right = r_indexer + n
+    #             r_region = right_region[pos_right]
+    #             if l_region > r_region:
+    #                 continue
+    #             l_index[indexer] = l_ind
+    #             r_index[indexer] = right_index[pos_right]
+    #             indexer += 1
+    #             width -= 1
+    # return l_index, r_index

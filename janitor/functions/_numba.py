@@ -1062,7 +1062,6 @@ def _get_indices_dual_non_monotonic_non_equi(
     """
     # two step pass
     # first pass gets the length of the final indices
-    # second pass populates the final indices with actual values
     count_indices = np.empty(counts.size, dtype=np.intp)
     total_length = 0
     for num in prange(counts.size):
@@ -1076,6 +1075,7 @@ def _get_indices_dual_non_monotonic_non_equi(
             total_length += out
             counter += out
         count_indices[num] = counter
+    # second pass populates the final indices with actual values
     start_indices = np.zeros(starts.size, dtype=np.intp)
     start_indices[1:] = np.cumsum(count_indices)[:-1]
     l_index = np.empty(total_length, dtype=np.intp)
@@ -1179,5 +1179,4 @@ def _get_indices_dual_non_monotonic_non_equii(
                 l_index[indexer + nnn] = value
                 r_index[indexer + nnn] = out[nnn]
             indexer += width
-
     return l_index, r_index

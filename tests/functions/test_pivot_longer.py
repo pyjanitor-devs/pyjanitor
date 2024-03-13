@@ -872,7 +872,7 @@ def test_not_dot_value_sep(not_dot_value):
     actual.columns = actual.columns.str.split("_", expand=True)
     actual.columns.names = ["event", "year"]
     actual = (
-        actual.stack(["event", "year"])
+        actual.stack(["event", "year"], future_stack=True)
         .rename("score")
         .sort_index()
         .reset_index()
@@ -915,7 +915,7 @@ def test_not_dot_value_pattern(not_dot_value):
     actual.columns = actual.columns.str.split("_", expand=True)
     actual.columns.names = ["event", "year"]
     actual = (
-        actual.stack(["event", "year"])
+        actual.stack(["event", "year"], future_stack=True)
         .rename("score")
         .sort_index()
         .reset_index()
@@ -942,7 +942,7 @@ def test_not_dot_value_pattern_named_groups(not_dot_value):
     actual.columns = actual.columns.str.split("_", expand=True)
     actual.columns.names = ["event", "year"]
     actual = (
-        actual.stack(["event", "year"])
+        actual.stack(["event", "year"], future_stack=True)
         .rename("score")
         .sort_index()
         .reset_index()
@@ -971,7 +971,7 @@ def test_not_dot_value_sep_single_column(not_dot_value):
     actual.columns = actual.columns.str.split("_", expand=True)
     actual.columns.names = ["event", "year"]
     actual = (
-        actual.stack(["event", "year"])
+        actual.stack(["event", "year"], future_stack=True)
         .rename("score")
         .sort_index()
         .reset_index()
@@ -1635,7 +1635,7 @@ def test_dot_value_duplicated_sub_columns():
     expected = df.set_index("id")
     expected.columns = expected.columns.str.split("_", expand=True)
     expected = (
-        expected.stack(level=[0, 2, 3])
+        expected.stack(level=[0, 2, 3], future_stack=True)
         .sort_index(level=[0, 1], ascending=[True, False])
         .reset_index(level=[2, 3], drop=True)
         .sort_index(axis=1, ascending=False)
@@ -1668,7 +1668,7 @@ def test_preserve_extension_types():
     expected = (
         cats.set_index("Cat")
         .rename_axis(columns="variable")
-        .stack()
+        .stack(future_stack=True)
         .rename("value")
         .reset_index()
     )

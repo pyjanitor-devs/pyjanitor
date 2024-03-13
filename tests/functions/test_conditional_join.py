@@ -3470,8 +3470,10 @@ def test_ge_eq_and_le_datess_numba_indices(df, right):
     expected = pd.Index(expected)
 
     actual, _ = get_join_indices(
-        df[["B", "A", "E"]],
-        right[["Floats", "Integers", "Dates", "Numeric"]],
+        df[["B", "A", "E"]].dropna(subset=["E"]),
+        right[["Floats", "Integers", "Dates", "Numeric"]].dropna(
+            subset=["Dates"]
+        ),
         [
             ("A", "Integers", "<"),
             ("E", "Dates", "=="),
@@ -3520,12 +3522,10 @@ def test_eq_indices(df, right):
 @pytest.mark.turtle
 def test_ge_eq_and_le_datess_indices(df, right):
     """compare join indices for multiple conditions."""
-
     expected = (
         df.reset_index()
-        .dropna(subset=["E"])
         .merge(
-            right.dropna(subset=["Dates"]),
+            right,
             left_on="E",
             right_on="Dates",
             how="inner",

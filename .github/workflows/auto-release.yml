@@ -46,7 +46,12 @@ jobs:
       #     wait-interval: 60  # seconds
 
       - name: Setup Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+      - name: Install pypa/build
+        run: >-
+          python3 -m pip install build --user
 
       - name: Install bump2version and wheel
         run: python -m pip install bumpversion wheel # "bumpversion" installs bump2version

@@ -761,7 +761,6 @@ def _numba_multiple_non_equi_join(
         right_indices.append(right_index)
         left_regions.append(left_region)
         right_regions.append(right_region)
-    return 1
     aligned_indices_and_regions = _align_indices_and_regions(
         indices=left_indices, regions=left_regions
     )
@@ -774,6 +773,7 @@ def _numba_multiple_non_equi_join(
     if not aligned_indices_and_regions:
         return None
     right_index, right_regions = aligned_indices_and_regions
+    return 2
     left_regions = np.column_stack(left_regions)
     right_regions = np.column_stack(right_regions)
     left_region1 = left_regions[:, 0]

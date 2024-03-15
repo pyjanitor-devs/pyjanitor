@@ -773,13 +773,13 @@ def _numba_multiple_non_equi_join(
     if not aligned_indices_and_regions:
         return None
     right_index, right_regions = aligned_indices_and_regions
-    return 2
     left_regions = np.column_stack(left_regions)
     right_regions = np.column_stack(right_regions)
     left_region1 = left_regions[:, 0]
     right_region1 = right_regions[:, 0]
     starts = right_region1.searchsorted(left_region1)
     booleans = starts == right_regions.shape[0]
+    return starts, booleans
     if booleans.all(axis=None):
         return None
     if booleans.any(axis=None):

@@ -761,6 +761,7 @@ def _numba_multiple_non_equi_join(
         right_indices.append(right_index)
         left_regions.append(left_region)
         right_regions.append(right_region)
+    return 1
     aligned_indices_and_regions = _align_indices_and_regions(
         indices=left_indices, regions=left_regions
     )

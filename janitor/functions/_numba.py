@@ -562,7 +562,7 @@ def _numba_equi_join_range_join(
 
 
 def _numba_single_non_equi_join(
-    left: pd.Series, right: pd.Series, op: str, keep: str, aggfunc: dict
+    left: pd.Series, right: pd.Series, op: str, keep: str
 ) -> tuple:
     """Return matching indices for single non-equi join."""
     if (op == "!=") or (keep != "all"):

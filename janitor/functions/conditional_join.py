@@ -42,7 +42,6 @@ def conditional_join(
     use_numba: bool = False,
     indicator: Optional[Union[bool, str]] = False,
     force: bool = False,
-    aggfunc: dict = None,
 ) -> pd.DataFrame:
     """The conditional_join function operates similarly to `pd.merge`,
     but supports joins on inequality operators,
@@ -302,7 +301,6 @@ def conditional_join(
         use_numba,
         indicator,
         force,
-        aggfunc,
     )
 
 
@@ -333,7 +331,6 @@ def _conditional_join_preliminary_checks(
     use_numba: bool,
     indicator: Union[bool, str],
     force: bool,
-    aggfunc: dict,
     return_matching_indices: bool = False,
 ) -> tuple:
     """
@@ -431,57 +428,6 @@ def _conditional_join_preliminary_checks(
 
     check("force", force, [bool])
 
-    if aggfunc:
-        check("aggfunc", aggfunc, [dict])
-        if not use_numba:
-            raise ValueError("aggregation is possible only within numba.")
-        if len(conditions) > 2:
-            raise ValueError(
-                "For an aggregation, "
-                "the number of join conditions "
-                "must not be greater than 2."
-            )
-        if keep != "all":
-            raise ValueError(
-                'aggregation is supported only when keep == "all" '
-            )
-        for *_, op in conditions:
-            if op == "!=":
-                raise ValueError(
-                    "The not equal operator is not "
-                    "supported within an aggregation."
-                )
-        for agg_name, column_name in aggfunc:
-            if agg_name not in {"sum", "count", "max", "min", "prod"}:
-                raise KeyError(
-                    "Only sum, count, min, max, and prod aggregations "
-                    "are supported; instead got "
-                    f"{agg_name}"
-                )
-            if column_name not in right:
-                raise KeyError(
-                    f"{column_name} does not exist in the right pandas object."
-                )
-            if (
-                (agg_name in {"sum", "prod"})
-                and not is_numeric_dtype(right[column_name])
-                and not is_timedelta64_dtype(right[column_name])
-            ):
-                raise ValueError(
-                    f"{agg_name} aggregation applies only to numeric data type, "
-                    f"instead got {right[column_name].dtype.name}"
-                )
-            if (
-                not is_numeric_dtype(right[column_name])
-                and not is_timedelta64_dtype(right[column_name])
-                and not is_datetime64_dtype(right[column_name])
-            ):
-                raise ValueError(
-                    f"aggregation applies only to numeric data type, "
-                    "or datetime dtype, "
-                    f"instead got {right[column_name].dtype.name}"
-                )
-
     return (
         df,
         right,
@@ -494,7 +440,6 @@ def _conditional_join_preliminary_checks(
         use_numba,
         indicator,
         force,
-        aggfunc,
     )
 
 
@@ -546,7 +491,6 @@ def _conditional_join_compute(
     use_numba: bool,
     indicator: Union[bool, str],
     force: bool,
-    aggfunc: dict,
     return_matching_indices=False,
 ) -> pd.DataFrame:
     """
@@ -566,7 +510,6 @@ def _conditional_join_compute(
         use_numba,
         indicator,
         force,
-        aggfunc,
     ) = _conditional_join_preliminary_checks(
         df=df,
         right=right,
@@ -574,12 +517,11 @@ def _conditional_join_compute(
         how=how,
         sort_by_appearance=sort_by_appearance,
         df_columns=df_columns,
-        right_columns=df_columns,
+        right_columns=right_columns,
         keep=keep,
         use_numba=use_numba,
         indicator=indicator,
         force=force,
-        aggfunc=aggfunc,
         return_matching_indices=return_matching_indices,
     )
 
@@ -623,7 +565,6 @@ def _conditional_join_compute(
                 right=right[right_on],
                 op=op,
                 keep=keep,
-                aggfunc=aggfunc,
             )
         else:
             result = _generic_func_cond_join(
@@ -633,7 +574,7 @@ def _conditional_join_compute(
                 multiple_conditions=False,
                 keep=keep,
             )
-    return result
+    # return result
     if result is None:
         result = np.array([], dtype=np.intp), np.array([], dtype=np.intp)
 
@@ -1009,7 +950,7 @@ def _multiple_conditional_join_le_lt(
                 multiple_conditions=False,
                 keep="all",
             )
-    return indices
+    # return indices
     if not indices:
         return None
 
@@ -1199,6 +1140,8 @@ def _create_frame(
     Create final dataframe
     """
     if (df_columns is None) and (right_columns is None):
+        print("rarrrr")
+        print(df_columns, right_columns)
         raise ValueError("df_columns and right_columns cannot both be None.")
     if (df_columns is not None) and (df_columns != slice(None)):
         df = df.select(columns=df_columns)

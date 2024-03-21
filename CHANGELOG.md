@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v0.27.0] - 2024-03-21
+
 -   [BUG] Fix logic for groupby in complete. Index support deprecated. Fix deprecation warning for fillna in `complete` PR #1289 @samukweku
 -   [ENH] `select` function now supports variable arguments - PR #1288 @samukweku
 -   [ENH] `conditional_join` now supports timedelta dtype. - PR #1297 @samukweku
@@ -356,7 +358,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.26.0...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.27.0...HEAD
+
+[v0.27.0]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.26.0...v0.27.0
 
 [v0.26.0]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.25.0...v0.26.0
 

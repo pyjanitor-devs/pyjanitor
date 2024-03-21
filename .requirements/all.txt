@@ -16,7 +16,7 @@ backcall==0.2.0
     # via ipython
 biopython==1.79
     # via -r biology.in
-black==22.1.0
+black==24.3.0
     # via -r dev.in
 cfgv==3.3.1
     # via pre-commit
@@ -31,9 +31,7 @@ colorama==0.4.4
     #   griffe
     #   interrogate
 coverage[toml]==6.3.2
-    # via
-    #   coverage
-    #   pytest-cov
+    # via pytest-cov
 darglint==1.8.1
     # via -r dev.in
 decorator==5.1.1
@@ -129,8 +127,9 @@ numpy==1.22.3
     #   scipy
     #   unyt
     #   xarray
-packaging==21.3
+packaging==24.0
     # via
+    #   black
     #   mkdocs
     #   pytest
     #   xarray
@@ -188,8 +187,6 @@ pymdown-extensions==10.0
     # via
     #   mkdocs-material
     #   mkdocstrings
-pyparsing==3.0.7
-    # via packaging
 pyspark==3.2.2
     # via -r spark.in
 pytest==7.0.1

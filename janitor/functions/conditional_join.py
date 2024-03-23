@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import operator
-import warnings
 from typing import Any, Hashable, Literal, Optional, Union
 
 import numpy as np
@@ -24,9 +23,7 @@ from janitor.functions.utils import (
     greater_than_join_types,
     less_than_join_types,
 )
-from janitor.utils import check, check_column, find_stack_level
-
-warnings.simplefilter("always", DeprecationWarning)
+from janitor.utils import check, check_column
 
 
 @pf.register_dataframe_method
@@ -35,7 +32,6 @@ def conditional_join(
     right: Union[pd.DataFrame, pd.Series],
     *conditions: Any,
     how: Literal["inner", "left", "right", "outer"] = "inner",
-    sort_by_appearance: bool = False,
     df_columns: Optional[Any] = slice(None),
     right_columns: Optional[Any] = slice(None),
     keep: Literal["first", "last", "all"] = "all",
@@ -258,14 +254,6 @@ def conditional_join(
             of the individual conditions.
         how: Indicates the type of join to be performed.
             It can be one of `inner`, `left`, `right` or `outer`.
-        sort_by_appearance: If `how = inner` and
-            `sort_by_appearance = False`, there
-            is no guarantee that the original order is preserved.
-            Usually, this offers more performance.
-            If `how = left`, the row order from the left dataframe
-            is preserved; if `how = right`, the row order
-            from the right dataframe is preserved.
-            !!!warning "Deprecated in 0.25.0"
         df_columns: Columns to select from `df` in the final output dataframe.
             Column selection is based on the
             [`select`][janitor.functions.select.select] syntax.
@@ -290,17 +278,16 @@ def conditional_join(
     """  # noqa: E501
 
     return _conditional_join_compute(
-        df,
-        right,
-        conditions,
-        how,
-        sort_by_appearance,
-        df_columns,
-        right_columns,
-        keep,
-        use_numba,
-        indicator,
-        force,
+        df=df,
+        right=right,
+        conditions=conditions,
+        how=how,
+        df_columns=df_columns,
+        right_columns=right_columns,
+        keep=keep,
+        use_numba=use_numba,
+        indicator=indicator,
+        force=force,
     )
 
 
@@ -324,7 +311,6 @@ def _conditional_join_preliminary_checks(
     right: Union[pd.DataFrame, pd.Series],
     conditions: tuple,
     how: str,
-    sort_by_appearance: bool,
     df_columns: Any,
     right_columns: Any,
     keep: str,
@@ -400,15 +386,6 @@ def _conditional_join_preliminary_checks(
             "'how' should be one of 'inner', 'left', 'right' or 'outer'."
         )
 
-    if sort_by_appearance:
-        warnings.warn(
-            "The keyword argument "
-            "'sort_by_appearance' of 'conditional_join' is deprecated.",
-            DeprecationWarning,
-            stacklevel=find_stack_level(),
-        )
-    check("sort_by_appearance", sort_by_appearance, [bool])
-
     if (df.columns.nlevels > 1) and (
         isinstance(df_columns, dict) or isinstance(right_columns, dict)
     ):
@@ -433,7 +410,6 @@ def _conditional_join_preliminary_checks(
         right,
         conditions,
         how,
-        sort_by_appearance,
         df_columns,
         right_columns,
         keep,
@@ -484,7 +460,6 @@ def _conditional_join_compute(
     right: pd.DataFrame,
     conditions: list,
     how: str,
-    sort_by_appearance: bool,
     df_columns: Any,
     right_columns: Any,
     keep: str,
@@ -503,7 +478,6 @@ def _conditional_join_compute(
         right,
         conditions,
         how,
-        sort_by_appearance,
         df_columns,
         right_columns,
         keep,
@@ -515,7 +489,6 @@ def _conditional_join_compute(
         right=right,
         conditions=conditions,
         how=how,
-        sort_by_appearance=sort_by_appearance,
         df_columns=df_columns,
         right_columns=right_columns,
         keep=keep,
@@ -574,7 +547,7 @@ def _conditional_join_compute(
                 multiple_conditions=False,
                 keep=keep,
             )
-    return result
+    # return result
     if result is None:
         result = np.array([], dtype=np.intp), np.array([], dtype=np.intp)
 
@@ -950,7 +923,7 @@ def _multiple_conditional_join_le_lt(
                 multiple_conditions=False,
                 keep="all",
             )
-    return indices
+    # return indices
     if not indices:
         return None
 
@@ -1347,7 +1320,6 @@ def get_join_indices(
         right=right,
         conditions=conditions,
         how="inner",
-        sort_by_appearance=False,
         df_columns=None,
         right_columns=None,
         keep=keep,

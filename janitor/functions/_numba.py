@@ -881,11 +881,8 @@ def _numba_multiple_non_equi_join(
     indices = [flip.searchsorted(arr) for flip, arr in zip(flipped, regions)]
     indices = np.column_stack(indices)
     ends = right_index.size - indices
-    # indexing an array, especially a > 1D array,
-    # requires alignment on both rows and columns
-    return left_regions, right_regions, cum_max_arr, starts, ends
-    cum_max_arr = cum_max_arr[ends - 1, np.arange(left_regions.shape[-1])]
-    indices = cum_max_arr - left_regions
+
+    indices = cum_max_arr[starts] - left_regions
     indices = indices.sum(axis=0)
     indices = indices.argsort()
     left_regions = left_regions[:, indices]
@@ -1205,7 +1202,7 @@ def _get_indices_multiple_non_equii(
 
         start = starts[num]
         end = min(previous_start, ends[num])
-        arr_max = max_arr[num]
+        arr_max = max_arr[start]
         for n in range(start, end):
             r_region = right_regions[n, 0]
             value_counts[r_region] += 1

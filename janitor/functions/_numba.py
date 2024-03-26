@@ -807,37 +807,35 @@ def _numba_multiple_non_equi_join(
         left_regions = left_regions[booleans]
         left_index = left_index[booleans]
         starts = starts[booleans]
-    cum_max_arr = cum_max_arr[:, 0]
-    left_region = left_regions[:, 0]
-    right_region = right_regions[:, 0]
-    is_monotonic = False
-    ser = pd.Series(right_region)
-    # there is a fast path if is_monotonic is True
-    # this is handy especially when there are only
-    # two join conditions
-    # we can get the matches via binary search
-    # which is preferable to a linear search
-    if ser.is_monotonic_increasing:
-        is_monotonic = True
-        ends = right_region.searchsorted(left_region, side="left")
-        starts = np.maximum(starts, ends)
-        ends = right_index.size
-    elif ser.is_monotonic_decreasing:
-        is_monotonic = True
-        ends = right_region[::-1].searchsorted(left_region, side="left")
-        ends = right_region.size - ends
-    else:
-        # get the max end, beyond which left_region is > right_region
-        ends = cum_max_arr[::-1].searchsorted(left_region, side="left")
-        ends = right_region.size - ends
-
-    ends = np.array([ends]) if is_scalar(ends) else ends
-
-    max_end = ends.max()
-    right_index = right_index[:max_end]
-    right_region = right_region[:max_end]
 
     if len(gt_lt) == 2:
+        left_region = left_regions[:, 0]
+        right_region = right_regions[:, 0]
+        is_monotonic = False
+        ser = pd.Series(right_region)
+        # there is a fast path if is_monotonic is True
+        # this is handy especially when there are only
+        # two join conditions
+        # we can get the matches via binary search
+        if ser.is_monotonic_increasing:
+            is_monotonic = True
+            ends = right_region.searchsorted(left_region, side="left")
+            starts = np.maximum(starts, ends)
+            ends = right_index.size
+        elif ser.is_monotonic_decreasing:
+            is_monotonic = True
+            ends = right_region[::-1].searchsorted(left_region, side="left")
+            ends = right_region.size - ends
+        else:
+            # get the max end, beyond which left_region is > right_region
+            cum_max_arr = cum_max_arr[:, 0]
+            ends = cum_max_arr[::-1].searchsorted(left_region, side="left")
+            ends = right_region.size - ends
+            ends = np.array([ends]) if is_scalar(ends) else ends
+            max_end = ends.max()
+            right_index = right_index[:max_end]
+            right_region = right_region[:max_end]
+
         if (ends - starts).max() == 1:
             # no point running a comparison op
             # if the width is all 1
@@ -860,9 +858,55 @@ def _numba_multiple_non_equi_join(
             max_arr=cum_max_arr,
         )
 
-    if is_monotonic:
-        left_regions = left_regions[:, 1:]
-        right_regions = right_regions[:, 1:]
+    # idea here is to iterate on the region
+    # that has the lowest number of comparisions
+    # this involves getting the maximum ends
+    # for each left region in the right region
+    # getting the total number of possible comparisons per left region
+    # and rearranging based on the region
+    # with the lowest number of comparisions
+    # - move the region with the lowest comparisons to the front
+    # this region now determines the iteration
+    # within this region, once we get a match,
+    # we check the other regions on that same row
+    # if they match, we keep the row, if not we discard
+    # and move on to the next one
+    # this process should help with
+    # reducing the overall number of comparisons
+
+    # return left_regions, right_regions, starts
+    flipped = cum_max_arr[::-1]
+    flipped = [flipped[:, n] for n in range(flipped.shape[1])]
+    regions = [left_regions[:, n] for n in range(left_regions.shape[1])]
+    indices = [flip.searchsorted(arr) for flip, arr in zip(flipped, regions)]
+    indices = np.column_stack(indices)
+    ends = right_index.size - indices
+    # indexing an array, especially a > 1D array,
+    # requires alignment on both rows and columns
+    return left_regions, right_regions, cum_max_arr, starts, ends
+    cum_max_arr = cum_max_arr[ends - 1, np.arange(left_regions.shape[-1])]
+    indices = cum_max_arr - left_regions
+    indices = indices.sum(axis=0)
+    indices = indices.argsort()
+    left_regions = left_regions[:, indices]
+    right_regions = right_regions[:, indices]
+    cum_max_arr = cum_max_arr[:, indices[0]]
+    # keep the largest
+    # since either way we may have to iterate to the end
+    # this ensures we do not unnecessarily iterate to the end
+    # unless we absolutely have to
+    ends = np.maximum.reduce(ends, axis=1)
+    return _get_indices_multiple_non_equii(
+        left_regions=left_regions,
+        right_regions=right_regions,
+        left_index=left_index,
+        right_index=right_index,
+        starts=starts,
+        ends=ends,
+        max_arr=cum_max_arr,
+    )
+
+    return left_regions, right_regions, starts, ends
     return _get_indices_multiple_non_equi(
         left_region=left_regions,
         right_region=right_regions,
@@ -1026,8 +1070,7 @@ def _get_indices_monotonic_non_equi(
     # the starting positions in the left_index(l_index)
     # will be 0, 2, 6, 12
     cumulative_starts = np.cumsum(counts)
-    startss = np.empty(starts.size, dtype=np.intp)
-    startss[0] = 0
+    startss = np.zeros(starts.size, dtype=np.intp)
     startss[1:] = cumulative_starts[:-1]
     l_index = np.empty(cumulative_starts[-1], dtype=np.intp)
     r_index = np.empty(cumulative_starts[-1], dtype=np.intp)
@@ -1133,3 +1176,68 @@ def _get_indices_dual_non_monotonic_non_equi(
                 r_index[indexer + size] = r_ind
                 size -= 1
     return l_index, r_index
+
+
+def _get_indices_multiple_non_equii(
+    left_regions: np.ndarray,
+    right_regions: np.ndarray,
+    left_index: np.ndarray,
+    right_index: np.ndarray,
+    starts: np.ndarray,
+    ends: np.ndarray,
+    max_arr: np.ndarray,
+):
+    """
+    Retrieves the matching indices
+    for the left and right regions.
+    Strictly for non-equi joins,
+    where the join conditions are more than two.
+    """
+    nrows = max_arr.max() + 1
+    ncols = right_regions.shape[0]
+    value_counts = np.zeros(nrows, dtype=np.intp)
+    positions = np.zeros((nrows, ncols), dtype=np.intp)
+    count_indices = np.empty(starts.size, dtype=np.intp)
+    total_length = 0
+    previous_start = ends[-1]
+    ncols = right_regions.shape[1]
+    for num in range(starts.size - 1, -1, -1):
+
+        start = starts[num]
+        end = min(previous_start, ends[num])
+        arr_max = max_arr[num]
+        for n in range(start, end):
+            r_region = right_regions[n, 0]
+            value_counts[r_region] += 1
+            positions[r_region, value_counts[r_region] - 1] = n
+        previous_start = start
+        counter = 0
+        for nn in range(left_regions[num, 0], arr_max + 1):
+            counts = value_counts[nn]
+            if not counts:
+                continue
+            for sz in range(counts):
+                pos = positions[nn, sz]
+                status = 1
+                for col in range(1, ncols):
+                    l_value = left_regions[num, col]
+                    r_value = right_regions[pos, col]
+                    if l_value > r_value:
+                        status = 0
+                        break
+                print(
+                    num, nn, left_regions[num, 0], arr_max + 1, counts, status
+                )
+                counter += status
+                total_length += status
+        count_indices[num] = counter
+    return (
+        left_regions,
+        right_regions,
+        count_indices,
+        starts,
+        ends,
+        max_arr,
+        value_counts,
+        positions,
+    )

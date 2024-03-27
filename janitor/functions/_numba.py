@@ -859,19 +859,13 @@ def _numba_multiple_non_equi_join(
         )
     # idea here is to iterate on the region
     # that has the lowest number of comparisions
-    # this involves getting the maximum ends
     # for each left region in the right region
-    # getting the total number of possible comparisons per left region
-    # and rearranging based on the region
-    # with the lowest number of comparisions
-    # - move the region with the lowest comparisons to the front
-    # this region now determines the iteration
+    # the region with the lowest number of comparisons
+    # is moved to the front of the array
     # within this region, once we get a match,
     # we check the other regions on that same row
     # if they match, we keep the row, if not we discard
     # and move on to the next one
-    # this process should help with
-    # reducing the overall number of comparisons
     indices = cum_max_arr[starts] - left_regions
     indices = indices.sum(axis=0)
     indices = indices.argsort()

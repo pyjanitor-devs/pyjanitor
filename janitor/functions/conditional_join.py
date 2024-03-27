@@ -1114,8 +1114,6 @@ def _create_frame(
     Create final dataframe
     """
     if (df_columns is None) and (right_columns is None):
-        print("rarrrr")
-        print(df_columns, right_columns)
         raise ValueError("df_columns and right_columns cannot both be None.")
     if (df_columns is not None) and (df_columns != slice(None)):
         df = df.select(columns=df_columns)

@@ -6,7 +6,6 @@ from numba import njit, prange
 from pandas.api.types import (
     is_datetime64_dtype,
     is_extension_array_dtype,
-    is_scalar,
 )
 
 from janitor.functions.utils import (
@@ -777,7 +776,6 @@ def _numba_multiple_non_equi_join(
 
     left_regions = np.column_stack(left_regions)
     right_regions = np.column_stack(right_regions)
-
     left_region1 = left_regions[:, 0]
     right_region1 = right_regions[:, 0]
     starts = right_region1.searchsorted(left_region1)
@@ -807,7 +805,6 @@ def _numba_multiple_non_equi_join(
         left_regions = left_regions[booleans]
         left_index = left_index[booleans]
         starts = starts[booleans]
-
     if len(gt_lt) == 2:
         left_region = left_regions[:, 0]
         right_region = right_regions[:, 0]
@@ -829,13 +826,14 @@ def _numba_multiple_non_equi_join(
         else:
             # get the max end, beyond which left_region is > right_region
             cum_max_arr = cum_max_arr[:, 0]
-            ends = cum_max_arr[::-1].searchsorted(left_region, side="left")
+            # the lowest left_region will have the largest coverage
+            # that gives us the end beyond which no left region is <= right_region
+            ends = cum_max_arr[::-1].searchsorted(
+                left_region.min(), side="left"
+            )
             ends = right_region.size - ends
-            ends = np.array([ends]) if is_scalar(ends) else ends
-            max_end = ends.max()
-            right_index = right_index[:max_end]
-            right_region = right_region[:max_end]
-
+            right_index = right_index[:ends]
+            right_region = right_region[:ends]
         if (ends - starts).max() == 1:
             # no point running a comparison op
             # if the width is all 1
@@ -934,6 +932,8 @@ def _align_indices_and_regions(indices, regions):
     """
     *other_indices, index = indices
     *other_regions, region = regions
+    # the first region should be sorted
+    # which comes in handy during iteration
     if not pd.Series(region).is_monotonic_increasing:
         sorter = region.argsort()
         index = index[sorter]
@@ -1009,7 +1009,7 @@ def _get_indices_dual_non_monotonic_non_equi(
     value_counts = np.zeros(right_region.max() + 1, dtype=np.intp)
     count_indices = np.empty(starts.size, dtype=np.intp)
     total_length = 0
-    previous_start = ends[-1]
+    previous_start = ends
     # positions -----> [0 1 2 3 4 5]
     # left_region ---> [0 1 1 5 5 6]
     # right_region --> [7 7 7 7 7 7]
@@ -1024,7 +1024,7 @@ def _get_indices_dual_non_monotonic_non_equi(
     # search starts from the bottom/max
     for num in range(starts.size - 1, -1, -1):
         start = starts[num]
-        end = min(previous_start, ends[num])
+        end = min(previous_start, ends)
         # maximum value at the same position
         # as left_region in right_region
         arr_max = max_arr[start]
@@ -1051,10 +1051,10 @@ def _get_indices_dual_non_monotonic_non_equi(
     r_index = np.empty(total_length, np.intp)
     value_counts = np.cumsum(value_counts)
     counts = np.zeros(right_region.max() + 1, dtype=np.intp)
-    previous_start = ends[-1]
+    previous_start = ends
     for num in range(starts.size - 1, -1, -1):
         start = starts[num]
-        end = min(previous_start, ends[num])
+        end = min(previous_start, ends)
         arr_max = max_arr[start]
         for n in range(start, end):
             r_region = right_region[n]

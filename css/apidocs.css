@@ -1,0 +1,53 @@
+/* https://mkdocstrings.github.io/theming/#css-classes */
+.doc-property {
+  border-radius: 15px;
+  padding: 0 5px;
+}
+.doc-property-special {
+  background-color: blue;
+  color: white;
+}
+.doc-property-private {
+  background-color: red;
+  color: white;
+}
+.doc-property-property {
+  background-color: green;
+  color: white;
+}
+.doc-property-read-only {
+  background-color: yellow;
+  color: black;
+}
+
+/* https://mkdocstrings.github.io/handlers/python/#recommended-style-material */
+/* Indentation. */
+div.doc-contents:not(.first) {
+  padding-left: 25px;
+  border-left: 4px solid rgba(230, 230, 230);
+  margin-bottom: 80px;
+}
+
+/* add a keyboard shortcut icon for search bar,
+ * https://github.com/squidfunk/mkdocs-material/issues/2574#issuecomment-821979698
+ */
+[data-md-toggle="search"]:not(:checked) ~ .md-header .md-search__form::after {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.3rem;
+  display: block;
+  padding: 0.1rem 0.4rem;
+  color: var(--md-default-bg-color--lighter);
+  font-weight: bold;
+  font-size: 0.8rem;
+  border: 0.05rem solid var(--md-default-bg-color--lighter);
+  border-radius: 0.1rem;
+  content: "/";
+}
+
+/* prevent selection of chevron in example blocks
+ * cf. https://mkdocstrings.github.io/recipes/#prevent-selection-of-prompts-and-output-in-python-code-blocks
+ */
+.highlight .gp, .highlight .go { /* Generic.Prompt, Generic.Output */
+    user-select: none;
+}

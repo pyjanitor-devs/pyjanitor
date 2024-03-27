@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import operator
-import warnings
 from typing import Any, Hashable, Literal, Optional, Union
 
 import numpy as np
@@ -24,9 +23,7 @@ from janitor.functions.utils import (
     greater_than_join_types,
     less_than_join_types,
 )
-from janitor.utils import check, check_column, find_stack_level
-
-warnings.simplefilter("always", DeprecationWarning)
+from janitor.utils import check, check_column
 
 
 @pf.register_dataframe_method
@@ -35,7 +32,6 @@ def conditional_join(
     right: Union[pd.DataFrame, pd.Series],
     *conditions: Any,
     how: Literal["inner", "left", "right", "outer"] = "inner",
-    sort_by_appearance: bool = False,
     df_columns: Optional[Any] = slice(None),
     right_columns: Optional[Any] = slice(None),
     keep: Literal["first", "last", "all"] = "all",
@@ -58,8 +54,13 @@ def conditional_join(
     Column selection in `df_columns` and `right_columns` is possible using the
     [`select`][janitor.functions.select.select] syntax.
 
-    Performance might be improved by setting `use_numba` to `True`.
+    Performance might be improved by setting `use_numba` to `True` -
+    this can be handy for equi joins that have lots of duplicated keys.
     This assumes that `numba` is installed.
+
+    Noticeable performance can be observed for range joins,
+    if both join columns from the right dataframe
+    are monotonically increasing.
 
     This function returns rows, if any, where values from `df` meet the
     condition(s) for values from `right`. The conditions are passed in
@@ -253,14 +254,6 @@ def conditional_join(
             of the individual conditions.
         how: Indicates the type of join to be performed.
             It can be one of `inner`, `left`, `right` or `outer`.
-        sort_by_appearance: If `how = inner` and
-            `sort_by_appearance = False`, there
-            is no guarantee that the original order is preserved.
-            Usually, this offers more performance.
-            If `how = left`, the row order from the left dataframe
-            is preserved; if `how = right`, the row order
-            from the right dataframe is preserved.
-            !!!warning "Deprecated in 0.25.0"
         df_columns: Columns to select from `df` in the final output dataframe.
             Column selection is based on the
             [`select`][janitor.functions.select.select] syntax.
@@ -285,17 +278,16 @@ def conditional_join(
     """  # noqa: E501
 
     return _conditional_join_compute(
-        df,
-        right,
-        conditions,
-        how,
-        sort_by_appearance,
-        df_columns,
-        right_columns,
-        keep,
-        use_numba,
-        indicator,
-        force,
+        df=df,
+        right=right,
+        conditions=conditions,
+        how=how,
+        df_columns=df_columns,
+        right_columns=right_columns,
+        keep=keep,
+        use_numba=use_numba,
+        indicator=indicator,
+        force=force,
     )
 
 
@@ -319,7 +311,6 @@ def _conditional_join_preliminary_checks(
     right: Union[pd.DataFrame, pd.Series],
     conditions: tuple,
     how: str,
-    sort_by_appearance: bool,
     df_columns: Any,
     right_columns: Any,
     keep: str,
@@ -395,15 +386,6 @@ def _conditional_join_preliminary_checks(
             "'how' should be one of 'inner', 'left', 'right' or 'outer'."
         )
 
-    if sort_by_appearance:
-        warnings.warn(
-            "The keyword argument "
-            "'sort_by_appearance' of 'conditional_join' is deprecated.",
-            DeprecationWarning,
-            stacklevel=find_stack_level(),
-        )
-    check("sort_by_appearance", sort_by_appearance, [bool])
-
     if (df.columns.nlevels > 1) and (
         isinstance(df_columns, dict) or isinstance(right_columns, dict)
     ):
@@ -428,7 +410,6 @@ def _conditional_join_preliminary_checks(
         right,
         conditions,
         how,
-        sort_by_appearance,
         df_columns,
         right_columns,
         keep,
@@ -479,7 +460,6 @@ def _conditional_join_compute(
     right: pd.DataFrame,
     conditions: list,
     how: str,
-    sort_by_appearance: bool,
     df_columns: Any,
     right_columns: Any,
     keep: str,
@@ -498,7 +478,6 @@ def _conditional_join_compute(
         right,
         conditions,
         how,
-        sort_by_appearance,
         df_columns,
         right_columns,
         keep,
@@ -506,18 +485,17 @@ def _conditional_join_compute(
         indicator,
         force,
     ) = _conditional_join_preliminary_checks(
-        df,
-        right,
-        conditions,
-        how,
-        sort_by_appearance,
-        df_columns,
-        right_columns,
-        keep,
-        use_numba,
-        indicator,
-        force,
-        return_matching_indices,
+        df=df,
+        right=right,
+        conditions=conditions,
+        how=how,
+        df_columns=df_columns,
+        right_columns=right_columns,
+        keep=keep,
+        use_numba=use_numba,
+        indicator=indicator,
+        force=force,
+        return_matching_indices=return_matching_indices,
     )
 
     eq_check = False
@@ -553,9 +531,9 @@ def _conditional_join_compute(
     else:
         left_on, right_on, op = conditions[0]
         if use_numba:
-            from janitor.functions._numba import _numba_single_join
+            from janitor.functions._numba import _numba_single_non_equi_join
 
-            result = _numba_single_join(
+            result = _numba_single_non_equi_join(
                 left=df[left_on],
                 right=right[right_on],
                 op=op,
@@ -569,7 +547,7 @@ def _conditional_join_compute(
                 multiple_conditions=False,
                 keep=keep,
             )
-
+    # return result
     if result is None:
         result = np.array([], dtype=np.intp), np.array([], dtype=np.intp)
 
@@ -848,8 +826,8 @@ def _multiple_conditional_join_le_lt(
     """
     if use_numba:
         from janitor.functions._numba import (
-            _numba_dual_join,
-            _numba_single_join,
+            _numba_multiple_non_equi_join,
+            _numba_single_non_equi_join,
         )
 
         gt_lt = [
@@ -863,11 +841,11 @@ def _multiple_conditional_join_le_lt(
         ]
         if len(gt_lt) == 1:
             left_on, right_on, op = gt_lt[0]
-            indices = _numba_single_join(
+            indices = _numba_single_non_equi_join(
                 df[left_on], right[right_on], op, keep="all"
             )
         else:
-            indices = _numba_dual_join(df, right, gt_lt)
+            indices = _numba_multiple_non_equi_join(df, right, gt_lt)
     else:
         # there is an opportunity for optimization for range joins
         # which is usually `lower_value < value < upper_value`
@@ -945,6 +923,7 @@ def _multiple_conditional_join_le_lt(
                 multiple_conditions=False,
                 keep="all",
             )
+    # return indices
     if not indices:
         return None
 
@@ -957,6 +936,7 @@ def _multiple_conditional_join_le_lt(
         indices = _generate_indices(*indices, conditions)
         if not indices:
             return None
+    # return indices
 
     return _keep_output(keep, *indices)
 
@@ -1061,20 +1041,18 @@ def _range_indices(
         search_indices = search_indices[keep_rows]
 
     repeater = search_indices - pos
-    if (repeater == 1).all():
+    if repeater.max() == 1:
         # no point running a comparison op
         # if the width is all 1
         # this also implies that the intervals
         # do not overlap on the right side
         return left_index, right_index[pos]
-
     right_index = [
         right_index[start:end] for start, end in zip(pos, search_indices)
     ]
 
     right_index = np.concatenate(right_index)
     left_index = left_index.repeat(repeater)
-
     if fastpath:
         return left_index, right_index
     # here we search for actual positions
@@ -1341,7 +1319,6 @@ def get_join_indices(
         right=right,
         conditions=conditions,
         how="inner",
-        sort_by_appearance=False,
         df_columns=None,
         right_columns=None,
         keep=keep,

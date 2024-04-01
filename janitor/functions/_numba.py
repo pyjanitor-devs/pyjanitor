@@ -1297,14 +1297,14 @@ def _align_indices_and_regions(indices, regions, sort=True):
     A single index is returned, with the regions
     properly aligned with the index.
     """
-    *other_indices, index = indices
-    *other_regions, region = regions
+    index, *other_indices = indices[:]
+    region, *other_regions = regions[:]
     # the first region should be sorted
     # which comes in handy during iteration
     # sorting is not required for an equi join region
     # since it is already sorted
     if sort and not pd.Series(region).is_monotonic_increasing:
-        sorter = region.argsort()
+        sorter = region.argsort(kind="stable")
         index = index[sorter]
         region = region[sorter]
     outcome = [region]

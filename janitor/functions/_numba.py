@@ -99,28 +99,6 @@ def _numba_equii_join(df, right, equi_conditions, non_equi_conditions):
     left_index = slice(None)
     right_index = slice(None)
 
-    # for left_on, right_on, op in non_equi_conditions:
-    #     result = _get_regions_non_equi(
-    #         left=df.loc[left_index, left_on],
-    #         right=right.loc[right_index, right_on],
-    #         op=op,
-    #     )
-    #     if result is None:
-    #         return None
-    #     (
-    #         left_index,
-    #         right_index,
-    #         left_region,
-    #         right_region,
-    #     ) = result
-
-    #     left_index = pd.Index(left_index)
-    #     right_index = pd.Index(right_index)
-    #     left_indices.append(left_index)
-    #     right_indices.append(right_index)
-    #     left_regions.append(left_region)
-    #     right_regions.append(right_region)
-
     if len(equi_conditions) == 1:
         left_on, right_on, _ = equi_conditions[0]
         left_arr = df.loc[left_index, left_on]
@@ -164,7 +142,6 @@ def _numba_equii_join(df, right, equi_conditions, non_equi_conditions):
         left_index=left_index,
         right_index=right_index,
     )
-    return result
     if result is None:
         return None
     (
@@ -181,6 +158,30 @@ def _numba_equii_join(df, right, equi_conditions, non_equi_conditions):
     left_regions.append(left_region)
     right_regions.append(right_region)
 
+    for left_on, right_on, op in non_equi_conditions:
+        result = _get_regions_non_equi(
+            left=df.loc[left_index, left_on],
+            right=right.loc[right_index, right_on],
+            op=op,
+        )
+        if result is None:
+            return None
+        (
+            left_index,
+            right_index,
+            left_region,
+            right_region,
+        ) = result
+
+        left_index = pd.Index(left_index)
+        right_index = pd.Index(right_index)
+        left_indices.append(left_index)
+        right_indices.append(right_index)
+        left_regions.append(left_region)
+        right_regions.append(right_region)
+
+    # return left_indices, right_indices, left_regions, right_regions
+
     left_index, left_regions = _align_indices_and_regions(
         indices=left_indices, regions=left_regions, sort=False
     )
@@ -188,7 +189,7 @@ def _numba_equii_join(df, right, equi_conditions, non_equi_conditions):
         indices=right_indices, regions=right_regions, sort=False
     )
 
-    # return left_regions, right_regions
+    return left_regions, right_regions
 
     left_regions = np.column_stack(left_regions)
     right_regions = np.column_stack(right_regions)

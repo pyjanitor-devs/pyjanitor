@@ -1,5 +1,7 @@
 """Various Functions powered by Numba"""
 
+from typing import Union
+
 import numpy as np
 import pandas as pd
 from numba import njit, prange
@@ -27,6 +29,370 @@ def _convert_to_numpy(left: np.ndarray, right: np.ndarray) -> tuple:
         left = left.view(np.int64)
         right = right.view(np.int64)
     return left, right
+
+
+def _get_regions_equi(
+    left: pd.Index,
+    right: pd.Index,
+    left_index: np.ndarray,
+    right_index: np.ndarray,
+) -> Union[tuple[np.ndarray], None]:
+    """
+    Generate regions for an equi join.
+
+    Returns indices and regions.
+    """
+    # it is assumed to be a many-to-many join
+    # if it isnt, then using Pandas' one-to-one
+    # or many-to-one via the use_numba=False
+    # argument should offer better performance
+    left_positions, left_uniques = left.factorize()
+    right_positions, right_uniques = right.factorize()
+    *_, right_indexer = left_uniques.join(
+        right_uniques, how="left", sort=False, return_indexers=True
+    )
+    # left and right are the same
+    # and have the same order
+    # e.g pd.Index([1,2,3]) vs pd.Index([1,2,3])
+    if right_indexer is None:
+        indexer = np.arange(left_uniques.size)
+        left_region = indexer[left_positions]
+        right_region = indexer[right_positions]
+        return left_index, right_index, left_region, right_region
+    booleans = right_indexer == -1
+    # absolutely no match
+    if booleans.all():
+        return None
+    # left and right are not the same
+    # pd.Index([1,2,3]) vs pd.Index([2,1])
+    if booleans.any():
+        booleans = ~booleans
+        left_region = booleans.cumsum() - 1
+        left_region = left_region[left_positions]
+        mask = booleans[left_positions]
+        left_region = left_region[mask]
+        left_index = left_index[mask]
+        right_region = np.full_like(right, fill_value=-1)
+        right_indexer = right_indexer[booleans]
+        right_region[right_indexer] = np.arange(right_indexer.size)
+        right_region = right_region[right_positions]
+        mask = right_region != -1
+        right_region = right_region[mask]
+        right_index = right_index[mask]
+        return left_region, right_region, left_index, right_index
+    # no -1s
+    # but left and right may not be in the same order
+    # e.g pd.Index([1,2,3]) vs pd.Index([3,1,2])
+    indexer = np.arange(left_uniques.size)
+    left_region = indexer[left_positions]
+    right_region = np.empty(right_uniques.size, dtype=np.intp)
+    right_region[right_indexer] = indexer
+    right_region = right_region[right_positions]
+    return left_index, right_index, left_region, right_region
+
+
+def _numba_equii_join(df, right, equi_conditions, non_equi_conditions):
+    left_indices = []
+    left_regions = []
+    right_indices = []
+    right_regions = []
+    left_index = slice(None)
+    right_index = slice(None)
+
+    # for left_on, right_on, op in non_equi_conditions:
+    #     result = _get_regions_non_equi(
+    #         left=df.loc[left_index, left_on],
+    #         right=right.loc[right_index, right_on],
+    #         op=op,
+    #     )
+    #     if result is None:
+    #         return None
+    #     (
+    #         left_index,
+    #         right_index,
+    #         left_region,
+    #         right_region,
+    #     ) = result
+
+    #     left_index = pd.Index(left_index)
+    #     right_index = pd.Index(right_index)
+    #     left_indices.append(left_index)
+    #     right_indices.append(right_index)
+    #     left_regions.append(left_region)
+    #     right_regions.append(right_region)
+
+    if len(equi_conditions) == 1:
+        left_on, right_on, _ = equi_conditions[0]
+        left_arr = df.loc[left_index, left_on]
+        any_nulls = left_arr.isna()
+        if any_nulls.all():
+            return None
+        if any_nulls.any():
+            left_arr = left_arr[~any_nulls]
+        right_arr = right.loc[right_index, right_on]
+        any_nulls = right_arr.isna()
+        if any_nulls.all():
+            return None
+        if any_nulls.any():
+            right_arr = right_arr[~any_nulls]
+        left_index = left_arr.index._values
+        right_index = right_arr.index._values
+        left_arr = pd.Index(left_arr)
+        right_arr = pd.Index(right_arr)
+    else:
+        left_on, right_on, _ = zip(*equi_conditions)
+        left_arr = df.loc[left_index, list(left_on)]
+        any_nulls = left_arr.isna().any(axis=1)
+        if any_nulls.all():
+            return None
+        if any_nulls.any(axis=None):
+            left_arr = left_arr[~any_nulls]
+        right_arr = right.loc[right_index, list(right_on)]
+        any_nulls = right_arr.isna().any(axis=1)
+        if any_nulls.all():
+            return None
+        if any_nulls.any(axis=None):
+            right_arr = right_arr[~any_nulls]
+        left_index = left_arr.index._values
+        left_arr = pd.MultiIndex.from_frame(left_arr)
+        right_index = right_arr.index._values
+        right_arr = pd.MultiIndex.from_frame(right_arr)
+
+    result = _get_regions_equi(
+        left=left_arr,
+        right=right_arr,
+        left_index=left_index,
+        right_index=right_index,
+    )
+    return result
+    if result is None:
+        return None
+    (
+        left_index,
+        right_index,
+        left_region,
+        right_region,
+    ) = result
+
+    left_index = pd.Index(left_index)
+    right_index = pd.Index(right_index)
+    left_indices.append(left_index)
+    right_indices.append(right_index)
+    left_regions.append(left_region)
+    right_regions.append(right_region)
+
+    left_index, left_regions = _align_indices_and_regions(
+        indices=left_indices, regions=left_regions, sort=False
+    )
+    right_index, right_regions = _align_indices_and_regions(
+        indices=right_indices, regions=right_regions, sort=False
+    )
+
+    # return left_regions, right_regions
+
+    left_regions = np.column_stack(left_regions)
+    right_regions = np.column_stack(right_regions)
+
+    # return left_regions, right_regions
+    left_indices = None
+    right_indices = None
+    left_arr = left_regions[:, 0]
+    right_arr = right_regions[:, 0]
+    starts = right_arr.searchsorted(left_arr, side="left")
+    ends = right_arr.searchsorted(left_arr, side="right")
+
+    grp = pd.DataFrame(right_regions[:, 1:]).groupby(
+        right_regions[:, 0], sort=False
+    )
+    grp = grp.transform("max").to_numpy(copy=False)
+    grp = grp[starts]
+    booleans = left_regions[:, 1:] > grp
+    booleans = booleans.any(axis=1)
+    if booleans.any(axis=None):
+        booleans = ~booleans
+        left_regions = left_regions[booleans]
+        starts = starts[booleans]
+        ends = ends[booleans]
+        left_index = left_index[booleans]
+    if (ends - starts).max() == 1:
+        # no need for a comparision
+        return left_index, right_index[starts]
+    # return left_regions,right_regions, grp,starts,ends
+    from pprint import pprint
+
+    pprint([left_regions, right_regions, starts, ends, grp[:, 0]])
+    # return left_regions, right_regions, starts, ends
+    return _get_indices_equi(
+        left_regions=left_regions[:, 1:],
+        right_regions=right_regions[:, 1:],
+        left_index=left_index,
+        right_index=right_index,
+        starts=starts,
+        ends=ends,
+        max_arr=grp[:, 0],
+    )
+
+
+@njit()
+def _get_indices_equi(
+    left_regions: np.ndarray,
+    right_regions: np.ndarray,
+    left_index: np.ndarray,
+    right_index: np.ndarray,
+    starts: np.ndarray,
+    ends: np.ndarray,
+    max_arr: np.ndarray,
+):
+    """
+    Retrieves the matching indices
+    for the left and right regions.
+    Strictly for equi joins.
+    """
+    nrows = max_arr.max() + 1
+    count_indices = np.empty(starts.size, dtype=np.intp)
+    total_length = 0
+    previous_start = -1
+    ncols = right_regions.shape[1]
+    total_length = 0
+    for num in range(starts.size):
+        start = starts[num]
+        end = ends[num]
+        arr_max = max_arr[start]
+        counter = 0
+        if previous_start != start:
+            value_counts = np.zeros(nrows, dtype=np.intp)
+            positions = np.zeros((nrows, end - start), dtype=np.intp)
+            for n in range(start, end):
+                region = right_regions[n, 0]
+                value_counts[region] += 1
+                positions[region, value_counts[region] - 1] = n
+        previous_start = start
+        for nn in range(left_regions[num, 0], arr_max + 1):
+            counts = value_counts[nn]
+            if not counts:
+                continue
+            for sz in range(counts):
+                pos = positions[nn, sz]
+                status = 1
+                for col in range(1, ncols):
+                    l_value = left_regions[num, col]
+                    r_value = right_regions[pos, col]
+                    if l_value > r_value:
+                        status = 0
+                        break
+                counter += status
+                total_length += status
+        count_indices[num] = counter
+    start_indices = np.zeros(starts.size, dtype=np.intp)
+    start_indices[1:] = np.cumsum(count_indices)[:-1]
+    l_index = np.empty(total_length, dtype=np.intp)
+    r_index = np.empty(total_length, np.intp)
+
+    for num in range(starts.size):
+        start = starts[num]
+        end = ends[num]
+        arr_max = max_arr[start]
+        size = count_indices[num]
+        l_ind = left_index[num]
+        indexer = start_indices[num]
+        if previous_start != start:
+            value_counts = np.zeros(nrows, dtype=np.intp)
+            positions = np.zeros((nrows, end - start), dtype=np.intp)
+            for n in range(start, end):
+                region = right_regions[n, 0]
+                value_counts[region] += 1
+                positions[region, value_counts[region] - 1] = n
+        previous_start = start
+        for nn in range(left_regions[num, 0], arr_max + 1):
+            if not size:
+                break
+            counts = value_counts[nn]
+            if not counts:
+                continue
+            for sz in range(counts):
+                pos = positions[nn, sz]
+                status = 1
+                for col in range(1, ncols):
+                    l_value = left_regions[num, col]
+                    r_value = right_regions[pos, col]
+                    if l_value > r_value:
+                        status = 0
+                        break
+                if status:
+                    l_index[indexer] = l_ind
+                    r_index[indexer] = right_index[pos]
+                    indexer += 1
+                    size -= 1
+                if not size:
+                    break
+    return l_index, r_index
+
+    return (
+        left_regions,
+        right_regions,
+        starts,
+        ends,
+        count_indices,
+        total_length,
+    )
+    #         for n in range(start,end):
+    #             r_region = right_regions[n, 1]
+    #             value_counts[r_region] += 1
+    #     #     status = 1
+    #     #     for col in range(1, ncols):
+    #     #         l_value = left_regions[num, col]
+    #     #         r_value = right_regions[n, col]
+    #     #         if l_value > r_value:
+    #     #             status = 0
+    #     #             break
+    #     #     counter += status
+    #     #     total_length += status
+    #     # count_indices[num] = counter
+    #     # counts += (counter > 0)
+    # return counts, count_indices, total_length
+    # if counts < starts.size:
+    #     indices = np.empty(counts, dtype=np.intp)
+    #     positions = np.empty(counts, dtype=np.intp)
+    #     indexer = 0
+    #     for num in range(starts.size):
+    #         val = count_indices[num]
+    #         if not val:
+    #             continue
+    #         indices[indexer] = val
+    #         positions[indexer] = num
+    #         indexer += 1
+    #         if indexer == counts:
+    #             break
+    # else:
+    #     indices = count_indices[:]
+    # start_indices = np.zeros(counts, dtype=np.intp)
+    # start_indices[1:] = np.cumsum(indices)[:-1]
+    # l_index = np.empty(total_length, dtype=np.intp)
+    # r_index = np.empty(total_length, dtype=np.intp)
+    # for num in range(counts):
+    #     indexer = start_indices[num]
+    #     pos = positions[num]
+    #     size = count_indices[pos]
+    #     start = starts[pos]
+    #     end = ends[pos]
+    #     l_ind = left_index[pos]
+    #     for n in range(start,end):
+    #         status = 1
+    #         for col in range(1, ncols):
+    #             l_value = left_regions[pos, col]
+    #             r_value = right_regions[n, col]
+    #             if l_value > r_value:
+    #                 status = 0
+    #                 break
+    #         if status:
+    #             l_index[indexer] = l_ind
+    #             r_index[indexer] = right_index[n]
+    #             indexer += 1
+    #             size -= 1
+    #         if not size:
+    #             break
+
+    # return  l_index, r_index
 
 
 def _numba_equi_join(df, right, eqs, ge_gt, le_lt):
@@ -922,7 +1288,7 @@ def _get_regions_non_equi(
     )
 
 
-def _align_indices_and_regions(indices, regions):
+def _align_indices_and_regions(indices, regions, sort=True):
     """
     align the indices and regions
     obtained from _get_regions_non_equi.
@@ -934,7 +1300,9 @@ def _align_indices_and_regions(indices, regions):
     *other_regions, region = regions
     # the first region should be sorted
     # which comes in handy during iteration
-    if not pd.Series(region).is_monotonic_increasing:
+    # sorting is not required for an equi join region
+    # since it is already sorted
+    if sort and not pd.Series(region).is_monotonic_increasing:
         sorter = region.argsort()
         index = index[sorter]
         region = region[sorter]
@@ -1169,7 +1537,6 @@ def _get_indices_multiple_non_equi(
             value_counts[r_region] += 1
             positions[r_region, value_counts[r_region] - 1] = n
         previous_start = start
-        counter = 0
         size = count_indices[num]
         l_ind = left_index[num]
         indexer = start_indices[num]

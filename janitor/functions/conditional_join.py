@@ -569,7 +569,7 @@ def _conditional_join_compute(
                 multiple_conditions=False,
                 keep=keep,
             )
-    return result
+
     if result is None:
         result = np.array([], dtype=np.intp), np.array([], dtype=np.intp)
 
@@ -945,7 +945,6 @@ def _multiple_conditional_join_le_lt(
                 multiple_conditions=False,
                 keep="all",
             )
-    return indices
     if not indices:
         return None
 

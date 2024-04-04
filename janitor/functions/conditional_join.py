@@ -56,6 +56,9 @@ def conditional_join(
 
     Performance might be improved by setting `use_numba` to `True` -
     this can be handy for equi joins that have lots of duplicated keys.
+    This can also be handy for non-equi joins, where there are more than
+    two join conditions,
+    or there is significant overlap in the range join columns.
     This assumes that `numba` is installed.
 
     Noticeable performance can be observed for range joins,
@@ -79,6 +82,8 @@ def conditional_join(
     is executed before the equi join - pass `force=True` to force this.
 
     The operator can be any of `==`, `!=`, `<=`, `<`, `>=`, `>`.
+
+    There is no optimisation for the `!=` operator.
 
     The join is done only on the columns.
 
@@ -547,11 +552,6 @@ def _conditional_join_compute(
                 multiple_conditions=False,
                 keep=keep,
             )
-
-    # return result
-    # a,b=result
-    # print(1638261600000000000 in a, 1638261600000000000 in b)
-    # return result
     if result is None:
         result = np.array([], dtype=np.intp), np.array([], dtype=np.intp)
 
@@ -676,18 +676,30 @@ def _multiple_conditional_join_eq(
         )
 
     if use_numba:
-        from janitor.functions._numba import (
-            _numba_equii_join,
-        )
+        from janitor.functions._numba import _numba_equi_join
 
-        equi = [condition for condition in conditions if condition[-1] == "=="]
-        non_equi = [
-            condition
-            for condition in conditions
-            if condition[-1]
-            in less_than_join_types.union(greater_than_join_types)
-        ]
-        if not non_equi:
+        eqs = None
+        for left_on, right_on, op in conditions:
+            if op == _JoinOperator.STRICTLY_EQUAL.value:
+                eqs = (left_on, right_on, op)
+                break
+
+        le_lt = None
+        ge_gt = None
+
+        for condition in conditions:
+            *_, op = condition
+            if op in less_than_join_types:
+                if le_lt:
+                    continue
+                le_lt = condition
+            elif op in greater_than_join_types:
+                if ge_gt:
+                    continue
+                ge_gt = condition
+            if le_lt and ge_gt:
+                break
+        if not le_lt and not ge_gt:
             raise ValueError(
                 "At least one less than or greater than "
                 "join condition should be present when an equi-join "
@@ -696,14 +708,53 @@ def _multiple_conditional_join_eq(
         rest = [
             condition
             for condition in conditions
-            if condition not in equi + non_equi
+            if condition not in {eqs, le_lt, ge_gt}
         ]
-        indices = _numba_equii_join(
-            df=df,
-            right=right,
-            equi_conditions=equi,
-            non_equi_conditions=non_equi,
-        )
+
+        right_columns = [eqs[1]]
+        df_columns = [eqs[0]]
+        if ge_gt:
+            if ge_gt[1] not in right_columns:
+                right_columns.append(ge_gt[1])
+            if ge_gt[0] not in df_columns:
+                df_columns.append(ge_gt[0])
+        if le_lt:
+            if le_lt[1] not in right_columns:
+                right_columns.append(le_lt[1])
+            if le_lt[0] not in df_columns:
+                df_columns.append(le_lt[0])
+
+        right_df = right.loc(axis=1)[right_columns]
+        left_df = df.loc(axis=1)[df_columns]
+        any_nulls = left_df.isna().any(axis=1)
+        if any_nulls.all(axis=None):
+            return None
+        if any_nulls.any():
+            left_df = left_df.loc[~any_nulls]
+        any_nulls = right_df.isna().any(axis=1)
+        if any_nulls.all(axis=None):
+            return None
+        if any_nulls.any():
+            right_df = right.loc[~any_nulls]
+        equi_col = right_columns[0]
+        # check if the first column is sorted
+        # if sorted, check if the second column is sorted
+        # per group in the first column
+        right_is_sorted = right_df[equi_col].is_monotonic_increasing
+        if right_is_sorted:
+            grp = right_df.groupby(equi_col, sort=False)
+            non_equi_col = right_columns[1]
+            # groupby.is_monotonic_increasing uses apply under the hood
+            # the approach used below circumvents the Series creation
+            # (which isn't required here)
+            # and just gets a sequence of booleans, before calling `all`
+            # to get a single True or False.
+            right_is_sorted = all(
+                arr.is_monotonic_increasing for _, arr in grp[non_equi_col]
+            )
+        if not right_is_sorted:
+            right_df = right_df.sort_values(right_columns)
+        indices = _numba_equi_join(left_df, right_df, eqs, ge_gt, le_lt)
         if not rest or (indices is None):
             return indices
 
@@ -718,98 +769,6 @@ def _multiple_conditional_join_eq(
             return None
 
         return _keep_output(keep, *indices)
-
-        # eqs = None
-        # for left_on, right_on, op in conditions:
-        #     if op == _JoinOperator.STRICTLY_EQUAL.value:
-        #         eqs = (left_on, right_on, op)
-        #         break
-
-        # le_lt = None
-        # ge_gt = None
-
-        # for condition in conditions:
-        #     *_, op = condition
-        #     if op in less_than_join_types:
-        #         if le_lt:
-        #             continue
-        #         le_lt = condition
-        #     elif op in greater_than_join_types:
-        #         if ge_gt:
-        #             continue
-        #         ge_gt = condition
-        #     if le_lt and ge_gt:
-        #         break
-        # if not le_lt and not ge_gt:
-        #     raise ValueError(
-        #         "At least one less than or greater than "
-        #         "join condition should be present when an equi-join "
-        #         "is present, and use_numba is set to True."
-        #     )
-        # rest = [
-        #     condition
-        #     for condition in conditions
-        #     if condition not in {eqs, le_lt, ge_gt}
-        # ]
-
-        # right_columns = [eqs[1]]
-        # df_columns = [eqs[0]]
-        # if ge_gt:
-        #     if ge_gt[1] not in right_columns:
-        #         right_columns.append(ge_gt[1])
-        #     if ge_gt[0] not in df_columns:
-        #         df_columns.append(ge_gt[0])
-        # if le_lt:
-        #     if le_lt[1] not in right_columns:
-        #         right_columns.append(le_lt[1])
-        #     if le_lt[0] not in df_columns:
-        #         df_columns.append(le_lt[0])
-
-        # right_df = right.loc(axis=1)[right_columns]
-        # left_df = df.loc(axis=1)[df_columns]
-        # any_nulls = left_df.isna().any(axis=1)
-        # if any_nulls.all(axis=None):
-        #     return None
-        # if any_nulls.any():
-        #     left_df = left_df.loc[~any_nulls]
-        # any_nulls = right_df.isna().any(axis=1)
-        # if any_nulls.all(axis=None):
-        #     return None
-        # if any_nulls.any():
-        #     right_df = right.loc[~any_nulls]
-        # equi_col = right_columns[0]
-        # # check if the first column is sorted
-        # # if sorted, check if the second column is sorted
-        # # per group in the first column
-        # right_is_sorted = right_df[equi_col].is_monotonic_increasing
-        # if right_is_sorted:
-        #     grp = right_df.groupby(equi_col, sort=False)
-        #     non_equi_col = right_columns[1]
-        #     # groupby.is_monotonic_increasing uses apply under the hood
-        #     # the approach used below circumvents the Series creation
-        #     # (which isn't required here)
-        #     # and just gets a sequence of booleans, before calling `all`
-        #     # to get a single True or False.
-        #     right_is_sorted = all(
-        #         arr.is_monotonic_increasing for _, arr in grp[non_equi_col]
-        #     )
-        # if not right_is_sorted:
-        #     right_df = right_df.sort_values(right_columns)
-        # indices = _numba_equi_join(left_df, right_df, eqs, ge_gt, le_lt)
-        # if not rest or (indices is None):
-        #     return indices
-
-        # rest = (
-        #     (df[left_on], right[right_on], op)
-        #     for left_on, right_on, op in rest
-        # )
-
-        # indices = _generate_indices(*indices, rest)
-
-        # if not indices:
-        #     return None
-
-        # return _keep_output(keep, *indices)
 
     eqs = [
         (left_on, right_on)
@@ -968,7 +927,7 @@ def _multiple_conditional_join_le_lt(
                 multiple_conditions=False,
                 keep="all",
             )
-    return indices
+
     if not indices:
         return None
 
@@ -981,7 +940,6 @@ def _multiple_conditional_join_le_lt(
         indices = _generate_indices(*indices, conditions)
         if not indices:
             return None
-    # return indices
 
     return _keep_output(keep, *indices)
 
@@ -1154,7 +1112,7 @@ def _create_frame(
     df_columns: Any,
     right_columns: Any,
     indicator: Union[bool, str],
-):
+) -> pd.DataFrame:
     """
     Create final dataframe
     """
@@ -1222,7 +1180,7 @@ def _create_frame(
         left_index: np.ndarray,
         right_index: np.ndarray,
         indicator: Union[bool, str],
-    ):
+    ) -> pd.DataFrame:
         """Computes an inner joined DataFrame.
 
         Args:

@@ -821,13 +821,13 @@ def _numba_dual_join(df: pd.DataFrame, right: pd.DataFrame, gt_lt: list):
             return None
         left_indices_and_regions.append(result[:2])
         right_indices_and_regions.append(result[2:])
+
     left_indices_and_regions = _realign(left_indices_and_regions)
     if not left_indices_and_regions:
         return None
     right_indices_and_regions = _realign(right_indices_and_regions)
     if not right_indices_and_regions:
         return None
-    return 2
 
     # left_indices_and_regions[0] is sorted ascending
     # use this to get the base line positions for right_indices_and_regions

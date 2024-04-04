@@ -21,6 +21,16 @@ def _convert_to_numpy(left: np.ndarray, right: np.ndarray) -> tuple:
     """
     Ensure array is a numpy array.
     """
+    any_nulls = pd.isna(left)
+    if any_nulls.all():
+        return None
+    if any_nulls.any():
+        left = left[~any_nulls]
+    any_nulls = pd.isna(right)
+    if any_nulls.all():
+        return None
+    if any_nulls.any():
+        right = right[~any_nulls]
     if is_extension_array_dtype(left):
         array_dtype = left.dtype.numpy_dtype
         left = left.astype(array_dtype)
@@ -48,6 +58,7 @@ def _get_regions_equi(
     # argument should offer better performance
     left_positions, left_uniques = left.factorize()
     right_positions, right_uniques = right.factorize()
+    # return left_uniques, right_uniques
     *_, right_indexer = left_uniques.join(
         right_uniques, how="left", sort=False, return_indexers=True
     )
@@ -64,6 +75,7 @@ def _get_regions_equi(
     if booleans.all():
         return None
     # left and right are not the same
+    # so there are -1s
     # pd.Index([1,2,3]) vs pd.Index([2,1])
     if booleans.any():
         booleans = ~booleans
@@ -92,10 +104,10 @@ def _get_regions_equi(
 
 
 def _numba_equii_join(df, right, equi_conditions, non_equi_conditions):
-    left_indices = []
-    left_regions = []
-    right_indices = []
-    right_regions = []
+    # left_indices = []
+    # left_regions = []
+    # right_indices = []
+    # right_regions = []
     left_index = slice(None)
     right_index = slice(None)
 
@@ -113,8 +125,8 @@ def _numba_equii_join(df, right, equi_conditions, non_equi_conditions):
             return None
         if any_nulls.any():
             right_arr = right_arr[~any_nulls]
-        left_index = left_arr.index._values
-        right_index = right_arr.index._values
+        left_index = left_arr.index
+        right_index = right_arr.index
         left_arr = pd.Index(left_arr)
         right_arr = pd.Index(right_arr)
     else:
@@ -131,9 +143,9 @@ def _numba_equii_join(df, right, equi_conditions, non_equi_conditions):
             return None
         if any_nulls.any(axis=None):
             right_arr = right_arr[~any_nulls]
-        left_index = left_arr.index._values
+        left_index = left_arr.index
         left_arr = pd.MultiIndex.from_frame(left_arr)
-        right_index = right_arr.index._values
+        right_index = right_arr.index
         right_arr = pd.MultiIndex.from_frame(right_arr)
 
     result = _get_regions_equi(
@@ -150,88 +162,217 @@ def _numba_equii_join(df, right, equi_conditions, non_equi_conditions):
         left_region,
         right_region,
     ) = result
-
-    left_index = pd.Index(left_index)
-    right_index = pd.Index(right_index)
-    left_indices.append(left_index)
-    right_indices.append(right_index)
-    left_regions.append(left_region)
-    right_regions.append(right_region)
-
-    for left_on, right_on, op in non_equi_conditions:
-        result = _get_regions_non_equi(
-            left=df.loc[left_index, left_on],
+    if len(non_equi_conditions) == 2:
+        # check if it is a range join
+        return non_equi_conditions
+        pass
+    # print(left_index, right_index)
+    if len(non_equi_conditions) == 1:
+        left_on, right_on, op = non_equi_conditions[0]
+        left = df.loc[left_index, left_on]
+        if (op in less_than_join_types) and not left.is_monotonic_increasing:
+            left = left.sort_values(ascending=False)
+        elif not left.is_monotonic_increasing:
+            left = left.sort_values()
+        result = _generic_func_cond_join(
+            left=left,
             right=right.loc[right_index, right_on],
             op=op,
+            multiple_conditions=True,
+            keep="all",
         )
         if result is None:
             return None
-        (
-            left_index,
-            right_index,
-            left_region,
-            right_region,
-        ) = result
 
-        left_index = pd.Index(left_index)
-        right_index = pd.Index(right_index)
-        left_indices.append(left_index)
-        right_indices.append(right_index)
-        left_regions.append(left_region)
-        right_regions.append(right_region)
+        l_index, r_index, search_indices = result
+        # return left_index, right_index, l_index, r_index
+        indexer = left_index.get_indexer(l_index)
+        mask = indexer == -1
+        if mask.any():
+            indexer = indexer[~mask]
+        left_index = left_index[indexer]
+        left_region = left_region[indexer]
+        indexer = right_index.get_indexer(r_index)
+        mask = indexer == -1
+        if mask.any():
+            indexer = indexer[~mask]
+        right_index = right_index[indexer]
+        right_region = right_region[indexer]
+        # return (
+        #     left_index,
+        #     right_index,
+        #     l_index,
+        #     r_index,
+        #     search_indices,
+        #     right_region,
+        #     right_region.size,
+        # )
+        # print(left_index, right_index, search_indices)
+        if op in less_than_join_types:
+            ends = np.empty(search_indices.size, dtype=np.intp)
+            ends[0] = right_index.size
+            ends[1:] = search_indices[:-1]
+            starts = search_indices
+        else:
+            starts = np.zeros(search_indices.size, dtype=np.intp)
+            starts[1:] = search_indices[:-1]
+            ends = search_indices
+        # return left_index, right_index, left_region, right_region, starts, ends
+        max_freq = pd.Series(right_region).value_counts().iloc[0]
+        return _get_indices_equi_single_join(
+            left_region=left_region,
+            right_region=right_region,
+            left_index=left_index._values,
+            right_index=right_index._values,
+            starts=starts,
+            ends=ends,
+            max_freq=max_freq,
+        )
+    return result
+
+    # left_index = pd.Index(left_index)
+    # right_index = pd.Index(right_index)
+    # left_indices.append(left_index)
+    # right_indices.append(right_index)
+    # left_regions.append(left_region)
+    # right_regions.append(right_region)
 
     # return left_indices, right_indices, left_regions, right_regions
 
-    left_index, left_regions = _align_indices_and_regions(
-        indices=left_indices, regions=left_regions, sort=False
-    )
-    right_index, right_regions = _align_indices_and_regions(
-        indices=right_indices, regions=right_regions, sort=False
-    )
+    # for left_on, right_on, op in non_equi_conditions[::-1]:
+    #     result = _get_regions_non_equi(
+    #         left=df.loc[left_index, left_on],
+    #         right=right.loc[right_index, right_on],
+    #         op=op,
+    #     )
+    #     if result is None:
+    #         return None
+    #     (
+    #         left_index,
+    #         right_index,
+    #         left_region,
+    #         right_region,
+    #     ) = result
 
-    return left_regions, right_regions
+    #     left_index = pd.Index(left_index)
+    #     right_index = pd.Index(right_index)
+    #     left_indices.append(left_index)
+    #     right_indices.append(right_index)
+    #     left_regions.append(left_region)
+    #     right_regions.append(right_region)
 
-    left_regions = np.column_stack(left_regions)
-    right_regions = np.column_stack(right_regions)
+    # left_index, left_regions = _align_indices_and_regions(
+    #     indices=left_indices, regions=left_regions
+    # )
+    # right_index, right_regions = _align_indices_and_regions(
+    #     indices=right_indices, regions=right_regions
+    # )
 
-    # return left_regions, right_regions
-    left_indices = None
-    right_indices = None
-    left_arr = left_regions[:, 0]
-    right_arr = right_regions[:, 0]
-    starts = right_arr.searchsorted(left_arr, side="left")
-    ends = right_arr.searchsorted(left_arr, side="right")
+    # return left_index, right_index, left_regions, right_regions
 
-    grp = pd.DataFrame(right_regions[:, 1:]).groupby(
-        right_regions[:, 0], sort=False
-    )
-    grp = grp.transform("max").to_numpy(copy=False)
-    grp = grp[starts]
-    booleans = left_regions[:, 1:] > grp
-    booleans = booleans.any(axis=1)
-    if booleans.any(axis=None):
-        booleans = ~booleans
-        left_regions = left_regions[booleans]
-        starts = starts[booleans]
-        ends = ends[booleans]
-        left_index = left_index[booleans]
-    if (ends - starts).max() == 1:
-        # no need for a comparision
-        return left_index, right_index[starts]
-    # return left_regions,right_regions, grp,starts,ends
-    from pprint import pprint
+    # left_regions = np.column_stack(left_regions)
+    # right_regions = np.column_stack(right_regions)
 
-    pprint([left_regions, right_regions, starts, ends, grp[:, 0]])
-    # return left_regions, right_regions, starts, ends
-    return _get_indices_equi(
-        left_regions=left_regions[:, 1:],
-        right_regions=right_regions[:, 1:],
-        left_index=left_index,
-        right_index=right_index,
-        starts=starts,
-        ends=ends,
-        max_arr=grp[:, 0],
-    )
+    # # return left_regions, right_regions
+    # left_indices = None
+    # right_indices = None
+    # left_arr = left_regions[:, 0]
+    # right_arr = right_regions[:, 0]
+    # starts = right_arr.searchsorted(left_arr, side="left")
+    # ends = right_arr.searchsorted(left_arr, side="right")
+
+    # grp = pd.DataFrame(right_regions[:, 1:]).groupby(
+    #     right_regions[:, 0], sort=False
+    # )
+    # grp = grp.transform("max").to_numpy(copy=False)
+    # grp = grp[starts]
+    # booleans = left_regions[:, 1:] > grp
+    # booleans = booleans.any(axis=1)
+    # if booleans.any(axis=None):
+    #     booleans = ~booleans
+    #     left_regions = left_regions[booleans]
+    #     starts = starts[booleans]
+    #     ends = ends[booleans]
+    #     left_index = left_index[booleans]
+    # if (ends - starts).max() == 1:
+    #     # no need for a comparision
+    #     return left_index, right_index[starts]
+    # # return left_regions,right_regions, grp,starts,ends
+    # from pprint import pprint
+
+    # pprint([left_regions, right_regions, starts, ends, grp[:, 0]])
+    # # return left_regions, right_regions, starts, ends
+    # return _get_indices_equi(
+    #     left_regions=left_regions[:, 1:],
+    #     right_regions=right_regions[:, 1:],
+    #     left_index=left_index,
+    #     right_index=right_index,
+    #     starts=starts,
+    #     ends=ends,
+    #     max_arr=grp[:, 0],
+    # )
+
+
+@njit()
+def _get_indices_equi_single_join(
+    left_region: np.ndarray,
+    right_region: np.ndarray,
+    left_index: np.ndarray,
+    right_index: np.ndarray,
+    starts: np.ndarray,
+    ends: np.ndarray,
+    max_freq: int,
+):
+    """
+    Return join indices for a single equi-join.
+    """
+    value_counts = np.zeros(right_region.max() + 1, dtype=np.intp)
+    count_indices = np.empty(starts.size, dtype=np.intp)
+    total_length = 0
+    non_matches = 0
+    for num in range(starts.size):
+        start = starts[num]
+        end = ends[num]
+        for n in range(start, end):
+            r_region = right_region[n]
+            value_counts[r_region] += 1
+        l_region = left_region[num]
+        counter = value_counts[l_region]
+        count_indices[num] = counter
+        total_length += counter
+        non_matches += not counter
+    if non_matches < starts.size:
+        _indices = count_indices[count_indices > 0]
+    else:
+        _indices = count_indices[:]
+    start_indices = np.zeros(_indices.size, dtype=np.intp)
+    start_indices[1:] = np.cumsum(_indices)[:-1]
+    l_index = np.empty(total_length, dtype=np.intp)
+    r_index = np.empty(total_length, dtype=np.intp)
+    n = 0
+    nrows = right_region.max() + 1
+    positions = np.zeros((nrows, max_freq), dtype=np.intp)
+    value_counts = np.zeros(nrows, dtype=np.intp)
+    for num in range(starts.size):
+        if not count_indices[num]:
+            continue
+        start = starts[num]
+        end = ends[num]
+        for ss in range(start, end):
+            r_region = right_region[ss]
+            value_counts[r_region] += 1
+            positions[r_region, value_counts[r_region] - 1] = ss
+        l_region = left_region[num]
+        counter = value_counts[l_region]
+        l_ind = left_index[num]
+        indexer = start_indices[n]
+        for nn in range(counter):
+            pos = positions[l_region, nn]
+            l_index[indexer] = l_ind
+            r_index[indexer] = right_index[pos]
+            indexer += 1
+        n += 1
+    return l_index, r_index
 
 
 @njit()
@@ -1289,7 +1430,7 @@ def _get_regions_non_equi(
     )
 
 
-def _align_indices_and_regions(indices, regions, sort=True):
+def _align_indices_and_regions(indices, regions):
     """
     align the indices and regions
     obtained from _get_regions_non_equi.
@@ -1297,23 +1438,24 @@ def _align_indices_and_regions(indices, regions, sort=True):
     A single index is returned, with the regions
     properly aligned with the index.
     """
-    index, *other_indices = indices[:]
-    region, *other_regions = regions[:]
+    index, *other_indices = indices[::-1]
+    region, *other_regions = regions[::-1]
     # the first region should be sorted
-    # which comes in handy during iteration
-    # sorting is not required for an equi join region
-    # since it is already sorted
-    if sort and not pd.Series(region).is_monotonic_increasing:
+    # since usually the search starts from the bottom
+    if not pd.Index(region).is_monotonic_increasing:
         sorter = region.argsort(kind="stable")
         index = index[sorter]
         region = region[sorter]
     outcome = [region]
     for _index, _region in zip(other_indices, other_regions):
-        indexer = _index.get_indexer(index)
-        booleans = indexer == -1
-        if booleans.any():
-            indexer = indexer[~booleans]
-        _region = _region[indexer]
+        *_, indexer = index.join(
+            _index, sort=False, how="left", return_indexers=True
+        )
+        if indexer is not None:
+            booleans = indexer != -1
+            if not booleans.all():
+                indexer = indexer[booleans]
+            _region = _region[indexer]
         outcome.append(_region)
     return index._values, outcome
 

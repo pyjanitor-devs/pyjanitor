@@ -746,7 +746,6 @@ def _less_than_indices(
     A tuple of integer indexes
     for left and right is returned.
     """
-
     # no point going through all the hassle
     if left.min() > right.max():
         return None
@@ -755,9 +754,11 @@ def _less_than_indices(
     if not outcome:
         return None
     left, right, left_index, right_index, right_is_sorted, any_nulls = outcome
-
+    left_positions, left = pd.factorize(left)
     search_indices = right.searchsorted(left, side="left")
-
+    left = left[left_positions]
+    search_indices = search_indices[left_positions]
+    left_positions = None
     # if any of the positions in `search_indices`
     # is equal to the length of `right_keys`
     # that means the respective position in `left`
@@ -767,10 +768,10 @@ def _less_than_indices(
     rows_equal = search_indices == len_right
 
     if rows_equal.any():
-        left = left[~rows_equal]
-        left_index = left_index[~rows_equal]
-        search_indices = search_indices[~rows_equal]
-
+        rows_equal = ~rows_equal
+        left = left[rows_equal]
+        left_index = left_index[rows_equal]
+        search_indices = search_indices[rows_equal]
     # the idea here is that if there are any equal values
     # shift to the right to the immediate next position
     # that is not equal
@@ -802,7 +803,6 @@ def _less_than_indices(
 
         if not search_indices.size:
             return None
-
     if multiple_conditions:
         return left_index, right_index, search_indices
     if right_is_sorted and (keep == "first"):
@@ -841,7 +841,6 @@ def _greater_than_indices(
     else a tuple of the index for left, right, as well
     as the positions of left in right is returned.
     """
-
     # quick break, avoiding the hassle
     if left.max() < right.min():
         return None
@@ -850,8 +849,11 @@ def _greater_than_indices(
     if not outcome:
         return None
     left, right, left_index, right_index, right_is_sorted, any_nulls = outcome
-
+    left_positions, left = pd.factorize(left)
     search_indices = right.searchsorted(left, side="right")
+    left = left[left_positions]
+    search_indices = search_indices[left_positions]
+    left_positions = None
     # if any of the positions in `search_indices`
     # is equal to 0 (less than 1), it implies that
     # left[position] is not greater than any value
@@ -861,7 +863,6 @@ def _greater_than_indices(
         left = left[~rows_equal]
         left_index = left_index[~rows_equal]
         search_indices = search_indices[~rows_equal]
-
     # the idea here is that if there are any equal values
     # shift downwards to the immediate next position
     # that is not equal

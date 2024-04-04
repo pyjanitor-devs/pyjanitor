@@ -547,7 +547,11 @@ def _conditional_join_compute(
                 multiple_conditions=False,
                 keep=keep,
             )
-    return result
+
+    # return result
+    # a,b=result
+    # print(1638261600000000000 in a, 1638261600000000000 in b)
+    # return result
     if result is None:
         result = np.array([], dtype=np.intp), np.array([], dtype=np.intp)
 

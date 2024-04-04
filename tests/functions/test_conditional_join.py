@@ -11,9 +11,10 @@ from janitor.testing_utils.strategies import (
     conditional_right,
 )
 
-pd.set_option("display.max_columns", None)
-pd.set_option("display.expand_frame_repr", False)
-pd.set_option("max_colwidth", None)
+# turn on to view dataframes from failed tests
+# pd.set_option("display.max_columns", None)
+# pd.set_option("display.expand_frame_repr", False)
+# pd.set_option("max_colwidth", None)
 
 
 @pytest.fixture

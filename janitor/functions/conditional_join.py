@@ -552,6 +552,7 @@ def _conditional_join_compute(
                 multiple_conditions=False,
                 keep=keep,
             )
+    # return result
     if result is None:
         result = np.array([], dtype=np.intp), np.array([], dtype=np.intp)
 
@@ -843,13 +844,17 @@ def _multiple_conditional_join_le_lt(
         conditions = [
             condition for condition in conditions if condition not in gt_lt
         ]
+        if (len(gt_lt) > 1) and not conditions:
+            return _numba_multiple_non_equi_join(df, right, gt_lt, keep=keep)
         if len(gt_lt) == 1:
             left_on, right_on, op = gt_lt[0]
             indices = _numba_single_non_equi_join(
                 df[left_on], right[right_on], op, keep="all"
             )
         else:
-            indices = _numba_multiple_non_equi_join(df, right, gt_lt)
+            indices = _numba_multiple_non_equi_join(
+                df, right, gt_lt, keep="all"
+            )
     else:
         # there is an opportunity for optimization for range joins
         # which is usually `lower_value < value < upper_value`
@@ -929,7 +934,7 @@ def _multiple_conditional_join_le_lt(
             )
     if not indices:
         return None
-
+    # return indices
     if conditions:
         conditions = (
             (df[left_on], right[right_on], op)
@@ -939,6 +944,7 @@ def _multiple_conditional_join_le_lt(
         indices = _generate_indices(*indices, conditions)
         if not indices:
             return None
+    # return indices
     return _keep_output(keep, *indices)
 
 

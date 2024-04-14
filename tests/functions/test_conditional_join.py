@@ -4036,6 +4036,215 @@ def test_multiple_non_eq_numba(df, right):
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
+def test_multiple_non_eq_first(df, right):
+    """Test output for multiple conditions - grab only the first match."""
+
+    expected = (
+        df[["B", "A", "E"]]
+        .assign(index=df.index)
+        .merge(
+            right[["Floats", "Integers", "Dates"]],
+            how="cross",
+        )
+        .loc[
+            lambda df: df.B.le(df.Floats)
+            & df.A.gt(df.Integers)
+            & df.E.lt(df.Dates)
+        ]
+        .groupby("index", sort=False)
+        .head(1)
+        .drop(columns="index")
+        .reset_index(drop=True)
+    )
+
+    actual = df[["B", "A", "E"]].conditional_join(
+        right[["Floats", "Integers", "Dates"]],
+        ("B", "Floats", "<="),
+        ("A", "Integers", ">"),
+        ("E", "Dates", "<"),
+        how="inner",
+        keep="first",
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_multiple_non_eq_first_numba(df, right):
+    """Test output for multiple conditions - grab only the first match."""
+
+    expected = (
+        df[["B", "A", "E"]]
+        .assign(index=df.index)
+        .merge(
+            right[["Floats", "Integers", "Dates"]],
+            how="cross",
+        )
+        .loc[
+            lambda df: df.B.le(df.Floats)
+            & df.A.gt(df.Integers)
+            & df.E.lt(df.Dates)
+        ]
+        .groupby("index", sort=False)
+        .head(1)
+        .drop(columns="index")
+        .reset_index(drop=True)
+    )
+
+    actual = df[["B", "A", "E"]].conditional_join(
+        right[["Floats", "Integers", "Dates"]],
+        ("B", "Floats", "<="),
+        ("A", "Integers", ">"),
+        ("E", "Dates", "<"),
+        how="inner",
+        keep="first",
+        use_numba=True,
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_multiple_non_eq_last(df, right):
+    """Test output for multiple conditions - grab only the last match."""
+
+    expected = (
+        df[["B", "A", "E"]]
+        .assign(index=df.index)
+        .merge(
+            right[["Floats", "Integers", "Dates"]],
+            how="cross",
+        )
+        .loc[
+            lambda df: df.B.le(df.Floats)
+            & df.A.gt(df.Integers)
+            & df.E.lt(df.Dates)
+        ]
+        .groupby("index", sort=False)
+        .tail(1)
+        .drop(columns="index")
+        .reset_index(drop=True)
+    )
+
+    actual = df[["B", "A", "E"]].conditional_join(
+        right[["Floats", "Integers", "Dates"]],
+        ("B", "Floats", "<="),
+        ("A", "Integers", ">"),
+        ("E", "Dates", "<"),
+        how="inner",
+        keep="last",
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_multiple_non_eq_last_numba(df, right):
+    """Test output for multiple conditions - grab only the last match."""
+
+    expected = (
+        df[["B", "A", "E"]]
+        .assign(index=df.index)
+        .merge(
+            right[["Floats", "Integers", "Dates"]],
+            how="cross",
+        )
+        .loc[
+            lambda df: df.B.le(df.Floats)
+            & df.A.gt(df.Integers)
+            & df.E.lt(df.Dates)
+        ]
+        .groupby("index", sort=False)
+        .tail(1)
+        .drop(columns="index")
+        .reset_index(drop=True)
+    )
+
+    actual = df[["B", "A", "E"]].conditional_join(
+        right[["Floats", "Integers", "Dates"]],
+        ("B", "Floats", "<="),
+        ("A", "Integers", ">"),
+        ("E", "Dates", "<"),
+        how="inner",
+        keep="last",
+        use_numba=True,
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_non_eq_last(df, right):
+    """Test output for dual conditions - grab only the last match."""
+
+    expected = (
+        df[["A", "E"]]
+        .assign(index=df.index)
+        .merge(
+            right[["Integers", "Dates"]],
+            how="cross",
+        )
+        .loc[lambda df: df.A.gt(df.Integers) & df.E.lt(df.Dates)]
+        .groupby("index", sort=False)
+        .tail(1)
+        .drop(columns="index")
+        .reset_index(drop=True)
+    )
+
+    actual = df[["A", "E"]].conditional_join(
+        right[["Integers", "Dates"]],
+        ("A", "Integers", ">"),
+        ("E", "Dates", "<"),
+        how="inner",
+        keep="last",
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_non_eq_last_numba(df, right):
+    """Test output for dual conditions - grab only the last match."""
+
+    expected = (
+        df[["A", "E"]]
+        .assign(index=df.index)
+        .merge(
+            right[["Integers", "Dates"]],
+            how="cross",
+        )
+        .loc[lambda df: df.A.gt(df.Integers) & df.E.lt(df.Dates)]
+        .groupby("index", sort=False)
+        .tail(1)
+        .drop(columns="index")
+        .reset_index(drop=True)
+    )
+
+    actual = df[["A", "E"]].conditional_join(
+        right[["Integers", "Dates"]],
+        ("A", "Integers", ">"),
+        ("E", "Dates", "<"),
+        how="inner",
+        keep="last",
+        use_numba=True,
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
 def test_multiple_eqs(df, right):
     """Test output for multiple conditions."""
 

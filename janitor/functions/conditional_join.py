@@ -927,7 +927,6 @@ def _multiple_conditional_join_le_lt(
                 multiple_conditions=False,
                 keep="all",
             )
-
     if not indices:
         return None
 
@@ -940,7 +939,6 @@ def _multiple_conditional_join_le_lt(
         indices = _generate_indices(*indices, conditions)
         if not indices:
             return None
-
     return _keep_output(keep, *indices)
 
 
@@ -972,6 +970,7 @@ def _range_indices(
     # this is helpful as we can convert extension arrays
     # to numpy arrays safely
     # and simplify the search logic below
+    # if there is no fastpath available
     any_nulls = df[left_on].isna()
     if any_nulls.any():
         left_c = left_c[~any_nulls]
@@ -990,10 +989,12 @@ def _range_indices(
     if outcome is None:
         return None
 
-    left_index, right_index, search_indices = outcome
+    left_index, right_index, ends = outcome
     left_on, right_on, op = second
-    right_c = right.loc[right_index, right_on]
-    left_c = df.loc[left_index, left_on]
+    left_on = df.columns.get_loc(left_on)
+    right_on = right.columns.get_loc(right_on)
+    right_c = right.iloc[right_index, right_on]
+    left_c = df.iloc[left_index, left_on]
     # if True, we can use a binary search
     # for more performance, instead of a linear search
     fastpath = right_c.is_monotonic_increasing
@@ -1007,7 +1008,7 @@ def _range_indices(
         )
         if outcome is None:
             return None
-        left_c, pos = outcome
+        left_c, starts = outcome
     else:
         # the aim here is to get the first match
         # where the left array is </<= than the right array
@@ -1025,35 +1026,33 @@ def _range_indices(
         )
         if outcome is None:
             return None
-        left_c, right_index, pos = outcome
+        left_c, right_index, starts = outcome
     if left_c.size < left_index.size:
         keep_rows = np.isin(left_index, left_c, assume_unique=True)
-        search_indices = search_indices[keep_rows]
+        ends = ends[keep_rows]
         left_index = left_c
     # no point searching within (a, b)
     # if a == b
     # since range(a, b) yields none
-    keep_rows = pos < search_indices
+    keep_rows = starts < ends
 
     if not keep_rows.any():
         return None
 
     if not keep_rows.all():
         left_index = left_index[keep_rows]
-        pos = pos[keep_rows]
-        search_indices = search_indices[keep_rows]
+        starts = starts[keep_rows]
+        ends = ends[keep_rows]
 
-    repeater = search_indices - pos
+    repeater = ends - starts
     if repeater.max() == 1:
         # no point running a comparison op
         # if the width is all 1
         # this also implies that the intervals
         # do not overlap on the right side
-        return left_index, right_index[pos]
-    right_index = [
-        right_index[start:end] for start, end in zip(pos, search_indices)
-    ]
+        return left_index, right_index[starts]
 
+    right_index = [right_index[start:end] for start, end in zip(starts, ends)]
     right_index = np.concatenate(right_index)
     left_index = left_index.repeat(repeater)
     if fastpath:
@@ -1064,6 +1063,7 @@ def _range_indices(
     # which are all in the original `df` and `right`
     # doing this allows some speed gains
     # while still ensuring correctness
+    left_on, right_on, op = second
     left_c = df[left_on]._values[left_index]
     right_c = right[right_on]._values[right_index]
     ext_arr = is_extension_array_dtype(left_c)

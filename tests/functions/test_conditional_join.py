@@ -3956,7 +3956,7 @@ def test_multiple_non_eqi_numba(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_multiple_non_eq(df, right):
     """Test output for multiple conditions."""
-
+    columns = ["A", "Integers", "E", "Dates", "B", "Floats"]
     expected = (
         df[["B", "A", "E"]]
         .assign(index=df.index)
@@ -3969,19 +3969,23 @@ def test_multiple_non_eq(df, right):
             & df.A.lt(df.Integers)
             & df.E.lt(df.Dates)
         ]
-        .groupby("index")
+        .groupby("index", sort=False)
         .head(1)
         .drop(columns="index")
-        .reset_index(drop=True)
+        .sort_values(columns, ignore_index=True)
     )
 
-    actual = df[["B", "A", "E"]].conditional_join(
-        right[["Floats", "Integers", "Dates"]],
-        ("B", "Floats", "<="),
-        ("A", "Integers", "<"),
-        ("E", "Dates", "<"),
-        how="inner",
-        keep="first",
+    actual = (
+        df[["B", "A", "E"]]
+        .conditional_join(
+            right[["Floats", "Integers", "Dates"]],
+            ("B", "Floats", "<="),
+            ("A", "Integers", "<"),
+            ("E", "Dates", "<"),
+            how="inner",
+            keep="first",
+        )
+        .sort_values(columns, ignore_index=True)
     )
 
     assert_frame_equal(expected, actual)
@@ -4005,7 +4009,7 @@ def test_multiple_non_eq_numba(df, right):
             & df.A.lt(df.Integers)
             & df.E.lt(df.Dates)
         ]
-        .groupby("index")
+        .groupby("index", sort=False)
         .head(1)
         .drop(columns="index")
         .reset_index(drop=True)
@@ -4038,7 +4042,7 @@ def test_multiple_non_eq_numba(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_multiple_non_eq_first(df, right):
     """Test output for multiple conditions - grab only the first match."""
-
+    columns = ["A", "Integers", "E", "Dates", "B", "Floats"]
     expected = (
         df[["B", "A", "E"]]
         .assign(index=df.index)
@@ -4054,16 +4058,20 @@ def test_multiple_non_eq_first(df, right):
         .groupby("index", sort=False)
         .head(1)
         .drop(columns="index")
-        .reset_index(drop=True)
+        .sort_values(columns, ignore_index=True)
     )
 
-    actual = df[["B", "A", "E"]].conditional_join(
-        right[["Floats", "Integers", "Dates"]],
-        ("B", "Floats", "<="),
-        ("A", "Integers", ">"),
-        ("E", "Dates", "<"),
-        how="inner",
-        keep="first",
+    actual = (
+        df[["B", "A", "E"]]
+        .conditional_join(
+            right[["Floats", "Integers", "Dates"]],
+            ("B", "Floats", "<="),
+            ("A", "Integers", ">"),
+            ("E", "Dates", "<"),
+            how="inner",
+            keep="first",
+        )
+        .sort_values(columns, ignore_index=True)
     )
 
     assert_frame_equal(expected, actual)
@@ -4074,7 +4082,7 @@ def test_multiple_non_eq_first(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_multiple_non_eq_first_numba(df, right):
     """Test output for multiple conditions - grab only the first match."""
-
+    columns = ["A", "Integers", "E", "Dates", "B", "Floats"]
     expected = (
         df[["B", "A", "E"]]
         .assign(index=df.index)
@@ -4090,17 +4098,21 @@ def test_multiple_non_eq_first_numba(df, right):
         .groupby("index", sort=False)
         .head(1)
         .drop(columns="index")
-        .reset_index(drop=True)
+        .sort_values(columns, ignore_index=True)
     )
 
-    actual = df[["B", "A", "E"]].conditional_join(
-        right[["Floats", "Integers", "Dates"]],
-        ("B", "Floats", "<="),
-        ("A", "Integers", ">"),
-        ("E", "Dates", "<"),
-        how="inner",
-        keep="first",
-        use_numba=True,
+    actual = (
+        df[["B", "A", "E"]]
+        .conditional_join(
+            right[["Floats", "Integers", "Dates"]],
+            ("B", "Floats", "<="),
+            ("A", "Integers", ">"),
+            ("E", "Dates", "<"),
+            how="inner",
+            keep="first",
+            use_numba=True,
+        )
+        .sort_values(columns, ignore_index=True)
     )
 
     assert_frame_equal(expected, actual)
@@ -4111,7 +4123,7 @@ def test_multiple_non_eq_first_numba(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_multiple_non_eq_last(df, right):
     """Test output for multiple conditions - grab only the last match."""
-
+    columns = ["A", "Integers", "E", "Dates", "B", "Floats"]
     expected = (
         df[["B", "A", "E"]]
         .assign(index=df.index)
@@ -4127,16 +4139,20 @@ def test_multiple_non_eq_last(df, right):
         .groupby("index", sort=False)
         .tail(1)
         .drop(columns="index")
-        .reset_index(drop=True)
+        .sort_values(columns, ignore_index=True)
     )
 
-    actual = df[["B", "A", "E"]].conditional_join(
-        right[["Floats", "Integers", "Dates"]],
-        ("B", "Floats", "<="),
-        ("A", "Integers", ">"),
-        ("E", "Dates", "<"),
-        how="inner",
-        keep="last",
+    actual = (
+        df[["B", "A", "E"]]
+        .conditional_join(
+            right[["Floats", "Integers", "Dates"]],
+            ("B", "Floats", "<="),
+            ("A", "Integers", ">"),
+            ("E", "Dates", "<"),
+            how="inner",
+            keep="last",
+        )
+        .sort_values(columns, ignore_index=True)
     )
 
     assert_frame_equal(expected, actual)
@@ -4147,7 +4163,7 @@ def test_multiple_non_eq_last(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_multiple_non_eq_last_numba(df, right):
     """Test output for multiple conditions - grab only the last match."""
-
+    columns = ["A", "Integers", "E", "Dates", "B", "Floats"]
     expected = (
         df[["B", "A", "E"]]
         .assign(index=df.index)
@@ -4163,17 +4179,21 @@ def test_multiple_non_eq_last_numba(df, right):
         .groupby("index", sort=False)
         .tail(1)
         .drop(columns="index")
-        .reset_index(drop=True)
+        .sort_values(columns, ignore_index=True)
     )
 
-    actual = df[["B", "A", "E"]].conditional_join(
-        right[["Floats", "Integers", "Dates"]],
-        ("B", "Floats", "<="),
-        ("A", "Integers", ">"),
-        ("E", "Dates", "<"),
-        how="inner",
-        keep="last",
-        use_numba=True,
+    actual = (
+        df[["B", "A", "E"]]
+        .conditional_join(
+            right[["Floats", "Integers", "Dates"]],
+            ("B", "Floats", "<="),
+            ("A", "Integers", ">"),
+            ("E", "Dates", "<"),
+            how="inner",
+            keep="last",
+            use_numba=True,
+        )
+        .sort_values(columns, ignore_index=True)
     )
 
     assert_frame_equal(expected, actual)
@@ -4184,7 +4204,7 @@ def test_multiple_non_eq_last_numba(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_non_eq_last(df, right):
     """Test output for dual conditions - grab only the last match."""
-
+    columns = ["A", "Integers", "E", "Dates"]
     expected = (
         df[["A", "E"]]
         .assign(index=df.index)
@@ -4196,15 +4216,19 @@ def test_dual_non_eq_last(df, right):
         .groupby("index", sort=False)
         .tail(1)
         .drop(columns="index")
-        .reset_index(drop=True)
+        .sort_values(columns, ignore_index=True)
     )
 
-    actual = df[["A", "E"]].conditional_join(
-        right[["Integers", "Dates"]],
-        ("A", "Integers", ">"),
-        ("E", "Dates", "<"),
-        how="inner",
-        keep="last",
+    actual = (
+        df[["A", "E"]]
+        .conditional_join(
+            right[["Integers", "Dates"]],
+            ("A", "Integers", ">"),
+            ("E", "Dates", "<"),
+            how="inner",
+            keep="last",
+        )
+        .sort_values(columns, ignore_index=True)
     )
 
     assert_frame_equal(expected, actual)
@@ -4215,7 +4239,7 @@ def test_dual_non_eq_last(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_non_eq_last_numba(df, right):
     """Test output for dual conditions - grab only the last match."""
-
+    columns = ["A", "Integers", "E", "Dates"]
     expected = (
         df[["A", "E"]]
         .assign(index=df.index)
@@ -4227,16 +4251,20 @@ def test_dual_non_eq_last_numba(df, right):
         .groupby("index", sort=False)
         .tail(1)
         .drop(columns="index")
-        .reset_index(drop=True)
+        .sort_values(columns, ignore_index=True)
     )
 
-    actual = df[["A", "E"]].conditional_join(
-        right[["Integers", "Dates"]],
-        ("A", "Integers", ">"),
-        ("E", "Dates", "<"),
-        how="inner",
-        keep="last",
-        use_numba=True,
+    actual = (
+        df[["A", "E"]]
+        .conditional_join(
+            right[["Integers", "Dates"]],
+            ("A", "Integers", ">"),
+            ("E", "Dates", "<"),
+            how="inner",
+            keep="last",
+            use_numba=True,
+        )
+        .sort_values(columns, ignore_index=True)
     )
 
     assert_frame_equal(expected, actual)

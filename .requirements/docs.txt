@@ -28,7 +28,7 @@ ghp-import==2.1.0
     # via mkdocs
 griffe==0.25.4
     # via mkdocstrings-python
-idna==3.4
+idna==3.7
     # via requests
 importlib-metadata==7.0.1
     # via

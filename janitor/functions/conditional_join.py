@@ -552,7 +552,6 @@ def _conditional_join_compute(
                 multiple_conditions=False,
                 keep=keep,
             )
-    # return result
     if result is None:
         result = np.array([], dtype=np.intp), np.array([], dtype=np.intp)
 
@@ -714,6 +713,7 @@ def _multiple_conditional_join_eq(
 
         right_columns = [eqs[1]]
         df_columns = [eqs[0]]
+        # ensure the sort columns are unique
         if ge_gt:
             if ge_gt[1] not in right_columns:
                 right_columns.append(ge_gt[1])
@@ -934,7 +934,6 @@ def _multiple_conditional_join_le_lt(
             )
     if not indices:
         return None
-    # return indices
     if conditions:
         conditions = (
             (df[left_on], right[right_on], op)
@@ -944,7 +943,6 @@ def _multiple_conditional_join_le_lt(
         indices = _generate_indices(*indices, conditions)
         if not indices:
             return None
-    # return indices
     return _keep_output(keep, *indices)
 
 
@@ -953,7 +951,7 @@ def _range_indices(
     right: pd.DataFrame,
     first: tuple,
     second: tuple,
-):
+) -> Union[tuple[np.ndarray, np.ndarray], None]:
     """
     Retrieve index positions for range/interval joins.
 
@@ -1086,7 +1084,7 @@ def _range_indices(
     return left_index, right_index
 
 
-def _create_multiindex_column(df: pd.DataFrame, right: pd.DataFrame):
+def _create_multiindex_column(df: pd.DataFrame, right: pd.DataFrame) -> tuple:
     """
     Create a MultiIndex column for conditional_join.
     """

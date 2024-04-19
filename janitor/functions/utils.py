@@ -25,6 +25,7 @@ from typing import (
 
 import numpy as np
 import pandas as pd
+import polars as pl
 from multipledispatch import dispatch
 from pandas.api.types import (
     is_bool_dtype,
@@ -38,12 +39,7 @@ from pandas.core.common import is_bool_indexer
 from pandas.core.groupby.generic import DataFrameGroupBy, SeriesGroupBy
 
 from janitor.errors import JanitorError
-from janitor.utils import (
-    _expand_grid,
-    check,
-    check_column,
-    find_stack_level,
-)
+from janitor.utils import _expand_grid, check, check_column, find_stack_level
 
 warnings.simplefilter("always", DeprecationWarning)
 

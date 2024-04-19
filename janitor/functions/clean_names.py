@@ -2,15 +2,14 @@
 
 from __future__ import annotations
 
-import unicodedata
-from typing import Optional, Union
-
 import pandas as pd
 import pandas_flavor as pf
 from pandas.api.types import is_scalar
 
-from janitor.errors import JanitorError
-from janitor.functions.utils import _is_str_or_cat, get_index_labels
+from janitor.functions.utils import (
+    get_index_labels,
+    make_clean_names,
+)
 from janitor.utils import deprecated_alias
 
 
@@ -18,9 +17,9 @@ from janitor.utils import deprecated_alias
 @deprecated_alias(preserve_original_columns="preserve_original_labels")
 def clean_names(
     df: pd.DataFrame,
-    axis: Union[str, None] = "columns",
-    column_names: Union[str, list] = None,
-    strip_underscores: Optional[Union[str, bool]] = None,
+    axis: str|None = "columns",
+    column_names: str|list = None,
+    strip_underscores: str|bool = None,
     case_type: str = "lower",
     remove_special: bool = False,
     strip_accents: bool = True,
@@ -121,14 +120,15 @@ def clean_names(
             column_names = [column_names]
         df = df.copy()
         for column_name in column_names:
-            df[column_name] = _clean_names(
-                obj=df[column_name],
+            df[column_name] = make_clean_names(
+                col=df[column_name],
                 enforce_string=enforce_string,
                 case_type=case_type,
                 remove_special=remove_special,
                 strip_accents=strip_accents,
                 strip_underscores=strip_underscores,
                 truncate_limit=truncate_limit,
+                df_type="pandas",
             )
         return df
 
@@ -141,136 +141,31 @@ def clean_names(
             for number in range(target_axis.nlevels)
         ]
         target_axis = [
-            _clean_names(
-                obj=obj,
+            make_clean_names(
+                col=obj,
                 enforce_string=enforce_string,
                 case_type=case_type,
                 remove_special=remove_special,
                 strip_accents=strip_accents,
                 strip_underscores=strip_underscores,
                 truncate_limit=truncate_limit,
+                df_type="pandas",
             )
             for obj in target_axis
         ]
     else:
-        target_axis = _clean_names(
-            obj=target_axis,
+        target_axis = make_clean_names(
+            col=target_axis,
             enforce_string=enforce_string,
             case_type=case_type,
             remove_special=remove_special,
             strip_accents=strip_accents,
             strip_underscores=strip_underscores,
             truncate_limit=truncate_limit,
+            df_type="pandas",
         )
     # Store the original column names, if enabled by user
     if preserve_original_labels:
         df.__dict__["original_labels"] = getattr(df, axis)
     setattr(df, axis, target_axis)
     return df
-
-
-def _clean_names(
-    obj: Union[pd.Index, pd.Series],
-    strip_underscores: Optional[Union[str, bool]] = None,
-    case_type: str = "lower",
-    remove_special: bool = False,
-    strip_accents: bool = False,
-    enforce_string: bool = False,
-    truncate_limit: int = None,
-) -> Union[pd.Index, pd.Series]:
-    """
-    Generic function to clean labels in a pandas object.
-    """
-    if enforce_string and not _is_str_or_cat(obj):
-        obj = obj.astype(str)
-    obj = _change_case(obj=obj, case_type=case_type)
-    obj = _normalize_1(obj=obj)
-    if remove_special:
-        obj = obj.str.replace(
-            pat="[^A-Za-z_\\d]", repl="", regex=True
-        ).str.strip()
-    if strip_accents:
-        obj = _strip_accents(obj=obj)
-    obj = obj.str.replace(pat="_+", repl="_", regex=True)
-    obj = _strip_underscores_func(
-        obj,
-        strip_underscores=strip_underscores,
-    )
-    if truncate_limit:
-        obj = obj.str[:truncate_limit]
-    return obj
-
-
-def _change_case(
-    obj: Union[pd.Index, pd.Series],
-    case_type: str,
-) -> Union[pd.Index, pd.Series]:
-    """Change case of labels in obj."""
-    case_types = {"preserve", "upper", "lower", "snake"}
-    case_type = case_type.lower()
-    if case_type not in case_types:
-        raise JanitorError(f"case_type must be one of: {case_types}")
-
-    if case_type == "preserve":
-        return obj
-    if case_type == "upper":
-        return obj.str.upper()
-    if case_type == "lower":
-        return obj.str.lower()
-    # Implementation taken from: https://gist.github.com/jaytaylor/3660565
-    # by @jtaylor
-    return (
-        obj.str.replace(pat=r"(.)([A-Z][a-z]+)", repl=r"\1_\2", regex=True)
-        .str.replace(pat=r"([a-z0-9])([A-Z])", repl=r"\1_\2", regex=True)
-        .str.lower()
-    )
-
-
-def _normalize_1(
-    obj: Union[pd.Index, pd.Series]
-) -> Union[pd.Index, pd.Series]:
-    """Perform normalization of labels in obj."""
-    FIXES = [(r"[ /:,?()\.-]", "_"), (r"['’]", ""), (r"[\xa0]", "_")]
-    for search, replace in FIXES:
-        obj = obj.str.replace(pat=search, repl=replace, regex=True)
-
-    return obj
-
-
-def _strip_accents(
-    obj: Union[pd.Index, pd.Series],
-) -> Union[pd.Index, pd.Series]:
-    """Remove accents from a label.
-
-    Inspired from [StackOverflow][so].
-
-    [so]: https://stackoverflow.com/questions/517923/what-is-the-best-way-to-remove-accents-in-a-python-unicode-strin
-    """  # noqa: E501
-    return obj.map(
-        lambda f: "".join(
-            [
-                letter
-                for letter in unicodedata.normalize("NFD", str(f))
-                if not unicodedata.combining(letter)
-            ]
-        )
-    )
-
-
-def _strip_underscores_func(
-    obj: Union[pd.Index, pd.Series],
-    strip_underscores: Union[str, bool] = None,
-) -> Union[pd.Index, pd.Series]:
-    """Strip underscores."""
-    underscore_options = {None, "left", "right", "both", "l", "r", True}
-    if strip_underscores not in underscore_options:
-        raise JanitorError(
-            f"strip_underscores must be one of: {underscore_options}"
-        )
-    if strip_underscores in {"left", "l"}:
-        return obj.str.lstrip("_")
-    if strip_underscores in {"right", "r"}:
-        return obj.str.rstrip("_")
-    if strip_underscores in {True, "both"}:
-        return obj.str.strip("_")
-    return obj

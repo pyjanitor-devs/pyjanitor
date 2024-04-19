@@ -81,6 +81,7 @@ from .utils import (
     col,
     get_columns,
     get_index_labels,
+    make_clean_names,
     patterns,
     unionize_dataframe_categories,
 )
@@ -129,6 +130,7 @@ __all__ = [
     "join_apply",
     "label_encode",
     "limit_column_characters",
+    "make_clean_names",
     "min_max_scale",
     "move",
     "pivot_longer",

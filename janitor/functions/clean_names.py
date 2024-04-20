@@ -121,14 +121,14 @@ def clean_names(
         df = df.copy()
         for column_name in column_names:
             df[column_name] = make_clean_names(
-                col=df[column_name],
+                obj=df[column_name],
                 enforce_string=enforce_string,
                 case_type=case_type,
                 remove_special=remove_special,
                 strip_accents=strip_accents,
                 strip_underscores=strip_underscores,
                 truncate_limit=truncate_limit,
-                df_type="pandas",
+                object_type="pandas",
             )
         return df
 
@@ -142,27 +142,27 @@ def clean_names(
         ]
         target_axis = [
             make_clean_names(
-                col=obj,
+                obj=obj,
                 enforce_string=enforce_string,
                 case_type=case_type,
                 remove_special=remove_special,
                 strip_accents=strip_accents,
                 strip_underscores=strip_underscores,
                 truncate_limit=truncate_limit,
-                df_type="pandas",
+                object_type="pandas",
             )
             for obj in target_axis
         ]
     else:
         target_axis = make_clean_names(
-            col=target_axis,
+            obj=target_axis,
             enforce_string=enforce_string,
             case_type=case_type,
             remove_special=remove_special,
             strip_accents=strip_accents,
             strip_underscores=strip_underscores,
             truncate_limit=truncate_limit,
-            df_type="pandas",
+            object_type="pandas",
         )
     # Store the original column names, if enabled by user
     if preserve_original_labels:

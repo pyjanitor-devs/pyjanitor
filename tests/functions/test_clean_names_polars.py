@@ -1,7 +1,10 @@
-import polars as pl
-import pytest
+import subprocess
 
-from janitor import make_clean_names
+subprocess.call(["pip", "install", "polars"])
+import polars as pl  # noqa: E402
+import pytest  # noqa: E402
+
+from janitor import make_clean_names  # noqa: E402
 
 
 @pytest.mark.functions

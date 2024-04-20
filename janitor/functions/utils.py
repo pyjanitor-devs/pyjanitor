@@ -1143,7 +1143,7 @@ class col:
 
 
 if TYPE_CHECKING:
-    import polars as pl
+    from polars import Expr
 
 
 def _change_case(

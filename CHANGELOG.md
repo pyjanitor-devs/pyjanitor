@@ -1,7 +1,7 @@
 # Changelog
 
 ## [Unreleased]
--  [ENH] Add `make_clean_names` function which works on a pandas Index/Series, a Polar Expression, or a python string/list. Issue #1343
+-  [ENH] Add `make_clean_names` function which works on a pandas Index/Series, a Polars Expression, or a python string/list. Issue #1343
 
 ## [v0.27.0] - 2024-03-21
 

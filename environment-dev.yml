@@ -34,7 +34,7 @@ dependencies:
   - pipreqs
   - pip-tools
   - pre-commit
-  - pypolars
+  - polars
   - pyspark>=3.2.0
   - pytest
   - pytest-cov

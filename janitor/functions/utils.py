@@ -1455,6 +1455,14 @@ def make_clean_names(
         │ abcde_fgi_j │
         └─────────────┘
 
+        The `make_clean_names` function can also be applied to a python string or list:
+        >>> raw = ["Abçdê fgí j"]
+        >>> make_clean_names(raw, object_type='list', strip_accents=True)
+        ['abcde_fgi_j']
+        >>> raw = "Abçdê fgí j"
+        >>> make_clean_names(raw, object_type='string', strip_accents=True)
+        'abcde_fgi_j'
+
     !!! info "New in version 0.28.0"
 
     Args:

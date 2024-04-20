@@ -1390,7 +1390,7 @@ def make_clean_names(
 
     Examples:
         >>> import subprocess
-        >>> subprocess.call(['pip', 'install', 'polars'])
+        >>> subprocess.run(['pip', 'install', 'polars'])
         >>> import polars as pl
         >>> import janitor
         >>> df = pl.DataFrame(

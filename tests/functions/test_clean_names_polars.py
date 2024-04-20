@@ -1,6 +1,6 @@
 import subprocess
 
-subprocess.call(["pip", "install", "polars"])
+subprocess.run(["pip", "install", "polars"])
 import polars as pl  # noqa: E402
 import pytest  # noqa: E402
 

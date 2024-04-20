@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from enum import Enum
 from functools import singledispatch
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     Hashable,
@@ -25,7 +26,6 @@ from typing import (
 
 import numpy as np
 import pandas as pd
-import polars as pl
 from multipledispatch import dispatch
 from pandas.api.types import (
     is_bool_dtype,
@@ -1140,6 +1140,10 @@ class col:
         """
         self.join_args = (self.cols, other.cols, "==")
         return self
+
+
+if TYPE_CHECKING:
+    import polars as pl
 
 
 def _change_case(

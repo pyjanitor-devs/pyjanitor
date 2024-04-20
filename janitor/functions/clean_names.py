@@ -78,8 +78,9 @@ def clean_names(
             Column selection is possible using the
             [`select`][janitor.functions.select.select] syntax.
         strip_underscores: Removes the outer underscores from all
-            column names. Default None keeps outer underscores. Values can be
-            either 'left', 'right' or 'both' or the respective shorthand 'l',
+            column names/values. Default None keeps outer underscores.
+            Values can be either 'left', 'right' or 'both'
+            or the respective shorthand 'l',
             'r' and True.
         case_type: Whether to make columns lower or uppercase.
             Current case may be preserved with 'preserve',
@@ -89,15 +90,17 @@ def clean_names(
         remove_special: Remove special characters from columns.
             Only letters, numbers and underscores are preserved.
         strip_accents: Whether or not to remove accents from
-            columns names.
+            columns names/values.
         preserve_original_labels: Preserve original names.
             This is later retrievable using `df.original_labels`.
             Applies if `axis` is not None.
-        enforce_string: Whether or not to convert all column names
-            to string type. Defaults to True, but can be turned off.
+        enforce_string: Whether or not to convert all
+            column names/values to string type.
+            Defaults to True, but can be turned off.
             Columns with >1 levels will not be converted by default.
-        truncate_limit: Truncates formatted column names to
-            the specified length. Default None does not truncate.
+        truncate_limit: Truncates formatted column names/values
+            to the specified length.
+            Default None does not truncate.
 
     Raises:
         ValueError: If `axis=None` and `column_names=None`.
@@ -118,14 +121,14 @@ def clean_names(
         df = df.copy()
         for column_name in column_names:
             df[column_name] = make_clean_names(
-                col=df[column_name],
+                obj=df[column_name],
                 enforce_string=enforce_string,
                 case_type=case_type,
                 remove_special=remove_special,
                 strip_accents=strip_accents,
                 strip_underscores=strip_underscores,
                 truncate_limit=truncate_limit,
-                df_type="pandas",
+                object_type="pandas",
             )
         return df
 
@@ -139,27 +142,27 @@ def clean_names(
         ]
         target_axis = [
             make_clean_names(
-                col=obj,
+                obj=obj,
                 enforce_string=enforce_string,
                 case_type=case_type,
                 remove_special=remove_special,
                 strip_accents=strip_accents,
                 strip_underscores=strip_underscores,
                 truncate_limit=truncate_limit,
-                df_type="pandas",
+                object_type="pandas",
             )
             for obj in target_axis
         ]
     else:
         target_axis = make_clean_names(
-            col=target_axis,
+            obj=target_axis,
             enforce_string=enforce_string,
             case_type=case_type,
             remove_special=remove_special,
             strip_accents=strip_accents,
             strip_underscores=strip_underscores,
             truncate_limit=truncate_limit,
-            df_type="pandas",
+            object_type="pandas",
         )
     # Store the original column names, if enabled by user
     if preserve_original_labels:

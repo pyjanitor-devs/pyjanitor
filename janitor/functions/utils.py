@@ -1139,41 +1139,41 @@ class col:
 
 
 def _change_case(
-    col: Union[pd.Index, pd.Series, pl.Expr, list, str],
+    obj: Union[pd.Index, pd.Series, pl.Expr, list, str],
     case_type: str,
-    df_type: str,
+    object_type: str,
 ) -> str:
-    """Change case of labels in col."""
+    """Change case of labels in obj."""
     case_types = {"preserve", "upper", "lower", "snake"}
     case_type = case_type.lower()
     if case_type not in case_types:
-        raise JanitorError(f"df_type must be one of: {case_types}")
+        raise JanitorError(f"type must be one of: {case_types}")
 
-    if df_type == "pandas":
+    if object_type == "pandas":
         if case_type == "preserve":
-            return col
+            return obj
         if case_type == "upper":
-            return col.str.upper()
+            return obj.str.upper()
         if case_type == "lower":
-            return col.str.lower()
+            return obj.str.lower()
         # Implementation taken from: https://gist.github.com/jaytaylor/3660565
         # by @jtaylor
         return (
-            col.str.replace(pat=r"(.)([A-Z][a-z]+)", repl=r"\1_\2", regex=True)
+            obj.str.replace(pat=r"(.)([A-Z][a-z]+)", repl=r"\1_\2", regex=True)
             .str.replace(pat=r"([a-z0-9])([A-Z])", repl=r"\1_\2", regex=True)
             .str.lower()
         )
-    if df_type == "polars":
+    if object_type == "polars":
         if case_type == "preserve":
-            return col
+            return obj
         if case_type == "upper":
-            return col.str.to_uppercase()
+            return obj.str.to_uppercase()
         if case_type == "lower":
-            return col.str.to_lowercase()
+            return obj.str.to_lowercase()
         # Implementation taken from: https://gist.github.com/jaytaylor/3660565
         # by @jtaylor
         return (
-            col.str.replace_all(
+            obj.str.replace_all(
                 pattern=r"(.)([A-Z][a-z]+)", value=r"${1}_${2}", literal=False
             )
             .str.replace_all(
@@ -1181,82 +1181,82 @@ def _change_case(
             )
             .str.to_lowercase()
         )
-    if df_type == "str":
+    if object_type == "string":
         if case_type == "preserve":
-            return col
+            return obj
         if case_type == "upper":
-            return col.upper()
+            return obj.upper()
         if case_type == "lower":
-            return col.lower()
+            return obj.lower()
         # Implementation adapted from: https://gist.github.com/jaytaylor/3660565
         # by @jtaylor
-        col = re.sub(pattern=r"(.)([A-Z][a-z]+)", repl=r"\1_\2", string=col)
-        col = re.sub(pattern=r"([a-z0-9])([A-Z])", repl=r"\1_\2", string=col)
-        return col.lower()
+        obj = re.sub(pattern=r"(.)([A-Z][a-z]+)", repl=r"\1_\2", string=obj)
+        obj = re.sub(pattern=r"([a-z0-9])([A-Z])", repl=r"\1_\2", string=obj)
+        return obj.lower()
 
     if case_type == "preserve":
-        return col
+        return obj
     if case_type == "upper":
-        return [label.upper() for label in col]
+        return [label.upper() for label in obj]
     if case_type == "lower":
-        return [label.lower() for label in col]
+        return [label.lower() for label in obj]
     # Implementation adapted from: https://gist.github.com/jaytaylor/3660565
     # by @jtaylor
-    col = [
+    obj = [
         re.sub(pattern=r"(.)([A-Z][a-z]+)", repl=r"\1_\2", string=label)
-        for label in col
+        for label in obj
     ]
-    col = [
+    obj = [
         re.sub(pattern=r"([a-z0-9])([A-Z])", repl=r"\1_\2", string=label)
-        for label in col
+        for label in obj
     ]
-    col = [label.lower() for label in col]
-    return col
+    obj = [label.lower() for label in obj]
+    return obj
 
 
 def _normalize_1(
-    col: Union[pd.Index, pd.Series, pl.Expr, list, str], df_type: str
+    obj: Union[pd.Index, pd.Series, pl.Expr, list, str], object_type: str
 ) -> str:
-    """Perform normalization of labels in col."""
+    """Perform normalization of labels in obj."""
     FIXES = [(r"[ /:,?()\.-]", "_"), (r"['’]", ""), (r"[\xa0]", "_")]
-    if df_type == "pandas":
+    if object_type == "pandas":
         for search, replace in FIXES:
-            col = col.str.replace(pat=search, repl=replace, regex=True)
-    elif df_type == "polars":
+            obj = obj.str.replace(pat=search, repl=replace, regex=True)
+    elif object_type == "polars":
         for search, replace in FIXES:
-            col = col.str.replace_all(
+            obj = obj.str.replace_all(
                 pattern=search, value=replace, literal=False
             )
-    elif df_type == "str":
+    elif object_type == "string":
         for search, replace in FIXES:
-            col = re.sub(pattern=search, repl=replace, string=col)
+            obj = re.sub(pattern=search, repl=replace, string=obj)
     else:
         for search, replace in FIXES:
-            col = [
+            obj = [
                 re.sub(pattern=search, repl=replace, string=label)
-                for label in col
+                for label in obj
             ]
-    return col
+    return obj
 
 
 def _remove_special(
-    df_type: str,
-    col: Union[pd.Index, pd.Series, pl.Expr, list, str] = None,
+    object_type: str,
+    obj: Union[pd.Index, pd.Series, pl.Expr, list, str] = None,
 ) -> str:
-    """Remove special characters from col."""
-    if df_type == "pandas":
-        return col.str.replace(
+    """Remove special characters from obj."""
+    if object_type == "pandas":
+        return obj.str.replace(
             pat="[^A-Za-z_\\d]", repl="", regex=True
         ).str.strip()
-    if df_type == "polars":
-        return col.str.replace_all(
+    if object_type == "polars":
+        return obj.str.replace_all(
             pattern="[^A-Za-z_\\d]", value="", literal=False
         ).str.strip_chars()
-    elif df_type == "str":
-        col = [item for item in col if item.isalnum() or (item == "_")]
-        return "".join(col)
+    elif object_type == "string":
+        obj = [item for item in obj if item.isalnum() or (item == "_")]
+        return "".join(obj)
     out = []
-    for label in col:
+    for label in obj:
         word = [item for item in label if item.isalnum() or (item == "_")]
         word = "".join(word)
         out.append(word)
@@ -1264,8 +1264,8 @@ def _remove_special(
 
 
 def _strip_accents(
-    col: Union[pd.Index, pd.Series, pl.Expr, list, str],
-    df_type: str,
+    obj: Union[pd.Index, pd.Series, pl.Expr, list, str],
+    object_type: str,
 ) -> str:
     """Remove accents from a label.
 
@@ -1273,8 +1273,8 @@ def _strip_accents(
 
     [so]: https://stackoverflow.com/questions/517923/what-is-the-best-way-to-remove-accents-in-a-python-unicode-strin
     """  # noqa: E501
-    if df_type == "pandas":
-        return col.map(
+    if object_type == "pandas":
+        return obj.map(
             lambda f: "".join(
                 [
                     letter
@@ -1283,8 +1283,8 @@ def _strip_accents(
                 ]
             )
         )
-    if df_type == "polars":
-        return col.map_elements(
+    if object_type == "polars":
+        return obj.map_elements(
             lambda word: [
                 letter
                 for letter in unicodedata.normalize("NFD", word)
@@ -1292,15 +1292,15 @@ def _strip_accents(
             ],
             return_dtype=pl.List(pl.Utf8),
         ).list.join("")
-    if df_type == "str":
-        col = [
+    if object_type == "string":
+        obj = [
             letter
-            for letter in unicodedata.normalize("NFD", col)
+            for letter in unicodedata.normalize("NFD", obj)
             if not unicodedata.combining(letter)
         ]
-        return "".join(col)
+        return "".join(obj)
     out = []
-    for label in col:
+    for label in obj:
         word = [
             letter
             for letter in unicodedata.normalize("NFD", label)
@@ -1312,8 +1312,8 @@ def _strip_accents(
 
 
 def _strip_underscores_func(
-    col: Union[pd.Index, pd.Series, pl.Expr, list, str],
-    df_type: str,
+    obj: Union[pd.Index, pd.Series, pl.Expr, list, str],
+    object_type: str,
     strip_underscores: Union[str, bool] = None,
 ) -> pd.DataFrame:
     """Strip underscores."""
@@ -1322,87 +1322,189 @@ def _strip_underscores_func(
         raise JanitorError(
             f"strip_underscores must be one of: {underscore_options}"
         )
-    if df_type == "pandas":
+    if object_type == "pandas":
         if strip_underscores in {"left", "l"}:
-            return col.str.lstrip("_")
+            return obj.str.lstrip("_")
         if strip_underscores in {"right", "r"}:
-            return col.str.rstrip("_")
+            return obj.str.rstrip("_")
         if strip_underscores in {True, "both"}:
-            return col.str.strip("_")
-        return col
+            return obj.str.strip("_")
+        return obj
 
-    if df_type == "polars":
+    if object_type == "polars":
         if strip_underscores in {"left", "l"}:
-            return col.str.strip_chars_start("_")
+            return obj.str.strip_chars_start("_")
         if strip_underscores in {"right", "r"}:
-            return col.str.strip_chars_end("_")
+            return obj.str.strip_chars_end("_")
         if strip_underscores in {True, "both"}:
-            return col.str.strip_chars("_")
-        return col
+            return obj.str.strip_chars("_")
+        return obj
 
-    if df_type == "str":
+    if object_type == "string":
         if strip_underscores in {"left", "l"}:
-            return col.lstrip("_")
+            return obj.lstrip("_")
         if strip_underscores in {"right", "r"}:
-            return col.rstrip("_")
+            return obj.rstrip("_")
         if strip_underscores in {True, "both"}:
-            return col.strip("_")
-        return col
+            return obj.strip("_")
+        return obj
 
     if strip_underscores in {"left", "l"}:
-        return [label.lstrip("_") for label in col]
+        return [label.lstrip("_") for label in obj]
     if strip_underscores in {"right", "r"}:
-        return [label.rstrip("_") for label in col]
+        return [label.rstrip("_") for label in obj]
     if strip_underscores in {True, "both"}:
-        return [label.strip("_") for label in col]
-    return col
+        return [label.strip("_") for label in obj]
+    return obj
 
 
 def make_clean_names(
-    col: Union[pd.Index, pd.Series, pl.Expr, list, str],
+    obj: Union[pd.Index, pd.Series, pl.Expr, list, str],
     strip_underscores: Optional[Union[str, bool]] = None,
     case_type: str = "lower",
     remove_special: bool = False,
     strip_accents: bool = False,
     enforce_string: bool = False,
     truncate_limit: int = None,
-    df_type: str = "pandas",
+    object_type: str = "pandas",
 ) -> Union[pd.Index, pd.Series, pl.Expr, list]:
     """
-    Generic function to clean an object.
-    """
-    if enforce_string and (df_type == "pandas"):
-        if not (_is_str_or_cat(col)):
-            col = col.astype(str)
-    elif enforce_string and (df_type == "python"):
-        col = [str(label) for label in col]
-    elif enforce_string and (df_type == "str"):
-        col = str(col)
-    elif enforce_string and (df_type == "polars"):
-        col = col.cast(pl.Utf8)
-    col = _change_case(col, case_type, df_type=df_type)
-    col = _normalize_1(col, df_type=df_type)
+    Generic function to clean labels in an object.
+    It can be applied to a pandas Index/Series, a Polars Expression,
+    or a python string/list.
+    For pandas, there is a [`clean_names`][janitor.functions.clean_names.clean_names]
+    method, which is a wrapper around the `make_clean_names` function.
+    For polars, use this function via existing Polars functions. The examples below
+    show how you can use this within polars.
+
+    Examples:
+        >>> import polars as pl
+        >>> import janitor
+        >>> df = pl.DataFrame(
+        ...     {
+        ...         "Aloha": range(3),
+        ...         "Bell Chart": range(3),
+        ...         "Animals@#$%^": range(3)
+        ...     }
+        ... )
+        >>> df
+        shape: (3, 3)
+        ┌───────┬────────────┬──────────────┐
+        │ Aloha ┆ Bell Chart ┆ Animals@#$%^ │
+        │ ---   ┆ ---        ┆ ---          │
+        │ i64   ┆ i64        ┆ i64          │
+        ╞═══════╪════════════╪══════════════╡
+        │ 0     ┆ 0          ┆ 0            │
+        │ 1     ┆ 1          ┆ 1            │
+        │ 2     ┆ 2          ┆ 2            │
+        └───────┴────────────┴──────────────┘
+
+        Clean the column names,
+        via [rename](https://docs.pola.rs/py-polars/html/reference/dataframe/api/polars.DataFrame.rename.html#polars-dataframe-rename):
+        >>> df.rename(
+        ...     lambda objumn_name: make_clean_names(
+        ...         obj=objumn_name, remove_special=True, object_type="string"
+        ...     )
+        ... )
+        shape: (3, 3)
+        ┌───────┬────────────┬─────────┐
+        │ aloha ┆ bell_chart ┆ animals │
+        │ ---   ┆ ---        ┆ ---     │
+        │ i64   ┆ i64        ┆ i64     │
+        ╞═══════╪════════════╪═════════╡
+        │ 0     ┆ 0          ┆ 0       │
+        │ 1     ┆ 1          ┆ 1       │
+        │ 2     ┆ 2          ┆ 2       │
+        └───────┴────────────┴─────────┘
+
+        >>> df = pl.DataFrame({"raw": ["Abçdê fgí j"]})
+        >>> df
+        shape: (1, 1)
+        ┌─────────────┐
+        │ raw         │
+        │ ---         │
+        │ str         │
+        ╞═════════════╡
+        │ Abçdê fgí j │
+        └─────────────┘
+
+        Clean the column values,
+        via [with_columns](https://docs.pola.rs/py-polars/html/reference/dataframe/api/polars.DataFrame.with_columns.html#polars-dataframe-with-columns):
+        >>> df.with_columns(
+        ...    pl.col("raw").pipe(
+        ...        make_clean_names, object_type="polars", strip_accents=True
+        ...    )
+        ... )
+        shape: (1, 1)
+        ┌─────────────┐
+        │ raw         │
+        │ ---         │
+        │ str         │
+        ╞═════════════╡
+        │ abcde_fgi_j │
+        └─────────────┘
+
+    !!! info "New in version 0.28.0"
+
+    Args:
+        obj: The object to clean. It can be a pandas Index,
+            a pandas Series, a polars Expression, a python string,
+            or a python list.
+        strip_underscores: Removes the outer underscores from all
+            labels. Default None keeps outer underscores. Values can be
+            either 'left', 'right' or 'both' or the respective shorthand 'l',
+            'r' and True.
+        case_type: Whether to make the labels lower or uppercase.
+            Current case may be preserved with 'preserve',
+            while snake case conversion (from CamelCase or camelCase only)
+            can be turned on using "snake".
+            Default 'lower' makes all characters lowercase.
+        remove_special: Remove special characters from the labels.
+            Only letters, numbers and underscores are preserved.
+        strip_accents: Whether or not to remove accents from
+            the labels.
+        enforce_string: Whether or not to convert the labels to string.
+            Defaults to True, but can be turned off.
+        truncate_limit: Truncates formatted labels to
+            the specified length. Default None does not truncate.
+        object_type: The type of object to clean. It should be either `pandas`,
+            `polars`, a python `string`, or a python `list`.
+    Returns:
+        A pandas Index, pandas Series, polars Expression, a python string,
+        or a python list.
+    """  # noqa: E501
+    if enforce_string and (object_type == "pandas"):
+        if not (_is_str_or_cat(obj)):
+            obj = obj.astype(str)
+    elif enforce_string and (object_type == "list"):
+        obj = [str(label) for label in obj]
+    elif enforce_string and (object_type == "string"):
+        obj = str(obj)
+    elif enforce_string and (object_type == "polars"):
+        obj = obj.cast(pl.Utf8)
+    obj = _change_case(obj, case_type, object_type=object_type)
+    obj = _normalize_1(obj, object_type=object_type)
     if remove_special:
-        col = _remove_special(df_type=df_type, col=col)
+        obj = _remove_special(object_type=object_type, obj=obj)
     if strip_accents:
-        col = _strip_accents(col=col, df_type=df_type)
-    if df_type == "pandas":
-        col = col.str.replace(pat="_+", repl="_", regex=True)
-    elif df_type == "polars":
-        col = col.str.replace(pattern="_+", value="_", literal=False)
-    elif df_type == "str":
-        col = re.sub(pattern="_+", repl="_", string=col)
+        obj = _strip_accents(obj=obj, object_type=object_type)
+    if object_type == "pandas":
+        obj = obj.str.replace(pat="_+", repl="_", regex=True)
+    elif object_type == "polars":
+        obj = obj.str.replace(pattern="_+", value="_", literal=False)
+    elif object_type == "string":
+        obj = re.sub(pattern="_+", repl="_", string=obj)
     else:
-        col = [re.sub(pattern="_+", repl="_", string=label) for label in col]
-    col = _strip_underscores_func(
-        col, strip_underscores=strip_underscores, df_type=df_type
+        obj = [re.sub(pattern="_+", repl="_", string=label) for label in obj]
+    obj = _strip_underscores_func(
+        obj, strip_underscores=strip_underscores, object_type=object_type
     )
-    if truncate_limit and (df_type == "pandas"):
-        col = col.str[:truncate_limit]
-    elif truncate_limit and (df_type == "polars"):
-        col = col.str.slice(offset=0, length=truncate_limit)
-    elif truncate_limit and (df_type == "str"):
-        col = col[:truncate_limit]
+    if truncate_limit and (object_type == "pandas"):
+        obj = obj.str[:truncate_limit]
+    elif truncate_limit and (object_type == "polars"):
+        obj = obj.str.slice(offset=0, length=truncate_limit)
+    elif truncate_limit and (object_type == "string"):
+        obj = obj[:truncate_limit]
     elif truncate_limit:
-        col = [label[:truncate_limit] for label in col]
-    return col
+        obj = [label[:truncate_limit] for label in obj]
+    return obj

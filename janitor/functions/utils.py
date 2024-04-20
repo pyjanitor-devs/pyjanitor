@@ -1387,6 +1387,8 @@ def make_clean_names(
     show how you can use this within polars.
 
     Examples:
+        >>> import subprocess
+        >>> subprocess.call(['pip', 'install', 'polars'])
         >>> import polars as pl
         >>> import janitor
         >>> df = pl.DataFrame(

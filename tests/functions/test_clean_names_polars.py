@@ -1,8 +1,5 @@
-import subprocess
-
-subprocess.run(["pip", "install", "polars"])
-import polars as pl  # noqa: E402
-import pytest  # noqa: E402
+import polars as pl
+import pytest
 
 from janitor import make_clean_names  # noqa: E402
 

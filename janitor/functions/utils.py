@@ -1144,11 +1144,11 @@ class col:
 
 
 if TYPE_CHECKING:
-    import polars as pl
+    from polars import Expr
 
 
 def _change_case(
-    obj: Union[pd.Index, pd.Series, pl.Expr, list, str],
+    obj: Union[pd.Index, pd.Series, Expr, list, str],
     case_type: str,
     object_type: str,
 ) -> str:
@@ -1224,7 +1224,7 @@ def _change_case(
 
 
 def _normalize_1(
-    obj: Union[pd.Index, pd.Series, pl.Expr, list, str], object_type: str
+    obj: Union[pd.Index, pd.Series, Expr, list, str], object_type: str
 ) -> str:
     """Perform normalization of labels in obj."""
     FIXES = [(r"[ /:,?()\.-]", "_"), (r"['’]", ""), (r"[\xa0]", "_")]
@@ -1250,7 +1250,7 @@ def _normalize_1(
 
 def _remove_special(
     object_type: str,
-    obj: Union[pd.Index, pd.Series, pl.Expr, list, str] = None,
+    obj: Union[pd.Index, pd.Series, Expr, list, str] = None,
 ) -> str:
     """Remove special characters from obj."""
     if object_type == "pandas":
@@ -1273,7 +1273,7 @@ def _remove_special(
 
 
 def _strip_accents(
-    obj: Union[pd.Index, pd.Series, pl.Expr, list, str],
+    obj: Union[pd.Index, pd.Series, Expr, list, str],
     object_type: str,
 ) -> str:
     """Remove accents from a label.
@@ -1293,13 +1293,15 @@ def _strip_accents(
             )
         )
     if object_type == "polars":
+        from polars import List, Utf8
+
         return obj.map_elements(
             lambda word: [
                 letter
                 for letter in unicodedata.normalize("NFD", word)
                 if not unicodedata.combining(letter)
             ],
-            return_dtype=pl.List(pl.Utf8),
+            return_dtype=List(Utf8),
         ).list.join("")
     if object_type == "string":
         obj = [
@@ -1321,7 +1323,7 @@ def _strip_accents(
 
 
 def _strip_underscores_func(
-    obj: Union[pd.Index, pd.Series, pl.Expr, list, str],
+    obj: Union[pd.Index, pd.Series, Expr, list, str],
     object_type: str,
     strip_underscores: Union[str, bool] = None,
 ) -> pd.DataFrame:
@@ -1368,7 +1370,7 @@ def _strip_underscores_func(
 
 
 def make_clean_names(
-    obj: Union[pd.Index, pd.Series, pl.Expr, list, str],
+    obj: Union[pd.Index, pd.Series, Expr, list, str],
     strip_underscores: Optional[Union[str, bool]] = None,
     case_type: str = "lower",
     remove_special: bool = False,
@@ -1376,7 +1378,7 @@ def make_clean_names(
     enforce_string: bool = False,
     truncate_limit: int = None,
     object_type: str = "pandas",
-) -> Union[pd.Index, pd.Series, pl.Expr, list]:
+) -> Union[pd.Index, pd.Series, Expr, list]:
     """
     Generic function to clean labels in an object.
     It can be applied to a pandas Index/Series, a Polars Expression,
@@ -1484,8 +1486,6 @@ def make_clean_names(
         A pandas Index, pandas Series, polars Expression, a python string,
         or a python list.
     """  # noqa: E501
-    if object_type == "polars":
-        import polars as pl
     if enforce_string and (object_type == "pandas"):
         if not (_is_str_or_cat(obj)):
             obj = obj.astype(str)
@@ -1494,7 +1494,9 @@ def make_clean_names(
     elif enforce_string and (object_type == "string"):
         obj = str(obj)
     elif enforce_string and (object_type == "polars"):
-        obj = obj.cast(pl.Utf8)
+        from polars import Utf8
+
+        obj = obj.cast(Utf8)
     obj = _change_case(obj, case_type, object_type=object_type)
     obj = _normalize_1(obj, object_type=object_type)
     if remove_special:

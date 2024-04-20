@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from enum import Enum
 from functools import singledispatch
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     Hashable,
@@ -25,7 +26,6 @@ from typing import (
 
 import numpy as np
 import pandas as pd
-import polars as pl
 from multipledispatch import dispatch
 from pandas.api.types import (
     is_bool_dtype,
@@ -1138,6 +1138,10 @@ class col:
         return self
 
 
+if TYPE_CHECKING:
+    import polars as pl
+
+
 def _change_case(
     obj: Union[pd.Index, pd.Series, pl.Expr, list, str],
     case_type: str,
@@ -1473,6 +1477,8 @@ def make_clean_names(
         A pandas Index, pandas Series, polars Expression, a python string,
         or a python list.
     """  # noqa: E501
+    if object_type == "polars":
+        import polars as pl
     if enforce_string and (object_type == "pandas"):
         if not (_is_str_or_cat(obj)):
             obj = obj.astype(str)

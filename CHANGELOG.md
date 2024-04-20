@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+-  [ENH] Add `make_clean_names` function which works on a pandas Index/Series, a Polar Expression, or a python string/list. Issue #1343
 
 - [ENH] Improved performance for non-equi joins when using numba - @samukweku PR #1341
 -  [ENH] Added a `clean_names` method for polars - it can be used to clean the column names, or clean column values . Issue #1343

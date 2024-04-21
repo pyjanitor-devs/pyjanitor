@@ -244,7 +244,6 @@ class PolarsExpr:
             enforce_string: Whether or not to cast the expression to a string type.
             truncate_limit: Truncates formatted labels in the expression to
                 the specified length. Default None does not truncate.
-
         Returns:
             A polars Expression.
         """

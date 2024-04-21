@@ -118,14 +118,11 @@ def _clean_column_names(
     case_type: str = "lower",
     remove_special: bool = False,
     strip_accents: bool = False,
-    enforce_string: bool = False,
     truncate_limit: int = None,
 ) -> str:
     """
     Function to clean the column names of a polars DataFrame.
     """
-    if enforce_string:
-        obj = str(obj)
     obj = _change_case(obj=obj, case_type=case_type)
     obj = _normalize_1(obj=obj)
     if remove_special:

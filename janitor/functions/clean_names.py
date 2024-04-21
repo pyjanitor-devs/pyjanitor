@@ -181,7 +181,7 @@ def _clean_names(
     """
     Generic function to clean labels in a pandas object.
     """
-    if enforce_string and not (_is_str_or_cat(obj)):
+    if enforce_string and not _is_str_or_cat(obj):
         obj = obj.astype(str)
     obj = _change_case(obj=obj, case_type=case_type)
     obj = _normalize_1(obj=obj)

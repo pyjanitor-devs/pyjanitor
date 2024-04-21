@@ -143,7 +143,7 @@ class PolarsExpr:
 
         Args:
             strip_underscores: Removes the outer underscores
-                from all labels in the Expression.
+                from all labels in the expression.
                 Default None keeps outer underscores.
                 Values can be either 'left', 'right'
                 or 'both' or the respective shorthand 'l',

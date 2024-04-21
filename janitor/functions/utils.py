@@ -12,7 +12,6 @@ from dataclasses import dataclass
 from enum import Enum
 from functools import singledispatch
 from typing import (
-    TYPE_CHECKING,
     Any,
     Callable,
     Hashable,
@@ -1140,10 +1139,6 @@ class col:
         """
         self.join_args = (self.cols, other.cols, "==")
         return self
-
-
-if TYPE_CHECKING:
-    from polars import Expr
 
 
 def _change_case(

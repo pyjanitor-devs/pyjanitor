@@ -1,4 +1,4 @@
-# Polars
+# PolarsExpr
 
 ::: janitor.polars
     options:

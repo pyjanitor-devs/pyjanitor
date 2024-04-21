@@ -1,6 +1,8 @@
 import polars as pl
 import pytest
 
+from janitor import polars  # noqa: F401
+
 
 @pytest.mark.functions
 def test_clean_names_method_chain(dataframe):

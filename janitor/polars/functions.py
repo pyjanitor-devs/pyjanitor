@@ -1,4 +1,4 @@
-"""General purpose data cleaning functions for pyspark."""
+"""functions for polars."""
 
 import re
 import unicodedata
@@ -29,7 +29,7 @@ def _change_case_expr(
     obj: pl.Expr,
     case_type: str,
 ) -> pl.Expr:
-    """Change case of obj."""
+    """Change case of labels in obj."""
     case_types = {"preserve", "upper", "lower", "snake"}
     case_type = case_type.lower()
     if case_type not in case_types:
@@ -65,7 +65,7 @@ def _normalize_expr(obj: pl.Expr) -> pl.Expr:
 def _remove_special_expr(
     obj: pl.Expr,
 ) -> pl.Expr:
-    """Remove special characters from obj."""
+    """Remove special characters from the labels in obj."""
     return obj.str.replace_all(
         pattern="[^A-Za-z_\\d]", value="", literal=False
     ).str.strip_chars()
@@ -74,7 +74,7 @@ def _remove_special_expr(
 def _strip_accents_expr(
     obj: pl.Expr,
 ) -> pl.Expr:
-    """Remove accents from a label.
+    """Remove accents from the labels in obj.
 
     Inspired from [StackOverflow][so].
 
@@ -112,8 +112,8 @@ def _strip_underscores_func_expr(
     return obj
 
 
-def _clean_names(
-    obj: Union[str, pl.Expr],
+def _clean_column_names(
+    obj: str,
     strip_underscores: Optional[Union[str, bool]] = None,
     case_type: str = "lower",
     remove_special: bool = False,
@@ -122,26 +122,37 @@ def _clean_names(
     truncate_limit: int = None,
 ) -> str:
     """
-    Generic function to clean labels.
-    Applies either to the columns of a polars DataFrame,
-    or a polars Expression.
+    Function to clean the column names of a polars DataFrame.
     """
-    if isinstance(obj, str):
-        if enforce_string:
-            obj = str(obj)
-        obj = _change_case(obj=obj, case_type=case_type)
-        obj = _normalize_1(obj=obj)
-        if remove_special:
-            obj = _remove_special(obj=obj)
-        if strip_accents:
-            obj = _strip_accents(obj=obj)
-        obj = re.sub(pattern="_+", repl="_", string=obj)
-        obj = _strip_underscores_func(
-            obj,
-            strip_underscores=strip_underscores,
-        )
-        obj = obj[:truncate_limit]
-        return obj
+    if enforce_string:
+        obj = str(obj)
+    obj = _change_case(obj=obj, case_type=case_type)
+    obj = _normalize_1(obj=obj)
+    if remove_special:
+        obj = _remove_special(obj=obj)
+    if strip_accents:
+        obj = _strip_accents(obj=obj)
+    obj = re.sub(pattern="_+", repl="_", string=obj)
+    obj = _strip_underscores_func(
+        obj,
+        strip_underscores=strip_underscores,
+    )
+    obj = obj[:truncate_limit]
+    return obj
+
+
+def _clean_expr_names(
+    obj: pl.Expr,
+    strip_underscores: Optional[Union[str, bool]] = None,
+    case_type: str = "lower",
+    remove_special: bool = False,
+    strip_accents: bool = False,
+    enforce_string: bool = False,
+    truncate_limit: int = None,
+) -> pl.Expr:
+    """
+    Function to clean the labels of a polars Expression.
+    """
     if enforce_string:
         obj = obj.cast(pl.Utf8)
     obj = _change_case_expr(obj=obj, case_type=case_type)

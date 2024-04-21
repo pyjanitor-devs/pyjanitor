@@ -7,7 +7,7 @@
         - clean_names
       show_root_heading: false
       show_source: true
-      show_submodules: true
+      show_submodules: false
 
 # PolarsFrame
 
@@ -18,4 +18,4 @@
         - clean_names
       show_root_heading: false
       show_source: true
-      show_submodules: true
+      show_submodules: false

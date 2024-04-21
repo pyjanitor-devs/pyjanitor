@@ -16,7 +16,7 @@ except ImportError:
 
 
 @pl.api.register_dataframe_namespace("janitor")
-class Frame:
+class PolarsFrame:
     def __init__(self, df: pl.DataFrame) -> pl.DataFrame:
         self._df = df
 

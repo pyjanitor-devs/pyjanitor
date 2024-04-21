@@ -45,6 +45,7 @@ nav:
       - Machine Learning: api/ml.md
       - Math: api/math.md
       # - PySpark: api/pyspark.md  # will be added back later
+      - Polars: api/polars.md
       - Timeseries: api/timeseries.md
       - XArray: api/xarray.md
   - Development Guide: devguide.md

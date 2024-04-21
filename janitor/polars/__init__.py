@@ -2,7 +2,7 @@ from typing import Optional, Union
 
 from janitor.utils import import_message
 
-from .functions import _clean_names
+from .functions import _clean_column_names, _clean_expr_names
 
 try:
     import polars as pl
@@ -66,7 +66,7 @@ class Frame:
             └───────┴────────────┴─────────┘
         """
         return self._df.rename(
-            lambda col: _clean_names(
+            lambda col: _clean_column_names(
                 obj=col,
                 strip_accents=strip_accents,
                 strip_underscores=strip_underscores,
@@ -120,7 +120,7 @@ class PolarsExpr:
             │ abcde_fgi_j │
             └─────────────┘
         """
-        return _clean_names(
+        return _clean_expr_names(
             obj=self._expr,
             strip_accents=strip_accents,
             strip_underscores=strip_underscores,

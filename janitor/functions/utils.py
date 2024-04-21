@@ -1166,7 +1166,7 @@ def _change_case(
 
 
 def _normalize_1(obj: str) -> str:
-    """Perform normalization of labels in obj."""
+    """Perform normalization of obj."""
     FIXES = [(r"[ /:,?()\.-]", "_"), (r"['’]", ""), (r"[\xa0]", "_")]
     for search, replace in FIXES:
         obj = re.sub(pattern=search, repl=replace, string=obj)
@@ -1185,7 +1185,7 @@ def _remove_special(
 def _strip_accents(
     obj: str,
 ) -> str:
-    """Remove accents from a label.
+    """Remove accents from obj.
 
     Inspired from [StackOverflow][so].
 

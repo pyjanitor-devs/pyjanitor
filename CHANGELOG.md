@@ -1,7 +1,7 @@
 # Changelog
 
 ## [Unreleased]
--  [ENH] Add `make_clean_names` function which works on a pandas Index/Series, a Polars Expression, or a python string/list. Issue #1343
+-  [ENH] Added a `clean_names` method for polars - it can be used to clean the column names, or clean column values . Issue #1343
 
 ## [v0.27.0] - 2024-03-21
 

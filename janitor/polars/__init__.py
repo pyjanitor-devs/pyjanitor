@@ -26,7 +26,6 @@ class PolarsFrame:
         case_type: str = "lower",
         remove_special: bool = False,
         strip_accents: bool = False,
-        enforce_string: bool = False,
         truncate_limit: int = None,
     ) -> pl.DataFrame:
         """
@@ -64,7 +63,28 @@ class PolarsFrame:
             │ 1     ┆ 1          ┆ 1       │
             │ 2     ┆ 2          ┆ 2       │
             └───────┴────────────┴─────────┘
-        """
+
+        !!! info "New in version 0.28.0"
+
+        Args:
+            strip_underscores: Removes the outer underscores from all
+                column names. Default None keeps outer underscores. Values can be
+                either 'left', 'right' or 'both' or the respective shorthand 'l',
+                'r' and True.
+            case_type: Whether to make the column names lower or uppercase.
+                Current case may be preserved with 'preserve',
+                while snake case conversion (from CamelCase or camelCase only)
+                can be turned on using "snake".
+                Default 'lower' makes all characters lowercase.
+            remove_special: Remove special characters from the column names.
+                Only letters, numbers and underscores are preserved.
+            strip_accents: Whether or not to remove accents from
+                the labels.
+            truncate_limit: Truncates formatted column names to
+                the specified length. Default None does not truncate.
+        Returns:
+            A polars DataFrame.
+        """  # noqa: E501
         return self._df.rename(
             lambda col: _clean_column_names(
                 obj=col,
@@ -72,7 +92,6 @@ class PolarsFrame:
                 strip_underscores=strip_underscores,
                 case_type=case_type,
                 remove_special=remove_special,
-                enforce_string=enforce_string,
                 truncate_limit=truncate_limit,
             )
         )
@@ -119,6 +138,30 @@ class PolarsExpr:
             ╞═════════════╡
             │ abcde_fgi_j │
             └─────────────┘
+
+        !!! info "New in version 0.28.0"
+
+        Args:
+            strip_underscores: Removes the outer underscores
+                from all labels in the Expression.
+                Default None keeps outer underscores.
+                Values can be either 'left', 'right'
+                or 'both' or the respective shorthand 'l',
+                'r' and True.
+            case_type: Whether to make the labels in the expression lower or uppercase.
+                Current case may be preserved with 'preserve',
+                while snake case conversion (from CamelCase or camelCase only)
+                can be turned on using "snake".
+                Default 'lower' makes all characters lowercase.
+            remove_special: Remove special characters from the values in the expression.
+                Only letters, numbers and underscores are preserved.
+            strip_accents: Whether or not to remove accents from
+                the expression.
+            enforce_string: Whether or not to cast the expression to a string type.
+            truncate_limit: Truncates formatted labels in the expression to
+                the specified length. Default None does not truncate.
+        Returns:
+            A polars Expression.
         """
         return _clean_expr_names(
             obj=self._expr,

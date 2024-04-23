@@ -2,7 +2,7 @@ from typing import Optional, Union
 
 from janitor.utils import import_message
 
-from .functions import _clean_column_names, _clean_expr_names
+from .clean_names import _clean_column_names, _clean_expr_names
 
 try:
     import polars as pl

@@ -1,4 +1,4 @@
-"""functions for polars."""
+"""clean_names implementation for polars."""
 
 import re
 import unicodedata

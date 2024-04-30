@@ -224,7 +224,7 @@ class PolarsFrame:
             │ 514 ┆ 545 ┆ Red Sox ┆ 2007  ┆ 2008  │
             │ 573 ┆ 526 ┆ Yankees ┆ 2007  ┆ 2008  │
             └─────┴─────┴─────────┴───────┴───────┘
-            >>> df.pivot_longer(
+            >>> df.janitor.pivot_longer(
             ...     index = 'team',
             ...     names_to = ['year', 'hr'],
             ...     names_pattern = ['year', 'hr']
@@ -265,12 +265,12 @@ class PolarsFrame:
             │ Hoover  ┆ Alabama ┆ Niko     ┆ 90    ┆ 14     ┆ 43         ┆ 34  ┆ 18    │
             └─────────┴─────────┴──────────┴───────┴────────┴────────────┴─────┴───────┘
 
-            >>> df.pivot_longer(
-            ...         index=["City", "State"],
-            ...         column_names=cs.numeric(),
-            ...         names_to=("Fruit", "Drink"),
-            ...         values_to=("Pounds", "Ounces"),
-            ...         names_pattern=["M|O|W", "G|V"],
+            >>> df.janitor.pivot_longer(
+            ...     index=["City", "State"],
+            ...     column_names=cs.numeric(),
+            ...     names_to=("Fruit", "Drink"),
+            ...     values_to=("Pounds", "Ounces"),
+            ...     names_pattern=["M|O|W", "G|V"],
             ...     )
             shape: (9, 6)
             ┌─────────┬─────────┬────────────┬────────┬───────┬────────┐

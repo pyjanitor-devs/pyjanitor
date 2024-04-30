@@ -49,7 +49,7 @@ class PolarsFrame:
             >>> import polars as pl
             >>> import polars.selectors as cs
             >>> import janitor.polars
-            >>> df = pd.DataFrame(
+            >>> df = pl.DataFrame(
             ...     {
             ...         "Sepal.Length": [5.1, 5.9],
             ...         "Sepal.Width": [3.5, 3.0],

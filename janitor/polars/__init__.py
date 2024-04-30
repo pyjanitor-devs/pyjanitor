@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 
+
 from janitor.utils import import_message
 
 from .pivot_longer import _pivot_longer
@@ -421,8 +422,6 @@ class PolarsExpr:
                 It takes the same
                 specification as polars' `str.extract_groups` method.
                 `names_pattern` can also be a list/tuple of regular expressions.
-                It can also be a list/tuple of strings;
-                the strings will be treated as regular expressions.
                 Under the hood it is processed with polars' `str.contains` function.
                 For a list/tuple of regular expressions,
                 `names_to` must also be a list/tuple and the lengths of both

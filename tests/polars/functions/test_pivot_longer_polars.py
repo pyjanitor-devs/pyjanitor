@@ -171,7 +171,11 @@ def test_names_pat_str(df_checks):
         column_names=cs.starts_with("ht"),
         names_to=(".value", "age"),
         names_pattern="(.+)(.)",
+<<<<<<< HEAD
         names_transform=pl.col("age").cast(pl.Int64),
+=======
+        names_transform={"age": pl.Int64},
+>>>>>>> d67bbff (changelog)
     ).sort(by=pl.all())
 
     actual = [
@@ -320,8 +324,13 @@ def test_names_pattern_dot_value(test_df):
         column_names=pl.all(),
         names_to=["set", ".value"],
         names_pattern="(.+)_(.+)",
+<<<<<<< HEAD
     ).sort(by=["loc", "lat", "long"])
     assert_frame_equal(result, actual, check_column_order=False)
+=======
+    ).sort(by=pl.all())
+    assert_frame_equal(result, actual)
+>>>>>>> d67bbff (changelog)
 
 
 def test_names_sep_dot_value(test_df):
@@ -331,8 +340,53 @@ def test_names_sep_dot_value(test_df):
         column_names=pl.all(),
         names_to=["set", ".value"],
         names_sep="_",
+<<<<<<< HEAD
     ).sort(by=["loc", "lat", "long"])
     assert_frame_equal(result, actual, check_column_order=False)
+=======
+    ).sort(by=pl.all())
+    assert_frame_equal(result, actual)
+
+
+def test_names_pattern_list():
+    """Test output if names_pattern is a list/tuple."""
+
+    df = pl.DataFrame(
+        {
+            "Activity": ["P1", "P2"],
+            "General": ["AA", "BB"],
+            "m1": ["A1", "B1"],
+            "t1": ["TA1", "TB1"],
+            "m2": ["A2", "B2"],
+            "t2": ["TA2", "TB2"],
+            "m3": ["A3", "B3"],
+            "t3": ["TA3", "TB3"],
+        }
+    )
+
+    result = (
+        df.janitor.pivot_longer(
+            index=["Activity", "General"],
+            names_pattern=["^m", "^t"],
+            names_to=["M", "Task"],
+        )
+        .select(["Activity", "General", "Task", "M"])
+        .sort(by=pl.all())
+    )
+
+    actual = [
+        {"Activity": "P1", "General": "AA", "Task": "TA1", "M": "A1"},
+        {"Activity": "P1", "General": "AA", "Task": "TA2", "M": "A2"},
+        {"Activity": "P1", "General": "AA", "Task": "TA3", "M": "A3"},
+        {"Activity": "P2", "General": "BB", "Task": "TB1", "M": "B1"},
+        {"Activity": "P2", "General": "BB", "Task": "TB2", "M": "B2"},
+        {"Activity": "P2", "General": "BB", "Task": "TB3", "M": "B3"},
+    ]
+
+    actual = pl.DataFrame(actual).sort(by=pl.all())
+
+    assert_frame_equal(result, actual)
+>>>>>>> d67bbff (changelog)
 
 
 @pytest.fixture
@@ -400,6 +454,7 @@ def test_not_dot_value_sep2(not_dot_value):
 def test_not_dot_value_pattern(not_dot_value):
     """Test output when names_pattern is a string and no dot_value"""
 
+<<<<<<< HEAD
     result = (
         not_dot_value.janitor.pivot_longer(
             index="country",
@@ -410,6 +465,14 @@ def test_not_dot_value_pattern(not_dot_value):
         .select("country", "event", "year", "score")
         .sort(by=pl.all())
     )
+=======
+    result = not_dot_value.janitor.pivot_longer(
+        index="country",
+        names_to=("event", "year"),
+        names_pattern=r"(.+)_(.+)",
+        values_to="score",
+    ).sort(by=pl.all())
+>>>>>>> d67bbff (changelog)
 
     actual = (
         not_dot_value.melt(id_vars="country", value_name="score")
@@ -444,6 +507,7 @@ def test_multiple_dot_value():
         }
     )
 
+<<<<<<< HEAD
     result = (
         df.janitor.pivot_longer(
             index="unit",
@@ -454,6 +518,14 @@ def test_multiple_dot_value():
         .select("unit", "time", "x_mean", "x_sd", "y_mean", "y_sd")
         .sort(by=pl.all())
     )
+=======
+    result = df.janitor.pivot_longer(
+        index="unit",
+        names_to=(".value", "time", ".value"),
+        names_pattern=r"(x|y)_([0-9])(_mean|_sd)",
+        names_transform={"time": pl.Int64},
+    ).sort(by=pl.all())
+>>>>>>> d67bbff (changelog)
 
     actual = {
         "unit": [1, 2, 3, 4, 1, 2, 3, 4],
@@ -598,4 +670,143 @@ def test_names_pattern_nulls_in_data(df_null):
 
     actual = pl.DataFrame(actual).sort(by=pl.all())
 
+<<<<<<< HEAD
     assert_frame_equal(result, actual, check_column_order=False)
+=======
+    assert_frame_equal(result, actual)
+
+
+@pytest.fixture
+def multiple_values_to():
+    """fixture for multiple values_to"""
+    # https://stackoverflow.com/q/51519101/7175713
+    return pl.DataFrame(
+        {
+            "City": ["Houston", "Austin", "Hoover"],
+            "State": ["Texas", "Texas", "Alabama"],
+            "Name": ["Aria", "Penelope", "Niko"],
+            "Mango": [4, 10, 90],
+            "Orange": [10, 8, 14],
+            "Watermelon": [40, 99, 43],
+            "Gin": [16, 200, 34],
+            "Vodka": [20, 33, 18],
+        },
+    )
+
+
+def test_output_values_to_seq(multiple_values_to):
+    """Test output when values_to is a list/tuple."""
+
+    expected = multiple_values_to.janitor.pivot_longer(
+        index=["City", "State"],
+        column_names=cs.numeric(),
+        names_to=("Fruit"),
+        values_to=("Pounds",),
+        names_pattern=[r"M|O|W"],
+    ).sort(by=pl.all())
+
+    actual = [
+        {"City": "Houston", "State": "Texas", "Fruit": "Mango", "Pounds": 4},
+        {"City": "Austin", "State": "Texas", "Fruit": "Mango", "Pounds": 10},
+        {"City": "Hoover", "State": "Alabama", "Fruit": "Mango", "Pounds": 90},
+        {"City": "Houston", "State": "Texas", "Fruit": "Orange", "Pounds": 10},
+        {"City": "Austin", "State": "Texas", "Fruit": "Orange", "Pounds": 8},
+        {
+            "City": "Hoover",
+            "State": "Alabama",
+            "Fruit": "Orange",
+            "Pounds": 14,
+        },
+        {
+            "City": "Houston",
+            "State": "Texas",
+            "Fruit": "Watermelon",
+            "Pounds": 40,
+        },
+        {
+            "City": "Austin",
+            "State": "Texas",
+            "Fruit": "Watermelon",
+            "Pounds": 99,
+        },
+        {
+            "City": "Hoover",
+            "State": "Alabama",
+            "Fruit": "Watermelon",
+            "Pounds": 43,
+        },
+    ]
+
+    actual = pl.DataFrame(actual).sort(by=pl.all())
+
+    assert_frame_equal(expected, actual)
+
+
+def test_output_values_to_seq1(multiple_values_to):
+    """Test output when values_to is a list/tuple."""
+    # https://stackoverflow.com/a/51520155/7175713
+    expected = (
+        multiple_values_to.janitor.pivot_longer(
+            index=["City", "State"],
+            column_names=cs.numeric(),
+            names_to=("Fruit", "Drink"),
+            values_to=("Pounds", "Ounces"),
+            names_pattern=[r"M|O|W", r"G|V"],
+        )
+        .with_columns(pl.col("Ounces").cast(float))
+        .sort(by=pl.all())
+    )
+
+    actual = {
+        "City": [
+            "Houston",
+            "Austin",
+            "Hoover",
+            "Houston",
+            "Austin",
+            "Hoover",
+            "Houston",
+            "Austin",
+            "Hoover",
+        ],
+        "State": [
+            "Texas",
+            "Texas",
+            "Alabama",
+            "Texas",
+            "Texas",
+            "Alabama",
+            "Texas",
+            "Texas",
+            "Alabama",
+        ],
+        "Fruit": [
+            "Mango",
+            "Mango",
+            "Mango",
+            "Orange",
+            "Orange",
+            "Orange",
+            "Watermelon",
+            "Watermelon",
+            "Watermelon",
+        ],
+        "Pounds": [4, 10, 90, 10, 8, 14, 40, 99, 43],
+        "Drink": [
+            "Gin",
+            "Gin",
+            "Gin",
+            "Vodka",
+            "Vodka",
+            "Vodka",
+            None,
+            None,
+            None,
+        ],
+        "Ounces": [16.0, 200.0, 34.0, 20.0, 33.0, 18.0, None, None, None],
+    }
+
+    actual = pl.DataFrame(actual).sort(by=pl.all())
+
+    assert_frame_equal(expected, actual)
+>>>>>>> d67bbff (changelog)

@@ -1,7 +1,7 @@
 # Changelog
 
 ## [Unreleased]
--  [ENH] Added a `clean_names` method for polars - it can be used to clean the column names, or clean column values . Issue #1343
+-  [ENH] Added a `pivot_longer` method for polars - Issue #1352
 
 - [ENH] Improved performance for non-equi joins when using numba - @samukweku PR #1341
 -  [ENH] Added a `clean_names` method for polars - it can be used to clean the column names, or clean column values . Issue #1343

@@ -4,7 +4,7 @@ import re
 from typing import Union
 
 from janitor import utils as janitor_utils
-from janitor.functions.utils import (
+from janitor.functions.clean_names import (
     _change_case,
     _normalize_1,
     _remove_special,

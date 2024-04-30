@@ -309,7 +309,7 @@ def test_names_pat_str(df_checks):
         names_to=(".value", "age"),
         names_pattern="(.+)(.)",
         names_transform={"age": pl.Int64},
-    ).sort(by=cs.all())
+    ).sort(by=pl.all())
 
     actual = [
         {"famid": 1, "birth": 1, "age": 1, "ht": 2.8},
@@ -331,7 +331,7 @@ def test_names_pat_str(df_checks):
         {"famid": 3, "birth": 3, "age": 1, "ht": 2.1},
         {"famid": 3, "birth": 3, "age": 2, "ht": 2.9},
     ]
-    actual = pl.DataFrame(actual).sort(by=cs.all())
+    actual = pl.DataFrame(actual).sort(by=pl.all())
 
     assert_frame_equal(result, actual, check_dtype=False)
 
@@ -342,7 +342,7 @@ def test_no_column_names(df_checks):
     are assigned to the index parameter.
     """
     assert_frame_equal(
-        df_checks.janitor.pivot_longer(index=cs.all()),
+        df_checks.janitor.pivot_longer(index=pl.all()),
         df_checks,
     )
 
@@ -452,10 +452,10 @@ def test_names_pattern_str(test_df):
     """Test output for names_pattern and .value."""
 
     result = test_df.janitor.pivot_longer(
-        column_names=cs.all(),
+        column_names=pl.all(),
         names_to=["set", ".value"],
         names_pattern="(.+)_(.+)",
-    ).sort(by=cs.all())
+    ).sort(by=pl.all())
     assert_frame_equal(result, actual)
 
 
@@ -463,10 +463,10 @@ def test_names_sep_str(test_df):
     """Test output for names_pattern and .value."""
 
     result = test_df.janitor.pivot_longer(
-        column_names=cs.all(),
+        column_names=pl.all(),
         names_to=["set", ".value"],
         names_sep="_",
-    ).sort(by=cs.all())
+    ).sort(by=pl.all())
     assert_frame_equal(result, actual)
 
 
@@ -599,7 +599,7 @@ def test_not_dot_value_pattern(not_dot_value):
         names_to=("event", "year"),
         names_pattern=r"(.+)_(.+)",
         values_to="score",
-    ).sort(by=cs.all())
+    ).sort(by=pl.all())
 
     assert_frame_equal(result, actual2)
 
@@ -625,7 +625,7 @@ def test_multiple_dot_value():
         names_to=(".value", "time", ".value"),
         names_pattern=r"(x|y)_([0-9])(_mean|_sd)",
         names_transform={"time": pl.Int64},
-    ).sort(by=cs.all())
+    ).sort(by=pl.all())
 
     actual = {
         "unit": [1, 2, 3, 4, 1, 2, 3, 4],
@@ -636,7 +636,7 @@ def test_multiple_dot_value():
         "y_sd": [0.0, 1.0, 1.0, 1.0, -0.525, 0.623, -0.705, 0.662],
     }
 
-    actual = pl.DataFrame(actual).sort(by=cs.all())
+    actual = pl.DataFrame(actual).sort(by=pl.all())
 
     assert_frame_equal(result, actual)
 
@@ -805,7 +805,7 @@ def test_output_values_to_seq(multiple_values_to):
         names_to=("Fruit"),
         values_to=("Pounds",),
         names_pattern=[r"M|O|W"],
-    ).sort(by=cs.all())
+    ).sort(by=pl.all())
 
     actual = [
         {"City": "Houston", "State": "Texas", "Fruit": "Mango", "Pounds": 4},

@@ -1,6 +1,6 @@
-from typing import Any, Optional, Sequence, Union
+from typing import Any, Iterable, Optional, Union
 
-from polars.type_aliases import ColumnNameOrSelector
+from polars.type_aliases import IntoExpr
 
 from janitor.utils import import_message
 
@@ -24,12 +24,8 @@ class PolarsFrame:
 
     def pivot_longer(
         self,
-        index: Union[
-            ColumnNameOrSelector, Sequence[ColumnNameOrSelector], None
-        ] = None,
-        column_names: Union[
-            ColumnNameOrSelector, Sequence[ColumnNameOrSelector], None
-        ] = None,
+        index: Union[IntoExpr, Iterable[IntoExpr], None] = None,
+        column_names: Union[IntoExpr, Iterable[IntoExpr], None] = None,
         names_to: Optional[Union[list, tuple, str]] = "variable",
         values_to: Optional[Union[list, tuple, str]] = "value",
         names_sep: Optional[Union[str, None]] = None,
@@ -317,8 +313,6 @@ class PolarsFrame:
                 It takes the same
                 specification as polars' `str.extract_groups` method.
                 `names_pattern` can also be a list/tuple of regular expressions.
-                It can also be a list/tuple of strings;
-                the strings will be treated as regular expressions.
                 Under the hood it is processed with polars' `str.contains` function.
                 For a list/tuple of regular expressions,
                 `names_to` must also be a list/tuple and the lengths of both

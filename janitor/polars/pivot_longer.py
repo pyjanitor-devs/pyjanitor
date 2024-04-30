@@ -2,7 +2,7 @@
 
 from collections import defaultdict
 from itertools import chain
-from typing import Any, Mapping, Optional, Pattern, Sequence, Union
+from typing import Any, Iterable, Optional, Union
 
 from janitor.utils import check, import_message
 
@@ -10,7 +10,7 @@ try:
     import polars as pl
     import polars.selectors as cs
     from polars.datatypes.classes import DataTypeClass
-    from polars.type_aliases import ColumnNameOrSelector, PolarsDataType
+    from polars.type_aliases import IntoExpr, PolarsDataType
 except ImportError:
     import_message(
         submodule="polars",
@@ -22,16 +22,17 @@ except ImportError:
 
 def _pivot_longer(
     df: pl.DataFrame,
-    index: Union[ColumnNameOrSelector, Sequence[ColumnNameOrSelector], None],
-    column_names: Union[
-        ColumnNameOrSelector, Sequence[ColumnNameOrSelector], None
-    ],
+    index: Union[IntoExpr, Iterable[IntoExpr], None],
+    column_names: Union[IntoExpr, Iterable[IntoExpr], None],
     names_to: Optional[Union[list, str]],
     values_to: Optional[str],
-    names_sep: Optional[Union[str, Pattern, None]],
-    names_pattern: Optional[Union[list, tuple, str, Pattern, None]],
+    names_sep: Optional[Union[str, None]],
+    names_pattern: Optional[Union[list, tuple, str, None]],
     names_transform: Optional[Union[PolarsDataType, dict]],
 ) -> pl.DataFrame:
+    """
+    Unpivots a DataFrame to long form.
+    """
 
     (
         df,
@@ -64,6 +65,11 @@ def _pivot_longer(
             value_name=values_to,
         )
 
+    # the core idea is to do the transformation on the columns
+    # before flipping into long form
+    # typically less work is done this way
+    # compared to flipping and then processing the columns
+
     if names_sep is not None:
         return _pivot_longer_names_sep(
             df=df,
@@ -75,7 +81,7 @@ def _pivot_longer(
             names_transform=names_transform,
         )
 
-    if isinstance(names_pattern, (str, Pattern)):
+    if isinstance(names_pattern, str):
         return _pivot_longer_names_pattern_str(
             df=df,
             index=index,
@@ -107,15 +113,15 @@ def _pivot_longer(
 
 def _pivot_longer_names_sep(
     df: pl.DataFrame,
-    index: Sequence,
-    column_names: Sequence,
-    names_to: Sequence,
+    index: Iterable,
+    column_names: Iterable,
+    names_to: Iterable,
     names_sep: str,
     values_to: str,
     names_transform: dict,
 ) -> pl.DataFrame:
     """
-    This takes care of pivoting scenarios where
+    This takes care of unpivoting scenarios where
     names_sep is provided.
     """
 
@@ -167,15 +173,15 @@ def _pivot_longer_names_sep(
 
 def _pivot_longer_names_pattern_str(
     df: pl.DataFrame,
-    index: Union[Sequence, None],
-    column_names: Union[Sequence, None],
-    names_to: Sequence,
+    index: Iterable,
+    column_names: Iterable,
+    names_to: Iterable,
     names_pattern: str,
     values_to: str,
     names_transform: dict,
 ) -> pl.DataFrame:
     """
-    This takes care of pivoting scenarios where
+    This takes care of unpivoting scenarios where
     names_pattern is a string.
     """
 
@@ -222,15 +228,15 @@ def _pivot_longer_names_pattern_str(
 
 def _pivot_longer_values_to_sequence(
     df: pl.DataFrame,
-    index: Union[Sequence, None],
-    column_names: Union[Sequence, None],
-    names_to: Sequence,
-    names_pattern: Sequence,
-    values_to: Sequence,
+    index: Iterable,
+    column_names: Iterable,
+    names_to: Iterable,
+    names_pattern: Iterable,
+    values_to: Iterable,
     names_transform: dict,
 ) -> pl.DataFrame:
     """
-    This takes care of pivoting scenarios where
+    This takes care of unpivoting scenarios where
     values_to is a list/tuple.
     """
     columns = df.select(column_names).columns
@@ -299,13 +305,13 @@ def _pivot_longer_values_to_sequence(
 
 def _pivot_longer_names_pattern_sequence(
     df: pl.DataFrame,
-    index: Union[Sequence, None],
-    column_names: Union[Sequence, None],
-    names_to: Sequence,
-    names_pattern: Sequence,
+    index: Iterable,
+    column_names: Iterable,
+    names_to: Iterable,
+    names_pattern: Iterable,
 ) -> pl.DataFrame:
     """
-    This takes care of pivoting scenarios where
+    This takes care of unpivoting scenarios where
     names_pattern is a list/tuple.
     """
     columns = df.select(column_names).columns
@@ -358,19 +364,17 @@ def _pivot_longer_names_pattern_sequence(
 
 def _pivot_longer_no_dot_value(
     df: pl.DataFrame,
-    outcome: Mapping,
-    names_to: Sequence,
+    outcome: pl.Series,
+    names_to: Iterable,
     values_to: str,
-    index: Sequence,
-    columns: Sequence,
+    index: Iterable,
+    columns: Iterable,
     names_transform: dict,
-):
+) -> pl.DataFrame:
     """
     Reshape the data for scenarios where .value
     is not present in names_to,
     or names_to is not a list/tuple.
-
-    Returns a DataFrame.
     """
     contents = []
     for col_name, mapping in zip(columns, outcome):
@@ -395,17 +399,15 @@ def _pivot_longer_no_dot_value(
 
 def _pivot_longer_dot_value(
     df: pl.DataFrame,
-    names_to: Sequence,
-    outcome: pl.DataFrame,
-    index: Sequence,
-    columns: Sequence,
+    names_to: Iterable,
+    outcome: pl.Series,
+    index: Iterable,
+    columns: Iterable,
     names_transform: Union[PolarsDataType, dict],
 ) -> pl.DataFrame:
     """
     Pivots the dataframe into the final form,
     for scenarios where .value is in names_to.
-
-    Returns a DataFrame.
     """
     booleans = outcome.struct.unnest().select(pl.all().is_null().any())
     for position in range(len(names_to)):
@@ -477,16 +479,14 @@ def _pivot_longer_dot_value(
 
 def _pivot_longer_dot_value_only(
     df: pl.DataFrame,
-    names_to: Sequence,
-    outcome: pl.DataFrame,
-    index: Sequence,
-    columns: Sequence,
+    names_to: Iterable,
+    outcome: pl.Series,
+    index: Iterable,
+    columns: Iterable,
 ) -> pl.DataFrame:
     """
     Pivots the dataframe into the final form,
     for scenarios where only '.value' is present in names_to.
-
-    Returns a DataFrame.
     """
 
     if names_to.count(".value") > 1:
@@ -551,8 +551,8 @@ def _data_checks_pivot_longer(
                 raise TypeError(
                     f"The argument passed to the {arg_name} parameter "
                     "should be a string type, a ColumnSelector,  "
-                    "or a list/tuple that contains "
-                    "a string and/or a ColumnSelector."
+                    "an expression or a list/tuple that contains "
+                    "a string and/or a ColumnSelector and/or an expression."
                 )
 
         if isinstance(arg_value, (list, tuple)):

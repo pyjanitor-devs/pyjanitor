@@ -254,6 +254,7 @@ class PolarsFrame:
             ...             "Vodka": [20, 33, 18],
             ...         },
             ...     )
+            >>> df
             shape: (3, 8)
             ┌─────────┬─────────┬──────────┬───────┬────────┬────────────┬─────┬───────┐
             │ City    ┆ State   ┆ Name     ┆ Mango ┆ Orange ┆ Watermelon ┆ Gin ┆ Vodka │

@@ -242,7 +242,7 @@ class PolarsFrame:
             └─────────┴─────┴──────┘
 
             Multiple `values_to`:
-            >>> df = pd.DataFrame(
+            >>> df = pl.DataFrame(
             ...         {
             ...             "City": ["Houston", "Austin", "Hoover"],
             ...             "State": ["Texas", "Texas", "Alabama"],

@@ -113,7 +113,7 @@ def read_commandline(cmd: str, engine="pandas", **kwargs: Any) -> Mapping:
     This function assumes that your command line command will return
     an output that is parsable using the relevant engine and StringIO.
     This function defaults to using `pd.read_csv` underneath the hood.
-    Keyword arguments are passed through to read_csv.
+    Keyword arguments are passed through as-is.
 
     Args:
         cmd: Shell command to preprocess a file on disk.

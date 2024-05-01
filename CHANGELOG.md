@@ -1,7 +1,7 @@
 # Changelog
 
 ## [Unreleased]
--  [ENH] Added a `pivot_longer` method for polars - Issue #1352
+-  [ENH] `read_commandline` function now supports polars - Issue #1352
 
 ## [v0.27.0] - 2024-03-21
 

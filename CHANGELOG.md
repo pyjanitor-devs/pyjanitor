@@ -1,7 +1,7 @@
 # Changelog
 
 ## [Unreleased]
--  [ENH] `read_commandline` function now supports polars - Issue #1352
+-  [ENH] `xlsx_table` function now supports polars - Issue #1352
 
 ## [v0.27.0] - 2024-03-21
 

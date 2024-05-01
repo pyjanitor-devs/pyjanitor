@@ -369,6 +369,7 @@ def xlsx_cells(
 
         >>> out = xlsx_cells(filename, sheetnames="highlights", engine='polars', fill=True).get_column('fill')
         >>> out
+        shape: (8,)
         Series: 'fill' [struct[3]]
         [
            {null,{"00000000","rgb",0.0},{"00000000","rgb",0.0}}

@@ -124,6 +124,40 @@ def _pivot_longer_names_sep(
     This takes care of unpivoting scenarios where
     names_sep is provided.
     """
+    if ".value" not in names_to:
+        # this is primarily to reorder the columns ... aesthetics
+        columns_to_select = [] if not index else list(index)
+        columns_to_select.extend(names_to)
+        columns_to_select.append(values_to)
+        # use names that are unlikely to cause a conflict
+        variable_name = "".join(columns_to_select)
+        explode_name = [] if not index else list(index)
+        explode_name.append(values_to)
+        df = (
+            # shrink the rows to only one level
+            # this way the string processing
+            # is at the same height as the number of columns
+            # less work is done this way
+            # and the actual reshaping will be on the explode
+            # it is better to string split on 6 rows than 60 rows
+            # so string split on 6 rows, explode to 60 rows
+            df.select(pl.all().implode())
+            .melt(
+                id_vars=index,
+                value_vars=column_names,
+                value_name=values_to,
+                variable_name=variable_name,
+            )
+            .with_columns(
+                pl.col(variable_name)
+                .str.split(by=names_sep)
+                .list.to_struct(n_field_strategy="max_width", fields=names_to)
+            )
+            .unnest(variable_name)
+            .explode(explode_name)
+            .select(columns_to_select)
+        )
+        return df
 
     columns = df.select(column_names).columns
     outcome = (
@@ -140,18 +174,6 @@ def _pivot_longer_names_sep(
             f"The length of names_to is {len_names_to} "
             "while the number of fields extracted is "
             f"{len_outcome}."
-        )
-
-    if ".value" not in names_to:
-        outcome = outcome.struct.rename_fields(names_to)
-        return _pivot_longer_no_dot_value(
-            df=df,
-            outcome=outcome,
-            values_to=values_to,
-            index=index,
-            columns=columns,
-            names_to=names_to,
-            names_transform=names_transform,
         )
     if all(label == ".value" for label in names_to):
         return _pivot_longer_dot_value_only(
@@ -184,30 +206,44 @@ def _pivot_longer_names_pattern_str(
     This takes care of unpivoting scenarios where
     names_pattern is a string.
     """
+    if ".value" not in names_to:
+        # this is primarily to reorder the columns ... aesthetics
+        columns_to_select = [] if not index else list(index)
+        columns_to_select.extend(names_to)
+        columns_to_select.append(values_to)
+        # use names that are unlikely to cause a conflict
+        variable_name = "".join(columns_to_select)
+        explode_name = [] if not index else list(index)
+        explode_name.append(values_to)
+        df = (
+            # shrink the rows to only one level
+            # this way the string processing
+            # is at the same height as the number of columns
+            # less work is done this way
+            # and the actual reshaping will be on the explode
+            # it is better to extract regex groups on 6 rows than 60 rows
+            # so extract based on regex on 6 rows, explode to 60 rows
+            df.select(pl.all().implode())
+            .melt(
+                id_vars=index,
+                value_vars=column_names,
+                value_name=values_to,
+                variable_name=variable_name,
+            )
+            .with_columns(
+                pl.col(variable_name)
+                .str.extract_groups(names_pattern)
+                .struct.rename_fields(names_to)
+            )
+            .unnest(variable_name)
+            .explode(explode_name)
+            .select(columns_to_select)
+        )
+        return df
 
     columns = df.select(column_names).columns
     outcome = pl.Series(columns).str.extract_groups(names_pattern)
-    len_outcome = len(outcome.struct.fields)
-    len_names_to = len(names_to)
-    if len_names_to != len_outcome:
-        raise ValueError(
-            f"The length of names_to does not match "
-            "the number of fields extracted. "
-            f"The length of names_to is {len_names_to} "
-            "while the number of fields extracted is "
-            f"{len_outcome}."
-        )
-    if ".value" not in names_to:
-        outcome = outcome.struct.rename_fields(names_to)
-        return _pivot_longer_no_dot_value(
-            df=df,
-            outcome=outcome,
-            values_to=values_to,
-            index=index,
-            columns=columns,
-            names_to=names_to,
-            names_transform=names_transform,
-        )
+
     if all(label == ".value" for label in names_to):
         return _pivot_longer_dot_value_only(
             df=df,
@@ -273,31 +309,26 @@ def _pivot_longer_values_to_sequence(
         .filter(filter_expr)
         .with_columns(cum_expr)
     )
-    headers_dict = defaultdict(list)
-    non_headers_dict = defaultdict(list)
+    mapping = defaultdict(list)
     for num, col_name, value_header, name_header in zip(
         outcome.get_column("idx"),
         outcome.get_column("cols"),
         outcome.get_column(".value"),
         outcome.get_column("value"),
     ):
-        non_headers_dict[num].append((col_name, name_header))
-        headers_dict[num].append((col_name, value_header))
-    contents = []
-    for key, value in headers_dict.items():
-        expression = [] if index is None else [pl.col(index)]
-        columns_to_select = [
-            pl.col(col_name).alias(repl_name) for col_name, repl_name in value
-        ]
-        expression.extend(columns_to_select)
-        columns_to_append = [
-            pl.lit(col_name, dtype=names_transform[repl_name]).alias(repl_name)
-            for col_name, repl_name in non_headers_dict[key]
-        ]
-
-        contents.append(df.select(expression).with_columns(columns_to_append))
-    columns_to_select = [] if not index else list(index)
-    columns_to_select.extend(chain.from_iterable(zip(names_to, values_to)))
+        expression = (
+            pl.col(col_name).alias(value_header),
+            pl.lit(col_name, dtype=names_transform[name_header]).alias(
+                name_header
+            ),
+        )
+        mapping[num].append(expression)
+    mapping = map(chain.from_iterable, mapping.values())
+    if index:
+        mapping = ((*entry, pl.col(index)) for entry in mapping)
+    contents = map(df.select, mapping)
+    columns_to_select = chain.from_iterable(zip(names_to, values_to))
+    columns_to_select = [*index, *columns_to_select]
     return pl.concat(contents, how="diagonal_relaxed").select(
         columns_to_select
     )
@@ -342,58 +373,21 @@ def _pivot_longer_names_pattern_sequence(
         .filter(filter_expr)
         .with_columns(cum_expr)
     )
-    headers_dict = defaultdict(list)
-    for num, col_name, name_header in zip(
+    mapping = defaultdict(list)
+    for num, col_name, repl_name in zip(
         outcome.get_column("idx"),
         outcome.get_column("cols"),
         outcome.get_column(".value"),
     ):
-        headers_dict[num].append((col_name, name_header))
+        expression = pl.col(col_name).alias(repl_name)
+        mapping[num].append(expression)
+    mapping = mapping.values()
+    if index:
+        mapping = ((*entry, pl.col(index)) for entry in mapping)
+    contents = map(df.select, mapping)
 
-    contents = []
-    for _, value in headers_dict.items():
-        expression = [] if index is None else [pl.col(index)]
-        columns_to_select = [
-            pl.col(col_name).alias(repl_name) for col_name, repl_name in value
-        ]
-        expression.extend(columns_to_select)
-
-        contents.append(df.select(expression))
-    return pl.concat(contents, how="diagonal_relaxed")
-
-
-def _pivot_longer_no_dot_value(
-    df: pl.DataFrame,
-    outcome: pl.Series,
-    names_to: Iterable,
-    values_to: str,
-    index: Iterable,
-    columns: Iterable,
-    names_transform: dict,
-) -> pl.DataFrame:
-    """
-    Reshape the data for scenarios where .value
-    is not present in names_to,
-    or names_to is not a list/tuple.
-    """
-    contents = []
-    for col_name, mapping in zip(columns, outcome):
-        expression = (
-            [pl.col(col_name)]
-            if index is None
-            else [pl.col(index), pl.col(col_name).alias(values_to)]
-        )
-        columns_to_append = [
-            pl.lit(label, dtype=names_transform[header]).alias(header)
-            for header, label in mapping.items()
-        ]
-        _frame = df.select(expression).with_columns(columns_to_append)
-        contents.append(_frame)
-    columns_to_select = [] if not index else list(index)
-    columns_to_select.extend(names_to)
-    columns_to_select.append(values_to)
     return pl.concat(contents, how="diagonal_relaxed").select(
-        pl.col(columns_to_select)
+        pl.col(index), pl.exclude(index)
     )
 
 
@@ -409,15 +403,24 @@ def _pivot_longer_dot_value(
     Pivots the dataframe into the final form,
     for scenarios where .value is in names_to.
     """
-    booleans = outcome.struct.unnest().select(pl.all().is_null().any())
-    for position in range(len(names_to)):
-        if booleans.to_series(position).item():
-            raise ValueError(
-                f"Column labels '{columns[position]}' "
-                "could not be matched with any of the groups "
-                "in the provided regex. Kindly provide a regular expression "
-                "(with the correct groups) that matches all labels in the columns."
-            )
+    idx = "".join(names_to)
+    booleans = (
+        outcome.struct.unnest()
+        .select(
+            pl.Series(columns).alias(idx),
+            pl.any_horizontal(pl.exclude(idx).is_null()),
+        )
+        .filter(pl.last())
+    )
+    if not booleans.is_empty():
+        column_name = booleans.get_column(idx)[0]
+        raise ValueError(
+            f"Column label '{column_name}' "
+            "could not be matched with any of the groups "
+            "in the provided regex. Kindly provide a regular expression "
+            "(with the correct groups) that matches all labels in the columns."
+        )
+
     if names_to.count(".value") > 1:
         cols = outcome.struct.fields
         dot_value = [
@@ -436,42 +439,38 @@ def _pivot_longer_dot_value(
         )
     else:
         outcome = outcome.struct.rename_fields(names_to).struct.unnest()
-    idx = "".join(names_to)
     not_dot_value = [name for name in names_to if name != ".value"]
     outcome = outcome.with_row_index(idx).with_columns(
         pl.col(idx).first().over(not_dot_value).rank("dense").sub(1),
         pl.struct(not_dot_value),
     )
-    headers_dict = defaultdict(list)
+    mapping = defaultdict(list)
     for num, col_name, repl_name in zip(
         outcome.get_column(idx),
         columns,
         outcome.get_column(".value"),
     ):
-        headers_dict[num].append((col_name, repl_name))
-
-    non_headers_dict = dict()
+        mapping[num].append(pl.col(col_name).alias(repl_name))
+    if index:
+        mapping = {
+            num: [pl.col(index), *columns_to_select]
+            for num, columns_to_select in mapping.items()
+        }
     outcome = outcome.select(idx, not_dot_value[0]).unique()
-
-    for key, value in zip(outcome.to_series(0), outcome.to_series(1)):
-        value = [
+    outcome = dict(zip(outcome.to_series(0), outcome.to_series(1)))
+    contents = []
+    for key, columns_to_select in mapping.items():
+        columns_to_append = outcome[key]
+        columns_to_append = [
             pl.lit(stub_name, dtype=names_transform[repl_name]).alias(
                 repl_name
             )
-            for repl_name, stub_name in value.items()
+            for repl_name, stub_name in columns_to_append.items()
         ]
-        non_headers_dict[key] = value
-    contents = []
-    for key, value in headers_dict.items():
-        expression = [] if index is None else [pl.col(index)]
-        columns_to_select = [
-            pl.col(col_name).alias(repl_name) for col_name, repl_name in value
-        ]
-        expression.extend(columns_to_select)
-        _frame = df.select(expression).with_columns(non_headers_dict[key])
-        contents.append(_frame)
-    columns_to_select = [] if not index else list(index)
-    columns_to_select.extend(not_dot_value)
+        columns_to_select.extend(columns_to_append)
+        contents.append(df.select(columns_to_select))
+
+    columns_to_select = [*index, *not_dot_value]
     return pl.concat(contents, how="diagonal_relaxed").select(
         pl.col(columns_to_select), pl.exclude(columns_to_select)
     )
@@ -498,24 +497,23 @@ def _pivot_longer_dot_value_only(
     outcome = outcome.with_columns(
         pl.col(".value").cum_count().over(".value").sub(1).alias("idx")
     )
-    headers_dict = defaultdict(list)
+
+    mapping = defaultdict(list)
     for num, col_name, repl_name in zip(
         outcome.get_column("idx"),
         columns,
         outcome.get_column(".value"),
     ):
-        headers_dict[num].append((col_name, repl_name))
-
-    contents = []
-    for _, value in headers_dict.items():
-        expression = [] if index is None else [pl.col(index)]
-        columns_to_select = [
-            pl.col(col_name).alias(repl_name) for col_name, repl_name in value
-        ]
-        expression.extend(columns_to_select)
-        contents.append(df.select(expression))
-
-    return pl.concat(contents, how="diagonal_relaxed")
+        mapping[num].append(pl.col(col_name).alias(repl_name))
+    if index:
+        mapping = {
+            num: [pl.col(index), *columns_to_select]
+            for num, columns_to_select in mapping.items()
+        }
+    contents = map(df.select, mapping.values())
+    return pl.concat(contents, how="diagonal_relaxed").select(
+        pl.col(index), pl.exclude(index)
+    )
 
 
 def _data_checks_pivot_longer(

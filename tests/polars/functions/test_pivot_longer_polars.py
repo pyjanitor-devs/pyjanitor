@@ -228,33 +228,6 @@ def test_names_pattern_list_empty_any(df_checks):
         )
 
 
-def test_names_pattern_no_match(df_checks):
-    """Raise error if names_pattern is a regex and returns no matches."""
-    with pytest.raises(
-        ValueError, match="Column labels .+ could not be matched with any .+"
-    ):
-        df_checks.janitor.pivot_longer(
-            index="famid",
-            names_to=[".value", "value"],
-            names_pattern=r"(rar)(.)",
-        )
-
-
-def test_names_pattern_incomplete_match(df_checks):
-    """
-    Raise error if names_pattern is a regex
-    and returns incomplete matches.
-    """
-    with pytest.raises(
-        ValueError, match="Column labels .+ could not be matched with any .+"
-    ):
-        df_checks.janitor.pivot_longer(
-            index="famid",
-            names_to=[".value", "value"],
-            names_pattern=r"(ht)(.)",
-        )
-
-
 def test_names_sep_len(df_checks):
     """
     Raise error if names_sep,

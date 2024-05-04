@@ -231,7 +231,7 @@ class PolarsFrame:
             ...     index = 'team',
             ...     names_to = ['year', 'hr'],
             ...     names_pattern = ['year', 'hr']
-            ... )
+            ... ).select('team','hr','year')
             shape: (4, 3)
             ┌─────────┬─────┬──────┐
             │ team    ┆ hr  ┆ year │

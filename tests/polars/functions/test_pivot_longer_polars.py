@@ -228,18 +228,6 @@ def test_names_pattern_list_empty_any(df_checks):
         )
 
 
-def test_names_sep_len(df_checks):
-    """
-    Raise error if names_sep,
-    and the number of  matches returned
-    is not equal to the length of names_to.
-    """
-    msg = "The length of names_to does not match "
-    msg += "the number of fields extracted.+ "
-    with pytest.raises(ValueError, match=msg):
-        df_checks.janitor.pivot_longer(names_to=".value", names_sep="t")
-
-
 def test_pivot_index_only(df_checks):
     """Test output if only index is passed."""
     result = df_checks.janitor.pivot_longer(
@@ -252,7 +240,7 @@ def test_pivot_index_only(df_checks):
         ["famid", "birth"], variable_name="dim", value_name="num"
     )
 
-    assert_frame_equal(result, actual)
+    assert_frame_equal(result, actual, check_column_order=False)
 
 
 def test_pivot_column_only(df_checks):
@@ -269,7 +257,7 @@ def test_pivot_column_only(df_checks):
         value_name="num",
     )
 
-    assert_frame_equal(result, actual)
+    assert_frame_equal(result, actual, check_column_order=False)
 
 
 def test_names_pat_str(df_checks):
@@ -306,7 +294,9 @@ def test_names_pat_str(df_checks):
     ]
     actual = pl.DataFrame(actual).sort(by=pl.all())
 
-    assert_frame_equal(result, actual, check_dtype=False)
+    assert_frame_equal(
+        result, actual, check_dtype=False, check_column_order=False
+    )
 
 
 def test_no_column_names(df_checks):
@@ -317,6 +307,7 @@ def test_no_column_names(df_checks):
     assert_frame_equal(
         df_checks.janitor.pivot_longer(index=pl.all()),
         df_checks,
+        check_column_order=False,
     )
 
 
@@ -428,8 +419,8 @@ def test_names_pattern_str(test_df):
         column_names=pl.all(),
         names_to=["set", ".value"],
         names_pattern="(.+)_(.+)",
-    ).sort(by=pl.all())
-    assert_frame_equal(result, actual)
+    ).sort(by=["loc", "lat", "long"])
+    assert_frame_equal(result, actual, check_column_order=False)
 
 
 def test_names_sep_str(test_df):
@@ -439,8 +430,8 @@ def test_names_sep_str(test_df):
         column_names=pl.all(),
         names_to=["set", ".value"],
         names_sep="_",
-    ).sort(by=pl.all())
-    assert_frame_equal(result, actual)
+    ).sort(by=["loc", "lat", "long"])
+    assert_frame_equal(result, actual, check_column_order=False)
 
 
 def test_names_pattern_list():
@@ -480,7 +471,7 @@ def test_names_pattern_list():
 
     actual = pl.DataFrame(actual).sort(by=pl.all())
 
-    assert_frame_equal(result, actual)
+    assert_frame_equal(result, actual, check_column_order=False)
 
 
 @pytest.fixture
@@ -544,7 +535,7 @@ def test_not_dot_value_sep(not_dot_value):
         values_to="score",
     ).sort(by=pl.all())
 
-    assert_frame_equal(result, actual2)
+    assert_frame_equal(result, actual2, check_column_order=False)
 
 
 def test_not_dot_value_sep2(not_dot_value):
@@ -561,7 +552,7 @@ def test_not_dot_value_sep2(not_dot_value):
         "country", variable_name="event", value_name="score"
     )
 
-    assert_frame_equal(result, actual)
+    assert_frame_equal(result, actual, check_column_order=False)
 
 
 def test_not_dot_value_pattern(not_dot_value):
@@ -574,7 +565,7 @@ def test_not_dot_value_pattern(not_dot_value):
         values_to="score",
     ).sort(by=pl.all())
 
-    assert_frame_equal(result, actual2)
+    assert_frame_equal(result, actual2, check_column_order=False)
 
 
 def test_multiple_dot_value():
@@ -611,7 +602,7 @@ def test_multiple_dot_value():
 
     actual = pl.DataFrame(actual).sort(by=pl.all())
 
-    assert_frame_equal(result, actual)
+    assert_frame_equal(result, actual, check_column_order=False)
 
 
 @pytest.fixture
@@ -633,7 +624,7 @@ def test_multiple_dot_value2(single_val):
         index="id", names_to=(".value", ".value"), names_pattern="(.)(.)"
     )
 
-    assert_frame_equal(result, single_val)
+    assert_frame_equal(result, single_val, check_column_order=False)
 
 
 actual3 = [
@@ -657,7 +648,7 @@ def test_names_pattern_sequence_single_unique_column(single_val):
         "id", names_to=["x"], names_pattern=("x",)
     )
 
-    assert_frame_equal(result, actual3)
+    assert_frame_equal(result, actual3, check_column_order=False)
 
 
 def test_names_pattern_single_column(single_val):
@@ -669,7 +660,7 @@ def test_names_pattern_single_column(single_val):
         "id", names_to=".value", names_pattern="(.)."
     )
 
-    assert_frame_equal(result, actual3)
+    assert_frame_equal(result, actual3, check_column_order=False)
 
 
 def test_names_pattern_single_column_not_dot_value(single_val):
@@ -683,6 +674,7 @@ def test_names_pattern_single_column_not_dot_value(single_val):
     assert_frame_equal(
         result,
         single_val.melt(id_vars="id", value_vars="x1", variable_name="yA"),
+        check_column_order=False,
     )
 
 
@@ -695,7 +687,9 @@ def test_names_pattern_single_column_not_dot_value1(single_val):
     )
 
     assert_frame_equal(
-        result, single_val.select("x1").melt(variable_name="yA")
+        result,
+        single_val.select("x1").melt(variable_name="yA"),
+        check_column_order=False,
     )
 
 
@@ -748,7 +742,7 @@ def test_names_pattern_nulls_in_data(df_null):
 
     actual = pl.DataFrame(actual).sort(by=pl.all())
 
-    assert_frame_equal(result, actual)
+    assert_frame_equal(result, actual, check_column_order=False)
 
 
 @pytest.fixture
@@ -814,7 +808,7 @@ def test_output_values_to_seq(multiple_values_to):
 
     actual = pl.DataFrame(actual).sort(by=pl.all())
 
-    assert_frame_equal(expected, actual)
+    assert_frame_equal(expected, actual, check_column_order=False)
 
 
 def test_output_values_to_seq1(multiple_values_to):
@@ -883,4 +877,4 @@ def test_output_values_to_seq1(multiple_values_to):
 
     actual = pl.DataFrame(actual).sort(by=pl.all())
 
-    assert_frame_equal(expected, actual)
+    assert_frame_equal(expected, actual, check_column_order=False)

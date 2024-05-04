@@ -117,7 +117,7 @@ class PolarsFrame:
             ...     index = 'Species',
             ...     names_to = ('part', '.value'),
             ...     names_sep = '.',
-            ... )
+            ... ).select('Species','part','Length','Width')
             shape: (4, 4)
             ┌───────────┬───────┬────────┬───────┐
             │ Species   ┆ part  ┆ Length ┆ Width │

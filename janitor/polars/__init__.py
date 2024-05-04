@@ -15,6 +15,7 @@ except ImportError:
     )
 
 
+@pl.api.register_lazyframe_namespace("janitor")
 @pl.api.register_dataframe_namespace("janitor")
 class PolarsFrame:
     def __init__(self, df: pl.DataFrame) -> pl.DataFrame:

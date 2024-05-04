@@ -18,7 +18,9 @@ except ImportError:
 @pl.api.register_lazyframe_namespace("janitor")
 @pl.api.register_dataframe_namespace("janitor")
 class PolarsFrame:
-    def __init__(self, df: pl.DataFrame) -> pl.DataFrame:
+    def __init__(
+        self, df: Union[pl.DataFrame, pl.LazyFrame]
+    ) -> Union[pl.DataFrame, pl.LazyFrame]:
         self._df = df
 
     def clean_names(
@@ -28,7 +30,7 @@ class PolarsFrame:
         remove_special: bool = False,
         strip_accents: bool = False,
         truncate_limit: int = None,
-    ) -> pl.DataFrame:
+    ) -> Union[pl.DataFrame, pl.LazyFrame]:
         """
         Clean the column names in a polars DataFrame.
 

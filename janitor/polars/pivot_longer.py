@@ -124,24 +124,51 @@ def _pivot_longer_names_sep(
     This takes care of unpivoting scenarios where
     names_sep is provided.
     """
+<<<<<<< HEAD
 
+=======
+    if not isinstance(df, pl.LazyFrame) and (".value" not in names_to):
+        columns_to_select = [*index, *names_to, values_to]
+        # use names that are unlikely to cause a conflict
+        variable_name = "".join(columns_to_select)
+        explode_name = [*index, values_to]
+        return (
+            df.select(pl.all().implode())
+            .melt(
+                id_vars=index,
+                value_vars=column_names,
+                value_name=values_to,
+                variable_name=variable_name,
+            )
+            .with_columns(
+                pl.col(variable_name)
+                .str.split(by=names_sep)
+                .list.to_struct(n_field_strategy="max_width", fields=names_to)
+            )
+            .unnest(variable_name)
+            .cast(names_transform)
+            .explode(explode_name)
+            .select(columns_to_select)
+        )
+>>>>>>> 2a9bc7c (add support for lazyframe)
     columns = df.select(column_names).columns
     outcome = (
         pl.Series(columns)
         .str.split(by=names_sep)
         .list.to_struct(n_field_strategy="max_width")
     )
-    len_outcome = len(outcome.struct.fields)
-    len_names_to = len(names_to)
-    if len_names_to != len_outcome:
-        raise ValueError(
-            "The length of names_to does not match "
-            "the number of fields extracted. "
-            f"The length of names_to is {len_names_to} "
-            "while the number of fields extracted is "
-            f"{len_outcome}."
+    if ".value" not in names_to:
+        return _pivot_longer_no_dot_value(
+            df=df,
+            outcome=outcome,
+            names_to=names_to,
+            names_transform=names_transform,
+            values_to=values_to,
+            index=index,
+            columns=columns,
         )
 
+<<<<<<< HEAD
     if ".value" not in names_to:
         outcome = outcome.struct.rename_fields(names_to)
         return _pivot_longer_no_dot_value(
@@ -153,6 +180,8 @@ def _pivot_longer_names_sep(
             names_to=names_to,
             names_transform=names_transform,
         )
+=======
+>>>>>>> 2a9bc7c (add support for lazyframe)
     if all(label == ".value" for label in names_to):
         return _pivot_longer_dot_value_only(
             df=df,
@@ -184,6 +213,7 @@ def _pivot_longer_names_pattern_str(
     This takes care of unpivoting scenarios where
     names_pattern is a string.
     """
+<<<<<<< HEAD
 
     columns = df.select(column_names).columns
     outcome = pl.Series(columns).str.extract_groups(names_pattern)
@@ -208,6 +238,45 @@ def _pivot_longer_names_pattern_str(
             names_to=names_to,
             names_transform=names_transform,
         )
+=======
+    if not isinstance(df, pl.LazyFrame) and (".value" not in names_to):
+        columns_to_select = [*index, *names_to, values_to]
+        # use names that are unlikely to cause a conflict
+        variable_name = "".join(columns_to_select)
+        explode_name = [*index, values_to]
+        return (
+            df.select(pl.all().implode())
+            .melt(
+                id_vars=index,
+                value_vars=column_names,
+                value_name=values_to,
+                variable_name=variable_name,
+            )
+            .with_columns(
+                pl.col(variable_name)
+                .str.extract_groups(names_pattern)
+                .struct.rename_fields(names_to)
+            )
+            .unnest(variable_name)
+            .cast(names_transform)
+            .explode(explode_name)
+            .select(columns_to_select)
+        )
+    columns = df.select(column_names).columns
+    outcome = pl.Series(columns).str.extract_groups(names_pattern)
+
+    if ".value" not in names_to:
+        return _pivot_longer_no_dot_value(
+            df=df,
+            outcome=outcome,
+            names_to=names_to,
+            names_transform=names_transform,
+            values_to=values_to,
+            index=index,
+            columns=columns,
+        )
+
+>>>>>>> 2a9bc7c (add support for lazyframe)
     if all(label == ".value" for label in names_to):
         return _pivot_longer_dot_value_only(
             df=df,
@@ -239,13 +308,12 @@ def _pivot_longer_values_to_sequence(
     This takes care of unpivoting scenarios where
     values_to is a list/tuple.
     """
-    columns = df.select(column_names).columns
-    outcome = pl.DataFrame({"cols": columns})
     expressions = [
         pl.col("cols").str.contains(pattern).alias(f"cols{num}")
         for num, pattern in enumerate(names_pattern)
     ]
-    outcome = outcome.with_columns(expressions)
+    columns = df.select(column_names).columns
+    outcome = pl.DataFrame({"cols": columns}).with_columns(expressions)
     booleans = outcome.select(pl.exclude("cols").any())
     for position in range(len(names_pattern)):
         if not booleans.to_series(position).item():
@@ -281,6 +349,7 @@ def _pivot_longer_values_to_sequence(
         outcome.get_column(".value"),
         outcome.get_column("value"),
     ):
+<<<<<<< HEAD
         non_headers_dict[num].append((col_name, name_header))
         headers_dict[num].append((col_name, value_header))
     contents = []
@@ -298,6 +367,27 @@ def _pivot_longer_values_to_sequence(
         contents.append(df.select(expression).with_columns(columns_to_append))
     columns_to_select = [] if not index else list(index)
     columns_to_select.extend(chain.from_iterable(zip(names_to, values_to)))
+=======
+        expression = (
+            pl.col(col_name).alias(value_header),
+            pl.lit(col_name, dtype=names_transform[name_header]).alias(
+                name_header
+            ),
+        )
+        mapping[num].append(expression)
+    mapping = (zip(*entry) for entry in mapping.values())
+    if index:
+        mapping = (
+            ((pl.col(index), *cols_to_select), cols_to_append)
+            for cols_to_select, cols_to_append in mapping
+        )
+    contents = (
+        df.select(cols_to_select).with_columns(cols_to_append)
+        for cols_to_select, cols_to_append in mapping
+    )
+    columns_to_select = chain.from_iterable(zip(names_to, values_to))
+    columns_to_select = [*index, *columns_to_select]
+>>>>>>> 2a9bc7c (add support for lazyframe)
     return pl.concat(contents, how="diagonal_relaxed").select(
         columns_to_select
     )
@@ -348,6 +438,7 @@ def _pivot_longer_names_pattern_sequence(
         outcome.get_column("cols"),
         outcome.get_column(".value"),
     ):
+<<<<<<< HEAD
         headers_dict[num].append((col_name, name_header))
 
     contents = []
@@ -394,7 +485,48 @@ def _pivot_longer_no_dot_value(
     columns_to_select.append(values_to)
     return pl.concat(contents, how="diagonal_relaxed").select(
         pl.col(columns_to_select)
+=======
+        expression = pl.col(col_name).alias(repl_name)
+        mapping[num].append(expression)
+    mapping = mapping.values()
+    if index:
+        mapping = ((pl.col(index), *entry) for entry in mapping)
+    contents = map(df.with_columns, mapping)
+    columns_to_select = [*index, *names_to]
+    return pl.concat(contents, how="diagonal_relaxed").select(
+        columns_to_select
+>>>>>>> 2a9bc7c (add support for lazyframe)
     )
+
+
+def _pivot_longer_no_dot_value(
+    df: pl.DataFrame,
+    outcome: pl.Series,
+    names_to: Iterable,
+    values_to: str,
+    index: Iterable,
+    columns: Iterable,
+    names_transform: dict,
+):
+    outcome = outcome.struct.rename_fields(names_to)
+    columns_to_append = [
+        [
+            pl.lit(label, dtype=names_transform[header]).alias(header)
+            for header, label in dictionary.items()
+        ]
+        for dictionary in outcome
+    ]
+    values = (pl.col(col_name).alias(values_to) for col_name in columns)
+    if index:
+        values = ([pl.col(index), col_name] for col_name in values)
+    values = map(df.select, values)
+    values = (
+        entry.with_columns(col)
+        for entry, col in zip(values, columns_to_append)
+    )
+    values = pl.concat(values, how="diagonal_relaxed")
+    columns_to_select = [*index, *names_to, values_to]
+    return values.select(columns_to_select)
 
 
 def _pivot_longer_dot_value(
@@ -448,9 +580,19 @@ def _pivot_longer_dot_value(
         columns,
         outcome.get_column(".value"),
     ):
+<<<<<<< HEAD
         headers_dict[num].append((col_name, repl_name))
 
     non_headers_dict = dict()
+=======
+        mapping[num].append(pl.col(col_name).alias(repl_name))
+    if index:
+        mapping = {
+            num: [pl.col(index), *columns_to_select]
+            for num, columns_to_select in mapping.items()
+        }
+    dot_value = outcome.get_column(".value").unique()
+>>>>>>> 2a9bc7c (add support for lazyframe)
     outcome = outcome.select(idx, not_dot_value[0]).unique()
 
     for key, value in zip(outcome.to_series(0), outcome.to_series(1)):
@@ -460,6 +602,7 @@ def _pivot_longer_dot_value(
             )
             for repl_name, stub_name in value.items()
         ]
+<<<<<<< HEAD
         non_headers_dict[key] = value
     contents = []
     for key, value in headers_dict.items():
@@ -472,8 +615,15 @@ def _pivot_longer_dot_value(
         contents.append(_frame)
     columns_to_select = [] if not index else list(index)
     columns_to_select.extend(not_dot_value)
+=======
+        contents.append(
+            df.select(columns_to_select).with_columns(columns_to_append)
+        )
+
+    columns_to_select = [*index, *not_dot_value, *dot_value]
+>>>>>>> 2a9bc7c (add support for lazyframe)
     return pl.concat(contents, how="diagonal_relaxed").select(
-        pl.col(columns_to_select), pl.exclude(columns_to_select)
+        columns_to_select
     )
 
 
@@ -504,6 +654,7 @@ def _pivot_longer_dot_value_only(
         columns,
         outcome.get_column(".value"),
     ):
+<<<<<<< HEAD
         headers_dict[num].append((col_name, repl_name))
 
     contents = []
@@ -516,6 +667,19 @@ def _pivot_longer_dot_value_only(
         contents.append(df.select(expression))
 
     return pl.concat(contents, how="diagonal_relaxed")
+=======
+        mapping[num].append(pl.col(col_name).alias(repl_name))
+    if index:
+        mapping = {
+            num: [pl.col(index), *columns_to_select]
+            for num, columns_to_select in mapping.items()
+        }
+    contents = map(df.with_columns, mapping.values())
+    columns_to_select = [*index, *outcome.get_column(".value").unique()]
+    return pl.concat(contents, how="diagonal_relaxed").select(
+        columns_to_select
+    )
+>>>>>>> 2a9bc7c (add support for lazyframe)
 
 
 def _data_checks_pivot_longer(

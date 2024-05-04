@@ -17,9 +17,12 @@ except ImportError:
     )
 
 
+@pl.api.register_lazyframe_namespace("janitor")
 @pl.api.register_dataframe_namespace("janitor")
 class PolarsFrame:
-    def __init__(self, df: pl.DataFrame) -> pl.DataFrame:
+    def __init__(
+        self, df: Union[pl.DataFrame, pl.LazyFrame]
+    ) -> Union[pl.DataFrame, pl.LazyFrame]:
         self._df = df
 
     def pivot_longer(
@@ -435,7 +438,7 @@ class PolarsExpr:
                 Applicable only if one of names_sep
                 or names_pattern is provided.
         Returns:
-            A polars DataFrame that has been unpivoted from wide to long
+            A polars DataFrame/LazyFrame that has been unpivoted from wide to long
                 format.
         """  # noqa: E501
         return _pivot_longer(

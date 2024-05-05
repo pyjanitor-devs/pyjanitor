@@ -4,3 +4,4 @@
     options:
       members:
       - PolarsFrame
+      - PolarsLazyFrame

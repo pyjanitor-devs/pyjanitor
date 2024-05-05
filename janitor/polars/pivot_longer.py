@@ -124,29 +124,6 @@ def _pivot_longer_names_sep(
     This takes care of unpivoting scenarios where
     names_sep is provided.
     """
-    if not isinstance(df, pl.LazyFrame) and (".value" not in names_to):
-        columns_to_select = [*index, *names_to, values_to]
-        # use names that are unlikely to cause a conflict
-        variable_name = "".join(columns_to_select)
-        explode_name = [*index, values_to]
-        return (
-            df.select(pl.all().implode())
-            .melt(
-                id_vars=index,
-                value_vars=column_names,
-                value_name=values_to,
-                variable_name=variable_name,
-            )
-            .with_columns(
-                pl.col(variable_name)
-                .str.split(by=names_sep)
-                .list.to_struct(n_field_strategy="max_width", fields=names_to)
-            )
-            .unnest(variable_name)
-            .cast(names_transform)
-            .explode(explode_name)
-            .select(columns_to_select)
-        )
     columns = df.select(column_names).columns
     outcome = (
         pl.Series(columns)
@@ -195,29 +172,7 @@ def _pivot_longer_names_pattern_str(
     This takes care of unpivoting scenarios where
     names_pattern is a string.
     """
-    if not isinstance(df, pl.LazyFrame) and (".value" not in names_to):
-        columns_to_select = [*index, *names_to, values_to]
-        # use names that are unlikely to cause a conflict
-        variable_name = "".join(columns_to_select)
-        explode_name = [*index, values_to]
-        return (
-            df.select(pl.all().implode())
-            .melt(
-                id_vars=index,
-                value_vars=column_names,
-                value_name=values_to,
-                variable_name=variable_name,
-            )
-            .with_columns(
-                pl.col(variable_name)
-                .str.extract_groups(names_pattern)
-                .struct.rename_fields(names_to)
-            )
-            .unnest(variable_name)
-            .cast(names_transform)
-            .explode(explode_name)
-            .select(columns_to_select)
-        )
+
     columns = df.select(column_names).columns
     outcome = pl.Series(columns).str.extract_groups(names_pattern)
 
@@ -393,25 +348,37 @@ def _pivot_longer_no_dot_value(
     columns: Iterable,
     names_transform: dict,
 ):
-    outcome = outcome.struct.rename_fields(names_to)
-    columns_to_append = [
-        [
-            pl.lit(label, dtype=names_transform[header]).alias(header)
-            for header, label in dictionary.items()
-        ]
-        for dictionary in outcome
-    ]
+    if isinstance(df, pl.LazyFrame):
+        height = df.select(pl.len()).collect().item()
+    else:
+        height = df.height
     values = (pl.col(col_name).alias(values_to) for col_name in columns)
     if index:
         values = ([pl.col(index), col_name] for col_name in values)
     values = map(df.select, values)
-    values = (
-        entry.with_columns(col)
-        for entry, col in zip(values, columns_to_append)
+    idx = f"{names_to[0]}_" if len(names_to) == 1 else "".join(names_to)
+    outcome = (
+        outcome.struct.rename_fields(names=names_to)
+        .struct.unnest()
+        .cast(names_transform)
+        .with_row_index(name=idx)
     )
-    values = pl.concat(values, how="diagonal_relaxed")
+    temp = (
+        pl.int_range(height * len(columns), dtype=pl.UInt32)
+        .floordiv(height)
+        .alias(idx)
+    )
+    temp = pl.select(temp)
+    if isinstance(df, pl.LazyFrame):
+        temp = temp.lazy().join(outcome.lazy(), on=idx, how="left")
+    else:
+        temp = temp.join(outcome, on=idx, how="left")
+    temp = temp.select(pl.exclude(idx))
     columns_to_select = [*index, *names_to, values_to]
-    return values.select(columns_to_select)
+    values = pl.concat(values)
+    return pl.concat([values, temp], how="horizontal").select(
+        columns_to_select
+    )
 
 
 def _pivot_longer_dot_value(

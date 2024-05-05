@@ -135,8 +135,6 @@ class PolarsLazyFrame:
             │ 1     ┆ 1          ┆ 1            │
             │ 2     ┆ 2          ┆ 2            │
             └───────┴────────────┴──────────────┘
-            >>> df.lazy().janitor.clean_names(remove_special=True)
-            <LazyFrame [3 cols, {"aloha": Int64 … "animals": Int64}] at 0x14647ED70>
             >>> df.lazy().janitor.clean_names(remove_special=True).collect()
             shape: (3, 3)
             ┌───────┬────────────┬─────────┐

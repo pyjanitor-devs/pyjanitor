@@ -117,14 +117,14 @@ class PolarsLazyFrame:
         Examples:
             >>> import polars as pl
             >>> import janitor.polars
-            >>> df = pl.DataFrame(
+            >>> df = pl.LazyFrame(
             ...     {
             ...         "Aloha": range(3),
             ...         "Bell Chart": range(3),
             ...         "Animals@#$%^": range(3)
             ...     }
             ... )
-            >>> df
+            >>> df.collect()
             shape: (3, 3)
             ┌───────┬────────────┬──────────────┐
             │ Aloha ┆ Bell Chart ┆ Animals@#$%^ │
@@ -135,7 +135,7 @@ class PolarsLazyFrame:
             │ 1     ┆ 1          ┆ 1            │
             │ 2     ┆ 2          ┆ 2            │
             └───────┴────────────┴──────────────┘
-            >>> df.lazy().janitor.clean_names(remove_special=True).collect()
+            >>> df.janitor.clean_names(remove_special=True).collect()
             shape: (3, 3)
             ┌───────┬────────────┬─────────┐
             │ aloha ┆ bell_chart ┆ animals │

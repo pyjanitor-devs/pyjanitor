@@ -5,3 +5,4 @@
       members:
       - PolarsExpr
       - PolarsFrame
+      - PolarsLazyFrame

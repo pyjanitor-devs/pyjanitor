@@ -112,7 +112,7 @@ class PolarsLazyFrame:
         truncate_limit: int = None,
     ) -> pl.LazyFrame:
         """
-        Clean the column names in a polars DataFrame.
+        Clean the column names in a polars LazyFrame.
 
         Examples:
             >>> import polars as pl

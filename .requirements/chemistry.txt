@@ -4,5 +4,5 @@
 #
 #    pip-compile .requirements/chemistry.in
 #
-tqdm==4.63.0
-    # via -r .requirements/chemistry.in
+tqdm==4.66.3
+    # via -r chemistry.in

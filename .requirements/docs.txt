@@ -129,7 +129,7 @@ stack-data==0.6.2
     # via ipython
 sympy==1.11.1
     # via unyt
-tqdm==4.64.1
+tqdm==4.66.3
     # via -r chemistry.in
 traitlets==5.8.1
     # via

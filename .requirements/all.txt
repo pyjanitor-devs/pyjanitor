@@ -241,7 +241,7 @@ tomli==2.0.1
     #   coverage
     #   pep517
     #   pytest
-tqdm==4.63.0
+tqdm==4.66.3
     # via -r chemistry.in
 traitlets==5.1.1
     # via

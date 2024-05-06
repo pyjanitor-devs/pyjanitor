@@ -502,7 +502,7 @@ def _pivot_longer_dot_value_only(
             num: [pl.col(index), *columns_to_select]
             for num, columns_to_select in mapping.items()
         }
-    contents = map(df.with_columns, mapping.values())
+    contents = map(df.select, mapping.values())
     columns_to_select = [*index, *outcome.get_column(".value").unique()]
     return pl.concat(contents, how="diagonal_relaxed").select(
         columns_to_select

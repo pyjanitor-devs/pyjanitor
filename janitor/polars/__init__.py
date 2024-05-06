@@ -197,7 +197,7 @@ class PolarsFrame:
             ...     index="unit",
             ...     names_to=(".value", "time", ".value"),
             ...     names_pattern=r"(x|y)_([0-9])(_mean)",
-            ... )
+            ... ).select('unit','time','x_mean','y_mean')
             shape: (2, 4)
             ┌──────┬──────┬────────┬────────┐
             │ unit ┆ time ┆ x_mean ┆ y_mean │

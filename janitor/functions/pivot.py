@@ -1010,12 +1010,16 @@ def _pivot_longer_names_pattern_str(
             ignore_index=ignore_index,
         )
 
+    index, mapping, outcome = _dot_value_extra_checks(
+        index=index, names_to=names_to, mapping=mapping
+    )
+
     return _pivot_longer_dot_value(
         df=df,
         index=index,
         sort_by_appearance=sort_by_appearance,
         ignore_index=ignore_index,
-        names_to=names_to,
+        outcome=outcome,
         dropna=dropna,
         names_transform=names_transform,
         mapping=mapping,
@@ -1068,12 +1072,16 @@ def _pivot_longer_names_sep(
             ignore_index=ignore_index,
         )
 
+    index, mapping, outcome = _dot_value_extra_checks(
+        index=index, names_to=names_to, mapping=mapping
+    )
+
     return _pivot_longer_dot_value(
         df=df,
         index=index,
         sort_by_appearance=sort_by_appearance,
         ignore_index=ignore_index,
-        names_to=names_to,
+        outcome=outcome,
         dropna=dropna,
         names_transform=names_transform,
         mapping=mapping,
@@ -1123,10 +1131,10 @@ def _pivot_longer_dot_value(
     index: Union[dict, None],
     sort_by_appearance: bool,
     ignore_index: bool,
-    names_to: list,
     dropna: bool,
     names_transform: Union[str, Callable, dict, None],
     mapping: pd.DataFrame,
+    outcome: pd.DataFrame,
 ) -> pd.DataFrame:
     """
     Pivots the dataframe into the final form,
@@ -1135,32 +1143,6 @@ def _pivot_longer_dot_value(
 
     Returns a DataFrame.
     """
-    outcome = mapping.pop(".value")
-    if names_to.count(".value") > 1:
-        outcome = [arr for _, arr in outcome.items()]
-        outcome = reduce(lambda x, y: x + y, outcome)
-
-    exclude = {
-        word
-        for word in outcome.array
-        if (word in names_to) and (word != ".value")
-    }
-    if exclude:
-        raise ValueError(
-            f"Labels {*exclude, } in names_to already exist "
-            "in the new dataframe's columns. "
-            "Kindly provide unique label(s)."
-        )
-
-    if index:
-        exclude = set(index).intersection(outcome.array)
-        if exclude:
-            raise ValueError(
-                f"Labels {*exclude, } already exist "
-                "as column labels assigned to the dataframe's "
-                "index parameter. Kindly provide unique label(s)."
-            )
-
     if mapping.empty:
         values, group_max = _headers_single_series(df=df, mapping=outcome)
         outcome = None
@@ -1253,6 +1235,43 @@ def _headers_single_series(df: pd.DataFrame, mapping: pd.Series) -> tuple:
         df.columns = mapping
     outcome = _dict_from_grouped_names(df=df)
     return outcome, group_max
+
+
+def _dot_value_extra_checks(
+    index: Union[dict, None],
+    names_to: list,
+    mapping: pd.DataFrame,
+):
+    """
+    Extra checks if '.value' is present
+    in names_to.
+    """
+    outcome = mapping.pop(".value")
+    if names_to.count(".value") > 1:
+        outcome = (arr for _, arr in outcome.items())
+        outcome = reduce(lambda x, y: x + y, outcome)
+
+    exclude = {
+        word
+        for word in outcome.array
+        if (word in names_to) and (word != ".value")
+    }
+    if exclude:
+        raise ValueError(
+            f"Labels {*exclude, } in names_to already exist "
+            "in the new dataframe's columns. "
+            "Kindly provide unique label(s)."
+        )
+
+    if index:
+        exclude = set(index).intersection(outcome.array)
+        if exclude:
+            raise ValueError(
+                f"Labels {*exclude, } already exist "
+                "as column labels assigned to the dataframe's "
+                "index parameter. Kindly provide unique label(s)."
+            )
+    return index, mapping, outcome
 
 
 def _dict_from_grouped_names(df: pd.DataFrame) -> dict:
@@ -1882,3 +1901,75 @@ def _check_tuples_multiindex(indexer, args, param):
         )
 
     return args
+
+
+def pivot_longer_spec(
+    df: pd.DataFrame,
+    spec: pd.DataFrame,
+    sort_by_appearance: bool = False,
+    ignore_index: bool = False,
+) -> pd.DataFrame:
+    """A low level interface to pivot a DataFrame from wide to long,
+    where you describe how the data will be unpivoted,
+    using a DataFrame.
+
+    !!! info "New in version 0.28.0"
+
+    Args:
+        df: A DataFrame to unpivot.
+        spec: A specification DataFrame.
+        This is useful for more complex pivots
+        because it gives you greater control
+        on how metadata stored in the column names
+        turns into columns in the result.
+        Must be a DataFrame containing character .name and .value columns.
+        Additional columns in spec should be named to match columns
+        in the long format of the dataset and contain values
+        corresponding to columns pivoted from the wide format.
+        sort_by_appearance: Boolean value that determines
+            the final look of the DataFrame. If `True`, the unpivoted DataFrame
+            will be stacked in order of first appearance.
+        ignore_index: If `True`,
+            the original index is ignored. If `False`, the original index
+            is retained and the index labels will be repeated as necessary.
+
+    Returns:
+        A pandas DataFrame.
+    """
+    if not spec.columns.is_unique:
+        raise ValueError("Kindly ensure the spec's columns is unique.")
+    if ".name" not in spec.columns:
+        raise KeyError(
+            "Kindly ensure the spec dataframe has a `.name` column."
+        )
+    if ".value" not in spec.columns:
+        raise KeyError(
+            "Kindly ensure the spec dataframe has a `.value` column."
+        )
+    if not spec[".name"].is_unique:
+        raise ValueError("The labels in the `.name` column should be unique.")
+
+    exclude = df.columns.intersection(spec.columns)
+    if not exclude.empty:
+        raise ValueError(
+            f"Labels {*exclude, } in the spec dataframe already exist "
+            "as column labels in the target dataframe. "
+            "index parameter. Kindly ensure the spec dataframe's columns "
+            "are not present in the target dataframe."
+        )
+
+    check("sort_by_appearance", sort_by_appearance, [bool])
+    check("ignore_index", ignore_index, [bool])
+
+    index = df.columns.difference(spec[".name"], sort=False)
+    index = {name: df[name]._values for name in index}
+    return _pivot_longer_dot_value(
+        df=df.loc[:, spec[".name"]],
+        index=index,
+        sort_by_appearance=sort_by_appearance,
+        ignore_index=ignore_index,
+        dropna=False,
+        names_transform=None,
+        mapping=spec.drop(columns=[".name", ".value"]),
+        outcome=spec[".value"],
+    )

@@ -1241,9 +1241,9 @@ def _pivot_longer_dot_value(
             "other": not_dot_value,
             "cumcount": cumcount.unique(),
         }
+
     indexer = _computations_expand_grid(indexer)
     indexer = pd.DataFrame(indexer, copy=False)
-
     indexer.columns = columns
     df = df.reindex(columns=indexer, copy=False)
     columns = df.loc[:, dot_value[0]].columns
@@ -2075,6 +2075,7 @@ def pivot_longer_spec(
     spec: pd.DataFrame,
     sort_by_appearance: bool = False,
     ignore_index: bool = True,
+    dropna: bool = False,
 ) -> pd.DataFrame:
     """A low level interface to pivot a DataFrame from wide to long form,
     where you describe how the data will be unpivoted,
@@ -2135,6 +2136,13 @@ def pivot_longer_spec(
         ignore_index: If `True`,
             the original index is ignored. If `False`, the original index
             is retained and the index labels will be repeated as necessary.
+        dropna: Determines whether or not to drop nulls
+            from the values columns. Default is `False`.
+
+    Raises:
+        KeyError: If '.name' or '.value' is missing from the spec's columns.
+        ValueError: If the spec's columns is not unique,
+            or the labels in spec['.name'] is not unique.
 
     Returns:
         A pandas DataFrame.
@@ -2161,11 +2169,16 @@ def pivot_longer_spec(
             "are not present in the source dataframe."
         )
 
+    check("dropna", dropna, [bool])
     check("sort_by_appearance", sort_by_appearance, [bool])
     check("ignore_index", ignore_index, [bool])
 
     index = df.columns.difference(spec[".name"], sort=False)
     index = {name: df[name]._values for name in index}
+    if spec.columns[1] != ".value":
+        order = pd.Index([".name", ".value"])
+        order = order.union(spec.columns, sort=False)
+        spec = spec.reindex(columns=order, copy=False)
     if spec.columns.size == 2:
         return _pivot_longer_dot_value_only(
             df=df.loc[:, spec[".name"]],
@@ -2180,7 +2193,7 @@ def pivot_longer_spec(
         index=index,
         sort_by_appearance=sort_by_appearance,
         ignore_index=ignore_index,
-        dropna=False,
+        dropna=dropna,
         names_transform=None,
-        mapping=spec.drop(columns=[".name"]),
+        mapping=spec.drop(columns=".name"),
     )

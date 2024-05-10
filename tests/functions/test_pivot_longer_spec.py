@@ -92,6 +92,12 @@ def test_ignore_index(df_checks):
         df_checks.pipe(pivot_longer_spec, spec=spec, ignore_index=1)
 
 
+def test_dropna(df_checks):
+    """Raise error if dropna is not boolean."""
+    with pytest.raises(TypeError, match="dropna should be one of.+"):
+        df_checks.pipe(pivot_longer_spec, spec=spec, dropna=1)
+
+
 def test_pivot_longer_spec(df_checks):
     """
     Test output if a specification is passed.
@@ -112,7 +118,10 @@ def test_pivot_longer_spec_dot_value_only(df_checks):
     and it is just .name and .value columns
     in the specification DataFrame.
     """
-    specs = {".name": ["ht1", "ht2"], ".value": ["ht", "ht"]}
+    specs = {
+        ".value": ["ht", "ht"],
+        ".name": ["ht1", "ht2"],
+    }
     specs = pd.DataFrame(specs)
     actual = df_checks.pipe(pivot_longer_spec, spec=specs)
     expected = (

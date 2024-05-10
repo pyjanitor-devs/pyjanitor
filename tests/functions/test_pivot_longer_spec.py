@@ -92,6 +92,14 @@ def test_ignore_index(df_checks):
         df_checks.pipe(pivot_longer_spec, spec=spec, ignore_index=1)
 
 
+def test_df_columns_is_unique(df_checks):
+    """Raise error if df_columns_is_unique is not boolean."""
+    with pytest.raises(
+        TypeError, match="df_columns_is_unique should be one of.+"
+    ):
+        df_checks.pipe(pivot_longer_spec, spec=spec, df_columns_is_unique=1)
+
+
 def test_dropna(df_checks):
     """Raise error if dropna is not boolean."""
     with pytest.raises(TypeError, match="dropna should be one of.+"):
@@ -135,3 +143,30 @@ def test_pivot_longer_spec_dot_value_only(df_checks):
         actual.sort_values(actual.columns.tolist(), ignore_index=True),
         expected.sort_values(actual.columns.tolist(), ignore_index=True),
     )
+
+
+def test_duplicated_columns():
+    """Test output for duplicated columns."""
+    rows = [["credit", 1, 1, 2, 3]]
+    columns = ["Type", "amount", "active", "amount", "active"]
+
+    df = pd.DataFrame(rows, columns=columns)
+    df = df.set_index("Type")
+
+    actual = pd.DataFrame(
+        {"amount": [1, 2], "active": [1, 3]},
+        index=pd.Index(["credit", "credit"], name="Type"),
+    ).loc[:, ["amount", "active"]]
+    specs = {
+        ".name": ["amount", "active"],
+        ".value": ["amount", "active"],
+    }
+    specs = pd.DataFrame(specs)
+    expected = df.pipe(
+        pivot_longer_spec,
+        spec=specs,
+        ignore_index=False,
+        df_columns_is_unique=False,
+    ).loc[:, ["amount", "active"]]
+
+    assert_frame_equal(actual, expected)

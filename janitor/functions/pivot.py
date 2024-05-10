@@ -2075,6 +2075,7 @@ def pivot_longer_spec(
     sort_by_appearance: bool = False,
     ignore_index: bool = True,
     dropna: bool = False,
+    df_columns_is_unique: bool = True,
 ) -> pd.DataFrame:
     """A low level interface to pivot a DataFrame from wide to long form,
     where you describe how the data will be unpivoted,
@@ -2137,6 +2138,8 @@ def pivot_longer_spec(
             is retained and the index labels will be repeated as necessary.
         dropna: Determines whether or not to drop nulls
             from the values columns. Default is `False`.
+        df_columns_is_unique: Boolean value to indicate if the source
+            DataFrame's columns is unique. Default is `True`.
 
     Raises:
         KeyError: If '.name' or '.value' is missing from the spec's columns.
@@ -2171,6 +2174,7 @@ def pivot_longer_spec(
     check("dropna", dropna, [bool])
     check("sort_by_appearance", sort_by_appearance, [bool])
     check("ignore_index", ignore_index, [bool])
+    check("df_columns_is_unique", df_columns_is_unique, [bool])
 
     index = df.columns.difference(spec[".name"], sort=False)
     index = {name: df[name]._values for name in index}
@@ -2178,9 +2182,14 @@ def pivot_longer_spec(
         order = pd.Index([".name", ".value"])
         order = order.union(spec.columns, sort=False)
         spec = spec.reindex(columns=order, copy=False)
+    df = df.loc[:, spec[".name"]]
+    if not df_columns_is_unique:
+        spec = pd.DataFrame({".name": df.columns}).merge(
+            spec, on=".name", how="inner"
+        )
     if spec.columns.size == 2:
         return _pivot_longer_dot_value_only(
-            df=df.loc[:, spec[".name"]],
+            df=df,
             index=index,
             sort_by_appearance=sort_by_appearance,
             ignore_index=ignore_index,
@@ -2188,11 +2197,11 @@ def pivot_longer_spec(
             mapping=spec[".value"],
         )
     return _pivot_longer_dot_value(
-        df=df.loc[:, spec[".name"]],
+        df=df,
         index=index,
         sort_by_appearance=sort_by_appearance,
         ignore_index=ignore_index,
         dropna=dropna,
         names_transform=None,
-        mapping=spec.drop(columns=".name"),
+        mapping=spec.iloc[:, 1:],
     )

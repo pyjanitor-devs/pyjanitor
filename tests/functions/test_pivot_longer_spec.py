@@ -104,3 +104,25 @@ def test_pivot_longer_spec(df_checks):
         actual.sort_values(actual.columns.tolist(), ignore_index=True),
         expected.sort_values(actual.columns.tolist(), ignore_index=True),
     )
+
+
+def test_pivot_longer_spec_dot_value_only(df_checks):
+    """
+    Test output if a specification is passed,
+    and it is just .name and .value columns
+    in the specification DataFrame.
+    """
+    specs = {".name": ["ht1", "ht2"], ".value": ["ht", "ht"]}
+    specs = pd.DataFrame(specs)
+    actual = df_checks.pipe(pivot_longer_spec, spec=specs)
+    expected = (
+        pd.wide_to_long(
+            df_checks, stubnames="ht", i=["famid", "birth"], j="age"
+        )
+        .reset_index()
+        .drop(columns="age")
+    )
+    assert_frame_equal(
+        actual.sort_values(actual.columns.tolist(), ignore_index=True),
+        expected.sort_values(actual.columns.tolist(), ignore_index=True),
+    )

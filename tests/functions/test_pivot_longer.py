@@ -1254,18 +1254,25 @@ def multiple_values_to():
             "Watermelon": [40, 99, 43],
             "Gin": [16, 200, 34],
             "Vodka": [20, 33, 18],
-        },
-        columns=[
-            "City",
-            "State",
-            "Name",
-            "Mango",
-            "Orange",
-            "Watermelon",
-            "Gin",
-            "Vodka",
-        ],
+        }
     )
+
+
+def test_names_pattern_dict_no_match(multiple_values_to):
+    """
+    Raise Error if there is no match for the regex
+    """
+    with pytest.raises(
+        ValueError, match="No match was returned for the regex.+"
+    ):
+        multiple_values_to.pivot_longer(
+            index=["City", "State"],
+            column_names=slice("Mango", "Vodka"),
+            names_pattern={
+                "Fruit": {"Pounds": r"M|O|W"},
+                "Drink": {"Ounces": r"Gg|Va"},
+            },
+        )
 
 
 def test_names_pattern_dict_names_to(multiple_values_to):
@@ -1607,10 +1614,10 @@ def test_duplicated_columns():
     actual = pd.DataFrame(
         {"amount": [1, 2], "active": [1, 3]},
         index=pd.Index(["credit", "credit"], name="Type"),
-    )
+    ).loc[:, ["amount", "active"]]
     expected = df.pivot_longer(
         names_to=".value", names_pattern="(.+)", ignore_index=False
-    )
+    ).loc[:, ["amount", "active"]]
 
     assert_frame_equal(actual, expected)
 
@@ -1699,14 +1706,18 @@ def test_dropna_sort_by_appearance():
         names_pattern=[".+date$", ".+"],
         dropna=True,
         sort_by_appearance=True,
-    )
+    ).loc[:, ["id", "treatment", "date"]]
 
-    expected = pd.lreshape(
-        treatments,
-        {
-            "treatment": ["A", "B", "other"],
-            "date": ["A_date", "B_date", "other_date"],
-        },
-    ).sort_values(["id", "treatment", "date"], ignore_index=True)
+    expected = (
+        pd.lreshape(
+            treatments,
+            {
+                "treatment": ["A", "B", "other"],
+                "date": ["A_date", "B_date", "other_date"],
+            },
+        )
+        .sort_values(["id", "treatment", "date"], ignore_index=True)
+        .loc[:, ["id", "treatment", "date"]]
+    )
 
     assert_frame_equal(actual, expected)

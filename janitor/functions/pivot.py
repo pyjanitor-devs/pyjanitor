@@ -1185,7 +1185,6 @@ def _pivot_longer_dot_value_only(
     where only `.value` is present.
     """
     df, group_max = _headers_single_series(df=df, mapping=mapping)
-    mapping = mapping.unique()
     return _final_frame_longer(
         df=df,
         len_index=len(df),
@@ -1196,7 +1195,7 @@ def _pivot_longer_dot_value_only(
         sort_by_appearance=sort_by_appearance,
         ignore_index=ignore_index,
         len_columns=group_max,
-        len_dot_value=len(mapping),
+        len_dot_value=mapping.nunique(),
     )
 
 

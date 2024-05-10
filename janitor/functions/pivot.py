@@ -985,12 +985,12 @@ def _pivot_longer_names_pattern_sequence(
     boolean_masks = (name for name, mask in boolean_masks if not mask)
     for pattern in boolean_masks:
         raise ValueError(f"No match was returned for the regex {pattern}")
-    columns = np.select(booleans, names_to, None)
+    values = np.select(booleans, names_to, None)
     # only matched columns are retained
-    booleans = pd.notna(columns)
+    booleans = pd.notna(values)
     df = df.loc[:, booleans]
-    columns = columns[booleans]
-    df, group_max = _headers_single_series(df=df, mapping=pd.Series(columns))
+    values = values[booleans]
+    df, group_max = _headers_single_series(df=df, mapping=pd.Series(values))
     len_index = len(df)
     return _final_frame_longer(
         df=df,

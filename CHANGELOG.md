@@ -1,7 +1,7 @@
 # Changelog
 
 ## [Unreleased]
-
+-   [ENH] Improve `pivot_longer` when `sort_by_appearance` is True. Added `pivot_longer_spec` for more control on how the dataframe should be unpivoted. -@samukweku #1361
 ## [v0.27.0] - 2024-03-21
 
 -   [BUG] Fix logic for groupby in complete. Index support deprecated. Fix deprecation warning for fillna in `complete` PR #1289 @samukweku

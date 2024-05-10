@@ -2100,7 +2100,7 @@ def pivot_longer_spec(
         1           5.9          3.0           5.1          1.8  virginica
         >>> spec = {'.name':['Sepal.Length','Petal.Length',
         ...                  'Sepal.Width','Petal.Width'],
-        ...         '.value':['Length','Length','Width','Width']
+        ...         '.value':['Length','Length','Width','Width'],
         ...         'part':['Sepal','Petal','Sepal','Petal']}
         >>> spec = pd.DataFrame(spec)
         >>> spec

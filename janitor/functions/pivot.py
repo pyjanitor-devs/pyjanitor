@@ -55,6 +55,9 @@ def pivot_longer(
     Column selection in `index` and `column_names` is possible using the
     [`select`][janitor.functions.select.select] syntax.
 
+    For more granular control on the unpivoting, have a look at
+    [`pivot_longer_spec`][janitor.functions.pivot.pivot_longer_spec].
+
     Examples:
         >>> import pandas as pd
         >>> import janitor
@@ -2079,7 +2082,13 @@ def pivot_longer_spec(
 ) -> pd.DataFrame:
     """A low level interface to pivot a DataFrame from wide to long form,
     where you describe how the data will be unpivoted,
-    using a DataFrame.
+    using a DataFrame. This gives you, the user,
+    more control over unpivoting, where you can instead create a “spec”
+    data frame that describes
+    exactly how data stored in the column names becomes variables.
+    It can come in handy for situations where
+    [`pivot_longer`][janitor.functions.pivot.pivot_longer]
+    seems inadequate for the transformation.
 
     !!! info "New in version 0.28.0"
 

@@ -5,3 +5,4 @@
       members:
       - PolarsFrame
       - PolarsLazyFrame
+      - pivot_longer_spec

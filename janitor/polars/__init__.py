@@ -50,6 +50,9 @@ class PolarsFrame:
         All measured variables are *unpivoted* (and typically duplicated) along the
         row axis.
 
+        For more granular control on the unpivoting, have a look at
+        `pivot_longer_spec`.
+
         Examples:
             >>> import polars as pl
             >>> import polars.selectors as cs
@@ -292,6 +295,9 @@ class PolarsLazyFrame:
         All measured variables are *unpivoted* (and typically duplicated) along the
         row axis.
 
+        For more granular control on the unpivoting, have a look at
+        `pivot_longer_spec`.
+
         Examples:
             >>> import polars as pl
             >>> import polars.selectors as cs
@@ -389,6 +395,10 @@ def pivot_longer_spec(
     more control over unpivoting, where you create a “spec”
     DataFrame that describes exactly how data stored in the column names
     becomes variables.
+
+    It can come in handy for situations where
+    `pivot_longer`
+    seems inadequate for the transformation.
 
     !!! info "New in version 0.28.0"
 

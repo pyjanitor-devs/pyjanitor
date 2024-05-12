@@ -46,7 +46,7 @@ def test_spec_columns_has_dot_name(df_checks):
 
 
 def test_spec_columns_has_dot_value(df_checks):
-    """Raise KeyError if '.valje' not in spec's columns."""
+    """Raise KeyError if '.value' not in spec's columns."""
     with pytest.raises(
         KeyError,
         match="Kindly ensure the spec dataframe has a `.value` column.",

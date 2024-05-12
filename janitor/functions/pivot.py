@@ -2162,11 +2162,11 @@ def pivot_longer_spec(
         raise ValueError("Kindly ensure the spec's columns is unique.")
     if ".name" not in spec.columns:
         raise KeyError(
-            "Kindly ensure the spec dataframe has a `.name` column."
+            "Kindly ensure the spec DataFrame has a `.name` column."
         )
     if ".value" not in spec.columns:
         raise KeyError(
-            "Kindly ensure the spec dataframe has a `.value` column."
+            "Kindly ensure the spec DataFrame has a `.value` column."
         )
     if not spec[".name"].is_unique:
         raise ValueError("The labels in the `.name` column should be unique.")
@@ -2174,10 +2174,10 @@ def pivot_longer_spec(
     exclude = df.columns.intersection(spec.columns)
     if not exclude.empty:
         raise ValueError(
-            f"Labels {*exclude, } in the spec dataframe already exist "
-            "as column labels in the source dataframe. "
-            "index parameter. Kindly ensure the spec dataframe's columns "
-            "are not present in the source dataframe."
+            f"Labels {*exclude, } in the spec DataFrame already exist "
+            "as column labels in the source DataFrame. "
+            "Kindly ensure the spec DataFrame's columns "
+            "are not present in the source DataFrame."
         )
 
     check("dropna", dropna, [bool])

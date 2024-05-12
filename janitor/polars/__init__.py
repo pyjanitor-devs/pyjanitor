@@ -97,7 +97,7 @@ class PolarsFrame:
             ...     index = 'Species',
             ...     names_to = ('part', 'dimension'),
             ...     names_sep = '.',
-            ... )
+            ... ).select('Species','part','dimension','value')
             shape: (8, 4)
             ┌───────────┬───────┬───────────┬───────┐
             │ Species   ┆ part  ┆ dimension ┆ value │
@@ -147,7 +147,7 @@ class PolarsFrame:
             ...     index = 'id',
             ...     names_to = ('diagnosis', 'gender', 'age'),
             ...     names_pattern = r"new_?(.+)_(.)(\\d+)",
-            ... )
+            ... ).select('id','diagnosis','gender','age','value')
             shape: (2, 5)
             ┌─────┬───────────┬────────┬──────┬───────┐
             │ id  ┆ diagnosis ┆ gender ┆ age  ┆ value │
@@ -165,7 +165,7 @@ class PolarsFrame:
             ...         names_to=("diagnosis", "gender", "age"),
             ...         names_pattern=r"new_?(.+)_(.)(\\d+)",
             ...         names_transform={"age": pl.Int32},
-            ...     )
+            ...     ).select('id','diagnosis','gender','age','value')
             ... )
             shape: (2, 5)
             ┌─────┬───────────┬────────┬──────┬───────┐

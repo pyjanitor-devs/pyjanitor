@@ -90,6 +90,16 @@ def test_name_sep_wrong_type(df_checks):
         )
 
 
+def test_name_transform_wrong_type(df_checks):
+    """Raise TypeError if the wrong type is provided for names_transform."""
+    with pytest.raises(TypeError, match="names_transform should be one of.+"):
+        df_checks.janitor.pivot_longer(
+            names_to=[".value", "num"],
+            names_sep="_",
+            names_transform=pl.UInt16,
+        )
+
+
 def test_values_to_wrong_type(df_checks):
     """Raise TypeError if the wrong type is provided for `values_to`."""
     with pytest.raises(TypeError, match="values_to should be one of.+"):

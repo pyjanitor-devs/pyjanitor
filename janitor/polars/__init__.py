@@ -422,9 +422,10 @@ class PolarsExpr:
             names_transform: Use this option to change the types of columns that
                 have been transformed to rows.
                 This does not applies to the values' columns.
-                It takes the same specification as
-                [polar's cast](https://docs.pola.rs/py-polars/html/reference/dataframe/api/polars.DataFrame.cast.html)
-                function.
+                `names_transform` accepts a dictionary, where
+                the keys in the dictionary
+                are the column names, while the values
+                are the data types to be applied on the columns.
                 Applicable only if one of names_sep
                 or names_pattern is provided.
 
@@ -457,12 +458,7 @@ class PolarsLazyFrame:
         values_to: str = "value",
         names_sep: str = None,
         names_pattern: str = None,
-        names_transform: Union[
-            Mapping[
-                Union[ColumnNameOrSelector, PolarsDataType], PolarsDataType
-            ],
-            PolarsDataType,
-        ] = None,
+        names_transform: dict = None,
     ) -> pl.LazyFrame:
         """
         Unpivots a LazyFrame from *wide* to *long* format.
@@ -542,9 +538,10 @@ class PolarsLazyFrame:
             names_transform: Use this option to change the types of columns that
                 have been transformed to rows.
                 This does not applies to the values' columns.
-                It takes the same specification as
-                [polar's cast](https://docs.pola.rs/py-polars/html/reference/dataframe/api/polars.DataFrame.cast.html)
-                function.
+                `names_transform` accepts a dictionary, where
+                the keys in the dictionary
+                are the column names, while the values
+                are the data types to be applied on the columns.
                 Applicable only if one of names_sep
                 or names_pattern is provided.
 

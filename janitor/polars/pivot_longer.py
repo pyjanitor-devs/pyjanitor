@@ -1,14 +1,14 @@
 """pivot_longer implementation for polars."""
 
 from collections import defaultdict
-from typing import Any, Iterable, Mapping, Union
+from typing import Any, Iterable, Union
 
 from janitor.utils import check, import_message
 
 try:
     import polars as pl
     import polars.selectors as cs
-    from polars.type_aliases import ColumnNameOrSelector, PolarsDataType
+    from polars.type_aliases import ColumnNameOrSelector
 except ImportError:
     import_message(
         submodule="polars",
@@ -26,10 +26,7 @@ def _pivot_longer(
     values_to: str,
     names_sep: str,
     names_pattern: str,
-    names_transform: Union[
-        Mapping[Union[ColumnNameOrSelector, PolarsDataType], PolarsDataType],
-        PolarsDataType,
-    ],
+    names_transform: dict,
 ) -> Union[pl.DataFrame, pl.LazyFrame]:
     """
     Unpivots a DataFrame/LazyFrame from wide to long form.
@@ -43,6 +40,7 @@ def _pivot_longer(
         values_to,
         names_sep,
         names_pattern,
+        names_transform,
     ) = _data_checks_pivot_longer(
         df=df,
         index=index,
@@ -51,6 +49,7 @@ def _pivot_longer(
         values_to=values_to,
         names_sep=names_sep,
         names_pattern=names_pattern,
+        names_transform=names_transform,
     )
 
     if not column_names:
@@ -68,43 +67,29 @@ def _pivot_longer(
     if isinstance(names_to, str):
         names_to = [names_to]
 
-    # the core idea is to do the transformation on the columns
-    # before flipping into long form
-    # typically less work is done this way
-    # compared to flipping and then processing the columns
-    # this is also generally more performant
-
-    if names_sep is not None:
-        return _pivot_longer_names_sep(
-            df=df,
-            column_names=column_names,
-            names_to=names_to,
-            names_sep=names_sep,
-            values_to=values_to,
-            names_transform=names_transform,
-        )
-
-    return _pivot_longer_names_pattern(
+    return _pivot_longer_create_spec(
         df=df,
         column_names=column_names,
         names_to=names_to,
+        names_sep=names_sep,
         names_pattern=names_pattern,
         values_to=values_to,
         names_transform=names_transform,
     )
 
 
-def _pivot_longer_names_sep(
+def _pivot_longer_create_spec(
     df: Union[pl.DataFrame, pl.LazyFrame],
     column_names: Iterable,
     names_to: Iterable,
-    names_sep: str,
+    names_sep: Union[str, None],
+    names_pattern: Union[str, None],
     values_to: str,
     names_transform: dict,
 ) -> pl.DataFrame:
     """
-    This takes care of unpivoting scenarios where
-    names_sep is provided.
+    This is where the spec DataFrame is created,
+    before the final reshape.
     """
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -139,6 +124,7 @@ def _pivot_longer_names_sep(
         pl.Series(columns)
 =======
     spec = pl.DataFrame({".name": column_names})
+<<<<<<< HEAD
     split_expr = (
         pl.col(".name")
 >>>>>>> 650cc93 (added pivot_longer_spec)
@@ -147,6 +133,23 @@ def _pivot_longer_names_sep(
         .alias("extract")
     )
     spec = spec.with_columns(split_expr)
+=======
+    if names_sep is not None:
+        split_expr = (
+            pl.col(".name")
+            .str.split(by=names_sep)
+            .list.to_struct(n_field_strategy="max_width")
+            .alias("extract")
+        )
+        spec = spec.with_columns(split_expr)
+    else:
+        extract_expr = (
+            pl.col(".name")
+            .str.extract_groups(pattern=names_pattern)
+            .alias("extract")
+        )
+        spec = spec.with_columns(extract_expr)
+>>>>>>> 8f4384d (reduce repetitiveness in function calls)
     len_fields = len(spec.get_column("extract").struct.fields)
     len_names_to = len(names_to)
 
@@ -158,18 +161,27 @@ def _pivot_longer_names_sep(
             "while the number of fields extracted is "
             f"{len_fields}."
         )
+    if names_pattern is not None:
+        null_check = (
+            spec.unnest(columns="extract")
+            .filter(pl.any_horizontal(pl.exclude(".name").is_null().any()))
+            .get_column(".name")
+        )
+        if null_check.len():
+            column_name = null_check.gather(0).item()
+            raise ValueError(
+                f"Column label '{column_name}' "
+                "could not be matched with any of the groups "
+                "in the provided regex. Kindly provide a regular expression "
+                "(with the correct groups) that matches all labels in the columns."
+            )
     if names_to.count(".value") < 2:
         rename_expr = pl.col("extract").struct.rename_fields(names=names_to)
         spec = spec.with_columns(rename_expr).unnest(columns="extract")
     else:
         spec = _squash_multiple_dot_value(spec=spec, names_to=names_to)
     if ".value" not in names_to:
-        not_dot_value = names_to
         spec = spec.with_columns(pl.lit(value=values_to).alias(".value"))
-    else:
-        not_dot_value = [
-            name for name in spec.columns if name not in {".name", ".value"}
-        ]
 
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -207,6 +219,7 @@ def _pivot_longer_names_sep(
 >>>>>>> 650cc93 (added pivot_longer_spec)
     )
     if names_transform is not None:
+<<<<<<< HEAD
         if isinstance(names_transform, dict):
             names_transform = {
                 key: value
@@ -693,6 +706,8 @@ def _pivot_longer_dot_value(
             }
         else:
             names_transform = {key: names_transform for key in not_dot_value}
+=======
+>>>>>>> 8f4384d (reduce repetitiveness in function calls)
         spec = spec.cast(dtypes=names_transform)
     return _pivot_longer_dot_value(df=df, spec=spec)
 
@@ -821,6 +836,7 @@ def _data_checks_pivot_longer(
     values_to,
     names_sep,
     names_pattern,
+    names_transform,
 ) -> tuple:
     """
     This function majorly does type checks on the passed arguments.
@@ -893,6 +909,9 @@ def _data_checks_pivot_longer(
     if names_pattern is not None:
         check("names_pattern", names_pattern, [str])
 
+    if names_transform is not None:
+        check("names_transform", names_transform, [dict])
+
     check("values_to", values_to, [str])
 
     return (
@@ -903,6 +922,7 @@ def _data_checks_pivot_longer(
         values_to,
         names_sep,
         names_pattern,
+        names_transform,
     )
 
 """pivot_longer implementation for polars."""

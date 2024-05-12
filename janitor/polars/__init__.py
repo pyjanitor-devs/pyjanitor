@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from janitor.utils import import_message
 
-from .pivot_longer import _pivot_longer
+from .pivot_longer import _pivot_longer, _pivot_longer_dot_value
 
 try:
     import polars as pl
@@ -412,8 +412,6 @@ class PolarsExpr:
                 from part of the existing column names and overrides `values_to`.
             values_to: Name of new column as a string that will contain what
                 were previously the values of the columns in `column_names`.
-                `values_to` can also be a list/tuple
-                and requires that `names_pattern` is also a list/tuple.
             names_sep: Determines how the column name is broken up, if
                 `names_to` contains multiple values. It takes the same
                 specification as polars' `str.split` method.
@@ -421,19 +419,15 @@ class PolarsExpr:
                 It can be a regular expression containing matching groups.
                 It takes the same
                 specification as polars' `str.extract_groups` method.
-                `names_pattern` can also be a list/tuple of regular expressions.
-                Under the hood it is processed with polars' `str.contains` function.
-                For a list/tuple of regular expressions,
-                `names_to` must also be a list/tuple and the lengths of both
-                arguments must match.
             names_transform: Use this option to change the types of columns that
                 have been transformed to rows.
                 This does not applies to the values' columns.
-                It can be a single valid polars dtype,
-                or a dictionary pairing the new column names
-                with a valid polars dtype.
+                It takes the same specification as
+                [polar's cast](https://docs.pola.rs/py-polars/html/reference/dataframe/api/polars.DataFrame.cast.html)
+                function.
                 Applicable only if one of names_sep
                 or names_pattern is provided.
+
         Returns:
             A polars DataFrame that has been unpivoted from wide to long
                 format.
@@ -457,13 +451,18 @@ class PolarsLazyFrame:
 
     def pivot_longer(
         self,
-        index: Union[IntoExpr, Iterable[IntoExpr], None] = None,
-        column_names: Union[IntoExpr, Iterable[IntoExpr], None] = None,
-        names_to: Optional[Union[list, tuple, str]] = "variable",
-        values_to: Optional[Union[list, tuple, str]] = "value",
-        names_sep: Optional[Union[str, None]] = None,
-        names_pattern: Optional[Union[list, tuple, str, None]] = None,
-        names_transform: Optional[Any] = pl.String,
+        index: ColumnNameOrSelector = None,
+        column_names: ColumnNameOrSelector = None,
+        names_to: Union[list, tuple, str] = "variable",
+        values_to: str = "value",
+        names_sep: str = None,
+        names_pattern: str = None,
+        names_transform: Union[
+            Mapping[
+                Union[ColumnNameOrSelector, PolarsDataType], PolarsDataType
+            ],
+            PolarsDataType,
+        ] = None,
     ) -> pl.LazyFrame:
         """
         Unpivots a LazyFrame from *wide* to *long* format.
@@ -533,8 +532,6 @@ class PolarsLazyFrame:
                 from part of the existing column names and overrides `values_to`.
             values_to: Name of new column as a string that will contain what
                 were previously the values of the columns in `column_names`.
-                `values_to` can also be a list/tuple
-                and requires that `names_pattern` is also a list/tuple.
             names_sep: Determines how the column name is broken up, if
                 `names_to` contains multiple values. It takes the same
                 specification as polars' `str.split` method.
@@ -542,19 +539,15 @@ class PolarsLazyFrame:
                 It can be a regular expression containing matching groups.
                 It takes the same
                 specification as polars' `str.extract_groups` method.
-                `names_pattern` can also be a list/tuple of regular expressions.
-                Under the hood it is processed with polars' `str.contains` function.
-                For a list/tuple of regular expressions,
-                `names_to` must also be a list/tuple and the lengths of both
-                arguments must match.
             names_transform: Use this option to change the types of columns that
                 have been transformed to rows.
                 This does not applies to the values' columns.
-                It can be a single valid polars dtype,
-                or a dictionary pairing the new column names
-                with a valid polars dtype.
+                It takes the same specification as
+                [polar's cast](https://docs.pola.rs/py-polars/html/reference/dataframe/api/polars.DataFrame.cast.html)
+                function.
                 Applicable only if one of names_sep
                 or names_pattern is provided.
+
         Returns:
             A polars LazyFrame that has been unpivoted from wide to long
                 format.
@@ -570,6 +563,7 @@ class PolarsLazyFrame:
             names_transform=names_transform,
         )
 
+<<<<<<< HEAD
 from __future__ import annotations
 
 from polars.type_aliases import ColumnNameOrSelector
@@ -959,6 +953,20 @@ def pivot_longer_spec(
     `janitor.polars.pivot_longer`
     seems inadequate for the transformation.
 
+=======
+
+def pivot_longer_spec(
+    df: Union[pl.DataFrame, pl.LazyFrame],
+    spec: pl.DataFrame,
+) -> Union[pl.DataFrame, pl.LazyFrame]:
+    """A declarative interface to pivot a DataFrame from wide to long form,
+    where you describe how the data will be unpivoted,
+    using a DataFrame. This gives you, the user,
+    more control over unpivoting, where you create a “spec”
+    DataFrame that describes exactly how data stored in the column names
+    becomes variables.
+
+>>>>>>> 650cc93 (added pivot_longer_spec)
     !!! info "New in version 0.28.0"
 
     Examples:
@@ -1016,6 +1024,7 @@ def pivot_longer_spec(
     Args:
         df: The source DataFrame to unpivot.
         spec: A specification DataFrame.
+<<<<<<< HEAD
             At a minimum, the spec DataFrame
             must have a `.name` column
             and a `.value` column.
@@ -1039,6 +1048,25 @@ def pivot_longer_spec(
         A polars DataFrame/LazyFrame.
     """
     check("spec", spec, [pl.DataFrame])
+=======
+            This is useful for more complex pivots
+            because it gives you greater control
+            on how the metadata stored in the column names
+            turns into columns in the result.
+            Must be a DataFrame containing character .name and .value columns.
+            Additional columns in spec should be named to match columns
+            in the long format of the dataset and contain values
+            corresponding to columns pivoted from the wide format.
+            Note that these additional columns should not already exist in the
+            source DataFrame.
+    Raises:
+        KeyError: If '.name' or '.value' is missing from the spec's columns.
+        ValueError: If the labels in spec['.name'] is not unique.
+
+    Returns:
+        A polars DataFrame.
+    """
+>>>>>>> 650cc93 (added pivot_longer_spec)
     if ".name" not in spec.columns:
         raise KeyError(
             "Kindly ensure the spec DataFrame has a `.name` column."

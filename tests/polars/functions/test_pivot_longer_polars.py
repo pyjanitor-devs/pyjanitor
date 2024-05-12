@@ -3,7 +3,7 @@ import polars.selectors as cs
 import pytest
 from polars.testing import assert_frame_equal
 
-from janitor import polars  # noqa: F401
+import janitor.polars  # noqa: F401
 
 
 @pytest.fixture
@@ -22,7 +22,7 @@ def df_checks():
 def test_type_index(df_checks):
     """Raise TypeError if wrong type is provided for the index."""
     msg = "The argument passed to the index parameter "
-    msg += "should be a string type, a ColumnSelector.+"
+    msg += "should be a type that is supported in the.+"
     with pytest.raises(TypeError, match=msg):
         df_checks.janitor.pivot_longer(index=2007, names_sep="_")
 
@@ -30,7 +30,7 @@ def test_type_index(df_checks):
 def test_type_column_names(df_checks):
     """Raise TypeError if wrong type is provided for column_names."""
     msg = "The argument passed to the column_names parameter "
-    msg += "should be a string type, a ColumnSelector.+"
+    msg += "should be a type that is supported in the.+"
     with pytest.raises(TypeError, match=msg):
         df_checks.janitor.pivot_longer(column_names=2007, names_sep="_")
 
@@ -82,47 +82,6 @@ def test_name_pattern_wrong_type(df_checks):
         )
 
 
-def test_names_pattern_wrong_subtype(df_checks):
-    """
-    Raise TypeError if names_pattern is a list/tuple
-    and wrong subtype is supplied.
-    """
-    with pytest.raises(TypeError, match="'1' in names_pattern.+"):
-        df_checks.janitor.pivot_longer(
-            names_to=["ht", "num"], names_pattern=[1, "\\d"]
-        )
-
-
-def test_names_pattern_names_to_unequal_length(df_checks):
-    """
-    Raise ValueError if names_pattern is a list/tuple
-    and wrong number of items in names_to.
-    """
-    with pytest.raises(
-        ValueError,
-        match="The length of names_to does not match "
-        "the number of regexes in names_pattern.+",
-    ):
-        df_checks.janitor.pivot_longer(
-            names_to=["variable"], names_pattern=["^ht", ".+i.+"]
-        )
-
-
-def test_names_pattern_names_to_dot_value(df_checks):
-    """
-    Raise Error if names_pattern is a list/tuple and
-    .value in names_to.
-    """
-    with pytest.raises(
-        ValueError,
-        match=".value is not accepted in names_to "
-        "if names_pattern is a list/tuple.",
-    ):
-        df_checks.janitor.pivot_longer(
-            names_to=["variable", ".value"], names_pattern=["^ht", ".+i.+"]
-        )
-
-
 def test_name_sep_wrong_type(df_checks):
     """Raise TypeError if the wrong type is provided for names_sep."""
     with pytest.raises(TypeError, match="names_sep should be one of.+"):
@@ -137,97 +96,6 @@ def test_values_to_wrong_type(df_checks):
         df_checks.janitor.pivot_longer(values_to={"salvo"}, names_sep="_")
 
 
-def test_values_to_wrong_type_names_pattern(df_checks):
-    """
-    Raise TypeError if `values_to` is a list,
-    and names_pattern is not.
-    """
-    with pytest.raises(
-        TypeError,
-        match="values_to can be a list/tuple only "
-        "if names_pattern is a list/tuple.",
-    ):
-        df_checks.janitor.pivot_longer(
-            values_to=["salvo"], names_pattern=r"(.)"
-        )
-
-
-def test_values_to_names_pattern_unequal_length(df_checks):
-    """
-    Raise ValueError if `values_to` is a list,
-    and the length of names_pattern
-    does not match the length of values_to.
-    """
-    with pytest.raises(
-        ValueError,
-        match="The length of values_to does not match "
-        "the number of regexes in names_pattern.+",
-    ):
-        df_checks.janitor.pivot_longer(
-            values_to=["salvo"],
-            names_pattern=["ht", r"\d"],
-            names_to=["foo", "bar"],
-        )
-
-
-def test_sub_values_to(df_checks):
-    """Raise error if values_to is a sequence, and contains non strings."""
-    with pytest.raises(TypeError, match="1 in values_to.+"):
-        df_checks.janitor.pivot_longer(
-            names_to=["x", "y"],
-            names_pattern=[r"ht", r"\d"],
-            values_to=[1, "salvo"],
-        )
-
-
-def test_duplicate_values_to(df_checks):
-    """Raise error if values_to is a sequence, and contains duplicates."""
-    with pytest.raises(
-        ValueError, match="'salvo' is duplicated in values_to."
-    ):
-        df_checks.janitor.pivot_longer(
-            names_to=["x", "y"],
-            names_pattern=[r"ht", r"\d"],
-            values_to=["salvo", "salvo"],
-        )
-
-
-def test_names_transform_wrong_type(df_checks):
-    """Raise TypeError if the wrong type is provided for `names_transform`."""
-    with pytest.raises(TypeError, match="names_transform should be one of.+"):
-        df_checks.janitor.pivot_longer(names_sep="_", names_transform=1)
-
-
-def test_names_transform_wrong_subtype(df_checks):
-    """
-    Raise TypeError if the wrong subtype
-    is provided for values in the
-    `names_transform` dictionary.
-    """
-    with pytest.raises(
-        TypeError,
-        match="dtype in the names_transform mapping should be one of.+",
-    ):
-        df_checks.janitor.pivot_longer(
-            names_sep="_", names_transform={"rar": 1}
-        )
-
-
-def test_names_pattern_list_empty_any(df_checks):
-    """
-    Raise ValueError if names_pattern is a list,
-    and not all matches are returned.
-    """
-    with pytest.raises(
-        ValueError, match="No match was returned for the regex.+"
-    ):
-        df_checks.janitor.pivot_longer(
-            index=["famid", "birth"],
-            names_to=["ht"],
-            names_pattern=["rar"],
-        )
-
-
 def test_pivot_index_only(df_checks):
     """Test output if only index is passed."""
     result = df_checks.janitor.pivot_longer(
@@ -237,7 +105,7 @@ def test_pivot_index_only(df_checks):
     )
 
     actual = df_checks.melt(
-        ["famid", "birth"], variable_name="dim", value_name="num"
+        id_vars=["famid", "birth"], variable_name="dim", value_name="num"
     )
 
     assert_frame_equal(result, actual, check_column_order=False)
@@ -258,6 +126,41 @@ def test_pivot_column_only(df_checks):
     )
 
     assert_frame_equal(result, actual, check_column_order=False)
+
+
+def test_names_to_names_pattern_len(df_checks):
+    """ "
+    Raise ValueError
+    if length of names_to
+    does not match the number of fields extracted
+    """
+    msg = "The length of names_to does "
+    msg += "not match the number of fields extracted.+"
+    with pytest.raises(ValueError, match=msg):
+
+        df_checks.janitor.pivot_longer(
+            column_names=cs.starts_with("ht"),
+            names_to=(".value"),
+            names_pattern=r"(\d+)(.)",
+            names_transform={"age": pl.Int64},
+        )
+
+
+def test_names_to_names_pattern_mismatch(df_checks):
+    """ "
+    Raise ValueError if
+    there is no match for the provided names_pattern
+    """
+    msg = "Column label 'ht1' could not be matched with "
+    msg += "any of the groups in the provided regex.+"
+
+    with pytest.raises(ValueError, match=msg):
+
+        df_checks.janitor.pivot_longer(
+            column_names=cs.starts_with("ht"),
+            names_to=(".value", "age"),
+            names_pattern=r"(\d+)(.)",
+        )
 
 
 def test_names_pat_str(df_checks):
@@ -307,7 +210,6 @@ def test_no_column_names(df_checks):
     assert_frame_equal(
         df_checks.janitor.pivot_longer(index=pl.all()),
         df_checks,
-        check_column_order=False,
     )
 
 
@@ -412,7 +314,7 @@ actual = [
 actual = pl.DataFrame(actual).sort(by=pl.all())
 
 
-def test_names_pattern_str(test_df):
+def test_names_pattern_dot_value(test_df):
     """Test output for names_pattern and .value."""
 
     result = test_df.janitor.pivot_longer(
@@ -423,7 +325,7 @@ def test_names_pattern_str(test_df):
     assert_frame_equal(result, actual, check_column_order=False)
 
 
-def test_names_sep_str(test_df):
+def test_names_sep_dot_value(test_df):
     """Test output for names_pattern and .value."""
 
     result = test_df.janitor.pivot_longer(
@@ -431,46 +333,6 @@ def test_names_sep_str(test_df):
         names_to=["set", ".value"],
         names_sep="_",
     ).sort(by=["loc", "lat", "long"])
-    assert_frame_equal(result, actual, check_column_order=False)
-
-
-def test_names_pattern_list():
-    """Test output if names_pattern is a list/tuple."""
-
-    df = pl.DataFrame(
-        {
-            "Activity": ["P1", "P2"],
-            "General": ["AA", "BB"],
-            "m1": ["A1", "B1"],
-            "t1": ["TA1", "TB1"],
-            "m2": ["A2", "B2"],
-            "t2": ["TA2", "TB2"],
-            "m3": ["A3", "B3"],
-            "t3": ["TA3", "TB3"],
-        }
-    )
-
-    result = (
-        df.janitor.pivot_longer(
-            index=["Activity", "General"],
-            names_pattern=["^m", "^t"],
-            names_to=["M", "Task"],
-        )
-        .select(["Activity", "General", "Task", "M"])
-        .sort(by=pl.all())
-    )
-
-    actual = [
-        {"Activity": "P1", "General": "AA", "Task": "TA1", "M": "A1"},
-        {"Activity": "P1", "General": "AA", "Task": "TA2", "M": "A2"},
-        {"Activity": "P1", "General": "AA", "Task": "TA3", "M": "A3"},
-        {"Activity": "P2", "General": "BB", "Task": "TB1", "M": "B1"},
-        {"Activity": "P2", "General": "BB", "Task": "TB2", "M": "B2"},
-        {"Activity": "P2", "General": "BB", "Task": "TB3", "M": "B3"},
-    ]
-
-    actual = pl.DataFrame(actual).sort(by=pl.all())
-
     assert_frame_equal(result, actual, check_column_order=False)
 
 
@@ -488,54 +350,35 @@ def not_dot_value():
     )
 
 
-actual2 = [
-    {"country": "China", "event": "floor", "year": "2012", "score": 40.8},
-    {"country": "China", "event": "floor", "year": "2016", "score": 42.1},
-    {"country": "China", "event": "vault", "year": "2012", "score": 44.3},
-    {"country": "China", "event": "vault", "year": "2016", "score": 44.3},
-    {"country": "Russia", "event": "floor", "year": "2012", "score": 41.6},
-    {"country": "Russia", "event": "floor", "year": "2016", "score": 42.0},
-    {"country": "Russia", "event": "vault", "year": "2012", "score": 46.4},
-    {"country": "Russia", "event": "vault", "year": "2016", "score": 45.7},
-    {
-        "country": "United States",
-        "event": "floor",
-        "year": "2012",
-        "score": 45.4,
-    },
-    {
-        "country": "United States",
-        "event": "floor",
-        "year": "2016",
-        "score": 46.0,
-    },
-    {
-        "country": "United States",
-        "event": "vault",
-        "year": "2012",
-        "score": 48.1,
-    },
-    {
-        "country": "United States",
-        "event": "vault",
-        "year": "2016",
-        "score": 46.9,
-    },
-]
-actual2 = pl.DataFrame(actual2).sort(by=pl.all())
-
-
 def test_not_dot_value_sep(not_dot_value):
     """Test output when names_sep and no dot_value"""
 
-    result = not_dot_value.janitor.pivot_longer(
-        "country",
-        names_to=("event", "year"),
-        names_sep="_",
-        values_to="score",
-    ).sort(by=pl.all())
+    result = (
+        not_dot_value.janitor.pivot_longer(
+            "country",
+            names_to=("event", "year"),
+            names_sep="_",
+            values_to="score",
+        )
+        .select("country", "event", "year", "score")
+        .sort(by=pl.all())
+    )
 
-    assert_frame_equal(result, actual2, check_column_order=False)
+    actual = (
+        not_dot_value.melt(id_vars="country", value_name="score")
+        .select(
+            "country",
+            "score",
+            pl.col("variable")
+            .str.split("_")
+            .list.to_struct(fields=["event", "year"]),
+        )
+        .unnest("variable")
+        .select("country", "event", "year", "score")
+        .sort(by=pl.all())
+    )
+
+    assert_frame_equal(result, actual)
 
 
 def test_not_dot_value_sep2(not_dot_value):
@@ -558,14 +401,32 @@ def test_not_dot_value_sep2(not_dot_value):
 def test_not_dot_value_pattern(not_dot_value):
     """Test output when names_pattern is a string and no dot_value"""
 
-    result = not_dot_value.janitor.pivot_longer(
-        index="country",
-        names_to=("event", "year"),
-        names_pattern=r"(.+)_(.+)",
-        values_to="score",
-    ).sort(by=pl.all())
+    result = (
+        not_dot_value.janitor.pivot_longer(
+            index="country",
+            names_to=("event", "year"),
+            names_pattern=r"(.+)_(.+)",
+            values_to="score",
+        )
+        .select("country", "event", "year", "score")
+        .sort(by=pl.all())
+    )
 
-    assert_frame_equal(result, actual2, check_column_order=False)
+    actual = (
+        not_dot_value.melt(id_vars="country", value_name="score")
+        .select(
+            "country",
+            "score",
+            pl.col("variable")
+            .str.split("_")
+            .list.to_struct(fields=["event", "year"]),
+        )
+        .unnest("variable")
+        .select("country", "event", "year", "score")
+        .sort(by=pl.all())
+    )
+
+    assert_frame_equal(result, actual)
 
 
 def test_multiple_dot_value():
@@ -584,12 +445,16 @@ def test_multiple_dot_value():
         }
     )
 
-    result = df.janitor.pivot_longer(
-        index="unit",
-        names_to=(".value", "time", ".value"),
-        names_pattern=r"(x|y)_([0-9])(_mean|_sd)",
-        names_transform={"time": pl.Int64},
-    ).sort(by=pl.all())
+    result = (
+        df.janitor.pivot_longer(
+            index="unit",
+            names_to=(".value", "time", ".value"),
+            names_pattern=r"(x|y)_([0-9])(_mean|_sd)",
+            names_transform={"time": pl.Int64},
+        )
+        .select("unit", "time", "x_mean", "x_sd", "y_mean", "y_sd")
+        .sort(by=pl.all())
+    )
 
     actual = {
         "unit": [1, 2, 3, 4, 1, 2, 3, 4],
@@ -637,18 +502,6 @@ actual3 = [
 ]
 
 actual3 = pl.DataFrame(actual3)
-
-
-def test_names_pattern_sequence_single_unique_column(single_val):
-    """
-    Test output if names_pattern is a sequence of length 1.
-    """
-
-    result = single_val.janitor.pivot_longer(
-        "id", names_to=["x"], names_pattern=("x",)
-    )
-
-    assert_frame_equal(result, actual3, check_column_order=False)
 
 
 def test_names_pattern_single_column(single_val):
@@ -721,11 +574,15 @@ def df_null():
 
 def test_names_pattern_nulls_in_data(df_null):
     """Test output if nulls are present in data."""
-    result = df_null.janitor.pivot_longer(
-        index="family",
-        names_to=[".value", "child"],
-        names_pattern=r"(.+)_(.+)",
-    ).sort(by=pl.all())
+    result = (
+        df_null.janitor.pivot_longer(
+            index="family",
+            names_to=[".value", "child"],
+            names_pattern=r"(.+)_(.+)",
+        )
+        .select("family", "child", "dob", "gender")
+        .sort(by=pl.all())
+    )
 
     actual = [
         {"family": 1, "child": "child1", "dob": "1998-11-26", "gender": 1.0},
@@ -743,138 +600,3 @@ def test_names_pattern_nulls_in_data(df_null):
     actual = pl.DataFrame(actual).sort(by=pl.all())
 
     assert_frame_equal(result, actual, check_column_order=False)
-
-
-@pytest.fixture
-def multiple_values_to():
-    """fixture for multiple values_to"""
-    # https://stackoverflow.com/q/51519101/7175713
-    return pl.DataFrame(
-        {
-            "City": ["Houston", "Austin", "Hoover"],
-            "State": ["Texas", "Texas", "Alabama"],
-            "Name": ["Aria", "Penelope", "Niko"],
-            "Mango": [4, 10, 90],
-            "Orange": [10, 8, 14],
-            "Watermelon": [40, 99, 43],
-            "Gin": [16, 200, 34],
-            "Vodka": [20, 33, 18],
-        },
-    )
-
-
-def test_output_values_to_seq(multiple_values_to):
-    """Test output when values_to is a list/tuple."""
-
-    expected = multiple_values_to.janitor.pivot_longer(
-        index=["City", "State"],
-        column_names=cs.numeric(),
-        names_to=("Fruit"),
-        values_to=("Pounds",),
-        names_pattern=[r"M|O|W"],
-    ).sort(by=pl.all())
-
-    actual = [
-        {"City": "Houston", "State": "Texas", "Fruit": "Mango", "Pounds": 4},
-        {"City": "Austin", "State": "Texas", "Fruit": "Mango", "Pounds": 10},
-        {"City": "Hoover", "State": "Alabama", "Fruit": "Mango", "Pounds": 90},
-        {"City": "Houston", "State": "Texas", "Fruit": "Orange", "Pounds": 10},
-        {"City": "Austin", "State": "Texas", "Fruit": "Orange", "Pounds": 8},
-        {
-            "City": "Hoover",
-            "State": "Alabama",
-            "Fruit": "Orange",
-            "Pounds": 14,
-        },
-        {
-            "City": "Houston",
-            "State": "Texas",
-            "Fruit": "Watermelon",
-            "Pounds": 40,
-        },
-        {
-            "City": "Austin",
-            "State": "Texas",
-            "Fruit": "Watermelon",
-            "Pounds": 99,
-        },
-        {
-            "City": "Hoover",
-            "State": "Alabama",
-            "Fruit": "Watermelon",
-            "Pounds": 43,
-        },
-    ]
-
-    actual = pl.DataFrame(actual).sort(by=pl.all())
-
-    assert_frame_equal(expected, actual, check_column_order=False)
-
-
-def test_output_values_to_seq1(multiple_values_to):
-    """Test output when values_to is a list/tuple."""
-    # https://stackoverflow.com/a/51520155/7175713
-    expected = (
-        multiple_values_to.janitor.pivot_longer(
-            index=["City", "State"],
-            column_names=cs.numeric(),
-            names_to=("Fruit", "Drink"),
-            values_to=("Pounds", "Ounces"),
-            names_pattern=[r"M|O|W", r"G|V"],
-        )
-        .with_columns(pl.col("Ounces").cast(float))
-        .sort(by=pl.all())
-    )
-
-    actual = {
-        "City": [
-            "Houston",
-            "Austin",
-            "Hoover",
-            "Houston",
-            "Austin",
-            "Hoover",
-            "Houston",
-            "Austin",
-            "Hoover",
-        ],
-        "State": [
-            "Texas",
-            "Texas",
-            "Alabama",
-            "Texas",
-            "Texas",
-            "Alabama",
-            "Texas",
-            "Texas",
-            "Alabama",
-        ],
-        "Fruit": [
-            "Mango",
-            "Mango",
-            "Mango",
-            "Orange",
-            "Orange",
-            "Orange",
-            "Watermelon",
-            "Watermelon",
-            "Watermelon",
-        ],
-        "Pounds": [4, 10, 90, 10, 8, 14, 40, 99, 43],
-        "Drink": [
-            "Gin",
-            "Gin",
-            "Gin",
-            "Vodka",
-            "Vodka",
-            "Vodka",
-            None,
-            None,
-            None,
-        ],
-        "Ounces": [16.0, 200.0, 34.0, 20.0, 33.0, 18.0, None, None, None],
-    }
-
-    actual = pl.DataFrame(actual).sort(by=pl.all())
-
-    assert_frame_equal(expected, actual, check_column_order=False)

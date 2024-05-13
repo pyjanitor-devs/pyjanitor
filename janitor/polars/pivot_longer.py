@@ -67,7 +67,7 @@ def _pivot_longer(
     if isinstance(names_to, str):
         names_to = [names_to]
 
-    return _pivot_longer_create_spec(
+    spec = _pivot_longer_create_spec(
         df=df,
         column_names=column_names,
         names_to=names_to,
@@ -77,9 +77,10 @@ def _pivot_longer(
         names_transform=names_transform,
     )
 
+    return _pivot_longer_dot_value(df=df, spec=spec)
+
 
 def _pivot_longer_create_spec(
-    df: Union[pl.DataFrame, pl.LazyFrame],
     column_names: Iterable,
     names_to: Iterable,
     names_sep: Union[str, None],
@@ -145,12 +146,12 @@ def _pivot_longer_create_spec(
     )
     if names_transform is not None:
         spec = spec.cast(dtypes=names_transform)
-    return _pivot_longer_dot_value(df=df, spec=spec)
+    return spec
 
 
 def _pivot_longer_dot_value(
-    df: pl.DataFrame, spec: pl.DataFrame
-) -> pl.DataFrame:
+    df: Union[pl.DataFrame, pl.LazyFrame], spec: pl.DataFrame
+) -> Union[pl.DataFrame, pl.LazyFrame]:
     """
     Reshape DataFrame to long form based on metadata in `spec`.
     """

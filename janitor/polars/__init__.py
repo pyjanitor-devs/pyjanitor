@@ -144,7 +144,7 @@ class PolarsFrame:
             >>> df.janitor.pivot_longer(
             ...     index = 'id',
             ...     names_to = ('diagnosis', 'gender', 'age'),
-            ...     names_pattern = r"new_?(.+)_(.)(\d+)",
+            ...     names_pattern = r"new_?(.+)_(.)([0-9]+)",
             ... ).select('id','diagnosis','gender','age','value').sort(by=pl.all())
             shape: (2, 5)
             ┌─────┬───────────┬────────┬──────┬───────┐
@@ -159,7 +159,7 @@ class PolarsFrame:
             Convert the dtypes of specific columns with `names_transform`:
             >>> df.janitor.pivot_longer(
             ...     index = "id",
-            ...     names_pattern=r"new_?(.+)_(.)(\d+)",
+            ...     names_pattern=r"new_?(.+)_(.)([0-9]+)",
             ...     names_to=("diagnosis", "gender", "age"),
             ...     names_transform={"age": pl.Int32},
             ... ).select("id", "diagnosis", "gender", "age", "value").sort(by=pl.all())
@@ -447,22 +447,25 @@ def pivot_longer_spec(
     Args:
         df: The source DataFrame to unpivot.
         spec: A specification DataFrame.
-            This is useful for more complex pivots
-            because it gives you greater control
-            on how the metadata stored in the column names
-            turns into columns in the result.
-            Must be a DataFrame containing character .name and .value columns.
+            At a minimum, the spec DataFrame
+            must have a '.name' column
+            and a '.value' column.
+            The '.name' column  should contain the
+            columns in the source DataFrame that will be
+            transformed to long form.
+            The '.value' column gives the name of the column
+            that the values in the source DataFrame will go into.
             Additional columns in spec should be named to match columns
             in the long format of the dataset and contain values
             corresponding to columns pivoted from the wide format.
-            Note that these additional columns should not already exist in the
-            source DataFrame.
+            Note that these additional columns should not already exist
+            in the source DataFrame.
     Raises:
         KeyError: If '.name' or '.value' is missing from the spec's columns.
         ValueError: If the labels in spec['.name'] is not unique.
 
     Returns:
-        A polars DataFrame.
+        A polars DataFrame/LazyFrame.
     """
     if ".name" not in spec.columns:
         raise KeyError(

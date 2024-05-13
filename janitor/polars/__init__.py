@@ -152,8 +152,8 @@ class PolarsFrame:
             │ --- ┆ ---       ┆ ---    ┆ ---  ┆ ---   │
             │ i64 ┆ str       ┆ str    ┆ str  ┆ i64   │
             ╞═════╪═══════════╪════════╪══════╪═══════╡
-            │ 1   ┆ sp        ┆ m      ┆ 5564 ┆ 2     │
             │ 1   ┆ rel       ┆ f      ┆ 65   ┆ 3     │
+            │ 1   ┆ sp        ┆ m      ┆ 5564 ┆ 2     │
             └─────┴───────────┴────────┴──────┴───────┘
 
             Convert the dtypes of specific columns with `names_transform`:

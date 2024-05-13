@@ -145,7 +145,7 @@ class PolarsFrame:
             ...     index = 'id',
             ...     names_to = ('diagnosis', 'gender', 'age'),
             ...     names_pattern = r"new_?(.+)_(.)(\d+)",
-            ... ).select('id','diagnosis','gender','age','value')
+            ... ).select('id','diagnosis','gender','age','value').sort(by=pl.all())
             shape: (2, 5)
             ┌─────┬───────────┬────────┬──────┬───────┐
             │ id  ┆ diagnosis ┆ gender ┆ age  ┆ value │
@@ -157,14 +157,12 @@ class PolarsFrame:
             └─────┴───────────┴────────┴──────┴───────┘
 
             Convert the dtypes of specific columns with `names_transform`:
-            >>> (
-            ...     df.janitor.pivot_longer(
-            ...         index="id",
-            ...         names_to=("diagnosis", "gender", "age"),
-            ...         names_pattern=r"new_?(.+)_(.)(\d+)",
-            ...         names_transform={"age": pl.Int32},
-            ...     ).select('id','diagnosis','gender','age','value')
-            ... )
+            >>> df.janitor.pivot_longer(
+            ...     index = "id",
+            ...     names_pattern=r"new_?(.+)_(.)(\d+)",
+            ...     names_to=("diagnosis", "gender", "age"),
+            ...     names_transform={"age": pl.Int32},
+            ... ).select("id", "diagnosis", "gender", "age", "value").sort(by=pl.all())
             shape: (2, 5)
             ┌─────┬───────────┬────────┬──────┬───────┐
             │ id  ┆ diagnosis ┆ gender ┆ age  ┆ value │

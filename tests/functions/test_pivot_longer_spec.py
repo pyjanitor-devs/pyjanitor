@@ -37,7 +37,7 @@ def test_spec_columns_has_dot_name(df_checks):
     """Raise KeyError if '.name' not in spec's columns."""
     with pytest.raises(
         KeyError,
-        match="Kindly ensure the spec dataframe has a `.name` column.",
+        match="Kindly ensure the spec DataFrame has a `.name` column.",
     ):
         df_checks.pipe(
             pivot_longer_spec,
@@ -49,7 +49,7 @@ def test_spec_columns_has_dot_value(df_checks):
     """Raise KeyError if '.value' not in spec's columns."""
     with pytest.raises(
         KeyError,
-        match="Kindly ensure the spec dataframe has a `.value` column.",
+        match="Kindly ensure the spec DataFrame has a `.value` column.",
     ):
         df_checks.pipe(
             pivot_longer_spec,
@@ -69,9 +69,10 @@ def test_spec_columns_dot_name_unique(df_checks):
 
 def test_spec_columns_index(df_checks):
     """Raise ValueError if the columns in spec already exist in the dataframe."""
+    msg = r"Labels \(\'birth',\)\ in the spec DataFrame already exist.+"
     with pytest.raises(
         ValueError,
-        match=r"Labels \('birth',\) in the spec dataframe already exist.+",
+        match=msg,
     ):
         df_checks.pipe(
             pivot_longer_spec, spec=spec.assign(birth=["ht2", "ht2"])

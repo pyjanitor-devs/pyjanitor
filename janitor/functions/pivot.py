@@ -2080,7 +2080,7 @@ def pivot_longer_spec(
     dropna: bool = False,
     df_columns_is_unique: bool = True,
 ) -> pd.DataFrame:
-    """A low level interface to pivot a DataFrame from wide to long form,
+    """A declarative interface to pivot a DataFrame from wide to long form,
     where you describe how the data will be unpivoted,
     using a DataFrame. This gives you, the user,
     more control over unpivoting, where you can instead create a “spec”
@@ -2129,16 +2129,18 @@ def pivot_longer_spec(
     Args:
         df: The source DataFrame to unpivot.
         spec: A specification DataFrame.
-            This is useful for more complex pivots
-            because it gives you greater control
-            on how the metadata stored in the column names
-            turns into columns in the result.
-            Must be a DataFrame containing character .name and .value columns.
+            At a minimum, the spec DataFrame
+            must have a '.name' and a '.value' columns.
+            The '.name' column  should contain the
+            columns in the source DataFrame that will be
+            transformed to long form.
+            The '.value' column gives the name of the column
+            that the values in the source DataFrame will go into.
             Additional columns in spec should be named to match columns
             in the long format of the dataset and contain values
             corresponding to columns pivoted from the wide format.
-            Note that these additional columns should not already exist in the
-            source DataFrame.
+            Note that these additional columns should not already exist
+            in the source DataFrame.
         sort_by_appearance: Boolean value that determines
             the final look of the DataFrame. If `True`, the unpivoted DataFrame
             will be stacked in order of first appearance.

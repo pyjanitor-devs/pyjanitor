@@ -68,7 +68,6 @@ def _pivot_longer(
         names_to = [names_to]
 
     spec = _pivot_longer_create_spec(
-        df=df,
         column_names=column_names,
         names_to=names_to,
         names_sep=names_sep,

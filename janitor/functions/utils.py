@@ -588,9 +588,9 @@ def _index_converter(arr, index):
     if is_bool_dtype(arr):
         arr = arr.nonzero()[0]
     elif isinstance(arr, slice):
-        arr = np.arange(index.size)[arr]
+        arr = range(index.size)[arr]
     elif isinstance(arr, int):
-        arr = np.array([arr])
+        arr = [arr]
     return arr
 
 

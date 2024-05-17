@@ -3,9 +3,12 @@ import pytest
 from polars.testing import assert_frame_equal
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 import janitor.polars  # noqa: F401
 >>>>>>> 650cc93 (added pivot_longer_spec)
+=======
+>>>>>>> 518fd2b (add check for spec dataframe)
 from janitor.polars import pivot_longer_spec
 
 
@@ -27,6 +30,9 @@ spec = pl.DataFrame(spec)
 
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 518fd2b (add check for spec dataframe)
 def test_spec_is_a_dataframe(df_checks):
     """Raise Error if spec is not a DataFrame."""
     with pytest.raises(
@@ -36,8 +42,11 @@ def test_spec_is_a_dataframe(df_checks):
         df_checks.pipe(pivot_longer_spec, spec={".name": "name"})
 
 
+<<<<<<< HEAD
 =======
 >>>>>>> 650cc93 (added pivot_longer_spec)
+=======
+>>>>>>> 518fd2b (add check for spec dataframe)
 def test_spec_columns_has_dot_name(df_checks):
     """Raise KeyError if '.name' not in spec's columns."""
     with pytest.raises(

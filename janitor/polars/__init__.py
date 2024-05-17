@@ -2,7 +2,7 @@ from __future__ import annotations
 
 
 
-from janitor.utils import import_message
+from janitor.utils import check, import_message
 
 from .pivot_longer import _pivot_longer, _pivot_longer_dot_value
 
@@ -1063,7 +1063,11 @@ def pivot_longer_spec(
     Returns:
         A polars DataFrame.
     """
+<<<<<<< HEAD
 >>>>>>> 650cc93 (added pivot_longer_spec)
+=======
+    check("spec", spec, [pl.DataFrame])
+>>>>>>> 518fd2b (add check for spec dataframe)
     if ".name" not in spec.columns:
         raise KeyError(
             "Kindly ensure the spec DataFrame has a `.name` column."

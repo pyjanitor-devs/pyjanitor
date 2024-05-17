@@ -2,7 +2,7 @@ from typing import Union
 
 from polars.type_aliases import ColumnNameOrSelector
 
-from janitor.utils import import_message
+from janitor.utils import check, import_message
 
 from .pivot_longer import _pivot_longer, _pivot_longer_dot_value
 
@@ -467,6 +467,7 @@ def pivot_longer_spec(
     Returns:
         A polars DataFrame/LazyFrame.
     """
+    check("spec", spec, [pl.DataFrame])
     if ".name" not in spec.columns:
         raise KeyError(
             "Kindly ensure the spec DataFrame has a `.name` column."

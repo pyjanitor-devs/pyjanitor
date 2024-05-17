@@ -2,7 +2,6 @@ import polars as pl
 import pytest
 from polars.testing import assert_frame_equal
 
-import janitor.polars  # noqa: F401
 from janitor.polars import pivot_longer_spec
 
 
@@ -21,6 +20,15 @@ def df_checks():
 
 spec = {".name": ["ht1", "ht2"], ".value": ["ht", "ht"], "age": [1, 2]}
 spec = pl.DataFrame(spec)
+
+
+def test_spec_is_a_dataframe(df_checks):
+    """Raise Error if spec is not a DataFrame."""
+    with pytest.raises(
+        TypeError,
+        match="spec should be one of.+",
+    ):
+        df_checks.pipe(pivot_longer_spec, spec={".name": "name"})
 
 
 def test_spec_columns_has_dot_name(df_checks):

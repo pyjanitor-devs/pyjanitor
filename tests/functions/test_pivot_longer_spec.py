@@ -22,6 +22,15 @@ spec = {".name": ["ht1", "ht2"], ".value": ["ht", "ht"], "age": [1, 2]}
 spec = pd.DataFrame(spec)
 
 
+def test_spec_is_a_dataframe(df_checks):
+    """Raise Error if spec is not a DataFrame."""
+    with pytest.raises(
+        TypeError,
+        match="spec should be one of.+",
+    ):
+        df_checks.pipe(pivot_longer_spec, spec={".name": "name"})
+
+
 def test_spec_columns_not_unique(df_checks):
     """Raise ValueError if the spec's columns is not unique."""
     with pytest.raises(

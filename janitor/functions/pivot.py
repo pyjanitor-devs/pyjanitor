@@ -2160,6 +2160,7 @@ def pivot_longer_spec(
     Returns:
         A pandas DataFrame.
     """
+    check("spec", spec, [pd.DataFrame])
     if not spec.columns.is_unique:
         raise ValueError("Kindly ensure the spec's columns is unique.")
     if ".name" not in spec.columns:

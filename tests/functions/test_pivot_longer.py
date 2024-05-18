@@ -1588,14 +1588,18 @@ def test_names_transform_numeric():
         names_transform=float,
     ).loc[:, ["A", "colname", "result", "treatment"]]
 
-    actual = pd.wide_to_long(
-        df,
-        ["result", "treatment"],
-        i="A",
-        j="colname",
-        suffix="[0-9.]+",
-        sep="_",
-    ).reset_index()
+    actual = (
+        pd.wide_to_long(
+            df,
+            ["result", "treatment"],
+            i="A",
+            j="colname",
+            suffix="[0-9.]+",
+            sep="_",
+        )
+        .reset_index()
+        .loc[:, ["A", "colname", "result", "treatment"]]
+    )
 
     result = result.sort_values(result.columns.tolist(), ignore_index=True)
     actual = actual.sort_values(actual.columns.tolist(), ignore_index=True)

@@ -66,6 +66,24 @@ def test_spec_columns_has_dot_value(df_checks):
         )
 
 
+def test_spec_columns_name_value_order(df_checks):
+    """
+    Raise ValueError if '.name' and '.value'
+    are not the first two labels
+    in spec's columns.
+    """
+    msg = "The first two columns of the spec DataFrame "
+    msg += "should be '.name' and '.value',.+"
+    with pytest.raises(
+        ValueError,
+        match=msg,
+    ):
+        df_checks.pipe(
+            pivot_longer_spec,
+            spec=spec.loc[:, [".value", ".name", "age"]],
+        )
+
+
 def test_spec_columns_dot_name_unique(df_checks):
     """Raise ValueError if '.name' column is not unique."""
     with pytest.raises(
@@ -137,8 +155,8 @@ def test_pivot_longer_spec_dot_value_only(df_checks):
     in the specification DataFrame.
     """
     specs = {
-        ".value": ["ht", "ht"],
         ".name": ["ht1", "ht2"],
+        ".value": ["ht", "ht"],
     }
     specs = pd.DataFrame(specs)
     actual = df_checks.pipe(pivot_longer_spec, spec=specs)

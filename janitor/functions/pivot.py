@@ -1188,6 +1188,7 @@ def _pivot_longer_dot_value_only(
     where only `.value` is present.
     """
     df, group_max = _headers_single_series(df=df, mapping=mapping)
+
     return _final_frame_longer(
         df=df,
         len_index=len(df),
@@ -1305,6 +1306,9 @@ def _headers_single_series(df: pd.DataFrame, mapping: pd.Series) -> tuple:
         df.columns = df.columns.get_level_values(0)
     else:
         df.columns = mapping
+        # ensures _reshape_with_sorting works fine
+        # a slicer is used there and requires order
+        # or else incorrect values will be generated
         df = df.sort_index(axis=1)
     return df, group_max
 
@@ -2171,6 +2175,12 @@ def pivot_longer_spec(
         raise KeyError(
             "Kindly ensure the spec DataFrame has a `.value` column."
         )
+    if spec.columns.tolist()[:2] != [".name", ".value"]:
+        raise ValueError(
+            "The first two columns of the spec DataFrame "
+            "should be '.name' and '.value', "
+            "with '.name' coming before '.value'."
+        )
     if not spec[".name"].is_unique:
         raise ValueError("The labels in the `.name` column should be unique.")
 
@@ -2190,10 +2200,7 @@ def pivot_longer_spec(
 
     index = df.columns.difference(spec[".name"], sort=False)
     index = {name: df[name]._values for name in index}
-    if spec.columns[1] != ".value":
-        order = pd.Index([".name", ".value"])
-        order = order.union(spec.columns, sort=False)
-        spec = spec.reindex(columns=order, copy=False)
+
     df = df.loc[:, spec[".name"]]
     if not df_columns_is_unique:
         spec = pd.DataFrame({".name": df.columns}).merge(

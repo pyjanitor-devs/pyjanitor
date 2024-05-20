@@ -34,9 +34,9 @@ class PolarsFrame:
         Examples:
             Replace column names with the first row.
 
-            >>> import pandas as pd
-            >>> import janitor
-            >>> df = pd.DataFrame({
+            >>> import polars as pl
+            >>> import janitor.polars
+            >>> df = pl.DataFrame({
             ...     "a": ["nums", 6, 9],
             ...     "b": ["chars", "x", "y"],
             ... })
@@ -73,9 +73,7 @@ class PolarsFrame:
 
             Remove rows above the elevated row and the elevated row itself.
 
-            >>> import pandas as pd
-            >>> import janitor
-            >>> df = pd.DataFrame({
+            >>> df = pl.DataFrame({
             ...     "a": ["bla1", "nums", 6, 9],
             ...     "b": ["bla2", "chars", "x", "y"],
             ... })
@@ -144,9 +142,9 @@ class PolarsLazyFrame:
         Examples:
             Replace column names with the first row.
 
-            >>> import pandas as pd
-            >>> import janitor
-            >>> df = pd.DataFrame({
+            >>> import polars as pl
+            >>> import janitor.polars
+            >>> df = pl.LazyFrame({
             ...     "a": ["nums", 6, 9],
             ...     "b": ["chars", "x", "y"],
             ... })
@@ -183,13 +181,11 @@ class PolarsLazyFrame:
 
             Remove rows above the elevated row and the elevated row itself.
 
-            >>> import pandas as pd
-            >>> import janitor
-            >>> df = pd.DataFrame({
+            >>> df = pl.LazyFrame({
             ...     "a": ["bla1", "nums", 6, 9],
             ...     "b": ["bla2", "chars", "x", "y"],
             ... })
-            >>> df
+            >>> df.collect()
             shape: (4, 2)
             ┌──────┬───────┐
             │ a    ┆ b     │

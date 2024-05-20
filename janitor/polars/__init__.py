@@ -148,7 +148,7 @@ class PolarsLazyFrame:
             ...     "a": ["nums", 6, 9],
             ...     "b": ["chars", "x", "y"],
             ... })
-            >>> df
+            >>> df.collect()
             shape: (3, 2)
             ┌──────┬───────┐
             │ a    ┆ b     │

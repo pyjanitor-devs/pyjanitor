@@ -1,7 +1,7 @@
 # Changelog
 
 ## [Unreleased]
--  [ENH] Added a `pivot_longer` method for polars - Issue #1352
+-  [ENH] Added a `convert_excel_date` method for polars - Issue #1352
 
 ## [v0.27.0] - 2024-03-21
 

@@ -16,7 +16,7 @@ def convert_excel_date(
 
     This method does not mutate the original DataFrame.
 
-    Implementation is also from
+    Implementation is based on
     [Stack Overflow](https://stackoverflow.com/questions/38454403/convert-excel-style-date-with-pandas).
 
     Examples:
@@ -62,7 +62,7 @@ def convert_matlab_date(
 ) -> pd.DataFrame:
     """Convert Matlab's serial date number into Python datetime format.
 
-    Implementation is also from
+    Implementation is based on
     [Stack Overflow](https://stackoverflow.com/questions/13965740/converting-matlabs-datenum-format-to-python).
 
     This method does not mutate the original DataFrame.
@@ -86,7 +86,7 @@ def convert_matlab_date(
 
     Args:
         df: A pandas DataFrame.
-        column_name: A column name, or a list of column names.
+        column_names: A column name, or a list of column names.
 
     Returns:
         A pandas DataFrame with corrected dates.

@@ -18,11 +18,10 @@ class PolarsExpr:
 
     def convert_excel_date(self) -> pl.Expr:
         """
-            Convert Excel's serial date format into Python datetime format.
+        Convert Excel's serial date format into Python datetime format.
 
-            Inspiration is from
+        Inspiration is from
         [Stack Overflow](https://stackoverflow.com/questions/38454403/convert-excel-style-date-with-pandas).
-
 
         Examples:
             >>> import polars as pl

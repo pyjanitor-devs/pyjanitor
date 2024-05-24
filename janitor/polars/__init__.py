@@ -72,7 +72,8 @@ class PolarsFrame:
             Generate all possible combinations of
             `group`, `item_id`, and `item_name`
             (whether or not they appear in the data)
-            >>> df.janitor.complete("group", "item_id", "item_name", sort=True)
+            >>> with pl.Config.set_tbl_rows(-1):
+            ...     df.janitor.complete("group", "item_id", "item_name", sort=True)
             shape: (12, 5)
             ┌───────┬─────────┬───────────┬────────┬────────┐
             │ group ┆ item_id ┆ item_name ┆ value1 ┆ value2 │
@@ -97,7 +98,8 @@ class PolarsFrame:
             `(item_id, item_name)` that already exist in the data.
             For such situations, where there is a group of columns,
             pass it in as a struct:
-            >>> df.janitor.complete("group", pl.struct("item_id", "item_name"), sort=True)
+            >>> with pl.Config.set_tbl_rows(-1):
+            ...     df.janitor.complete("group", pl.struct("item_id", "item_name"), sort=True)
             shape: (8, 5)
             ┌───────┬─────────┬───────────┬────────┬────────┐
             │ group ┆ item_id ┆ item_name ┆ value1 ┆ value2 │
@@ -115,13 +117,14 @@ class PolarsFrame:
             └───────┴─────────┴───────────┴────────┴────────┘
 
             Fill in nulls:
-            >>> df.janitor.complete(
-            ...     "group",
-            ...     pl.struct("item_id", "item_name"),
-            ...     fill_value={"value1": 0, "value2": 99},
-            ...     explicit=True,
-            ...     sort=True,
-            ... )
+            >>> with pl.Config.set_tbl_rows(-1):
+            ...     df.janitor.complete(
+            ...         "group",
+            ...         pl.struct("item_id", "item_name"),
+            ...         fill_value={"value1": 0, "value2": 99},
+            ...         explicit=True,
+            ...         sort=True,
+            ...     )
             shape: (8, 5)
             ┌───────┬─────────┬───────────┬────────┬────────┐
             │ group ┆ item_id ┆ item_name ┆ value1 ┆ value2 │
@@ -140,13 +143,14 @@ class PolarsFrame:
 
             Limit the fill to only the newly created
             missing values with `explicit = FALSE`
-            >>> df.janitor.complete(
-            ...     "group",
-            ...     pl.struct("item_id", "item_name"),
-            ...     fill_value={"value1": 0, "value2": 99},
-            ...     explicit=False,
-            ...     sort=True,
-            ... )
+            >>> with pl.Config.set_tbl_rows(-1):
+            ...     df.janitor.complete(
+            ...         "group",
+            ...         pl.struct("item_id", "item_name"),
+            ...         fill_value={"value1": 0, "value2": 99},
+            ...         explicit=False,
+            ...         sort=True,
+            ...     )
             shape: (8, 5)
             ┌───────┬─────────┬───────────┬────────┬────────┐
             │ group ┆ item_id ┆ item_name ┆ value1 ┆ value2 │
@@ -191,11 +195,12 @@ class PolarsFrame:
             └──────┴────────────┴───────────┘
 
             Expose missing years from 1999 to 2004 -
-            pass a polars expresion with the new dates,
+            pass a polars expression with the new dates,
             and ensure the expression's name already exists
             in the DataFrame:
             >>> expression = pl.int_range(1999,2005).alias('Year')
-            >>> df.janitor.complete(expression,'Taxon',sort=True)
+            >>> with pl.Config.set_tbl_rows(-1):
+            ...     df.janitor.complete(expression,'Taxon',sort=True)
             shape: (12, 3)
             ┌──────┬────────────┬───────────┐
             │ Year ┆ Taxon      ┆ Abundance │

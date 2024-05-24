@@ -72,7 +72,7 @@ class PolarsFrame:
             Generate all possible combinations of
             `group`, `item_id`, and `item_name`
             (whether or not they appear in the data)
-            >>> with pl.Config.set_tbl_rows(-1):
+            >>> with pl.Config(tbl_rows=-1):
             ...     df.janitor.complete("group", "item_id", "item_name", sort=True)
             shape: (12, 5)
             ┌───────┬─────────┬───────────┬────────┬────────┐
@@ -98,7 +98,7 @@ class PolarsFrame:
             `(item_id, item_name)` that already exist in the data.
             For such situations, where there is a group of columns,
             pass it in as a struct:
-            >>> with pl.Config.set_tbl_rows(-1):
+            >>> with pl.Config(tbl_rows=-1):
             ...     df.janitor.complete("group", pl.struct("item_id", "item_name"), sort=True)
             shape: (8, 5)
             ┌───────┬─────────┬───────────┬────────┬────────┐
@@ -117,7 +117,7 @@ class PolarsFrame:
             └───────┴─────────┴───────────┴────────┴────────┘
 
             Fill in nulls:
-            >>> with pl.Config.set_tbl_rows(-1):
+            >>> with pl.Config(tbl_rows=-1):
             ...     df.janitor.complete(
             ...         "group",
             ...         pl.struct("item_id", "item_name"),
@@ -143,7 +143,7 @@ class PolarsFrame:
 
             Limit the fill to only the newly created
             missing values with `explicit = FALSE`
-            >>> with pl.Config.set_tbl_rows(-1):
+            >>> with pl.Config(tbl_rows=-1):
             ...     df.janitor.complete(
             ...         "group",
             ...         pl.struct("item_id", "item_name"),
@@ -199,7 +199,7 @@ class PolarsFrame:
             and ensure the expression's name already exists
             in the DataFrame:
             >>> expression = pl.int_range(1999,2005).alias('Year')
-            >>> with pl.Config.set_tbl_rows(-1):
+            >>> with pl.Config(tbl_rows=-1):
             ...     df.janitor.complete(expression,'Taxon',sort=True)
             shape: (12, 3)
             ┌──────┬────────────┬───────────┐

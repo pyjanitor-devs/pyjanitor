@@ -305,7 +305,8 @@ class PolarsLazyFrame:
             Generate all possible combinations of
             `group`, `item_id`, and `item_name`
             (whether or not they appear in the data)
-            >>> df.janitor.complete("group", "item_id", "item_name", sort=True).collect()
+            >>> with pl.Config(tbl_rows=-1):
+            ...     df.janitor.complete("group", "item_id", "item_name", sort=True).collect()
             shape: (12, 5)
             ┌───────┬─────────┬───────────┬────────┬────────┐
             │ group ┆ item_id ┆ item_name ┆ value1 ┆ value2 │
@@ -330,7 +331,8 @@ class PolarsLazyFrame:
             `(item_id, item_name)` that already exist in the data.
             For such situations, where there is a group of columns,
             pass it in as a struct:
-            >>> df.janitor.complete("group", pl.struct("item_id", "item_name"), sort=True).collect()
+            >>> with pl.Config(tbl_rows=-1):
+            ...     df.janitor.complete("group", pl.struct("item_id", "item_name"), sort=True).collect()
             shape: (8, 5)
             ┌───────┬─────────┬───────────┬────────┬────────┐
             │ group ┆ item_id ┆ item_name ┆ value1 ┆ value2 │
@@ -348,13 +350,14 @@ class PolarsLazyFrame:
             └───────┴─────────┴───────────┴────────┴────────┘
 
             Fill in nulls:
-            >>> df.janitor.complete(
-            ...     "group",
-            ...     pl.struct("item_id", "item_name"),
-            ...     fill_value={"value1": 0, "value2": 99},
-            ...     explicit=True,
-            ...     sort=True,
-            ... ).collect()
+            >>> with pl.Config(tbl_rows=-1):
+            ...     df.janitor.complete(
+            ...         "group",
+            ...         pl.struct("item_id", "item_name"),
+            ...         fill_value={"value1": 0, "value2": 99},
+            ...         explicit=True,
+            ...         sort=True,
+            ...     ).collect()
             shape: (8, 5)
             ┌───────┬─────────┬───────────┬────────┬────────┐
             │ group ┆ item_id ┆ item_name ┆ value1 ┆ value2 │
@@ -373,13 +376,14 @@ class PolarsLazyFrame:
 
             Limit the fill to only the newly created
             missing values with `explicit = FALSE`
-            >>> df.janitor.complete(
-            ...     "group",
-            ...     pl.struct("item_id", "item_name"),
-            ...     fill_value={"value1": 0, "value2": 99},
-            ...     explicit=False,
-            ...     sort=True,
-            ... ).collect()
+            >>> with pl.Config(tbl_rows=-1):
+            ...     df.janitor.complete(
+            ...         "group",
+            ...         pl.struct("item_id", "item_name"),
+            ...         fill_value={"value1": 0, "value2": 99},
+            ...         explicit=False,
+            ...         sort=True,
+            ...     ).collect()
             shape: (8, 5)
             ┌───────┬─────────┬───────────┬────────┬────────┐
             │ group ┆ item_id ┆ item_name ┆ value1 ┆ value2 │

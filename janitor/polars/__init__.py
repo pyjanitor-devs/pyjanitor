@@ -47,8 +47,6 @@ class PolarsFrame:
         Examples:
             >>> import polars as pl
             >>> import janitor.polars
-            >>> pl.Config.set_tbl_cols(-1)
-            >>> pl.Config.set_tbl_rows(-1)
             >>> df = pl.DataFrame(
             ...     dict(
             ...         group=(1, 2, 1, 2),
@@ -277,8 +275,6 @@ class PolarsLazyFrame:
         Examples:
             >>> import polars as pl
             >>> import janitor.polars
-            >>> pl.Config.set_tbl_cols(-1)
-            >>> pl.Config.set_tbl_rows(-1)
             >>> df = pl.LazyFrame(
             ...     dict(
             ...         group=(1, 2, 1, 2),

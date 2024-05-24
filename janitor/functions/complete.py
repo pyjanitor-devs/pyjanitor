@@ -19,7 +19,8 @@ def complete(
     fill_value: Optional[Union[Dict, Any]] = None,
     explicit: bool = True,
 ) -> pd.DataFrame:
-    """Complete a data frame with missing combinations of data.
+    """
+    Turns implicit missing values into explicit missing values.
 
     It is modeled after tidyr's `complete` function, and is a wrapper around
     [`expand_grid`][janitor.functions.expand_grid.expand_grid], `pd.merge`
@@ -145,7 +146,7 @@ def complete(
             a list/tuple of column labels, or a dictionary that pairs
             column labels with new values.
         sort: Sort DataFrame based on *columns.
-        by: Label or list of labels to group by.
+        by: Column(s) to group by.
             The explicit missing rows are returned per group.
         fill_value: Scalar value to use instead of NaN
             for missing combinations. A dictionary, mapping columns names

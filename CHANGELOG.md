@@ -1,7 +1,7 @@
 # Changelog
 
 ## [Unreleased]
--  [ENH] Added a `clean_names` method for polars - it can be used to clean the column names, or clean column values . Issue #1343
+-  [ENH] Added a `complete` method for polars. - Issue #1352
 
 ## [v0.27.0] - 2024-03-21
 

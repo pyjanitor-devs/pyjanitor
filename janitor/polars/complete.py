@@ -1,10 +1,15 @@
 """complete implementation for polars."""
 
-from janitor.utils import import_message
+from __future__ import annotations
+
+from typing import Any
+
+from janitor.utils import check, import_message
 
 try:
     import polars as pl
     import polars.selectors as cs
+    from polars.type_aliases import ColumnNameOrSelector
 except ImportError:
     import_message(
         submodule="polars",
@@ -16,11 +21,12 @@ except ImportError:
 
 def _complete(
     df: pl.DataFrame | pl.LazyFrame,
-    columns: tuple,
-    fill_value: dict | int | float | str,
+    columns: tuple[ColumnNameOrSelector],
+    fill_value: dict | Any | pl.Expr,
     explicit: bool,
     sort: bool,
-):
+    by: ColumnNameOrSelector,
+) -> pl.DataFrame | pl.LazyFrame:
     """
     This function computes the final output for the `complete` function.
 
@@ -29,6 +35,8 @@ def _complete(
     if not columns:
         return df
 
+    check("sort", sort, [bool])
+    check("explicit", explicit, [bool])
     all_strings = (isinstance(column, str) for column in columns)
     all_strings = all(all_strings)
     if all_strings:
@@ -49,26 +57,79 @@ def _complete(
                     "or a polars expression, instead got - "
                     f"{type(column)}."
                 )
-
-    if sort and all_strings:
-        _columns = _columns.unique().sort().implode()
-    elif all_strings:
-        _columns = _columns.unique().implode()
-    elif sort:
-        _columns = [column.unique().sort().implode() for column in _columns]
+    by_does_not_exist = by is None
+    if all_strings:
+        _columns = _columns.unique()
+        if sort:
+            _columns = _columns.sort()
+        if by_does_not_exist:
+            _columns = _columns.implode()
     else:
-        _columns = [column.unique().implode() for column in _columns]
-    uniques = df.select(_columns)
+        _columns = [column.unique() for column in _columns]
+        if sort:
+            _columns = [column.sort() for column in _columns]
+        if by_does_not_exist:
+            _columns = [column.implode() for column in _columns]
 
-    for column in uniques.columns:
+    if by_does_not_exist:
+        uniques = df.select(_columns)
+        _columns = uniques.columns
+    else:
+        uniques = df.group_by(by, maintain_order=sort).agg(_columns)
+        _by = cs.expand_selector(target=df, selector=by)
+        _columns = [column for column in uniques.columns if column not in _by]
+    for column in _columns:
         uniques = uniques.explode(column)
 
-    structs_exist = any(entry == pl.Struct for entry in uniques.dtypes)
+    _columns = [
+        column
+        for column, dtype in zip(_columns, uniques.select(_columns).dtypes)
+        if dtype == pl.Struct
+    ]
 
-    if structs_exist:
-        for label, dtype in zip(uniques.columns, uniques.dtypes):
-            if dtype == pl.Struct:
-                uniques = uniques.unnest(label)
+    if _columns:
+        for column in _columns:
+            uniques = uniques.unnest(columns=column)
 
+    idx = None
+    if (fill_value is not None) and not explicit:
+        idx = "".join(df.columns)
+        df = df.with_row_index(name=idx)
     df = uniques.join(df, on=uniques.columns, how="left")
+
+    if fill_value is not None:
+        # exclude columns that were not used
+        # to generate the combinations
+        exclude_columns = uniques.columns
+        if idx:
+            exclude_columns.append(idx)
+        booleans = df.select(pl.exclude(exclude_columns).is_null().any())
+        _columns = [
+            column
+            for column in booleans.columns
+            if booleans.get_column(column).item()
+        ]
+        if _columns and isinstance(fill_value, dict):
+            fill_value = [
+                pl.col(column_name).fill_null(value=value)
+                for column_name, value in fill_value.items()
+                if column_name in _columns
+            ]
+        elif _columns:
+            fill_value = [
+                pl.col(column).fill_null(value=fill_value)
+                for column in _columns
+            ]
+        if _columns and not explicit:
+            condition = pl.col(idx).is_null()
+            fill_value = [
+                pl.when(condition)
+                .then(_fill_value)
+                .otherwise(pl.col(column_name))
+                for column_name, _fill_value in zip(_columns, fill_value)
+            ]
+        if _columns:
+            df = df.with_columns(fill_value)
+        if idx:
+            df = df.select(pl.exclude(idx))
     return df

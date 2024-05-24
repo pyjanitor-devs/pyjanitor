@@ -104,6 +104,8 @@ def _complete(
         if idx:
             exclude_columns.append(idx)
         booleans = df.select(pl.exclude(exclude_columns).is_null().any())
+        if isinstance(booleans, pl.LazyFrame):
+            booleans = booleans.collect()
         _columns = [
             column
             for column in booleans.columns

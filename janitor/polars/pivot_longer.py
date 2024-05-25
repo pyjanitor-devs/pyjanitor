@@ -268,23 +268,23 @@ def _data_checks_pivot_longer(
             _check_type_single(entry=arg_value)
 
     if (index is None) and (column_names is None):
-        column_names = cs.expand_selector(df, pl.all())
+        column_names = df.columns
         index = []
     elif (index is not None) and (column_names is not None):
         _check_type(arg_name="index", arg_value=index)
-        index = cs.expand_selector(df, index)
+        index = df.select(index).columns
         _check_type(arg_name="column_names", arg_value=column_names)
-        column_names = cs.expand_selector(df, column_names)
+        column_names = df.select(column_names).columns
 
     elif (index is None) and (column_names is not None):
         _check_type(arg_name="column_names", arg_value=column_names)
-        column_names = cs.expand_selector(df, column_names)
-        index = cs.expand_selector(df, pl.exclude(column_names))
+        column_names = df.select(column_names).columns
+        index = df.select(pl.exclude(column_names)).columns
 
     elif (index is not None) and (column_names is None):
         _check_type(arg_name="index", arg_value=index)
-        index = cs.expand_selector(df, index)
-        column_names = cs.expand_selector(df, pl.exclude(index))
+        index = df.select(index).columns
+        column_names = df.select(pl.exclude(index)).columns
 
     check("names_to", names_to, [list, tuple, str])
     if isinstance(names_to, (list, tuple)):

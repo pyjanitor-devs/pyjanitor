@@ -76,9 +76,8 @@ def _complete(
         _columns = uniques.columns
     else:
         uniques = df.group_by(by, maintain_order=sort).agg(_columns)
-        _by = cs._combine_as_selector(by)
-        _by = cs.expand_selector(target=df, selector=_by)
-        _columns = [column for column in uniques.columns if column not in _by]
+        _by = uniques.select(by).columns
+        _columns = uniques.select(pl.exclude(_by)).columns
     for column in _columns:
         uniques = uniques.explode(column)
 

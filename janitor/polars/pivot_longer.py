@@ -93,20 +93,19 @@ def _pivot_longer_create_spec(
     """
     spec = pl.DataFrame({".name": column_names})
     if names_sep is not None:
-        split_expr = (
+        _expr = (
             pl.col(".name")
             .str.split(by=names_sep)
             .list.to_struct(n_field_strategy="max_width")
             .alias("extract")
         )
-        spec = spec.with_columns(split_expr)
     else:
-        extract_expr = (
+        _expr = (
             pl.col(".name")
             .str.extract_groups(pattern=names_pattern)
             .alias("extract")
         )
-        spec = spec.with_columns(extract_expr)
+    spec = spec.with_columns(_expr)
     len_fields = len(spec.get_column("extract").struct.fields)
     len_names_to = len(names_to)
 

@@ -90,16 +90,6 @@ def test_name_sep_wrong_type(df_checks):
         )
 
 
-def test_name_transform_wrong_type(df_checks):
-    """Raise TypeError if the wrong type is provided for names_transform."""
-    with pytest.raises(TypeError, match="names_transform should be one of.+"):
-        df_checks.janitor.pivot_longer(
-            names_to=[".value", "num"],
-            names_sep="_",
-            names_transform=pl.UInt16,
-        )
-
-
 def test_values_to_wrong_type(df_checks):
     """Raise TypeError if the wrong type is provided for `values_to`."""
     with pytest.raises(TypeError, match="values_to should be one of.+"):
@@ -152,7 +142,6 @@ def test_names_to_names_pattern_len(df_checks):
             column_names=cs.starts_with("ht"),
             names_to=(".value"),
             names_pattern=r"(\d+)(.)",
-            names_transform={"age": pl.Int64},
         )
 
 
@@ -182,7 +171,7 @@ def test_names_pat_str(df_checks):
         column_names=cs.starts_with("ht"),
         names_to=(".value", "age"),
         names_pattern="(.+)(.)",
-        names_transform={"age": pl.Int64},
+        names_transform=pl.col("age").cast(pl.Int64),
     ).sort(by=pl.all())
 
     actual = [
@@ -460,7 +449,7 @@ def test_multiple_dot_value():
             index="unit",
             names_to=(".value", "time", ".value"),
             names_pattern=r"(x|y)_([0-9])(_mean|_sd)",
-            names_transform={"time": pl.Int64},
+            names_transform=pl.col("time").cast(pl.Int64),
         )
         .select("unit", "time", "x_mean", "x_sd", "y_mean", "y_sd")
         .sort(by=pl.all())

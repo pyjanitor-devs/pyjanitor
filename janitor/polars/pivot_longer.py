@@ -175,6 +175,7 @@ def _pivot_longer_dot_value(
     ):
         expression = pl.col(column_name).alias(replacement_name)
         mapping[position].append(expression)
+
     mapping = (
         (
             [
@@ -192,10 +193,10 @@ def _pivot_longer_dot_value(
     ]
 
     df = pl.concat(df, how="diagonal_relaxed", rechunk=True)
-    spec = spec.select(idx, *not_dot_value).unique()
-    if df_is_a_lazyframe:
-        spec = spec.lazy()
     if not_dot_value:
+        if df_is_a_lazyframe:
+            spec = spec.lazy()
+        spec = spec.group_by(idx).agg(pl.col(not_dot_value).first())
         df = df.join(spec, on=idx, how="inner")
     df = df.select(pl.exclude(idx))
     return df

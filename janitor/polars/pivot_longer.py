@@ -192,7 +192,7 @@ def _pivot_longer_dot_value(
         for columns_to_select, position in mapping
     ]
 
-    df = pl.concat(df, how="diagonal_relaxed")
+    df = pl.concat(df, how="diagonal_relaxed", rechunk=True)
     spec = spec.select(idx, *not_dot_value).unique()
     if df_is_a_lazyframe:
         spec = spec.lazy()

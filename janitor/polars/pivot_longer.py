@@ -26,7 +26,7 @@ def _pivot_longer(
     values_to: str,
     names_sep: str,
     names_pattern: str,
-    names_transform: dict,
+    names_transform: pl.Expr,
 ) -> Union[pl.DataFrame, pl.LazyFrame]:
     """
     Unpivots a DataFrame/LazyFrame from wide to long form.
@@ -85,7 +85,7 @@ def _pivot_longer_create_spec(
     names_sep: Union[str, None],
     names_pattern: Union[str, None],
     values_to: str,
-    names_transform: dict,
+    names_transform: pl.Expr,
 ) -> pl.DataFrame:
     """
     This is where the spec DataFrame is created,
@@ -219,6 +219,7 @@ def _pivot_longer_create_spec(
 >>>>>>> 650cc93 (added pivot_longer_spec)
     )
     if names_transform is not None:
+<<<<<<< HEAD
 <<<<<<< HEAD
         if isinstance(names_transform, dict):
             names_transform = {
@@ -570,6 +571,10 @@ def _pivot_longer_no_dot_value(
     values = pl.concat(values, how="diagonal_relaxed")
     columns_to_select = [*index, *names_to, values_to]
     return values.select(columns_to_select)
+=======
+        spec = spec.with_columns(names_transform)
+    return spec
+>>>>>>> a52d72b (names_transform should be a pl.Expr)
 
 
 def _pivot_longer_dot_value(

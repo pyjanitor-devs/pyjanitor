@@ -30,7 +30,7 @@ class PolarsFrame:
         values_to: str = "value",
         names_sep: str = None,
         names_pattern: str = None,
-        names_transform: dict = None,
+        names_transform: pl.Expr = None,
     ) -> pl.DataFrame:
         """
         Unpivots a DataFrame from *wide* to *long* format.
@@ -161,7 +161,7 @@ class PolarsFrame:
             ...     index = "id",
             ...     names_pattern=r"new_?(.+)_(.)([0-9]+)",
             ...     names_to=("diagnosis", "gender", "age"),
-            ...     names_transform={"age": pl.Int32},
+            ...     names_transform=pl.col('age').cast(pl.Int32),
             ... ).select("id", "diagnosis", "gender", "age", "value").sort(by=pl.all())
             shape: (2, 5)
             ┌─────┬───────────┬────────┬──────┬───────┐
@@ -233,10 +233,7 @@ class PolarsFrame:
             names_transform: Use this option to change the types of columns that
                 have been transformed to rows.
                 This does not applies to the values' columns.
-                `names_transform` accepts a dictionary, where
-                the keys in the dictionary
-                are the column names, while the values
-                are the data types to be applied on the columns.
+                Accepts a polars expression or a list of polars expressions.
                 Applicable only if one of names_sep
                 or names_pattern is provided.
 
@@ -269,7 +266,7 @@ class PolarsLazyFrame:
         values_to: str = "value",
         names_sep: str = None,
         names_pattern: str = None,
-        names_transform: dict = None,
+        names_transform: pl.Expr = None,
     ) -> pl.LazyFrame:
         """
         Unpivots a LazyFrame from *wide* to *long* format.
@@ -352,10 +349,7 @@ class PolarsLazyFrame:
             names_transform: Use this option to change the types of columns that
                 have been transformed to rows.
                 This does not applies to the values' columns.
-                `names_transform` accepts a dictionary, where
-                the keys in the dictionary
-                are the column names, while the values
-                are the data types to be applied on the columns.
+                Accepts a polars expression or a list of polars expressions.
                 Applicable only if one of names_sep
                 or names_pattern is provided.
 

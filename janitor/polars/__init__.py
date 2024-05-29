@@ -1,4 +1,4 @@
-from typing import Union
+from __future__ import annotations
 
 from polars.type_aliases import ColumnNameOrSelector
 
@@ -26,7 +26,7 @@ class PolarsFrame:
         self,
         index: ColumnNameOrSelector = None,
         column_names: ColumnNameOrSelector = None,
-        names_to: Union[list, tuple, str] = "variable",
+        names_to: list | tuple | str = "variable",
         values_to: str = "value",
         names_sep: str = None,
         names_pattern: str = None,
@@ -262,7 +262,7 @@ class PolarsLazyFrame:
         self,
         index: ColumnNameOrSelector = None,
         column_names: ColumnNameOrSelector = None,
-        names_to: Union[list, tuple, str] = "variable",
+        names_to: list | tuple | str = "variable",
         values_to: str = "value",
         names_sep: str = None,
         names_pattern: str = None,
@@ -370,9 +370,9 @@ class PolarsLazyFrame:
 
 
 def pivot_longer_spec(
-    df: Union[pl.DataFrame, pl.LazyFrame],
+    df: pl.DataFrame | pl.LazyFrame,
     spec: pl.DataFrame,
-) -> Union[pl.DataFrame, pl.LazyFrame]:
+) -> pl.DataFrame | pl.LazyFrame:
     """A declarative interface to pivot a DataFrame from wide to long form,
     where you describe how the data will be unpivoted,
     using a DataFrame. This gives you, the user,
@@ -381,7 +381,7 @@ def pivot_longer_spec(
     becomes variables.
 
     It can come in handy for situations where
-    `pivot_longer`
+    `janitor.polars.pivot_longer`
     seems inadequate for the transformation.
 
     !!! info "New in version 0.28.0"

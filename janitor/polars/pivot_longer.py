@@ -196,7 +196,8 @@ def _pivot_longer_dot_value(
     spec = spec.select(idx, *not_dot_value).unique()
     if df_is_a_lazyframe:
         spec = spec.lazy()
-    df = df.join(spec, on=idx, how="inner")
+    if not_dot_value:
+        df = df.join(spec, on=idx, how="inner")
     df = df.select(pl.exclude(idx))
     return df
 

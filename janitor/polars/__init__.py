@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 
-
 from janitor.utils import check, import_message
 
 from .pivot_longer import _pivot_longer, _pivot_longer_dot_value
@@ -937,6 +936,7 @@ class PolarsLazyFrame:
 
 def pivot_longer_spec(
     df: pl.DataFrame | pl.LazyFrame,
+<<<<<<< HEAD
     spec: pl.DataFrame,
 ) -> pl.DataFrame | pl.LazyFrame:
     """
@@ -957,8 +957,10 @@ def pivot_longer_spec(
 
 def pivot_longer_spec(
     df: Union[pl.DataFrame, pl.LazyFrame],
+=======
+>>>>>>> 834bdd9 (__future__)
     spec: pl.DataFrame,
-) -> Union[pl.DataFrame, pl.LazyFrame]:
+) -> pl.DataFrame | pl.LazyFrame:
     """A declarative interface to pivot a DataFrame from wide to long form,
     where you describe how the data will be unpivoted,
     using a DataFrame. This gives you, the user,
@@ -966,7 +968,14 @@ def pivot_longer_spec(
     DataFrame that describes exactly how data stored in the column names
     becomes variables.
 
+<<<<<<< HEAD
 >>>>>>> 650cc93 (added pivot_longer_spec)
+=======
+    It can come in handy for situations where
+    `janitor.polars.pivot_longer`
+    seems inadequate for the transformation.
+
+>>>>>>> 834bdd9 (__future__)
     !!! info "New in version 0.28.0"
 
     Examples:

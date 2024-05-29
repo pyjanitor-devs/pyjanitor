@@ -1,7 +1,7 @@
 """pivot_longer implementation for polars."""
 
 from collections import defaultdict
-from typing import Any, Iterable, Union
+from typing import Any, Iterable
 
 from janitor.utils import check, import_message
 
@@ -19,15 +19,15 @@ except ImportError:
 
 
 def _pivot_longer(
-    df: Union[pl.DataFrame, pl.LazyFrame],
+    df: pl.DataFrame | pl.LazyFrame,
     index: ColumnNameOrSelector,
     column_names: ColumnNameOrSelector,
-    names_to: Union[list, tuple, str],
+    names_to: list | tuple | str,
     values_to: str,
     names_sep: str,
     names_pattern: str,
     names_transform: pl.Expr,
-) -> Union[pl.DataFrame, pl.LazyFrame]:
+) -> pl.DataFrame | pl.LazyFrame:
     """
     Unpivots a DataFrame/LazyFrame from wide to long form.
     """
@@ -82,8 +82,8 @@ def _pivot_longer_create_spec(
     df: Union[pl.DataFrame, pl.LazyFrame],
     column_names: Iterable,
     names_to: Iterable,
-    names_sep: Union[str, None],
-    names_pattern: Union[str, None],
+    names_sep: str | None,
+    names_pattern: str | None,
     values_to: str,
     names_transform: pl.Expr,
 ) -> pl.DataFrame:
@@ -578,6 +578,7 @@ def _pivot_longer_no_dot_value(
 
 
 def _pivot_longer_dot_value(
+<<<<<<< HEAD
     df: pl.DataFrame,
     names_to: Iterable,
     outcome: pl.Series,
@@ -720,6 +721,10 @@ def _pivot_longer_dot_value(
 def _pivot_longer_dot_value(
     df: pl.DataFrame, spec: pl.DataFrame
 ) -> pl.DataFrame:
+=======
+    df: pl.DataFrame | pl.LazyFrame, spec: pl.DataFrame
+) -> pl.DataFrame | pl.LazyFrame:
+>>>>>>> 834bdd9 (__future__)
     """
     Reshape DataFrame to long form based on metadata in `spec`.
     """

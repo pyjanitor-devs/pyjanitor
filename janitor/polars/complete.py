@@ -91,47 +91,45 @@ def _complete(
         for column in _columns:
             uniques = uniques.unnest(columns=column)
 
+    if fill_value is None:
+        return uniques.join(df, on=uniques.columns, how="left")
     idx = None
-    if (fill_value is not None) and not explicit:
+    columns_to_select = df.columns
+    if not explicit:
         idx = "".join(df.columns)
         df = df.with_row_index(name=idx)
     df = uniques.join(df, on=uniques.columns, how="left")
-
-    if fill_value is not None:
-        # exclude columns that were not used
-        # to generate the combinations
-        exclude_columns = uniques.columns
-        if idx:
-            exclude_columns.append(idx)
-        booleans = df.select(pl.exclude(exclude_columns).is_null().any())
-        if isinstance(booleans, pl.LazyFrame):
-            booleans = booleans.collect()
-        _columns = [
-            column
-            for column in booleans.columns
-            if booleans.get_column(column).item()
+    # exclude columns that were not used
+    # to generate the combinations
+    exclude_columns = uniques.columns
+    if idx:
+        exclude_columns.append(idx)
+    expression = pl.exclude(exclude_columns).is_null().any()
+    booleans = df.select(expression)
+    if isinstance(booleans, pl.LazyFrame):
+        booleans = booleans.collect()
+    _columns = [
+        column
+        for column in booleans.columns
+        if booleans.get_column(column).item()
+    ]
+    if _columns and isinstance(fill_value, dict):
+        fill_value = [
+            pl.col(column_name).fill_null(value=value)
+            for column_name, value in fill_value.items()
+            if column_name in _columns
         ]
-        if _columns and isinstance(fill_value, dict):
-            fill_value = [
-                pl.col(column_name).fill_null(value=value)
-                for column_name, value in fill_value.items()
-                if column_name in _columns
-            ]
-        elif _columns:
-            fill_value = [
-                pl.col(column).fill_null(value=fill_value)
-                for column in _columns
-            ]
-        if _columns and not explicit:
-            condition = pl.col(idx).is_null()
-            fill_value = [
-                pl.when(condition)
-                .then(_fill_value)
-                .otherwise(pl.col(column_name))
-                for column_name, _fill_value in zip(_columns, fill_value)
-            ]
-        if _columns:
-            df = df.with_columns(fill_value)
-        if idx:
-            df = df.select(pl.exclude(idx))
-    return df
+    elif _columns:
+        fill_value = [
+            pl.col(column).fill_null(value=fill_value) for column in _columns
+        ]
+    if _columns and not explicit:
+        condition = pl.col(idx).is_null()
+        fill_value = [
+            pl.when(condition).then(_fill_value).otherwise(pl.col(column_name))
+            for column_name, _fill_value in zip(_columns, fill_value)
+        ]
+    if _columns:
+        df = df.with_columns(fill_value)
+
+    return df.select(columns_to_select)

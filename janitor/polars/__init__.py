@@ -373,11 +373,14 @@ def pivot_longer_spec(
     df: pl.DataFrame | pl.LazyFrame,
     spec: pl.DataFrame,
 ) -> pl.DataFrame | pl.LazyFrame:
-    """A declarative interface to pivot a DataFrame from wide to long form,
+    """
+    A declarative interface to pivot a DataFrame
+    from wide to long form,
     where you describe how the data will be unpivoted,
     using a DataFrame. This gives you, the user,
-    more control over unpivoting, where you create a “spec”
-    DataFrame that describes exactly how data stored in the column names
+    more control over the transformation to long form,
+    using a *spec* DataFrame that describes exactly
+    how data stored in the column names
     becomes variables.
 
     It can come in handy for situations where
@@ -442,21 +445,23 @@ def pivot_longer_spec(
         df: The source DataFrame to unpivot.
         spec: A specification DataFrame.
             At a minimum, the spec DataFrame
-            must have a '.name' column
-            and a '.value' column.
-            The '.name' column  should contain the
+            must have a `.name` column
+            and a `.value` column.
+            The `.name` column  should contain the
             columns in the source DataFrame that will be
             transformed to long form.
-            The '.value' column gives the name of the column
+            The `.value` column gives the name of the column
             that the values in the source DataFrame will go into.
-            Additional columns in spec should be named to match columns
+            Additional columns in the spec DataFrame
+            should be named to match columns
             in the long format of the dataset and contain values
             corresponding to columns pivoted from the wide format.
             Note that these additional columns should not already exist
             in the source DataFrame.
+
     Raises:
-        KeyError: If '.name' or '.value' is missing from the spec's columns.
-        ValueError: If the labels in spec['.name'] is not unique.
+        KeyError: If `.name` or `.value` is missing from the spec's columns.
+        ValueError: If the labels in `spec['.name']` is not unique.
 
     Returns:
         A polars DataFrame/LazyFrame.

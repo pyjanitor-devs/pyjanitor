@@ -239,6 +239,7 @@ class PolarsFrame:
             sort: Sort the DataFrame based on *columns.
             by: Column(s) to group by.
                 The explicit missing rows are returned per group.
+
         Returns:
             A polars DataFrame.
         """  # noqa: E501
@@ -264,9 +265,9 @@ class PolarsLazyFrame:
         explicit: bool = True,
         sort: bool = False,
         by: ColumnNameOrSelector = None,
-    ) -> pl.DataFrame:
+    ) -> pl.LazyFrame:
         """
-        Turns implicit missing values into explicit missing values
+        Turns implicit missing values into explicit missing values.
 
         It is modeled after tidyr's `complete` function.
         In a way, it is the inverse of `pl.drop_nulls`,
@@ -418,6 +419,7 @@ class PolarsLazyFrame:
             sort: Sort the LazyFrame based on *columns.
             by: Column(s) to group by.
                 The explicit missing rows are returned per group.
+
         Returns:
             A polars LazyFrame.
         """  # noqa: E501

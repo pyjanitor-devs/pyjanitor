@@ -1,5 +1,7 @@
 """pivot_longer implementation for polars."""
 
+from __future__ import annotations
+
 from collections import defaultdict
 from typing import Any, Iterable
 
@@ -89,23 +91,23 @@ def _pivot_longer_create_spec(
 ) -> pl.DataFrame:
     """
     This is where the spec DataFrame is created,
-    before the final reshape.
+    before the transformation to long form.
     """
     spec = pl.DataFrame({".name": column_names})
     if names_sep is not None:
-        _expr = (
+        expression = (
             pl.col(".name")
             .str.split(by=names_sep)
             .list.to_struct(n_field_strategy="max_width")
             .alias("extract")
         )
     else:
-        _expr = (
+        expression = (
             pl.col(".name")
             .str.extract_groups(pattern=names_pattern)
             .alias("extract")
         )
-    spec = spec.with_columns(_expr)
+    spec = spec.with_columns(expression)
     len_fields = len(spec.get_column("extract").struct.fields)
     len_names_to = len(names_to)
 
@@ -118,9 +120,11 @@ def _pivot_longer_create_spec(
             f"{len_fields}."
         )
     if names_pattern is not None:
+        expression = pl.exclude(".name").is_null().any()
+        expression = pl.any_horizontal(expression)
         null_check = (
             spec.unnest(columns="extract")
-            .filter(pl.any_horizontal(pl.exclude(".name").is_null().any()))
+            .filter(expression)
             .get_column(".name")
         )
         if null_check.len():
@@ -132,12 +136,13 @@ def _pivot_longer_create_spec(
                 "(with the correct groups) that matches all labels in the columns."
             )
     if names_to.count(".value") < 2:
-        rename_expr = pl.col("extract").struct.rename_fields(names=names_to)
-        spec = spec.with_columns(rename_expr).unnest(columns="extract")
+        expression = pl.col("extract").struct.rename_fields(names=names_to)
+        spec = spec.with_columns(expression).unnest(columns="extract")
     else:
         spec = _squash_multiple_dot_value(spec=spec, names_to=names_to)
     if ".value" not in names_to:
-        spec = spec.with_columns(pl.lit(value=values_to).alias(".value"))
+        expression = pl.lit(value=values_to).alias(".value")
+        spec = spec.with_columns(expression)
 
     spec = spec.select(
         pl.col([".name", ".value"]), pl.exclude([".name", ".value"])
@@ -158,15 +163,15 @@ def _pivot_longer_dot_value(
         column for column in spec.columns if column not in {".name", ".value"}
     ]
     idx = "".join(spec.columns)
-    if len(spec.columns) == 2:
-        # use a cumulative count to properly pair the columns
-        spec = spec.with_columns(
-            pl.cum_count(".value").over(".value").alias(idx)
-        )
+    if not_dot_value:
+        # assign a number to each group (grouped by not_dot_value)
+        expression = pl.first(idx).over(not_dot_value).rank("dense").sub(1)
+        spec = spec.with_row_index(name=idx).with_columns(expression)
     else:
-        # assign a number to each group
-        ngroup_expr = pl.first(idx).over(not_dot_value).rank("dense").sub(1)
-        spec = spec.with_row_index(name=idx).with_columns(ngroup_expr)
+        # use a cumulative count to properly pair the columns
+        # grouped by .value
+        expression = pl.cum_count(".value").over(".value").alias(idx)
+        spec = spec.with_columns(expression)
     mapping = defaultdict(list)
     for position, column_name, replacement_name in zip(
         spec.get_column(name=idx),
@@ -186,20 +191,32 @@ def _pivot_longer_dot_value(
         )
         for position, columns_to_select in mapping.items()
     )
-    df_is_a_lazyframe = isinstance(df, pl.LazyFrame)
     df = [
         df.select(columns_to_select).with_columns(position)
         for columns_to_select, position in mapping
     ]
-
+    # rechunking can be expensive;
+    # however subsequent operations are faster
+    # since data is contiguous in memory
     df = pl.concat(df, how="diagonal_relaxed", rechunk=True)
+    expression = pl.cum_count(".value").over(".value").eq(1)
+    dot_value = spec.filter(expression).select(".value")
+    columns_to_select = [*index, *dot_value.to_series(0)]
     if not_dot_value:
-        if df_is_a_lazyframe:
-            spec = spec.lazy()
-        spec = spec.group_by(idx).agg(pl.col(not_dot_value).first())
-        df = df.join(spec, on=idx, how="inner")
-    df = df.select(pl.exclude(idx))
-    return df
+        if isinstance(df, pl.LazyFrame):
+            ranges = df.select(idx).collect().get_column(idx)
+        else:
+            ranges = df.get_column(idx)
+        spec = spec.select(pl.struct(not_dot_value))
+        _value = spec.columns[0]
+        expression = pl.cum_count(_value).over(_value).eq(1)
+        # using a gather approach, instead of a join
+        # offers more performance - not sure why
+        # maybe in the join there is another rechunking?
+        spec = spec.filter(expression).select(pl.col(_value).gather(ranges))
+        df = df.with_columns(spec).unnest(_value)
+        columns_to_select.extend(not_dot_value)
+    return df.select(columns_to_select)
 
 
 def _squash_multiple_dot_value(

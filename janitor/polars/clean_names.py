@@ -1,8 +1,9 @@
 """clean_names implementation for polars."""
 
+from __future__ import annotations
+
 import re
 import unicodedata
-from typing import Optional, Union
 
 from janitor.errors import JanitorError
 from janitor.functions.utils import (
@@ -95,7 +96,7 @@ def _strip_accents_expr(
 
 def _strip_underscores_func_expr(
     obj: pl.Expr,
-    strip_underscores: Union[str, bool] = None,
+    strip_underscores: str | bool = None,
 ) -> pl.Expr:
     """Strip underscores from obj."""
     underscore_options = {None, "left", "right", "both", "l", "r", True}
@@ -114,7 +115,7 @@ def _strip_underscores_func_expr(
 
 def _clean_column_names(
     obj: str,
-    strip_underscores: Optional[Union[str, bool]] = None,
+    strip_underscores: str | bool = None,
     case_type: str = "lower",
     remove_special: bool = False,
     strip_accents: bool = False,
@@ -140,7 +141,7 @@ def _clean_column_names(
 
 def _clean_expr_names(
     obj: pl.Expr,
-    strip_underscores: Optional[Union[str, bool]] = None,
+    strip_underscores: str | bool = None,
     case_type: str = "lower",
     remove_special: bool = False,
     strip_accents: bool = False,

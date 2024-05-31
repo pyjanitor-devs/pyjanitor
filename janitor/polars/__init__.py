@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from __future__ import annotations
 
 from janitor.utils import import_message
 
@@ -15,7 +15,6 @@ except ImportError:
     )
 
 
-@pl.api.register_lazyframe_namespace("janitor")
 @pl.api.register_dataframe_namespace("janitor")
 class PolarsFrame:
     def __init__(self, df: pl.DataFrame) -> pl.DataFrame:
@@ -23,7 +22,7 @@ class PolarsFrame:
 
     def clean_names(
         self,
-        strip_underscores: Optional[Union[str, bool]] = None,
+        strip_underscores: str | bool = None,
         case_type: str = "lower",
         remove_special: bool = False,
         strip_accents: bool = False,
@@ -83,6 +82,7 @@ class PolarsFrame:
                 the labels.
             truncate_limit: Truncates formatted column names to
                 the specified length. Default None does not truncate.
+
         Returns:
             A polars DataFrame.
         """  # noqa: E501
@@ -105,7 +105,7 @@ class PolarsLazyFrame:
 
     def clean_names(
         self,
-        strip_underscores: Optional[Union[str, bool]] = None,
+        strip_underscores: str | bool = None,
         case_type: str = "lower",
         remove_special: bool = False,
         strip_accents: bool = False,
@@ -165,6 +165,7 @@ class PolarsLazyFrame:
                 the labels.
             truncate_limit: Truncates formatted column names to
                 the specified length. Default None does not truncate.
+
         Returns:
             A polars LazyFrame.
         """  # noqa: E501
@@ -187,7 +188,7 @@ class PolarsExpr:
 
     def clean_names(
         self,
-        strip_underscores: Optional[Union[str, bool]] = None,
+        strip_underscores: str | bool = None,
         case_type: str = "lower",
         remove_special: bool = False,
         strip_accents: bool = False,
@@ -243,6 +244,7 @@ class PolarsExpr:
             enforce_string: Whether or not to cast the expression to a string type.
             truncate_limit: Truncates formatted labels in the expression to
                 the specified length. Default None does not truncate.
+
         Returns:
             A polars Expression.
         """

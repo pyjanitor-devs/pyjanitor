@@ -478,7 +478,7 @@ def _create_pandas_object(df, columns, sort):
     objects = []
     for column in columns:
         if is_scalar(column):
-            _object = df.loc[:, column].drop_duplicates()
+            _object = df[column].drop_duplicates()
             if sort:
                 _object = _object.sort_values()
             objects.append(_object)

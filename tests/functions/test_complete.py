@@ -745,18 +745,27 @@ def test_groupby_tuple():
     )
 
     # https://stackoverflow.com/a/77123963/7175713
-    def reindex(g):
-        idx = pd.MultiIndex.from_product(
-            [g["Grid Cell"].unique(), g["Site"].unique(), g["Date"].unique()],
-            names=["Grid Cell", "Site", "Date"],
-        )
-        return g.set_index(["Grid Cell", "Site", "Date"]).reindex(
-            idx, fill_value=np.nan
-        )
+    data = [
+        {"Grid Cell": 1, "Site": "A", "Date": "1999-01-01", "Value": -2.45},
+        {"Grid Cell": 1, "Site": "A", "Date": "1999-02-01", "Value": -3.72},
+        {"Grid Cell": 1, "Site": "A", "Date": "1999-03-01", "Value": 1.34},
+        {"Grid Cell": 1, "Site": "A", "Date": "1999-04-01", "Value": 4.56},
+        {"Grid Cell": 1, "Site": "B", "Date": "1999-01-01", "Value": 0.23},
+        {"Grid Cell": 1, "Site": "B", "Date": "1999-02-01", "Value": 3.26},
+        {"Grid Cell": 1, "Site": "B", "Date": "1999-03-01", "Value": 6.76},
+        {"Grid Cell": 1, "Site": "B", "Date": "1999-04-01", "Value": np.nan},
+        {"Grid Cell": 2, "Site": "C", "Date": "2000-01-01", "Value": -7.45},
+        {"Grid Cell": 2, "Site": "C", "Date": "2000-02-01", "Value": -6.43},
+        {"Grid Cell": 2, "Site": "C", "Date": "2000-03-01", "Value": -2.18},
+        {"Grid Cell": 2, "Site": "C", "Date": "2000-04-01", "Value": np.nan},
+        {"Grid Cell": 2, "Site": "D", "Date": "2000-01-01", "Value": -10.72},
+        {"Grid Cell": 2, "Site": "D", "Date": "2000-02-01", "Value": -8.97},
+        {"Grid Cell": 2, "Site": "D", "Date": "2000-03-01", "Value": -5.32},
+        {"Grid Cell": 2, "Site": "D", "Date": "2000-04-01", "Value": -1.73},
+    ]
 
-    actual = (
-        df.groupby("Grid Cell", group_keys=False).apply(reindex).reset_index()
-    )
+    actual = pd.DataFrame(data)
+
     assert_frame_equal(expected, actual)
 
 

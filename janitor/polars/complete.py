@@ -92,7 +92,7 @@ def _complete(
             uniques = uniques.unnest(columns=column)
 
     if fill_value is None:
-        return uniques.join(df, on=uniques.columns, how="left")
+        return uniques.join(df, on=uniques.columns, how="full", coalesce=True)
     idx = None
     columns_to_select = df.columns
     if not explicit:

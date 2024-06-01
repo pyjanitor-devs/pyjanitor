@@ -255,5 +255,6 @@ def test_complete_3(fill_df):
     Test output for janitor.complete
     """
     assert_frame_equal(
-        fill_df.janitor.complete("group", sort=True), fill_df.sort("group")
+        fill_df.janitor.complete("group", sort=True).sort("group"),
+        fill_df.sort("group"),
     )

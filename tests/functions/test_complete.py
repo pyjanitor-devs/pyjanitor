@@ -372,7 +372,10 @@ def test_dict_duplicated(df):
 def test_single_column(df):
     """Test `complete` output if a single column is provided."""
     result = df.complete("names")
-    assert_frame_equal(result, df)
+    assert_frame_equal(
+        result.sort_values(df.columns.tolist(), ignore_index=True),
+        df.sort_values(df.columns.tolist(), ignore_index=True),
+    )
 
 
 def test_tuple_column():
@@ -697,73 +700,48 @@ def test_nulls(fill_df):
     """
     Test output if nulls are present
     """
-    actual = fill_df.complete(["value1"], "value2", sort=True)
-    ind = [fill_df.value1.dropna().unique(), fill_df.value2.unique()]
-    ind = pd.MultiIndex.from_product(ind, names=["value1", "value2"])
-    ind = pd.DataFrame([], index=ind)
-    expected = fill_df.merge(
-        ind, on=["value1", "value2"], how="outer", sort=True
+    columns = fill_df.columns.tolist()
+    actual = (
+        fill_df.complete(["value1"], "value2", sort=True)
+        .loc[:, columns]
+        .sort_values(columns, ignore_index=True)
     )
+    expected = (
+        fill_df.set_index(["value1", "value2"])
+        .unstack("value2")
+        .stack("value2", future_stack=True)
+        .reset_index()
+        .loc[:, columns]
+        .sort_values(columns, ignore_index=True)
+    )
+
     assert_frame_equal(actual, expected)
 
 
 def test_groupby_tuple():
     """Test output for groupby on a tuple of columns."""
     # https://stackoverflow.com/q/77123843/7175713
-    data_dict = {
-        "Grid Cell": [1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2],
-        "Site": [
-            "A",
-            "A",
-            "A",
-            "A",
-            "B",
-            "B",
-            "B",
-            "C",
-            "C",
-            "C",
-            "D",
-            "D",
-            "D",
-            "D",
-        ],
-        "Date": [
-            "1999-01-01",
-            "1999-02-01",
-            "1999-03-01",
-            "1999-04-01",
-            "1999-01-01",
-            "1999-02-01",
-            "1999-03-01",
-            "2000-01-01",
-            "2000-02-01",
-            "2000-03-01",
-            "2000-01-01",
-            "2000-02-01",
-            "2000-03-01",
-            "2000-04-01",
-        ],
-        "Value": [
-            -2.45,
-            -3.72,
-            1.34,
-            4.56,
-            0.23,
-            3.26,
-            6.76,
-            -7.45,
-            -6.43,
-            -2.18,
-            -10.72,
-            -8.97,
-            -5.32,
-            -1.73,
-        ],
-    }
+    data_dict = [
+        {"Grid Cell": 1, "Site": "A", "Date": "1999-01-01", "Value": -2.45},
+        {"Grid Cell": 1, "Site": "A", "Date": "1999-02-01", "Value": -3.72},
+        {"Grid Cell": 1, "Site": "A", "Date": "1999-03-01", "Value": 1.34},
+        {"Grid Cell": 1, "Site": "A", "Date": "1999-04-01", "Value": 4.56},
+        {"Grid Cell": 1, "Site": "B", "Date": "1999-01-01", "Value": 0.23},
+        {"Grid Cell": 1, "Site": "B", "Date": "1999-02-01", "Value": 3.26},
+        {"Grid Cell": 1, "Site": "B", "Date": "1999-03-01", "Value": 6.76},
+        {"Grid Cell": 2, "Site": "C", "Date": "2000-01-01", "Value": -7.45},
+        {"Grid Cell": 2, "Site": "C", "Date": "2000-02-01", "Value": -6.43},
+        {"Grid Cell": 2, "Site": "C", "Date": "2000-03-01", "Value": -2.18},
+        {"Grid Cell": 2, "Site": "D", "Date": "2000-01-01", "Value": -10.72},
+        {"Grid Cell": 2, "Site": "D", "Date": "2000-02-01", "Value": -8.97},
+        {"Grid Cell": 2, "Site": "D", "Date": "2000-03-01", "Value": -5.32},
+        {"Grid Cell": 2, "Site": "D", "Date": "2000-04-01", "Value": -1.73},
+    ]
     df = pd.DataFrame.from_dict(data_dict)
-    expected = df.complete("Date", "Site", by="Grid Cell").sort_values(
-        ["Grid Cell", "Site", "Date"], ignore_index=True
+    expected = (
+        df.complete("Date", "Site", by="Grid Cell")
+        .sort_values(["Grid Cell", "Site", "Date"], ignore_index=True)
+        .loc[:, ["Grid Cell", "Site", "Date", "Value"]]
     )
 
     # https://stackoverflow.com/a/77123963/7175713

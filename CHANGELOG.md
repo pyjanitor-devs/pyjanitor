@@ -1,7 +1,7 @@
 # Changelog
 
 ## [Unreleased]
-
+-   [ENH] dictionary argument no longer supported in the `complete` method. User should instead provide a pandas object. - PR #1369 @samukweku
 ## [v0.27.0] - 2024-03-21
 
 -   [BUG] Fix logic for groupby in complete. Index support deprecated. Fix deprecation warning for fillna in `complete` PR #1289 @samukweku

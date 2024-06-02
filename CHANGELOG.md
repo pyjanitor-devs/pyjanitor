@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+- [ENH] Improved performance for non-equi joins when using numba - @samukweku PR #1341
 
 ## [v0.27.0] - 2024-03-21
 

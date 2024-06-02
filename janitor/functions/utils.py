@@ -767,9 +767,10 @@ def _less_than_indices(
     rows_equal = search_indices == len_right
 
     if rows_equal.any():
-        left = left[~rows_equal]
-        left_index = left_index[~rows_equal]
-        search_indices = search_indices[~rows_equal]
+        rows_equal = ~rows_equal
+        left = left[rows_equal]
+        left_index = left_index[rows_equal]
+        search_indices = search_indices[rows_equal]
 
     # the idea here is that if there are any equal values
     # shift to the right to the immediate next position
@@ -796,9 +797,10 @@ def _less_than_indices(
         rows_equal = search_indices == len_right
 
         if rows_equal.any():
-            left = left[~rows_equal]
-            left_index = left_index[~rows_equal]
-            search_indices = search_indices[~rows_equal]
+            rows_equal = ~rows_equal
+            left = left[rows_equal]
+            left_index = left_index[rows_equal]
+            search_indices = search_indices[rows_equal]
 
         if not search_indices.size:
             return None
@@ -858,9 +860,10 @@ def _greater_than_indices(
     # in right
     rows_equal = search_indices < 1
     if rows_equal.any():
-        left = left[~rows_equal]
-        left_index = left_index[~rows_equal]
-        search_indices = search_indices[~rows_equal]
+        rows_equal = ~rows_equal
+        left = left[rows_equal]
+        left_index = left_index[rows_equal]
+        search_indices = search_indices[rows_equal]
 
     # the idea here is that if there are any equal values
     # shift downwards to the immediate next position
@@ -883,9 +886,10 @@ def _greater_than_indices(
         # with side='right' should be 1
         rows_equal = search_indices < 1
         if rows_equal.any():
-            left = left[~rows_equal]
-            left_index = left_index[~rows_equal]
-            search_indices = search_indices[~rows_equal]
+            rows_equal = ~rows_equal
+            left = left[rows_equal]
+            left_index = left_index[rows_equal]
+            search_indices = search_indices[rows_equal]
 
         if not search_indices.size:
             return None

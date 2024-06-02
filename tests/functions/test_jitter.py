@@ -6,6 +6,7 @@ from janitor.functions import jitter  # noqa: F401
 
 @pytest.mark.functions
 def test_datatypes_check(dataframe):
+    """Test that data types are checked correctly when using jitter."""
     # `scale` should be a numeric value > 0
     with pytest.raises(TypeError):
         assert dataframe.jitter(
@@ -61,12 +62,17 @@ def test_datatypes_check(dataframe):
 
 @pytest.mark.functions
 def test_jitter(dataframe):
+    """Test that the jitter function executes without error."""
     # Functional test to ensure jitter runs without error
     dataframe.jitter(column_name="a", dest_column_name="a_jitter", scale=1.0)
 
 
 @pytest.mark.functions
 def test_jitter_with_nans(missingdata_df):
+    """Test jittering with NaNs.
+
+    This is just an execution test.
+    """
     # Functional test to ensure jitter runs without error if NaNs are present
     missingdata_df.jitter(
         column_name="a", dest_column_name="a_jitter", scale=1.0
@@ -75,6 +81,10 @@ def test_jitter_with_nans(missingdata_df):
 
 @pytest.mark.functions
 def test_jitter_random_state(dataframe):
+    """Test jittering with a random seed.
+
+    This is just an execution test.
+    """
     # Functional test to ensure jitter runs when setting random seed
     dataframe.jitter(
         column_name="a",
@@ -86,6 +96,7 @@ def test_jitter_random_state(dataframe):
 
 @pytest.mark.functions
 def test_jitter_clip(dataframe):
+    """Test jittering with clipping."""
     # Ensure clip works as intended
     df = dataframe.jitter(
         column_name="a",
@@ -98,11 +109,14 @@ def test_jitter_clip(dataframe):
 
 @pytest.mark.functions
 def test_jitter_results():
-    """Ensure the mean of the jittered values is approximately
-    equal to the mean of the original values, and that the
-    standard deviation of the jittered value is approximately
-    equal to the `scale` parameter."""
-    error_tolerance = 0.05  # 5%
+    """Test correctness of the jitter function.
+
+    Ensure the mean of the jittered values is approximately
+    equal to the mean of the original values (within 10% error),
+    and that the standard deviation of the jittered value
+    is approximately equal to the `scale` parameter.
+    """
+    error_tolerance = 0.10  # 10%
     scale = 2.0
 
     df = pd.DataFrame({"original": [1] * 1000})

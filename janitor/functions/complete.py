@@ -113,6 +113,7 @@ def complete(
         1      2        2         a     NaN       5
         2      1        2         b     3.0       6
         3      2        3         b     4.0       7
+
         >>> df.complete(
         ...     "group",
         ...     ("item_id", "item_name"),
@@ -148,12 +149,56 @@ def complete(
         6      2        2         b     0.0    99.0
         7      2        3         b     4.0     7.0
 
+        Expose missing rows per group, using a callable:
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "state": ["CA", "CA", "HI", "HI", "HI", "NY", "NY"],
+        ...         "year": [2010, 2013, 2010, 2012, 2016, 2009, 2013],
+        ...         "value": [1, 3, 1, 2, 3, 2, 5],
+        ...     }
+        ... )
+        >>> df
+          state  year  value
+        0    CA  2010      1
+        1    CA  2013      3
+        2    HI  2010      1
+        3    HI  2012      2
+        4    HI  2016      3
+        5    NY  2009      2
+        6    NY  2013      5
+
+        >>> def new_year_values(df):
+        ...     values = range(df.year.min(), df.year.max() + 1)
+        ...     values = pd.Series(values, name="year")
+        ...     return values
+
+        >>> df.complete(new_year_values, by='state',sort=True)
+            state  year  value
+        0     CA  2010    1.0
+        1     CA  2011    NaN
+        2     CA  2012    NaN
+        3     CA  2013    3.0
+        4     HI  2010    1.0
+        5     HI  2011    NaN
+        6     HI  2012    2.0
+        7     HI  2013    NaN
+        8     HI  2014    NaN
+        9     HI  2015    NaN
+        10    HI  2016    3.0
+        11    NY  2009    2.0
+        12    NY  2010    NaN
+        13    NY  2011    NaN
+        14    NY  2012    NaN
+        15    NY  2013    5.0
+
     Args:
         df: A pandas DataFrame.
         *columns: This refers to the columns to be completed.
             It could be column labels (string type),
             a list/tuple of column labels,
             or a pandas Index, Series, or DataFrame.
+            It can also be a callable that gets evaluated
+            to a padnas Index, Series, or DataFrame.
         sort: Sort DataFrame based on *columns.
         by: Label or list of labels to group by.
             The explicit missing rows are returned per group.
@@ -369,7 +414,8 @@ def _data_checks_complete(
             column_checker.extend(grouping)
         elif callable(grouping):
             grouping = apply_if_callable(
-                maybe_callable=grouping, obj=df.iloc[0]
+                maybe_callable=grouping,
+                obj=df.iloc[0],
             )
             _grouping, column_checker = _check_pandas_object(
                 grouping=grouping, column_checker=column_checker

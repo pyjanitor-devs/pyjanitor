@@ -10,7 +10,7 @@ import janitor.io
 
 
 @pytest.mark.parametrize("engine", ["pandas", "polars"])
-def test_read_commandline(dataframe, engine="pandas"):
+def test_read_commandline(dataframe, engine):
     """
     Test asserts that the dataframe made
         from the read_commandline function is

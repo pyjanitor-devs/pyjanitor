@@ -96,6 +96,23 @@ def test_empty_groups(fill_df):
         fill_df.complete("group", {})
 
 
+def test_empty_groups_list(fill_df):
+    """Raise ValueError if any of the groups is empty."""
+    with pytest.raises(
+        ValueError, match="entry in columns argument cannot be empty"
+    ):
+        fill_df.complete("group", [])
+
+
+def test_callable(fill_df):
+    """Raise ValueError if the callable does not evaluate to a pandas object."""
+    with pytest.raises(
+        TypeError,
+        match=r"The callable should evaluate to either a pandas.+",
+    ):
+        fill_df.complete("group", lambda f: 1)
+
+
 def test_dict_not_list_like(fill_df):
     """
     Raise ValueError if `*columns`
@@ -136,6 +153,34 @@ def test_by_not_found(fill_df):
     """Raise ValueError if `by` does not exist."""
     with pytest.raises(ValueError):
         fill_df.complete("group", "item_id", by="name")
+
+
+def test_mi_none(fill_df):
+    """
+    Raise if MultiIndex has None as one of its names
+    """
+    mi = fill_df.loc[:, ["item_id", "item_name"]].drop_duplicates()
+    mi = pd.MultiIndex.from_frame(mi, names=[None, "item_name"])
+    with pytest.raises(
+        ValueError, match="Ensure all labels in the MultiIndex.+"
+    ):
+        fill_df.complete("group", mi)
+
+
+def test_index_none(fill_df):
+    """
+    Raise if Index has None as its name
+    """
+    with pytest.raises(ValueError, match="Ensure the Index has a name."):
+        fill_df.complete("group", pd.Index([0, 1, 2]))
+
+
+def test_series_none(fill_df):
+    """
+    Raise if Series has None as its name
+    """
+    with pytest.raises(ValueError, match="Ensure the Series has a name."):
+        fill_df.complete("group", pd.Series([0, 1, 2]))
 
 
 def test_group_None(fill_df):
@@ -340,6 +385,90 @@ def test_dict_Index(df):
 
 @given(df=categoricaldf_strategy())
 @settings(deadline=None, max_examples=10)
+def test_complete_Index(df):
+    """
+    Test `complete` output when *columns
+    is an Index.
+    """
+    cols = ["names", "numbers"]
+    df = df.assign(names=[*ascii_lowercase[: len(df)]])
+    new_numbers = pd.RangeIndex(
+        start=df.numbers.min(), stop=df.numbers.max() + 1, name="numbers"
+    )
+    cols = ["numbers", "names"]
+    result = df.complete(new_numbers, "names", sort=True)
+    columns = df.columns
+    new_index = range(df.numbers.min(), df.numbers.max() + 1)
+    new_index = pd.MultiIndex.from_product([new_index, df.names], names=cols)
+    expected = (
+        df.set_index(cols)
+        .reindex(new_index)
+        .reset_index()
+        .reindex(columns=columns)
+    )
+
+    assert_frame_equal(result, expected)
+
+
+@given(df=categoricaldf_strategy())
+@settings(deadline=None, max_examples=10)
+def test_complete_Series(df):
+    """
+    Test `complete` output when *columns
+    is a Series.
+    """
+    cols = ["names", "numbers"]
+    df = df.assign(names=[*ascii_lowercase[: len(df)]])
+    new_numbers = range(df.numbers.min(), df.numbers.max() + 1)
+    new_numbers = pd.Series(new_numbers, name="numbers")
+    cols = ["numbers", "names"]
+    result = df.complete(new_numbers, "names", sort=True)
+    columns = df.columns
+    new_index = range(df.numbers.min(), df.numbers.max() + 1)
+    new_index = pd.MultiIndex.from_product([new_index, df.names], names=cols)
+    expected = (
+        df.set_index(cols)
+        .reindex(new_index)
+        .reset_index()
+        .reindex(columns=columns)
+    )
+
+    assert_frame_equal(result, expected)
+
+
+@given(df=categoricaldf_strategy())
+@settings(deadline=None, max_examples=10)
+def test_complete_callable(df):
+    """
+    Test `complete` output when *columns
+    is a callable.
+    """
+    cols = ["names", "numbers"]
+    df = df.assign(names=[*ascii_lowercase[: len(df)]])
+
+    def _index(df):
+        return pd.RangeIndex(
+            start=df.numbers.min(), stop=df.numbers.max() + 1, name="numbers"
+        )
+
+    new_numbers = _index(df=df)
+    cols = ["numbers", "names"]
+    result = df.complete(new_numbers, "names", sort=True)
+    columns = df.columns
+    new_index = range(df.numbers.min(), df.numbers.max() + 1)
+    new_index = pd.MultiIndex.from_product([new_index, df.names], names=cols)
+    expected = (
+        df.set_index(cols)
+        .reindex(new_index)
+        .reset_index()
+        .reindex(columns=columns)
+    )
+
+    assert_frame_equal(result, expected)
+
+
+@given(df=categoricaldf_strategy())
+@settings(deadline=None, max_examples=10)
 def test_dict_duplicated(df):
     """
     Test `complete` output when *columns
@@ -391,6 +520,67 @@ def test_tuple_column():
     )
 
     result = df.complete("group", ("item_id", "item_name"), sort=True)
+
+    columns = ["group", "item_id", "item_name"]
+    expected = (
+        df.set_index(columns)
+        .unstack("group")
+        .stack(future_stack=True)
+        .reset_index()
+        .reindex(columns=df.columns)
+        .sort_values(columns, ignore_index=True)
+    )
+    assert_frame_equal(result, expected)
+
+
+def test_pandas_dataframe():
+    """Test `complete` output if a DataFrame is provided."""
+    df = pd.DataFrame(
+        {
+            "group": [2, 1, 1],
+            "item_id": [2, 1, 2],
+            "item_name": ["b", "a", "b"],
+            "value1": [2, 1, 3],
+            "value2": [5, 4, 6],
+        }
+    )
+
+    result = df.complete(
+        "group",
+        df.loc[:, ["item_id", "item_name"]].drop_duplicates(),
+        sort=True,
+    )
+
+    columns = ["group", "item_id", "item_name"]
+    expected = (
+        df.set_index(columns)
+        .unstack("group")
+        .stack(future_stack=True)
+        .reset_index()
+        .reindex(columns=df.columns)
+        .sort_values(columns, ignore_index=True)
+    )
+    assert_frame_equal(result, expected)
+
+
+def test_pandas_multiindex():
+    """Test `complete` output if a MultiIndex is provided."""
+    df = pd.DataFrame(
+        {
+            "group": [2, 1, 1],
+            "item_id": [2, 1, 2],
+            "item_name": ["b", "a", "b"],
+            "value1": [2, 1, 3],
+            "value2": [5, 4, 6],
+        }
+    )
+    index = df.loc[:, ["item_id", "item_name"]].drop_duplicates()
+    index = pd.MultiIndex.from_frame(index)
+    result = df.complete(
+        "group",
+        index,
+        sort=True,
+    )
 
     columns = ["group", "item_id", "item_name"]
     expected = (

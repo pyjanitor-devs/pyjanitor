@@ -37,41 +37,30 @@ def _complete(
 
     check("sort", sort, [bool])
     check("explicit", explicit, [bool])
-    all_strings = (isinstance(column, str) for column in columns)
-    all_strings = all(all_strings)
-    if all_strings:
-        _columns = pl.col(columns)
-    else:
-        _columns = []
-        for column in columns:
-            if isinstance(column, str):
-                _columns.append(pl.col(column))
-            elif cs.is_selector(column):
-                _columns.append(column.as_expr())
-            elif isinstance(column, pl.Expr):
-                _columns.append(column)
-            else:
-                raise TypeError(
-                    f"The argument passed to the columns parameter "
-                    "should either be a string, a column selector, "
-                    "or a polars expression, instead got - "
-                    f"{type(column)}."
-                )
+    _columns = []
+    for column in columns:
+        if isinstance(column, str):
+            _columns.append((pl.col(column), "string"))
+        elif cs.is_selector(column):
+            _columns.append((column.as_expr(), "selector"))
+        elif isinstance(column, pl.Expr):
+            _columns.append((column, "expr"))
+        else:
+            raise TypeError(
+                f"The argument passed to the columns parameter "
+                "should either be a string, a column selector, "
+                "or a polars expression, instead got - "
+                f"{type(column)}."
+            )
     by_does_not_exist = by is None
-    if all_strings:
-        _columns = _columns.unique()
-        if sort:
-            _columns = _columns.sort()
-        if by_does_not_exist:
-            _columns = _columns.implode()
-    else:
-        _columns = [column.unique() for column in _columns]
-        if sort:
-            _columns = [column.sort() for column in _columns]
-        if by_does_not_exist:
-            _columns = [column.implode() for column in _columns]
-
+    _columns = [
+        column.unique() if column_type in {"string", "selector"} else column
+        for column, column_type in _columns
+    ]
+    if sort:
+        _columns = [column.sort() for column in _columns]
     if by_does_not_exist:
+        _columns = [column.implode() for column in _columns]
         uniques = df.select(_columns)
         _columns = uniques.columns
     else:

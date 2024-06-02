@@ -224,7 +224,7 @@ class PolarsFrame:
             │ 2004 ┆ Saccharina ┆ 2         │
             └──────┴────────────┴───────────┘
 
-            Expose missing rows per group, using a callable:
+            Expose missing rows per group:
             >>> df = pl.DataFrame(
             ...     {
             ...         "state": ["CA", "CA", "HI", "HI", "HI", "NY", "NY"],

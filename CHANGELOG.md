@@ -3,6 +3,9 @@
 ## [Unreleased]
 -  [ENH] `xlsx_table` function now supports polars - Issue #1352
 
+-  [ENH] Improved performance for non-equi joins when using numba - @samukweku PR #1341
+-  [ENH] Added a `clean_names` method for polars - it can be used to clean the column names, or clean column values . Issue #1343
+
 ## [v0.27.0] - 2024-03-21
 
 -   [BUG] Fix logic for groupby in complete. Index support deprecated. Fix deprecation warning for fillna in `complete` PR #1289 @samukweku

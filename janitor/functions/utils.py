@@ -5,6 +5,7 @@ from __future__ import annotations
 import fnmatch
 import inspect
 import re
+import unicodedata
 import warnings
 from collections.abc import Callable as dispatch_callable
 from dataclasses import dataclass
@@ -36,7 +37,13 @@ from pandas.api.types import (
 from pandas.core.common import is_bool_indexer
 from pandas.core.groupby.generic import DataFrameGroupBy, SeriesGroupBy
 
-from janitor.utils import _expand_grid, check, check_column, find_stack_level
+from janitor.errors import JanitorError
+from janitor.utils import (
+    _expand_grid,
+    check,
+    check_column,
+    find_stack_level,
+)
 
 warnings.simplefilter("always", DeprecationWarning)
 
@@ -767,9 +774,10 @@ def _less_than_indices(
     rows_equal = search_indices == len_right
 
     if rows_equal.any():
-        left = left[~rows_equal]
-        left_index = left_index[~rows_equal]
-        search_indices = search_indices[~rows_equal]
+        rows_equal = ~rows_equal
+        left = left[rows_equal]
+        left_index = left_index[rows_equal]
+        search_indices = search_indices[rows_equal]
 
     # the idea here is that if there are any equal values
     # shift to the right to the immediate next position
@@ -796,9 +804,10 @@ def _less_than_indices(
         rows_equal = search_indices == len_right
 
         if rows_equal.any():
-            left = left[~rows_equal]
-            left_index = left_index[~rows_equal]
-            search_indices = search_indices[~rows_equal]
+            rows_equal = ~rows_equal
+            left = left[rows_equal]
+            left_index = left_index[rows_equal]
+            search_indices = search_indices[rows_equal]
 
         if not search_indices.size:
             return None
@@ -858,9 +867,10 @@ def _greater_than_indices(
     # in right
     rows_equal = search_indices < 1
     if rows_equal.any():
-        left = left[~rows_equal]
-        left_index = left_index[~rows_equal]
-        search_indices = search_indices[~rows_equal]
+        rows_equal = ~rows_equal
+        left = left[rows_equal]
+        left_index = left_index[rows_equal]
+        search_indices = search_indices[rows_equal]
 
     # the idea here is that if there are any equal values
     # shift downwards to the immediate next position
@@ -883,9 +893,10 @@ def _greater_than_indices(
         # with side='right' should be 1
         rows_equal = search_indices < 1
         if rows_equal.any():
-            left = left[~rows_equal]
-            left_index = left_index[~rows_equal]
-            search_indices = search_indices[~rows_equal]
+            rows_equal = ~rows_equal
+            left = left[rows_equal]
+            left_index = left_index[rows_equal]
+            search_indices = search_indices[rows_equal]
 
         if not search_indices.size:
             return None
@@ -1133,3 +1144,81 @@ class col:
         """
         self.join_args = (self.cols, other.cols, "==")
         return self
+
+
+def _change_case(
+    obj: str,
+    case_type: str,
+) -> str:
+    """Change case of obj."""
+    case_types = {"preserve", "upper", "lower", "snake"}
+    case_type = case_type.lower()
+    if case_type not in case_types:
+        raise JanitorError(f"type must be one of: {case_types}")
+
+    if case_type == "preserve":
+        return obj
+    if case_type == "upper":
+        return obj.upper()
+    if case_type == "lower":
+        return obj.lower()
+    # Implementation adapted from: https://gist.github.com/jaytaylor/3660565
+    # by @jtaylor
+    obj = re.sub(pattern=r"(.)([A-Z][a-z]+)", repl=r"\1_\2", string=obj)
+    obj = re.sub(pattern=r"([a-z0-9])([A-Z])", repl=r"\1_\2", string=obj)
+    return obj.lower()
+
+
+def _normalize_1(obj: str) -> str:
+    """Perform normalization of obj."""
+    FIXES = [(r"[ /:,?()\.-]", "_"), (r"['’]", ""), (r"[\xa0]", "_")]
+    for search, replace in FIXES:
+        obj = re.sub(pattern=search, repl=replace, string=obj)
+
+    return obj
+
+
+def _remove_special(
+    obj: str,
+) -> str:
+    """Remove special characters from obj."""
+    obj = [item for item in obj if item.isalnum() or (item == "_")]
+    return "".join(obj)
+
+
+def _strip_accents(
+    obj: str,
+) -> str:
+    """Remove accents from obj.
+
+    Inspired from [StackOverflow][so].
+
+    [so]: https://stackoverflow.com/questions/517923/what-is-the-best-way-to-remove-accents-in-a-python-unicode-strin
+    """  # noqa: E501
+
+    obj = [
+        letter
+        for letter in unicodedata.normalize("NFD", obj)
+        if not unicodedata.combining(letter)
+    ]
+    return "".join(obj)
+
+
+def _strip_underscores_func(
+    obj: str,
+    strip_underscores: Union[str, bool] = None,
+) -> str:
+    """Strip underscores from obj."""
+    underscore_options = {None, "left", "right", "both", "l", "r", True}
+    if strip_underscores not in underscore_options:
+        raise JanitorError(
+            f"strip_underscores must be one of: {underscore_options}"
+        )
+
+    if strip_underscores in {"left", "l"}:
+        return obj.lstrip("_")
+    if strip_underscores in {"right", "r"}:
+        return obj.rstrip("_")
+    if strip_underscores in {True, "both"}:
+        return obj.strip("_")
+    return obj

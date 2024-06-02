@@ -71,7 +71,7 @@ def test_complete_1(fill_df):
     trimmed = fill_df.select(~cs.starts_with("value"))
     result = trimmed.janitor.complete(
         "group",
-        pl.struct("item_id", "item_name"),
+        pl.struct("item_id", "item_name").alias("rar"),
         fill_value=0,
         explicit=False,
         sort=True,
@@ -149,7 +149,7 @@ def test_complete_2(fill_df):
     """Test output for janitor.complete."""
     result = fill_df.janitor.complete(
         "group",
-        pl.struct("item_id", "item_name"),
+        pl.struct("item_id", "item_name").alias("rar"),
         fill_value={"value1": 0, "value2": 99},
         explicit=False,
         sort=True,
@@ -242,8 +242,8 @@ def test_complete_multiple_groupings():
     )
 
     result = df3.janitor.complete(
-        pl.struct("meta", "domain1"),
-        pl.struct("project_id", "question_count"),
+        pl.struct("meta", "domain1").alias("bar"),
+        pl.struct("project_id", "question_count").alias("foo"),
         fill_value={"tag_count": 0},
         sort=True,
     ).select("project_id", "meta", "domain1", "question_count", "tag_count")

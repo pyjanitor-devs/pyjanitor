@@ -84,7 +84,8 @@ def _complete(
     _columns = [
         column
         for column, dtype in zip(_columns, uniques.select(_columns).dtypes)
-        if dtype == pl.Struct
+        # this way we ensure there is no tampering with existing struct columns
+        if (dtype == pl.Struct) and (column not in df.columns)
     ]
 
     if _columns:

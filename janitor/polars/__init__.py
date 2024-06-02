@@ -39,10 +39,13 @@ class PolarsFrame:
         In a way, it is the inverse of `pl.drop_nulls`,
         as it exposes implicitly missing rows.
 
-        If the combination involves multiple columns, pass it as a struct.
+        If the combination involves multiple columns, pass it as a struct,
+        with an alias - the name of the struct should not exist in the DataFrame.
         If new values need to be introduced, a polars Expression
         with the new values can be passed, as long as the polars Expression
         has a name that already exists in the DataFrame.
+        Note that if the polars expression evaluates to a struct,
+        then the fields, not the name, should already exist in the DataFrame.
 
         Examples:
             >>> import polars as pl
@@ -99,7 +102,7 @@ class PolarsFrame:
             For such situations, where there is a group of columns,
             pass it in as a struct:
             >>> with pl.Config(tbl_rows=-1):
-            ...     df.janitor.complete("group", pl.struct("item_id", "item_name"), sort=True)
+            ...     df.janitor.complete("group", pl.struct("item_id", "item_name").alias('rar'), sort=True)
             shape: (8, 5)
             ┌───────┬─────────┬───────────┬────────┬────────┐
             │ group ┆ item_id ┆ item_name ┆ value1 ┆ value2 │
@@ -120,7 +123,7 @@ class PolarsFrame:
             >>> with pl.Config(tbl_rows=-1):
             ...     df.janitor.complete(
             ...         "group",
-            ...         pl.struct("item_id", "item_name"),
+            ...         pl.struct("item_id", "item_name").alias('rar'),
             ...         fill_value={"value1": 0, "value2": 99},
             ...         explicit=True,
             ...         sort=True,
@@ -146,7 +149,7 @@ class PolarsFrame:
             >>> with pl.Config(tbl_rows=-1):
             ...     df.janitor.complete(
             ...         "group",
-            ...         pl.struct("item_id", "item_name"),
+            ...         pl.struct("item_id", "item_name").alias('rar'),
             ...         fill_value={"value1": 0, "value2": 99},
             ...         explicit=False,
             ...         sort=True,
@@ -273,10 +276,13 @@ class PolarsLazyFrame:
         In a way, it is the inverse of `pl.drop_nulls`,
         as it exposes implicitly missing rows.
 
-        If the combination involves multiple columns, pass it as a struct.
+        If the combination involves multiple columns, pass it as a struct,
+        with an alias - the name of the struct should not exist in the LazyFrame.
         If new values need to be introduced, a polars Expression
         with the new values can be passed, as long as the polars Expression
         has a name that already exists in the LazyFrame.
+        Note that if the polars expression evaluates to a struct,
+        then the fields, not the name, should already exist in the LazyFrame.
 
         Examples:
             >>> import polars as pl
@@ -325,79 +331,6 @@ class PolarsLazyFrame:
             │ 2     ┆ 2       ┆ a         ┆ null   ┆ 5      │
             │ 2     ┆ 2       ┆ b         ┆ null   ┆ null   │
             │ 2     ┆ 3       ┆ a         ┆ null   ┆ null   │
-            │ 2     ┆ 3       ┆ b         ┆ 4      ┆ 7      │
-            └───────┴─────────┴───────────┴────────┴────────┘
-
-            Cross all possible `group` values with the unique pairs of
-            `(item_id, item_name)` that already exist in the data.
-            For such situations, where there is a group of columns,
-            pass it in as a struct:
-            >>> with pl.Config(tbl_rows=-1):
-            ...     df.janitor.complete("group", pl.struct("item_id", "item_name"), sort=True).collect()
-            shape: (8, 5)
-            ┌───────┬─────────┬───────────┬────────┬────────┐
-            │ group ┆ item_id ┆ item_name ┆ value1 ┆ value2 │
-            │ ---   ┆ ---     ┆ ---       ┆ ---    ┆ ---    │
-            │ i64   ┆ i64     ┆ str       ┆ i64    ┆ i64    │
-            ╞═══════╪═════════╪═══════════╪════════╪════════╡
-            │ 1     ┆ 1       ┆ a         ┆ 1      ┆ 4      │
-            │ 1     ┆ 2       ┆ a         ┆ null   ┆ null   │
-            │ 1     ┆ 2       ┆ b         ┆ 3      ┆ 6      │
-            │ 1     ┆ 3       ┆ b         ┆ null   ┆ null   │
-            │ 2     ┆ 1       ┆ a         ┆ null   ┆ null   │
-            │ 2     ┆ 2       ┆ a         ┆ null   ┆ 5      │
-            │ 2     ┆ 2       ┆ b         ┆ null   ┆ null   │
-            │ 2     ┆ 3       ┆ b         ┆ 4      ┆ 7      │
-            └───────┴─────────┴───────────┴────────┴────────┘
-
-            Fill in nulls:
-            >>> with pl.Config(tbl_rows=-1):
-            ...     df.janitor.complete(
-            ...         "group",
-            ...         pl.struct("item_id", "item_name"),
-            ...         fill_value={"value1": 0, "value2": 99},
-            ...         explicit=True,
-            ...         sort=True,
-            ...     ).collect()
-            shape: (8, 5)
-            ┌───────┬─────────┬───────────┬────────┬────────┐
-            │ group ┆ item_id ┆ item_name ┆ value1 ┆ value2 │
-            │ ---   ┆ ---     ┆ ---       ┆ ---    ┆ ---    │
-            │ i64   ┆ i64     ┆ str       ┆ i64    ┆ i64    │
-            ╞═══════╪═════════╪═══════════╪════════╪════════╡
-            │ 1     ┆ 1       ┆ a         ┆ 1      ┆ 4      │
-            │ 1     ┆ 2       ┆ a         ┆ 0      ┆ 99     │
-            │ 1     ┆ 2       ┆ b         ┆ 3      ┆ 6      │
-            │ 1     ┆ 3       ┆ b         ┆ 0      ┆ 99     │
-            │ 2     ┆ 1       ┆ a         ┆ 0      ┆ 99     │
-            │ 2     ┆ 2       ┆ a         ┆ 0      ┆ 5      │
-            │ 2     ┆ 2       ┆ b         ┆ 0      ┆ 99     │
-            │ 2     ┆ 3       ┆ b         ┆ 4      ┆ 7      │
-            └───────┴─────────┴───────────┴────────┴────────┘
-
-            Limit the fill to only the newly created
-            missing values with `explicit = FALSE`
-            >>> with pl.Config(tbl_rows=-1):
-            ...     df.janitor.complete(
-            ...         "group",
-            ...         pl.struct("item_id", "item_name"),
-            ...         fill_value={"value1": 0, "value2": 99},
-            ...         explicit=False,
-            ...         sort=True,
-            ...     ).collect()
-            shape: (8, 5)
-            ┌───────┬─────────┬───────────┬────────┬────────┐
-            │ group ┆ item_id ┆ item_name ┆ value1 ┆ value2 │
-            │ ---   ┆ ---     ┆ ---       ┆ ---    ┆ ---    │
-            │ i64   ┆ i64     ┆ str       ┆ i64    ┆ i64    │
-            ╞═══════╪═════════╪═══════════╪════════╪════════╡
-            │ 1     ┆ 1       ┆ a         ┆ 1      ┆ 4      │
-            │ 1     ┆ 2       ┆ a         ┆ 0      ┆ 99     │
-            │ 1     ┆ 2       ┆ b         ┆ 3      ┆ 6      │
-            │ 1     ┆ 3       ┆ b         ┆ 0      ┆ 99     │
-            │ 2     ┆ 1       ┆ a         ┆ 0      ┆ 99     │
-            │ 2     ┆ 2       ┆ a         ┆ null   ┆ 5      │
-            │ 2     ┆ 2       ┆ b         ┆ 0      ┆ 99     │
             │ 2     ┆ 3       ┆ b         ┆ 4      ┆ 7      │
             └───────┴─────────┴───────────┴────────┴────────┘
 

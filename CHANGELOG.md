@@ -1,7 +1,9 @@
 # Changelog
 
 ## [Unreleased]
-- [ENH] Improved performance for non-equi joins when using numba - @samukweku PR #1341
+
+-  [ENH] Improved performance for non-equi joins when using numba - @samukweku PR #1341
+-  [ENH] Added a `clean_names` method for polars - it can be used to clean the column names, or clean column values . Issue #1343
 
 ## [v0.27.0] - 2024-03-21
 

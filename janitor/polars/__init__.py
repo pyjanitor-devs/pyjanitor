@@ -224,6 +224,59 @@ class PolarsFrame:
             │ 2004 ┆ Saccharina ┆ 2         │
             └──────┴────────────┴───────────┘
 
+            Expose missing rows per group, using a callable:
+            >>> df = pl.DataFrame(
+            ...     {
+            ...         "state": ["CA", "CA", "HI", "HI", "HI", "NY", "NY"],
+            ...         "year": [2010, 2013, 2010, 2012, 2016, 2009, 2013],
+            ...         "value": [1, 3, 1, 2, 3, 2, 5],
+            ...     }
+            ... )
+            >>> df
+            shape: (7, 3)
+            ┌───────┬──────┬───────┐
+            │ state ┆ year ┆ value │
+            │ ---   ┆ ---  ┆ ---   │
+            │ str   ┆ i64  ┆ i64   │
+            ╞═══════╪══════╪═══════╡
+            │ CA    ┆ 2010 ┆ 1     │
+            │ CA    ┆ 2013 ┆ 3     │
+            │ HI    ┆ 2010 ┆ 1     │
+            │ HI    ┆ 2012 ┆ 2     │
+            │ HI    ┆ 2016 ┆ 3     │
+            │ NY    ┆ 2009 ┆ 2     │
+            │ NY    ┆ 2013 ┆ 5     │
+            └───────┴──────┴───────┘
+            >>> low = pl.col('year').min()
+            >>> high = pl.col('year').max().add(1)
+            >>> new_year_values=pl.int_range(low,high).alias('year')
+            >>> with pl.Config(tbl_rows=-1):
+            ...     df.janitor.complete(new_year_values,by='state',sort=True)
+            shape: (16, 3)
+            ┌───────┬──────┬───────┐
+            │ state ┆ year ┆ value │
+            │ ---   ┆ ---  ┆ ---   │
+            │ str   ┆ i64  ┆ i64   │
+            ╞═══════╪══════╪═══════╡
+            │ CA    ┆ 2010 ┆ 1     │
+            │ CA    ┆ 2011 ┆ null  │
+            │ CA    ┆ 2012 ┆ null  │
+            │ CA    ┆ 2013 ┆ 3     │
+            │ HI    ┆ 2010 ┆ 1     │
+            │ HI    ┆ 2011 ┆ null  │
+            │ HI    ┆ 2012 ┆ 2     │
+            │ HI    ┆ 2013 ┆ null  │
+            │ HI    ┆ 2014 ┆ null  │
+            │ HI    ┆ 2015 ┆ null  │
+            │ HI    ┆ 2016 ┆ 3     │
+            │ NY    ┆ 2009 ┆ 2     │
+            │ NY    ┆ 2010 ┆ null  │
+            │ NY    ┆ 2011 ┆ null  │
+            │ NY    ┆ 2012 ┆ null  │
+            │ NY    ┆ 2013 ┆ 5     │
+            └───────┴──────┴───────┘
+
+
         !!! info "New in version 0.28.0"
 
         Args:

@@ -1,7 +1,10 @@
 # Changelog
 
 ## [Unreleased]
--  [ENH] Added a `pivot_longer` method, and a `pivot_longer_spec` function for polars - Issue #1352
+
+- [ENH] Improved performance for non-equi joins when using numba - @samukweku PR #1341
+- [ENH] Added a `pivot_longer` method, and a `pivot_longer_spec` function for polars - Issue #1352 @samukweku
+
 
 ## [v0.27.0] - 2024-03-21
 

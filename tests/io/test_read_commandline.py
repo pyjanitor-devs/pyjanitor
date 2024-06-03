@@ -9,8 +9,7 @@ import pytest
 import janitor.io
 
 
-@pytest.mark.parametrize("engine", ["pandas", "polars"])
-def test_read_commandline(dataframe, engine):
+def test_read_commandline(dataframe):
     """
     Test asserts that the dataframe made
         from the read_commandline function is
@@ -29,13 +28,9 @@ def test_read_commandline(dataframe, engine):
     if sys.platform in ["win32"]:
         # cat is not an operable command for Windows command line
         # "type" is a similar call
-        df = janitor.io.read_commandline(
-            f"type {temp_dir}\\dataframe.csv", engine=engine
-        )
+        df = janitor.io.read_commandline(f"type {temp_dir}\\dataframe.csv")
     else:
-        df = janitor.io.read_commandline(
-            f"cat {temp_dir}/dataframe.csv", engine=engine
-        )
+        df = janitor.io.read_commandline(f"cat {temp_dir}/dataframe.csv")
 
     # Make assertion that new dataframe created with read_commandline
     #   is equal to the test dataframe

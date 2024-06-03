@@ -8,7 +8,7 @@ from collections import defaultdict
 from glob import glob
 from io import StringIO
 from itertools import chain
-from typing import IO, TYPE_CHECKING, Any, Iterable, Union
+from typing import IO, TYPE_CHECKING, Any, Iterable, Mapping, Union
 
 import pandas as pd
 
@@ -142,14 +142,15 @@ def xlsx_table(
     path: Union[str, IO, Workbook],
     sheetname: str = None,
     table: Union[str, list, tuple] = None,
-) -> Union[pd.DataFrame, dict]:
+    engine: str = "pandas",
+) -> Mapping:
     """Returns a DataFrame of values in a table in the Excel file.
 
     This applies to an Excel file, where the data range is explicitly
     specified as a Microsoft Excel table.
 
     If there is a single table in the sheet, or a string is provided
-    as an argument to the `table` parameter, a pandas DataFrame is returned;
+    as an argument to the `table` parameter, a DataFrame is returned;
     if there is more than one table in the sheet,
     and the `table` argument is `None`, or a list/tuple of names,
     a dictionary of DataFrames is returned, where the keys of the dictionary
@@ -157,6 +158,7 @@ def xlsx_table(
 
     Examples:
         >>> import pandas as pd
+        >>> import polars as pl
         >>> from janitor import xlsx_table
         >>> filename="../pyjanitor/tests/test_data/016-MSPTDA-Excel.xlsx"
 
@@ -169,6 +171,20 @@ def xlsx_table(
         2           3      Freestyle
         3           4    Competition
         4           5  Long Distance
+
+        >>> xlsx_table(filename, table='dCategory', engine='polars')
+        shape: (5, 2)
+        ┌────────────┬───────────────┐
+        │ CategoryID ┆ Category      │
+        │ ---        ┆ ---           │
+        │ i64        ┆ str           │
+        ╞════════════╪═══════════════╡
+        │ 1          ┆ Beginner      │
+        │ 2          ┆ Advanced      │
+        │ 3          ┆ Freestyle     │
+        │ 4          ┆ Competition   │
+        │ 5          ┆ Long Distance │
+        └────────────┴───────────────┘
 
         Multiple tables:
 
@@ -189,6 +205,8 @@ def xlsx_table(
     Args:
           path: Path to the Excel File. It can also be an openpyxl Workbook.
           table: Name of a table, or list of tables in the sheet.
+          engine: DataFrame engine. Should be either pandas or polars.
+            Defaults to pandas
 
     Raises:
         AttributeError: If a workbook is provided, and is a ReadOnlyWorksheet.
@@ -196,7 +214,7 @@ def xlsx_table(
         KeyError: If the provided table does not exist in the sheet.
 
     Returns:
-        A pandas DataFrame, or a dictionary of DataFrames,
+        A DataFrame, or a dictionary of DataFrames,
             if there are multiple arguments for the `table` parameter,
             or the argument to `table` is `None`.
     """  # noqa : E501
@@ -219,6 +237,22 @@ def xlsx_table(
             DeprecationWarning,
             stacklevel=find_stack_level(),
         )
+    if engine not in {"pandas", "polars"}:
+        raise ValueError("engine should be one of pandas or polars.")
+    base_engine = pd
+    if engine == "polars":
+        try:
+            import polars as pl
+
+            base_engine = pl
+        except ImportError:
+            import_message(
+                submodule="polars",
+                package="polars",
+                conda_channel="conda-forge",
+                pip_install=True,
+            )
+
     if table is not None:
         check("table", table, [str, list, tuple])
         if isinstance(table, (list, tuple)):
@@ -245,13 +279,15 @@ def xlsx_table(
             header_exist = contents.headerRowCount
             coordinates = contents.ref
             data = worksheet[coordinates]
-            data = [[entry.value for entry in cell] for cell in data]
             if header_exist:
                 header, *data = data
+                header = [cell.value for cell in header]
             else:
                 header = [f"C{num}" for num in range(len(data[0]))]
-            data = pd.DataFrame(data, columns=header)
-            dictionary[table_name] = data
+            data = zip(*data)
+            data = ([entry.value for entry in cell] for cell in data)
+            data = dict(zip(header, data))
+            dictionary[table_name] = base_engine.DataFrame(data)
         return dictionary
 
     worksheets = [worksheet for worksheet in ws if worksheet.tables.items()]

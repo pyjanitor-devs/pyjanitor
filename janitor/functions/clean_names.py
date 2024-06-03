@@ -204,6 +204,7 @@ def _change_case(
     obj: pd.Index | pd.Series,
     case_type: str,
 ) -> pd.Index | pd.Series:
+
     """Change case of labels in obj."""
     case_types = {"preserve", "upper", "lower", "snake"}
     case_type = case_type.lower()
@@ -226,6 +227,7 @@ def _change_case(
 
 
 def _normalize_1(obj: pd.Index | pd.Series) -> pd.Index | pd.Series:
+
     """Perform normalization of labels in obj."""
     FIXES = [(r"[ /:,?()\.-]", "_"), (r"['’]", ""), (r"[\xa0]", "_")]
     for search, replace in FIXES:
@@ -237,6 +239,7 @@ def _normalize_1(obj: pd.Index | pd.Series) -> pd.Index | pd.Series:
 def _strip_accents(
     obj: pd.Index | pd.Series,
 ) -> pd.Index | pd.Series:
+
     """Remove accents from a label.
 
     Inspired from [StackOverflow][so].
@@ -258,6 +261,7 @@ def _strip_underscores_func(
     obj: pd.Index | pd.Series,
     strip_underscores: str | bool = None,
 ) -> pd.Index | pd.Series:
+
     """Strip underscores."""
     underscore_options = {None, "left", "right", "both", "l", "r", True}
     if strip_underscores not in underscore_options:

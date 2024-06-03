@@ -39,6 +39,7 @@ markers = [
     "utils: utility tests",
     "engineering: tests for engineering",
     "ml: tests for machine learning",
+    "polars: tests for polars methods",
     "spark_functions: tests for pyspark functions",
     "xarray: tests for xarray functions",
     "timeseries: tests for timeseries",

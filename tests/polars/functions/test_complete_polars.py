@@ -68,9 +68,9 @@ def test_complete_1(fill_df):
     """
     Test output for janitor.complete.
     """
-    trimmed = fill_df.select(~cs.starts_with("value"))
+    trimmed = fill_df.lazy().select(~cs.starts_with("value"))
     result = trimmed.janitor.complete(
-        "group",
+        cs.by_name("group"),
         pl.struct("item_id", "item_name").alias("rar").unique(),
         fill_value=0,
         explicit=False,
@@ -88,7 +88,7 @@ def test_complete_1(fill_df):
             {"group": 2, "item_id": 3, "item_name": "b"},
         ]
     )
-    assert_frame_equal(result, expected)
+    assert_frame_equal(result.collect(), expected)
 
 
 def test_groupby_complete():

@@ -88,7 +88,7 @@ def _complete(
     if not explicit:
         idx = "".join(df.columns)
         df = df.with_row_index(name=idx)
-    df = uniques.join(df, on=uniques.columns, how="left")
+    df = uniques.join(df, on=uniques.columns, how="full", coalesce=True)
     # exclude columns that were not used
     # to generate the combinations
     exclude_columns = uniques.columns

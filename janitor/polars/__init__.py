@@ -330,7 +330,6 @@ class PolarsFrame:
             names_transform=names_transform,
         )
 
-
     def pivot_longer(
         self,
         index: ColumnNameOrSelector = None,
@@ -440,6 +439,8 @@ class PolarsFrame:
             values_to=values_to,
             names_transform=names_transform,
         )
+
+
 @pl.api.register_expr_namespace("janitor")
 class PolarsExpr:
     def __init__(self, expr: pl.Expr) -> pl.Expr:
@@ -516,6 +517,7 @@ class PolarsExpr:
             enforce_string=enforce_string,
             truncate_limit=truncate_limit,
         )
+
 
 def pivot_longer_spec(
     df: pl.DataFrame | pl.LazyFrame,
@@ -649,4 +651,3 @@ def pivot_longer_spec(
 
 
 __all__ = ["PolarsFrame", "PolarsLazyFrame", "pivot_longer_spec"]
-

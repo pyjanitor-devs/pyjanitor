@@ -337,21 +337,24 @@ def xlsx_cells(
     border: bool = False,
     protection: bool = False,
     comment: bool = False,
+    engine: str = "pandas",
     **kwargs: Any,
-) -> Union[dict, pd.DataFrame]:
+) -> Mapping:
     """Imports data from spreadsheet without coercing it into a rectangle.
 
     Each cell is represented by a row in a dataframe, and includes the
     cell's coordinates, the value, row and column position.
     The cell formatting (fill, font, border, etc) can also be accessed;
     usually this is returned as a dictionary in the cell, and the specific
-    cell format attribute can be accessed using `pd.Series.str.get`.
+    cell format attribute can be accessed using `pd.Series.str.get`
+    or `pl.struct.field` if it is a polars DataFrame.
 
     Inspiration for this comes from R's [tidyxl][link] package.
     [link]: https://nacnudus.github.io/tidyxl/reference/tidyxl.html
 
     Examples:
         >>> import pandas as pd
+        >>> import polars as pl
         >>> from janitor import xlsx_cells
         >>> pd.set_option("display.max_columns", None)
         >>> pd.set_option("display.expand_frame_repr", False)
@@ -398,6 +401,40 @@ def xlsx_cells(
         7    00000000
         Name: fill, dtype: object
 
+        Access cell formatting in a polars DataFrame:
+
+        >>> out = xlsx_cells(filename, sheetnames="highlights", engine='polars', fill=True).get_column('fill')
+        >>> out
+        shape: (8,)
+        Series: 'fill' [struct[3]]
+        [
+           {null,{"00000000","rgb",0.0},{"00000000","rgb",0.0}}
+           {null,{"00000000","rgb",0.0},{"00000000","rgb",0.0}}
+           {null,{"00000000","rgb",0.0},{"00000000","rgb",0.0}}
+           {null,{"00000000","rgb",0.0},{"00000000","rgb",0.0}}
+           {"solid",{"FFFFFF00","rgb",0.0},{"FFFFFF00","rgb",0.0}}
+           {"solid",{"FFFFFF00","rgb",0.0},{"FFFFFF00","rgb",0.0}}
+           {null,{"00000000","rgb",0.0},{"00000000","rgb",0.0}}
+           {null,{"00000000","rgb",0.0},{"00000000","rgb",0.0}}
+        ]
+
+        Specific cell attributes can be acessed via Polars' struct:
+
+        >>> out.struct.field('fgColor').struct.field('rgb')
+        shape: (8,)
+        Series: 'rgb' [str]
+        [
+           "00000000"
+           "00000000"
+           "00000000"
+           "00000000"
+           "FFFFFF00"
+           "FFFFFF00"
+           "00000000"
+           "00000000"
+        ]
+
+
     Args:
         path: Path to the Excel File. It can also be an openpyxl Workbook.
         sheetnames: Names of the sheets from which the cells are to be extracted.
@@ -426,6 +463,7 @@ def xlsx_cells(
             It is usually returned as a dictionary.
         comment: If `True`, return comment properties of the cell.
             It is usually returned as a dictionary.
+        engine: DataFrame engine. Should be either pandas or polars.
         **kwargs: Any other attributes of the cell, that can be accessed from openpyxl.
 
     Raises:
@@ -434,7 +472,7 @@ def xlsx_cells(
             is not a openpyxl cell attribute.
 
     Returns:
-        A pandas DataFrame, or a dictionary of DataFrames.
+        A DataFrame, or a dictionary of DataFrames.
     """  # noqa : E501
 
     try:
@@ -462,6 +500,21 @@ def xlsx_cells(
         path = load_workbook(
             filename=path, read_only=read_only, keep_links=False
         )
+    if engine not in {"pandas", "polars"}:
+        raise ValueError("engine should be one of pandas or polars.")
+    base_engine = pd
+    if engine == "polars":
+        try:
+            import polars as pl
+
+            base_engine = pl
+        except ImportError:
+            import_message(
+                submodule="polars",
+                package="polars",
+                conda_channel="conda-forge",
+                pip_install=True,
+            )
     # start_point and end_point applies if the user is interested in
     # only a subset of the Excel File and knows the coordinates
     if start_point or end_point:
@@ -533,6 +586,7 @@ def xlsx_cells(
             start_point,
             end_point,
             include_blank_cells,
+            base_engine=base_engine,
         )
         for sheetname in sheetnames
     }
@@ -552,6 +606,7 @@ def _xlsx_cells(
     start_point: Union[str, int],
     end_point: Union[str, int],
     include_blank_cells: bool,
+    base_engine,
 ):
     """
     Function to process a single sheet. Returns a DataFrame.
@@ -567,7 +622,7 @@ def _xlsx_cells(
         path_is_workbook: True/False.
 
     Returns:
-        A pandas DataFrame.
+        A DataFrame.
     """
 
     if start_point:
@@ -579,15 +634,23 @@ def _xlsx_cells(
         if (cell.value is None) and (not include_blank_cells):
             continue
         for value in defaults:
-            frame[value].append(getattr(cell, value, None))
+            outcome = getattr(cell, value, None)
+            if value.startswith("is_"):
+                pass
+            elif outcome is not None:
+                outcome = str(outcome)
+            frame[value].append(outcome)
         for parent, boolean_value in parameters.items():
             check(f"The value for {parent}", boolean_value, [bool])
             if not boolean_value:
                 continue
             boolean_value = _object_to_dict(getattr(cell, parent, None))
+            if isinstance(boolean_value, dict) or (boolean_value is None):
+                pass
+            else:
+                boolean_value = str(boolean_value)
             frame[parent].append(boolean_value)
-
-    return pd.DataFrame(frame, copy=False)
+    return base_engine.DataFrame(frame)
 
 
 def _object_to_dict(obj):

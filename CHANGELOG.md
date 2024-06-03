@@ -1,7 +1,6 @@
 # Changelog
 
 ## [Unreleased]
--  [ENH] `xlsx_table` function now supports polars - Issue #1352
 
 - [ENH] Added a `pivot_longer` method, and a `pivot_longer_spec` function for polars - Issue #1352
 

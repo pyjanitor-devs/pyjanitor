@@ -39,6 +39,7 @@ markers = [
     "utils: utility tests",
     "engineering: tests for engineering",
     "ml: tests for machine learning",
+    "polars: tests for polars methods",
     "spark_functions: tests for pyspark functions",
     "xarray: tests for xarray functions",
     "timeseries: tests for timeseries",
@@ -91,6 +92,6 @@ lint.dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 # Assume Python 3.10
 target-version = "py310"
 
-[tool.ruff.mccabe]
+[tool.ruff.lint.mccabe]
 # Unlike Flake8, default to a complexity level of 10.
 max-complexity = 10

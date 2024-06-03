@@ -37,13 +37,6 @@ from pandas.api.types import (
 from pandas.core.common import is_bool_indexer
 from pandas.core.groupby.generic import DataFrameGroupBy, SeriesGroupBy
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-from janitor.errors import JanitorError
-=======
->>>>>>> d852eee (keep changes related only to pivot_longer)
-from janitor.utils import _expand_grid, check, check_column, find_stack_level
-=======
 from janitor.errors import JanitorError
 from janitor.utils import (
     _expand_grid,
@@ -51,7 +44,6 @@ from janitor.utils import (
     check_column,
     find_stack_level,
 )
->>>>>>> fe180c6 (updates)
 
 warnings.simplefilter("always", DeprecationWarning)
 
@@ -1214,7 +1206,7 @@ def _strip_accents(
 
 def _strip_underscores_func(
     obj: str,
-    strip_underscores: str | bool = None,
+    strip_underscores: Union[str, bool] = None,
 ) -> str:
     """Strip underscores from obj."""
     underscore_options = {None, "left", "right", "both", "l", "r", True}

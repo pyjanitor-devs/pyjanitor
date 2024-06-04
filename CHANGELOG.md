@@ -1,7 +1,7 @@
 # Changelog
 
 ## [Unreleased]
--  [ENH] dictionary argument no longer supported in the `complete` method. User should instead provide a pandas object. - PR #1369 @samukweku
+-  [ENH] pandas Index,Series, DataFrame now supported in the `complete` method. - PR #1369 @samukweku
 -  [ENH] `xlsx_cells` function now supports polars - Issue #1352
 -  [ENH] `xlsx_table` function now supports polars - Issue #1352
 -  [ENH] Improved performance for non-equi joins when using numba - @samukweku PR #1341

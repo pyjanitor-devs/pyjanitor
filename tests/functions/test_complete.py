@@ -88,7 +88,7 @@ def test_column_None(fill_df):
     assert_frame_equal(fill_df.complete(), fill_df)
 
 
-def test_empty_groups(fill_df):
+def test_empty_groups_dict(fill_df):
     """Raise ValueError if any of the groups is empty."""
     with pytest.raises(
         ValueError, match="entry in columns argument cannot be empty"
@@ -113,16 +113,17 @@ def test_callable(fill_df):
         fill_df.complete("group", lambda f: 1)
 
 
-def test_dict_not_list_like(fill_df):
+def test_dict_not_pandas_object(fill_df):
     """
     Raise ValueError if `*columns`
     is a dictionary, and the value
-    is not list-like.
+    is not a pandas object.
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError, match="The value in the dictionary for.+"):
         fill_df.complete("group", {"item_id": "cities"})
 
 
+@pytest.mark.xfail(reason="dictionary now accepts a MultiIndex")
 def test_dict_not_1D(fill_df):
     """
     Raise ValueError if `*columns`
@@ -135,6 +136,7 @@ def test_dict_not_1D(fill_df):
         fill_df.complete("group", {"item_id": fill_df})
 
 
+@pytest.mark.xfail(reason="no checks on pandas object's contents")
 def test_dict_empty(fill_df):
     """
     Raise ValueError if `*columns`
@@ -283,7 +285,9 @@ def test_dict_callable(df):
     cols = ["names", "numbers"]
     df = df.assign(names=[*ascii_lowercase[: len(df)]])
     new_numbers = {
-        "numbers": lambda df: range(df.numbers.min(), df.numbers.max() + 1)
+        "numbers": lambda df: pd.RangeIndex(
+            df.numbers.min(), df.numbers.max() + 1
+        )
     }
     cols = ["numbers", "names"]
     result = df.complete(new_numbers, "names", sort=True)
@@ -329,33 +333,6 @@ def test_dict_extension_array(df):
 
 @given(df=categoricaldf_strategy())
 @settings(deadline=None, max_examples=10)
-def test_dict_numpy(df):
-    """
-    Test `complete` output when *columns
-    is a dictionary, and value is
-    a numpy array.
-    """
-    cols = ["names", "numbers"]
-    df = df.assign(names=[*ascii_lowercase[: len(df)]])
-    new_numbers = np.arange(df.numbers.min(), df.numbers.max() + 1)
-    new_numbers = {"numbers": new_numbers}
-    cols = ["numbers", "names"]
-    result = df.complete(new_numbers, "names", sort=True)
-    columns = df.columns
-    new_index = range(df.numbers.min(), df.numbers.max() + 1)
-    new_index = pd.MultiIndex.from_product([new_index, df.names], names=cols)
-    expected = (
-        df.set_index(cols)
-        .reindex(new_index)
-        .reset_index()
-        .reindex(columns=columns)
-    )
-
-    assert_frame_equal(result, expected)
-
-
-@given(df=categoricaldf_strategy())
-@settings(deadline=None, max_examples=10)
 def test_dict_Index(df):
     """
     Test `complete` output when *columns
@@ -365,7 +342,7 @@ def test_dict_Index(df):
     cols = ["names", "numbers"]
     df = df.assign(names=[*ascii_lowercase[: len(df)]])
     new_numbers = pd.RangeIndex(
-        start=df.numbers.min(), stop=df.numbers.max() + 1
+        start=df.numbers.min(), stop=df.numbers.max() + 1, name="numbers"
     )
     new_numbers = {"numbers": new_numbers}
     cols = ["numbers", "names"]
@@ -452,36 +429,6 @@ def test_complete_callable(df):
         )
 
     new_numbers = _index(df=df)
-    cols = ["numbers", "names"]
-    result = df.complete(new_numbers, "names", sort=True)
-    columns = df.columns
-    new_index = range(df.numbers.min(), df.numbers.max() + 1)
-    new_index = pd.MultiIndex.from_product([new_index, df.names], names=cols)
-    expected = (
-        df.set_index(cols)
-        .reindex(new_index)
-        .reset_index()
-        .reindex(columns=columns)
-    )
-
-    assert_frame_equal(result, expected)
-
-
-@given(df=categoricaldf_strategy())
-@settings(deadline=None, max_examples=10)
-def test_dict_duplicated(df):
-    """
-    Test `complete` output when *columns
-    is a dictionary, and value is
-    duplicated.
-    """
-    cols = ["names", "numbers"]
-    df = df.assign(names=[*ascii_lowercase[: len(df)]])
-    new_numbers = pd.RangeIndex(
-        start=df.numbers.min(), stop=df.numbers.max() + 1
-    )
-    new_numbers = new_numbers.append(new_numbers)
-    new_numbers = {"numbers": new_numbers}
     cols = ["numbers", "names"]
     result = df.complete(new_numbers, "names", sort=True)
     columns = df.columns
@@ -653,7 +600,7 @@ def test_dict_tuple_callable(taxonomy_df):
     """
 
     result = taxonomy_df.complete(
-        {"Year": lambda x: range(x.Year.min(), x.Year.max() + 1)},
+        {"Year": lambda x: pd.RangeIndex(x.Year.min(), x.Year.max() + 1)},
         ("Taxon", "Abundance"),
         sort=True,
     )
@@ -681,7 +628,7 @@ def test_dict_tuple(taxonomy_df):
     """
 
     result = taxonomy_df.complete(
-        {"Year": [2000, 1999, 2001, 2002, 2003, 2004]},
+        {"Year": pd.Series([2000, 1999, 2001, 2002, 2003, 2004])},
         ("Taxon", "Abundance"),
         sort=True,
     )
@@ -713,7 +660,7 @@ def test_complete_groupby():
     )
 
     result = df.complete(
-        {"year": lambda x: range(x.year.min(), x.year.max() + 1)},
+        {"year": lambda x: pd.Series(range(x.year.min(), x.year.max() + 1))},
         by="state",
         sort=True,
     )
@@ -970,5 +917,5 @@ def test_MI_1(MI):
         how="outer",
         sort=True,
     ).rename_axis(columns=[None, None])
-    actual = MI.iloc[:2].complete({("a", "bar"): range(1, 5)})
+    actual = MI.iloc[:2].complete({("a", "bar"): pd.Series(range(1, 5))})
     assert_frame_equal(actual, expected)

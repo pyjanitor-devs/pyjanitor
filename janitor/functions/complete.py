@@ -1,17 +1,14 @@
 from __future__ import annotations
 
-import warnings
 from typing import Any
 
 import pandas as pd
 import pandas_flavor as pf
-from pandas.api.types import is_list_like, is_scalar
+from pandas.api.types import is_scalar
 from pandas.core.common import apply_if_callable
 
 from janitor.functions.utils import _computations_expand_grid
-from janitor.utils import check, check_column, find_stack_level
-
-warnings.simplefilter("always", UserWarning)
+from janitor.utils import check, check_column
 
 
 @pf.register_dataframe_method
@@ -36,10 +33,23 @@ def complete(
     or a pandas Index, Series, or DataFrame.
     If a pandas Index, Series, or DataFrame is passed, it should
     have a name or names that exist in `df`.
+
     A callable can also be passed - the callable should evaluate
     to a pandas Index, Series, or DataFrame.
-    User should ensure that the pandas object is unique - no checks are done
-    to ensure uniqueness.
+
+    A dictionary can also be passed -
+    the values of the dictionary should be
+    either a pandas Index or Series
+    or a callable that evaluates to a
+    pandas Index or Series,
+    while the keys of the dictionary
+    should exist in `df`.
+
+    User should ensure that the pandas object is unique and/or sorted
+    - no checks are done to ensure uniqueness and/or sortedness.
+
+    If `by` is present, the DataFrame is *completed* per group.
+    `by` should be a column name, or a list of column names.
 
     Examples:
         >>> import pandas as pd
@@ -78,11 +88,7 @@ def complete(
 
         Expose missing years from 1999 to 2004:
         >>> index = pd.Index(range(1999,2005),name='Year')
-        >>> df.complete(
-        ...     index,
-        ...     "Taxon",
-        ...     sort=True
-        ... )
+        >>> df.complete(index, "Taxon", sort=True)
             Year       Taxon  Abundance
         0   1999      Agarum        1.0
         1   1999  Saccharina        4.0
@@ -168,10 +174,7 @@ def complete(
         6    NY  2013      5
 
         >>> def new_year_values(df):
-        ...     values = range(df.year.min(), df.year.max() + 1)
-        ...     values = pd.Series(values, name="year")
-        ...     return values
-
+        ...     return pd.RangeIndex(start=df.year.min(), stop=df.year.max() + 1, name='year')
         >>> df.complete(new_year_values, by='state',sort=True)
             state  year  value
         0     CA  2010    1.0
@@ -198,7 +201,11 @@ def complete(
             a list/tuple of column labels,
             or a pandas Index, Series, or DataFrame.
             It can also be a callable that gets evaluated
-            to a padnas Index, Series, or DataFrame.
+            to a pandas Index, Series, or DataFrame.
+            It can also be a dictionay, where the values
+            are a pandas Index or Series,
+            or a callable that evaluates to a
+            pandas Index or Series.
         sort: Sort DataFrame based on *columns.
         by: Label or list of labels to group by.
             The explicit missing rows are returned per group.
@@ -344,12 +351,21 @@ def _computations_complete(
 
 def _data_checks_complete(
     df: pd.DataFrame,
-    columns: list | tuple | dict | str,
+    columns: (
+        list
+        | tuple
+        | dict
+        | str
+        | callable
+        | pd.Index
+        | pd.Series
+        | pd.DataFrame
+    ),
     sort: bool,
     by: list | str,
     fill_value: dict | Any,
     explicit: bool,
-):
+) -> tuple:
     """
     Function to check parameters in the `complete` function.
     Checks the type of the `columns` parameter, as well as the
@@ -372,70 +388,39 @@ def _data_checks_complete(
         for grouping in columns
     ]
 
-    def _check_pandas_object(grouping, column_checker):
-        """
-        Check if object is a pandas object.
-        """
-        if isinstance(grouping, pd.DataFrame):
-            column_checker.extend(grouping.columns)
-        elif isinstance(grouping, pd.MultiIndex):
-            if None in grouping.names:
-                raise ValueError(
-                    "Ensure all labels in the MultiIndex are named."
-                )
-            column_checker.extend(grouping.names)
-        elif isinstance(grouping, (pd.Series, pd.Index)):
-            if not grouping.name:
-                name_of_type = type(grouping).__name__
-                raise ValueError(f"Ensure the {name_of_type} has a name.")
-            column_checker.append(grouping.name)
-        else:
-            grouping = None
-        return grouping, column_checker
-
     column_checker = []
     for grouping in columns:
         if is_scalar(grouping):
             column_checker.append(grouping)
-        elif isinstance(grouping, list):
-            if not grouping:
-                raise ValueError("entry in columns argument cannot be empty")
-            column_checker.extend(grouping)
-        elif isinstance(grouping, dict):
-            warnings.warn(
-                "A dictionary argument is no longer supported, "
-                "and will be deprecated in the next pyjanitor release. "
-                "Instead, pass a pandas Index, a Series or a DataFrame.",
-                DeprecationWarning,
-                stacklevel=find_stack_level(),
-            )
+        elif isinstance(grouping, (list, dict)):
             if not grouping:
                 raise ValueError("entry in columns argument cannot be empty")
             column_checker.extend(grouping)
         elif callable(grouping):
             grouping = apply_if_callable(
                 maybe_callable=grouping,
-                obj=df.iloc[:1],
+                obj=df.iloc[:10],
             )
-            _grouping, column_checker = _check_pandas_object(
-                grouping=grouping, column_checker=column_checker
-            )
-            if _grouping is None:
+            if not isinstance(grouping, (pd.Index, pd.Series, pd.DataFrame)):
                 raise TypeError(
                     "The callable should evaluate to either "
                     "a pandas DataFrame, Index, or Series; "
                     f"instead got {type(grouping)}."
                 )
+            column_checker = _check_pandas_object(
+                grouping=grouping, column_checker=column_checker
+            )
+
         elif isinstance(grouping, (pd.DataFrame, pd.Index, pd.Series)):
-            grouping, column_checker = _check_pandas_object(
+            column_checker = _check_pandas_object(
                 grouping=grouping, column_checker=column_checker
             )
         else:
             raise TypeError(
-                "The complete function expects a scalar, a list/tuple, "
-                "a pandas Index, Series, DataFrame, "
-                "or a callable that returns "
-                "a pandas Index, Series, or DataFrame"
+                "The argument to the variable columns parameter "
+                "in the complete function "
+                "should be a scalar, a list, dict, tuple, "
+                "pandas Index, Series, DataFrame, or callable; "
                 f"instead, got {type(grouping)}"
             )
 
@@ -477,43 +462,43 @@ def _data_checks_complete(
     return columns, column_checker, sort, by, fill_value, explicit
 
 
-def _create_pandas_objects_from_dict(df, column, sort):
+def _check_pandas_object(grouping: Any, column_checker: list):
+    """
+    Check if object is a pandas object.
+    """
+    if isinstance(grouping, pd.DataFrame):
+        column_checker.extend(grouping.columns)
+    elif isinstance(grouping, pd.MultiIndex):
+        if None in grouping.names:
+            raise ValueError("Ensure all labels in the MultiIndex are named.")
+        column_checker.extend(grouping.names)
+    elif isinstance(grouping, (pd.Series, pd.Index)):
+        if not grouping.name:
+            name_of_type = type(grouping).__name__
+            raise ValueError(f"Ensure the {name_of_type} has a name.")
+        column_checker.append(grouping.name)
+    return column_checker
+
+
+def _create_pandas_objects_from_dict(df, column):
     """
     Create pandas object if column is a dictionary
     """
     collection = []
     for key, value in column.items():
         arr = apply_if_callable(value, df)
-        if not is_list_like(arr):
-            raise ValueError(f"value for {key} should be a 1-D array.")
-        if not hasattr(arr, "shape"):
-            arr = pd.Series([*arr], name=key)
-
-        if not arr.size > 0:
-            raise ValueError(
-                f"Kindly ensure the provided array for {key} "
-                "has at least one value."
+        if not isinstance(arr, (pd.Index, pd.Series)):
+            raise TypeError(
+                f"The value in the dictionary for {key} "
+                "should evaluate to either "
+                "a pandas Index, or Series; "
+                f"instead got {type(arr)}."
             )
-
-        if isinstance(arr, pd.Index):
-            arr_ndim = arr.nlevels
-        else:
-            arr_ndim = arr.ndim
-
-        if arr_ndim != 1:
-            raise ValueError(f"Kindly provide a 1-D array for {key}.")
-
-        if sort:
-            _, arr = pd.factorize(arr, sort=sort)
-
-        if isinstance(key, tuple):  # handle a MultiIndex column
-            arr = pd.DataFrame(arr, columns=pd.MultiIndex.from_tuples([key]))
-
-        else:
-            arr = pd.Series(arr, name=key)
-
+        if is_scalar(key):
+            arr.name = key
+        else:  # pd.MultiIndex
+            arr.names = key
         collection.append(arr)
-
     return collection
 
 
@@ -534,9 +519,7 @@ def _create_pandas_object(df, columns, sort):
                 _object = _object.sort_values(column)
             objects.append(_object)
         elif isinstance(column, dict):
-            _object = _create_pandas_objects_from_dict(
-                df=df, column=column, sort=sort
-            )
+            _object = _create_pandas_objects_from_dict(df=df, column=column)
             objects.extend(_object)
         else:
             _object = apply_if_callable(maybe_callable=column, obj=df)

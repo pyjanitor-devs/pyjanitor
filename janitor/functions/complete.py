@@ -415,7 +415,7 @@ def _data_checks_complete(
         elif callable(grouping):
             grouping = apply_if_callable(
                 maybe_callable=grouping,
-                obj=df.iloc[0],
+                obj=df.iloc[:1],
             )
             _grouping, column_checker = _check_pandas_object(
                 grouping=grouping, column_checker=column_checker

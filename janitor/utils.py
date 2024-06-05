@@ -8,7 +8,7 @@ import socket
 import sys
 from functools import singledispatch, wraps
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, List, Union
+from typing import Any, Callable, Iterable, Union
 from warnings import warn
 
 import numpy as np
@@ -47,97 +47,140 @@ def check(varname: str, value, expected_types: list):
 
 
 @singledispatch
-def _expand_grid(value, grid_index, key):
+def _expand_grid(value, key, uniqs, grid_index, contents) -> tuple:
     """
     Base function for dispatch of `_expand_grid`.
+
+    Args:
+        value: list-like object.
+        key: label or tuple of labels.
+        uniqs: unique labels.
+            Ensures label in `key` does not already exists.
+        grid_index: numpy array used to reindex `value`.
+        contents: dictionary created after reindexing `value` with `grid_index`.
+
+    Raises:
+        ValueError: If `key` is duplicated.
+        TypeError: If ndim==2 and tuple is not provided.
+
+    Returns:
+        A dictionary
     """
-
-    raise TypeError(
-        f"{type(value).__name__} data type "
-        "is not supported in `expand_grid`."
-    )
-
-
-@_expand_grid.register(np.ndarray)
-def _sub_expand_grid(value, grid_index, key):  # noqa: F811
-    """
-    Expands the numpy array based on `grid_index`.
-    Returns a dictionary.
-    """
-
-    if value.ndim > 2:
-        raise ValueError(
-            "expand_grid works only on 1D and 2D arrays. "
-            f"The provided array for {key} however "
-            f"has a dimension of {value.ndim}."
-        )
-
-    value = value[grid_index]
-
     if value.ndim == 1:
-        return {(key, 0): value}
-
-    return {(key, num): value[:, num] for num in range(value.shape[-1])}
-
-
-@_expand_grid.register(pd.api.extensions.ExtensionArray)
-def _sub_expand_grid(value, grid_index, key):  # noqa: F811
-    """
-    Expands the pandas array based on `grid_index`.
-    Returns a dictionary.
-    """
-
-    return {(key, 0): value[grid_index]}
-
-
-@_expand_grid.register(pd.Index)
-@_expand_grid.register(pd.Series)
-def _sub_expand_grid(value, grid_index, key):  # noqa: F811
-    """
-    Expands the pd.Series/pd.Index based on `grid_index`.
-    Returns a dictionary.
-    """
-
-    name = value.name or 0
-
-    return {(key, name): value._values[grid_index]}
+        if key in uniqs:
+            raise ValueError(
+                f"{key} is duplicated. Ensure the labels in the dictionary are unique."
+            )
+        uniqs.add(key)
+        new_values = value[grid_index]
+        contents[key] = new_values
+        return contents, uniqs
+    if not isinstance(key, tuple):
+        raise TypeError(
+            f"Expected a tuple of labels as key; instead got {type(key).__name__}"
+        )
+    if len(key) != value.shape[-1]:
+        raise ValueError(
+            f"The number of labels in {key} -> {len(key)} "
+            f"is not equal to the number of columns -> {value.shape[-1]} "
+            "in the array."
+        )
+    for label in key:
+        if label in uniqs:
+            raise ValueError(
+                f"{label} in {key} is duplicated. "
+                "Ensure the labels in the dictionary are unique."
+            )
+        uniqs.add(label)
+    new_values = value[grid_index]
+    new_values = {label: new_values[:, num] for num, label in enumerate(key)}
+    contents.update(new_values)
+    return contents, uniqs
 
 
 @_expand_grid.register(pd.DataFrame)
-def _sub_expand_grid(value, grid_index, key):  # noqa: F811
+def _sub_expand_grid(
+    value, key, uniqs, grid_index, contents
+) -> tuple:  # noqa: F811
     """
     Expands the DataFrame based on `grid_index`.
-    Returns a dictionary.
     """
-    if isinstance(value.columns, pd.MultiIndex):
-        return {
-            (key, *name): val._values[grid_index]
-            for name, val in value.items()
-        }
-
-    return {
-        (key, name): val._values[grid_index] for name, val in value.items()
+    if not isinstance(key, tuple):
+        raise TypeError(
+            f"Expected a tuple of labels as key; instead got {type(key).__name__}"
+        )
+    if len(key) != value.columns.size:
+        raise ValueError(
+            f"The number of labels in {key} - {len(key)} "
+            f"is not equal to the number of columns - {value.columns.size} "
+            "in the DataFrame."
+        )
+    for label in key:
+        if label in uniqs:
+            raise ValueError(
+                f"{label} in {key} is duplicated. "
+                "Ensure the labels in the dictionary are unique."
+            )
+        uniqs.add(label)
+    new_values = [arr._values for _, arr in value.items()]
+    new_values = {
+        label: new_values[num][grid_index] for num, label in enumerate(key)
     }
+    contents.update(new_values)
+    return contents, uniqs
 
 
 @_expand_grid.register(pd.MultiIndex)
-def _sub_expand_grid(value, grid_index, key):  # noqa: F811
+def _sub_expand_grid(
+    value, key, uniqs, grid_index, contents
+) -> tuple:  # noqa: F811
     """
     Expands the MultiIndex based on `grid_index`.
-    Returns a dictionary.
     """
 
-    contents = {}
-    num = 0
-    for n in range(value.nlevels):
-        arr = value.get_level_values(n)
-        name = arr.name
-        arr = arr._values[grid_index]
-        if not name:
-            name = num
-            num += 1
-        contents[(key, name)] = arr
-    return contents
+    if not isinstance(key, tuple):
+        raise TypeError(
+            f"Expected a tuple of labels as key; instead got {type(key).__name__}"
+        )
+    if len(key) != value.nlevels:
+        raise ValueError(
+            f"The number of labels in {key} - {len(key)} "
+            f"is not equal to the number of levels -{value.nlevels} "
+            "in the MultiIndex."
+        )
+    for label in key:
+        if label in uniqs:
+            raise ValueError(
+                f"{label} in {key} is duplicated. "
+                "Ensure the labels are unique."
+            )
+        uniqs.add(label)
+    new_values = [
+        value.get_level_values(num)._values for num in range(value.nlevels)
+    ]
+    new_values = {
+        label: new_values[num][grid_index] for num, label in enumerate(key)
+    }
+    contents.update(new_values)
+    return contents, uniqs
+
+
+@_expand_grid.register(pd.Series)
+@_expand_grid.register(pd.Index)
+def _sub_expand_grid(
+    value, key, uniqs, grid_index, contents
+) -> tuple:  # noqa: F811
+    """
+    Expands the Index/Series based on `grid_index`.
+    """
+    if key in uniqs:
+        raise ValueError(
+            f"{key} is duplicated. Ensure the labels in the dictionary are unique."
+        )
+    uniqs.add(key)
+    new_values = value._values[grid_index]
+    contents[key] = new_values
+    return contents, uniqs
 
 
 def import_message(
@@ -212,7 +255,7 @@ def idempotent(func: Callable, df: pd.DataFrame, *args: Any, **kwargs: Any):
 
 
 def deprecated_kwargs(
-    *arguments: List[str],
+    *arguments: tuple[str],
     message: str = (
         "The keyword argument '{argument}' of '{func_name}' is deprecated."
     ),
@@ -339,7 +382,7 @@ def refactored_function(message: str, category=FutureWarning) -> Callable:
     return decorator
 
 
-def rename_kwargs(func_name: str, kwargs: Dict, aliases: Dict):
+def rename_kwargs(func_name: str, kwargs: dict, aliases: dict):
     """Used to update deprecated argument names with new names.
 
     Throws a

@@ -178,8 +178,6 @@ def patterns(regex_pattern: Union[str, Pattern]) -> Pattern:
 def _computations_expand_grid(others: dict) -> dict:
     """
     Creates a cartesian product of all the inputs in `others`.
-    Uses numpy's `mgrid` to generate indices, which is used to
-    `explode` all the inputs in `others`.
 
     There is a performance penalty for small entries
     in using this method, instead of `itertools.product`;
@@ -193,50 +191,57 @@ def _computations_expand_grid(others: dict) -> dict:
 
     A dictionary of all possible combinations is returned.
     """
-
-    for key in others:
-        check("key", key, [Hashable])
-
     grid = {}
 
     for key, value in others.items():
-        if is_scalar(value):
-            value = np.asarray([value])
-        elif is_list_like(value) and (not hasattr(value, "shape")):
-            value = np.asarray([*value])
+        if not is_list_like(value):
+            raise TypeError(
+                f"Expected a list-like object for {key}; instead got {type(value)}"
+            )
+        if not hasattr(value, "shape"):
+            value = np.asanyarray(value)
         if not value.size:
             raise ValueError(f"Kindly provide a non-empty array for {key}.")
-
+        if value.ndim > 2:
+            raise ValueError(
+                "expand_grid works only on 1D and 2D arrays. "
+                f"The provided array for {key} however "
+                f"has a dimension of {value.ndim}."
+            )
         grid[key] = value
-
     others = None
-
-    # slice obtained here is used in `np.mgrid`
-    # to generate cartesian indices
-    # which is then paired with grid.items()
-    # to blow up each individual value
-    # before creating the final DataFrame.
-    grid = grid.items()
-    grid_index = [slice(len(value)) for _, value in grid]
-    grid_index = map(np.ravel, np.mgrid[grid_index])
-    grid = zip(grid, grid_index)
-    grid = ((*left, right) for left, right in grid)
+    grid_index = map(len, grid.values())
+    # https://stackoverflow.com/a/76525858/7175713
+    # faster than previous implementation which uses np.mgrid
+    grid_index = np.indices(grid_index).reshape((len(grid), -1))
     contents = {}
-    for key, value, grid_index in grid:
-        contents.update(_expand_grid(value, grid_index, key))
-    # check length of keys and pad if necessary
-    lengths = set(map(len, contents))
-    if len(lengths) > 1:
-        lengths = max(lengths)
-        others = {}
-        for key, value in contents.items():
-            len_key = len(key)
-            if len_key < lengths:
-                padding = [""] * (lengths - len_key)
-                key = (*key, *padding)
+    uniqs = set()
+    for num, (key, value) in enumerate(grid.items()):
+        contents, uniqs = _expand_grid(
+            value,
+            key=key,
+            uniqs=uniqs,
+            grid_index=grid_index[num],
+            contents=contents,
+        )
+
+    if all(map(is_scalar, contents)):
+        return contents
+    lengths = (len(key) for key in contents if isinstance(key, tuple))
+    lengths = max(lengths)
+    others = {}
+    # manage differing tuple lengths
+    # or a mix of tuples and scalars
+    for key, value in contents.items():
+        if is_scalar(key):
+            key = (key, *([""] * (lengths - 1)))
             others[key] = value
-        return others
-    return contents
+        elif len(key) == lengths:
+            others[key] = value
+        else:
+            key = (*key, *([""] * (lengths - len(key))))
+            others[key] = value
+    return others
 
 
 @dispatch(pd.DataFrame, (list, tuple), str)

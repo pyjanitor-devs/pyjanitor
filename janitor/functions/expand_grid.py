@@ -1,44 +1,42 @@
 """Implementation source for `expand_grid`."""
 
-from typing import Dict, Optional, Union
+from __future__ import annotations
+
+from typing import Dict, Optional
 
 import pandas as pd
 import pandas_flavor as pf
 
 from janitor.functions.utils import _computations_expand_grid
-from janitor.utils import check
+from janitor.utils import check, deprecated_kwargs
+
+msg = "df_key is deprecated. The column names "
+msg += "of the DataFrame will be used instead."
 
 
 @pf.register_dataframe_method
+@deprecated_kwargs(
+    "df_key",
+    message=msg,
+)
 def expand_grid(
     df: Optional[pd.DataFrame] = None,
     df_key: Optional[str] = None,
     *,
-    others: Optional[Dict] = None,
-) -> Union[pd.DataFrame, None]:
+    others: Optional[Dict],
+) -> pd.DataFrame:
     """Creates a DataFrame from a cartesian combination of all inputs.
 
     It is not restricted to DataFrame;
     it can work with any list-like structure
     that is 1 or 2 dimensional.
 
-    If method-chaining to a DataFrame, a string argument
-    to `df_key` parameter must be provided.
-
     Data types are preserved in this function,
     including pandas' extension array dtypes.
-
-    The output will always be a DataFrame, usually with a MultiIndex column,
-    with the keys of the `others` dictionary serving as the top level columns.
 
     If a pandas Series/DataFrame is passed, and has a labeled index, or
     a MultiIndex index, the index is discarded; the final DataFrame
     will have a RangeIndex.
-
-    The MultiIndexed DataFrame can be flattened using pyjanitor's
-    [`collapse_levels`][janitor.functions.collapse_levels.collapse_levels]
-    method; the user can also decide to drop any of the levels, via pandas'
-    `droplevel` method.
 
     Examples:
 
@@ -46,9 +44,8 @@ def expand_grid(
         >>> from janitor.functions.expand_grid import expand_grid
         >>> df = pd.DataFrame({"x": [1, 2], "y": [2, 1]})
         >>> data = {"z": [1, 2, 3]}
-        >>> df.expand_grid(df_key="df", others=data)
-          df     z
-           x  y  0
+        >>> df.expand_grid(others=data)
+           x  y  z
         0  1  2  1
         1  1  2  2
         2  1  2  3
@@ -61,7 +58,6 @@ def expand_grid(
         >>> data = {"x": [1, 2, 3], "y": [1, 2]}
         >>> expand_grid(others=data)
            x  y
-           0  0
         0  1  1
         1  1  2
         2  2  1
@@ -78,40 +74,14 @@ def expand_grid(
             If no dataframe exists, all inputs
             in `others` will be combined to create a DataFrame.
 
-    Raises:
-        KeyError: If there is a DataFrame and `df_key` is not provided.
-
     Returns:
-        A pandas DataFrame of the cartesian product.
-        If `df` is not provided, and `others` is not provided,
-        None is returned.
+        A pandas DataFrame.
     """
-
-    if df is not None:
-        check("df", df, [pd.DataFrame])
-        if not df_key:
-            raise KeyError(
-                "Using `expand_grid` as part of a "
-                "DataFrame method chain requires that "
-                "a string argument be provided for "
-                "the `df_key` parameter. "
-            )
-
-        check("df_key", df_key, [str])
-
-    if not others and (df is not None):
-        return df
-
-    if not others:
-        return None
-
     check("others", others, [dict])
 
-    for key in others:
-        check("key", key, [str])
-
     if df is not None:
-        others = {**{df_key: df}, **others}
-
+        key = tuple(df.columns)
+        df = {key: df}
+        others = {**df, **others}
     others = _computations_expand_grid(others)
     return pd.DataFrame(others, copy=False)

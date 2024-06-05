@@ -1,5 +1,3 @@
-from functools import reduce
-
 import numpy as np
 import pandas as pd
 import pytest
@@ -14,334 +12,304 @@ from janitor.testing_utils.strategies import (
 )
 
 
-@given(df=df_strategy())
-@settings(deadline=None, max_examples=10)
+@pytest.fixture
+def df():
+    """fixture dataframe"""
+    return pd.DataFrame(
+        {
+            "famid": [1, 1, 1, 2, 2, 2, 3, 3, 3],
+            "birth": [1, 2, 3, 1, 2, 3, 1, 2, 3],
+            "ht1": [2.8, 2.9, 2.2, 2, 1.8, 1.9, 2.2, 2.3, 2.1],
+            "ht2": [3.4, 3.8, 2.9, 3.2, 2.8, 2.4, 3.3, 3.4, 2.9],
+        }
+    )
+
+
 def test_others_not_dict(df):
     """Raise Error if `others` is not a dictionary."""
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeError, match="others should be one of.+"):
         df.expand_grid("frame", others=[2, 3])
 
 
-@given(df=df_strategy())
-@settings(deadline=None, max_examples=10)
+@pytest.mark.xfail(reason="others should be supplied.")
 def test_others_none(df):
     """Return DataFrame if no `others`, and df exists."""
-    assert_frame_equal(df.expand_grid("df"), df)
+    assert_frame_equal(df.expand_grid("df", others={}), df)
 
 
+@pytest.mark.xfail(reason="others should not be an empty dict.")
 def test_others_empty():
-    """Return None if no `others`."""
-    assert (expand_grid(), None)  # noqa : F631
+    """Return empty dict if no `others`."""
+    assert (expand_grid(others={}), {})  # noqa : F631
 
 
-@given(df=df_strategy())
-@settings(deadline=None, max_examples=10)
+@pytest.mark.xfail(reason="df_key is deprecated.")
 def test_df_key(df):
     """Raise error if df exists and df_key is not supplied."""
     with pytest.raises(KeyError):
         expand_grid(df, others={"y": [5, 4, 3, 2, 1]})
 
 
-@given(df=df_strategy())
-@settings(deadline=None, max_examples=10)
+@pytest.mark.xfail(reason="df_key is deprecated.")
 def test_df_key_hashable(df):
     """Raise error if df exists and df_key is not Hashable."""
     with pytest.raises(TypeError):
         expand_grid(df, df_key=["a"], others={"y": [5, 4, 3, 2, 1]})
 
 
+def test_scalar():
+    """Raise TypeError if scalar value is provided."""
+    with pytest.raises(TypeError, match="Expected a list-like object.+"):
+        expand_grid(others={"x": 1})
+
+
 def test_numpy_zero_d():
     """Raise ValueError if numpy array dimension is zero."""
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Kindly provide a non-empty array.+"):
         expand_grid(others={"x": np.array([], dtype=int)})
 
 
 def test_numpy_gt_2d():
     """Raise ValueError if numpy array dimension is greater than 2."""
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="expand_grid works only on 1D.+"):
         expand_grid(others={"x": np.array([[[2, 3]]])})
 
 
 def test_series_empty():
     """Raise ValueError if Series is empty."""
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Kindly provide a non-empty array.+"):
         expand_grid(others={"x": pd.Series([], dtype=int)})
 
 
 def test_dataframe_empty():
     """Raise ValueError if DataFrame is empty."""
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Kindly provide a non-empty array.+"):
         expand_grid(others={"x": pd.DataFrame([])})
 
 
 def test_index_empty():
     """Raise ValueError if Index is empty."""
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Kindly provide a non-empty array.+"):
         expand_grid(others={"x": pd.Index([], dtype=int)})
 
 
+def test_dup_series(df):
+    """
+    Raise If key is duplicated.
+    """
+    others = {
+        ("A", "B"): df.iloc[:, :2],
+        "A": df["famid"],
+    }
+    with pytest.raises(ValueError, match="A is duplicated.+"):
+        expand_grid(others=others)
+
+
+def test_dup_array(df):
+    """
+    Raise If key is duplicated.
+    """
+    others = {
+        ("A", "B"): df.iloc[:, :2],
+        "A": df["famid"].to_numpy(),
+    }
+    with pytest.raises(ValueError, match="A is duplicated.+"):
+        expand_grid(others=others)
+
+
+def test_dup_MultiIndex(df):
+    """
+    Raise If key is duplicated.
+    """
+    others = {
+        "A": df["famid"],
+        ("A", "B"): pd.MultiIndex.from_frame(df.iloc[:, :2]),
+    }
+    with pytest.raises(ValueError, match=r"A in \('A', 'B'\) is duplicated.+"):
+        expand_grid(others=others)
+
+
+def test_wrong_type_MultiIndex(df):
+    """
+    Raise If key is wrong tyupe.
+    """
+    others = {
+        "A": df["famid"],
+        "B": pd.MultiIndex.from_frame(df.iloc[:, :2]),
+    }
+    with pytest.raises(
+        TypeError, match=r"Expected a tuple of labels as key.+"
+    ):
+        expand_grid(others=others)
+
+
+def test_wrong_length_keys_MultiIndex(df):
+    """
+    Raise If key length does not match the number of levels.
+    """
+    others = {
+        "A": df["famid"],
+        ("A",): pd.MultiIndex.from_frame(df.iloc[:, :2]),
+    }
+    with pytest.raises(
+        ValueError, match=r"The number of labels in \('A',\).+"
+    ):
+        expand_grid(others=others)
+
+
+def test_dup_DataFrame(df):
+    """
+    Raise If key is duplicated.
+    """
+    others = {
+        "A": df["famid"],
+        ("A", "B"): df.iloc[:, :2],
+    }
+    with pytest.raises(ValueError, match=r"A in \('A', 'B'\) is duplicated.+"):
+        expand_grid(others=others)
+
+
+def test_wrong_length_keys_DataFrame(df):
+    """
+    Raise If key length does not match the number of columns.
+    """
+    others = {
+        "A": df["famid"],
+        ("A",): df.iloc[:, :2],
+    }
+    with pytest.raises(
+        ValueError, match=r"The number of labels in \('A',\).+"
+    ):
+        expand_grid(others=others)
+
+
+def test_wrong_type_DataFrame(df):
+    """
+    Raise If key is wrong tyupe.
+    """
+    others = {
+        "A": df["famid"],
+        "B": df.iloc[:, :2],
+    }
+    with pytest.raises(
+        TypeError, match=r"Expected a tuple of labels as key.+"
+    ):
+        expand_grid(others=others)
+
+
+def test_dup_2d_array(df):
+    """
+    Raise If key is duplicated.
+    """
+    others = {
+        "A": df["famid"],
+        ("A", "B"): df.iloc[:, :2].to_numpy(),
+    }
+    with pytest.raises(ValueError, match=r"A in \('A', 'B'\) is duplicated.+"):
+        expand_grid(others=others)
+
+
+def test_wrong_length_keys_2d_array(df):
+    """
+    Raise If key length does not match the number of columns.
+    """
+    others = {
+        "A": df["famid"],
+        ("A",): df.iloc[:, :2].to_numpy(),
+    }
+    with pytest.raises(
+        ValueError, match=r"The number of labels in \('A',\).+"
+    ):
+        expand_grid(others=others)
+
+
+def test_wrong_type_2d_array(df):
+    """
+    Raise If key is wrong tyupe.
+    """
+    others = {
+        "A": df["famid"],
+        "B": df.iloc[:, :2].to_numpy(),
+    }
+    with pytest.raises(
+        TypeError, match=r"Expected a tuple of labels as key.+"
+    ):
+        expand_grid(others=others)
+
+
 @settings(deadline=None, max_examples=10)
 @given(df=df_strategy())
-def test_series(df):
-    """Test expand_grid output for Series input."""
+def test_various(df):
+    """Test expand_grid output for various inputs."""
     A = df["a"]
     B = df["cities"]
-    others = {"A": A, "B": B}
+    frame = df.loc[:, ["decorated-elephant", "animals@#$%^"]]
+    MI = pd.MultiIndex.from_frame(frame)
+
+    others = {
+        "a": pd.Index(A),
+        "cities": B,
+        ("decorated-elephant", "animals@#$%^"): frame,
+        ("1", "2"): MI,
+        "1D": A.to_numpy(),
+    }
     result = expand_grid(others=others)
-    A = df.loc[:, ["a"]]
-    B = df.loc[:, ["cities"]]
-    expected = A.assign(key=1).merge(B.assign(key=1), on="key")
-    expected = expected.drop(columns="key")
-    expected.columns = pd.MultiIndex.from_arrays(
-        [["A", "B"], expected.columns]
+    expected = (
+        pd.merge(A, B, how="cross")
+        .merge(frame, how="cross")
+        .merge(frame.set_axis(["1", "2"], axis="columns"), how="cross")
+        .merge(A.rename("1D"), how="cross")
     )
     assert_frame_equal(result, expected)
 
 
 @settings(deadline=None, max_examples=10)
 @given(df=df_strategy())
-def test_series_dataframe(df):
-    """Test expand_grid output for Series and DataFrame inputs."""
-    A = df["a"]
-    B = df.iloc[:, [1, 2]]
-    others = {"A": A, "B": B}
-    result = expand_grid(others=others)
-    A = df.loc[:, ["a"]]
-    expected = A.assign(key=1).merge(B.assign(key=1), on="key")
-    expected = expected.drop(columns="key")
-    expected.columns = pd.MultiIndex.from_arrays(
-        [["A", "B", "B"], expected.columns]
+def test_variouss(df):
+    """Test expand_grid output for various inputs."""
+    A = df["animals@#$%^"].astype("category")
+    B = df["cities"]
+    frame = df.loc[:, ["cities", "animals@#$%^"]].set_axis(
+        ["1D", "2D"], axis=1
     )
+
+    others = {
+        "animals@#$%^": A.array,
+        "cities": B,
+        ("1D", "2D"): frame.to_numpy(),
+    }
+    result = expand_grid(others=others)
+    expected = pd.merge(A, B, how="cross").merge(frame, how="cross")
     assert_frame_equal(result, expected)
 
 
 @settings(deadline=None, max_examples=10)
-@given(df=df_strategy())
-def test_series_multiindex_dataframe(df):
-    """
-    Test expand_grid output
-    if the DataFrame's columns is a MultiIndex.
-    """
-    A = df["a"]
-    B = df.iloc[:, [1, 2]]
-    B.columns = pd.MultiIndex.from_arrays([["C", "D"], B.columns])
-    others = {"A": A, "B": B}
+@given(df=categoricaldf_strategy())
+def test_keys_mix(df):
+    """Test expand_grid output for a mix of tuple and scalar keys."""
+    A = df["names"]
+    B = pd.MultiIndex.from_frame(df)
+    B.names = ["foo", "bar"]
+    others = {("names", "A"): A, ("foo", "bar"): B}
     result = expand_grid(others=others)
-    A = df.loc[:, ["a"]]
-    expected = A.assign(key=1).merge(B.droplevel(level=1, axis=1), how="cross")
-    expected = expected.drop(columns="key")
+    expected = pd.merge(A, df, how="cross")
     expected.columns = pd.MultiIndex.from_tuples(
-        [
-            ("A", "a", ""),
-            ("B", "C", "Bell__Chart"),
-            ("B", "D", "decorated-elephant"),
-        ],
-    )
-    assert_frame_equal(result, expected)
-
-
-@settings(deadline=None, max_examples=10)
-@given(df=df_strategy())
-def test_numpy_1d(df):
-    """Test expand_grid output for a 1D numpy array."""
-    A = df["a"].to_numpy()
-    B = df["cities"]
-    others = {"A": A, "B": B}
-    result = expand_grid(others=others)
-    A = df.loc[:, ["a"]].rename(columns={"a": 0})
-    B = df.loc[:, ["cities"]]
-    expected = A.merge(B, how="cross")
-    expected.columns = pd.MultiIndex.from_arrays(
-        [["A", "B"], expected.columns]
+        [("names", "A"), ("foo", ""), ("bar", "")]
     )
     assert_frame_equal(result, expected)
 
 
 @settings(deadline=None, max_examples=10)
 @given(df=categoricaldf_strategy())
-def test_numpy_2d(df):
-    """Test expand_grid output for a 2D numpy array"""
+def test_keys_mixx(df):
+    """Test expand_grid output for a mix of tuple and scalar keys."""
     A = df["names"]
-    base = df.loc[:, ["numbers"]].assign(num=df.numbers * 4)
-    B = base.to_numpy(dtype=int)
-    others = {"A": A, "B": B}
+    B = df["numbers"]
+    C = df["numbers"].rename("c")
+    others = {("names", "B", "C"): A, ("foo", "bar"): B, "c": C.tolist()}
     result = expand_grid(others=others)
-    A = df.loc[:, ["names"]]
-    B = base.set_axis([0, 1], axis=1)
-    expected = A.merge(B, how="cross")
-    expected.columns = pd.MultiIndex.from_arrays(
-        [["A", "B", "B"], expected.columns]
-    )
-    assert_frame_equal(result, expected, check_dtype=False)
-
-
-@settings(deadline=None, max_examples=10)
-@given(df=df_strategy())
-def test_index(df):
-    """Test expand_grid output for a pandas Index that has a name."""
-    A = pd.Index(df["a"])
-    B = df["cities"]
-    others = {"A": A, "B": B}
-    result = expand_grid(others=others)
-    A = df.loc[:, ["a"]]
-    B = df.loc[:, ["cities"]]
-    expected = A.merge(B, how="cross")
-    expected.columns = pd.MultiIndex.from_arrays(
-        [["A", "B"], expected.columns]
+    expected = pd.merge(A, B, how="cross").merge(C, how="cross")
+    expected.columns = pd.MultiIndex.from_tuples(
+        [("names", "B", "C"), ("foo", "bar", ""), ("c", "", "")]
     )
     assert_frame_equal(result, expected)
-
-
-@settings(deadline=None, max_examples=10)
-@given(df=df_strategy())
-def test_index_name_none(df):
-    """Test expand_grid output for a pandas Index without a name."""
-    A = pd.Index(df["a"].array, name=None)
-    B = df["cities"]
-    others = {"A": A, "B": B}
-    result = expand_grid(others=others)
-    A = df.loc[:, ["a"]]
-    B = df.loc[:, ["cities"]]
-    expected = A.merge(B, how="cross")
-    expected.columns = pd.MultiIndex.from_arrays([["A", "B"], [0, "cities"]])
-    assert_frame_equal(result, expected)
-
-
-@settings(deadline=None, max_examples=10)
-@given(df=categoricaldf_strategy())
-def test_multiindex(df):
-    """Test expand_grid output for a pandas MultiIndex with a name."""
-    A = df["names"]
-    base = df.loc[:, ["numbers"]].assign(num=df.numbers * 4)
-    B = pd.MultiIndex.from_frame(base)
-    others = {"A": A, "B": B}
-    result = expand_grid(others=others)
-    A = df.loc[:, ["names"]]
-    B = base.copy()
-    expected = A.merge(B, how="cross")
-    expected.columns = pd.MultiIndex.from_arrays(
-        [["A", "B", "B"], expected.columns]
-    )
-    assert_frame_equal(result, expected)
-
-
-@settings(deadline=None, max_examples=10)
-@given(df=categoricaldf_strategy())
-def test_multiindex_names_none(df):
-    """Test expand_grid output for a pandas MultiIndex without a name."""
-    A = df["names"]
-    base = df.loc[:, ["numbers"]].assign(num=df.numbers * 4)
-    B = pd.MultiIndex.from_frame(base, names=[None, None])
-    others = {"A": A, "B": B}
-    result = expand_grid(others=others)
-    A = df.loc[:, ["names"]]
-    B = base.copy()
-    expected = A.merge(B, how="cross")
-    expected.columns = pd.MultiIndex.from_arrays(
-        [["A", "B", "B"], ["names", 0, 1]]
-    )
-    assert_frame_equal(result, expected)
-
-
-@settings(deadline=None, max_examples=10)
-@given(df=df_strategy())
-def test_pandas_extension_array(df):
-    """Test expand_grid output for a pandas array."""
-    A = df["a"]
-    B = df["cities"].astype("string").array
-    others = {"A": A, "B": B}
-    result = expand_grid(others=others)
-    A = df.loc[:, ["a"]]
-    B = df.loc[:, ["cities"]].astype("string").set_axis([0], axis=1)
-    expected = A.merge(B, how="cross")
-    expected.columns = pd.MultiIndex.from_arrays(
-        [["A", "B"], expected.columns]
-    )
-    assert_frame_equal(result, expected)
-
-
-@settings(deadline=None, max_examples=10)
-@given(df=df_strategy())
-def test_sequence(df):
-    """Test expand_grid output for list."""
-    A = df["a"].to_list()
-    B = df["cities"]
-    others = {"A": A, "B": B}
-    result = expand_grid(others=others)
-    A = df.loc[:, ["a"]].rename(columns={"a": 0})
-    B = df.loc[:, ["cities"]]
-    expected = A.merge(B, how="cross")
-    expected.columns = pd.MultiIndex.from_arrays(
-        [["A", "B"], expected.columns]
-    )
-    assert_frame_equal(result, expected, check_dtype=False)
-
-
-@settings(deadline=None, max_examples=10)
-@given(df=df_strategy())
-def test_scalar(df):
-    """Test expand_grid output for a scalar value."""
-    A = df["a"]
-    B = 2
-    others = {"A": A, "B": B}
-    result = expand_grid(others=others)
-    A = df.loc[:, ["a"]]
-    B = pd.DataFrame([2])
-    expected = A.assign(key=1).merge(B.assign(key=1), on="key")
-    expected = expected.drop(columns="key")
-    expected.columns = pd.MultiIndex.from_arrays(
-        [["A", "B"], expected.columns]
-    )
-    assert_frame_equal(result, expected, check_dtype=False)
-
-
-@settings(deadline=None, max_examples=10)
-@given(df=df_strategy())
-def test_chain_df(df):
-    """Test expand_grid in a method-chain operation."""
-    A = df["a"]
-    B = df[["cities"]]
-    others = {"A": A}
-    result = B.expand_grid(df_key="city", others=others)
-    A = df.loc[:, ["a"]]
-    expected = B.assign(key=1).merge(A.assign(key=1), on="key")
-    expected = expected.drop(columns="key")
-    expected.columns = pd.MultiIndex.from_arrays(
-        [["city", "A"], expected.columns]
-    )
-    assert_frame_equal(result, expected)
-
-
-@settings(deadline=None, max_examples=10)
-@given(df=df_strategy())
-def test_series_name(df):
-    """Test expand_grid where the Series has no name."""
-    A = df["a"].rename(None)
-    B = df[["cities"]]
-    others = {"A": A}
-    result = B.expand_grid(df_key="city", others=others)
-    A = df.loc[:, ["a"]]
-    expected = B.assign(key=1).merge(A.assign(key=1), on="key")
-    expected = expected.drop(columns="key")
-    expected.columns = pd.MultiIndex.from_arrays(
-        [["city", "A"], ["cities", 0]]
-    )
-    assert_frame_equal(result, expected)
-
-
-def test_extension_array():
-    """Test output on an extension array"""
-    others = dict(
-        id=pd.Categorical(
-            values=(2, 1, 1, 2, 1), categories=(1, 2, 3), ordered=True
-        ),
-        year=(2018, 2018, 2019, 2020, 2020),
-        gender=pd.Categorical(("female", "male", "male", "female", "male")),
-    )
-
-    expected = expand_grid(others=others).droplevel(axis=1, level=-1)
-    others = [pd.Series(val).rename(key) for key, val in others.items()]
-
-    func = lambda x, y: pd.merge(x, y, how="cross")  # noqa: E731
-    actual = reduce(func, others)
-    assert_frame_equal(expected, actual, check_dtype=False)

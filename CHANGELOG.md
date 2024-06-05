@@ -2,10 +2,11 @@
 
 ## [Unreleased]
 
--  [ENH] `xlsx_cells` function now supports polars - Issue #1352
--  [ENH] `xlsx_table` function now supports polars - Issue #1352
+-  [ENH] `xlsx_cells` function now supports polars - Issue #1352 @samukweku
+-  [ENH] `xlsx_table` function now supports polars - Issue #1352 @samukweku
 -  [ENH] Improved performance for non-equi joins when using numba - @samukweku PR #1341
--  [ENH] Added a `clean_names` method for polars - it can be used to clean the column names, or clean column values . Issue #1343
+-  [ENH] Added a `clean_names` method for polars - it can be used to clean the column names, or clean column values . Issue #1343 @samukweku
+-  [ENH] Implement `expand` function for pandas - Issue #1293
 
 ## [v0.27.0] - 2024-03-21
 

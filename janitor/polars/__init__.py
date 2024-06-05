@@ -119,11 +119,14 @@ class PolarsFrame:
 
         If the combination involves multiple columns, pass it as a struct,
         with an alias - the name of the struct should not exist in the DataFrame.
+
         If new values need to be introduced, a polars Expression
         with the new values can be passed, as long as the polars Expression
         has a name that already exists in the DataFrame.
+
         It is up to the user to ensure that the polars expression returns
         unique values and/or sorted values.
+
         Note that if the polars expression evaluates to a struct,
         then the fields, not the name, should already exist in the DataFrame.
 
@@ -494,11 +497,14 @@ class PolarsLazyFrame:
 
         If the combination involves multiple columns, pass it as a struct,
         with an alias - the name of the struct should not exist in the LazyFrame.
+
         If new values need to be introduced, a polars Expression
         with the new values can be passed, as long as the polars Expression
         has a name that already exists in the LazyFrame.
+
         It is up to the user to ensure that the polars expression returns
         unique values.
+
         Note that if the polars expression evaluates to a struct,
         then the fields, not the name, should already exist in the LazyFrame.
 

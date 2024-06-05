@@ -40,9 +40,9 @@ def complete(
 
     A dictionary can also be passed -
     the values of the dictionary should be
-    either a pandas Index or Series
+    either be a 1D array
     or a callable that evaluates to a
-    pandas Index or Series,
+    1D array,
     while the keys of the dictionary
     should exist in `df`.
 
@@ -90,6 +90,23 @@ def complete(
         Expose missing years from 1999 to 2004:
         >>> index = pd.Index(range(1999,2005),name='Year')
         >>> df.complete(index, "Taxon", sort=True)
+            Year       Taxon  Abundance
+        0   1999      Agarum        1.0
+        1   1999  Saccharina        4.0
+        2   2000      Agarum        NaN
+        3   2000  Saccharina        5.0
+        4   2001      Agarum        NaN
+        5   2001  Saccharina        NaN
+        6   2002      Agarum        NaN
+        7   2002  Saccharina        NaN
+        8   2003      Agarum        NaN
+        9   2003  Saccharina        NaN
+        10  2004      Agarum        8.0
+        11  2004  Saccharina        2.0
+
+        A dictionary can be used as well:
+        >>> dictionary = {'Year':range(1999,2005)}
+        >>> df.complete(dictionary, "Taxon", sort=True)
             Year       Taxon  Abundance
         0   1999      Agarum        1.0
         1   1999  Saccharina        4.0

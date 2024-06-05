@@ -40,11 +40,17 @@ def _complete(
     _columns = []
     for column in columns:
         if isinstance(column, str):
-            _columns.append((pl.col(column), "string"))
+            col = pl.col(column).unique()
+            if sort:
+                col = col.sort()
+            _columns.append(col)
         elif cs.is_selector(column):
-            _columns.append((column.as_expr(), "selector"))
+            col = column.as_expr().unique()
+            if sort:
+                col = col.sort()
+            _columns.append(col)
         elif isinstance(column, pl.Expr):
-            _columns.append((column, "expr"))
+            _columns.append(column)
         else:
             raise TypeError(
                 f"The argument passed to the columns parameter "
@@ -53,12 +59,6 @@ def _complete(
                 f"{type(column)}."
             )
     by_does_not_exist = by is None
-    _columns = [
-        column.unique() if column_type in {"string", "selector"} else column
-        for column, column_type in _columns
-    ]
-    if sort:
-        _columns = [column.sort() for column in _columns]
     if by_does_not_exist:
         _columns = [column.implode() for column in _columns]
         uniques = df.select(_columns)

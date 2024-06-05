@@ -123,7 +123,7 @@ class PolarsFrame:
         with the new values can be passed, as long as the polars Expression
         has a name that already exists in the DataFrame.
         It is up to the user to ensure that the polars expression returns
-        unique values.
+        unique values and/or sorted values.
         Note that if the polars expression evaluates to a struct,
         then the fields, not the name, should already exist in the DataFrame.
 
@@ -184,7 +184,7 @@ class PolarsFrame:
             >>> with pl.Config(tbl_rows=-1):
             ...     df.janitor.complete(
             ...         "group",
-            ...         pl.struct("item_id", "item_name").unique().alias("rar"),
+            ...         pl.struct("item_id", "item_name").unique().sort().alias("rar"),
             ...         sort=True
             ...     )
             shape: (8, 5)
@@ -207,7 +207,7 @@ class PolarsFrame:
             >>> with pl.Config(tbl_rows=-1):
             ...     df.janitor.complete(
             ...         "group",
-            ...         pl.struct("item_id", "item_name").unique().alias('rar'),
+            ...         pl.struct("item_id", "item_name").unique().sort().alias('rar'),
             ...         fill_value={"value1": 0, "value2": 99},
             ...         explicit=True,
             ...         sort=True,
@@ -233,7 +233,7 @@ class PolarsFrame:
             >>> with pl.Config(tbl_rows=-1):
             ...     df.janitor.complete(
             ...         "group",
-            ...         pl.struct("item_id", "item_name").unique().alias('rar'),
+            ...         pl.struct("item_id", "item_name").unique().sort().alias('rar'),
             ...         fill_value={"value1": 0, "value2": 99},
             ...         explicit=False,
             ...         sort=True,

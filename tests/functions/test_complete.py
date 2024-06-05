@@ -113,13 +113,13 @@ def test_callable(fill_df):
         fill_df.complete("group", lambda f: 1)
 
 
-def test_dict_not_pandas_object(fill_df):
+def test_dict_not_list_like(fill_df):
     """
     Raise ValueError if `*columns`
     is a dictionary, and the value
-    is not a pandas object.
+    is not list-like.
     """
-    with pytest.raises(TypeError, match="The value in the dictionary for.+"):
+    with pytest.raises(TypeError, match="Expected a list-like object.+"):
         fill_df.complete("group", {"item_id": "cities"})
 
 
@@ -285,9 +285,7 @@ def test_dict_callable(df):
     cols = ["names", "numbers"]
     df = df.assign(names=[*ascii_lowercase[: len(df)]])
     new_numbers = {
-        "numbers": lambda df: pd.RangeIndex(
-            df.numbers.min(), df.numbers.max() + 1
-        )
+        "numbers": lambda df: range(df.numbers.min(), df.numbers.max() + 1)
     }
     cols = ["numbers", "names"]
     result = df.complete(new_numbers, "names", sort=True)

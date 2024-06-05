@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from typing import Any
 
+import numpy as np
 import pandas as pd
 import pandas_flavor as pf
-from pandas.api.types import is_scalar
+from pandas.api.types import is_list_like, is_scalar
 from pandas.core.common import apply_if_callable
 
 from janitor.functions.utils import _computations_expand_grid
@@ -487,17 +488,16 @@ def _create_pandas_objects_from_dict(df, column):
     collection = []
     for key, value in column.items():
         arr = apply_if_callable(value, df)
-        if not isinstance(arr, (pd.Index, pd.Series)):
+        if not is_list_like(arr):
             raise TypeError(
-                f"The value in the dictionary for {key} "
-                "should evaluate to either "
-                "a pandas Index, or Series; "
+                f"Expected a list-like object for {key}; "
                 f"instead got {type(arr)}."
             )
-        if is_scalar(key):
-            arr.name = key
-        else:  # pd.MultiIndex
-            arr.names = key
+        if not hasattr(arr, "shape"):
+            arr = np.asanyarray(arr)
+        if not isinstance(arr, (pd.Index, pd.Series)):
+            arr = pd.Series(arr)
+        arr.name = key
         collection.append(arr)
     return collection
 

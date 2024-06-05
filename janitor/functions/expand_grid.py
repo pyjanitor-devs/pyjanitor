@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Dict, Optional
-
 import pandas as pd
 import pandas_flavor as pf
 
@@ -20,10 +18,10 @@ msg += "of the DataFrame will be used instead."
     message=msg,
 )
 def expand_grid(
-    df: Optional[pd.DataFrame] = None,
-    df_key: Optional[str] = None,
+    df: pd.DataFrame = None,
+    df_key: str = None,
     *,
-    others: Optional[Dict],
+    others: dict,
 ) -> pd.DataFrame:
     """Creates a DataFrame from a cartesian combination of all inputs.
 

@@ -220,10 +220,12 @@ def complete(
             or a pandas Index, Series, or DataFrame.
             It can also be a callable that gets evaluated
             to a pandas Index, Series, or DataFrame.
-            It can also be a dictionay, where the values
-            are a pandas Index or Series,
+            It can also be a dictionay,
+            where the values are either a 1D array
             or a callable that evaluates to a
-            pandas Index or Series.
+            1D array,
+            while the keys of the dictionary
+            should exist in `df`.
         sort: Sort DataFrame based on *columns.
         by: Label or list of labels to group by.
             The explicit missing rows are returned per group.

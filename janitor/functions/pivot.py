@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 import re
 import warnings
 from collections import defaultdict
 from functools import reduce
 from itertools import chain, zip_longest
-from typing import Callable, Optional, Pattern, Union
+from typing import Callable, Pattern
 
 import numpy as np
 import pandas as pd
@@ -26,17 +28,17 @@ from janitor.utils import check, refactored_function
 @pf.register_dataframe_method
 def pivot_longer(
     df: pd.DataFrame,
-    index: Optional[Union[list, tuple, str, Pattern]] = None,
-    column_names: Optional[Union[list, tuple, str, Pattern]] = None,
-    names_to: Optional[Union[list, tuple, str]] = None,
-    values_to: Optional[str] = "value",
-    column_level: Optional[Union[int, str]] = None,
-    names_sep: Optional[Union[str, Pattern]] = None,
-    names_pattern: Optional[Union[list, tuple, str, Pattern]] = None,
-    names_transform: Optional[Union[str, Callable, dict]] = None,
+    index: list | tuple | str | Pattern = None,
+    column_names: list | tuple | str | Pattern = None,
+    names_to: list | tuple | str = None,
+    values_to: str = "value",
+    column_level: int | str = None,
+    names_sep: str | Pattern = None,
+    names_pattern: list | tuple | str | Pattern = None,
+    names_transform: str | Callable | dict = None,
     dropna: bool = False,
-    sort_by_appearance: Optional[bool] = False,
-    ignore_index: Optional[bool] = True,
+    sort_by_appearance: bool = False,
+    ignore_index: bool = True,
 ) -> pd.DataFrame:
     """Unpivots a DataFrame from *wide* to *long* format.
 
@@ -772,14 +774,14 @@ def _data_checks_pivot_longer(
 
 def _computations_pivot_longer(
     df: pd.DataFrame,
-    index: Union[list, None],
-    column_names: Union[list, None],
-    column_level: Union[int, str, None],
-    names_to: Union[list, None],
-    values_to: Union[list, str, None],
-    names_sep: Union[str, Pattern],
-    names_pattern: Union[list, tuple, str, Pattern],
-    names_transform: Union[str, Callable, dict, None],
+    index: list | tuple | str | Pattern | None,
+    column_names: list | tuple | str | Pattern | None,
+    names_to: list | tuple | str | None,
+    values_to: str,
+    column_level: int | str,
+    names_sep: str | Pattern,
+    names_pattern: list | tuple | str | Pattern | None,
+    names_transform: str | Callable | dict | None,
     dropna: bool,
     sort_by_appearance: bool,
     ignore_index: bool,
@@ -903,11 +905,11 @@ def _pivot_longer_values_to_sequence(
     df: pd.DataFrame,
     index: dict,
     names_to: list,
-    names_pattern: Union[list, tuple],
-    names_transform: Union[str, Callable, dict, None],
+    names_pattern: list | tuple,
+    names_transform: str | Callable | dict | None,
     dropna: bool,
     sort_by_appearance: bool,
-    values_to: Union[list, tuple],
+    values_to: list | tuple,
     ignore_index: bool,
 ) -> pd.DataFrame:
     """
@@ -967,7 +969,7 @@ def _pivot_longer_names_pattern_sequence(
     df: pd.DataFrame,
     index: dict,
     names_to: list,
-    names_pattern: Union[list, tuple],
+    names_pattern: list | tuple,
     dropna: bool,
     sort_by_appearance: bool,
     ignore_index: bool,
@@ -1011,9 +1013,9 @@ def _pivot_longer_names_pattern_sequence(
 
 def _pivot_longer_names_pattern_str(
     df: pd.DataFrame,
-    index: Union[dict, None],
+    index: dict | None,
     names_to: list,
-    names_pattern: Union[str, Pattern],
+    names_pattern: str | Pattern,
     names_transform: bool,
     values_to: str,
     dropna: bool,
@@ -1083,9 +1085,9 @@ def _pivot_longer_names_sep(
     df: pd.DataFrame,
     index: dict,
     names_to: list,
-    names_sep: Union[str, Pattern],
+    names_sep: str | Pattern,
     values_to: str,
-    names_transform: Union[str, dict, Callable, None],
+    names_transform: str | dict | Callable | None,
     dropna: bool,
     sort_by_appearance: bool,
     ignore_index: bool,
@@ -1150,9 +1152,7 @@ def _pivot_longer_names_sep(
     )
 
 
-def _names_transform(
-    mapping: dict, names_transform: Union[str, Callable, dict]
-):
+def _names_transform(mapping: dict, names_transform: str | Callable | dict):
     """
     Convert names extracted from the dataframe's columns
     to specified dtype(s) in names_transform.
@@ -1209,7 +1209,7 @@ def _pivot_longer_dot_value(
     sort_by_appearance: bool,
     ignore_index: bool,
     dropna: bool,
-    names_transform: Union[str, Callable, dict, None],
+    names_transform: str | Callable | dict | None,
     mapping: pd.DataFrame,
 ) -> pd.DataFrame:
     """
@@ -1474,7 +1474,7 @@ def _final_frame_longer(
     index: dict,
     columns: dict,
     dropna: bool,
-    names_transform: Union[str, Callable, dict, None],
+    names_transform: str | Callable | dict | None,
     sort_by_appearance: bool,
     ignore_index: bool,
     len_columns: int = None,
@@ -1558,10 +1558,10 @@ def _final_frame_longer(
 )
 def pivot_wider(
     df: pd.DataFrame,
-    index: Optional[Union[list, str]] = None,
-    names_from: Optional[Union[list, str]] = None,
-    values_from: Optional[Union[list, str]] = None,
-    flatten_levels: Optional[bool] = True,
+    index: list | str = None,
+    names_from: list | str = None,
+    values_from: list | str = None,
+    flatten_levels: bool = True,
     names_sep: str = "_",
     names_glue: str = None,
     reset_index: bool = True,
@@ -1759,15 +1759,15 @@ def pivot_wider(
 
 def _computations_pivot_wider(
     df: pd.DataFrame,
-    index: Optional[Union[list, str]] = None,
-    names_from: Optional[Union[list, str]] = None,
-    values_from: Optional[Union[list, str]] = None,
-    flatten_levels: Optional[bool] = True,
-    names_sep: str = "_",
-    names_glue: str = None,
-    reset_index: bool = True,
-    names_expand: bool = False,
-    index_expand: bool = False,
+    index: list | str | None,
+    names_from: list | str | None,
+    values_from: list | str | None,
+    flatten_levels: bool,
+    names_sep: str,
+    names_glue: str | None,
+    reset_index: bool,
+    names_expand: bool,
+    index_expand: bool,
 ) -> pd.DataFrame:
     """
     This is the main workhorse of the `pivot_wider` function.

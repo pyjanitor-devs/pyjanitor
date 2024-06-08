@@ -215,7 +215,7 @@ def complete(
     Args:
         df: A pandas DataFrame.
         *columns: This refers to the columns to be completed.
-            It could be column labels (string type),
+            It could be column labels,
             a list/tuple of column labels,
             or a pandas Index, Series, or DataFrame.
             It can also be a callable that gets evaluated

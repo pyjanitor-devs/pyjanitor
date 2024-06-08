@@ -30,6 +30,8 @@ def expand_grid(
 ) -> pd.DataFrame:
     """Creates a DataFrame from a cartesian combination of all inputs.
 
+    Inspiration is from tidyr's expand_grid() function.
+
     It is not restricted to a pandas DataFrame;
     it can work with any list-like structure
     that is 1 or 2 dimensional.
@@ -97,6 +99,8 @@ def expand(
 ) -> pd.DataFrame:
     """
     Creates a DataFrame from a cartesian combination of all inputs.
+
+    Inspiration is from tidyr's expand() function.
 
     expand() is often useful with `pd.merge` to convert implicit
     missing values to explicit missing values - similar to

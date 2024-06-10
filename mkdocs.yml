@@ -63,7 +63,9 @@ plugins:
             docstring_style: "google"
             docstring_options:
               trim_doctest_flags: true
+              show_if_no_docstring: false
             show_root_toc_entry: false
+            show_root_heading: false
             show_submodules: true
             show_source: true
 # - mknotebooks:

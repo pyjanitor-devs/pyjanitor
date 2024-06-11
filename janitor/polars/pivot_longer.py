@@ -20,6 +20,137 @@ except ImportError:
     )
 
 
+def pivot_longer_spec(
+    df: pl.DataFrame | pl.LazyFrame,
+    spec: pl.DataFrame,
+) -> pl.DataFrame | pl.LazyFrame:
+    """
+    A declarative interface to pivot a DataFrame
+    from wide to long form,
+    where you describe how the data will be unpivoted,
+    using a DataFrame. This gives you, the user,
+    more control over the transformation to long form,
+    using a *spec* DataFrame that describes exactly
+    how data stored in the column names
+    becomes variables.
+
+    It can come in handy for situations where
+    `janitor.polars.pivot_longer`
+    seems inadequate for the transformation.
+
+    !!! info "New in version 0.28.0"
+
+    Examples:
+        >>> import pandas as pd
+        >>> import janitor.polars
+        >>> df = pl.DataFrame(
+        ...     {
+        ...         "Sepal.Length": [5.1, 5.9],
+        ...         "Sepal.Width": [3.5, 3.0],
+        ...         "Petal.Length": [1.4, 5.1],
+        ...         "Petal.Width": [0.2, 1.8],
+        ...         "Species": ["setosa", "virginica"],
+        ...     }
+        ... )
+        >>> df
+        shape: (2, 5)
+        ┌──────────────┬─────────────┬──────────────┬─────────────┬───────────┐
+        │ Sepal.Length ┆ Sepal.Width ┆ Petal.Length ┆ Petal.Width ┆ Species   │
+        │ ---          ┆ ---         ┆ ---          ┆ ---         ┆ ---       │
+        │ f64          ┆ f64         ┆ f64          ┆ f64         ┆ str       │
+        ╞══════════════╪═════════════╪══════════════╪═════════════╪═══════════╡
+        │ 5.1          ┆ 3.5         ┆ 1.4          ┆ 0.2         ┆ setosa    │
+        │ 5.9          ┆ 3.0         ┆ 5.1          ┆ 1.8         ┆ virginica │
+        └──────────────┴─────────────┴──────────────┴─────────────┴───────────┘
+        >>> spec = {'.name':['Sepal.Length','Petal.Length',
+        ...                  'Sepal.Width','Petal.Width'],
+        ...         '.value':['Length','Length','Width','Width'],
+        ...         'part':['Sepal','Petal','Sepal','Petal']}
+        >>> spec = pl.DataFrame(spec)
+        >>> spec
+        shape: (4, 3)
+        ┌──────────────┬────────┬───────┐
+        │ .name        ┆ .value ┆ part  │
+        │ ---          ┆ ---    ┆ ---   │
+        │ str          ┆ str    ┆ str   │
+        ╞══════════════╪════════╪═══════╡
+        │ Sepal.Length ┆ Length ┆ Sepal │
+        │ Petal.Length ┆ Length ┆ Petal │
+        │ Sepal.Width  ┆ Width  ┆ Sepal │
+        │ Petal.Width  ┆ Width  ┆ Petal │
+        └──────────────┴────────┴───────┘
+        >>> df.pipe(pivot_longer_spec,spec=spec)
+        shape: (4, 4)
+        ┌───────────┬────────┬───────┬───────┐
+        │ Species   ┆ Length ┆ Width ┆ part  │
+        │ ---       ┆ ---    ┆ ---   ┆ ---   │
+        │ str       ┆ f64    ┆ f64   ┆ str   │
+        ╞═══════════╪════════╪═══════╪═══════╡
+        │ setosa    ┆ 5.1    ┆ 3.5   ┆ Sepal │
+        │ virginica ┆ 5.9    ┆ 3.0   ┆ Sepal │
+        │ setosa    ┆ 1.4    ┆ 0.2   ┆ Petal │
+        │ virginica ┆ 5.1    ┆ 1.8   ┆ Petal │
+        └───────────┴────────┴───────┴───────┘
+
+    Args:
+        df: The source DataFrame to unpivot.
+        spec: A specification DataFrame.
+            At a minimum, the spec DataFrame
+            must have a `.name` column
+            and a `.value` column.
+            The `.name` column  should contain the
+            columns in the source DataFrame that will be
+            transformed to long form.
+            The `.value` column gives the name of the column
+            that the values in the source DataFrame will go into.
+            Additional columns in the spec DataFrame
+            should be named to match columns
+            in the long format of the dataset and contain values
+            corresponding to columns pivoted from the wide format.
+            Note that these additional columns should not already exist
+            in the source DataFrame.
+
+    Raises:
+        KeyError: If `.name` or `.value` is missing from the spec's columns.
+        ValueError: If the labels in `spec['.name']` is not unique.
+
+    Returns:
+        A polars DataFrame/LazyFrame.
+    """
+    check("spec", spec, [pl.DataFrame])
+    if ".name" not in spec.columns:
+        raise KeyError(
+            "Kindly ensure the spec DataFrame has a `.name` column."
+        )
+    if ".value" not in spec.columns:
+        raise KeyError(
+            "Kindly ensure the spec DataFrame has a `.value` column."
+        )
+    if spec.select(pl.col(".name").is_duplicated().any()).item():
+        raise ValueError("The labels in the `.name` column should be unique.")
+
+    exclude = set(df.columns).intersection(spec.columns)
+    if exclude:
+        raise ValueError(
+            f"Labels {*exclude, } in the spec dataframe already exist "
+            "as column labels in the source dataframe. "
+            "Kindly ensure the spec DataFrame's columns "
+            "are not present in the source DataFrame."
+        )
+
+    if spec.columns[:2] != [".name", ".value"]:
+        raise ValueError(
+            "The first two columns of the spec DataFrame "
+            "should be '.name' and '.value', "
+            "with '.name' coming before '.value'."
+        )
+
+    return _pivot_longer_dot_value(
+        df=df,
+        spec=spec,
+    )
+
+
 def _pivot_longer(
     df: pl.DataFrame | pl.LazyFrame,
     index: ColumnNameOrSelector,

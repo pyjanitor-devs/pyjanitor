@@ -351,7 +351,7 @@ class PolarsExpr:
         expression += pl.datetime(year=1970, month=1, day=1)
         return expression
 
-      
+
 from .dataframe import PolarsDataFrame
 from .expressions import PolarsExpr
 from .lazyframe import PolarsLazyFrame

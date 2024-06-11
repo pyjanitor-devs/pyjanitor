@@ -350,3 +350,17 @@ class PolarsExpr:
         expression = pl.duration(milliseconds=expression)
         expression += pl.datetime(year=1970, month=1, day=1)
         return expression
+
+      
+from .dataframe import PolarsDataFrame
+from .expressions import PolarsExpr
+from .lazyframe import PolarsLazyFrame
+from .pivot_longer import pivot_longer_spec
+
+__all__ = [
+    "pivot_longer_spec",
+    "clean_names",
+    "PolarsDataFrame",
+    "PolarsLazyFrame",
+    "PolarsExpr",
+]

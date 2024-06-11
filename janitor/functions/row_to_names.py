@@ -1,5 +1,7 @@
 """Implementation of the `row_to_names` function."""
 
+from __future__ import annotations
+
 import warnings
 
 import numpy as np
@@ -13,7 +15,7 @@ from janitor.utils import check, deprecated_alias
 @deprecated_alias(row_number="row_numbers", remove_row="remove_rows")
 def row_to_names(
     df: pd.DataFrame,
-    row_numbers: int = 0,
+    row_numbers: int | list = 0,
     remove_rows: bool = False,
     remove_rows_above: bool = False,
     reset_index: bool = False,
@@ -73,7 +75,7 @@ def row_to_names(
             Note that indexing starts from 0. It can also be a list,
             in which case, a MultiIndex column is created.
             Defaults to 0 (first row).
-        remove_row: Whether the row(s) should be removed from the DataFrame.
+        remove_rows: Whether the row(s) should be removed from the DataFrame.
         remove_rows_above: Whether the row(s) above the selected row should
             be removed from the DataFrame.
         reset_index: Whether the index should be reset on the returning DataFrame.
@@ -84,10 +86,10 @@ def row_to_names(
     if not pd.options.mode.copy_on_write:
         df = df.copy()
 
-    check("row_number", row_numbers, [int, list])
+    check("row_numbers", row_numbers, [int, list])
     if isinstance(row_numbers, list):
         for entry in row_numbers:
-            check("entry in the row_number argument", entry, [int])
+            check("entry in the row_numbers argument", entry, [int])
 
     warnings.warn(
         "The function row_to_names will, in the official 1.0 release, "

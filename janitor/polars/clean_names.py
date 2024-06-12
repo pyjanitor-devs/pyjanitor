@@ -115,11 +115,11 @@ def _strip_underscores_func_expr(
 
 def _clean_column_names(
     obj: str,
-    strip_underscores: str | bool = None,
-    case_type: str = "lower",
-    remove_special: bool = False,
-    strip_accents: bool = False,
-    truncate_limit: int = None,
+    strip_underscores: str | bool,
+    case_type: str,
+    remove_special: bool,
+    strip_accents: bool,
+    truncate_limit: int,
 ) -> str:
     """
     Function to clean the column names of a polars DataFrame.

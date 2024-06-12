@@ -103,7 +103,7 @@ def pivot_longer(
         6     setosa   Petal.Width    0.2
         7  virginica   Petal.Width    1.8
 
-        Split the column labels into parts:
+        Split the column labels into individual columns:
         >>> df.pivot_longer(
         ...     index = 'Species',
         ...     names_to = ('part', 'dimension'),
@@ -269,7 +269,7 @@ def pivot_longer(
         ...             "Watermelon": [40, 99, 43],
         ...             "Gin": [16, 200, 34],
         ...             "Vodka": [20, 33, 18],
-        ...         }
+        ...         },
         ...     )
         >>> df
               City    State      Name  Mango  Orange  Watermelon  Gin  Vodka

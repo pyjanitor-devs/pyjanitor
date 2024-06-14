@@ -1279,7 +1279,6 @@ def _pivot_longer_dot_value(
 
     Returns a DataFrame.
     """
-
     if not others:
         contents, reps = _stack_dot_value_only(
             spec=spec,
@@ -1297,12 +1296,9 @@ def _pivot_longer_dot_value(
         df = {**index, **contents}
         df = pd.DataFrame(data=df, index=df_index, copy=False)
         if dropna:
-            nulls = [pd.isna(arr) for _, arr in contents.items()]
-            nulls = np.logical_and.reduce(nulls)
-            if nulls.any():
-                df = df.iloc[~nulls]
-                if ignore_index:
-                    df.index = range(len(df))
+            df = _pivot_longer_dropna(
+                df=df, contents=contents, ignore_index=ignore_index
+            )
         return df
 
     if spec.duplicated().any(axis=None):
@@ -1327,12 +1323,9 @@ def _pivot_longer_dot_value(
     df = {**index, **spec, **contents}
     df = pd.DataFrame(data=df, index=df_index, copy=False)
     if dropna:
-        nulls = [pd.isna(arr) for _, arr in contents.items()]
-        nulls = np.logical_and.reduce(nulls)
-        if nulls.any():
-            df = df.iloc[~nulls]
-            if ignore_index:
-                df.index = range(len(df))
+        df = _pivot_longer_dropna(
+            df=df, contents=contents, ignore_index=ignore_index
+        )
     return df
 
 
@@ -1394,8 +1387,7 @@ def _stack_dot_value_only(
     Flip the .value into long form.
     Applicable when only .value column exists in spec
     """
-    nunique = spec.nunique().item()
-    if nunique == 1:
+    if spec.nunique().item() == 1:
         return _stack_dot_value_only_single_label(
             spec=spec, df=df, sort_by_appearance=sort_by_appearance
         )
@@ -1415,7 +1407,6 @@ def _stack_dot_value_only_single_label(
     and .value.unique==1
     """
     reps = len(spec)
-    length = len(df) * reps
     if df.dtypes.map(is_extension_array_dtype).any(axis=None):
         contents = [arr._values for _, arr in df.items()]
         contents = concat_compat(contents)
@@ -1676,6 +1667,22 @@ def _stack_non_dot_value_do_not_sort(
     return index, spec, df_index
 
 
+def _pivot_longer_dropna(
+    df: pd.DataFrame, contents: dict, ignore_index: bool
+) -> pd.DataFrame:
+    """
+    Drop nulls from long form
+    """
+    nulls = [pd.isna(arr) for _, arr in contents.items()]
+    nulls = np.logical_and.reduce(nulls)
+    if not nulls.any():
+        return df
+    df = df.iloc[~nulls]
+    if ignore_index:
+        df.index = range(len(df))
+    return df
+
+
 def _names_transform(
     spec: pd.DataFrame, others: list, names_transform: str | Callable | dict
 ) -> pd.DataFrame:
@@ -1698,6 +1705,7 @@ def _names_transform(
         return spec
     for label in others:
         try:
+            # built-in functions (float, int, ...)
             spec[label] = spec[label].astype(names_transform)
         except TypeError:
             spec[label] = names_transform(spec[label])

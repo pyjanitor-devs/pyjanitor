@@ -2,13 +2,14 @@
 
 ## [Unreleased]
 
--  [ENH] Improve `pivot_longer` when `sort_by_appearance` is True. Added `pivot_longer_spec` for more control on how the dataframe should be unpivoted. -@samukweku #1361
--  [ENH] Added a `row_to_names` method for polars. Issue #1352
--  [ENH] `read_commandline` function now supports polars - Issue #1352
--  [ENH] `xlsx_cells` function now supports polars - Issue #1352
--  [ENH] `xlsx_table` function now supports polars - Issue #1352
--  [ENH] Improved performance for non-equi joins when using numba - @samukweku PR #1341
--  [ENH] Added a `clean_names` method for polars - it can be used to clean the column names, or clean column values . Issue #1343
+- [ENH] Improve `pivot_longer` when `sort_by_appearance` is True. Added `pivot_longer_spec` for more control on how the dataframe should be unpivoted. -@samukweku #1361
+- [ENH] Added a `row_to_names` method for polars. Issue #1352
+- [ENH] `read_commandline` function now supports polars - Issue #1352
+- [ENH] `xlsx_cells` function now supports polars - Issue #1352
+- [ENH] `xlsx_table` function now supports polars - Issue #1352
+- [ENH] Improved performance for non-equi joins when using numba - @samukweku PR #1341
+- [ENH] Added a `clean_names` method for polars - it can be used to clean the column names, or clean column values . Issue #1343
+- [ENH] Added a `complete` method for polars. - Issue #1352 @samukweku
 
 
 ## [v0.27.0] - 2024-03-21

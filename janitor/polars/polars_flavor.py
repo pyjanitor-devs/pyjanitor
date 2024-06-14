@@ -22,10 +22,10 @@ def register_dataframe_method(method: Callable) -> Callable:
     """Register a function as a method attached to the Polars DataFrame.
 
     Example:
-        >>> @register_dataframe_method
-        >>> def print_column(df, col):
-        ...    '''Print the dataframe column given'''
-        ...    print(df[col])
+        >>> @register_dataframe_method # doctest: +SKIP
+        >>> def print_column(df, col): # doctest: +SKIP
+        ...    '''Print the dataframe column given''' # doctest: +SKIP
+        ...    print(df[col]) # doctest: +SKIP
 
     !!! info "New in version 0.28.0"
 
@@ -57,10 +57,10 @@ def register_lazyframe_method(method: Callable) -> Callable:
     """Register a function as a method attached to the Polars LazyFrame.
 
     Example:
-        >>> @register_lazyframe_method
-        >>> def print_column(df, col):
-        ...    '''Print the dataframe column given'''
-        ...    print(df[col])
+        >>> @register_lazyframe_method # doctest: +SKIP
+        >>> def print_column(df, col): # doctest: +SKIP
+        ...    '''Print the dataframe column given''' # doctest: +SKIP
+        ...    print(df[col]) # doctest: +SKIP
 
     !!! info "New in version 0.28.0"
 

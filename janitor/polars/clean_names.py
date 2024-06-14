@@ -68,7 +68,7 @@ def clean_names(
         │ 1     ┆ 1          ┆ 1            │
         │ 2     ┆ 2          ┆ 2            │
         └───────┴────────────┴──────────────┘
-        >>> df.janitor.clean_names(remove_special=True)
+        >>> df.clean_names(remove_special=True)
         shape: (3, 3)
         ┌───────┬────────────┬─────────┐
         │ aloha ┆ bell_chart ┆ animals │
@@ -142,7 +142,7 @@ def make_clean_names(
         └─────────────┘
 
         Clean the column values:
-        >>> df.with_columns(pl.col("raw").janitor.make_clean_names(strip_accents=True))
+        >>> df.with_columns(pl.col("raw").make_clean_names(strip_accents=True))
         shape: (1, 1)
         ┌─────────────┐
         │ raw         │

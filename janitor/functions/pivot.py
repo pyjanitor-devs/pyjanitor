@@ -280,16 +280,16 @@ def pivot_longer(
         ...         values_to=("Pounds", "Ounces"),
         ...         names_pattern=["M|O|W", "G|V"],
         ...     )
-              City    State       Fruit  Pounds  Drink  Ounces
-        0  Houston    Texas       Mango       4    Gin    16.0
-        1   Austin    Texas       Mango      10    Gin   200.0
-        2   Hoover  Alabama       Mango      90    Gin    34.0
-        3  Houston    Texas      Orange      10  Vodka    20.0
-        4   Austin    Texas      Orange       8  Vodka    33.0
-        5   Hoover  Alabama      Orange      14  Vodka    18.0
-        6  Houston    Texas  Watermelon      40   None     NaN
-        7   Austin    Texas  Watermelon      99   None     NaN
-        8   Hoover  Alabama  Watermelon      43   None     NaN
+              City    State       Fruit  Drink  Pounds  Ounces
+        0  Houston    Texas       Mango    Gin       4    16.0
+        1   Austin    Texas       Mango    Gin      10   200.0
+        2   Hoover  Alabama       Mango    Gin      90    34.0
+        3  Houston    Texas      Orange  Vodka      10    20.0
+        4   Austin    Texas      Orange  Vodka       8    33.0
+        5   Hoover  Alabama      Orange  Vodka      14    18.0
+        6  Houston    Texas  Watermelon   None      40     NaN
+        7   Austin    Texas  Watermelon   None      99     NaN
+        8   Hoover  Alabama  Watermelon   None      43     NaN
 
         Replicate the above transformation with a nested dictionary passed to `names_pattern`
         - the outer keys in the `names_pattern` dictionary are passed to `names_to`,
@@ -302,16 +302,16 @@ def pivot_longer(
         ...         "Drink": {"Ounces": "G|V"},
         ...     },
         ... )
-              City    State       Fruit  Pounds  Drink  Ounces
-        0  Houston    Texas       Mango       4    Gin    16.0
-        1   Austin    Texas       Mango      10    Gin   200.0
-        2   Hoover  Alabama       Mango      90    Gin    34.0
-        3  Houston    Texas      Orange      10  Vodka    20.0
-        4   Austin    Texas      Orange       8  Vodka    33.0
-        5   Hoover  Alabama      Orange      14  Vodka    18.0
-        6  Houston    Texas  Watermelon      40   None     NaN
-        7   Austin    Texas  Watermelon      99   None     NaN
-        8   Hoover  Alabama  Watermelon      43   None     NaN
+              City    State       Fruit  Drink  Pounds  Ounces
+        0  Houston    Texas       Mango    Gin       4    16.0
+        1   Austin    Texas       Mango    Gin      10   200.0
+        2   Hoover  Alabama       Mango    Gin      90    34.0
+        3  Houston    Texas      Orange  Vodka      10    20.0
+        4   Austin    Texas      Orange  Vodka       8    33.0
+        5   Hoover  Alabama      Orange  Vodka      14    18.0
+        6  Houston    Texas  Watermelon   None      40     NaN
+        7   Austin    Texas  Watermelon   None      99     NaN
+        8   Hoover  Alabama  Watermelon   None      43     NaN
 
     !!! abstract "Version Changed"
 

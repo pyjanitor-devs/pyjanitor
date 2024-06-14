@@ -24,13 +24,13 @@ except ImportError:
 @register_lazyframe_method
 @register_dataframe_method
 def complete(
-    df,
+    df: pl.DataFrame | pl.LazyFrame,
     *columns: ColumnNameOrSelector,
     fill_value: dict | Any | pl.Expr = None,
     explicit: bool = True,
     sort: bool = False,
     by: ColumnNameOrSelector = None,
-) -> pl.DataFrame:
+) -> pl.DataFrame | pl.LazyFrame:
     """
     Turns implicit missing values into explicit missing values
 
@@ -309,7 +309,7 @@ def complete(
             The explicit missing rows are returned per group.
 
     Returns:
-        A polars DataFrame.
+        A polars DataFrame/LazyFrame.
     """  # noqa: E501
     return _complete(
         df=df,

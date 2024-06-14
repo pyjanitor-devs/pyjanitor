@@ -27,7 +27,7 @@ def pivot_longer_spec(
     spec: pl.DataFrame,
 ) -> pl.DataFrame | pl.LazyFrame:
     """
-    A declarative interface to pivot a DataFrame
+    A declarative interface to pivot a Polars Frame
     from wide to long form,
     where you describe how the data will be unpivoted,
     using a DataFrame. This gives you, the user,
@@ -96,6 +96,7 @@ def pivot_longer_spec(
 
     Args:
         df: The source DataFrame to unpivot.
+            It can also be a LazyFrame.
         spec: A specification DataFrame.
             At a minimum, the spec DataFrame
             must have a `.name` column
@@ -156,7 +157,7 @@ def pivot_longer_spec(
 @register_lazyframe_method
 @register_dataframe_method
 def pivot_longer(
-    df,
+    df: pl.DataFrame | pl.LazyFrame,
     index: ColumnNameOrSelector = None,
     column_names: ColumnNameOrSelector = None,
     names_to: list | tuple | str = "variable",
@@ -164,7 +165,7 @@ def pivot_longer(
     names_sep: str = None,
     names_pattern: str = None,
     names_transform: pl.Expr = None,
-) -> pl.DataFrame:
+) -> pl.DataFrame | pl.LazyFrame:
     """
     Unpivots a DataFrame from *wide* to *long* format.
 
@@ -373,8 +374,8 @@ def pivot_longer(
             or names_pattern is provided.
 
     Returns:
-        A polars DataFrame that has been unpivoted from wide to long
-            format.
+        A polars DataFrame/LazyFrame that has been unpivoted
+        from wide to long format.
     """  # noqa: E501
     return _pivot_longer(
         df=df,

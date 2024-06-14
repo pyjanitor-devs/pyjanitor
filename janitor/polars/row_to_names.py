@@ -1,4 +1,4 @@
-"""clean_names implementation for polars."""
+"""row_to_names implementation for polars."""
 
 from __future__ import annotations
 
@@ -20,12 +20,12 @@ except ImportError:
 @register_lazyframe_method
 @register_dataframe_method
 def row_to_names(
-    df,
+    df: pl.DataFrame | pl.LazyFrame,
     row_numbers: int | list = 0,
     remove_rows: bool = False,
     remove_rows_above: bool = False,
     separator: str = "_",
-) -> pl.DataFrame:
+) -> pl.DataFrame | pl.LazyFrame:
     """
     Elevates a row, or rows, to be the column names of a DataFrame.
 
@@ -113,7 +113,7 @@ def row_to_names(
             if row_numbers is a list of integers. Default is '_'.
 
     Returns:
-        A polars DataFrame.
+        A polars DataFrame/LazyFrame.
     """  # noqa: E501
     return _row_to_names(
         df=df,

@@ -35,13 +35,13 @@ except ImportError:
 @register_lazyframe_method
 @register_dataframe_method
 def clean_names(
-    df,
+    df: pl.DataFrame | pl.LazyFrame,
     strip_underscores: str | bool = None,
     case_type: str = "lower",
     remove_special: bool = False,
     strip_accents: bool = False,
     truncate_limit: int = None,
-) -> pl.DataFrame:
+) -> pl.DataFrame | pl.LazyFrame:
     """
     Clean the column names in a polars DataFrame.
 
@@ -100,7 +100,7 @@ def clean_names(
             the specified length. Default None does not truncate.
 
     Returns:
-        A polars DataFrame.
+        A polars DataFrame/LazyFrame.
     """  # noqa: E501
     return df.rename(
         lambda col: _clean_column_names(

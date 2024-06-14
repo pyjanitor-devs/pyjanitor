@@ -1495,16 +1495,21 @@ def test_output_values_to_seq1(multiple_values_to):
         .reset_index(level=2, drop=True)
         .reset_index()
         .astype({"Fruit": "category", "Drink": "category"})
+        .loc[:, ["City", "State", "Fruit", "Pounds", "Drink", "Ounces"]]
     )
 
-    expected = multiple_values_to.pivot_longer(
-        index=["City", "State"],
-        column_names=slice("Mango", "Vodka"),
-        names_to=("Fruit", "Drink"),
-        values_to=("Pounds", "Ounces"),
-        names_pattern=[r"M|O|W", r"G|V"],
-        names_transform={"Fruit": "category", "Drink": "category"},
-    ).sort_values(["Fruit", "City", "State"], ignore_index=True)
+    expected = (
+        multiple_values_to.pivot_longer(
+            index=["City", "State"],
+            column_names=slice("Mango", "Vodka"),
+            names_to=("Fruit", "Drink"),
+            values_to=("Pounds", "Ounces"),
+            names_pattern=[r"M|O|W", r"G|V"],
+            names_transform={"Fruit": "category", "Drink": "category"},
+        )
+        .sort_values(["Fruit", "City", "State"], ignore_index=True)
+        .loc[:, ["City", "State", "Fruit", "Pounds", "Drink", "Ounces"]]
+    )
 
     assert_frame_equal(expected, actual)
 
@@ -1538,17 +1543,22 @@ def test_output_names_pattern_nested_dictionary(multiple_values_to):
         .reset_index(level=2, drop=True)
         .reset_index()
         .astype({"Fruit": "category", "Drink": "category"})
+        .loc[:, ["City", "State", "Fruit", "Pounds", "Drink", "Ounces"]]
     )
 
-    expected = multiple_values_to.pivot_longer(
-        index=["City", "State"],
-        column_names=slice("Mango", "Vodka"),
-        names_pattern={
-            "Fruit": {"Pounds": r"M|O|W"},
-            "Drink": {"Ounces": r"G|V"},
-        },
-        names_transform={"Fruit": "category", "Drink": "category"},
-    ).sort_values(["Fruit", "City", "State"], ignore_index=True)
+    expected = (
+        multiple_values_to.pivot_longer(
+            index=["City", "State"],
+            column_names=slice("Mango", "Vodka"),
+            names_pattern={
+                "Fruit": {"Pounds": r"M|O|W"},
+                "Drink": {"Ounces": r"G|V"},
+            },
+            names_transform={"Fruit": "category", "Drink": "category"},
+        )
+        .sort_values(["Fruit", "City", "State"], ignore_index=True)
+        .loc[:, ["City", "State", "Fruit", "Pounds", "Drink", "Ounces"]]
+    )
 
     assert_frame_equal(expected, actual)
 
@@ -1627,7 +1637,7 @@ def test_duplicated_columns():
 
 
 def test_dot_value_duplicated_sub_columns():
-    """Test output when the column extracts are not unique."""
+    """Raise when the column extracts are not unique."""
     # https://stackoverflow.com/q/64061588/7175713
     df = pd.DataFrame(
         {
@@ -1643,25 +1653,15 @@ def test_dot_value_duplicated_sub_columns():
         }
     )
 
-    expected = df.set_index("id")
-    expected.columns = expected.columns.str.split("_", expand=True)
-    expected = (
-        expected.stack(level=[0, 2, 3], future_stack=True)
-        .sort_index(level=[0, 1], ascending=[True, False])
-        .reset_index(level=[2, 3], drop=True)
-        .sort_index(axis=1, ascending=False)
-        .rename_axis(["id", "cod"])
-        .reset_index()
-    )
-
-    actual = df.pivot_longer(
-        "id",
-        names_to=("cod", ".value"),
-        names_pattern="(.)_(start|end).+",
-        sort_by_appearance=True,
-    )
-
-    assert_frame_equal(actual, expected)
+    with pytest.raises(
+        ValueError, match="spec contains duplicate entries, cannot reshape."
+    ):
+        df.pivot_longer(
+            "id",
+            names_to=("cod", ".value"),
+            names_pattern="(.)_(start|end).+",
+            sort_by_appearance=True,
+        )
 
 
 def test_preserve_extension_types():

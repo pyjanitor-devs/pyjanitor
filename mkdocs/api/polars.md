@@ -3,6 +3,7 @@
 ::: janitor.polars
     options:
       members:
-      - PolarsFrame
-      - PolarsLazyFrame
-      - pivot_longer_spec
+        - PolarsExpr
+        - PolarsDataFrame
+        - PolarsLazyFrame
+        - pivot_longer_spec

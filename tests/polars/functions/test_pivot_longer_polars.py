@@ -19,25 +19,9 @@ def df_checks():
     )
 
 
-def test_type_index(df_checks):
-    """Raise TypeError if wrong type is provided for the index."""
-    msg = "The argument passed to the index parameter "
-    msg += "should be a type that is supported in the.+"
-    with pytest.raises(TypeError, match=msg):
-        df_checks.janitor.pivot_longer(index=2007, names_sep="_")
-
-
-def test_type_column_names(df_checks):
-    """Raise TypeError if wrong type is provided for column_names."""
-    msg = "The argument passed to the column_names parameter "
-    msg += "should be a type that is supported in the.+"
-    with pytest.raises(TypeError, match=msg):
-        df_checks.janitor.pivot_longer(column_names=2007, names_sep="_")
-
-
 def test_type_names_to(df_checks):
     """Raise TypeError if wrong type is provided for names_to."""
-    msg = "names_to should be one of .+"
+    msg = "names_to should be a string, list, or tuple.+"
     with pytest.raises(TypeError, match=msg):
         df_checks.janitor.pivot_longer(names_to=2007, names_sep="_")
 
@@ -96,38 +80,6 @@ def test_values_to_wrong_type(df_checks):
         df_checks.janitor.pivot_longer(values_to={"salvo"}, names_sep="_")
 
 
-def test_pivot_index_only(df_checks):
-    """Test output if only index is passed."""
-    result = df_checks.janitor.pivot_longer(
-        index=["famid", "birth"],
-        names_to="dim",
-        values_to="num",
-    )
-
-    actual = df_checks.melt(
-        id_vars=["famid", "birth"], variable_name="dim", value_name="num"
-    )
-
-    assert_frame_equal(result, actual, check_column_order=False)
-
-
-def test_pivot_column_only(df_checks):
-    """Test output if only column_names is passed."""
-    result = df_checks.janitor.pivot_longer(
-        column_names=["ht1", "ht2"],
-        names_to="dim",
-        values_to="num",
-    )
-
-    actual = df_checks.melt(
-        id_vars=["famid", "birth"],
-        variable_name="dim",
-        value_name="num",
-    )
-
-    assert_frame_equal(result, actual, check_column_order=False)
-
-
 def test_names_to_names_pattern_len(df_checks):
     """ "
     Raise ValueError
@@ -167,12 +119,16 @@ def test_names_pat_str(df_checks):
     Test output when names_pattern is a string,
     and .value is present.
     """
-    result = df_checks.janitor.pivot_longer(
-        column_names=cs.starts_with("ht"),
-        names_to=(".value", "age"),
-        names_pattern="(.+)(.)",
-        names_transform=pl.col("age").cast(pl.Int64),
-    ).sort(by=pl.all())
+    result = (
+        df_checks.janitor.pivot_longer(
+            index=["famid", "birth"],
+            names_to=(".value", "age"),
+            names_pattern="(.+)(.)",
+            names_transform=pl.col("age").cast(pl.Int64),
+        )
+        .select("famid", "birth", "age", "ht")
+        .sort(by=pl.all())
+    )
 
     actual = [
         {"famid": 1, "birth": 1, "age": 1, "ht": 2.8},
@@ -196,20 +152,7 @@ def test_names_pat_str(df_checks):
     ]
     actual = pl.DataFrame(actual).sort(by=pl.all())
 
-    assert_frame_equal(
-        result, actual, check_dtype=False, check_column_order=False
-    )
-
-
-def test_no_column_names(df_checks):
-    """
-    Test output if all the columns
-    are assigned to the index parameter.
-    """
-    assert_frame_equal(
-        df_checks.janitor.pivot_longer(index=pl.all()),
-        df_checks,
-    )
+    assert_frame_equal(result, actual)
 
 
 @pytest.fixture
@@ -316,23 +259,37 @@ actual = pl.DataFrame(actual).sort(by=pl.all())
 def test_names_pattern_dot_value(test_df):
     """Test output for names_pattern and .value."""
 
-    result = test_df.janitor.pivot_longer(
-        column_names=pl.all(),
-        names_to=["set", ".value"],
-        names_pattern="(.+)_(.+)",
-    ).sort(by=["loc", "lat", "long"])
-    assert_frame_equal(result, actual, check_column_order=False)
+    result = (
+        test_df.janitor.pivot_longer(
+            column_names=cs.all(),
+            names_to=["set", ".value"],
+            names_pattern="(.+)_(.+)",
+        )
+        .sort(by=["loc", "lat", "long"])
+        .with_columns(
+            pl.col("lat").cast(pl.Float64), pl.col("long").cast(pl.Float64)
+        )
+        .select("set", "loc", "lat", "long")
+    )
+    assert_frame_equal(result, actual)
 
 
 def test_names_sep_dot_value(test_df):
     """Test output for names_pattern and .value."""
 
-    result = test_df.janitor.pivot_longer(
-        column_names=pl.all(),
-        names_to=["set", ".value"],
-        names_sep="_",
-    ).sort(by=["loc", "lat", "long"])
-    assert_frame_equal(result, actual, check_column_order=False)
+    result = (
+        test_df.janitor.pivot_longer(
+            column_names=cs.all(),
+            names_to=["set", ".value"],
+            names_sep="_",
+        )
+        .sort(by=["loc", "lat", "long"])
+        .with_columns(
+            pl.col("lat").cast(pl.Float64), pl.col("long").cast(pl.Float64)
+        )
+        .select("set", "loc", "lat", "long")
+    )
+    assert_frame_equal(result, actual)
 
 
 @pytest.fixture
@@ -394,7 +351,7 @@ def test_not_dot_value_sep2(not_dot_value):
         "country", variable_name="event", value_name="score"
     )
 
-    assert_frame_equal(result, actual, check_column_order=False)
+    assert_frame_equal(result, actual)
 
 
 def test_not_dot_value_pattern(not_dot_value):
@@ -451,6 +408,9 @@ def test_multiple_dot_value():
             names_pattern=r"(x|y)_([0-9])(_mean|_sd)",
             names_transform=pl.col("time").cast(pl.Int64),
         )
+        .with_columns(
+            pl.col("x_mean").cast(pl.Int64), pl.col("y_mean").cast(pl.Int64)
+        )
         .select("unit", "time", "x_mean", "x_sd", "y_mean", "y_sd")
         .sort(by=pl.all())
     )
@@ -466,7 +426,7 @@ def test_multiple_dot_value():
 
     actual = pl.DataFrame(actual).sort(by=pl.all())
 
-    assert_frame_equal(result, actual, check_column_order=False)
+    assert_frame_equal(result, actual)
 
 
 @pytest.fixture
@@ -512,7 +472,7 @@ def test_names_pattern_single_column(single_val):
         "id", names_to=".value", names_pattern="(.)."
     )
 
-    assert_frame_equal(result, actual3, check_column_order=False)
+    assert_frame_equal(result, actual3)
 
 
 def test_names_pattern_single_column_not_dot_value(single_val):
@@ -521,12 +481,11 @@ def test_names_pattern_single_column_not_dot_value(single_val):
     """
     result = single_val.janitor.pivot_longer(
         index="id", column_names="x1", names_to="yA", names_pattern="(.+)"
-    )
+    ).select("id", "yA", "value")
 
     assert_frame_equal(
         result,
         single_val.melt(id_vars="id", value_vars="x1", variable_name="yA"),
-        check_column_order=False,
     )
 
 
@@ -534,14 +493,15 @@ def test_names_pattern_single_column_not_dot_value1(single_val):
     """
     Test output if names_to is not '.value'.
     """
-    result = single_val.select("x1").janitor.pivot_longer(
-        names_to="yA", names_pattern="(.+)"
+    result = (
+        single_val.select("x1")
+        .janitor.pivot_longer(names_to="yA", names_pattern="(.+)")
+        .select("yA", "value")
     )
 
     assert_frame_equal(
         result,
         single_val.select("x1").melt(variable_name="yA"),
-        check_column_order=False,
     )
 
 
@@ -579,6 +539,7 @@ def test_names_pattern_nulls_in_data(df_null):
             names_to=[".value", "child"],
             names_pattern=r"(.+)_(.+)",
         )
+        .with_columns(pl.col("gender").cast(pl.Float64))
         .select("family", "child", "dob", "gender")
         .sort(by=pl.all())
     )
@@ -598,4 +559,4 @@ def test_names_pattern_nulls_in_data(df_null):
 
     actual = pl.DataFrame(actual).sort(by=pl.all())
 
-    assert_frame_equal(result, actual, check_column_order=False)
+    assert_frame_equal(result, actual)

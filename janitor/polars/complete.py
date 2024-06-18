@@ -81,12 +81,14 @@ def _complete(
         for column in _columns:
             uniques = uniques.unnest(columns=column)
 
-    if fill_value is None:
+    no_columns_to_fill = set(df.columns) == set(uniques.columns)
+    if fill_value is None or no_columns_to_fill:
         return uniques.join(df, on=uniques.columns, how="full", coalesce=True)
     idx = None
     columns_to_select = df.columns
     if not explicit:
         idx = "".join(df.columns)
+        idx = f"{idx}_"
         df = df.with_row_index(name=idx)
     df = uniques.join(df, on=uniques.columns, how="full", coalesce=True)
     # exclude columns that were not used
@@ -94,32 +96,25 @@ def _complete(
     exclude_columns = uniques.columns
     if idx:
         exclude_columns.append(idx)
-    expression = pl.exclude(exclude_columns).is_null().any()
-    booleans = df.select(expression)
-    if isinstance(booleans, pl.LazyFrame):
-        booleans = booleans.collect()
     _columns = [
-        column
-        for column in booleans.columns
-        if booleans.get_column(column).item()
+        column for column in columns_to_select if column not in exclude_columns
     ]
-    if _columns and isinstance(fill_value, dict):
+    if isinstance(fill_value, dict):
         fill_value = [
             pl.col(column_name).fill_null(value=value)
             for column_name, value in fill_value.items()
             if column_name in _columns
         ]
-    elif _columns:
+    else:
         fill_value = [
             pl.col(column).fill_null(value=fill_value) for column in _columns
         ]
-    if _columns and not explicit:
+    if not explicit:
         condition = pl.col(idx).is_null()
         fill_value = [
             pl.when(condition).then(_fill_value).otherwise(pl.col(column_name))
             for column_name, _fill_value in zip(_columns, fill_value)
         ]
-    if _columns:
-        df = df.with_columns(fill_value)
+    df = df.with_columns(fill_value)
 
     return df.select(columns_to_select)

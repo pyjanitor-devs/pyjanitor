@@ -266,9 +266,6 @@ def test_names_pattern_dot_value(test_df):
             names_pattern="(.+)_(.+)",
         )
         .sort(by=["loc", "lat", "long"])
-        .with_columns(
-            pl.col("lat").cast(pl.Float64), pl.col("long").cast(pl.Float64)
-        )
         .select("set", "loc", "lat", "long")
     )
     assert_frame_equal(result, actual)
@@ -284,9 +281,6 @@ def test_names_sep_dot_value(test_df):
             names_sep="_",
         )
         .sort(by=["loc", "lat", "long"])
-        .with_columns(
-            pl.col("lat").cast(pl.Float64), pl.col("long").cast(pl.Float64)
-        )
         .select("set", "loc", "lat", "long")
     )
     assert_frame_equal(result, actual)
@@ -408,9 +402,6 @@ def test_multiple_dot_value():
             names_pattern=r"(x|y)_([0-9])(_mean|_sd)",
             names_transform=pl.col("time").cast(pl.Int64),
         )
-        .with_columns(
-            pl.col("x_mean").cast(pl.Int64), pl.col("y_mean").cast(pl.Int64)
-        )
         .select("unit", "time", "x_mean", "x_sd", "y_mean", "y_sd")
         .sort(by=pl.all())
     )
@@ -448,7 +439,7 @@ def test_multiple_dot_value2(single_val):
         index="id", names_to=(".value", ".value"), names_pattern="(.)(.)"
     )
 
-    assert_frame_equal(result, single_val, check_column_order=False)
+    assert_frame_equal(result, single_val)
 
 
 actual3 = [
@@ -472,7 +463,7 @@ def test_names_pattern_single_column(single_val):
         "id", names_to=".value", names_pattern="(.)."
     )
 
-    assert_frame_equal(result, actual3)
+    assert_frame_equal(result.sort(by=pl.all()), actual3.sort(by=pl.all()))
 
 
 def test_names_pattern_single_column_not_dot_value(single_val):
@@ -539,7 +530,6 @@ def test_names_pattern_nulls_in_data(df_null):
             names_to=[".value", "child"],
             names_pattern=r"(.+)_(.+)",
         )
-        .with_columns(pl.col("gender").cast(pl.Float64))
         .select("family", "child", "dob", "gender")
         .sort(by=pl.all())
     )

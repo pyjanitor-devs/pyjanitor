@@ -206,10 +206,10 @@ class PolarsDataFrame:
             │ ---       ┆ ---   ┆ ---    ┆ ---   │
             │ str       ┆ str   ┆ f64    ┆ f64   │
             ╞═══════════╪═══════╪════════╪═══════╡
-            │ setosa    ┆ Sepal ┆ 5.1    ┆ 3.5   │
-            │ virginica ┆ Sepal ┆ 5.9    ┆ 3.0   │
             │ setosa    ┆ Petal ┆ 1.4    ┆ 0.2   │
             │ virginica ┆ Petal ┆ 5.1    ┆ 1.8   │
+            │ setosa    ┆ Sepal ┆ 5.1    ┆ 3.5   │
+            │ virginica ┆ Sepal ┆ 5.9    ┆ 3.0   │
             └───────────┴───────┴────────┴───────┘
 
             Split the column labels based on regex:

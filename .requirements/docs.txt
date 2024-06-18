@@ -90,6 +90,8 @@ pexpect==4.8.0
     # via ipython
 pickleshare==0.7.5
     # via ipython
+polars==0.20.31
+    # via -r docs.in
 prompt-toolkit==3.0.36
     # via ipython
 ptyprocess==0.7.0
@@ -137,7 +139,7 @@ traitlets==5.8.1
     #   matplotlib-inline
 unyt==2.9.3
     # via -r engineering.in
-urllib3==1.26.18
+urllib3==1.26.19
     # via requests
 watchdog==2.2.1
     # via mkdocs

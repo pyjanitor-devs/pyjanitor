@@ -1,7 +1,7 @@
 # Changelog
 
 ## [Unreleased]
- 
+
 
 
 - [ENH] Added a `complete` method for polars. - Issue #1352 @samukweku

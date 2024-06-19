@@ -93,7 +93,7 @@ def read_csvs(
     return dfs_dict
 
 
-def read_commandline(cmd: str, **kwargs: Any) -> pd.DataFrame:
+def read_commandline(cmd: str, engine="pandas", **kwargs: Any) -> Mapping:
     """Read a CSV file based on a command-line command.
 
     For example, you may wish to run the following command on `sep-quarter.csv`
@@ -111,26 +111,42 @@ def read_commandline(cmd: str, **kwargs: Any) -> pd.DataFrame:
     ```
 
     This function assumes that your command line command will return
-    an output that is parsable using `pandas.read_csv` and StringIO.
-    We default to using `pd.read_csv` underneath the hood.
-    Keyword arguments are passed through to read_csv.
+    an output that is parsable using the relevant engine and StringIO.
+    This function defaults to using `pd.read_csv` underneath the hood.
+    Keyword arguments are passed through as-is.
 
     Args:
         cmd: Shell command to preprocess a file on disk.
+        engine: DataFrame engine to process the output of the shell command.
+            Currently supports both pandas and polars.
         **kwargs: Keyword arguments that are passed through to
-            `pd.read_csv()`.
+            the engine's csv reader.
+
 
     Returns:
-        A pandas DataFrame parsed from the stdout of the underlying
+        A DataFrame parsed from the stdout of the underlying
             shell.
     """
 
     check("cmd", cmd, [str])
+    if engine not in {"pandas", "polars"}:
+        raise ValueError("engine should be either pandas or polars.")
     # adding check=True ensures that an explicit, clear error
     # is raised, so that the user can see the reason for the failure
     outcome = subprocess.run(
         cmd, shell=True, capture_output=True, text=True, check=True
     )
+    if engine == "polars":
+        try:
+            import polars as pl
+        except ImportError:
+            import_message(
+                submodule="polars",
+                package="polars",
+                conda_channel="conda-forge",
+                pip_install=True,
+            )
+        return pl.read_csv(StringIO(outcome.stdout), **kwargs)
     return pd.read_csv(StringIO(outcome.stdout), **kwargs)
 
 

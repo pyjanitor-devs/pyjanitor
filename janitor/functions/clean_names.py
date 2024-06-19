@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import unicodedata
-from typing import Optional, Union
 
 import pandas as pd
 import pandas_flavor as pf
@@ -18,9 +17,9 @@ from janitor.utils import deprecated_alias
 @deprecated_alias(preserve_original_columns="preserve_original_labels")
 def clean_names(
     df: pd.DataFrame,
-    axis: Union[str, None] = "columns",
-    column_names: Union[str, list] = None,
-    strip_underscores: Optional[Union[str, bool]] = None,
+    axis: str = "columns",
+    column_names: str | list = None,
+    strip_underscores: str | bool = None,
     case_type: str = "lower",
     remove_special: bool = False,
     strip_accents: bool = True,
@@ -170,14 +169,14 @@ def clean_names(
 
 
 def _clean_names(
-    obj: Union[pd.Index, pd.Series],
-    strip_underscores: Optional[Union[str, bool]] = None,
-    case_type: str = "lower",
-    remove_special: bool = False,
-    strip_accents: bool = False,
-    enforce_string: bool = False,
-    truncate_limit: int = None,
-) -> Union[pd.Index, pd.Series]:
+    obj: pd.Index | pd.Series,
+    strip_underscores: str | bool,
+    case_type: str,
+    remove_special: bool,
+    strip_accents: bool,
+    enforce_string: bool,
+    truncate_limit: int,
+) -> pd.Index | pd.Series:
     """
     Generic function to clean labels in a pandas object.
     """
@@ -202,9 +201,9 @@ def _clean_names(
 
 
 def _change_case(
-    obj: Union[pd.Index, pd.Series],
+    obj: pd.Index | pd.Series,
     case_type: str,
-) -> Union[pd.Index, pd.Series]:
+) -> pd.Index | pd.Series:
     """Change case of labels in obj."""
     case_types = {"preserve", "upper", "lower", "snake"}
     case_type = case_type.lower()
@@ -226,9 +225,7 @@ def _change_case(
     )
 
 
-def _normalize_1(
-    obj: Union[pd.Index, pd.Series]
-) -> Union[pd.Index, pd.Series]:
+def _normalize_1(obj: pd.Index | pd.Series) -> pd.Index | pd.Series:
     """Perform normalization of labels in obj."""
     FIXES = [(r"[ /:,?()\.-]", "_"), (r"['’]", ""), (r"[\xa0]", "_")]
     for search, replace in FIXES:
@@ -238,8 +235,8 @@ def _normalize_1(
 
 
 def _strip_accents(
-    obj: Union[pd.Index, pd.Series],
-) -> Union[pd.Index, pd.Series]:
+    obj: pd.Index | pd.Series,
+) -> pd.Index | pd.Series:
     """Remove accents from a label.
 
     Inspired from [StackOverflow][so].
@@ -258,9 +255,9 @@ def _strip_accents(
 
 
 def _strip_underscores_func(
-    obj: Union[pd.Index, pd.Series],
-    strip_underscores: Union[str, bool] = None,
-) -> Union[pd.Index, pd.Series]:
+    obj: pd.Index | pd.Series,
+    strip_underscores: str | bool = None,
+) -> pd.Index | pd.Series:
     """Strip underscores."""
     underscore_options = {None, "left", "right", "both", "l", "r", True}
     if strip_underscores not in underscore_options:

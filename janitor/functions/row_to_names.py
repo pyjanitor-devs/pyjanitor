@@ -15,7 +15,7 @@ from janitor.utils import check, deprecated_alias
 @deprecated_alias(row_number="row_numbers", remove_row="remove_rows")
 def row_to_names(
     df: pd.DataFrame,
-    row_numbers: int | list = 0,
+    row_numbers: int | list | slice = 0,
     remove_rows: bool = False,
     remove_rows_above: bool = False,
     reset_index: bool = False,
@@ -83,20 +83,30 @@ def row_to_names(
     Returns:
         A pandas DataFrame with set column names.
     """  # noqa: E501
+
     if not pd.options.mode.copy_on_write:
         df = df.copy()
+    else:
+        df = df[:]
 
-    check("row_numbers", row_numbers, [int, list])
-    if isinstance(row_numbers, list):
+    if isinstance(row_numbers, int):
+        row_numbers = slice(row_numbers, row_numbers + 1)
+    elif isinstance(row_numbers, slice):
+        if row_numbers.step is not None:
+            raise ValueError(
+                "The step argument for slice is not supported in row_to_names."
+            )
+    elif isinstance(row_numbers, list):
         for entry in row_numbers:
             check("entry in the row_numbers argument", entry, [int])
+    else:
+        raise TypeError(
+            "row_numbers should be either an integer, "
+            "a slice or a list; "
+            f"instead got type {type(row_numbers).__name__}"
+        )
+    is_a_slice = isinstance(row_numbers, slice)
 
-    warnings.warn(
-        "The function row_to_names will, in the official 1.0 release, "
-        "change its behaviour to reset the dataframe's index by default. "
-        "You can prepare for this change right now by explicitly setting "
-        "`reset_index=True` when calling on `row_to_names`."
-    )
     # should raise if positional indexers are missing
     # IndexError: positional indexers are out-of-bounds
     headers = df.iloc[row_numbers]
@@ -111,25 +121,33 @@ def row_to_names(
     df.columns = headers
     df.columns.name = None
 
-    df_index = df.index
     if remove_rows_above:
-        if isinstance(row_numbers, list):
-            if not (np.diff(row_numbers) == 1).all():
-                raise ValueError(
-                    "The remove_rows_above argument is applicable "
-                    "only if the row_numbers argument is an integer, "
-                    "or the integers in a list are consecutive increasing, "
-                    "with a difference of 1."
-                )
-            tail = row_numbers[0]
+        if not is_a_slice:
+            raise ValueError(
+                "The remove_rows_above argument is applicable "
+                "only if the row_numbers argument is an integer "
+                "or a slice."
+            )
+        if remove_rows:
+            df = df.iloc[row_numbers.stop :]
         else:
-            tail = row_numbers
-        df = df.iloc[tail:]
-    if remove_rows:
-        if isinstance(row_numbers, int):
-            row_numbers = [row_numbers]
-        df_index = df.index.symmetric_difference(df_index[row_numbers])
-        df = df.loc[df_index]
+            df = df.iloc[row_numbers.start :]
+    elif remove_rows:
+        if is_a_slice:
+            start = row_numbers.start if row_numbers.start else 0
+            stop = row_numbers.stop
+            df = [df.iloc[:start], df.iloc[stop:]]
+            df = pd.concat(df, sort=False, copy=False)
+        else:
+            row_numbers = np.setdiff1d(range(len(df)), row_numbers)
+            df = df.iloc[row_numbers]
     if reset_index:
         df.index = range(len(df))
+    else:
+        warnings.warn(
+            "The function row_to_names will, in the official 1.0 release, "
+            "change its behaviour to reset the dataframe's index by default. "
+            "You can prepare for this change right now by explicitly setting "
+            "`reset_index=True` when calling on `row_to_names`."
+        )
     return df

@@ -64,9 +64,9 @@ def test_row_to_names_delete_above(dataframe):
 
 
 @pytest.mark.functions
-def test_row_to_names_delete_above_list(dataframe):
-    "Test output if row_numbers is a list"
-    df = dataframe.row_to_names([2, 3], remove_rows_above=True)
+def test_row_to_names_delete_above_slice(dataframe):
+    "Test output if row_numbers is a slice"
+    df = dataframe.row_to_names(slice(2, 4), remove_rows_above=True)
     assert df.iloc[0, 0] == 3
     assert df.iloc[0, 1] == 3.234_612_5
     assert df.iloc[0, 2] == 3
@@ -75,13 +75,11 @@ def test_row_to_names_delete_above_list(dataframe):
 
 
 @pytest.mark.functions
-def test_row_to_names_delete_above_list_non_consecutive(dataframe):
-    "Raise if row_numbers is a list, but non consecutive"
-    msg = "The remove_rows_above argument is applicable "
-    msg += "only if the row_numbers argument is an integer, "
-    msg += "or the integers in a list are consecutive increasing, "
-    msg += "with a difference of 1."
-    with pytest.raises(ValueError, match=msg):
+def test_row_to_names_delete_above_is_a_list(dataframe):
+    "Raise if row_numbers is a list"
+    with pytest.raises(
+        ValueError, match=r"The remove_rows_above argument is applicable.+"
+    ):
         dataframe.row_to_names([1, 3], remove_rows_above=True)
 
 

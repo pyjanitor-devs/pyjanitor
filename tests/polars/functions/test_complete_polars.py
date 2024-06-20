@@ -40,7 +40,7 @@ def taxonomy_df():
 
 def test_column_None(fill_df):
     """Test output if *columns is empty."""
-    assert_frame_equal(fill_df.janitor.complete(), fill_df)
+    assert_frame_equal(fill_df.complete(), fill_df)
 
 
 def test_empty_groups(fill_df):
@@ -49,19 +49,19 @@ def test_empty_groups(fill_df):
     msg += "should either be a string, a column selector, "
     msg += "or a polars expression, instead got.+"
     with pytest.raises(TypeError, match=msg):
-        fill_df.janitor.complete("group", {})
+        fill_df.complete("group", {})
 
 
 def test_type_sort(fill_df):
     """Raise TypeError if `sort` is not boolean."""
     with pytest.raises(TypeError):
-        fill_df.janitor.complete("group", "item_id", sort=11)
+        fill_df.complete("group", "item_id", sort=11)
 
 
 def test_type_explicit(fill_df):
     """Raise TypeError if `explicit` is not boolean."""
     with pytest.raises(TypeError):
-        fill_df.janitor.complete("group", "item_id", explicit=11)
+        fill_df.complete("group", "item_id", explicit=11)
 
 
 def test_complete_1(fill_df):
@@ -69,7 +69,7 @@ def test_complete_1(fill_df):
     Test output for janitor.complete.
     """
     trimmed = fill_df.lazy().select(~cs.starts_with("value"))
-    result = trimmed.janitor.complete(
+    result = trimmed.complete(
         cs.by_name("group"),
         pl.struct("item_id", "item_name").alias("rar").unique().sort(),
         fill_value=0,
@@ -115,7 +115,7 @@ def test_groupby_complete():
 
     df = pl.LazyFrame(data)
     expected = (
-        df.janitor.complete("Date", "Site", by="Grid Cell")
+        df.complete("Date", "Site", by="Grid Cell")
         .select("Grid Cell", "Site", "Date", "Value")
         .sort(by=pl.all())
     )
@@ -147,7 +147,7 @@ def test_groupby_complete():
 # https://tidyr.tidyverse.org/reference/complete.html
 def test_complete_2(fill_df):
     """Test output for janitor.complete."""
-    result = fill_df.janitor.complete(
+    result = fill_df.complete(
         "group",
         pl.struct("item_id", "item_name").alias("rar").unique().sort(),
         fill_value={"value1": 0, "value2": 99},
@@ -241,7 +241,7 @@ def test_complete_multiple_groupings():
         }
     )
 
-    result = df3.janitor.complete(
+    result = df3.complete(
         pl.struct("meta", "domain1").alias("bar").unique().sort(),
         pl.struct("project_id", "question_count").alias("foo").unique().sort(),
         fill_value={"tag_count": 0},
@@ -255,6 +255,6 @@ def test_complete_3(fill_df):
     Test output for janitor.complete
     """
     assert_frame_equal(
-        fill_df.janitor.complete("group", sort=True).sort("group"),
+        fill_df.complete("group", sort=True).sort("group"),
         fill_df.sort("group"),
     )

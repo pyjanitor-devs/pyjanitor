@@ -25,10 +25,19 @@ def test_separator_type(df):
 @pytest.mark.parametrize("df", [df, df.lazy()])
 def test_row_numbers_type(df):
     """
-    Raise if row_numbers is not an int/list
+    Raise if row_numbers is not an int/slice/list
     """
     with pytest.raises(TypeError, match="row_numbers should be.+"):
         df.janitor.row_to_names({1, 2})
+
+
+@pytest.mark.parametrize("df", [df, df.lazy()])
+def test_row_numbers_slice_step(df):
+    """
+    Raise if row_numbers is a slice and step is passed.
+    """
+    with pytest.raises(ValueError, match="The step argument for slice.+"):
+        df.janitor.row_to_names(slice(1, 3, 1))
 
 
 @pytest.mark.parametrize("df", [df, df.lazy()])
@@ -46,6 +55,15 @@ def test_row_numbers_list_type(df):
 @pytest.mark.parametrize("df", [df, df.lazy()])
 def test_row_to_names(df):
     df = df.janitor.row_to_names(2)
+    assert df.columns[0] == "3.2346125"
+    assert df.columns[1] == "3"
+    assert df.columns[2] == "lion"
+    assert df.columns[3] == "Basel"
+
+
+@pytest.mark.parametrize("df", [df, df.lazy()])
+def test_row_to_names_slice(df):
+    df = df.janitor.row_to_names(slice(2, 3))
     assert df.columns[0] == "3.2346125"
     assert df.columns[1] == "3"
     assert df.columns[2] == "lion"
@@ -108,7 +126,7 @@ def test_row_to_names_delete_above(df):
 @pytest.mark.parametrize("df", [df, df.lazy()])
 def test_row_to_names_delete_above_list(df):
     "Test output if row_numbers is a list"
-    df = df.janitor.row_to_names([2, 3], remove_rows_above=True)
+    df = df.janitor.row_to_names(slice(2, 4), remove_rows_above=True)
     if isinstance(df, pl.LazyFrame):
         df = df.collect()
     assert df.to_series(0)[0] == 3.234_612_5
@@ -124,7 +142,7 @@ def test_row_to_names_delete_above_delete_rows(df):
     and remove_rows_above=True
     """
     df = df.janitor.row_to_names(
-        [2, 3], remove_rows=True, remove_rows_above=True
+        slice(2, 4), remove_rows=True, remove_rows_above=True
     )
     if isinstance(df, pl.LazyFrame):
         df = df.collect()
@@ -150,11 +168,8 @@ def test_row_to_names_delete_above_delete_rows_scalar(df):
 
 
 @pytest.mark.parametrize("df", [df, df.lazy()])
-def test_row_to_names_delete_above_list_non_consecutive(df):
-    "Raise if row_numbers is a list, but non consecutive"
-    msg = "The remove_rows_above argument is applicable "
-    msg += "only if the row_numbers argument is an integer, "
-    msg += "or the integers in a list are consecutive increasing, "
-    msg += "with a difference of 1."
-    with pytest.raises(ValueError, match=msg):
+def test_row_to_names_not_a_slice_remove_rows_above(df):
+    with pytest.raises(
+        ValueError, match=r"The remove_rows_above argument is applicable.+"
+    ):
         df.janitor.row_to_names([1, 3], remove_rows_above=True)

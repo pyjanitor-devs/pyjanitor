@@ -114,7 +114,7 @@ def test_names_pat_str(df_checks):
     and .value is present.
     """
     result = (
-        df_checks.janitor.pivot_longer(
+        df_checks.pivot_longer(
             index=["famid", "birth"],
             names_to=(".value", "age"),
             names_pattern="(.+)(.)",
@@ -254,7 +254,7 @@ def test_names_pattern_dot_value(test_df):
     """Test output for names_pattern and .value."""
 
     result = (
-        test_df.janitor.pivot_longer(
+        test_df.pivot_longer(
             column_names=cs.all(),
             names_to=["set", ".value"],
             names_pattern="(.+)_(.+)",
@@ -269,7 +269,7 @@ def test_names_sep_dot_value(test_df):
     """Test output for names_pattern and .value."""
 
     result = (
-        test_df.janitor.pivot_longer(
+        test_df.pivot_longer(
             column_names=cs.all(),
             names_to=["set", ".value"],
             names_sep="_",
@@ -480,7 +480,7 @@ def test_names_pattern_single_column_not_dot_value1(single_val):
     """
     result = (
         single_val.select("x1")
-        .janitor.pivot_longer(names_to="yA", names_pattern="(.+)")
+        .pivot_longer(names_to="yA", names_pattern="(.+)")
         .select("yA", "value")
     )
 

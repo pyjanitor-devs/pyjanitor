@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from janitor.utils import check, import_message
 
-from .polars_flavor import register_dataframe_method, register_lazyframe_method
+from .polars_flavor import register_dataframe_method
 
 try:
     import polars as pl
@@ -17,19 +17,18 @@ except ImportError:
     )
 
 
-@register_lazyframe_method
 @register_dataframe_method
 def row_to_names(
-    df: pl.DataFrame | pl.LazyFrame,
-    row_numbers: int | list = 0,
+    df: pl.DataFrame,
+    row_numbers: int | list | slice = 0,
     remove_rows: bool = False,
     remove_rows_above: bool = False,
     separator: str = "_",
-) -> pl.DataFrame | pl.LazyFrame:
+) -> pl.DataFrame:
     """
     Elevates a row, or rows, to be the column names of a DataFrame.
 
-    `row_to_names` can also be applied to a LazyFrame.
+    For a LazyFrame, the user should materialize into a DataFrame before using `row_to_names`..
 
     Examples:
         Replace column names with the first row.
@@ -104,7 +103,7 @@ def row_to_names(
 
     Args:
         row_numbers: Position of the row(s) containing the variable names.
-            Note that indexing starts from 0. It can also be a list.
+            Note that indexing starts from 0. It can also be a list/slice.
             Defaults to 0 (first row).
         remove_rows: Whether the row(s) should be removed from the DataFrame.
         remove_rows_above: Whether the row(s) above the selected row should
@@ -113,7 +112,7 @@ def row_to_names(
             if row_numbers is a list of integers. Default is '_'.
 
     Returns:
-        A polars DataFrame/LazyFrame.
+        A polars DataFrame.
     """  # noqa: E501
     return _row_to_names(
         df=df,
@@ -125,12 +124,12 @@ def row_to_names(
 
 
 def _row_to_names(
-    df: pl.DataFrame | pl.LazyFrame,
+    df: pl.DataFrame,
     row_numbers: int | list | slice,
     remove_rows: bool,
     remove_rows_above: bool,
     separator: str,
-) -> pl.DataFrame | pl.LazyFrame:
+) -> pl.DataFrame:
     """
     Function to convert rows in the DataFrame to column names.
     """
@@ -167,8 +166,7 @@ def _row_to_names(
         expression = expression.str.concat(delimiter=separator)
         expression = pl.struct(expression)
         mapping = df.select(expression)
-    if isinstance(df, pl.LazyFrame):
-        mapping = mapping.collect()
+
     mapping = mapping.to_series(0)[0]
     df = df.rename(mapping=mapping)
     if remove_rows_above:

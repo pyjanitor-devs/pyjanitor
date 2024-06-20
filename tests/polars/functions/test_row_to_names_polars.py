@@ -3,17 +3,20 @@ import pytest
 
 import janitor.polars  # noqa: F401
 
-df = pl.DataFrame(
-    {
-        "Bell__Chart": [1.234_523_45, 2.456_234, 3.234_612_5] * 3,
-        "decorated-elephant": [1, 2, 3] * 3,
-        "animals@#$%^": ["rabbit", "leopard", "lion"] * 3,
-        "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
-    }
-)
+
+@pytest.fixture
+def df():
+    """fixture for tests"""
+    return pl.DataFrame(
+        {
+            "Bell__Chart": [1.234_523_45, 2.456_234, 3.234_612_5] * 3,
+            "decorated-elephant": [1, 2, 3] * 3,
+            "animals@#$%^": ["rabbit", "leopard", "lion"] * 3,
+            "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
+        }
+    )
 
 
-@pytest.mark.parametrize("df", [df, df.lazy()])
 def test_separator_type(df):
     """
     Raise if separator is not a string
@@ -22,7 +25,6 @@ def test_separator_type(df):
         df.row_to_names([1, 2], separator=1)
 
 
-@pytest.mark.parametrize("df", [df, df.lazy()])
 def test_row_numbers_type(df):
     """
     Raise if row_numbers is not an int/slice/list
@@ -31,7 +33,6 @@ def test_row_numbers_type(df):
         df.row_to_names({1, 2})
 
 
-@pytest.mark.parametrize("df", [df, df.lazy()])
 def test_row_numbers_slice_step(df):
     """
     Raise if row_numbers is a slice and step is passed.
@@ -40,7 +41,6 @@ def test_row_numbers_slice_step(df):
         df.row_to_names(slice(1, 3, 1))
 
 
-@pytest.mark.parametrize("df", [df, df.lazy()])
 def test_row_numbers_list_type(df):
     """
     Raise if row_numbers is a list
@@ -52,7 +52,6 @@ def test_row_numbers_list_type(df):
         df.row_to_names(["1", 2])
 
 
-@pytest.mark.parametrize("df", [df, df.lazy()])
 def test_row_to_names(df):
     df = df.row_to_names(2)
     assert df.columns[0] == "3.2346125"
@@ -61,7 +60,6 @@ def test_row_to_names(df):
     assert df.columns[3] == "Basel"
 
 
-@pytest.mark.parametrize("df", [df, df.lazy()])
 def test_row_to_names_slice(df):
     df = df.row_to_names(slice(2, 3))
     assert df.columns[0] == "3.2346125"
@@ -70,7 +68,6 @@ def test_row_to_names_slice(df):
     assert df.columns[3] == "Basel"
 
 
-@pytest.mark.parametrize("df", [df, df.lazy()])
 def test_row_to_names_single_list(df):
     "Test output if row_numbers is a list, and contains a single item."
     df = df.row_to_names([2])
@@ -80,7 +77,6 @@ def test_row_to_names_single_list(df):
     assert df.columns[3] == "Basel"
 
 
-@pytest.mark.parametrize("df", [df, df.lazy()])
 def test_row_to_names_list(df):
     "Test output if row_numbers is a list."
     df = df.row_to_names([1, 2])
@@ -90,7 +86,6 @@ def test_row_to_names_list(df):
     assert df.columns[3] == "Shanghai_Basel"
 
 
-@pytest.mark.parametrize("df", [df, df.lazy()])
 def test_row_to_names_delete_this_row(df):
     df = df.row_to_names(2, remove_rows=True)
     if isinstance(df, pl.LazyFrame):
@@ -101,7 +96,6 @@ def test_row_to_names_delete_this_row(df):
     assert df.to_series(3)[0] == "Cambridge"
 
 
-@pytest.mark.parametrize("df", [df, df.lazy()])
 def test_row_to_names_list_delete_this_row(df):
     df = df.row_to_names([2], remove_rows=True)
     if isinstance(df, pl.LazyFrame):
@@ -112,7 +106,6 @@ def test_row_to_names_list_delete_this_row(df):
     assert df.to_series(3)[0] == "Cambridge"
 
 
-@pytest.mark.parametrize("df", [df, df.lazy()])
 def test_row_to_names_delete_above(df):
     df = df.row_to_names(2, remove_rows_above=True)
     if isinstance(df, pl.LazyFrame):
@@ -123,7 +116,6 @@ def test_row_to_names_delete_above(df):
     assert df.to_series(3)[0] == "Basel"
 
 
-@pytest.mark.parametrize("df", [df, df.lazy()])
 def test_row_to_names_delete_above_list(df):
     "Test output if row_numbers is a list"
     df = df.row_to_names(slice(2, 4), remove_rows_above=True)
@@ -135,7 +127,6 @@ def test_row_to_names_delete_above_list(df):
     assert df.to_series(3)[0] == "Basel"
 
 
-@pytest.mark.parametrize("df", [df, df.lazy()])
 def test_row_to_names_delete_above_delete_rows(df):
     """
     Test output for remove_rows=True
@@ -150,7 +141,6 @@ def test_row_to_names_delete_above_delete_rows(df):
     assert df.to_series(3)[0] == "Shanghai"
 
 
-@pytest.mark.parametrize("df", [df, df.lazy()])
 def test_row_to_names_delete_above_delete_rows_scalar(df):
     """
     Test output for remove_rows=True
@@ -165,7 +155,6 @@ def test_row_to_names_delete_above_delete_rows_scalar(df):
     assert df.to_series(3)[0] == "Cambridge"
 
 
-@pytest.mark.parametrize("df", [df, df.lazy()])
 def test_row_to_names_not_a_slice_remove_rows_above(df):
     with pytest.raises(
         ValueError, match=r"The remove_rows_above argument is applicable.+"

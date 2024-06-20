@@ -217,7 +217,7 @@ def pivot_longer(
         └──────────────┴─────────────┴──────────────┴─────────────┴───────────┘
 
         Replicate polars' [melt](https://docs.pola.rs/py-polars/html/reference/dataframe/api/polars.DataFrame.melt.html#polars-dataframe-melt):
-        >>> df.pivot_longer(index = 'Species')
+        >>> df.janitor.pivot_longer(index = 'Species').sort(by=pl.all())
         shape: (8, 3)
         ┌───────────┬──────────────┬───────┐
         │ Species   ┆ variable     ┆ value │
@@ -239,7 +239,7 @@ def pivot_longer(
         ...     index = 'Species',
         ...     names_to = ('part', 'dimension'),
         ...     names_sep = '.',
-        ... ).select('Species','part','dimension','value')
+        ... ).select('Species','part','dimension','value').sort(by=pl.all())
         shape: (8, 4)
         ┌───────────┬───────┬───────────┬───────┐
         │ Species   ┆ part  ┆ dimension ┆ value │
@@ -261,7 +261,7 @@ def pivot_longer(
         ...     index = 'Species',
         ...     names_to = ('part', '.value'),
         ...     names_sep = '.',
-        ... ).select('Species','part','Length','Width')
+        ... ).select('Species','part','Length','Width').sort(by=pl.all())
         shape: (4, 4)
         ┌───────────┬───────┬────────┬───────┐
         │ Species   ┆ part  ┆ Length ┆ Width │

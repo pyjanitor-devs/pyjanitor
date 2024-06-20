@@ -75,7 +75,7 @@ def pivot_longer_spec(
         │ Sepal.Width  ┆ Width  ┆ Sepal │
         │ Petal.Width  ┆ Width  ┆ Petal │
         └──────────────┴────────┴───────┘
-        >>> df.pipe(pivot_longer_spec,spec=spec).sort*by=pl.all())
+        >>> df.pipe(pivot_longer_spec,spec=spec).sort(by=pl.all())
         shape: (4, 4)
         ┌───────────┬───────┬────────┬───────┐
         │ Species   ┆ part  ┆ Length ┆ Width │

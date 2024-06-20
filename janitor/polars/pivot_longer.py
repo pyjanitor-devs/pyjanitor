@@ -217,7 +217,7 @@ def pivot_longer(
         └──────────────┴─────────────┴──────────────┴─────────────┴───────────┘
 
         Replicate polars' [melt](https://docs.pola.rs/py-polars/html/reference/dataframe/api/polars.DataFrame.melt.html#polars-dataframe-melt):
-        >>> df.janitor.pivot_longer(index = 'Species').sort(by=pl.all())
+        >>> df.pivot_longer(index = 'Species').sort(by=pl.all())
         shape: (8, 3)
         ┌───────────┬──────────────┬───────┐
         │ Species   ┆ variable     ┆ value │

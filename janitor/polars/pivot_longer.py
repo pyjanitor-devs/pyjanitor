@@ -246,14 +246,14 @@ def pivot_longer(
         │ ---       ┆ ---   ┆ ---       ┆ ---   │
         │ str       ┆ str   ┆ str       ┆ f64   │
         ╞═══════════╪═══════╪═══════════╪═══════╡
-        │ setosa    ┆ Sepal ┆ Length    ┆ 5.1   │
-        │ virginica ┆ Sepal ┆ Length    ┆ 5.9   │
-        │ setosa    ┆ Sepal ┆ Width     ┆ 3.5   │
-        │ virginica ┆ Sepal ┆ Width     ┆ 3.0   │
         │ setosa    ┆ Petal ┆ Length    ┆ 1.4   │
-        │ virginica ┆ Petal ┆ Length    ┆ 5.1   │
         │ setosa    ┆ Petal ┆ Width     ┆ 0.2   │
+        │ setosa    ┆ Sepal ┆ Length    ┆ 5.1   │
+        │ setosa    ┆ Sepal ┆ Width     ┆ 3.5   │
+        │ virginica ┆ Petal ┆ Length    ┆ 5.1   │
         │ virginica ┆ Petal ┆ Width     ┆ 1.8   │
+        │ virginica ┆ Sepal ┆ Length    ┆ 5.9   │
+        │ virginica ┆ Sepal ┆ Width     ┆ 3.0   │
         └───────────┴───────┴───────────┴───────┘
 
         Retain parts of the column names as headers:
@@ -268,10 +268,10 @@ def pivot_longer(
         │ ---       ┆ ---   ┆ ---    ┆ ---   │
         │ str       ┆ str   ┆ f64    ┆ f64   │
         ╞═══════════╪═══════╪════════╪═══════╡
-        │ setosa    ┆ Sepal ┆ 5.1    ┆ 3.5   │
-        │ virginica ┆ Sepal ┆ 5.9    ┆ 3.0   │
         │ setosa    ┆ Petal ┆ 1.4    ┆ 0.2   │
+        │ setosa    ┆ Sepal ┆ 5.1    ┆ 3.5   │
         │ virginica ┆ Petal ┆ 5.1    ┆ 1.8   │
+        │ virginica ┆ Sepal ┆ 5.9    ┆ 3.0   │
         └───────────┴───────┴────────┴───────┘
 
         Split the column labels based on regex:

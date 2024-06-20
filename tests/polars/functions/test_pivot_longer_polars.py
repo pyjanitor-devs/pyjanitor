@@ -23,7 +23,7 @@ def test_type_names_to(df_checks):
     """Raise TypeError if wrong type is provided for names_to."""
     msg = "names_to should be a string, list, or tuple.+"
     with pytest.raises(TypeError, match=msg):
-        df_checks.janitor.pivot_longer(names_to=2007, names_sep="_")
+        df_checks.pivot_longer(names_to=2007, names_sep="_")
 
 
 def test_subtype_names_to(df_checks):
@@ -33,15 +33,13 @@ def test_subtype_names_to(df_checks):
     in names_to.
     """
     with pytest.raises(TypeError, match="'1' in names_to.+"):
-        df_checks.janitor.pivot_longer(names_to=[1], names_sep="_")
+        df_checks.pivot_longer(names_to=[1], names_sep="_")
 
 
 def test_duplicate_names_to(df_checks):
     """Raise error if names_to contains duplicates."""
     with pytest.raises(ValueError, match="'y' is duplicated in names_to."):
-        df_checks.janitor.pivot_longer(
-            names_to=["y", "y"], names_pattern="(.+)(.)"
-        )
+        df_checks.pivot_longer(names_to=["y", "y"], names_pattern="(.+)(.)")
 
 
 def test_both_names_sep_and_pattern(df_checks):
@@ -53,7 +51,7 @@ def test_both_names_sep_and_pattern(df_checks):
         ValueError,
         match="Only one of names_pattern or names_sep should be provided.",
     ):
-        df_checks.janitor.pivot_longer(
+        df_checks.pivot_longer(
             names_to=["rar", "bar"], names_sep="-", names_pattern="(.+)(.)"
         )
 
@@ -61,23 +59,19 @@ def test_both_names_sep_and_pattern(df_checks):
 def test_name_pattern_wrong_type(df_checks):
     """Raise TypeError if the wrong type is provided for names_pattern."""
     with pytest.raises(TypeError, match="names_pattern should be one of.+"):
-        df_checks.janitor.pivot_longer(
-            names_to=["rar", "bar"], names_pattern=2007
-        )
+        df_checks.pivot_longer(names_to=["rar", "bar"], names_pattern=2007)
 
 
 def test_name_sep_wrong_type(df_checks):
     """Raise TypeError if the wrong type is provided for names_sep."""
     with pytest.raises(TypeError, match="names_sep should be one of.+"):
-        df_checks.janitor.pivot_longer(
-            names_to=[".value", "num"], names_sep=["_"]
-        )
+        df_checks.pivot_longer(names_to=[".value", "num"], names_sep=["_"])
 
 
 def test_values_to_wrong_type(df_checks):
     """Raise TypeError if the wrong type is provided for `values_to`."""
     with pytest.raises(TypeError, match="values_to should be one of.+"):
-        df_checks.janitor.pivot_longer(values_to={"salvo"}, names_sep="_")
+        df_checks.pivot_longer(values_to={"salvo"}, names_sep="_")
 
 
 def test_names_to_names_pattern_len(df_checks):
@@ -90,7 +84,7 @@ def test_names_to_names_pattern_len(df_checks):
     msg += "not match the number of fields extracted.+"
     with pytest.raises(ValueError, match=msg):
 
-        df_checks.janitor.pivot_longer(
+        df_checks.pivot_longer(
             column_names=cs.starts_with("ht"),
             names_to=(".value"),
             names_pattern=r"(\d+)(.)",
@@ -107,7 +101,7 @@ def test_names_to_names_pattern_mismatch(df_checks):
 
     with pytest.raises(ValueError, match=msg):
 
-        df_checks.janitor.pivot_longer(
+        df_checks.pivot_longer(
             column_names=cs.starts_with("ht"),
             names_to=(".value", "age"),
             names_pattern=r"(\d+)(.)",
@@ -304,7 +298,7 @@ def test_not_dot_value_sep(not_dot_value):
     """Test output when names_sep and no dot_value"""
 
     result = (
-        not_dot_value.janitor.pivot_longer(
+        not_dot_value.pivot_longer(
             "country",
             names_to=("event", "year"),
             names_sep="_",
@@ -334,7 +328,7 @@ def test_not_dot_value_sep(not_dot_value):
 def test_not_dot_value_sep2(not_dot_value):
     """Test output when names_sep and no dot_value"""
 
-    result = not_dot_value.janitor.pivot_longer(
+    result = not_dot_value.pivot_longer(
         "country",
         names_to="event",
         names_sep="/",
@@ -352,7 +346,7 @@ def test_not_dot_value_pattern(not_dot_value):
     """Test output when names_pattern is a string and no dot_value"""
 
     result = (
-        not_dot_value.janitor.pivot_longer(
+        not_dot_value.pivot_longer(
             index="country",
             names_to=("event", "year"),
             names_pattern=r"(.+)_(.+)",
@@ -396,7 +390,7 @@ def test_multiple_dot_value():
     )
 
     result = (
-        df.janitor.pivot_longer(
+        df.pivot_longer(
             index="unit",
             names_to=(".value", "time", ".value"),
             names_pattern=r"(x|y)_([0-9])(_mean|_sd)",
@@ -435,7 +429,7 @@ def single_val():
 def test_multiple_dot_value2(single_val):
     """Test output for multiple .value."""
 
-    result = single_val.janitor.pivot_longer(
+    result = single_val.pivot_longer(
         index="id", names_to=(".value", ".value"), names_pattern="(.)(.)"
     )
 
@@ -459,7 +453,7 @@ def test_names_pattern_single_column(single_val):
     Test output if names_to is only '.value'.
     """
 
-    result = single_val.janitor.pivot_longer(
+    result = single_val.pivot_longer(
         "id", names_to=".value", names_pattern="(.)."
     )
 
@@ -470,7 +464,7 @@ def test_names_pattern_single_column_not_dot_value(single_val):
     """
     Test output if names_to is not '.value'.
     """
-    result = single_val.janitor.pivot_longer(
+    result = single_val.pivot_longer(
         index="id", column_names="x1", names_to="yA", names_pattern="(.+)"
     ).select("id", "yA", "value")
 
@@ -525,7 +519,7 @@ def df_null():
 def test_names_pattern_nulls_in_data(df_null):
     """Test output if nulls are present in data."""
     result = (
-        df_null.janitor.pivot_longer(
+        df_null.pivot_longer(
             index="family",
             names_to=[".value", "child"],
             names_pattern=r"(.+)_(.+)",

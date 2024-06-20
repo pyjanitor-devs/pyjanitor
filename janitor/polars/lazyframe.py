@@ -154,21 +154,21 @@ class PolarsLazyFrame:
             │ 5.9          ┆ 3.0         ┆ 5.1          ┆ 1.8         ┆ virginica │
             └──────────────┴─────────────┴──────────────┴─────────────┴───────────┘
 
-            >>> df.janitor.pivot_longer(index = 'Species').collect()
+            >>> df.janitor.pivot_longer(index = 'Species').sort(by=pl.all()).collect()
             shape: (8, 3)
             ┌───────────┬──────────────┬───────┐
             │ Species   ┆ variable     ┆ value │
             │ ---       ┆ ---          ┆ ---   │
             │ str       ┆ str          ┆ f64   │
             ╞═══════════╪══════════════╪═══════╡
-            │ setosa    ┆ Sepal.Length ┆ 5.1   │
-            │ virginica ┆ Sepal.Length ┆ 5.9   │
-            │ setosa    ┆ Sepal.Width  ┆ 3.5   │
-            │ virginica ┆ Sepal.Width  ┆ 3.0   │
             │ setosa    ┆ Petal.Length ┆ 1.4   │
-            │ virginica ┆ Petal.Length ┆ 5.1   │
             │ setosa    ┆ Petal.Width  ┆ 0.2   │
+            │ setosa    ┆ Sepal.Length ┆ 5.1   │
+            │ setosa    ┆ Sepal.Width  ┆ 3.5   │
+            │ virginica ┆ Petal.Length ┆ 5.1   │
             │ virginica ┆ Petal.Width  ┆ 1.8   │
+            │ virginica ┆ Sepal.Length ┆ 5.9   │
+            │ virginica ┆ Sepal.Width  ┆ 3.0   │
             └───────────┴──────────────┴───────┘
 
         !!! info "New in version 0.28.0"

@@ -155,21 +155,21 @@ class PolarsDataFrame:
             └──────────────┴─────────────┴──────────────┴─────────────┴───────────┘
 
             Replicate polars' [melt](https://docs.pola.rs/py-polars/html/reference/dataframe/api/polars.DataFrame.melt.html#polars-dataframe-melt):
-            >>> df.janitor.pivot_longer(index = 'Species')
+            >>> df.janitor.pivot_longer(index = 'Species').sort(by=pl.all())
             shape: (8, 3)
             ┌───────────┬──────────────┬───────┐
             │ Species   ┆ variable     ┆ value │
             │ ---       ┆ ---          ┆ ---   │
             │ str       ┆ str          ┆ f64   │
             ╞═══════════╪══════════════╪═══════╡
-            │ setosa    ┆ Sepal.Length ┆ 5.1   │
-            │ virginica ┆ Sepal.Length ┆ 5.9   │
-            │ setosa    ┆ Sepal.Width  ┆ 3.5   │
-            │ virginica ┆ Sepal.Width  ┆ 3.0   │
             │ setosa    ┆ Petal.Length ┆ 1.4   │
-            │ virginica ┆ Petal.Length ┆ 5.1   │
             │ setosa    ┆ Petal.Width  ┆ 0.2   │
+            │ setosa    ┆ Sepal.Length ┆ 5.1   │
+            │ setosa    ┆ Sepal.Width  ┆ 3.5   │
+            │ virginica ┆ Petal.Length ┆ 5.1   │
             │ virginica ┆ Petal.Width  ┆ 1.8   │
+            │ virginica ┆ Sepal.Length ┆ 5.9   │
+            │ virginica ┆ Sepal.Width  ┆ 3.0   │
             └───────────┴──────────────┴───────┘
 
             Split the column labels into individual columns:

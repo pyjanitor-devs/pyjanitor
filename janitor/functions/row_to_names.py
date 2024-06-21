@@ -84,10 +84,7 @@ def row_to_names(
         A pandas DataFrame with set column names.
     """  # noqa: E501
 
-    if not pd.options.mode.copy_on_write:
-        df = df.copy()
-    else:
-        df = df[:]
+    df_ = df[:]
 
     if isinstance(row_numbers, int):
         row_numbers = slice(row_numbers, row_numbers + 1)
@@ -109,7 +106,7 @@ def row_to_names(
 
     # should raise if positional indexers are missing
     # IndexError: positional indexers are out-of-bounds
-    headers = df.iloc[row_numbers]
+    headers = df_.iloc[row_numbers]
     if isinstance(headers, pd.DataFrame) and (len(headers) == 1):
         headers = headers.squeeze()
     if isinstance(headers, pd.Series):
@@ -118,8 +115,8 @@ def row_to_names(
         headers = [entry.array for _, entry in headers.items()]
         headers = pd.MultiIndex.from_tuples(headers)
 
-    df.columns = headers
-    df.columns.name = None
+    df_.columns = headers
+    df_.columns.name = None
 
     if remove_rows_above:
         if not is_a_slice:
@@ -129,20 +126,20 @@ def row_to_names(
                 "or a slice."
             )
         if remove_rows:
-            df = df.iloc[row_numbers.stop :]
+            df_ = df_.iloc[row_numbers.stop :]
         else:
-            df = df.iloc[row_numbers.start :]
+            df_ = df_.iloc[row_numbers.start :]
     elif remove_rows:
         if is_a_slice:
             start = row_numbers.start if row_numbers.start else 0
             stop = row_numbers.stop
-            df = [df.iloc[:start], df.iloc[stop:]]
-            df = pd.concat(df, sort=False, copy=False)
+            df_ = [df_.iloc[:start], df_.iloc[stop:]]
+            df_ = pd.concat(df_, sort=False, copy=False)
         else:
-            row_numbers = np.setdiff1d(range(len(df)), row_numbers)
-            df = df.iloc[row_numbers]
+            row_numbers = np.setdiff1d(range(len(df_)), row_numbers)
+            df_ = df_.iloc[row_numbers]
     if reset_index:
-        df.index = range(len(df))
+        df_.index = range(len(df_))
     else:
         warnings.warn(
             "The function row_to_names will, in the official 1.0 release, "
@@ -150,4 +147,4 @@ def row_to_names(
             "You can prepare for this change right now by explicitly setting "
             "`reset_index=True` when calling on `row_to_names`."
         )
-    return df
+    return df_

@@ -15,6 +15,6 @@ def test_convert_matlab_date():
             ]
         }
     )
-    expression = pl.col("dates").janitor.convert_matlab_date().alias("dd")
+    expression = pl.col("dates").convert_matlab_date().alias("dd")
     expression = df.with_columns(expression).get_column("dd")
     assert expression.dtype.is_temporal() is True

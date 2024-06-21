@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import defaultdict
 from typing import Any
 
 import numpy as np
@@ -7,6 +8,7 @@ import pandas as pd
 import pandas_flavor as pf
 from pandas.api.types import is_list_like, is_scalar
 from pandas.core.common import apply_if_callable
+from pandas.core.dtypes.concat import concat_compat
 
 from janitor.functions.utils import _computations_expand_grid
 from janitor.utils import check, check_column
@@ -250,15 +252,13 @@ def complete(
     return _computations_complete(df, columns, sort, by, fill_value, explicit)
 
 
-def _create_cartesian_dataframe(df, columns, column_checker, sort):
+def _create_cartesian_dataframe(df, columns, sort):
     """
     Create a DataFrame from the
     combination of all pandas objects
     """
     objects = _create_pandas_object(df, columns=columns, sort=sort)
-    objects = dict(zip(range(len(objects)), objects))
     objects = _computations_expand_grid(objects)
-    objects = dict(zip(column_checker, objects.values()))
     objects = pd.DataFrame(objects, copy=False)
     return objects
 
@@ -289,23 +289,27 @@ def _computations_complete(
 
     if by is None:
         uniques = _create_cartesian_dataframe(
-            df=df, column_checker=column_checker, columns=columns, sort=sort
+            df=df, columns=columns, sort=sort
         )
     else:
         grouped = df.groupby(by, sort=False)
+        index = grouped._grouper.result_index
         uniques = {}
-        for group_name, frame in grouped:
-            _object = _create_cartesian_dataframe(
-                df=frame,
-                column_checker=column_checker,
-                columns=columns,
-                sort=sort,
+        lengths = []
+        uniques = defaultdict(list)
+        for _, frame in grouped:
+            _object = _create_pandas_object(
+                df=frame, columns=columns, sort=sort
             )
-            uniques[group_name] = _object
+            _object = _computations_expand_grid(_object)
+            length = _object[next(iter(_object))].size
+            lengths.append(length)
+            for k, v in _object.items():
+                uniques[k].append(v)
+        uniques = {key: concat_compat(value) for key, value in uniques.items()}
+        index = index.repeat(lengths)
+        uniques = pd.DataFrame(data=uniques, index=index, copy=False)
         column_checker = by + column_checker
-        by.append("".join(column_checker))
-        uniques = pd.concat(uniques, names=by, copy=False, sort=False)
-        uniques = uniques.droplevel(axis=0, level=-1)
     columns = df.columns
     indicator = False
     if (fill_value is not None) and not explicit:
@@ -323,7 +327,7 @@ def _computations_complete(
     if indicator:
         indicator = out.pop(indicator)
     if not out.columns.equals(columns):
-        out = out.loc[:, columns]
+        out = out.reindex(columns=columns, copy=False)
     if fill_value is None:
         return out
     # keep only columns that are not part of column_checker
@@ -504,7 +508,7 @@ def _create_pandas_objects_from_dict(df, column):
     """
     Create pandas object if column is a dictionary
     """
-    collection = []
+    collection = {}
     for key, value in column.items():
         arr = apply_if_callable(value, df)
         if not is_list_like(arr):
@@ -514,33 +518,46 @@ def _create_pandas_objects_from_dict(df, column):
             )
         if not hasattr(arr, "shape"):
             arr = np.asanyarray(arr)
-        if not isinstance(arr, (pd.Index, pd.Series)):
-            arr = pd.Series(arr)
-        arr.name = key
-        collection.append(arr)
+        # if not isinstance(arr, (pd.Index, pd.Series)):
+        #     arr = pd.Series(arr)
+        # arr.name = key
+        # collection.append(arr)
+        collection[key] = arr
     return collection
+
+
+def _create_pandas_objects_from_callable(df, column):
+    """
+    Create pandas object if column is a callable
+    """
+    arr = apply_if_callable(maybe_callable=column, obj=df)
+    if isinstance(arr, pd.DataFrame):
+        return {tuple(arr.columns): arr}
+    return {arr.name: arr}
 
 
 def _create_pandas_object(df, columns, sort):
     """
     Create pandas objects before building the cartesian DataFrame.
     """
-    objects = []
+    objects = {}
     for column in columns:
         if is_scalar(column):
             _object = df[column].drop_duplicates()
             if sort:
                 _object = _object.sort_values()
-            objects.append(_object)
+            objects[column] = _object
         elif isinstance(column, list):
             _object = df.loc[:, column].drop_duplicates()
             if sort:
                 _object = _object.sort_values(column)
-            objects.append(_object)
+            objects[tuple(column)] = _object
         elif isinstance(column, dict):
             _object = _create_pandas_objects_from_dict(df=df, column=column)
-            objects.extend(_object)
+            objects.update(_object)
         else:
-            _object = apply_if_callable(maybe_callable=column, obj=df)
-            objects.append(_object)
+            _object = _create_pandas_objects_from_callable(
+                column=column, df=df
+            )
+            objects.update(_object)
     return objects

@@ -38,7 +38,7 @@ def convert_excel_date(expr: pl.Expr) -> pl.Expr:
         │ 39690 │
         │ 37118 │
         └───────┘
-        >>> expression = pl.col('date').janitor.convert_excel_date().alias('date_')
+        >>> expression = pl.col('date').convert_excel_date().alias('date_')
         >>> df.with_columns(expression)
         shape: (3, 2)
         ┌───────┬────────────┐
@@ -86,7 +86,7 @@ def convert_matlab_date(expr: pl.Expr) -> pl.Expr:
         │ 737124.4985   │
         │ 737124.0      │
         └───────────────┘
-        >>> expression = pl.col('date').janitor.convert_matlab_date().alias('date_')
+        >>> expression = pl.col('date').convert_matlab_date().alias('date_')
         >>> df.with_columns(expression)
         shape: (4, 2)
         ┌───────────────┬─────────────────────────┐

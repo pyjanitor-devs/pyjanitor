@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-- [ENH] Added a `convert_excel_date` method for polars - Issue #1352
+- [ENH] Added `convert_excel_date` and `convert_matlab_date` methods for polars - Issue #1352
 - [ENH] Added a `complete` method for polars. - Issue #1352 @samukweku
 - [ENH] `read_commandline` function now supports polars - Issue #1352
 - [ENH] Improved performance for non-equi joins when using numba - @samukweku PR #1341

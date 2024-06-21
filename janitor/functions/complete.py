@@ -245,22 +245,10 @@ def complete(
 
     if not columns:
         return df
-
     # no copy is made of the original dataframe
     # since pd.merge (computed some lines below)
     # makes a new object - essentially a copy
     return _computations_complete(df, columns, sort, by, fill_value, explicit)
-
-
-def _create_cartesian_dataframe(df, columns, sort):
-    """
-    Create a DataFrame from the
-    combination of all pandas objects
-    """
-    objects = _create_pandas_object(df, columns=columns, sort=sort)
-    objects = _computations_expand_grid(objects)
-    objects = pd.DataFrame(objects, copy=False)
-    return objects
 
 
 def _computations_complete(
@@ -288,9 +276,9 @@ def _computations_complete(
     ) = _data_checks_complete(df, columns, sort, by, fill_value, explicit)
 
     if by is None:
-        uniques = _create_cartesian_dataframe(
-            df=df, columns=columns, sort=sort
-        )
+        uniques = _create_pandas_object(df, columns=columns, sort=sort)
+        uniques = _computations_expand_grid(uniques)
+        uniques = pd.DataFrame(uniques, copy=False)
     else:
         grouped = df.groupby(by, sort=False)
         index = grouped._grouper.result_index
@@ -518,21 +506,20 @@ def _create_pandas_objects_from_dict(df, column):
             )
         if not hasattr(arr, "shape"):
             arr = np.asanyarray(arr)
-        # if not isinstance(arr, (pd.Index, pd.Series)):
-        #     arr = pd.Series(arr)
-        # arr.name = key
-        # collection.append(arr)
         collection[key] = arr
     return collection
 
 
-def _create_pandas_objects_from_callable(df, column):
+def _create_pandas_object_(df, column):
     """
-    Create pandas object if column is a callable
+    Create pandas object if column
+    is a callable/pd.Index/pd.Series/pd.DataFrame
     """
     arr = apply_if_callable(maybe_callable=column, obj=df)
     if isinstance(arr, pd.DataFrame):
         return {tuple(arr.columns): arr}
+    if isinstance(arr, pd.MultiIndex):
+        return {tuple(arr.names): arr}
     return {arr.name: arr}
 
 
@@ -556,8 +543,6 @@ def _create_pandas_object(df, columns, sort):
             _object = _create_pandas_objects_from_dict(df=df, column=column)
             objects.update(_object)
         else:
-            _object = _create_pandas_objects_from_callable(
-                column=column, df=df
-            )
+            _object = _create_pandas_object_(column=column, df=df)
             objects.update(_object)
     return objects

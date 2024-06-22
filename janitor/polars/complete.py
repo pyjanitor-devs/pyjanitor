@@ -110,7 +110,7 @@ def complete(
         >>> with pl.Config(tbl_rows=-1):
         ...     df.complete(
         ...         "group",
-        ...         pl.struct("item_id", "item_name").unique().alias("rar"),
+        ...         pl.struct("item_id", "item_name").unique().sort().alias("rar"),
         ...         sort=True
         ...     )
         shape: (8, 5)
@@ -133,7 +133,7 @@ def complete(
         >>> with pl.Config(tbl_rows=-1):
         ...     df.complete(
         ...         "group",
-        ...         pl.struct("item_id", "item_name").unique().alias('rar'),
+        ...         pl.struct("item_id", "item_name").unique().sort().alias('rar'),
         ...         fill_value={"value1": 0, "value2": 99},
         ...         explicit=True,
         ...         sort=True,
@@ -159,7 +159,7 @@ def complete(
         >>> with pl.Config(tbl_rows=-1):
         ...     df.complete(
         ...         "group",
-        ...         pl.struct("item_id", "item_name").unique().alias('rar'),
+        ...         pl.struct("item_id", "item_name").unique().sort().alias('rar'),
         ...         fill_value={"value1": 0, "value2": 99},
         ...         explicit=False,
         ...         sort=True,
@@ -343,9 +343,13 @@ def _complete(
     for column in columns:
         if isinstance(column, str):
             col = pl.col(column).unique()
+            if sort:
+                col = col.sort()
             _columns.append(col)
         elif cs.is_selector(column):
             col = column.as_expr().unique()
+            if sort:
+                col = col.sort()
             _columns.append(col)
         elif isinstance(column, pl.Expr):
             _columns.append(column)
@@ -354,7 +358,7 @@ def _complete(
                 f"The argument passed to the columns parameter "
                 "should either be a string, a column selector, "
                 "or a polars expression, instead got - "
-                f"{type(column)}."
+                f"{type(column).__name__}."
             )
     by_does_not_exist = by is None
     if by_does_not_exist:

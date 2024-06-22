@@ -538,8 +538,6 @@ def _pivot_longer_create_spec(
         spec = spec.with_columns(
             pl.col(variable_name).struct.rename_fields(names=names_to)
         )
-        if ".value" not in names_to:
-            return spec.get_column(variable_name)
         not_dot_value = [name for name in names_to if name != ".value"]
         spec = spec.unnest(variable_name)
         if not_dot_value:

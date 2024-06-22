@@ -358,7 +358,7 @@ def _complete(
                 f"The argument passed to the columns parameter "
                 "should either be a string, a column selector, "
                 "or a polars expression, instead got - "
-                f"{type(column).__name__}."
+                f"{type(column)}."
             )
     by_does_not_exist = by is None
     if by_does_not_exist:
@@ -383,35 +383,16 @@ def _complete(
         for column in _columns:
             uniques = uniques.unnest(columns=column)
 
-    merge_columns = uniques.columns
-    if sort:
-        sort_index = "".join(uniques.columns + df.columns)
-        sort_index = f"{sort_index}_"
-        uniques = uniques.with_row_index(name=sort_index)
-    else:
-        sort_index = None
     no_columns_to_fill = set(df.columns) == set(uniques.columns)
     if fill_value is None or no_columns_to_fill:
-        if not sort:
-            return uniques.join(
-                df, on=merge_columns, how="full", coalesce=True
-            )
-        return (
-            uniques.join(df, on=merge_columns, how="full", coalesce=True)
-            .sort(by=sort_index)
-            .select(pl.exclude(sort_index))
-        )
+        return uniques.join(df, on=uniques.columns, how="full", coalesce=True)
     idx = None
     columns_to_select = df.columns
     if not explicit:
-        idx = "".join(df.columns + uniques.columns)
+        idx = "".join(df.columns)
         idx = f"{idx}_"
         df = df.with_row_index(name=idx)
-    else:
-        idx = None
-    df = uniques.join(df, on=merge_columns, how="full", coalesce=True)
-    if sort:
-        df = df.sort(by=sort_index).select(pl.exclude(sort_index))
+    df = uniques.join(df, on=uniques.columns, how="full", coalesce=True)
     # exclude columns that were not used
     # to generate the combinations
     exclude_columns = uniques.columns

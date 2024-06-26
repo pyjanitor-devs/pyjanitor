@@ -33,7 +33,7 @@ def pivot_longer_spec(
     becomes variables.
 
     It can come in handy for situations where
-    `janitor.polars.pivot_longer`
+    [`pivot_longer`][janitor.polars.pivot_longer.pivot_longer]
     seems inadequate for the transformation.
 
     !!! info "New in version 0.28.0"
@@ -187,8 +187,11 @@ def pivot_longer(
     All measured variables are *unpivoted* (and typically duplicated) along the
     row axis.
 
+    If `names_pattern`, use a valid regular expression pattern containing at least
+    one capture group, compatible with the [regex crate](https://docs.rs/regex/latest/regex/).
+
     For more granular control on the unpivoting, have a look at
-    `pivot_longer_spec`.
+    [`pivot_longer_spec`][janitor.polars.pivot_longer.pivot_longer_spec].
 
     `pivot_longer` can also be applied to a LazyFrame.
 

@@ -10,6 +10,7 @@
 - [ENH] `xlsx_table` function now supports polars - Issue #1352 @samukweku
 - [ENH] Added a `pivot_longer` method, and a `pivot_longer_spec` function for polars - Issue #1352 @samukweku
 - [ENH] pandas Index,Series, DataFrame now supported in the `complete` method. - PR #1369 @samukweku
+- [ENH] Improve performance for `first/last` in `conditional_join, when the join columns in the right dataframe are sorted. - PR #1382 @samukweku
 
 ## [v0.27.0] - 2024-03-21
 

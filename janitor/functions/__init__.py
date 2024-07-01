@@ -69,6 +69,7 @@ from .select import select, select_columns, select_rows
 from .shuffle import shuffle
 from .sort_column_value_order import sort_column_value_order
 from .sort_naturally import sort_naturally
+from .summarise import summarise
 from .take_first import take_first
 from .then import then
 from .to_datetime import to_datetime
@@ -94,6 +95,7 @@ __all__ = [
     "change_index_dtype",
     "clean_names",
     "coalesce",
+    "col",
     "collapse_levels",
     "complete",
     "concatenate_columns",
@@ -106,6 +108,7 @@ __all__ = [
     "deconcatenate_column",
     "drop_constant_columns",
     "drop_duplicate_columns",
+    "DropLabel",
     "dropnotnull",
     "encode_categorical",
     "expand_column",
@@ -120,7 +123,9 @@ __all__ = [
     "filter_string",
     "find_replace",
     "flag_nulls",
+    "get_columns",
     "get_dupes",
+    "get_index_labels",
     "get_join_indices",
     "groupby_agg",
     "groupby_topk",
@@ -131,6 +136,7 @@ __all__ = [
     "limit_column_characters",
     "min_max_scale",
     "move",
+    "patterns",
     "pivot_longer",
     "pivot_wider",
     "process_text",
@@ -147,6 +153,7 @@ __all__ = [
     "shuffle",
     "sort_column_value_order",
     "sort_naturally",
+    "summarise",
     "take_first",
     "then",
     "to_datetime",
@@ -154,11 +161,6 @@ __all__ = [
     "transform_column",
     "transform_columns",
     "truncate_datetime_dataframe",
-    "update_where",
-    "patterns",
     "unionize_dataframe_categories",
-    "DropLabel",
-    "get_index_labels",
-    "col",
-    "get_columns",
+    "update_where",
 ]

@@ -7,10 +7,16 @@ import pandas as pd
 import pandas_flavor as pf
 
 from janitor.functions.utils import _factorize
-from janitor.utils import deprecated_alias
+from janitor.utils import deprecated_alias, refactored_function
 
 
 @pf.register_dataframe_method
+@refactored_function(
+    message=(
+        "This function will be deprecated in a 1.x release. "
+        "Please use `janitor.factorize_columns` instead."
+    )
+)
 @deprecated_alias(columns="column_names")
 def label_encode(
     df: pd.DataFrame,

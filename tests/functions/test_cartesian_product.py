@@ -15,7 +15,7 @@ def test_not_pandas_object():
     with pytest.raises(
         TypeError, match=r"input should be either a Pandas DataFrame.+"
     ):
-        cartesian_product({"x": [1, 2]})
+        cartesian_product([1, 2])
 
 
 def test_Series_duplicated_label():
@@ -79,12 +79,16 @@ def test_cartesian_output(df):
     frame = df.drop(columns=["a", "cities"])
     index = pd.Index(df["a"], name="rar")
     mi = pd.MultiIndex.from_frame(frame, names=["mi1", "mi2", "mi3"])
-    result = cartesian_product(df["a"], df["cities"], frame, index, mi)
+    dictionary = {"dictionary": [2, 4]}
+    result = cartesian_product(
+        df["a"], df["cities"], frame, index, mi, dictionary
+    )
     expected = (
         pd.merge(df["a"], df["cities"], how="cross")
         .merge(frame, how="cross")
         .merge(df["a"].rename("rar"), how="cross")
         .merge(frame.set_axis(["mi1", "mi2", "mi3"], axis=1), how="cross")
+        .merge(pd.Series([2, 4], name="dictionary"), how="cross")
     )
     assert_frame_equal(result, expected)
 

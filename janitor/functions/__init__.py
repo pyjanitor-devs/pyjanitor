@@ -40,7 +40,7 @@ from .drop_duplicate_columns import drop_duplicate_columns
 from .dropnotnull import dropnotnull
 from .encode_categorical import encode_categorical
 from .expand_column import expand_column
-from .expand_grid import cartesian_product, expand_grid
+from .expand_grid import cartesian_product, expand, expand_grid
 from .explode_index import explode_index
 from .factorize_columns import factorize_columns
 from .fill import fill_direction, fill_empty
@@ -109,6 +109,7 @@ __all__ = [
     "drop_duplicate_columns",
     "dropnotnull",
     "encode_categorical",
+    "expand",
     "expand_column",
     "expand_grid",
     "explode_index",

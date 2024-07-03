@@ -2,7 +2,9 @@
 
 ## [Unreleased]
 
+
 - [ENH] Improve `pivot_longer` when `sort_by_appearance` is True. Added `pivot_longer_spec` for more control on how the dataframe should be unpivoted. -@samukweku #1361
+- [ENH] Added `convert_excel_date` and `convert_matlab_date` methods for polars - Issue #1352
 - [ENH] Added a `complete` method for polars. - Issue #1352 @samukweku
 - [ENH] Added a `pivot_longer` method, and a `pivot_longer_spec` function for polars - Issue #1352 @samukweku
 - [ENH] Added a `row_to_names` method for polars. Issue #1352 @samukweku

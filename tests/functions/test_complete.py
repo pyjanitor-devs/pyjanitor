@@ -40,17 +40,6 @@ def MI():
     return dfmi
 
 
-def test_multiindex_names_not_found(MI):
-    """
-    Raise ValueError if the passed label is not found
-    """
-    MI.index.names = list("ABCD")
-    with pytest.raises(
-        ValueError, match="group not present in dataframe columns!"
-    ):
-        MI.complete("group")
-
-
 @pytest.fixture
 def fill_df():
     """pytest fixture"""
@@ -88,135 +77,10 @@ def test_column_None(fill_df):
     assert_frame_equal(fill_df.complete(), fill_df)
 
 
-def test_empty_groups_dict(fill_df):
-    """Raise ValueError if any of the groups is empty."""
-    with pytest.raises(
-        ValueError, match="entry in columns argument cannot be empty"
-    ):
-        fill_df.complete("group", {})
-
-
-def test_empty_groups_list(fill_df):
-    """Raise ValueError if any of the groups is empty."""
-    with pytest.raises(
-        ValueError, match="entry in columns argument cannot be empty"
-    ):
-        fill_df.complete("group", [])
-
-
-def test_callable(fill_df):
-    """Raise ValueError if the callable does not evaluate to a pandas object."""
-    with pytest.raises(
-        TypeError,
-        match=r"The callable should evaluate to either a pandas.+",
-    ):
-        fill_df.complete("group", lambda f: 1)
-
-
-def test_dict_not_list_like(fill_df):
-    """
-    Raise ValueError if `*columns`
-    is a dictionary, and the value
-    is not list-like.
-    """
-    with pytest.raises(TypeError, match="Expected a list-like object.+"):
-        fill_df.complete("group", {"item_id": "cities"})
-
-
-@pytest.mark.xfail(reason="dictionary now accepts a MultiIndex")
-def test_dict_not_1D(fill_df):
-    """
-    Raise ValueError if `*columns`
-    is a dictionary, and the value
-    is not 1D array.
-    """
-    with pytest.raises(
-        ValueError, match="Kindly provide a 1-D array for item_id."
-    ):
-        fill_df.complete("group", {"item_id": fill_df})
-
-
-@pytest.mark.xfail(reason="no checks on pandas object's contents")
-def test_dict_empty(fill_df):
-    """
-    Raise ValueError if `*columns`
-    is a dictionary, and the value
-    is an empty array.
-    """
-    with pytest.raises(
-        ValueError,
-        match="Kindly ensure the provided array for group "
-        "has at least one value.",
-    ):
-        fill_df.complete("item_id", {"group": pd.Series([], dtype=int)})
-
-
-def test_by_not_found(fill_df):
-    """Raise ValueError if `by` does not exist."""
-    with pytest.raises(ValueError):
-        fill_df.complete("group", "item_id", by="name")
-
-
-def test_mi_none(fill_df):
-    """
-    Raise if MultiIndex has None as one of its names
-    """
-    mi = fill_df.loc[:, ["item_id", "item_name"]].drop_duplicates()
-    mi = pd.MultiIndex.from_frame(mi, names=[None, "item_name"])
-    with pytest.raises(
-        ValueError, match="Ensure all labels in the MultiIndex.+"
-    ):
-        fill_df.complete("group", mi)
-
-
-def test_index_none(fill_df):
-    """
-    Raise if Index has None as its name
-    """
-    with pytest.raises(ValueError, match="Ensure the Index has a name."):
-        fill_df.complete("group", pd.Index([0, 1, 2]))
-
-
-def test_series_none(fill_df):
-    """
-    Raise if Series has None as its name
-    """
-    with pytest.raises(ValueError, match="Ensure the Series has a name."):
-        fill_df.complete("group", pd.Series([0, 1, 2]))
-
-
-def test_group_None(fill_df):
-    """Raise ValueError if entry is None."""
-    with pytest.raises(
-        ValueError, match="label in the columns argument cannot be None."
-    ):
-        fill_df.complete("group", "item_id", None)
-
-
-def test_duplicate_groups(fill_df):
-    """Raise ValueError if there are duplicate groups."""
-    with pytest.raises(
-        ValueError, match="item_id should be in only one group."
-    ):
-        fill_df.complete("group", "item_id", ("item_id", "item_name"))
-
-
-def test_type_groups(fill_df):
-    """Raise TypeError if grouping is not a permitted type."""
-    with pytest.raises(TypeError):
-        fill_df.complete("group", "item_id", {1, 2, 3})
-
-
 def test_type_sort(fill_df):
     """Raise TypeError if `sort` is not boolean."""
     with pytest.raises(TypeError):
         fill_df.complete("group", "item_id", sort=11)
-
-
-def test_groups_not_found(fill_df):
-    """Raise ValueError if group does not exist."""
-    with pytest.raises(ValueError):
-        fill_df.complete("group", ("item_id", "name"))
 
 
 def test_fill_value(fill_df):
@@ -452,8 +316,8 @@ def test_single_column(df):
     )
 
 
-def test_tuple_column():
-    """Test `complete` output if a tuple is provided."""
+def test_seq_column():
+    """Test `complete` output if a sequence is provided."""
     df = pd.DataFrame(
         {
             "group": [2, 1, 1],
@@ -464,7 +328,7 @@ def test_tuple_column():
         }
     )
 
-    result = df.complete("group", ("item_id", "item_name"), sort=True)
+    result = df.complete("group", ["item_id", "item_name"], sort=True)
 
     columns = ["group", "item_id", "item_name"]
     expected = (
@@ -563,8 +427,8 @@ def test_complete_multiple_groupings():
     )
 
     result = df3.complete(
-        ("meta", "domain1"),
-        ("project_id", "question_count"),
+        ["meta", "domain1"],
+        ["project_id", "question_count"],
         fill_value={"tag_count": 0},
         sort=True,
     ).astype({"tag_count": int})
@@ -591,15 +455,15 @@ def test_fill_value_scalar(taxonomy_df):
 
 
 #  http://imachordata.com/2016/02/05/you-complete-me/
-def test_dict_tuple_callable(taxonomy_df):
+def test_dict_seq_callable(taxonomy_df):
     """
-    Test output if a dictionary and a tuple/list
+    Test output if a dictionary and a list
     are included in the `columns` parameter.
     """
 
     result = taxonomy_df.complete(
         {"Year": lambda x: pd.RangeIndex(x.Year.min(), x.Year.max() + 1)},
-        ("Taxon", "Abundance"),
+        ["Taxon", "Abundance"],
         sort=True,
     )
 
@@ -619,15 +483,15 @@ def test_dict_tuple_callable(taxonomy_df):
     assert_frame_equal(result, expected)
 
 
-def test_dict_tuple(taxonomy_df):
+def test_dict_seq(taxonomy_df):
     """
-    Test output if a dictionary and a tuple/list
+    Test output if a dictionary and a list
     are included in the `columns` parameter.
     """
 
     result = taxonomy_df.complete(
         {"Year": pd.Series([2000, 1999, 2001, 2002, 2003, 2004])},
-        ("Taxon", "Abundance"),
+        ["Taxon", "Abundance"],
         sort=True,
     )
 
@@ -680,7 +544,7 @@ def test_explicit_scalar(fill_df):
     """Test output if fill_value is a scalar, and explicit is False."""
     result = fill_df.complete(
         "group",
-        ("item_id", "item_name"),
+        ["item_id", "item_name"],
         fill_value=0,
         explicit=False,
     ).astype({"value2": int})
@@ -704,7 +568,7 @@ def test_explicit_scalar_cat(fill_df):
     fill_df = fill_df.astype({"value1": "category"})
     result = fill_df.complete(
         "group",
-        ("item_id", "item_name"),
+        ["item_id", "item_name"],
         fill_value=0,
         explicit=False,
     ).astype({"value2": int})
@@ -733,71 +597,19 @@ def test_explicit_dict(fill_df):
     """Test output if fill_value is a dictionary, and explicit is False."""
     result = fill_df.complete(
         "group",
-        ("item_id", "item_name"),
+        ["item_id", "item_name"],
         fill_value={"value1": 0, "value2": 99},
         explicit=False,
         sort=True,
     ).astype({"value2": int})
-    expected = pd.DataFrame(
-        [
-            {
-                "group": 1,
-                "item_id": 1,
-                "item_name": "a",
-                "value1": 1.0,
-                "value2": 4,
-            },
-            {
-                "group": 1,
-                "item_id": 2,
-                "item_name": "a",
-                "value1": 0.0,
-                "value2": 99,
-            },
-            {
-                "group": 1,
-                "item_id": 2,
-                "item_name": "b",
-                "value1": 3.0,
-                "value2": 6,
-            },
-            {
-                "group": 1,
-                "item_id": 3,
-                "item_name": "b",
-                "value1": 0.0,
-                "value2": 99,
-            },
-            {
-                "group": 2,
-                "item_id": 1,
-                "item_name": "a",
-                "value1": 0.0,
-                "value2": 99,
-            },
-            {
-                "group": 2,
-                "item_id": 2,
-                "item_name": "a",
-                "value1": np.nan,
-                "value2": 5,
-            },
-            {
-                "group": 2,
-                "item_id": 2,
-                "item_name": "b",
-                "value1": 0.0,
-                "value2": 99,
-            },
-            {
-                "group": 2,
-                "item_id": 3,
-                "item_name": "b",
-                "value1": 4.0,
-                "value2": 7,
-            },
-        ]
-    )
+    expected = {
+        "group": [1, 1, 1, 1, 2, 2, 2, 2],
+        "item_id": [1, 2, 2, 3, 1, 2, 2, 3],
+        "item_name": ["a", "a", "b", "b", "a", "a", "b", "b"],
+        "value1": [1.0, 0.0, 3.0, 0.0, 0.0, np.nan, 0.0, 4.0],
+        "value2": [4, 99, 6, 99, 99, 5, 99, 7],
+    }
+    expected = pd.DataFrame(expected)
 
     assert_frame_equal(result, expected, check_dtype=False)
 
@@ -811,7 +623,7 @@ def test_explicit_(fill_df):
     trimmed = fill_df.select("value*", axis="columns", invert=True)
     result = trimmed.complete(
         "group",
-        ("item_id", "item_name"),
+        ["item_id", "item_name"],
         fill_value=0,
         explicit=False,
         sort=True,

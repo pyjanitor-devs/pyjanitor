@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- [ENH] Added a `cartesian_product` function, as well as an `expand` method for pandas. - PR #1352 @samukweku
 - [ENH] Added a `complete` method for polars. - Issue #1352 @samukweku
 - [ENH] `read_commandline` function now supports polars - Issue #1352
 - [ENH] Improved performance for non-equi joins when using numba - @samukweku PR #1341

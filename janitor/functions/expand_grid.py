@@ -151,9 +151,10 @@ def expand(
     It can also be used to figure out which combinations are missing
     (e.g identify gaps in your DataFrame).
 
-    The variable `columns` parameter can be a combination
-    of column names, a list/tuple of column names,
-    or a pandas Index/Series/DataFrame.
+    The variable `columns` parameter can be a column name,
+    a list of column names, a pandas Index/Series/DataFrame,
+    or a callable, which when applied to the DataFrame,
+    evaluates to a pandas Index/Series/DataFrame.
 
     A dictionary can also be passed
     to the variable `columns` parameter -
@@ -307,7 +308,13 @@ def expand(
             It could be column labels,
              a list/tuple of column labels,
              or a pandas Index/Series/DataFrame.
-            It can also be a dictionay,
+
+            It can also be a callable;
+            the callable will be applied to the
+            entire DataFrame. The callable should
+            return a pandas Series/Index/DataFrame.
+
+            It can also be a dictionary,
             where the values are either a 1D array
             or a callable that evaluates to a
             1D array.
@@ -352,7 +359,7 @@ def _build_pandas_objects_for_expand(df: pd.DataFrame, columns: tuple) -> list:
     These will be passed to _cartesian_product
     """
     contents = []
-    for column in columns:
+    for position, column in enumerate(columns):
         if is_scalar(column) or isinstance(column, tuple):
             arr = df[column].drop_duplicates()
             contents.append(arr)
@@ -360,20 +367,26 @@ def _build_pandas_objects_for_expand(df: pd.DataFrame, columns: tuple) -> list:
             arr = df.loc[:, column].drop_duplicates()
             contents.append(arr)
         elif isinstance(column, dict):
-            arr = {
-                label: apply_if_callable(maybe_callable=arr, obj=df)
-                for label, arr in column.items()
-            }
-            contents.append(arr)
+            for label, arr in column.items():
+                arr = apply_if_callable(maybe_callable=arr, obj=df)
+                arr = pd.Series(arr, name=label)
+                contents.append(arr)
         elif isinstance(column, (pd.Series, pd.Index, pd.DataFrame)):
             contents.append(column)
+        elif callable(column):
+            arr = apply_if_callable(maybe_callable=column, obj=df)
+            contents.append(arr)
         else:
             raise TypeError(
                 "The arguments to the variable columns parameter "
                 "should either be a column name, a list of column names, "
-                "a pandas Index/Series/DataFrame, or a dictionary "
+                "a pandas Index/Series/DataFrame, "
+                "a callable that evaluates to a "
+                "pandas Index/Series/DataFrame, "
+                "or a dictionary, "
                 "where the value is a 1D array; "
-                f"instead got {type(column).__name__}"
+                f"instead got type {type(column).__name__} "
+                f"at position {position}"
             )
     return contents
 
@@ -431,6 +444,9 @@ def cartesian_product(*inputs: tuple) -> pd.DataFrame:
         else:
             contents.append(entry)
     outcome = _compute_cartesian_product(inputs=contents)
+    # the values in the outcome dictionary are copies,
+    # based on numpy indexing semantics;
+    # as such, it is safe to pass copy=False
     return pd.DataFrame(data=outcome, copy=False)
 
 

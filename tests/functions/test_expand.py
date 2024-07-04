@@ -47,6 +47,7 @@ def test_various(df):
         ["decorated-elephant", "animals@#$%^"],
         mapping,
         pd.RangeIndex(start=1, stop=5, name="rangeindex"),
+        lambda df: df["a"].rename("lambda"),
     )
     A = df["a"].drop_duplicates()
     B = df["cities"].drop_duplicates()
@@ -60,6 +61,7 @@ def test_various(df):
         )
         .merge(D, how="cross")
         .merge(D.rename("rangeindex"), how="cross")
+        .merge(df["a"].rename("lambda"), how="cross")
     )
 
     assert_frame_equal(actual, expected)

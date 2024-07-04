@@ -28,14 +28,14 @@ repos:
 
   # The interim replacement for darglint is pydoclint.
   - repo: https://github.com/jsh9/pydoclint
-    rev: 0.4.2
+    rev: 0.5.3
     hooks:
       - id: pydoclint
         args:
           - "--config=pyproject.toml"
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: v0.4.9
+    rev: v0.5.0
     hooks:
       - id: ruff
         args: [--fix]

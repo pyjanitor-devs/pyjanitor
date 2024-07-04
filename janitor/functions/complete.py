@@ -137,7 +137,7 @@ def complete(
 
         >>> df.complete(
         ...     "group",
-        ...     ("item_id", "item_name"),
+        ...     ["item_id", "item_name"],
         ...     fill_value={"value1": 0, "value2": 99},
         ...     sort=True
         ... )
@@ -155,7 +155,7 @@ def complete(
         by setting explicit to `False`:
         >>> df.complete(
         ...     "group",
-        ...     ("item_id", "item_name"),
+        ...     ["item_id", "item_name"],
         ...     fill_value={"value1": 0, "value2": 99},
         ...     explicit=False,
         ...     sort=True

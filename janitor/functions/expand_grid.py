@@ -273,7 +273,7 @@ def expand(
         Filter for missing observations:
         >>> combo = df.expand('type','size','year')
         >>> anti_join = df.merge(combo, how='right', indicator=True)
-        >>> anti_join.query("_merge=='right_only").drop(columns="_merge")
+        >>> anti_join.query("_merge=='right_only'").drop(columns="_merge")
               type  year size
         1    apple  2012   XS
         2    apple  2011   XS

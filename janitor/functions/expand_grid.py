@@ -28,12 +28,13 @@ def expand_grid(
     *,
     others: Optional[dict] = None,
 ) -> Union[pd.DataFrame, None]:
-    """Creates a DataFrame from a cartesian combination of all inputs.
+    """
+    Creates a DataFrame from a cartesian combination of all inputs.
 
-        !!!note
+    !!!note
 
-        This function will be deprecated in a 1.x release.
-        Please use [`cartesian_product`][janitor.functions.expand_grid.cartesian_product]
+        This function will be deprecated in a 1.x release;
+        use [`cartesian_product`][janitor.functions.expand_grid.cartesian_product]
         instead.
 
     It is not restricted to a pandas DataFrame;
@@ -59,9 +60,8 @@ def expand_grid(
     `droplevel` method.
 
     Examples:
-
         >>> import pandas as pd
-        >>> from janitor.functions.expand_grid import expand_grid
+        >>> import janitor as jn
         >>> df = pd.DataFrame({"x": [1, 2], "y": [2, 1]})
         >>> data = {"z": [1, 2, 3]}
         >>> df.expand_grid(df_key="df", others=data)
@@ -77,7 +77,7 @@ def expand_grid(
         `expand_grid` works with non-pandas objects:
 
         >>> data = {"x": [1, 2, 3], "y": [1, 2]}
-        >>> expand_grid(others=data)
+        >>> jn.expand_grid(others=data)
            x  y
            0  0
         0  1  1
@@ -144,7 +144,9 @@ def expand(
 
     Inspiration is from tidyr's expand() function.
 
-    expand() is often useful with `pd.merge` to convert implicit
+    expand() is often useful with
+    [pd.merge](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.merge.html)
+    to convert implicit
     missing values to explicit missing values - similar to
     [`complete`][janitor.functions.complete.complete].
 
@@ -324,7 +326,7 @@ def expand(
 
     Returns:
         A pandas DataFrame.
-    """
+    """  # noqa: E501
     if by is None:
         contents = _build_pandas_objects_for_expand(df=df, columns=columns)
         return cartesian_product(*contents)
@@ -401,12 +403,11 @@ def cartesian_product(*inputs: tuple) -> pd.DataFrame:
     a 1D array.
 
     Examples:
-
         >>> import pandas as pd
-        >>> from janitor import cartesian_product
+        >>> import janitor as jn
         >>> df = pd.DataFrame({"x": [1, 2], "y": [2, 1]})
         >>> data = pd.Series([1, 2, 3], name='z')
-        >>> cartesian_product(df, data)
+        >>> jn.cartesian_product(df, data)
            x  y  z
         0  1  2  1
         1  1  2  2

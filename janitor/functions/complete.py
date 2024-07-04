@@ -21,19 +21,19 @@ def complete(
     """
     Complete a data frame with missing combinations of data.
 
-    It is modeled after tidyr's `complete` function, and is a wrapper around
-    [`expand_grid`][janitor.functions.expand_grid.expand_grid], `pd.merge`
-    and `pd.fillna`. In a way, it is the inverse of `pd.dropna`, as it exposes
+    It is modeled after tidyr's `complete` function.
+    In a way, it is the inverse of `pd.dropna`, as it exposes
     implicitly missing rows.
 
-    The variable `columns` parameter can be a combination
-    of column names or a list/tuple of column names,
+    The variable `columns` parameter can be a column name,
+    a list of column names,
     or a pandas Index, Series, or DataFrame.
     If a pandas Index, Series, or DataFrame is passed, it should
     have a name or names that exist in `df`.
 
     A callable can also be passed - the callable should evaluate
-    to a pandas Index, Series, or DataFrame.
+    to a pandas Index, Series, or DataFrame,
+    and the names of the pandas object should exist in `df`.
 
     A dictionary can also be passed -
     the values of the dictionary should be
@@ -215,8 +215,10 @@ def complete(
             It could be a column name,
             a list of column names,
             or a pandas Index, Series, or DataFrame.
+
             It can also be a callable that gets evaluated
             to a pandas Index, Series, or DataFrame.
+
             It can also be a dictionary,
             where the values are either a 1D array
             or a callable that evaluates to a

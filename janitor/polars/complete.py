@@ -385,14 +385,14 @@ def _complete(
 
     no_columns_to_fill = set(df.columns) == set(uniques.columns)
     if fill_value is None or no_columns_to_fill:
-        return uniques.join(df, on=uniques.columns, how="full", coalesce=True)
+        return uniques.join(df, on=uniques.columns, how="left", coalesce=True)
     idx = None
     columns_to_select = df.columns
     if not explicit:
         idx = "".join(df.columns)
         idx = f"{idx}_"
         df = df.with_row_index(name=idx)
-    df = uniques.join(df, on=uniques.columns, how="full", coalesce=True)
+    df = uniques.join(df, on=uniques.columns, how="left", coalesce=True)
     # exclude columns that were not used
     # to generate the combinations
     exclude_columns = uniques.columns

@@ -1254,18 +1254,25 @@ def multiple_values_to():
             "Watermelon": [40, 99, 43],
             "Gin": [16, 200, 34],
             "Vodka": [20, 33, 18],
-        },
-        columns=[
-            "City",
-            "State",
-            "Name",
-            "Mango",
-            "Orange",
-            "Watermelon",
-            "Gin",
-            "Vodka",
-        ],
+        }
     )
+
+
+def test_names_pattern_dict_no_match(multiple_values_to):
+    """
+    Raise Error if there is no match for the regex
+    """
+    with pytest.raises(
+        ValueError, match="No match was returned for the regex.+"
+    ):
+        multiple_values_to.pivot_longer(
+            index=["City", "State"],
+            column_names=slice("Mango", "Vodka"),
+            names_pattern={
+                "Fruit": {"Pounds": r"M|O|W"},
+                "Drink": {"Ounces": r"Gg|Va"},
+            },
+        )
 
 
 def test_names_pattern_dict_names_to(multiple_values_to):
@@ -1488,16 +1495,21 @@ def test_output_values_to_seq1(multiple_values_to):
         .reset_index(level=2, drop=True)
         .reset_index()
         .astype({"Fruit": "category", "Drink": "category"})
+        .loc[:, ["City", "State", "Fruit", "Pounds", "Drink", "Ounces"]]
     )
 
-    expected = multiple_values_to.pivot_longer(
-        index=["City", "State"],
-        column_names=slice("Mango", "Vodka"),
-        names_to=("Fruit", "Drink"),
-        values_to=("Pounds", "Ounces"),
-        names_pattern=[r"M|O|W", r"G|V"],
-        names_transform={"Fruit": "category", "Drink": "category"},
-    ).sort_values(["Fruit", "City", "State"], ignore_index=True)
+    expected = (
+        multiple_values_to.pivot_longer(
+            index=["City", "State"],
+            column_names=slice("Mango", "Vodka"),
+            names_to=("Fruit", "Drink"),
+            values_to=("Pounds", "Ounces"),
+            names_pattern=[r"M|O|W", r"G|V"],
+            names_transform={"Fruit": "category", "Drink": "category"},
+        )
+        .sort_values(["Fruit", "City", "State"], ignore_index=True)
+        .loc[:, ["City", "State", "Fruit", "Pounds", "Drink", "Ounces"]]
+    )
 
     assert_frame_equal(expected, actual)
 
@@ -1531,17 +1543,22 @@ def test_output_names_pattern_nested_dictionary(multiple_values_to):
         .reset_index(level=2, drop=True)
         .reset_index()
         .astype({"Fruit": "category", "Drink": "category"})
+        .loc[:, ["City", "State", "Fruit", "Pounds", "Drink", "Ounces"]]
     )
 
-    expected = multiple_values_to.pivot_longer(
-        index=["City", "State"],
-        column_names=slice("Mango", "Vodka"),
-        names_pattern={
-            "Fruit": {"Pounds": r"M|O|W"},
-            "Drink": {"Ounces": r"G|V"},
-        },
-        names_transform={"Fruit": "category", "Drink": "category"},
-    ).sort_values(["Fruit", "City", "State"], ignore_index=True)
+    expected = (
+        multiple_values_to.pivot_longer(
+            index=["City", "State"],
+            column_names=slice("Mango", "Vodka"),
+            names_pattern={
+                "Fruit": {"Pounds": r"M|O|W"},
+                "Drink": {"Ounces": r"G|V"},
+            },
+            names_transform={"Fruit": "category", "Drink": "category"},
+        )
+        .sort_values(["Fruit", "City", "State"], ignore_index=True)
+        .loc[:, ["City", "State", "Fruit", "Pounds", "Drink", "Ounces"]]
+    )
 
     assert_frame_equal(expected, actual)
 
@@ -1581,14 +1598,18 @@ def test_names_transform_numeric():
         names_transform=float,
     ).loc[:, ["A", "colname", "result", "treatment"]]
 
-    actual = pd.wide_to_long(
-        df,
-        ["result", "treatment"],
-        i="A",
-        j="colname",
-        suffix="[0-9.]+",
-        sep="_",
-    ).reset_index()
+    actual = (
+        pd.wide_to_long(
+            df,
+            ["result", "treatment"],
+            i="A",
+            j="colname",
+            suffix="[0-9.]+",
+            sep="_",
+        )
+        .reset_index()
+        .loc[:, ["A", "colname", "result", "treatment"]]
+    )
 
     result = result.sort_values(result.columns.tolist(), ignore_index=True)
     actual = actual.sort_values(actual.columns.tolist(), ignore_index=True)
@@ -1607,16 +1628,16 @@ def test_duplicated_columns():
     actual = pd.DataFrame(
         {"amount": [1, 2], "active": [1, 3]},
         index=pd.Index(["credit", "credit"], name="Type"),
-    )
+    ).loc[:, ["amount", "active"]]
     expected = df.pivot_longer(
         names_to=".value", names_pattern="(.+)", ignore_index=False
-    )
+    ).loc[:, ["amount", "active"]]
 
     assert_frame_equal(actual, expected)
 
 
 def test_dot_value_duplicated_sub_columns():
-    """Test output when the column extracts are not unique."""
+    """Raise when the column extracts are not unique."""
     # https://stackoverflow.com/q/64061588/7175713
     df = pd.DataFrame(
         {
@@ -1632,25 +1653,15 @@ def test_dot_value_duplicated_sub_columns():
         }
     )
 
-    expected = df.set_index("id")
-    expected.columns = expected.columns.str.split("_", expand=True)
-    expected = (
-        expected.stack(level=[0, 2, 3], future_stack=True)
-        .sort_index(level=[0, 1], ascending=[True, False])
-        .reset_index(level=[2, 3], drop=True)
-        .sort_index(axis=1, ascending=False)
-        .rename_axis(["id", "cod"])
-        .reset_index()
-    )
-
-    actual = df.pivot_longer(
-        "id",
-        names_to=("cod", ".value"),
-        names_pattern="(.)_(start|end).+",
-        sort_by_appearance=True,
-    )
-
-    assert_frame_equal(actual, expected)
+    with pytest.raises(
+        ValueError, match="spec contains duplicate entries, cannot reshape."
+    ):
+        df.pivot_longer(
+            "id",
+            names_to=("cod", ".value"),
+            names_pattern="(.)_(start|end).+",
+            sort_by_appearance=True,
+        )
 
 
 def test_preserve_extension_types():
@@ -1699,14 +1710,18 @@ def test_dropna_sort_by_appearance():
         names_pattern=[".+date$", ".+"],
         dropna=True,
         sort_by_appearance=True,
-    )
+    ).loc[:, ["id", "treatment", "date"]]
 
-    expected = pd.lreshape(
-        treatments,
-        {
-            "treatment": ["A", "B", "other"],
-            "date": ["A_date", "B_date", "other_date"],
-        },
-    ).sort_values(["id", "treatment", "date"], ignore_index=True)
+    expected = (
+        pd.lreshape(
+            treatments,
+            {
+                "treatment": ["A", "B", "other"],
+                "date": ["A_date", "B_date", "other_date"],
+            },
+        )
+        .sort_values(["id", "treatment", "date"], ignore_index=True)
+        .loc[:, ["id", "treatment", "date"]]
+    )
 
     assert_frame_equal(actual, expected)

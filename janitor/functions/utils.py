@@ -573,7 +573,6 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
         arg = [entry for entry in arg if not isinstance(entry, DropLabel)]
         arg.append(drop_labels)
     indices = [_select_index(entry, df, axis) for entry in arg]
-
     # single entry does not need to be combined
     # or materialized if possible;
     # this offers more performance
@@ -595,9 +594,9 @@ def _index_converter(arr, index):
     if is_bool_dtype(arr):
         arr = arr.nonzero()[0]
     elif isinstance(arr, slice):
-        arr = range(index.size)[arr]
+        arr = np.arange(index.size)[arr]
     elif isinstance(arr, int):
-        arr = [arr]
+        arr = np.array([arr])
     return arr
 
 

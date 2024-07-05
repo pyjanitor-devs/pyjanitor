@@ -813,6 +813,10 @@ def _less_than_indices(
 
     if multiple_conditions:
         return left_index, right_index, search_indices
+    if right_is_sorted and (keep == "last"):
+        indexer = np.empty_like(search_indices)
+        indexer[:] = len_right - 1
+        return left_index, right_index[indexer]
     if right_is_sorted and (keep == "first"):
         if any_nulls:
             return left_index, right_index[search_indices]
@@ -902,6 +906,9 @@ def _greater_than_indices(
 
     if multiple_conditions:
         return left_index, right_index, search_indices
+    if right_is_sorted and (keep == "first"):
+        indexer = np.zeros_like(search_indices)
+        return left_index, right_index[indexer]
     if right_is_sorted and (keep == "last"):
         if any_nulls:
             return left_index, right_index[search_indices - 1]
@@ -1043,9 +1050,9 @@ def _keep_output(keep: str, left: np.ndarray, right: np.ndarray):
     grouped = pd.Series(right).groupby(left)
     if keep == "first":
         grouped = grouped.min()
-        return grouped.index, grouped.array
+        return grouped.index, grouped._values
     grouped = grouped.max()
-    return grouped.index, grouped.array
+    return grouped.index, grouped._values
 
 
 class col:

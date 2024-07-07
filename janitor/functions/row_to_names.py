@@ -47,7 +47,7 @@ def row_to_names(
         1    9     y
         >>> df.row_to_names([0,1], remove_rows=True, reset_index=True)
           nums chars
-          6    x
+             6     x
         0    9     y
 
         Remove rows above the elevated row and the elevated row itself.
@@ -72,8 +72,7 @@ def row_to_names(
     Args:
         df: A pandas DataFrame.
         row_numbers: Position of the row(s) containing the variable names.
-            Note that indexing starts from 0. It can also be a list,
-            in which case, a MultiIndex column is created.
+            It can be an integer, a list or a slice.
             Defaults to 0 (first row).
         remove_rows: Whether the row(s) should be removed from the DataFrame.
         remove_rows_above: Whether the row(s) above the selected row should

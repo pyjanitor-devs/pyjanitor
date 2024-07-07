@@ -11,7 +11,7 @@ from .polars_flavor import register_dataframe_method, register_lazyframe_method
 try:
     import polars as pl
     import polars.selectors as cs
-    from polars.type_aliases import ColumnNameOrSelector
+    from polars._typing import ColumnNameOrSelector
 except ImportError:
     import_message(
         submodule="polars",

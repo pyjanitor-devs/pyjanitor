@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import warnings
+from functools import singledispatch
 
 import numpy as np
 import pandas as pd
@@ -84,67 +84,148 @@ def row_to_names(
         A pandas DataFrame with set column names.
     """  # noqa: E501
 
+    return _row_to_names(
+        row_numbers,
+        df=df,
+        remove_rows=remove_rows,
+        remove_rows_above=remove_rows_above,
+        reset_index=reset_index,
+    )
+
+
+@singledispatch
+def _row_to_names(
+    row_numbers, df, remove_rows, remove_rows_above, reset_index
+) -> pd.DataFrame:
+    """
+    Base function for row_to_names.
+    """
+    raise TypeError(
+        "row_numbers should be either an integer, "
+        "a slice or a list; "
+        f"instead got type {type(row_numbers).__name__}"
+    )
+
+
+@_row_to_names.register(int)  # noqa: F811
+def _row_to_names_dispatch(  # noqa: F811
+    row_numbers, df, remove_rows, remove_rows_above, reset_index
+):
     df_ = df[:]
+    headers = df_.iloc[row_numbers]
+    df_.columns = headers
+    df_.columns.name = None
+    if not remove_rows and not remove_rows_above and not reset_index:
+        return df_
+    if not remove_rows and not remove_rows_above and reset_index:
+        return df_.reset_index(drop=True)
 
-    if isinstance(row_numbers, int):
-        row_numbers = slice(row_numbers, row_numbers + 1)
-    elif isinstance(row_numbers, slice):
-        if row_numbers.step is not None:
-            raise ValueError(
-                "The step argument for slice is not supported in row_to_names."
-            )
-    elif isinstance(row_numbers, list):
-        for entry in row_numbers:
-            check("entry in the row_numbers argument", entry, [int])
+    len_df = len(df_)
+    arrays = [arr for _, arr in df_.items()]
+    if remove_rows_above and remove_rows:
+        indexer = np.arange(row_numbers + 1, len_df)
+    elif remove_rows_above:
+        indexer = np.arange(row_numbers, len_df)
+    elif remove_rows:
+        indexer = np.arange(len_df)
+        mask = np.ones(len_df, dtype=np.bool_)
+        mask[row_numbers] = False
+        indexer = indexer[mask]
+    arrays = {num: arr[indexer] for num, arr in enumerate(arrays)}
+    if reset_index:
+        df_index = pd.RangeIndex(start=0, stop=indexer.size)
     else:
-        raise TypeError(
-            "row_numbers should be either an integer, "
-            "a slice or a list; "
-            f"instead got type {type(row_numbers).__name__}"
-        )
-    is_a_slice = isinstance(row_numbers, slice)
+        df_index = df_.index[indexer]
+    _df = pd.DataFrame(data=arrays, index=df_index, copy=False)
+    _df.columns = df_.columns
+    return _df
 
-    # should raise if positional indexers are missing
-    # IndexError: positional indexers are out-of-bounds
+
+@_row_to_names.register(slice)  # noqa: F811
+def _row_to_names_dispatch(  # noqa: F811
+    row_numbers, df, remove_rows, remove_rows_above, reset_index
+):
+    if row_numbers.step is not None:
+        raise ValueError(
+            "The step argument for slice is not supported in row_to_names."
+        )
+    df_ = df[:]
     headers = df_.iloc[row_numbers]
     if isinstance(headers, pd.DataFrame) and (len(headers) == 1):
         headers = headers.squeeze()
-    if isinstance(headers, pd.Series):
-        headers = pd.Index(headers)
+        df_.columns = headers
+        df_.columns.name = None
     else:
-        headers = [entry.array for _, entry in headers.items()]
+        headers = [array._values for _, array in headers.items()]
         headers = pd.MultiIndex.from_tuples(headers)
-
-    df_.columns = headers
-    df_.columns.name = None
-
-    if remove_rows_above:
-        if not is_a_slice:
-            raise ValueError(
-                "The remove_rows_above argument is applicable "
-                "only if the row_numbers argument is an integer "
-                "or a slice."
-            )
-        if remove_rows:
-            df_ = df_.iloc[row_numbers.stop :]
-        else:
-            df_ = df_.iloc[row_numbers.start :]
+        df_.columns = headers
+    if not remove_rows and not remove_rows_above and not reset_index:
+        return df_
+    if not remove_rows and not remove_rows_above and reset_index:
+        return df_.reset_index(drop=True)
+    len_df = len(df_)
+    arrays = [arr._values for _, arr in df_.items()]
+    if remove_rows_above and remove_rows:
+        indexer = np.arange(row_numbers.stop + 1, len_df)
+    elif remove_rows_above:
+        indexer = np.arange(row_numbers.start, len_df)
     elif remove_rows:
-        if is_a_slice:
-            start = row_numbers.start if row_numbers.start else 0
-            stop = row_numbers.stop
-            df_ = [df_.iloc[:start], df_.iloc[stop:]]
-            df_ = pd.concat(df_, sort=False, copy=False)
-        else:
-            row_numbers = np.setdiff1d(range(len(df_)), row_numbers)
-            df_ = df_.iloc[row_numbers]
+        indexer = np.arange(len_df)
+        mask = np.ones(len_df, dtype=np.bool_)
+        mask[row_numbers] = False
+        indexer = indexer[mask]
+    arrays = {num: arr[indexer] for num, arr in enumerate(arrays)}
     if reset_index:
-        df_.index = range(len(df_))
+        df_index = pd.RangeIndex(start=0, stop=indexer.size)
     else:
-        warnings.warn(
-            "The function row_to_names will, in the official 1.0 release, "
-            "change its behaviour to reset the dataframe's index by default. "
-            "You can prepare for this change right now by explicitly setting "
-            "`reset_index=True` when calling on `row_to_names`."
+        df_index = df_.index[indexer]
+    _df = pd.DataFrame(data=arrays, index=df_index, copy=False)
+    _df.columns = df_.columns
+    return _df
+
+
+@_row_to_names.register(list)  # noqa: F811
+def _row_to_names_dispatch(  # noqa: F811
+    row_numbers, df, remove_rows, remove_rows_above, reset_index
+):
+    if remove_rows_above:
+        raise ValueError(
+            "The remove_rows_above argument is applicable "
+            "only if the row_numbers argument is an integer "
+            "or a slice."
         )
-    return df_
+
+    for entry in row_numbers:
+        check("entry in the row_numbers argument", entry, [int])
+
+    df_ = df[:]
+    headers = df_.iloc[row_numbers]
+    if isinstance(headers, pd.DataFrame) and (len(headers) == 1):
+        headers = headers.squeeze()
+        df_.columns = headers
+        df_.columns.name = None
+    else:
+        headers = [array._values for _, array in headers.items()]
+        headers = pd.MultiIndex.from_tuples(headers)
+        df_.columns = headers
+
+    if not remove_rows and reset_index:
+        return df_.reset_index(drop=True)
+    if not remove_rows and not reset_index:
+        return df_
+
+    len_df = len(df_)
+    arrays = [arr._values for _, arr in df_.items()]
+    indexer = np.arange(len_df)
+    mask = np.ones(len_df, dtype=np.bool_)
+    mask[row_numbers] = False
+    indexer = indexer[mask]
+
+    arrays = {num: arr[indexer] for num, arr in enumerate(arrays)}
+    if reset_index:
+        df_index = pd.RangeIndex(start=0, stop=indexer.size)
+    else:
+        df_index = df_.index[indexer]
+    _df = pd.DataFrame(data=arrays, index=df_index, copy=False)
+    _df.columns = df_.columns
+    return _df

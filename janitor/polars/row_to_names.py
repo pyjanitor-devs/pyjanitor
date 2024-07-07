@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from functools import singledispatch
+
 from janitor.utils import check, import_message
 
 from .polars_flavor import register_dataframe_method
@@ -27,8 +29,6 @@ def row_to_names(
 ) -> pl.DataFrame:
     """
     Elevates a row, or rows, to be the column names of a DataFrame.
-
-    For a LazyFrame, the user should materialize into a DataFrame before using `row_to_names`..
 
     Examples:
         Replace column names with the first row.
@@ -103,8 +103,7 @@ def row_to_names(
 
     Args:
         row_numbers: Position of the row(s) containing the variable names.
-            Note that indexing starts from 0. It can also be a list/slice.
-            Defaults to 0 (first row).
+            It can be an integer, list or a slice.
         remove_rows: Whether the row(s) should be removed from the DataFrame.
         remove_rows_above: Whether the row(s) above the selected row should
             be removed from the DataFrame.
@@ -115,85 +114,93 @@ def row_to_names(
         A polars DataFrame.
     """  # noqa: E501
     return _row_to_names(
+        row_numbers,
         df=df,
-        row_numbers=row_numbers,
         remove_rows=remove_rows,
         remove_rows_above=remove_rows_above,
         separator=separator,
     )
 
 
+@singledispatch
 def _row_to_names(
-    df: pl.DataFrame,
-    row_numbers: int | list | slice,
-    remove_rows: bool,
-    remove_rows_above: bool,
-    separator: str,
+    row_numbers, df, remove_rows, remove_rows_above, separator
 ) -> pl.DataFrame:
     """
-    Function to convert rows in the DataFrame to column names.
+    Base function for row_to_names.
     """
-    check("separator", separator, [str])
-    if isinstance(row_numbers, int):
-        row_numbers = slice(row_numbers, row_numbers + 1)
-    elif isinstance(row_numbers, slice):
-        if row_numbers.step is not None:
-            raise ValueError(
-                "The step argument for slice is not supported in row_to_names."
-            )
-    elif isinstance(row_numbers, list):
-        for entry in row_numbers:
-            check("entry in the row_numbers argument", entry, [int])
-    else:
-        raise TypeError(
-            "row_numbers should be either an integer, "
-            "a slice or a list; "
-            f"instead got type {type(row_numbers).__name__}"
-        )
-    is_a_slice = isinstance(row_numbers, slice)
-    if is_a_slice:
-        expression = pl.all().str.concat(delimiter=separator)
-        expression = pl.struct(expression)
-        offset = row_numbers.start
-        length = row_numbers.stop - row_numbers.start
-        mapping = df.slice(
-            offset=offset,
-            length=length,
-        )
-        mapping = mapping.select(expression)
-    else:
-        expression = pl.all().gather(row_numbers)
-        expression = expression.str.concat(delimiter=separator)
-        expression = pl.struct(expression)
-        mapping = df.select(expression)
+    raise TypeError(
+        "row_numbers should be either an integer, "
+        "a slice or a list; "
+        f"instead got type {type(row_numbers).__name__}"
+    )
 
-    mapping = mapping.to_series(0)[0]
-    df = df.rename(mapping=mapping)
+
+@_row_to_names.register(int)  # noqa: F811
+def _row_to_names_dispatch(  # noqa: F811
+    row_numbers, df, remove_rows, remove_rows_above, separator
+):
+    expression = pl.col("*").cast(pl.String).gather(row_numbers)
+    expression = pl.struct(expression)
+    headers = df.select(expression).to_series(0).to_list()[0]
+    df = df.rename(mapping=headers)
+    if remove_rows_above and remove_rows:
+        return df.slice(row_numbers + 1)
+    elif remove_rows_above:
+        return df.slice(row_numbers)
+    elif remove_rows:
+        expression = pl.int_range(pl.len()).ne(row_numbers)
+        return df.filter(expression)
+    return df
+
+
+@_row_to_names.register(slice)  # noqa: F811
+def _row_to_names_dispatch(  # noqa: F811
+    row_numbers, df, remove_rows, remove_rows_above, separator
+):
+    if row_numbers.step is not None:
+        raise ValueError(
+            "The step argument for slice is not supported in row_to_names."
+        )
+    headers = df.slice(row_numbers.start, row_numbers.stop - row_numbers.start)
+    headers = headers.cast(pl.String)
+    expression = pl.all().str.concat(delimiter=separator)
+    expression = pl.struct(expression)
+    headers = headers.select(expression).to_series(0).to_list()[0]
+    df = df.rename(mapping=headers)
+    if remove_rows_above and remove_rows:
+        return df.slice(row_numbers.stop)
+    elif remove_rows_above:
+        return df.slice(row_numbers.start)
+    elif remove_rows:
+        expression = pl.int_range(pl.len()).is_between(
+            row_numbers.start, row_numbers.stop, closed="left"
+        )
+        return df.filter(~expression)
+    return df
+
+
+@_row_to_names.register(list)  # noqa: F811
+def _row_to_names_dispatch(  # noqa: F811
+    row_numbers, df, remove_rows, remove_rows_above, separator
+):
     if remove_rows_above:
-        if not is_a_slice:
-            raise ValueError(
-                "The remove_rows_above argument is applicable "
-                "only if the row_numbers argument is an integer "
-                "or a slice."
-            )
-        if remove_rows:
-            return df.slice(offset=row_numbers.stop)
-        return df.slice(offset=row_numbers.start)
-
-    if remove_rows:
-        if is_a_slice:
-            df = [
-                df.slice(offset=0, length=row_numbers.start),
-                df.slice(offset=row_numbers.stop),
-            ]
-            return pl.concat(df, rechunk=True)
-        name = "".join(df.columns)
-        name = f"{name}_"
-        df = (
-            df.with_row_index(name=name)
-            .filter(pl.col(name=name).is_in(row_numbers).not_())
-            .select(pl.exclude(name))
+        raise ValueError(
+            "The remove_rows_above argument is applicable "
+            "only if the row_numbers argument is an integer "
+            "or a slice."
         )
-        return df
 
+    for entry in row_numbers:
+        check("entry in the row_numbers argument", entry, [int])
+
+    expression = pl.col("*").gather(row_numbers)
+    headers = df.select(expression).cast(pl.String)
+    expression = pl.all().str.concat(delimiter=separator)
+    expression = pl.struct(expression)
+    headers = headers.select(expression).to_series(0).to_list()[0]
+    df = df.rename(mapping=headers)
+    if remove_rows:
+        expression = pl.int_range(pl.len()).is_in(row_numbers)
+        return df.filter(~expression)
     return df

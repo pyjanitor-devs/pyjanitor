@@ -120,7 +120,7 @@ def _row_to_names_dispatch(  # noqa: F811
         return df_.reset_index(drop=True)
 
     len_df = len(df_)
-    arrays = [arr for _, arr in df_.items()]
+    arrays = [arr._values for _, arr in df_.items()]
     if remove_rows_above and remove_rows:
         indexer = np.arange(row_numbers + 1, len_df)
     elif remove_rows_above:

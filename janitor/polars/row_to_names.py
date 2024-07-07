@@ -140,9 +140,8 @@ def _row_to_names(
 def _row_to_names_dispatch(  # noqa: F811
     row_numbers, df, remove_rows, remove_rows_above, separator
 ):
-    expression = pl.col("*").cast(pl.String).gather(row_numbers)
-    expression = pl.struct(expression)
-    headers = df.select(expression).to_series(0).to_list()[0]
+    headers = df.row(row_numbers, named=True)
+    headers = {col: str(repl) for col, repl in headers.items()}
     df = df.rename(mapping=headers)
     if remove_rows_above and remove_rows:
         return df.slice(row_numbers + 1)
@@ -163,10 +162,9 @@ def _row_to_names_dispatch(  # noqa: F811
             "The step argument for slice is not supported in row_to_names."
         )
     headers = df.slice(row_numbers.start, row_numbers.stop - row_numbers.start)
-    headers = headers.cast(pl.String)
     expression = pl.all().str.concat(delimiter=separator)
-    expression = pl.struct(expression)
-    headers = headers.select(expression).to_series(0).to_list()[0]
+    headers = headers.select(expression).row(0, named=True)
+    headers = {col: str(repl) for col, repl in headers.items()}
     df = df.rename(mapping=headers)
     if remove_rows_above and remove_rows:
         return df.slice(row_numbers.stop)
@@ -194,11 +192,10 @@ def _row_to_names_dispatch(  # noqa: F811
     for entry in row_numbers:
         check("entry in the row_numbers argument", entry, [int])
 
-    expression = pl.col("*").gather(row_numbers)
-    headers = df.select(expression).cast(pl.String)
-    expression = pl.all().str.concat(delimiter=separator)
-    expression = pl.struct(expression)
-    headers = headers.select(expression).to_series(0).to_list()[0]
+    expression = pl.all().gather(row_numbers)
+    expression = expression.str.concat(delimiter=separator)
+    headers = df.select(expression).row(0, named=True)
+    headers = {col: str(repl) for col, repl in headers.items()}
     df = df.rename(mapping=headers)
     if remove_rows:
         expression = pl.int_range(pl.len()).is_in(row_numbers)

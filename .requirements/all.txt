@@ -159,6 +159,10 @@ platformdirs==2.5.1
     #   virtualenv
 pluggy==1.0.0
     # via pytest
+polars==1.1.0
+    # via
+    #   -r docs.in
+    #   -r testing.in
 pre-commit==2.17.0
     # via -r dev.in
 prompt-toolkit==3.0.39
@@ -261,7 +265,7 @@ wheel==0.38.1
     # via pip-tools
 xarray==2022.3.0
     # via pandas-flavor
-zipp==3.7.0
+zipp==3.19.1
     # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:

@@ -145,5 +145,5 @@ watchdog==2.2.1
     # via mkdocs
 wcwidth==0.2.6
     # via prompt-toolkit
-zipp==3.17.0
+zipp==3.19.1
     # via importlib-metadata

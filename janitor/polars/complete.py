@@ -11,7 +11,7 @@ from .polars_flavor import register_dataframe_method, register_lazyframe_method
 try:
     import polars as pl
     import polars.selectors as cs
-    from polars.type_aliases import ColumnNameOrSelector
+    from polars._typing import ColumnNameOrSelector
 except ImportError:
     import_message(
         submodule="polars",
@@ -38,18 +38,12 @@ def complete(
     In a way, it is the inverse of `pl.drop_nulls`,
     as it exposes implicitly missing rows.
 
-    If the combination involves multiple columns, pass it as a struct,
-    with an alias - the name of the struct should not exist in the DataFrame.
-
     If new values need to be introduced, a polars Expression
     with the new values can be passed, as long as the polars Expression
     has a name that already exists in the DataFrame.
 
     It is up to the user to ensure that the polars expression returns
     unique values and/or sorted values.
-
-    Note that if the polars expression evaluates to a struct,
-    then the fields, not the name, should already exist in the DataFrame.
 
     `complete` can also be applied to a LazyFrame.
 
@@ -105,14 +99,10 @@ def complete(
 
         Cross all possible `group` values with the unique pairs of
         `(item_id, item_name)` that already exist in the data.
-        For such situations, where there is a group of columns,
-        pass it in as a struct:
         >>> with pl.Config(tbl_rows=-1):
-        ...     df.complete(
-        ...         "group",
-        ...         pl.struct("item_id", "item_name").unique().sort().alias("rar"),
-        ...         sort=True
-        ...     )
+        ...     df.select(
+        ...         "group", pl.struct("item_id", "item_name"), "value1", "value2"
+        ...     ).complete("group", "item_id").unnest("item_id")
         shape: (8, 5)
         ┌───────┬─────────┬───────────┬────────┬────────┐
         │ group ┆ item_id ┆ item_name ┆ value1 ┆ value2 │
@@ -131,13 +121,15 @@ def complete(
 
         Fill in nulls:
         >>> with pl.Config(tbl_rows=-1):
-        ...     df.complete(
+        ...     df.select(
+        ...         "group", pl.struct("item_id", "item_name"), "value1", "value2"
+        ...     ).complete(
         ...         "group",
-        ...         pl.struct("item_id", "item_name").unique().sort().alias('rar'),
+        ...         "item_id",
         ...         fill_value={"value1": 0, "value2": 99},
         ...         explicit=True,
         ...         sort=True,
-        ...     )
+        ...     ).unnest("item_id")
         shape: (8, 5)
         ┌───────┬─────────┬───────────┬────────┬────────┐
         │ group ┆ item_id ┆ item_name ┆ value1 ┆ value2 │
@@ -156,14 +148,15 @@ def complete(
 
         Limit the fill to only the newly created
         missing values with `explicit = FALSE`
-        >>> with pl.Config(tbl_rows=-1):
-        ...     df.complete(
+        ...     df.select(
+        ...         "group", pl.struct("item_id", "item_name"), "value1", "value2"
+        ...     ).complete(
         ...         "group",
-        ...         pl.struct("item_id", "item_name").unique().sort().alias('rar'),
+        ...         "item_id",
         ...         fill_value={"value1": 0, "value2": 99},
         ...         explicit=False,
         ...         sort=True,
-        ...     )
+        ...     ).unnest("item_id")
         shape: (8, 5)
         ┌───────┬─────────┬───────────┬────────┬────────┐
         │ group ┆ item_id ┆ item_name ┆ value1 ┆ value2 │
@@ -364,38 +357,33 @@ def _complete(
     if by_does_not_exist:
         _columns = [column.implode() for column in _columns]
         uniques = df.select(_columns)
-        _columns = uniques.columns
+        uniques_schema = uniques.collect_schema()
+        _columns = uniques_schema.names()
     else:
         uniques = df.group_by(by, maintain_order=sort).agg(_columns)
-        _by = uniques.select(by).columns
-        _columns = uniques.select(pl.exclude(_by)).columns
+        uniques_schema = uniques.collect_schema()
+        _columns = cs.expand_selector(
+            uniques_schema, cs.exclude(by), strict=False
+        )
     for column in _columns:
         uniques = uniques.explode(column)
 
-    _columns = [
-        column
-        for column, dtype in zip(_columns, uniques.select(_columns).dtypes)
-        # this way we ensure there is no tampering with existing struct columns
-        if (dtype == pl.Struct) and (column not in df.columns)
-    ]
-
-    if _columns:
-        for column in _columns:
-            uniques = uniques.unnest(columns=column)
-
-    no_columns_to_fill = set(df.columns) == set(uniques.columns)
-    if fill_value is None or no_columns_to_fill:
-        return uniques.join(df, on=uniques.columns, how="left", coalesce=True)
+    df_columns = df.collect_schema()
+    columns_to_fill = df_columns.keys() ^ uniques_schema.keys()
+    if (fill_value is None) or not columns_to_fill:
+        return uniques.join(
+            df, on=uniques_schema.names(), how="left", coalesce=True
+        )
     idx = None
-    columns_to_select = df.columns
+    columns_to_select = df_columns.names()
     if not explicit:
-        idx = "".join(df.columns)
+        idx = "".join(columns_to_select)
         idx = f"{idx}_"
         df = df.with_row_index(name=idx)
-    df = uniques.join(df, on=uniques.columns, how="left", coalesce=True)
+    df = uniques.join(df, on=uniques_schema.names(), how="left", coalesce=True)
     # exclude columns that were not used
     # to generate the combinations
-    exclude_columns = uniques.columns
+    exclude_columns = uniques_schema.names()
     if idx:
         exclude_columns.append(idx)
     _columns = [

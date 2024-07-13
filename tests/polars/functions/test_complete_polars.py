@@ -69,12 +69,16 @@ def test_complete_1(fill_df):
     Test output for janitor.complete.
     """
     trimmed = fill_df.lazy().select(~cs.starts_with("value"))
-    result = trimmed.complete(
-        cs.by_name("group"),
-        pl.struct("item_id", "item_name").alias("rar").unique().sort(),
-        fill_value=0,
-        explicit=False,
-        sort=True,
+    result = (
+        trimmed.select("group", pl.struct("item_id", "item_name"))
+        .complete(
+            cs.by_name("group"),
+            "item_id",
+            fill_value=0,
+            explicit=False,
+            sort=True,
+        )
+        .unnest("item_id")
     )
     expected = pl.DataFrame(
         [
@@ -147,12 +151,18 @@ def test_groupby_complete():
 # https://tidyr.tidyverse.org/reference/complete.html
 def test_complete_2(fill_df):
     """Test output for janitor.complete."""
-    result = fill_df.complete(
-        "group",
-        pl.struct("item_id", "item_name").alias("rar").unique().sort(),
-        fill_value={"value1": 0, "value2": 99},
-        explicit=False,
-        sort=True,
+    result = (
+        fill_df.select(
+            "group", pl.struct("item_id", "item_name"), "value1", "value2"
+        )
+        .complete(
+            "group",
+            pl.col("item_id").unique().sort(),
+            fill_value={"value1": 0, "value2": 99},
+            explicit=False,
+            sort=True,
+        )
+        .unnest("item_id")
     )
     expected = pl.DataFrame(
         [
@@ -241,12 +251,21 @@ def test_complete_multiple_groupings():
         }
     )
 
-    result = df3.complete(
-        pl.struct("meta", "domain1").alias("bar").unique().sort(),
-        pl.struct("project_id", "question_count").alias("foo").unique().sort(),
-        fill_value={"tag_count": 0},
-        sort=True,
-    ).select("project_id", "meta", "domain1", "question_count", "tag_count")
+    result = (
+        df3.select(
+            pl.struct("meta", "domain1"),
+            pl.struct("project_id", "question_count"),
+            "tag_count",
+        )
+        .complete(
+            pl.col("meta").unique().sort(),
+            "project_id",
+            fill_value={"tag_count": 0},
+            sort=True,
+        )
+        .unnest("meta", "project_id")
+        .select("project_id", "meta", "domain1", "question_count", "tag_count")
+    )
     assert_frame_equal(result, output3)
 
 

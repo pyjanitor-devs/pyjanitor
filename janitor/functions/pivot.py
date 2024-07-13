@@ -14,10 +14,10 @@ import pandas_flavor as pf
 from pandas.api.types import is_extension_array_dtype, is_list_like
 from pandas.core.dtypes.concat import concat_compat
 
-from janitor.functions.select import get_index_labels
-from janitor.functions.utils import (
+from janitor.functions.select import (
     _index_converter,
     _select_index,
+    get_index_labels,
 )
 from janitor.utils import check, refactored_function
 

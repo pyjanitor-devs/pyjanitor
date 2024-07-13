@@ -1,15 +1,26 @@
 from __future__ import annotations
 
-from typing import Any, Literal
+import fnmatch
+import inspect
+import re
+from collections.abc import Callable as dispatch_callable
+from dataclasses import dataclass
+from functools import singledispatch
+from typing import Any, Callable, Literal
 
+import numpy as np
 import pandas as pd
 import pandas_flavor as pf
-from pandas.api.types import is_scalar
+from pandas.api.types import (
+    is_bool_dtype,
+    is_datetime64_dtype,
+    is_list_like,
+    is_scalar,
+)
+from pandas.core.common import is_bool_indexer
 from pandas.core.groupby.generic import DataFrameGroupBy, SeriesGroupBy
 
-from janitor.functions.utils import _select, _select_index
-
-# noqa: F401
+from janitor.functions.utils import _is_str_or_cat
 from janitor.utils import check, deprecated_alias, refactored_function
 
 
@@ -484,3 +495,371 @@ def get_columns(
     label = get_index_labels(label, group.obj, axis="columns")
     label = label if is_scalar(label) else list(label)
     return group[label]
+
+
+def _select_regex(index, arg, source="regex"):
+    "Process regex on a Pandas Index"
+    assert source in ("fnmatch", "regex"), source
+    try:
+        if source == "fnmatch":
+            arg, regex = arg
+            bools = index.str.match(regex, na=False)
+        else:
+            bools = index.str.contains(arg, na=False, regex=True)
+        if not bools.any():
+            raise KeyError(f"No match was returned for '{arg}'")
+        return bools
+    except Exception as exc:
+        raise KeyError(f"No match was returned for '{arg}'") from exc
+
+
+def _select_callable(arg, func: Callable, axis=None):
+    """
+    Process a callable on a Pandas DataFrame/Index.
+    """
+    bools = func(arg)
+    bools = np.asanyarray(bools)
+    if not is_bool_dtype(bools):
+        raise ValueError(
+            "The output of the applied callable "
+            "should be a 1-D boolean array."
+        )
+    if axis:
+        arg = getattr(arg, axis)
+    if len(bools) != len(arg):
+        raise IndexError(
+            f"The boolean array output from the callable {arg} "
+            f"has wrong length: "
+            f"{len(bools)} instead of {len(arg)}"
+        )
+    return bools
+
+
+@dataclass
+class DropLabel:
+    """Helper class for removing labels within the `select` syntax.
+
+    `label` can be any of the types supported in the `select`,
+    `select_rows` and `select_columns` functions.
+    An array of integers not matching the labels is returned.
+
+    !!! info "New in version 0.24.0"
+
+    Args:
+        label: Label(s) to be dropped from the index.
+    """
+
+    label: Any
+
+
+@singledispatch
+def _select_index(arg, df, axis):
+    """Base function for selection on a Pandas Index object.
+
+    Returns either an integer, a slice,
+    a sequence of booleans, or an array of integers,
+    that match the exact location of the target.
+    """
+    try:
+        return getattr(df, axis).get_loc(arg)
+    except Exception as exc:
+        raise KeyError(f"No match was returned for {arg}") from exc
+
+
+@_select_index.register(str)  # noqa: F811
+def _index_dispatch(arg, df, axis):  # noqa: F811
+    """Base function for selection on a Pandas Index object.
+
+    Applies only to strings.
+    It is also applicable to shell-like glob strings,
+    which are supported by `fnmatch`.
+
+    Returns either a sequence of booleans, an integer,
+    or a slice.
+    """
+    index = getattr(df, axis)
+    if isinstance(index, pd.MultiIndex):
+        index = index.get_level_values(0)
+    if _is_str_or_cat(index) or is_datetime64_dtype(index):
+        try:
+            return index.get_loc(arg)
+        except KeyError as exc:
+            if _is_str_or_cat(index):
+                if arg == "*":
+                    return slice(None)
+                # label selection should be case sensitive
+                # fix for Github Issue 1160
+                # translating to regex solves the case sensitivity
+                # and also avoids the list comprehension
+                # not that list comprehension is bad - i'd say it is efficient
+                # however, the Pandas str.match method used in _select_regex
+                # could offer more performance, especially if the
+                # underlying array of the index is a PyArrow string array
+                return _select_regex(
+                    index, (arg, fnmatch.translate(arg)), source="fnmatch"
+                )
+            raise KeyError(f"No match was returned for '{arg}'") from exc
+    raise KeyError(f"No match was returned for '{arg}'")
+
+
+@_select_index.register(re.Pattern)  # noqa: F811
+def _index_dispatch(arg, df, axis):  # noqa: F811
+    """Base function for selection on a Pandas Index object.
+
+    Applies only to regular expressions.
+    `re.compile` is required for the regular expression.
+
+    Returns an array of booleans.
+    """
+    index = getattr(df, axis)
+    if isinstance(index, pd.MultiIndex):
+        index = index.get_level_values(0)
+    return _select_regex(index, arg)
+
+
+@_select_index.register(range)  # noqa: F811
+@_select_index.register(slice)  # noqa: F811
+def _index_dispatch(arg, df, axis):  # noqa: F811
+    """
+    Base function for selection on a Pandas Index object.
+    Applies only to slices.
+
+    Returns a slice object.
+    """
+    index = getattr(df, axis)
+    if not index.is_monotonic_increasing:
+        if not index.is_unique:
+            raise ValueError(
+                "Non-unique Index labels should be monotonic increasing."
+                "Kindly sort the index."
+            )
+        if is_datetime64_dtype(index):
+            raise ValueError(
+                "The DatetimeIndex should be monotonic increasing."
+                "Kindly sort the index"
+            )
+
+    return index._convert_slice_indexer(arg, kind="loc")
+
+
+@_select_index.register(dispatch_callable)  # noqa: F811
+def _index_dispatch(arg, df, axis):  # noqa: F811
+    """
+    Base function for selection on a Pandas Index object.
+    Applies only to callables.
+
+    The callable is applied to the entire DataFrame.
+
+    Returns an array of booleans.
+    """
+    # special case for selecting dtypes columnwise
+    dtypes = (
+        arg.__name__
+        for _, arg in inspect.getmembers(pd.api.types, inspect.isfunction)
+        if arg.__name__.startswith("is") and arg.__name__.endswith("type")
+    )
+    if (arg.__name__ in dtypes) and (axis == "columns"):
+        bools = df.dtypes.map(arg)
+        return np.asanyarray(bools)
+
+    return _select_callable(df, arg, axis)
+
+
+@_select_index.register(dict)  # noqa: F811
+def _index_dispatch(arg, df, axis):  # noqa: F811
+    """
+    Base function for selection on a Pandas Index object.
+    Applies only to a dictionary.
+
+    Returns an array of integers.
+    """
+    level_label = {}
+    index = getattr(df, axis)
+    if not isinstance(index, pd.MultiIndex):
+        return _select_index(list(arg), df, axis)
+    all_str = (isinstance(entry, str) for entry in arg)
+    all_str = all(all_str)
+    all_int = (isinstance(entry, int) for entry in arg)
+    all_int = all(all_int)
+    if not all_str | all_int:
+        raise TypeError(
+            "The keys in the dictionary represent the levels "
+            "in the MultiIndex, and should either be all "
+            "strings or integers."
+        )
+    for key, value in arg.items():
+        if isinstance(value, dispatch_callable):
+            indexer = index.get_level_values(key)
+            value = _select_callable(indexer, value)
+        elif isinstance(value, re.Pattern):
+            indexer = index.get_level_values(key)
+            value = _select_regex(indexer, value)
+        level_label[key] = value
+
+    level_label = {
+        index._get_level_number(level): label
+        for level, label in level_label.items()
+    }
+    level_label = [
+        level_label.get(num, slice(None)) for num in range(index.nlevels)
+    ]
+    return index.get_locs(level_label)
+
+
+@_select_index.register(np.ndarray)  # noqa: F811
+@_select_index.register(pd.api.extensions.ExtensionArray)  # noqa: F811
+@_select_index.register(pd.Index)  # noqa: F811
+@_select_index.register(pd.MultiIndex)  # noqa: F811
+@_select_index.register(pd.Series)  # noqa: F811
+def _index_dispatch(arg, df, axis):  # noqa: F811
+    """
+    Base function for selection on a Pandas Index object.
+    Applies to pd.Series/pd.Index/pd.array/np.ndarray.
+
+    Returns an array of integers.
+    """
+    index = getattr(df, axis)
+
+    if is_bool_dtype(arg):
+        if len(arg) != len(index):
+            raise IndexError(
+                f"{arg} is a boolean dtype and has wrong length: "
+                f"{len(arg)} instead of {len(index)}"
+            )
+        return np.asanyarray(arg)
+    try:
+        if isinstance(arg, pd.Series):
+            arr = arg.array
+        else:
+            arr = arg
+        if isinstance(index, pd.MultiIndex) and not isinstance(
+            arg, pd.MultiIndex
+        ):
+            return index.get_locs([arg])
+        arr = index.get_indexer_for(arr)
+        not_found = arr == -1
+        if not_found.all():
+            raise KeyError(
+                f"No match was returned for any of the labels in {arg}"
+            )
+        elif not_found.any():
+            not_found = set(arg).difference(index)
+            raise KeyError(
+                f"No match was returned for these labels in {arg} - "
+                f"{*not_found,}"
+            )
+        return arr
+    except Exception as exc:
+        raise KeyError(f"No match was returned for {arg}") from exc
+
+
+@_select_index.register(DropLabel)  # noqa: F811
+def _column_sel_dispatch(cols, df, axis):  # noqa: F811
+    """
+    Base function for selection on a Pandas Index object.
+    Returns the inverse of the passed label(s).
+
+    Returns an array of integers.
+    """
+    arr = _select_index(cols.label, df, axis)
+    index = np.arange(getattr(df, axis).size)
+    arr = _index_converter(arr, index)
+    return np.delete(index, arr)
+
+
+@_select_index.register(set)
+@_select_index.register(list)  # noqa: F811
+def _index_dispatch(arg, df, axis):  # noqa: F811
+    """
+    Base function for selection on a Pandas Index object.
+    Applies only to list type.
+    It can take any of slice, str, callable, re.Pattern types, ...,
+    or a combination of these types.
+
+    Returns an array of integers.
+    """
+    index = getattr(df, axis)
+    if is_bool_indexer(arg):
+        if len(arg) != len(index):
+            raise ValueError(
+                "The length of the list of booleans "
+                f"({len(arg)}) does not match "
+                f"the length of the DataFrame's {axis}({index.size})."
+            )
+
+        return arg
+
+    # shortcut for single unique dtype of scalars
+    checks = (is_scalar(entry) for entry in arg)
+    if all(checks):
+        dtypes = {type(entry) for entry in arg}
+        if len(dtypes) == 1:
+            indices = index.get_indexer_for(list(arg))
+            if (indices != -1).all():
+                return indices
+    # treat multiple DropLabel instances as a single unit
+    checks = (isinstance(entry, DropLabel) for entry in arg)
+    if sum(checks) > 1:
+        drop_labels = (entry for entry in arg if isinstance(entry, DropLabel))
+        drop_labels = [entry.label for entry in drop_labels]
+        drop_labels = DropLabel(drop_labels)
+        arg = [entry for entry in arg if not isinstance(entry, DropLabel)]
+        arg.append(drop_labels)
+    indices = [_select_index(entry, df, axis) for entry in arg]
+    # single entry does not need to be combined
+    # or materialized if possible;
+    # this offers more performance
+    if len(indices) == 1:
+        if is_scalar(indices[0]):
+            return indices
+        indices = indices[0]
+        if is_list_like(indices):
+            indices = np.asanyarray(indices)
+        return indices
+    indices = [_index_converter(arr, index) for arr in indices]
+    return np.concatenate(indices)
+
+
+def _index_converter(arr, index):
+    """Converts output from _select_index to an array_like"""
+    if is_list_like(arr):
+        arr = np.asanyarray(arr)
+    if is_bool_dtype(arr):
+        arr = arr.nonzero()[0]
+    elif isinstance(arr, slice):
+        arr = np.arange(index.size)[arr]
+    elif isinstance(arr, int):
+        arr = np.array([arr])
+    return arr
+
+
+def _select(
+    df: pd.DataFrame,
+    invert: bool = False,
+    rows=None,
+    columns=None,
+) -> pd.DataFrame:
+    """
+    Index DataFrame on the index or columns.
+
+    Returns a DataFrame.
+    """
+    if rows is None:
+        row_indexer = slice(None)
+    else:
+        outcome = _select_index([rows], df, axis="index")
+        if invert:
+            row_indexer = np.ones(df.index.size, dtype=np.bool_)
+            row_indexer[outcome] = False
+        else:
+            row_indexer = outcome
+    if columns is None:
+        column_indexer = slice(None)
+    else:
+        outcome = _select_index([columns], df, axis="columns")
+        if invert:
+            column_indexer = np.ones(df.columns.size, dtype=np.bool_)
+            column_indexer[outcome] = False
+        else:
+            column_indexer = outcome
+    return df.iloc[row_indexer, column_indexer]

@@ -66,6 +66,7 @@ from .reorder_columns import reorder_columns
 from .round_to_fraction import round_to_fraction
 from .row_to_names import row_to_names
 from .select import (
+    DropLabel,
     get_columns,
     get_index_labels,
     select,
@@ -83,7 +84,6 @@ from .transform_columns import transform_column, transform_columns
 from .truncate_datetime import truncate_datetime_dataframe
 from .update_where import update_where
 from .utils import (
-    DropLabel,
     unionize_dataframe_categories,
 )
 

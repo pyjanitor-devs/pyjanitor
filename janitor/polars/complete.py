@@ -364,28 +364,34 @@ def _complete(
     if by_does_not_exist:
         _columns = [column.implode() for column in _columns]
         uniques = df.select(_columns)
-        _columns = uniques.columns
+        _columns = uniques.collect_schema().names()
     else:
         uniques = df.group_by(by, maintain_order=sort).agg(_columns)
-        _by = uniques.select(by).columns
-        _columns = uniques.select(pl.exclude(_by)).columns
+        _by = uniques.select(by).collect_schema().names()
+        _columns = uniques.select(pl.exclude(_by)).collect_schema().names()
     for column in _columns:
         uniques = uniques.explode(column)
 
     _columns = [
         column
-        for column, dtype in zip(_columns, uniques.select(_columns).dtypes)
+        for column, dtype in zip(
+            _columns, uniques.select(_columns).collect_schema().dtypes()
+        )
         # this way we ensure there is no tampering with existing struct columns
-        if (dtype == pl.Struct) and (column not in df.columns)
+        if (dtype == pl.Struct) and (column not in df.collect_schema().names())
     ]
 
     if _columns:
         for column in _columns:
             uniques = uniques.unnest(columns=column)
 
-    no_columns_to_fill = set(df.columns) == set(uniques.columns)
+    no_columns_to_fill = set(df.collect_schema().names()) == set(
+        uniques.collect_schema().names()
+    )
     if fill_value is None or no_columns_to_fill:
-        return uniques.join(df, on=uniques.columns, how="left", coalesce=True)
+        return uniques.join(
+            df, on=uniques.collect_schema().names(), how="left", coalesce=True
+        )
     idx = None
     columns_to_select = df.columns
     if not explicit:

@@ -186,8 +186,8 @@ def conditional_join(
         Get the last match:
         >>> df1.conditional_join(
         ...     df2,
-        ...     col("value_1") > col("value_2A"),
-        ...     col("value_1") < col("value_2B"),
+        ...     ("value_1", "value_2A", ">"),
+        ...     ("value_1", "value_2B", "<"),
         ...     keep='last'
         ... )
            value_1  value_2A  value_2B

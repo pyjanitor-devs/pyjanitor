@@ -147,7 +147,8 @@ def complete(
         └───────┴─────────┴───────────┴────────┴────────┘
 
         Limit the fill to only the newly created
-        missing values with `explicit = FALSE`
+        missing values with `explicit = FALSE`:
+        >>> with pl.Config(tbl_rows=-1):
         ...     df.select(
         ...         "group", pl.struct("item_id", "item_name"), "value1", "value2"
         ...     ).complete(

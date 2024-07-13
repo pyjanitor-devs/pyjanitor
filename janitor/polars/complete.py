@@ -102,7 +102,7 @@ def complete(
         >>> with pl.Config(tbl_rows=-1):
         ...     df.select(
         ...         "group", pl.struct("item_id", "item_name"), "value1", "value2"
-        ...     ).complete("group", "item_id").unnest("item_id")
+        ...     ).complete("group", "item_id").unnest("item_id").sort(pl.all())
         shape: (8, 5)
         ┌───────┬─────────┬───────────┬────────┬────────┐
         │ group ┆ item_id ┆ item_name ┆ value1 ┆ value2 │
@@ -128,8 +128,7 @@ def complete(
         ...         "item_id",
         ...         fill_value={"value1": 0, "value2": 99},
         ...         explicit=True,
-        ...         sort=True,
-        ...     ).unnest("item_id")
+        ...     ).unnest("item_id").sort(pl.all())
         shape: (8, 5)
         ┌───────┬─────────┬───────────┬────────┬────────┐
         │ group ┆ item_id ┆ item_name ┆ value1 ┆ value2 │
@@ -156,8 +155,7 @@ def complete(
         ...         "item_id",
         ...         fill_value={"value1": 0, "value2": 99},
         ...         explicit=False,
-        ...         sort=True,
-        ...     ).unnest("item_id")
+        ...     ).unnest("item_id").sort(pl.all())
         shape: (8, 5)
         ┌───────┬─────────┬───────────┬────────┬────────┐
         │ group ┆ item_id ┆ item_name ┆ value1 ┆ value2 │

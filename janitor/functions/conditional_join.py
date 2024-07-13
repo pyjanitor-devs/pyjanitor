@@ -152,8 +152,8 @@ def conditional_join(
         ...  .rename(columns={'value_1':'left_column'})
         ...  .conditional_join(
         ...      df2,
-        ...     ("value_1", "value_2A", ">"),
-        ...     ("value_1", "value_2B", "<"),
+        ...     ("left_column", "value_2A", ">"),
+        ...     ("left_column", "value_2B", "<"),
         ...      right_columns='value_2B',
         ...      how='outer')
         ... )

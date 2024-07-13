@@ -7,10 +7,7 @@ import pandas_flavor as pf
 from pandas.api.types import is_scalar
 from pandas.core.groupby.generic import DataFrameGroupBy, SeriesGroupBy
 
-from janitor.functions.utils import (
-    _select,
-    _select_index,
-)
+from janitor.functions.utils import _select, _select_index
 
 # noqa: F401
 from janitor.utils import check, deprecated_alias, refactored_function

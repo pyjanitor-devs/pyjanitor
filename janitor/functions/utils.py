@@ -17,7 +17,6 @@ from typing import (
     Hashable,
     Iterable,
     List,
-    Literal,
     Optional,
     Pattern,
     Union,
@@ -35,7 +34,6 @@ from pandas.api.types import (
     union_categoricals,
 )
 from pandas.core.common import is_bool_indexer
-from pandas.core.groupby.generic import DataFrameGroupBy, SeriesGroupBy
 
 from janitor.errors import JanitorError
 from janitor.utils import (
@@ -600,54 +598,6 @@ def _index_converter(arr, index):
     return arr
 
 
-def get_index_labels(
-    arg, df: pd.DataFrame, axis: Literal["index", "columns"]
-) -> pd.Index:
-    """Convenience function to get actual labels from column/index
-
-    !!! info "New in version 0.25.0"
-
-    Args:
-        arg: Valid inputs include: an exact column name to look for,
-            a shell-style glob string (e.g. `*_thing_*`),
-            a regular expression,
-            a callable,
-            or variable arguments of all the aforementioned.
-            A sequence of booleans is also acceptable.
-            A dictionary can be used for selection
-            on a MultiIndex on different levels.
-        df: The pandas DataFrame object.
-        axis: Should be either `index` or `columns`.
-
-    Returns:
-        A pandas Index.
-    """
-    assert axis in {"index", "columns"}
-    index = getattr(df, axis)
-    return index[_select_index(arg, df, axis)]
-
-
-def get_columns(group: Union[DataFrameGroupBy, SeriesGroupBy], label):
-    """
-    Helper function for selecting columns on a grouped object,
-    using the
-    [`select`][janitor.functions.select.select] syntax.
-
-    !!! info "New in version 0.25.0"
-
-    Args:
-        group: A Pandas GroupBy object.
-        label: column(s) to select.
-
-    Returns:
-        A pandas groupby object.
-    """
-    check("groupby object", group, [DataFrameGroupBy, SeriesGroupBy])
-    label = get_index_labels(label, group.obj, axis="columns")
-    label = label if is_scalar(label) else list(label)
-    return group[label]
-
-
 def _select(
     df: pd.DataFrame,
     invert: bool = False,
@@ -1053,103 +1003,6 @@ def _keep_output(keep: str, left: np.ndarray, right: np.ndarray):
         return grouped.index, grouped._values
     grouped = grouped.max()
     return grouped.index, grouped._values
-
-
-class col:
-    """Helper class for column selection within an expression.
-
-    Args:
-        column (Hashable): The name of the column to be selected.
-
-    Raises:
-        TypeError: If the `column` parameter is not hashable.
-
-    !!! info "New in version 0.25.0"
-
-    !!! warning
-
-        `col` is currently considered experimental.
-        The implementation and parts of the API
-        may change without warning.
-
-    """
-
-    def __init__(self, column: Hashable):
-        self.cols = column
-        check("column", self.cols, [Hashable])
-        self.join_args = None
-
-    def __gt__(self, other):
-        """Implements the greater-than comparison operator (`>`).
-
-        Args:
-            other (col): The other `col` object to compare to.
-
-        Returns:
-            col: The current `col` object.
-        """
-        self.join_args = (self.cols, other.cols, ">")
-        return self
-
-    def __ge__(self, other):
-        """Implements the greater-than-or-equal-to comparison operator (`>=`).
-
-        Args:
-            other (col): The other `col` object to compare to.
-
-        Returns:
-            col: The current `col` object.
-        """
-        self.join_args = (self.cols, other.cols, ">=")
-        return self
-
-    def __lt__(self, other):
-        """Implements the less-than comparison operator (`<`).
-
-        Args:
-            other (col): The other `col` object to compare to.
-
-        Returns:
-            col: The current `col` object.
-        """
-        self.join_args = (self.cols, other.cols, "<")
-        return self
-
-    def __le__(self, other):
-        """Implements the less-than-or-equal-to comparison operator (`<=`).
-
-        Args:
-            other (col): The other `col` object to compare to.
-
-        Returns:
-            col: The current `col` object.
-        """
-        self.join_args = (self.cols, other.cols, "<=")
-        return self
-
-    def __ne__(self, other):
-        """Implements the not-equal-to comparison operator (`!=`).
-
-        Args:
-            other (col): The other `col` object to compare to.
-
-        Returns:
-            col: The current `col` object.
-        """
-        self.join_args = (self.cols, other.cols, "!=")
-        return self
-
-    def __eq__(self, other):
-        """Implements the equal-to comparison operator (`==`).
-
-        Args:
-            other (col): The other `col` object to compare to.
-
-        Returns:
-            col: The current `col` object.
-        """
-        self.join_args = (self.cols, other.cols, "==")
-        return self
 
 
 def _change_case(

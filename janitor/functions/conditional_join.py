@@ -19,7 +19,6 @@ from janitor.functions.utils import (
     _generic_func_cond_join,
     _JoinOperator,
     _keep_output,
-    col,
     greater_than_join_types,
     less_than_join_types,
 )
@@ -71,8 +70,6 @@ def conditional_join(
     the form `(left_on, right_on, op)`; `left_on` is the column
     label from `df`, `right_on` is the column label from `right`,
     while `op` is the operator.
-
-    The `col` class is also supported in the `conditional_join` syntax.
 
     For multiple conditions, the and(`&`)
     operator is used to combine the results of the individual conditions.
@@ -133,24 +130,11 @@ def conditional_join(
         3        4         3         5
         4        4         3         6
 
-        Use the `col` class:
-        >>> df1.conditional_join(
-        ...     df2,
-        ...     col("value_1") > col("value_2A"),
-        ...     col("value_1") < col("value_2B")
-        ... )
-           value_1  value_2A  value_2B
-        0        2         1         3
-        1        5         3         6
-        2        3         2         4
-        3        4         3         5
-        4        4         3         6
-
         Select specific columns, after the join:
         >>> df1.conditional_join(
         ...     df2,
-        ...     col("value_1") > col("value_2A"),
-        ...     col("value_1") < col("value_2B"),
+        ...     ("value_1", "value_2A", ">"),
+        ...     ("value_1", "value_2B", "<"),
         ...     right_columns='value_2B',
         ...     how='left'
         ... )
@@ -168,8 +152,8 @@ def conditional_join(
         ...  .rename(columns={'value_1':'left_column'})
         ...  .conditional_join(
         ...      df2,
-        ...      ("left_column", "value_2A", ">"),
-        ...      ("left_column", "value_2B", "<"),
+        ...     ("value_1", "value_2A", ">"),
+        ...     ("value_1", "value_2B", "<"),
         ...      right_columns='value_2B',
         ...      how='outer')
         ... )
@@ -189,8 +173,8 @@ def conditional_join(
         Get the first match:
         >>> df1.conditional_join(
         ...     df2,
-        ...     col("value_1") > col("value_2A"),
-        ...     col("value_1") < col("value_2B"),
+        ...     ("value_1", "value_2A", ">"),
+        ...     ("value_1", "value_2B", "<"),
         ...     keep='first'
         ... )
            value_1  value_2A  value_2B
@@ -245,6 +229,8 @@ def conditional_join(
             - Numba support for equi join
         - 0.27.0
             - Added support for timedelta dtype.
+        - 0.28.0
+            - `col` class deprecated.
 
     Args:
         df: A pandas DataFrame.
@@ -355,10 +341,6 @@ def _conditional_join_preliminary_checks(
     if not conditions:
         raise ValueError("Kindly provide at least one join condition.")
 
-    conditions = [
-        cond.join_args if isinstance(cond, col) else cond
-        for cond in conditions
-    ]
     for condition in conditions:
         check("condition", condition, [tuple])
         len_condition = len(condition)

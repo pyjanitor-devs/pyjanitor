@@ -1,9 +1,18 @@
-from typing import Any
+from __future__ import annotations
+
+from typing import Any, Literal
 
 import pandas as pd
 import pandas_flavor as pf
+from pandas.api.types import is_scalar
+from pandas.core.groupby.generic import DataFrameGroupBy, SeriesGroupBy
 
-from janitor.functions.utils import DropLabel, _select  # noqa: F401
+from janitor.functions.utils import (
+    _select,
+    _select_index,
+)
+
+# noqa: F401
 from janitor.utils import check, deprecated_alias, refactored_function
 
 
@@ -314,7 +323,7 @@ def select_rows(
 @deprecated_alias(rows="index")
 def select(
     df: pd.DataFrame,
-    *args,
+    *args: tuple,
     index: Any = None,
     columns: Any = None,
     axis: str = "columns",
@@ -428,3 +437,53 @@ def select(
             return _select(df, columns=list(args), rows=index, invert=invert)
         raise ValueError("axis should be either 'index' or 'columns'.")
     return _select(df, rows=index, columns=columns, invert=invert)
+
+
+def get_index_labels(
+    arg: Any, df: pd.DataFrame, axis: Literal["index", "columns"]
+) -> pd.Index:
+    """Convenience function to get actual labels from column/index
+
+    !!! info "New in version 0.25.0"
+
+    Args:
+        arg: Valid inputs include: an exact column name to look for,
+            a shell-style glob string (e.g. `*_thing_*`),
+            a regular expression,
+            a callable,
+            or variable arguments of all the aforementioned.
+            A sequence of booleans is also acceptable.
+            A dictionary can be used for selection
+            on a MultiIndex on different levels.
+        df: The pandas DataFrame object.
+        axis: Should be either `index` or `columns`.
+
+    Returns:
+        A pandas Index.
+    """
+    assert axis in {"index", "columns"}
+    index = getattr(df, axis)
+    return index[_select_index(arg, df, axis)]
+
+
+def get_columns(
+    group: DataFrameGroupBy | SeriesGroupBy, label: Any
+) -> DataFrameGroupBy | SeriesGroupBy:
+    """
+    Helper function for selecting columns on a grouped object,
+    using the
+    [`select`][janitor.functions.select.select] syntax.
+
+    !!! info "New in version 0.25.0"
+
+    Args:
+        group: A Pandas GroupBy object.
+        label: column(s) to select.
+
+    Returns:
+        A pandas groupby object.
+    """
+    check("groupby object", group, [DataFrameGroupBy, SeriesGroupBy])
+    label = get_index_labels(label, group.obj, axis="columns")
+    label = label if is_scalar(label) else list(label)
+    return group[label]

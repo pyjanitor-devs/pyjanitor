@@ -111,7 +111,7 @@ def convert_datetime_to_number(
     da_or_ds: Union[xr.DataArray, xr.Dataset],
     time_units: str,
     dim: str = "time",
-):
+) -> Union[xr.DataArray, xr.Dataset]:
     """Convert the coordinates of a datetime axis to a human-readable float
     representation.
 

@@ -109,7 +109,8 @@ def expand(
         │ orange ┆ S    │
         │ orange ┆ XS   │
         └────────┴──────┘
-        >>> df.expand('type','size','year',sort=True)
+        >>> with pl.Config(tbl_rows=-1):
+        ...     df.expand('type','size','year',sort=True)
         shape: (18, 3)
         ┌────────┬──────┬──────┐
         │ type   ┆ size ┆ year │
@@ -164,7 +165,8 @@ def expand(
         └────────┴──────┴──────┘
 
         Expand the DataFrame to include new observations:
-        >>> df.expand('type','size',pl.int_range(2010,2014).alias('new_year'),sort=True)
+        >>> with pl.Config(tbl_rows=-1):
+        ...     df.expand('type','size',pl.int_range(2010,2014).alias('new_year'),sort=True)
         shape: (24, 3)
         ┌────────┬──────┬──────────┐
         │ type   ┆ size ┆ new_year │
@@ -199,7 +201,8 @@ def expand(
 
         Filter for missing observations:
         >>> columns = ('type','size','year')
-        >>> df.expand(*columns).join(df, how='anti', on=columns).sort(by=pl.all())
+        >>> with pl.Config(tbl_rows=-1):
+        ...     df.expand(*columns).join(df, how='anti', on=columns).sort(by=pl.all())
         shape: (13, 3)
         ┌────────┬──────┬──────┐
         │ type   ┆ size ┆ year │
@@ -222,7 +225,8 @@ def expand(
         └────────┴──────┴──────┘
 
         Expand within each group, using `by`:
-        >>> df.expand('year','size',by='type',sort=True)
+        >>> with pl.Config(tbl_rows=-1):
+        ...     df.expand('year','size',by='type',sort=True)
         shape: (10, 3)
         ┌────────┬──────┬──────┐
         │ type   ┆ year ┆ size │

@@ -57,7 +57,7 @@ def expand(
         ...         {'type': 'orange', 'year': 2010, 'size': 'S'},
         ...         {'type': 'orange', 'year': 2011, 'size': 'S'},
         ...         {'type': 'orange', 'year': 2012, 'size': 'M'}]
-        >>> df = pd.DataFrame(data)
+        >>> df = pl.DataFrame(data)
         >>> df
         shape: (6, 3)
         ┌────────┬──────┬──────┐

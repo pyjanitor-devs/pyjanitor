@@ -47,7 +47,7 @@ def test_empty_groups(fill_df):
     """Raise TypeError if wrong column type is passed."""
     msg = "The argument passed to the columns parameter "
     msg += "should either be a string, a column selector, "
-    msg += "or a polars expression, instead got.+"
+    msg += "a polars expression, or a polars Series; instead got.+"
     with pytest.raises(TypeError, match=msg):
         fill_df.complete("group", {})
 

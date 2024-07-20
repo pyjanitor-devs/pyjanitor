@@ -278,14 +278,12 @@ def _computations_complete(
                     f"The value for {column_name} should be a scalar."
                 )
 
-    uniques = df.expand(*columns, by=by)
+    uniques = df.expand(*columns, by=by, sort=sort)
     if by is None:
         merge_columns = uniques.columns.tolist()
     else:
         merge_columns = [*uniques.index.names] + uniques.columns.tolist()
 
-    if sort:
-        uniques = uniques.sort_values(merge_columns)
     columns = df.columns
     indicator = False
     if (fill_value is not None) and not explicit:

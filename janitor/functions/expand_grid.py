@@ -137,7 +137,10 @@ def expand_grid(
 
 @pf.register_dataframe_method
 def expand(
-    df: pd.DataFrame, *columns: tuple, by: str | list = None
+    df: pd.DataFrame,
+    *columns: tuple,
+    sort: bool = False,
+    by: str | list = None,
 ) -> pd.DataFrame:
     """
     Creates a DataFrame from a cartesian combination of all inputs.
@@ -322,6 +325,7 @@ def expand(
             1D array.
             The array should be unique;
             no check is done to verify this.
+        sort: If True, sort the DataFrame.
         by: Label or list of labels to group by.
 
     Returns:
@@ -329,7 +333,7 @@ def expand(
     """  # noqa: E501
     if by is None:
         contents = _build_pandas_objects_for_expand(df=df, columns=columns)
-        return cartesian_product(*contents)
+        return cartesian_product(*contents, sort=sort)
     if not is_scalar(by) and not isinstance(by, list):
         raise TypeError(
             "The argument to the by parameter "
@@ -343,7 +347,7 @@ def expand(
     lengths = []
     for _, frame in grouped:
         objects = _build_pandas_objects_for_expand(df=frame, columns=columns)
-        objects = _compute_cartesian_product(inputs=objects)
+        objects = _compute_cartesian_product(inputs=objects, sort=False)
         length = objects[next(iter(objects))].size
         lengths.append(length)
         for k, v in objects.items():
@@ -352,7 +356,11 @@ def expand(
         key: concat_compat(value) for key, value in dictionary.items()
     }
     index = index.repeat(lengths)
-    return pd.DataFrame(data=dictionary, index=index, copy=False)
+    out = pd.DataFrame(data=dictionary, index=index, copy=False)
+    if sort:
+        headers = out.columns.tolist()
+        return out.sort_values(headers)
+    return out
 
 
 def _build_pandas_objects_for_expand(df: pd.DataFrame, columns: tuple) -> list:
@@ -393,7 +401,7 @@ def _build_pandas_objects_for_expand(df: pd.DataFrame, columns: tuple) -> list:
     return contents
 
 
-def cartesian_product(*inputs: tuple) -> pd.DataFrame:
+def cartesian_product(*inputs: tuple, sort: bool = False) -> pd.DataFrame:
     """Creates a DataFrame from a cartesian combination of all inputs.
 
     Inspiration is from tidyr's expand_grid() function.
@@ -432,6 +440,7 @@ def cartesian_product(*inputs: tuple) -> pd.DataFrame:
         *inputs: Variable arguments. The arguments should be
             a pandas Index/Series/DataFrame, or a dictionary,
             where the values in the dictionary is a 1D array.
+        sort: If True, sort the output DataFrame.
 
     Returns:
         A pandas DataFrame.
@@ -444,14 +453,14 @@ def cartesian_product(*inputs: tuple) -> pd.DataFrame:
                 contents.append(arr)
         else:
             contents.append(entry)
-    outcome = _compute_cartesian_product(inputs=contents)
+    outcome = _compute_cartesian_product(inputs=contents, sort=sort)
     # the values in the outcome dictionary are copies,
     # based on numpy indexing semantics;
     # as such, it is safe to pass copy=False
     return pd.DataFrame(data=outcome, copy=False)
 
 
-def _compute_cartesian_product(inputs: tuple) -> dict:
+def _compute_cartesian_product(inputs: tuple, sort: bool) -> dict:
     """
     Compute the cartesian product of pandas objects.
     """
@@ -470,13 +479,20 @@ def _compute_cartesian_product(inputs: tuple) -> dict:
     contents = {}
     for pandas_object, indexer in zipped:
         if isinstance(pandas_object, pd.DataFrame):
+            if sort:
+                headers = pandas_object.columns.tolist()
+                pandas_object = pandas_object.sort_values(headers)
             for label, array in pandas_object.items():
                 contents[label] = array._values[indexer]
         elif isinstance(pandas_object, pd.MultiIndex):
+            if sort:
+                pandas_object, _ = pandas_object.sortlevel()
             for label in pandas_object.names:
                 array = pandas_object.get_level_values(label)._values[indexer]
                 contents[label] = array
         else:
+            if sort:
+                pandas_object = pandas_object.sort_values()
             array = pandas_object._values[indexer]
             contents[pandas_object.name] = array
 

@@ -67,6 +67,40 @@ def test_various(df):
     assert_frame_equal(actual, expected)
 
 
+@settings(deadline=None, max_examples=10)
+@given(df=df_strategy())
+def test_various_sorted(df):
+    """Test `expand` output for various inputs."""
+    mapping = {"year": range(1, 5)}
+    expected = df.expand(
+        "a",
+        "cities",
+        ["decorated-elephant", "animals@#$%^"],
+        mapping,
+        pd.RangeIndex(start=1, stop=5, name="rangeindex"),
+        lambda df: df["a"].rename("lambda"),
+        sort=True,
+    )
+    A = df["a"].drop_duplicates()
+    B = df["cities"].drop_duplicates()
+    C = df.loc[:, ["decorated-elephant", "animals@#$%^"]].drop_duplicates()
+    D = pd.Series(range(1, 5), name="year")
+    actual = (
+        pd.merge(A, B, how="cross")
+        .merge(
+            C,
+            how="cross",
+        )
+        .merge(D, how="cross")
+        .merge(D.rename("rangeindex"), how="cross")
+        .merge(df["a"].rename("lambda"), how="cross")
+    )
+    headers = actual.columns.tolist()
+    actual = actual.sort_values(headers, ignore_index=True)
+
+    assert_frame_equal(actual, expected)
+
+
 def test_expand_by():
     """
     Test `expand` with `by`

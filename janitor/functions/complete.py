@@ -242,9 +242,6 @@ def complete(
 
     if not columns:
         return df
-    # no copy is made of the original dataframe
-    # since pd.merge (computed some lines below)
-    # makes a new object - essentially a copy
     return _computations_complete(df, columns, sort, by, fill_value, explicit)
 
 
@@ -282,13 +279,15 @@ def _computations_complete(
     if by is None:
         merge_columns = uniques.columns.tolist()
     else:
-        merge_columns = [*uniques.index.names] + uniques.columns.tolist()
+        merge_columns = [*uniques.index.names]
+        merge_columns.extend(uniques.columns.tolist())
 
     columns = df.columns
-    indicator = False
     if (fill_value is not None) and not explicit:
         # to get a name that does not exist in the columns
         indicator = "".join(columns)
+    else:
+        indicator = False
     out = pd.merge(
         uniques,
         df,

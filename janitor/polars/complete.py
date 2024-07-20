@@ -647,9 +647,8 @@ def _complete(
     ]
     if isinstance(fill_value, dict):
         fill_value = [
-            pl.col(column_name).fill_null(value=value)
-            for column_name, value in fill_value.items()
-            if column_name in _columns
+            pl.col(column_name).fill_null(value=fill_value[column_name])
+            for column_name in _columns
         ]
     else:
         fill_value = [

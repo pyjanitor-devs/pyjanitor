@@ -642,10 +642,10 @@ def _complete(
     exclude_columns = uniques_schema.names()
     if idx:
         exclude_columns.append(idx)
-    _columns = [
-        column for column in columns_to_select if column not in exclude_columns
-    ]
+    _columns = set(columns_to_select).difference(exclude_columns)
+
     if isinstance(fill_value, dict):
+        _columns = _columns.intersection(fill_value)
         fill_value = [
             pl.col(column_name).fill_null(value=fill_value[column_name])
             for column_name in _columns

@@ -103,7 +103,6 @@ def convert_matlab_date(
 
 
 @pf.register_dataframe_method
-@pf.register_dataframe_method
 @refactored_function(
     message=(
         "This function will be deprecated in a 1.x release. "

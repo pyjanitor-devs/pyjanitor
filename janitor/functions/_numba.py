@@ -1,6 +1,6 @@
 """Various Functions powered by Numba"""
 
-from typing import Union
+from typing import Any, Union
 
 import numpy as np
 import pandas as pd
@@ -12,6 +12,7 @@ from pandas.api.types import (
 
 from janitor.functions.utils import (
     _generic_func_cond_join,
+    _null_checks_cond_join,
     greater_than_join_types,
     less_than_join_types,
 )
@@ -560,41 +561,320 @@ def _numba_equi_join_range_join(
     return l_index, r_index
 
 
+@njit(parallel=True, cache=True)
+def _numba_less_than_indices(
+    left: np.ndarray,
+    right: np.ndarray,
+    left_index: np.ndarray,
+    right_index: np.ndarray,
+    strict: bool,
+    right_is_sorted: bool,
+    keep: str,
+) -> tuple:
+    """
+    Use binary search to get indices where left
+    is less than or equal to right.
+
+    If strict is True, then only indices
+    where `left` is less than
+    (but not equal to) `right` are returned.
+
+    A tuple of integer indexes
+    for left and right is returned.
+    """
+    search_indices = np.empty(left.size, dtype=np.intp)
+    len_arr = right.size
+    total = 0
+    counts = 0
+    for indexer in prange(left.size):
+        value = left[np.intp(indexer)]
+        outcome = _numba_less_than(arr=right, value=value)
+        if outcome == len_arr:
+            search_indices[np.intp(indexer)] = outcome
+            continue
+        if strict and (value == right[np.intp(outcome)]):
+            outcome = _numba_greater_than(arr=right, value=value)
+        counts += outcome != len_arr
+        total += len_arr - outcome
+        search_indices[np.intp(indexer)] = outcome
+    if counts == 0:
+        return None, None
+    if right_is_sorted and (keep == "first"):
+        new_right_index = np.empty(counts, dtype=right_index.dtype)
+        new_left_index = np.empty(counts, dtype=left_index.dtype)
+        new_indexer = 0
+        for indexer in range(left.size):
+            value = search_indices[np.intp(indexer)]
+            if value == len_arr:
+                continue
+            new_left_index[np.intp(new_indexer)] = left_index[np.intp(indexer)]
+            new_right_index[np.intp(new_indexer)] = right_index[np.intp(value)]
+            new_indexer += 1
+        return new_left_index, new_right_index
+    if right_is_sorted and (keep == "last"):
+        new_right_index = np.empty(counts, dtype=right_index.dtype)
+        new_left_index = np.empty(counts, dtype=left_index.dtype)
+        new_indexer = 0
+        for indexer in range(left.size):
+            value = search_indices[np.intp(indexer)]
+            if value == len_arr:
+                continue
+            new_left_index[np.intp(new_indexer)] = left_index[np.intp(indexer)]
+            new_right_index[np.intp(new_indexer)] = right_index[
+                np.intp(len_arr - 1)
+            ]
+            new_indexer += 1
+        return new_left_index, new_right_index
+    if keep == "first":
+        new_left_index = np.empty(counts, dtype=left_index.dtype)
+        new_right_index = np.empty(counts, dtype=right_index.dtype)
+        new_indexer = 0
+        for num in range(search_indices.size):
+            start = search_indices[np.intp(num)]
+            if start == len_arr:
+                continue
+            minimum = right_index[start]
+            for indexer in range(start, len_arr):
+                value = right_index[np.intp(indexer)]
+                if value < minimum:
+                    minimum = value
+            new_left_index[np.uintp(new_indexer)] = left_index[np.intp(num)]
+            new_right_index[np.uintp(new_indexer)] = minimum
+            new_indexer += 1
+        return new_left_index, new_right_index
+    if keep == "last":
+        new_left_index = np.empty(counts, dtype=left_index.dtype)
+        new_right_index = np.empty(counts, dtype=right_index.dtype)
+        new_indexer = 0
+        for num in range(search_indices.size):
+            start = search_indices[np.intp(num)]
+            if start == len_arr:
+                continue
+            maximum = right_index[np.intp(start)]
+            for indexer in range(start, len_arr):
+                value = right_index[np.intp(indexer)]
+                if value > maximum:
+                    maximum = value
+            new_left_index[np.intp(new_indexer)] = left_index[np.intp(num)]
+            new_right_index[np.intp(new_indexer)] = maximum
+            new_indexer += 1
+        return new_left_index, new_right_index
+    new_left_index = np.empty(total, dtype=left_index.dtype)
+    new_right_index = np.empty(total, dtype=right_index.dtype)
+    new_indexer = 0
+    for num in range(search_indices.size):
+        start = search_indices[np.intp(num)]
+        if start == len_arr:
+            continue
+        for indexer in range(start, len_arr):
+            value = right_index[np.intp(indexer)]
+            new_left_index[np.intp(new_indexer)] = left_index[np.intp(num)]
+            new_right_index[np.intp(new_indexer)] = value
+            new_indexer += 1
+    return new_left_index, new_right_index
+
+
+@njit(parallel=True, cache=True)
+def _numba_greater_than_indices(
+    left: np.ndarray,
+    right: np.ndarray,
+    left_index: np.ndarray,
+    right_index: np.ndarray,
+    strict: bool,
+    right_is_sorted: bool,
+    keep: str,
+) -> tuple:
+    """
+    Use binary search to get indices where left
+    is greater than or equal to right.
+
+    If strict is True, then only indices
+    where `left` is greater than
+    (but not equal to) `right` are returned.
+
+    A tuple of integer indexes
+    for left and right is returned.
+    """
+    search_indices = np.empty(left.size, dtype=np.intp)
+    total = 0
+    counts = 0
+    for indexer in prange(left.size):
+        value = left[np.uintp(indexer)]
+        outcome = _numba_greater_than(arr=right, value=value)
+        if strict and (value == right[np.intp(outcome - 1)]):
+            outcome = _numba_less_than(arr=right, value=value)
+        if outcome > 0:
+            counts += 1
+        total += outcome
+        search_indices[np.intp(indexer)] = outcome
+    if counts == 0:
+        return None, None
+    if right_is_sorted and (keep == "first"):
+        new_right_index = np.empty(counts, dtype=right_index.dtype)
+        new_left_index = np.empty(counts, dtype=left_index.dtype)
+        new_indexer = 0
+        for indexer in range(left.size):
+            value = search_indices[np.intp(indexer)]
+            if value == 0:
+                continue
+            new_left_index[np.intp(new_indexer)] = left_index[np.intp(indexer)]
+            new_right_index[np.intp(new_indexer)] = right_index[value - 1]
+            new_indexer += 1
+        return new_left_index, new_right_index
+    if right_is_sorted and (keep == "last"):
+        new_right_index = np.empty(counts, dtype=right_index.dtype)
+        new_left_index = np.empty(counts, dtype=left_index.dtype)
+        new_indexer = 0
+        for indexer in range(left.size):
+            value = search_indices[np.intp(indexer)]
+            if value == 0:
+                continue
+            value -= 1
+            new_left_index[np.intp(new_indexer)] = left_index[np.intp(indexer)]
+            new_right_index[np.intp(new_indexer)] = right_index[np.intp(value)]
+            new_indexer += 1
+        return new_left_index, new_right_index
+    if keep == "first":
+        new_left_index = np.empty(counts, dtype=left_index.dtype)
+        new_right_index = np.empty(counts, dtype=right_index.dtype)
+        new_indexer = 0
+        for num in range(search_indices.size):
+            start = search_indices[np.intp(num)]
+            if start == 0:
+                continue
+            start -= 1
+            minimum = right_index[np.intp(start)]
+            for indexer in range(start):
+                value = right_index[np.uintp(indexer)]
+                if value < minimum:
+                    minimum = value
+            new_left_index[np.intp(new_indexer)] = left_index[np.intp(num)]
+            new_right_index[np.intp(new_indexer)] = minimum
+            new_indexer += 1
+        return new_left_index, new_right_index
+    if keep == "last":
+        new_left_index = np.empty(counts, dtype=left_index.dtype)
+        new_right_index = np.empty(counts, dtype=right_index.dtype)
+        new_indexer = 0
+        for num in range(search_indices.size):
+            start = search_indices[np.intp(num)]
+            if start == 0:
+                continue
+            start -= 1
+            maximum = right_index[np.uintp(start)]
+            for indexer in range(start):
+                value = right_index[np.intp(indexer)]
+                if value > maximum:
+                    maximum = value
+            new_left_index[np.intp(new_indexer)] = left_index[np.uintp(num)]
+            new_right_index[np.intp(new_indexer)] = maximum
+            new_indexer += 1
+        return new_left_index, new_right_index
+    new_left_index = np.empty(total, dtype=left_index.dtype)
+    new_right_index = np.empty(total, dtype=right_index.dtype)
+    new_indexer = 0
+    for num in range(search_indices.size):
+        start = search_indices[np.intp(num)]
+        if start == 0:
+            continue
+        for indexer in range(start):
+            value = right_index[np.intp(indexer)]
+            new_left_index[np.intp(new_indexer)] = left_index[np.intp(num)]
+            new_right_index[np.intp(new_indexer)] = value
+            new_indexer += 1
+    return new_left_index, new_right_index
+
+
+@njit
+def _numba_equals(arr: np.ndarray, value: Any):
+    """
+    Get earliest position in `arr`
+    where arr[i] == `value`
+    """
+    min_idx = 0
+    max_idx = len(arr)
+    while min_idx < max_idx:
+        # to avoid overflow
+        mid_idx = min_idx + ((max_idx - min_idx) >> 1)
+        if arr[mid_idx] == value:
+            return mid_idx
+        if arr[mid_idx] < value:
+            min_idx = mid_idx + 1
+        else:
+            max_idx = mid_idx
+    return -1
+
+
+@njit
+def _numba_less_than(arr: np.ndarray, value: Any):
+    """
+    Get earliest position in `arr`
+    where arr[i] <= `value`
+    """
+    min_idx = 0
+    max_idx = len(arr)
+    while min_idx < max_idx:
+        # to avoid overflow
+        mid_idx = min_idx + ((max_idx - min_idx) >> 1)
+        if arr[mid_idx] < value:
+            min_idx = mid_idx + 1
+        else:
+            max_idx = mid_idx
+    return min_idx
+
+
+@njit
+def _numba_greater_than(arr: np.ndarray, value: Any):
+    min_idx = 0
+    max_idx = len(arr)
+    """
+    Get earliest position in `arr`
+    where arr[i] > `value`
+    """
+    while min_idx < max_idx:
+        # to avoid overflow
+        mid_idx = min_idx + ((max_idx - min_idx) >> 1)
+        if value < arr[mid_idx]:
+            max_idx = mid_idx
+        else:
+            min_idx = mid_idx + 1
+    return min_idx
+
+
 def _numba_single_non_equi_join(
     left: pd.Series, right: pd.Series, op: str, keep: str
 ) -> tuple[np.ndarray, np.ndarray]:
     """Return matching indices for single non-equi join."""
-    if op == "!=":
-        return _generic_func_cond_join(
-            left=left, right=right, op=op, multiple_conditions=False, keep=keep
-        )
-
-    outcome = _generic_func_cond_join(
-        left=left, right=right, op=op, multiple_conditions=True, keep="all"
-    )
-    if outcome is None:
+    outcome = _null_checks_cond_join(left=left, right=right)
+    if not outcome:
         return None
-    left_index, right_index, starts = outcome
+    left, right, left_index, right_index, right_is_sorted, any_nulls = outcome
+    left, right = _convert_to_numpy(left=left, right=right)
+    left_index, right_index = _convert_to_numpy(
+        left=left_index, right=right_index
+    )
     if op in less_than_join_types:
-        counts = right_index.size - starts
-    else:
-        counts = starts[:]
-        starts = np.zeros(starts.size, dtype=np.intp)
-    if keep == "all":
-        return _get_indices_monotonic_non_equi(
+        result = _numba_less_than_indices(
+            left=left,
             left_index=left_index,
             right_index=right_index,
-            starts=starts,
-            counts=counts,
+            right=right,
+            strict=op == "<",
+            keep=keep,
+            right_is_sorted=right_is_sorted,
         )
-    mapping = {"first": 1, "last": 0}
-    return _get_indices_monotonic_non_equi_first_or_last(
-        left_index=left_index,
-        right_index=right_index,
-        starts=starts,
-        counts=counts,
-        keep=mapping[keep],
-    )
+    else:
+        result = _numba_greater_than_indices(
+            left=left,
+            left_index=left_index,
+            right_index=right_index,
+            right=right,
+            strict=op == ">",
+            keep=keep,
+            right_is_sorted=right_is_sorted,
+        )
+    result = None if result[0] is None else result
+    return result
 
 
 def _numba_multiple_non_equi_join(

@@ -810,7 +810,6 @@ def _less_than_indices(
 
         if not search_indices.size:
             return None
-
     if multiple_conditions:
         return left_index, right_index, search_indices
     if right_is_sorted and (keep == "last"):
@@ -903,7 +902,6 @@ def _greater_than_indices(
 
         if not search_indices.size:
             return None
-
     if multiple_conditions:
         return left_index, right_index, search_indices
     if right_is_sorted and (keep == "first"):

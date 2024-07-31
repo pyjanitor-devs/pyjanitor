@@ -544,7 +544,7 @@ def _conditional_join_compute(
             )
     else:
         left_on, right_on, op = conditions[0]
-        if use_numba:
+        if use_numba and (op != "!="):
             from janitor.functions._numba import _numba_single_non_equi_join
 
             result = _numba_single_non_equi_join(
@@ -561,6 +561,7 @@ def _conditional_join_compute(
                 multiple_conditions=False,
                 keep=keep,
             )
+    # return result
     if result is None:
         result = np.array([], dtype=np.intp), np.array([], dtype=np.intp)
 
@@ -963,6 +964,7 @@ def _multiple_conditional_join_le_lt(
                 multiple_conditions=False,
                 keep="all",
             )
+    # return indices
     if not indices:
         return None
     if conditions:

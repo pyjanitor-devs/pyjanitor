@@ -594,9 +594,9 @@ def _pivot_longer_no_dot_value(
     # than running on the actual data
     outcome = (
         df.select(pl.all().implode())
-        .melt(
-            id_vars=index,
-            value_vars=column_names,
+        .unpivot(
+            index=index,
+            on=column_names,
             variable_name=variable_name,
             value_name=values_to,
         )
@@ -637,7 +637,7 @@ def _pivot_longer_dot_value(
     outcome = (
         df.select(expressions)
         .select(pl.all().implode())
-        .melt(id_vars=index, variable_name=variable_name, value_name=".value")
+        .unpivot(index=index, variable_name=variable_name, value_name=".value")
         .with_columns(spec)
     )
 

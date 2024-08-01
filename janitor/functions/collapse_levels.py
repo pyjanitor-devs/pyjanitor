@@ -1,7 +1,5 @@
 """Implementation of the `collapse_levels` function."""
 
-from typing import Union
-
 import pandas as pd
 import pandas_flavor as pf
 from pandas.api.types import is_string_dtype
@@ -12,9 +10,9 @@ from janitor.utils import check
 @pf.register_dataframe_method
 def collapse_levels(
     df: pd.DataFrame,
-    sep: Union[str, None] = None,
-    glue: Union[str, None] = None,
-    axis="columns",
+    sep: str = None,
+    glue: str = None,
+    axis: str = "columns",
 ) -> pd.DataFrame:
     """Flatten multi-level index/column dataframe to a single level.
 

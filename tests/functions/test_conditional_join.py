@@ -5,7 +5,7 @@ from hypothesis import given, settings
 from pandas import Timedelta
 from pandas.testing import assert_frame_equal, assert_index_equal
 
-from janitor import col, get_join_indices
+from janitor import get_join_indices
 from janitor.testing_utils.strategies import (
     conditional_df,
     conditional_right,
@@ -48,7 +48,7 @@ def test_conditional_join():
         }
     )
     df1.conditional_join(
-        df2, col("value_1") > col("value_2A"), col("value_1") < col("value_2B")
+        df2, ("value_1", "value_2A", ">"), ("value_1", "value_2B", "<")
     )
 
 
@@ -2961,7 +2961,7 @@ def test_multiple_ge_eq_and_le_numbers(df, right):
             ("A", "Integers", ">="),
             ("E", "Dates", "<="),
             ("B", "Floats", "=="),
-            col("B") > col("Numeric"),
+            ("B", "Numeric", ">"),
             how="inner",
         )
         .sort_values(columns, ignore_index=True)
@@ -2997,7 +2997,7 @@ def test_ge_eq_and_multiple_le_numbers(df, right):
             ("A", "Integers", ">="),
             ("E", "Dates", "<="),
             ("B", "Floats", "=="),
-            col("B") < col("Numeric"),
+            ("B", "Numeric", "<"),
             how="inner",
         )
         .sort_values(columns, ignore_index=True)
@@ -3846,10 +3846,10 @@ def test_multiple_non_equii_col_syntax(df, right):
         df[["B", "A", "E"]]
         .conditional_join(
             right[["Floats", "Integers", "Dates", "Numeric"]],
-            col("A") >= col("Integers"),
-            col("E") <= col("Dates"),
-            col("B") < col("Floats"),
-            col("B") > col("Numeric"),
+            ("A", "Integers", ">="),
+            ("E", "Dates", "<="),
+            ("B", "Floats", "<"),
+            ("B", "Numeric", ">"),
             how="inner",
         )
         .sort_values(columns, ignore_index=True)
@@ -4416,9 +4416,9 @@ def test_multiple_eqs_col_syntax(df, right):
         df[["B", "A", "E"]]
         .conditional_join(
             right[["Floats", "Integers", "Dates"]],
-            col("E") != col("Dates"),
-            col("B") == col("Floats"),
-            col("A") == col("Integers"),
+            ("E", "Dates", "!="),
+            ("B", "Floats", "=="),
+            ("A", "Integers", "=="),
             how="inner",
         )
         .sort_values(columns, ignore_index=True)

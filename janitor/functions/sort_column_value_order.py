@@ -8,7 +8,10 @@ from janitor.utils import check, check_column
 
 @pf.register_dataframe_method
 def sort_column_value_order(
-    df: pd.DataFrame, column: str, column_value_order: dict, columns=None
+    df: pd.DataFrame,
+    column: str,
+    column_value_order: dict,
+    columns: str = None,
 ) -> pd.DataFrame:
     """This function adds precedence to certain values in a specified column,
     then sorts based on that column and any other specified columns.

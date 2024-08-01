@@ -309,7 +309,7 @@ def test_not_dot_value_sep(not_dot_value):
     )
 
     actual = (
-        not_dot_value.melt(id_vars="country", value_name="score")
+        not_dot_value.unpivot(index="country", value_name="score")
         .select(
             "country",
             "score",
@@ -329,14 +329,14 @@ def test_not_dot_value_sep2(not_dot_value):
     """Test output when names_sep and no dot_value"""
 
     result = not_dot_value.pivot_longer(
-        "country",
+        index="country",
         names_to="event",
         names_sep="/",
         values_to="score",
     )
 
-    actual = not_dot_value.melt(
-        "country", variable_name="event", value_name="score"
+    actual = not_dot_value.unpivot(
+        index="country", variable_name="event", value_name="score"
     )
 
     assert_frame_equal(result, actual)
@@ -357,7 +357,7 @@ def test_not_dot_value_pattern(not_dot_value):
     )
 
     actual = (
-        not_dot_value.melt(id_vars="country", value_name="score")
+        not_dot_value.unpivot(index="country", value_name="score")
         .select(
             "country",
             "score",
@@ -470,7 +470,7 @@ def test_names_pattern_single_column_not_dot_value(single_val):
 
     assert_frame_equal(
         result,
-        single_val.melt(id_vars="id", value_vars="x1", variable_name="yA"),
+        single_val.unpivot(index="id", on="x1", variable_name="yA"),
     )
 
 
@@ -486,7 +486,7 @@ def test_names_pattern_single_column_not_dot_value1(single_val):
 
     assert_frame_equal(
         result,
-        single_val.select("x1").melt(variable_name="yA"),
+        single_val.select("x1").unpivot(variable_name="yA"),
     )
 
 

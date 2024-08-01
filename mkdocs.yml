@@ -68,6 +68,7 @@ plugins:
             show_root_heading: false
             show_submodules: true
             show_source: true
+            members_order: alphabetical
 # - mknotebooks:
 #     execute: true
 #     write_markdown: true

@@ -51,3 +51,5 @@ dependencies:
   - xorg-libxrender
   - pip:
       - mknotebooks
+  # Temporarily pinned to fix CI
+  - setuptools==70.3.0

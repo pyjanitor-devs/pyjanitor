@@ -10,7 +10,7 @@ backcall==0.2.0
     # via ipython
 biopython==1.80
     # via -r biology.in
-certifi==2023.7.22
+certifi==2024.7.4
     # via requests
 charset-normalizer==3.0.1
     # via requests
@@ -145,5 +145,5 @@ watchdog==2.2.1
     # via mkdocs
 wcwidth==0.2.6
     # via prompt-toolkit
-zipp==3.17.0
+zipp==3.19.1
     # via importlib-metadata

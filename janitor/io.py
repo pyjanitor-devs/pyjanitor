@@ -93,7 +93,9 @@ def read_csvs(
     return dfs_dict
 
 
-def read_commandline(cmd: str, engine="pandas", **kwargs: Any) -> Mapping:
+def read_commandline(
+    cmd: str, engine: str = "pandas", **kwargs: Any
+) -> Mapping:
     """Read a CSV file based on a command-line command.
 
     For example, you may wish to run the following command on `sep-quarter.csv`
@@ -219,9 +221,9 @@ def xlsx_table(
         2           3         Chantel Zoya     SW
 
     Args:
-          path: Path to the Excel File. It can also be an openpyxl Workbook.
-          table: Name of a table, or list of tables in the sheet.
-          engine: DataFrame engine. Should be either pandas or polars.
+        path: Path to the Excel File. It can also be an openpyxl Workbook.
+        table: Name of a table, or list of tables in the sheet.
+        engine: DataFrame engine. Should be either pandas or polars.
             Defaults to pandas
 
     Raises:

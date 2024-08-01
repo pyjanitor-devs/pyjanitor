@@ -6,7 +6,7 @@ from typing import Any, Optional
 import pandas as pd
 import pandas_flavor as pf
 
-from janitor.functions.utils import get_index_labels
+from janitor.functions.select import get_index_labels
 from janitor.utils import deprecated_alias
 
 

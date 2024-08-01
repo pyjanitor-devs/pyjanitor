@@ -9,7 +9,8 @@ import pandas_flavor as pf
 from pandas.api.types import is_scalar
 
 from janitor.errors import JanitorError
-from janitor.functions.utils import _is_str_or_cat, get_index_labels
+from janitor.functions.select import get_index_labels
+from janitor.functions.utils import _is_str_or_cat
 from janitor.utils import deprecated_alias
 
 

@@ -594,8 +594,10 @@ def _numba_less_than_indices(
             continue
         if strict and (value == right[np.intp(outcome)]):
             outcome = _numba_greater_than(arr=right, value=value)
-        counts += outcome != len_arr
-        total += len_arr - outcome
+        result = outcome != len_arr
+        counts += result
+        result = len_arr - outcome
+        total += result
         search_indices[np.intp(indexer)] = outcome
     if counts == 0:
         return None, None
@@ -662,14 +664,17 @@ def _numba_less_than_indices(
     new_left_index = np.empty(total, dtype=left_index.dtype)
     new_right_index = np.empty(total, dtype=right_index.dtype)
     new_indexer = 0
+    print(left_index, right_index, search_indices)
     for num in range(search_indices.size):
         start = search_indices[np.intp(num)]
         if start == len_arr:
             continue
+        l_index = left_index[np.intp(num)]
         for indexer in range(start, len_arr):
             value = right_index[np.intp(indexer)]
-            new_left_index[np.intp(new_indexer)] = left_index[np.intp(num)]
+            new_left_index[np.intp(new_indexer)] = l_index
             new_right_index[np.intp(new_indexer)] = value
+            print(l_index, value, new_indexer)
             new_indexer += 1
     return new_left_index, new_right_index
 
@@ -718,7 +723,7 @@ def _numba_greater_than_indices(
             if value == 0:
                 continue
             new_left_index[np.intp(new_indexer)] = left_index[np.intp(indexer)]
-            new_right_index[np.intp(new_indexer)] = right_index[value - 1]
+            new_right_index[np.intp(new_indexer)] = right_index[np.intp(0)]
             new_indexer += 1
         return new_left_index, new_right_index
     if right_is_sorted and (keep == "last"):
@@ -729,9 +734,10 @@ def _numba_greater_than_indices(
             value = search_indices[np.intp(indexer)]
             if value == 0:
                 continue
-            value -= 1
             new_left_index[np.intp(new_indexer)] = left_index[np.intp(indexer)]
-            new_right_index[np.intp(new_indexer)] = right_index[np.intp(value)]
+            new_right_index[np.intp(new_indexer)] = right_index[
+                np.intp(value - 1)
+            ]
             new_indexer += 1
         return new_left_index, new_right_index
     if keep == "first":
@@ -742,10 +748,9 @@ def _numba_greater_than_indices(
             start = search_indices[np.intp(num)]
             if start == 0:
                 continue
-            start -= 1
-            minimum = right_index[np.intp(start)]
+            minimum = right_index[np.intp(start - 1)]
             for indexer in range(start):
-                value = right_index[np.uintp(indexer)]
+                value = right_index[np.intp(indexer)]
                 if value < minimum:
                     minimum = value
             new_left_index[np.intp(new_indexer)] = left_index[np.intp(num)]
@@ -760,13 +765,12 @@ def _numba_greater_than_indices(
             start = search_indices[np.intp(num)]
             if start == 0:
                 continue
-            start -= 1
-            maximum = right_index[np.uintp(start)]
+            maximum = right_index[np.intp(start - 1)]
             for indexer in range(start):
                 value = right_index[np.intp(indexer)]
                 if value > maximum:
                     maximum = value
-            new_left_index[np.intp(new_indexer)] = left_index[np.uintp(num)]
+            new_left_index[np.intp(new_indexer)] = left_index[np.intp(num)]
             new_right_index[np.intp(new_indexer)] = maximum
             new_indexer += 1
         return new_left_index, new_right_index
@@ -777,9 +781,10 @@ def _numba_greater_than_indices(
         start = search_indices[np.intp(num)]
         if start == 0:
             continue
+        l_index = left_index[np.intp(num)]
         for indexer in range(start):
             value = right_index[np.intp(indexer)]
-            new_left_index[np.intp(new_indexer)] = left_index[np.intp(num)]
+            new_left_index[np.intp(new_indexer)] = l_index
             new_right_index[np.intp(new_indexer)] = value
             new_indexer += 1
     return new_left_index, new_right_index

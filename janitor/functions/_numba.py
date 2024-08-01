@@ -581,6 +581,21 @@ def _numba_less_than_indices(
 
     A tuple of integer indexes
     for left and right is returned.
+
+    Args:
+        left: left array.
+        right: right array. Should be sorted.
+        Find positions within this array
+        where values from the left should be inserted.
+        left_index: Index of left array. Required to reconstruct DataFrame.
+        right_index: Index of right array. Required to reconstruct DataFrame.
+        strict: True if '<', else False.
+        right_is_sorted: True if right array was already sorted
+        keep: Determines if all rows are returned ('all'),
+            or the first and last matches.
+
+    Returns:
+        A tuple of arrays.
     """
     search_indices = np.empty(left.size, dtype=np.intp)
     len_arr = right.size
@@ -664,7 +679,6 @@ def _numba_less_than_indices(
     new_left_index = np.empty(total, dtype=left_index.dtype)
     new_right_index = np.empty(total, dtype=right_index.dtype)
     new_indexer = 0
-    print(left_index, right_index, search_indices)
     for num in range(search_indices.size):
         start = search_indices[np.intp(num)]
         if start == len_arr:
@@ -674,7 +688,6 @@ def _numba_less_than_indices(
             value = right_index[np.intp(indexer)]
             new_left_index[np.intp(new_indexer)] = l_index
             new_right_index[np.intp(new_indexer)] = value
-            print(l_index, value, new_indexer)
             new_indexer += 1
     return new_left_index, new_right_index
 
@@ -699,6 +712,22 @@ def _numba_greater_than_indices(
 
     A tuple of integer indexes
     for left and right is returned.
+
+
+    Args:
+        left: left array.
+        right: right array. Should be sorted.
+        Find positions within this array
+        where values from the left should be inserted.
+        left_index: Index of left array. Required to reconstruct DataFrame.
+        right_index: Index of right array. Required to reconstruct DataFrame.
+        strict: True if '>', else False.
+        right_is_sorted: True if right array was already sorted.
+        keep: Determines if all rows are returned ('all'),
+            or the first and last matches.
+
+    Returns:
+        A tuple of arrays.
     """
     search_indices = np.empty(left.size, dtype=np.intp)
     total = 0

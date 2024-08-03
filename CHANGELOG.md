@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-
+- [ENH] Added a `cartesian_product` function, as well as an `expand` method for pandas. - Issue #1293 @samukweku
 - [ENH] Improve `pivot_longer` when `sort_by_appearance` is True. Added `pivot_longer_spec` for more control on how the dataframe should be unpivoted. -@samukweku #1361
 - [ENH] Added `convert_excel_date` and `convert_matlab_date` methods for polars - Issue #1352
 - [ENH] Added a `complete` method for polars. - Issue #1352 @samukweku

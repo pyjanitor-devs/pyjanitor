@@ -2,13 +2,10 @@ from __future__ import annotations
 
 from typing import Any
 
-import numpy as np
 import pandas as pd
 import pandas_flavor as pf
-from pandas.api.types import is_list_like, is_scalar
-from pandas.core.common import apply_if_callable
+from pandas.api.types import is_scalar
 
-from janitor.functions.utils import _computations_expand_grid
 from janitor.utils import check, check_column
 
 
@@ -24,19 +21,19 @@ def complete(
     """
     Complete a data frame with missing combinations of data.
 
-    It is modeled after tidyr's `complete` function, and is a wrapper around
-    [`expand_grid`][janitor.functions.expand_grid.expand_grid], `pd.merge`
-    and `pd.fillna`. In a way, it is the inverse of `pd.dropna`, as it exposes
+    It is modeled after tidyr's `complete` function.
+    In a way, it is the inverse of `pd.dropna`, as it exposes
     implicitly missing rows.
 
-    The variable `columns` parameter can be a combination
-    of column names or a list/tuple of column names,
+    The variable `columns` parameter can be a column name,
+    a list of column names,
     or a pandas Index, Series, or DataFrame.
     If a pandas Index, Series, or DataFrame is passed, it should
     have a name or names that exist in `df`.
 
     A callable can also be passed - the callable should evaluate
-    to a pandas Index, Series, or DataFrame.
+    to a pandas Index, Series, or DataFrame,
+    and the names of the pandas object should exist in `df`.
 
     A dictionary can also be passed -
     the values of the dictionary should be
@@ -140,7 +137,7 @@ def complete(
 
         >>> df.complete(
         ...     "group",
-        ...     ("item_id", "item_name"),
+        ...     ["item_id", "item_name"],
         ...     fill_value={"value1": 0, "value2": 99},
         ...     sort=True
         ... )
@@ -158,7 +155,7 @@ def complete(
         by setting explicit to `False`:
         >>> df.complete(
         ...     "group",
-        ...     ("item_id", "item_name"),
+        ...     ["item_id", "item_name"],
         ...     fill_value={"value1": 0, "value2": 99},
         ...     explicit=False,
         ...     sort=True
@@ -215,12 +212,14 @@ def complete(
     Args:
         df: A pandas DataFrame.
         *columns: This refers to the columns to be completed.
-            It could be column labels,
-            a list/tuple of column labels,
+            It could be a column name,
+            a list of column names,
             or a pandas Index, Series, or DataFrame.
+
             It can also be a callable that gets evaluated
             to a pandas Index, Series, or DataFrame.
-            It can also be a dictionay,
+
+            It can also be a dictionary,
             where the values are either a 1D array
             or a callable that evaluates to a
             1D array,
@@ -243,24 +242,7 @@ def complete(
 
     if not columns:
         return df
-
-    # no copy is made of the original dataframe
-    # since pd.merge (computed some lines below)
-    # makes a new object - essentially a copy
     return _computations_complete(df, columns, sort, by, fill_value, explicit)
-
-
-def _create_cartesian_dataframe(df, columns, column_checker, sort):
-    """
-    Create a DataFrame from the
-    combination of all pandas objects
-    """
-    objects = _create_pandas_object(df, columns=columns, sort=sort)
-    objects = dict(zip(range(len(objects)), objects))
-    objects = _computations_expand_grid(objects)
-    objects = dict(zip(column_checker, objects.values()))
-    objects = pd.DataFrame(objects, copy=False)
-    return objects
 
 
 def _computations_complete(
@@ -274,48 +256,43 @@ def _computations_complete(
     """
     This function computes the final output for the `complete` function.
 
-    If `by` is present, then `groupby()` is used.
-
     A DataFrame, with rows of missing values, if any, is returned.
     """
-    (
-        columns,
-        column_checker,
-        sort,
-        by,
-        fill_value,
-        explicit,
-    ) = _data_checks_complete(df, columns, sort, by, fill_value, explicit)
+    check("explicit", explicit, [bool])
 
-    if by is None:
-        uniques = _create_cartesian_dataframe(
-            df=df, column_checker=column_checker, columns=columns, sort=sort
+    check("sort", sort, [bool])
+
+    fill_value_check = is_scalar(fill_value), isinstance(fill_value, dict)
+    if not any(fill_value_check):
+        raise TypeError(
+            "fill_value should either be a dictionary or a scalar value."
         )
+    if fill_value_check[-1]:
+        check_column(df, fill_value)
+        for column_name, value in fill_value.items():
+            if not is_scalar(value):
+                raise ValueError(
+                    f"The value for {column_name} should be a scalar."
+                )
+
+    uniques = df.expand(*columns, by=by, sort=sort)
+    if by is None:
+        merge_columns = uniques.columns.tolist()
     else:
-        grouped = df.groupby(by, sort=False)
-        uniques = {}
-        for group_name, frame in grouped:
-            _object = _create_cartesian_dataframe(
-                df=frame,
-                column_checker=column_checker,
-                columns=columns,
-                sort=sort,
-            )
-            uniques[group_name] = _object
-        column_checker = by + column_checker
-        by.append("".join(column_checker))
-        uniques = pd.concat(uniques, names=by, copy=False, sort=False)
-        uniques = uniques.droplevel(axis=0, level=-1)
+        merge_columns = [*uniques.index.names]
+        merge_columns.extend(uniques.columns.tolist())
+
     columns = df.columns
-    indicator = False
     if (fill_value is not None) and not explicit:
         # to get a name that does not exist in the columns
         indicator = "".join(columns)
+    else:
+        indicator = False
     out = pd.merge(
         uniques,
         df,
         how="outer",
-        on=column_checker,
+        on=merge_columns,
         copy=False,
         sort=False,
         indicator=indicator,
@@ -323,26 +300,22 @@ def _computations_complete(
     if indicator:
         indicator = out.pop(indicator)
     if not out.columns.equals(columns):
-        out = out.loc[:, columns]
+        out = out.reindex(columns=columns, copy=False)
     if fill_value is None:
         return out
     # keep only columns that are not part of column_checker
     # IOW, we are excluding columns that were not used
     # to generate the combinations
-    null_columns = [
-        col for col in out if out[col].hasnans and col not in column_checker
-    ]
+    null_columns = out.columns.difference(merge_columns)
+    null_columns = [col for col in null_columns if out[col].hasnans]
     if not null_columns:
         return out
     if is_scalar(fill_value):
         # faster when fillna operates on a Series basis
         fill_value = {col: fill_value for col in null_columns}
     else:
-        fill_value = {
-            col: _fill_value
-            for col, _fill_value in fill_value.items()
-            if col in null_columns
-        }
+        fill_value = {col: fill_value[col] for col in null_columns}
+
     if not fill_value:
         return out
     if explicit:
@@ -367,180 +340,3 @@ def _computations_complete(
         out.loc[boolean_filter, column_name] = value
 
     return out
-
-
-def _data_checks_complete(
-    df: pd.DataFrame,
-    columns: (
-        list
-        | tuple
-        | dict
-        | str
-        | callable
-        | pd.Index
-        | pd.Series
-        | pd.DataFrame
-    ),
-    sort: bool,
-    by: list | str,
-    fill_value: dict | Any,
-    explicit: bool,
-) -> tuple:
-    """
-    Function to check parameters in the `complete` function.
-    Checks the type of the `columns` parameter, as well as the
-    types within the `columns` parameter.
-
-    Check is conducted to ensure that column names are not repeated.
-    Also checks that the names in `columns` actually exist in `df`.
-
-    Returns `df`, `columns`, `column_checker`, `by`, `fill_value`,
-    and `explicit` if all checks pass.
-    """
-
-    if by:
-        if not isinstance(by, list):
-            by = [by]
-        check_column(df, column_names=by, present=True)
-
-    columns = [
-        [*grouping] if isinstance(grouping, tuple) else grouping
-        for grouping in columns
-    ]
-
-    column_checker = []
-    for grouping in columns:
-        if is_scalar(grouping):
-            column_checker.append(grouping)
-        elif isinstance(grouping, (list, dict)):
-            if not grouping:
-                raise ValueError("entry in columns argument cannot be empty")
-            column_checker.extend(grouping)
-        elif callable(grouping):
-            grouping = apply_if_callable(
-                maybe_callable=grouping,
-                obj=df.iloc[:10],
-            )
-            if not isinstance(grouping, (pd.Index, pd.Series, pd.DataFrame)):
-                raise TypeError(
-                    "The callable should evaluate to either "
-                    "a pandas DataFrame, Index, or Series; "
-                    f"instead got {type(grouping)}."
-                )
-            column_checker = _check_pandas_object(
-                grouping=grouping, column_checker=column_checker
-            )
-
-        elif isinstance(grouping, (pd.DataFrame, pd.Index, pd.Series)):
-            column_checker = _check_pandas_object(
-                grouping=grouping, column_checker=column_checker
-            )
-        else:
-            raise TypeError(
-                "The argument to the variable columns parameter "
-                "in the complete function "
-                "should be a scalar, a list, dict, tuple, "
-                "pandas Index, Series, DataFrame, or callable; "
-                f"instead, got {type(grouping)}"
-            )
-
-    # columns should not be duplicated across groups
-    # nor should it exist in `by`
-    column_checker_no_duplicates = set()
-    for column in column_checker:
-        if column is None:
-            raise ValueError("label in the columns argument cannot be None.")
-        if column in column_checker_no_duplicates:
-            raise ValueError(f"{column} should be in only one group.")
-        if by and (column in by):
-            raise ValueError(
-                f"{column} already exists as a label in the `by` argument."
-            )
-        column_checker_no_duplicates.add(column)  # noqa: PD005
-
-    check_column(df, column_names=column_checker, present=True)
-
-    check("explicit", explicit, [bool])
-
-    column_checker_no_duplicates = None
-
-    check("sort", sort, [bool])
-
-    fill_value_check = is_scalar(fill_value), isinstance(fill_value, dict)
-    if not any(fill_value_check):
-        raise TypeError(
-            "fill_value should either be a dictionary or a scalar value."
-        )
-    if fill_value_check[-1]:
-        check_column(df, fill_value)
-        for column_name, value in fill_value.items():
-            if not is_scalar(value):
-                raise ValueError(
-                    f"The value for {column_name} should be a scalar."
-                )
-
-    return columns, column_checker, sort, by, fill_value, explicit
-
-
-def _check_pandas_object(grouping: Any, column_checker: list):
-    """
-    Check if object is a pandas object.
-    """
-    if isinstance(grouping, pd.DataFrame):
-        column_checker.extend(grouping.columns)
-    elif isinstance(grouping, pd.MultiIndex):
-        if None in grouping.names:
-            raise ValueError("Ensure all labels in the MultiIndex are named.")
-        column_checker.extend(grouping.names)
-    elif isinstance(grouping, (pd.Series, pd.Index)):
-        if not grouping.name:
-            name_of_type = type(grouping).__name__
-            raise ValueError(f"Ensure the {name_of_type} has a name.")
-        column_checker.append(grouping.name)
-    return column_checker
-
-
-def _create_pandas_objects_from_dict(df, column):
-    """
-    Create pandas object if column is a dictionary
-    """
-    collection = []
-    for key, value in column.items():
-        arr = apply_if_callable(value, df)
-        if not is_list_like(arr):
-            raise TypeError(
-                f"Expected a list-like object for {key}; "
-                f"instead got {type(arr)}."
-            )
-        if not hasattr(arr, "shape"):
-            arr = np.asanyarray(arr)
-        if not isinstance(arr, (pd.Index, pd.Series)):
-            arr = pd.Series(arr)
-        arr.name = key
-        collection.append(arr)
-    return collection
-
-
-def _create_pandas_object(df, columns, sort):
-    """
-    Create pandas objects before building the cartesian DataFrame.
-    """
-    objects = []
-    for column in columns:
-        if is_scalar(column):
-            _object = df[column].drop_duplicates()
-            if sort:
-                _object = _object.sort_values()
-            objects.append(_object)
-        elif isinstance(column, list):
-            _object = df.loc[:, column].drop_duplicates()
-            if sort:
-                _object = _object.sort_values(column)
-            objects.append(_object)
-        elif isinstance(column, dict):
-            _object = _create_pandas_objects_from_dict(df=df, column=column)
-            objects.extend(_object)
-        else:
-            _object = apply_if_callable(maybe_callable=column, obj=df)
-            objects.append(_object)
-    return objects

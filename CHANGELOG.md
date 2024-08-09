@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v0.28.1] - 2024-08-09
+
 ## [v0.28.0] - 2024-08-03
 
 -   [ENH] Added a `cartesian_product` function, as well as an `expand` method for pandas. - Issue #1293 @samukweku
@@ -374,7 +376,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.28.0...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.28.1...HEAD
+
+[v0.28.1]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.28.0...v0.28.1
 
 [v0.28.0]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.27.0...v0.28.0
 

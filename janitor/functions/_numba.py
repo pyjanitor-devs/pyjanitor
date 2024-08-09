@@ -1,5 +1,7 @@
 """Various Functions powered by Numba"""
 
+from __future__ import annotations
+
 from typing import Union
 
 import numpy as np

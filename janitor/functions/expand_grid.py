@@ -1,5 +1,7 @@
 """Implementation source for `expand_grid`."""
 
+from __future__ import annotations
+
 from collections import defaultdict
 from functools import singledispatch
 from typing import Optional, Union

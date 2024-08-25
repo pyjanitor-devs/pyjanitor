@@ -703,9 +703,7 @@ greater_than_join_types = {
 }
 
 
-def _null_checks_cond_join(
-    left: pd.Series, right: pd.Series
-) -> Union[tuple, None]:
+def _null_checks_cond_join(left: pd.Series, right: pd.Series) -> tuple | None:
     """
     Checks for nulls in the arrays before conducting binary search.
 
@@ -773,7 +771,7 @@ def _less_than_indices(
     rows_equal = search_indices == len_right
 
     if rows_equal.any():
-        rows_equal = ~rows_equal
+        rows_equal = np.logical_not(rows_equal)
         left = left[rows_equal]
         left_index = left_index[rows_equal]
         search_indices = search_indices[rows_equal]
@@ -803,7 +801,7 @@ def _less_than_indices(
         rows_equal = search_indices == len_right
 
         if rows_equal.any():
-            rows_equal = ~rows_equal
+            rows_equal = np.logical_not(rows_equal)
             left = left[rows_equal]
             left_index = left_index[rows_equal]
             search_indices = search_indices[rows_equal]
@@ -869,7 +867,7 @@ def _greater_than_indices(
     # in right
     rows_equal = search_indices < 1
     if rows_equal.any():
-        rows_equal = ~rows_equal
+        rows_equal = np.logical_not(rows_equal)
         left = left[rows_equal]
         left_index = left_index[rows_equal]
         search_indices = search_indices[rows_equal]
@@ -895,7 +893,7 @@ def _greater_than_indices(
         # with side='right' should be 1
         rows_equal = search_indices < 1
         if rows_equal.any():
-            rows_equal = ~rows_equal
+            rows_equal = np.logical_not(rows_equal)
             left = left[rows_equal]
             left_index = left_index[rows_equal]
             search_indices = search_indices[rows_equal]

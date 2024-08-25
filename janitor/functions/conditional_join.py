@@ -964,7 +964,6 @@ def _multiple_conditional_join_le_lt(
                 multiple_conditions=False,
                 keep="all",
             )
-    return indices
     if not indices:
         return None
     if conditions:

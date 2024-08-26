@@ -168,7 +168,7 @@ def _numba_equi_join(
     # this also lets us know if there are equi matches
     keep_rows = slice_starts < slice_ends
     if not keep_rows.any():
-        return None
+        return None, None
     if not keep_rows.all():
         left_index = left_index[keep_rows]
         slice_starts = slice_starts[keep_rows]
@@ -247,9 +247,6 @@ def _numba_equi_join(
             ge_arr2,
             ge_strict,
         )
-
-    if left_index is None:
-        return None
 
     return left_index, right_index
 
@@ -1136,7 +1133,12 @@ def _numba_multiple_non_equi_join(
         right_array = right[right_on]
         outcome = _null_checks_cond_join(left=left_array, right=right_array)
         if outcome is None:
-            return None
+            return {
+                "df": df,
+                "right": right,
+                "left_index": np.array([], dtype=np.intp),
+                "right_index": np.array([], dtype=np.intp),
+            }
         (
             left_array,
             right_array,
@@ -1153,12 +1155,14 @@ def _numba_multiple_non_equi_join(
         strict = op in {"<", ">"}
         op = op in less_than_join_types  # 1 or 0
         combo = (left_array, right_array, left_index, right_index, op, strict)
+        # print('la', left_array)
+        # print('ra', right_array)
         arrays.append(combo)
     shape = (len(df), len(gt_lt))
     left_regions = np.empty(shape=shape, dtype=np.intp)
     shape = (len(right), len(gt_lt))
     right_regions = np.empty(shape=shape, dtype=np.intp)
-    outcome = _get_indices_non_equi_joins(
+    indices = _get_indices_non_equi_joins(
         left_regions=left_regions,
         right_regions=right_regions,
         original_index=original_index,
@@ -1166,7 +1170,18 @@ def _numba_multiple_non_equi_join(
         keep=keep,
         tuples=tuple(arrays),
     )
-    return outcome
+    return indices
+    if indices[0] is None:
+        left_index = np.array([], dtype=np.intp)
+        right_index = np.array([], dtype=np.intp)
+    else:
+        left_index, right_index = indices
+    return {
+        "df": df,
+        "right": right,
+        "left_index": left_index,
+        "right_index": right_index,
+    }
     # if outcome[0] is not None:
     #     return pd.concat(
     #         [
@@ -1189,7 +1204,10 @@ def _get_indices_non_equi_joins(
 ):
     len_right_regions = len(right_regions)
     len_left_regions = len(left_regions)
+    len_tuples = len(tuples)
     # use this to possibly trim the left and right regions
+    l_counts = np.zeros(len_left_regions, dtype=np.intp)
+    r_counts = np.zeros(len_right_regions, dtype=np.intp)
     l_booleans = np.zeros(len_left_regions, dtype=np.bool_)
     r_booleans = np.zeros(len_right_regions, dtype=np.bool_)
     # do we need to trim the regions
@@ -1261,7 +1279,9 @@ def _get_indices_non_equi_joins(
             current_value += value
             r_cum_region[_num] = current_value
             boolean = current_value == -1
-            trim_right_region |= boolean
+            if boolean:
+                trim_right_region = True
+                continue
             # ensure alignment on right_index
             # and the position in the join tuple
             # indexing into the right region
@@ -1269,11 +1289,9 @@ def _get_indices_non_equi_joins(
             _position = np.uint64(position)
             _num = right_index[_num]
             _num = np.uint64(_num)
-            # use position in right_index for indexing
-            if position == 0:
-                r_booleans[_num] = not boolean
-            else:
-                r_booleans[_num] &= not boolean
+            r_counts[_num] += 1
+            boolean = r_counts[_num] == len_tuples
+            r_booleans[_num] = boolean
             right_regions[_num, _position] = current_value
             value = current_value
         for num in prange(len_left_arr):
@@ -1290,18 +1308,20 @@ def _get_indices_non_equi_joins(
             _num = left_index[_num]
             _num = np.uint64(_num)
             boolean = value == -1
-            # use position in left_index for indexing
-            if position == 0:
-                l_booleans[_num] = not boolean
-            else:
-                l_booleans[_num] &= not boolean
             if boolean:
                 trim_left_region = True
                 continue
+            l_counts[_num] += 1
+            boolean = l_counts[_num] == len(tuples)
+            l_booleans[_num] = boolean
             value = r_cum_region[np.uint64(value)]
             left_regions[_num, _position] = value
     left_index = np.arange(len_left_regions, dtype=np.intp)
     right_index = np.arange(len_right_regions, dtype=np.intp)
+    print("l", left_regions)
+    print("r", right_regions)
+    print("lb", l_booleans)
+    print("rb", r_booleans)
     if trim_left_region:
         left_regions = left_regions[l_booleans]
         left_index = left_index[l_booleans]
@@ -1309,6 +1329,10 @@ def _get_indices_non_equi_joins(
         right_regions = right_regions[r_booleans]
         right_index = right_index[r_booleans]
         original_index = original_index[r_booleans]
+    print("lt", left_regions)
+    print("rt", right_regions)
+    print("li", left_index)
+    print("ri", right_index)
     if len(tuples) == 2:
         return _numba_dual_non_equi_join(
             left_regions=left_regions,
@@ -1319,7 +1343,6 @@ def _get_indices_non_equi_joins(
             keep=keep,
             right_is_sorted=right_is_sorted,
         )
-
     return None, None
 
 

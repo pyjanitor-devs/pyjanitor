@@ -11,10 +11,10 @@ from janitor.testing_utils.strategies import (
     conditional_right,
 )
 
-# turn on to view dataframes from failed tests
-# pd.set_option("display.max_columns", None)
-# pd.set_option("display.expand_frame_repr", False)
-# pd.set_option("max_colwidth", None)
+# # turn on to view dataframes from failed tests
+pd.set_option("display.max_columns", None)
+pd.set_option("display.expand_frame_repr", False)
+pd.set_option("max_colwidth", None)
 
 
 @pytest.fixture
@@ -3585,7 +3585,7 @@ def test_ge_eq_and_le_datess_numba_indices(df, right):
     )
     expected = pd.Index(expected)
 
-    actual, _ = get_join_indices(
+    actual = get_join_indices(
         df[["B", "A", "E"]].dropna(subset=["E"]),
         right[["Floats", "Integers", "Dates", "Numeric"]].dropna(
             subset=["Dates"]
@@ -3598,7 +3598,7 @@ def test_ge_eq_and_le_datess_numba_indices(df, right):
         ],
         use_numba=True,
     )
-    actual = df.index[actual]
+    actual = df.index[actual["left_index"]]
     assert_index_equal(expected, actual, check_names=False)
 
 
@@ -3622,14 +3622,14 @@ def test_eq_indices(df, right):
     )
     expected = pd.Index(expected)
 
-    actual, _ = get_join_indices(
+    actual = get_join_indices(
         df.dropna(subset=["E"]),
         right.dropna(subset=["Dates"]),
         [
             ("E", "Dates", "=="),
         ],
     )
-    actual = df.index[actual]
+    actual = df.index[actual["left_index"]]
     assert_index_equal(expected, actual, check_names=False)
 
 
@@ -3656,7 +3656,7 @@ def test_ge_eq_and_le_datess_indices(df, right):
     )
     expected = pd.Index(expected)
 
-    actual, _ = get_join_indices(
+    actual = get_join_indices(
         df[["B", "A", "E"]],
         right[["Floats", "Integers", "Dates", "Numeric"]],
         [
@@ -3666,7 +3666,7 @@ def test_ge_eq_and_le_datess_indices(df, right):
             ("B", "Numeric", "!="),
         ],
     )
-    actual = df.index[actual]
+    actual = df.index[actual["left_index"]]
     assert_index_equal(expected, actual, check_names=False)
 
 

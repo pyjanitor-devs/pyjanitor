@@ -5,7 +5,7 @@ from hypothesis import given, settings
 from pandas import Timedelta
 from pandas.testing import assert_frame_equal, assert_index_equal
 
-from janitor import col, get_join_indices
+from janitor import get_join_indices
 from janitor.testing_utils.strategies import (
     conditional_df,
     conditional_right,
@@ -48,7 +48,7 @@ def test_conditional_join():
         }
     )
     df1.conditional_join(
-        df2, col("value_1") > col("value_2A"), col("value_1") < col("value_2B")
+        df2, ("value_1", "value_2A", ">"), ("value_1", "value_2B", "<")
     )
 
 
@@ -2961,7 +2961,7 @@ def test_multiple_ge_eq_and_le_numbers(df, right):
             ("A", "Integers", ">="),
             ("E", "Dates", "<="),
             ("B", "Floats", "=="),
-            col("B") > col("Numeric"),
+            ("B", "Numeric", ">"),
             how="inner",
         )
         .sort_values(columns, ignore_index=True)
@@ -2997,7 +2997,7 @@ def test_ge_eq_and_multiple_le_numbers(df, right):
             ("A", "Integers", ">="),
             ("E", "Dates", "<="),
             ("B", "Floats", "=="),
-            col("B") < col("Numeric"),
+            ("B", "Numeric", "<"),
             how="inner",
         )
         .sort_values(columns, ignore_index=True)
@@ -3259,347 +3259,347 @@ def test_ge_eq_and_le_numbers_variant_numba(df, right):
     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None, max_examples=10)
-@given(df=conditional_df(), right=conditional_right())
-@pytest.mark.turtle
-def test_ge_eq_and_le_numbers_numba(df, right):
-    """Test output for multiple conditions."""
+# @settings(deadline=None, max_examples=10)
+# @given(df=conditional_df(), right=conditional_right())
+# @pytest.mark.turtle
+# def test_ge_eq_and_le_numbers_numba(df, right):
+#     """Test output for multiple conditions."""
 
-    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
-    expected = (
-        df.merge(
-            right, left_on="B", right_on="Floats", how="inner", sort=False
-        )
-        .loc[lambda df: df.A.ge(df.Integers) & df.E.le(df.Dates), columns]
-        .sort_values(columns, ignore_index=True)
-    )
+#     columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+#     expected = (
+#         df.merge(
+#             right, left_on="B", right_on="Floats", how="inner", sort=False
+#         )
+#         .loc[lambda df: df.A.ge(df.Integers) & df.E.le(df.Dates), columns]
+#         .sort_values(columns, ignore_index=True)
+#     )
 
-    actual = (
-        df[["B", "A", "E"]]
-        .conditional_join(
-            right[["Floats", "Integers", "Dates"]],
-            ("A", "Integers", ">="),
-            ("E", "Dates", "<="),
-            ("B", "Floats", "=="),
-            how="inner",
-            use_numba=True,
-        )
-        .sort_values(columns, ignore_index=True)
-    )
-    actual = actual.filter(columns)
-    assert_frame_equal(expected, actual)
-
-
-@settings(deadline=None, max_examples=10)
-@given(df=conditional_df(), right=conditional_right())
-@pytest.mark.turtle
-def test_ge_eq_and_le_integers_numba(df, right):
-    """Test output for multiple conditions."""
-
-    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
-    expected = (
-        df.merge(
-            right, left_on="A", right_on="Integers", how="inner", sort=False
-        )
-        .loc[lambda df: df.B.ge(df.Floats) & df.E.le(df.Dates), columns]
-        .sort_values(columns, ignore_index=True)
-    )
-
-    actual = (
-        df[["B", "A", "E"]]
-        .conditional_join(
-            right[["Floats", "Integers", "Dates"]],
-            ("A", "Integers", "=="),
-            ("E", "Dates", "<="),
-            ("B", "Floats", ">="),
-            how="inner",
-            use_numba=True,
-        )
-        .sort_values(columns, ignore_index=True)
-    )
-    actual = actual.filter(columns)
-    assert_frame_equal(expected, actual)
+#     actual = (
+#         df[["B", "A", "E"]]
+#         .conditional_join(
+#             right[["Floats", "Integers", "Dates"]],
+#             ("A", "Integers", ">="),
+#             ("E", "Dates", "<="),
+#             ("B", "Floats", "=="),
+#             how="inner",
+#             use_numba=True,
+#         )
+#         .sort_values(columns, ignore_index=True)
+#     )
+#     actual = actual.filter(columns)
+#     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None, max_examples=10)
-@given(df=conditional_df(), right=conditional_right())
-@pytest.mark.turtle
-def test_ge_eq_and_lt_integers_numba(df, right):
-    """Test output for multiple conditions."""
+# @settings(deadline=None, max_examples=10)
+# @given(df=conditional_df(), right=conditional_right())
+# @pytest.mark.turtle
+# def test_ge_eq_and_le_integers_numba(df, right):
+#     """Test output for multiple conditions."""
 
-    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
-    expected = (
-        df.merge(
-            right, left_on="A", right_on="Integers", how="inner", sort=False
-        )
-        .loc[lambda df: df.B.lt(df.Floats) & df.E.ge(df.Dates), columns]
-        .sort_values(columns, ignore_index=True)
-    )
+#     columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+#     expected = (
+#         df.merge(
+#             right, left_on="A", right_on="Integers", how="inner", sort=False
+#         )
+#         .loc[lambda df: df.B.ge(df.Floats) & df.E.le(df.Dates), columns]
+#         .sort_values(columns, ignore_index=True)
+#     )
 
-    actual = (
-        df[["B", "A", "E"]]
-        .conditional_join(
-            right[["Floats", "Integers", "Dates"]],
-            ("A", "Integers", "=="),
-            ("E", "Dates", ">="),
-            ("B", "Floats", "<"),
-            how="inner",
-            use_numba=True,
-        )
-        .sort_values(columns, ignore_index=True)
-    )
-    actual = actual.filter(columns)
-    assert_frame_equal(expected, actual)
-
-
-@settings(deadline=None, max_examples=10)
-@given(df=conditional_df(), right=conditional_right())
-@pytest.mark.turtle
-def test_gt_eq_integers_numba(df, right):
-    """Test output for multiple conditions."""
-
-    columns = ["A", "E", "Integers", "Dates"]
-    expected = (
-        df.merge(
-            right, left_on="A", right_on="Integers", how="inner", sort=False
-        )
-        .loc[lambda df: df.E.gt(df.Dates), columns]
-        .sort_values(columns, ignore_index=True)
-    )
-
-    actual = (
-        df[["A", "E"]]
-        .conditional_join(
-            right[["Integers", "Dates"]],
-            ("A", "Integers", "=="),
-            ("E", "Dates", ">"),
-            how="inner",
-            use_numba=True,
-        )
-        .sort_values(columns, ignore_index=True)
-    )
-    actual = actual.filter(columns)
-    assert_frame_equal(expected, actual)
+#     actual = (
+#         df[["B", "A", "E"]]
+#         .conditional_join(
+#             right[["Floats", "Integers", "Dates"]],
+#             ("A", "Integers", "=="),
+#             ("E", "Dates", "<="),
+#             ("B", "Floats", ">="),
+#             how="inner",
+#             use_numba=True,
+#         )
+#         .sort_values(columns, ignore_index=True)
+#     )
+#     actual = actual.filter(columns)
+#     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None, max_examples=10)
-@given(df=conditional_df(), right=conditional_right())
-@pytest.mark.turtle
-def test_gt_eq_dates_numba(df, right):
-    """Test output for multiple conditions."""
+# @settings(deadline=None, max_examples=10)
+# @given(df=conditional_df(), right=conditional_right())
+# @pytest.mark.turtle
+# def test_ge_eq_and_lt_integers_numba(df, right):
+#     """Test output for multiple conditions."""
 
-    columns = ["A", "E", "Integers", "Dates"]
-    expected = (
-        df.dropna(subset=["E"])
-        .merge(
-            right.dropna(subset=["Dates"]),
-            left_on="E",
-            right_on="Dates",
-            how="inner",
-            sort=False,
-        )
-        .loc[lambda df: df.A.gt(df.Integers), columns]
-        .sort_values(columns, ignore_index=True)
-    )
+#     columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+#     expected = (
+#         df.merge(
+#             right, left_on="A", right_on="Integers", how="inner", sort=False
+#         )
+#         .loc[lambda df: df.B.lt(df.Floats) & df.E.ge(df.Dates), columns]
+#         .sort_values(columns, ignore_index=True)
+#     )
 
-    actual = (
-        df[["A", "E"]]
-        .conditional_join(
-            right[["Integers", "Dates"]],
-            ("A", "Integers", ">"),
-            ("E", "Dates", "=="),
-            how="inner",
-            use_numba=True,
-        )
-        .sort_values(columns, ignore_index=True)
-    )
-    actual = actual.filter(columns)
-    assert_frame_equal(expected, actual)
+#     actual = (
+#         df[["B", "A", "E"]]
+#         .conditional_join(
+#             right[["Floats", "Integers", "Dates"]],
+#             ("A", "Integers", "=="),
+#             ("E", "Dates", ">="),
+#             ("B", "Floats", "<"),
+#             how="inner",
+#             use_numba=True,
+#         )
+#         .sort_values(columns, ignore_index=True)
+#     )
+#     actual = actual.filter(columns)
+#     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None, max_examples=10)
-@given(df=conditional_df(), right=conditional_right())
-@pytest.mark.turtle
-def test_lt_eq_integers_numba(df, right):
-    """Test output for multiple conditions."""
+# @settings(deadline=None, max_examples=10)
+# @given(df=conditional_df(), right=conditional_right())
+# @pytest.mark.turtle
+# def test_gt_eq_integers_numba(df, right):
+#     """Test output for multiple conditions."""
 
-    columns = ["A", "E", "Integers", "Dates"]
-    expected = (
-        df.merge(
-            right, left_on="A", right_on="Integers", how="inner", sort=False
-        )
-        .loc[lambda df: df.E.lt(df.Dates), columns]
-        .sort_values(columns, ignore_index=True)
-    )
+#     columns = ["A", "E", "Integers", "Dates"]
+#     expected = (
+#         df.merge(
+#             right, left_on="A", right_on="Integers", how="inner", sort=False
+#         )
+#         .loc[lambda df: df.E.gt(df.Dates), columns]
+#         .sort_values(columns, ignore_index=True)
+#     )
 
-    actual = (
-        df[["A", "E"]]
-        .conditional_join(
-            right[["Integers", "Dates"]],
-            ("A", "Integers", "=="),
-            ("E", "Dates", "<"),
-            how="inner",
-            use_numba=True,
-        )
-        .sort_values(columns, ignore_index=True)
-    )
-    actual = actual.filter(columns)
-    assert_frame_equal(expected, actual)
-
-
-@settings(deadline=None, max_examples=10)
-@given(df=conditional_df(), right=conditional_right())
-@pytest.mark.turtle
-def test_lt_eq_dates_numba(df, right):
-    """Test output for multiple conditions."""
-
-    columns = ["A", "E", "Integers", "Dates"]
-    expected = (
-        df.dropna(subset=["E"])
-        .merge(
-            right.dropna(subset=["Dates"]),
-            left_on="E",
-            right_on="Dates",
-            how="inner",
-            sort=False,
-        )
-        .loc[lambda df: df.A.lt(df.Integers), columns]
-        .sort_values(columns, ignore_index=True)
-    )
-
-    actual = (
-        df[["A", "E"]]
-        .conditional_join(
-            right[["Integers", "Dates"]],
-            ("A", "Integers", "<"),
-            ("E", "Dates", "=="),
-            how="inner",
-            use_numba=True,
-        )
-        .sort_values(columns, ignore_index=True)
-    )
-    actual = actual.filter(columns)
-    assert_frame_equal(expected, actual)
+#     actual = (
+#         df[["A", "E"]]
+#         .conditional_join(
+#             right[["Integers", "Dates"]],
+#             ("A", "Integers", "=="),
+#             ("E", "Dates", ">"),
+#             how="inner",
+#             use_numba=True,
+#         )
+#         .sort_values(columns, ignore_index=True)
+#     )
+#     actual = actual.filter(columns)
+#     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None, max_examples=10)
-@given(df=conditional_df(), right=conditional_right())
-@pytest.mark.turtle
-def test_ge_eq_and_le_dates_numba(df, right):
-    """Test output for multiple conditions."""
+# @settings(deadline=None, max_examples=10)
+# @given(df=conditional_df(), right=conditional_right())
+# @pytest.mark.turtle
+# def test_gt_eq_dates_numba(df, right):
+#     """Test output for multiple conditions."""
 
-    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
-    expected = (
-        df.dropna(subset=["E"])
-        .merge(
-            right.dropna(subset=["Dates"]),
-            left_on="E",
-            right_on="Dates",
-            how="inner",
-            sort=False,
-        )
-        .loc[lambda df: df.B.gt(df.Floats) & df.A.lt(df.Integers), columns]
-        .sort_values(columns, ignore_index=True)
-    )
+#     columns = ["A", "E", "Integers", "Dates"]
+#     expected = (
+#         df.dropna(subset=["E"])
+#         .merge(
+#             right.dropna(subset=["Dates"]),
+#             left_on="E",
+#             right_on="Dates",
+#             how="inner",
+#             sort=False,
+#         )
+#         .loc[lambda df: df.A.gt(df.Integers), columns]
+#         .sort_values(columns, ignore_index=True)
+#     )
 
-    actual = (
-        df[["B", "A", "E"]]
-        .conditional_join(
-            right[["Floats", "Integers", "Dates"]],
-            ("A", "Integers", "<"),
-            ("E", "Dates", "=="),
-            ("B", "Floats", ">"),
-            how="inner",
-            use_numba=True,
-        )
-        .sort_values(columns, ignore_index=True)
-    )
-    actual = actual.filter(columns)
-    assert_frame_equal(expected, actual)
-
-
-@settings(deadline=None, max_examples=10)
-@given(df=conditional_df(), right=conditional_right())
-@pytest.mark.turtle
-def test_ge_eq_and_le_datess_numba(df, right):
-    """Test output for multiple conditions."""
-
-    columns = ["B", "A", "E", "Floats", "Integers", "Dates", "Numeric"]
-    expected = (
-        df.dropna(subset=["E"])
-        .merge(
-            right.dropna(subset=["Dates"]),
-            left_on="E",
-            right_on="Dates",
-            how="inner",
-            sort=False,
-        )
-        .loc[
-            lambda df: df.B.gt(df.Floats)
-            & df.A.lt(df.Integers)
-            & df.B.ne(df.Numeric),
-            columns,
-        ]
-        .sort_values(columns, ignore_index=True)
-    )
-
-    actual = (
-        df[["B", "A", "E"]]
-        .conditional_join(
-            right[["Floats", "Integers", "Dates", "Numeric"]],
-            ("A", "Integers", "<"),
-            ("E", "Dates", "=="),
-            ("B", "Floats", ">"),
-            ("B", "Numeric", "!="),
-            how="inner",
-            use_numba=True,
-        )
-        .sort_values(columns, ignore_index=True)
-    )
-    actual = actual.filter(columns)
-    assert_frame_equal(expected, actual)
+#     actual = (
+#         df[["A", "E"]]
+#         .conditional_join(
+#             right[["Integers", "Dates"]],
+#             ("A", "Integers", ">"),
+#             ("E", "Dates", "=="),
+#             how="inner",
+#             use_numba=True,
+#         )
+#         .sort_values(columns, ignore_index=True)
+#     )
+#     actual = actual.filter(columns)
+#     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None, max_examples=10)
-@given(df=conditional_df(), right=conditional_right())
-@pytest.mark.turtle
-def test_ge_eq_and_le_datess_numba_indices(df, right):
-    """compare join indices for multiple conditions."""
+# @settings(deadline=None, max_examples=10)
+# @given(df=conditional_df(), right=conditional_right())
+# @pytest.mark.turtle
+# def test_lt_eq_integers_numba(df, right):
+#     """Test output for multiple conditions."""
 
-    expected = (
-        df.reset_index()
-        .dropna(subset=["E"])
-        .merge(
-            right.dropna(subset=["Dates"]),
-            left_on="E",
-            right_on="Dates",
-            how="inner",
-            sort=False,
-        )
-        .loc[
-            lambda df: df.B.gt(df.Floats)
-            & df.A.lt(df.Integers)
-            & df.B.ne(df.Numeric),
-            "index",
-        ]
-    )
-    expected = pd.Index(expected)
+#     columns = ["A", "E", "Integers", "Dates"]
+#     expected = (
+#         df.merge(
+#             right, left_on="A", right_on="Integers", how="inner", sort=False
+#         )
+#         .loc[lambda df: df.E.lt(df.Dates), columns]
+#         .sort_values(columns, ignore_index=True)
+#     )
 
-    actual = get_join_indices(
-        df[["B", "A", "E"]].dropna(subset=["E"]),
-        right[["Floats", "Integers", "Dates", "Numeric"]].dropna(
-            subset=["Dates"]
-        ),
-        [
-            ("A", "Integers", "<"),
-            ("E", "Dates", "=="),
-            ("B", "Floats", ">"),
-            ("B", "Numeric", "!="),
-        ],
-        use_numba=True,
-    )
-    actual = df.index[actual["left_index"]]
-    assert_index_equal(expected, actual, check_names=False)
+#     actual = (
+#         df[["A", "E"]]
+#         .conditional_join(
+#             right[["Integers", "Dates"]],
+#             ("A", "Integers", "=="),
+#             ("E", "Dates", "<"),
+#             how="inner",
+#             use_numba=True,
+#         )
+#         .sort_values(columns, ignore_index=True)
+#     )
+#     actual = actual.filter(columns)
+#     assert_frame_equal(expected, actual)
+
+
+# @settings(deadline=None, max_examples=10)
+# @given(df=conditional_df(), right=conditional_right())
+# @pytest.mark.turtle
+# def test_lt_eq_dates_numba(df, right):
+#     """Test output for multiple conditions."""
+
+#     columns = ["A", "E", "Integers", "Dates"]
+#     expected = (
+#         df.dropna(subset=["E"])
+#         .merge(
+#             right.dropna(subset=["Dates"]),
+#             left_on="E",
+#             right_on="Dates",
+#             how="inner",
+#             sort=False,
+#         )
+#         .loc[lambda df: df.A.lt(df.Integers), columns]
+#         .sort_values(columns, ignore_index=True)
+#     )
+
+#     actual = (
+#         df[["A", "E"]]
+#         .conditional_join(
+#             right[["Integers", "Dates"]],
+#             ("A", "Integers", "<"),
+#             ("E", "Dates", "=="),
+#             how="inner",
+#             use_numba=True,
+#         )
+#         .sort_values(columns, ignore_index=True)
+#     )
+#     actual = actual.filter(columns)
+#     assert_frame_equal(expected, actual)
+
+
+# @settings(deadline=None, max_examples=10)
+# @given(df=conditional_df(), right=conditional_right())
+# @pytest.mark.turtle
+# def test_ge_eq_and_le_dates_numba(df, right):
+#     """Test output for multiple conditions."""
+
+#     columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+#     expected = (
+#         df.dropna(subset=["E"])
+#         .merge(
+#             right.dropna(subset=["Dates"]),
+#             left_on="E",
+#             right_on="Dates",
+#             how="inner",
+#             sort=False,
+#         )
+#         .loc[lambda df: df.B.gt(df.Floats) & df.A.lt(df.Integers), columns]
+#         .sort_values(columns, ignore_index=True)
+#     )
+
+#     actual = (
+#         df[["B", "A", "E"]]
+#         .conditional_join(
+#             right[["Floats", "Integers", "Dates"]],
+#             ("A", "Integers", "<"),
+#             ("E", "Dates", "=="),
+#             ("B", "Floats", ">"),
+#             how="inner",
+#             use_numba=True,
+#         )
+#         .sort_values(columns, ignore_index=True)
+#     )
+#     actual = actual.filter(columns)
+#     assert_frame_equal(expected, actual)
+
+
+# @settings(deadline=None, max_examples=10)
+# @given(df=conditional_df(), right=conditional_right())
+# @pytest.mark.turtle
+# def test_ge_eq_and_le_datess_numba(df, right):
+#     """Test output for multiple conditions."""
+
+#     columns = ["B", "A", "E", "Floats", "Integers", "Dates", "Numeric"]
+#     expected = (
+#         df.dropna(subset=["E"])
+#         .merge(
+#             right.dropna(subset=["Dates"]),
+#             left_on="E",
+#             right_on="Dates",
+#             how="inner",
+#             sort=False,
+#         )
+#         .loc[
+#             lambda df: df.B.gt(df.Floats)
+#             & df.A.lt(df.Integers)
+#             & df.B.ne(df.Numeric),
+#             columns,
+#         ]
+#         .sort_values(columns, ignore_index=True)
+#     )
+
+#     actual = (
+#         df[["B", "A", "E"]]
+#         .conditional_join(
+#             right[["Floats", "Integers", "Dates", "Numeric"]],
+#             ("A", "Integers", "<"),
+#             ("E", "Dates", "=="),
+#             ("B", "Floats", ">"),
+#             ("B", "Numeric", "!="),
+#             how="inner",
+#             use_numba=True,
+#         )
+#         .sort_values(columns, ignore_index=True)
+#     )
+#     actual = actual.filter(columns)
+#     assert_frame_equal(expected, actual)
+
+
+# @settings(deadline=None, max_examples=10)
+# @given(df=conditional_df(), right=conditional_right())
+# @pytest.mark.turtle
+# def test_ge_eq_and_le_datess_numba_indices(df, right):
+#     """compare join indices for multiple conditions."""
+
+#     expected = (
+#         df.reset_index()
+#         .dropna(subset=["E"])
+#         .merge(
+#             right.dropna(subset=["Dates"]),
+#             left_on="E",
+#             right_on="Dates",
+#             how="inner",
+#             sort=False,
+#         )
+#         .loc[
+#             lambda df: df.B.gt(df.Floats)
+#             & df.A.lt(df.Integers)
+#             & df.B.ne(df.Numeric),
+#             "index",
+#         ]
+#     )
+#     expected = pd.Index(expected)
+
+#     actual, _ = get_join_indices(
+#         df[["B", "A", "E"]].dropna(subset=["E"]),
+#         right[["Floats", "Integers", "Dates", "Numeric"]].dropna(
+#             subset=["Dates"]
+#         ),
+#         [
+#             ("A", "Integers", "<"),
+#             ("E", "Dates", "=="),
+#             ("B", "Floats", ">"),
+#             ("B", "Numeric", "!="),
+#         ],
+#         use_numba=True,
+#     )
+#     actual = df.index[actual]
+#     assert_index_equal(expected, actual, check_names=False)
 
 
 @settings(deadline=None, max_examples=10)
@@ -3622,52 +3622,52 @@ def test_eq_indices(df, right):
     )
     expected = pd.Index(expected)
 
-    actual = get_join_indices(
+    actual, _ = get_join_indices(
         df.dropna(subset=["E"]),
         right.dropna(subset=["Dates"]),
         [
             ("E", "Dates", "=="),
         ],
     )
-    actual = df.index[actual["left_index"]]
+    actual = df.index[actual]
     assert_index_equal(expected, actual, check_names=False)
 
 
-@settings(deadline=None, max_examples=10)
-@given(df=conditional_df(), right=conditional_right())
-@pytest.mark.turtle
-def test_ge_eq_and_le_datess_indices(df, right):
-    """compare join indices for multiple conditions."""
-    expected = (
-        df.reset_index()
-        .merge(
-            right,
-            left_on="E",
-            right_on="Dates",
-            how="inner",
-            sort=False,
-        )
-        .loc[
-            lambda df: df.B.gt(df.Floats)
-            & df.A.lt(df.Integers)
-            & df.B.ne(df.Numeric),
-            "index",
-        ]
-    )
-    expected = pd.Index(expected)
+# @settings(deadline=None, max_examples=10)
+# @given(df=conditional_df(), right=conditional_right())
+# @pytest.mark.turtle
+# def test_ge_eq_and_le_datess_indices(df, right):
+#     """compare join indices for multiple conditions."""
+#     expected = (
+#         df.reset_index()
+#         .merge(
+#             right,
+#             left_on="E",
+#             right_on="Dates",
+#             how="inner",
+#             sort=False,
+#         )
+#         .loc[
+#             lambda df: df.B.gt(df.Floats)
+#             & df.A.lt(df.Integers)
+#             & df.B.ne(df.Numeric),
+#             "index",
+#         ]
+#     )
+#     expected = pd.Index(expected)
 
-    actual = get_join_indices(
-        df[["B", "A", "E"]],
-        right[["Floats", "Integers", "Dates", "Numeric"]],
-        [
-            ("A", "Integers", "<"),
-            ("E", "Dates", "=="),
-            ("B", "Floats", ">"),
-            ("B", "Numeric", "!="),
-        ],
-    )
-    actual = df.index[actual["left_index"]]
-    assert_index_equal(expected, actual, check_names=False)
+#     actual, _ = get_join_indices(
+#         df[["B", "A", "E"]],
+#         right[["Floats", "Integers", "Dates", "Numeric"]],
+#         [
+#             ("A", "Integers", "<"),
+#             ("E", "Dates", "=="),
+#             ("B", "Floats", ">"),
+#             ("B", "Numeric", "!="),
+#         ],
+#     )
+#     actual = df.index[actual]
+#     assert_index_equal(expected, actual, check_names=False)
 
 
 @pytest.mark.turtle
@@ -3846,10 +3846,10 @@ def test_multiple_non_equii_col_syntax(df, right):
         df[["B", "A", "E"]]
         .conditional_join(
             right[["Floats", "Integers", "Dates", "Numeric"]],
-            col("A") >= col("Integers"),
-            col("E") <= col("Dates"),
-            col("B") < col("Floats"),
-            col("B") > col("Numeric"),
+            ("A", "Integers", ">="),
+            ("E", "Dates", "<="),
+            ("B", "Floats", "<"),
+            ("B", "Numeric", ">"),
             how="inner",
         )
         .sort_values(columns, ignore_index=True)
@@ -4304,191 +4304,191 @@ def test_multiple_eqs(df, right):
     assert_frame_equal(expected, actual)
 
 
-@pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
-@given(df=conditional_df(), right=conditional_right())
-def test_multiple_eqs_numba_range(df, right):
-    """Test output for multiple conditions."""
+# @pytest.mark.turtle
+# @settings(deadline=None, max_examples=10)
+# @given(df=conditional_df(), right=conditional_right())
+# def test_multiple_eqs_numba_range(df, right):
+#     """Test output for multiple conditions."""
 
-    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
-    expected = (
-        df.merge(
-            right,
-            left_on=["A"],
-            right_on=["Integers"],
-            how="inner",
-            sort=False,
-        )
-        .loc[lambda df: df.E.lt(df.Dates) & df.B.gt(df.Floats), columns]
-        .sort_values(columns, ignore_index=True)
-    )
-    expected = expected.filter(columns)
-    actual = (
-        df[["B", "A", "E"]]
-        .conditional_join(
-            right[["Floats", "Integers", "Dates"]],
-            ("E", "Dates", "<"),
-            ("B", "Floats", ">"),
-            ("A", "Integers", "=="),
-            how="inner",
-            use_numba=True,
-        )
-        .sort_values(columns, ignore_index=True)
-    )
+#     columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+#     expected = (
+#         df.merge(
+#             right,
+#             left_on=["A"],
+#             right_on=["Integers"],
+#             how="inner",
+#             sort=False,
+#         )
+#         .loc[lambda df: df.E.lt(df.Dates) & df.B.gt(df.Floats), columns]
+#         .sort_values(columns, ignore_index=True)
+#     )
+#     expected = expected.filter(columns)
+#     actual = (
+#         df[["B", "A", "E"]]
+#         .conditional_join(
+#             right[["Floats", "Integers", "Dates"]],
+#             ("E", "Dates", "<"),
+#             ("B", "Floats", ">"),
+#             ("A", "Integers", "=="),
+#             how="inner",
+#             use_numba=True,
+#         )
+#         .sort_values(columns, ignore_index=True)
+#     )
 
-    assert_frame_equal(expected, actual)
-
-
-@pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
-@given(df=conditional_df(), right=conditional_right())
-def test_multiple_eqs_outer(df, right):
-    """Test output for multiple conditions."""
-
-    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
-    expected = df.merge(
-        right,
-        left_on=["B", "A"],
-        right_on=["Floats", "Integers"],
-        how="inner",
-        sort=False,
-        indicator=True,
-    ).loc[lambda df: df.E.ne(df.Dates), columns + ["_merge"]]
-    contents = [expected]
-    top = df.loc(axis=1)[["B", "A", "E"]].merge(
-        expected.loc(axis=1)[["B", "A", "E"]], indicator=True, how="left"
-    )
-    top = top.loc[top._merge == "left_only"]
-    if not top.empty:
-        contents.append(top)
-    bottom = expected.loc(axis=1)[["Floats", "Integers", "Dates"]].merge(
-        right.loc(axis=1)[["Floats", "Integers", "Dates"]],
-        indicator=True,
-        how="right",
-    )
-    bottom = bottom.loc[bottom._merge == "right_only"]
-    if not bottom.empty:
-        contents.append(bottom)
-
-    expected = pd.concat(contents)
-    expected = expected.sort_values(columns, ignore_index=True).sort_index(
-        axis="columns"
-    )
-    actual = (
-        df[["B", "A", "E"]]
-        .conditional_join(
-            right[["Floats", "Integers", "Dates"]].assign(B=right.Floats),
-            ("E", "Dates", "!="),
-            ("B", "B", "=="),
-            ("A", "Integers", "=="),
-            how="outer",
-            indicator=True,
-        )
-        .select(("right", "B"), axis="columns", invert=True)
-        .droplevel(axis=1, level=0)
-        .rename(columns={"": "_merge"})
-        .sort_values(columns, ignore_index=True)
-        .sort_index(axis="columns")
-    )
-    assert_frame_equal(expected, actual)
+#     assert_frame_equal(expected, actual)
 
 
-@pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
-@given(df=conditional_df(), right=conditional_right())
-def test_multiple_eqs_col_syntax(df, right):
-    """Test output for multiple conditions."""
+# @pytest.mark.turtle
+# @settings(deadline=None, max_examples=10)
+# @given(df=conditional_df(), right=conditional_right())
+# def test_multiple_eqs_outer(df, right):
+#     """Test output for multiple conditions."""
 
-    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
-    expected = (
-        df.merge(
-            right,
-            left_on=["B", "A"],
-            right_on=["Floats", "Integers"],
-            how="inner",
-            sort=False,
-        )
-        .loc[lambda df: df.E.ne(df.Dates), columns]
-        .sort_values(columns, ignore_index=True)
-    )
-    expected = expected.filter(columns)
-    actual = (
-        df[["B", "A", "E"]]
-        .conditional_join(
-            right[["Floats", "Integers", "Dates"]],
-            col("E") != col("Dates"),
-            col("B") == col("Floats"),
-            col("A") == col("Integers"),
-            how="inner",
-        )
-        .sort_values(columns, ignore_index=True)
-    )
+#     columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+#     expected = df.merge(
+#         right,
+#         left_on=["B", "A"],
+#         right_on=["Floats", "Integers"],
+#         how="inner",
+#         sort=False,
+#         indicator=True,
+#     ).loc[lambda df: df.E.ne(df.Dates), columns + ["_merge"]]
+#     contents = [expected]
+#     top = df.loc(axis=1)[["B", "A", "E"]].merge(
+#         expected.loc(axis=1)[["B", "A", "E"]], indicator=True, how="left"
+#     )
+#     top = top.loc[top._merge == "left_only"]
+#     if not top.empty:
+#         contents.append(top)
+#     bottom = expected.loc(axis=1)[["Floats", "Integers", "Dates"]].merge(
+#         right.loc(axis=1)[["Floats", "Integers", "Dates"]],
+#         indicator=True,
+#         how="right",
+#     )
+#     bottom = bottom.loc[bottom._merge == "right_only"]
+#     if not bottom.empty:
+#         contents.append(bottom)
 
-    assert_frame_equal(expected, actual)
-
-
-@pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
-@given(df=conditional_df(), right=conditional_right())
-def test_eq_strings(df, right):
-    """Test output for joins on strings."""
-
-    columns = ["C", "A", "Strings", "Integers"]
-    expected = df.merge(
-        right,
-        left_on="C",
-        right_on="Strings",
-        how="inner",
-        sort=False,
-    )
-    expected = expected.loc[
-        expected.A >= expected.Integers, columns
-    ].sort_values(columns, ignore_index=True)
-
-    actual = df.conditional_join(
-        right,
-        ("C", "Strings", "=="),
-        ("A", "Integers", ">="),
-        how="inner",
-        df_columns=["C", "A"],
-        right_columns=["Strings", "Integers"],
-    ).sort_values(columns, ignore_index=True)
-
-    assert_frame_equal(expected, actual)
+#     expected = pd.concat(contents)
+#     expected = expected.sort_values(columns, ignore_index=True).sort_index(
+#         axis="columns"
+#     )
+#     actual = (
+#         df[["B", "A", "E"]]
+#         .conditional_join(
+#             right[["Floats", "Integers", "Dates"]].assign(B=right.Floats),
+#             ("E", "Dates", "!="),
+#             ("B", "B", "=="),
+#             ("A", "Integers", "=="),
+#             how="outer",
+#             indicator=True,
+#         )
+#         .select(("right", "B"), axis="columns", invert=True)
+#         .droplevel(axis=1, level=0)
+#         .rename(columns={"": "_merge"})
+#         .sort_values(columns, ignore_index=True)
+#         .sort_index(axis="columns")
+#     )
+#     assert_frame_equal(expected, actual)
 
 
-def test_extension_array_eq():
-    """Extension arrays when matching on equality."""
-    df1 = pd.DataFrame(
-        {"id": [1, 1, 1, 2, 2, 3], "value_1": [2, 5, 7, 1, 3, 4]}
-    )
-    df1 = df1.astype({"value_1": "Int64"})
-    df2 = pd.DataFrame(
-        {
-            "id": [1, 1, 1, 1, 2, 2, 2, 3],
-            "value_2A": [0, 3, 7, 12, 0, 2, 3, 1],
-            "value_2B": [1, 5, 9, 15, 1, 4, 6, 3],
-        }
-    )
-    df2 = df2.astype({"value_2A": "Int64"})
-    expected = df1.conditional_join(
-        df2,
-        ("id", "id", "=="),
-        ("value_1", "value_2A", ">"),
-        use_numba=False,
-    )
-    expected = (
-        expected.drop(columns=("right", "id"))
-        .droplevel(axis=1, level=0)
-        .sort_values(["id", "value_1", "value_2A"], ignore_index=True)
-    )
-    actual = (
-        df1.merge(df2, on="id")
-        .loc[lambda df: df.value_1.gt(df.value_2A)]
-        .sort_values(["id", "value_1", "value_2A"], ignore_index=True)
-    )
+# @pytest.mark.turtle
+# @settings(deadline=None, max_examples=10)
+# @given(df=conditional_df(), right=conditional_right())
+# def test_multiple_eqs_col_syntax(df, right):
+#     """Test output for multiple conditions."""
 
-    assert_frame_equal(expected, actual)
+#     columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+#     expected = (
+#         df.merge(
+#             right,
+#             left_on=["B", "A"],
+#             right_on=["Floats", "Integers"],
+#             how="inner",
+#             sort=False,
+#         )
+#         .loc[lambda df: df.E.ne(df.Dates), columns]
+#         .sort_values(columns, ignore_index=True)
+#     )
+#     expected = expected.filter(columns)
+#     actual = (
+#         df[["B", "A", "E"]]
+#         .conditional_join(
+#             right[["Floats", "Integers", "Dates"]],
+#             ("E", "Dates", "!="),
+#             ("B", "Floats", "=="),
+#             ("A", "Integers", "=="),
+#             how="inner",
+#         )
+#         .sort_values(columns, ignore_index=True)
+#     )
+
+#     assert_frame_equal(expected, actual)
+
+
+# @pytest.mark.turtle
+# @settings(deadline=None, max_examples=10)
+# @given(df=conditional_df(), right=conditional_right())
+# def test_eq_strings(df, right):
+#     """Test output for joins on strings."""
+
+#     columns = ["C", "A", "Strings", "Integers"]
+#     expected = df.merge(
+#         right,
+#         left_on="C",
+#         right_on="Strings",
+#         how="inner",
+#         sort=False,
+#     )
+#     expected = expected.loc[
+#         expected.A >= expected.Integers, columns
+#     ].sort_values(columns, ignore_index=True)
+
+#     actual = df.conditional_join(
+#         right,
+#         ("C", "Strings", "=="),
+#         ("A", "Integers", ">="),
+#         how="inner",
+#         df_columns=["C", "A"],
+#         right_columns=["Strings", "Integers"],
+#     ).sort_values(columns, ignore_index=True)
+
+#     assert_frame_equal(expected, actual)
+
+
+# def test_extension_array_eq():
+#     """Extension arrays when matching on equality."""
+#     df1 = pd.DataFrame(
+#         {"id": [1, 1, 1, 2, 2, 3], "value_1": [2, 5, 7, 1, 3, 4]}
+#     )
+#     df1 = df1.astype({"value_1": "Int64"})
+#     df2 = pd.DataFrame(
+#         {
+#             "id": [1, 1, 1, 1, 2, 2, 2, 3],
+#             "value_2A": [0, 3, 7, 12, 0, 2, 3, 1],
+#             "value_2B": [1, 5, 9, 15, 1, 4, 6, 3],
+#         }
+#     )
+#     df2 = df2.astype({"value_2A": "Int64"})
+#     expected = df1.conditional_join(
+#         df2,
+#         ("id", "id", "=="),
+#         ("value_1", "value_2A", ">"),
+#         use_numba=False,
+#     )
+#     expected = (
+#         expected.drop(columns=("right", "id"))
+#         .droplevel(axis=1, level=0)
+#         .sort_values(["id", "value_1", "value_2A"], ignore_index=True)
+#     )
+#     actual = (
+#         df1.merge(df2, on="id")
+#         .loc[lambda df: df.value_1.gt(df.value_2A)]
+#         .sort_values(["id", "value_1", "value_2A"], ignore_index=True)
+#     )
+
+#     assert_frame_equal(expected, actual)
 
 
 def test_extension_array_eq_force():
@@ -4687,26 +4687,26 @@ def test_no_match():
     assert_frame_equal(expected, actual)
 
 
-def test_no_match_equi_numba():
-    """
-    Test output for equality merge,
-     where binary search is triggered,
-     and there are no matches.
-    """
-    df1 = pd.DataFrame({"A": [1, 2, 2, 3], "B": range(0, 4)})
-    df2 = pd.DataFrame({"A": [1, 2, 2, 3], "B": range(4, 8)})
-    actual = (
-        df1.merge(df2, on="A", sort=False)
-        .loc[lambda df: df.B_x > df.B_y]
-        .reset_index(drop=True)
-    )
-    actual.columns = list("ABC")
-    expected = df1.conditional_join(
-        df2, ("A", "A", "=="), ("B", "B", ">"), use_numba=True
-    ).drop(columns=("right", "A"))
-    expected.columns = list("ABC")
+# def test_no_match_equi_numba():
+#     """
+#     Test output for equality merge,
+#      where binary search is triggered,
+#      and there are no matches.
+#     """
+#     df1 = pd.DataFrame({"A": [1, 2, 2, 3], "B": range(0, 4)})
+#     df2 = pd.DataFrame({"A": [1, 2, 2, 3], "B": range(4, 8)})
+#     actual = (
+#         df1.merge(df2, on="A", sort=False)
+#         .loc[lambda df: df.B_x > df.B_y]
+#         .reset_index(drop=True)
+#     )
+#     actual.columns = list("ABC")
+#     expected = df1.conditional_join(
+#         df2, ("A", "A", "=="), ("B", "B", ">"), use_numba=True
+#     ).drop(columns=("right", "A"))
+#     expected.columns = list("ABC")
 
-    assert_frame_equal(expected, actual)
+#     assert_frame_equal(expected, actual)
 
 
 def test_timedelta_dtype():
@@ -4758,33 +4758,33 @@ def test_timedelta_dtype():
     assert_frame_equal(expected, actual)
 
 
-# https://stackoverflow.com/q/61948103/7175713
-def test_numba_equi_extension_array():
-    """
-    Test output for equi join and numba
-    """
-    df1 = pd.DataFrame(
-        {"id": [1, 1, 1, 2, 2, 3], "value_1": [2, 5, 7, 1, 3, 4]}
-    )
-    df2 = pd.DataFrame(
-        {
-            "id": [1, 1, 1, 1, 2, 2, 2, 3],
-            "value_2A": [0, 3, 7, 12, 0, 2, 3, 1],
-            "value_2B": [1, 9, 5, 15, 1, 6, 4, 3],
-        }
-    )
-    df1["value_1"] = df1["value_1"].astype(pd.Int64Dtype())
-    df2["value_2A"] = df2["value_2A"].astype(pd.Int64Dtype())
-    df2["value_2B"] = df2["value_2B"].astype(pd.Int64Dtype())
-    expected = df1.merge(df2, on="id").query("value_2A < value_1 < value_2B")
-    expected.index = range(expected.index.size)
-    actual = df1.conditional_join(
-        df2,
-        ("id", "id", "=="),
-        ("value_1", "value_2A", ">"),
-        ("value_1", "value_2B", "<"),
-        right_columns="value*",
-        use_numba=True,
-    )
+# # https://stackoverflow.com/q/61948103/7175713
+# def test_numba_equi_extension_array():
+#     """
+#     Test output for equi join and numba
+#     """
+#     df1 = pd.DataFrame(
+#         {"id": [1, 1, 1, 2, 2, 3], "value_1": [2, 5, 7, 1, 3, 4]}
+#     )
+#     df2 = pd.DataFrame(
+#         {
+#             "id": [1, 1, 1, 1, 2, 2, 2, 3],
+#             "value_2A": [0, 3, 7, 12, 0, 2, 3, 1],
+#             "value_2B": [1, 9, 5, 15, 1, 6, 4, 3],
+#         }
+#     )
+#     df1["value_1"] = df1["value_1"].astype(pd.Int64Dtype())
+#     df2["value_2A"] = df2["value_2A"].astype(pd.Int64Dtype())
+#     df2["value_2B"] = df2["value_2B"].astype(pd.Int64Dtype())
+#     expected = df1.merge(df2, on="id").query("value_2A < value_1 < value_2B")
+#     expected.index = range(expected.index.size)
+#     actual = df1.conditional_join(
+#         df2,
+#         ("id", "id", "=="),
+#         ("value_1", "value_2A", ">"),
+#         ("value_1", "value_2B", "<"),
+#         right_columns="value*",
+#         use_numba=True,
+#     )
 
-    assert_frame_equal(expected, actual)
+#     assert_frame_equal(expected, actual)

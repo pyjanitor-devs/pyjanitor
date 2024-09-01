@@ -738,6 +738,7 @@ def _less_than_indices(
     strict: bool,
     multiple_conditions: bool,
     keep: str,
+    use_numba: bool = False,
 ) -> tuple:
     """
     Use binary search to get indices where left
@@ -810,13 +811,13 @@ def _less_than_indices(
             return None
     if multiple_conditions:
         return left_index, right_index, search_indices
-    if right_is_sorted and (keep == "last"):
+    if right_is_sorted & (keep == "last"):
         indexer = np.empty_like(search_indices)
         indexer[:] = len_right - 1
         return left_index, right_index[indexer]
-    if right_is_sorted and (keep == "first"):
-        if any_nulls:
-            return left_index, right_index[search_indices]
+    if right_is_sorted & (keep == "first") & any_nulls:
+        return left_index, right_index[search_indices]
+    if right_is_sorted & (keep == "first"):
         return left_index, search_indices
     right = [right_index[ind:len_right] for ind in search_indices]
     if keep == "first":

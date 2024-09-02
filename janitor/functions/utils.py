@@ -732,13 +732,52 @@ def _null_checks_cond_join(left: pd.Series, right: pd.Series) -> tuple | None:
     return left, right, left_index, right_index, right_is_sorted, any_nulls
 
 
+def _equal_indices(
+    left: pd.Series,
+    right: pd.Series,
+) -> tuple:
+    """
+    Use binary search to get indices where left
+    is equal to right.
+
+    A tuple of integer indexes
+    for left and right is returned.
+
+    Specific to numba_equi_join
+    """
+    outcome = _null_checks_cond_join(left=left, right=right)
+    if not outcome:
+        return None
+    left, right, left_index, right_index, *_ = outcome
+    starts = right.searchsorted(left, side="left")
+    ends = right.searchsorted(left, side="right")
+    l_booleans = starts < ends
+    if not l_booleans.any():
+        return None
+    if not l_booleans.all():
+        left_index = left_index[l_booleans]
+        starts = starts[l_booleans]
+        ends = ends[l_booleans]
+    r_booleans = np.zeros(right.size, dtype=np.intp)
+    r_booleans[starts] = -1
+    r_booleans[ends - 1] = 1
+    r_booleans = r_booleans.cumsum()
+    r_booleans[ends - 1] = -1
+    r_booleans = r_booleans == -1
+    if not r_booleans.all():
+        left = left[l_booleans]
+        right_index = right_index[r_booleans]
+        right = right[r_booleans]
+        starts = right.searchsorted(left, side="left")
+    return left_index, right_index, starts
+
+
 def _less_than_indices(
     left: pd.Series,
     right: pd.Series,
     strict: bool,
     multiple_conditions: bool,
     keep: str,
-    use_numba: bool = False,
 ) -> tuple:
     """
     Use binary search to get indices where left

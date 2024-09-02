@@ -7,12 +7,13 @@ from typing import Any, Union
 
 import numpy as np
 import pandas as pd
-from numba import njit, prange
+from numba import njit
 from pandas.api.types import is_datetime64_dtype, is_extension_array_dtype
 
 # https://numba.discourse.group/t/uint64-vs-int64-indexing-performance-difference/1500
 # indexing with unsigned integers offers more performance
 from janitor.functions.utils import (
+    _equal_indices,
     _generic_func_cond_join,
     greater_than_join_types,
 )
@@ -35,11 +36,7 @@ def _convert_to_numpy(
 
 
 def _numba_equi_join(
-    df: pd.DataFrame,
-    right: pd.DataFrame,
-    eqs: tuple,
-    ge_gt: tuple,
-    le_lt: tuple,
+    df: pd.DataFrame, right: pd.DataFrame, eqs: list, gt_lt: list, keep: str
 ) -> Union[tuple[np.ndarray, np.ndarray], None]:
     """
     Compute indices when an equi join is present.
@@ -149,437 +146,320 @@ def _numba_equi_join(
     # 	id	value_1	id	value_2A	value_2B
     # 	2	  3	    2	   2	       4
     #
-    left_column, right_column, _ = eqs
-    # steal some perf here within the binary search
-    # search for uniques
-    # and later index them with left_positions
-    left_positions, left_arr = df[left_column].factorize(sort=False)
-    right_arr = right[right_column]._values
-    left_index = df.index._values
-    right_index = right.index._values
-    slice_starts = right_arr.searchsorted(left_arr, side="left")
-    slice_starts = slice_starts[left_positions]
-    slice_ends = right_arr.searchsorted(left_arr, side="right")
-    slice_ends = slice_ends[left_positions]
-    # check if there is a search space
-    # this also lets us know if there are equi matches
-    keep_rows = slice_starts < slice_ends
-    if not keep_rows.any():
-        return None, None
-    if not keep_rows.all():
-        left_index = left_index[keep_rows]
-        slice_starts = slice_starts[keep_rows]
-        slice_ends = slice_ends[keep_rows]
-
-    ge_arr1 = None
-    ge_arr2 = None
-    ge_strict = None
-    if ge_gt:
-        left_column, right_column, op = ge_gt
-        ge_arr1 = df.loc[left_index, left_column]._values
-        ge_arr2 = right[right_column]._values
-        ge_arr1, ge_arr2 = _convert_to_numpy(left=ge_arr1, right=ge_arr2)
-        ge_strict = True if op == ">" else False
-
-    le_arr1 = None
-    le_arr2 = None
-    le_strict = None
-    if le_lt:
-        left_column, right_column, op = le_lt
-        le_arr1 = df.loc[left_index, left_column]._values
-        le_arr2 = right[right_column]._values
-        le_arr1, le_arr2 = _convert_to_numpy(left=le_arr1, right=le_arr2)
-        le_strict = True if op == "<" else False
-
-    if le_lt and ge_gt:
-        group = right.groupby(eqs[1])[le_lt[1]]
-        # is the last column (le_lt) monotonic increasing?
-        # fast path if it is
-        all_monotonic_increasing = all(
-            arr.is_monotonic_increasing for _, arr in group
-        )
-        if all_monotonic_increasing:
-            cum_max_arr = le_arr2[:]
-        else:
-            cum_max_arr = group.cummax()._values
-            if is_extension_array_dtype(cum_max_arr):
-                array_dtype = cum_max_arr.dtype.numpy_dtype
-                cum_max_arr = cum_max_arr.astype(array_dtype)
-            if is_datetime64_dtype(cum_max_arr):
-                cum_max_arr = cum_max_arr.view(np.int64)
-
-        left_index, right_index = _numba_equi_join_range_join(
-            left_index,
-            right_index,
-            slice_starts,
-            slice_ends,
-            ge_arr1,
-            ge_arr2,
-            ge_strict,
-            le_arr1,
-            le_arr2,
-            le_strict,
-            all_monotonic_increasing,
-            cum_max_arr,
-        )
-
-    elif le_lt:
-        left_index, right_index = _numba_equi_le_join(
-            left_index,
-            right_index,
-            slice_starts,
-            slice_ends,
-            le_arr1,
-            le_arr2,
-            le_strict,
-        )
-
+    left_df = df[:]
+    right_df = right[:]
+    left_column, right_column, _ = eqs[0]
+    # sorting on the first column
+    # helps to achieve more performance
+    # when iterating to compare left and right regions for matches
+    # note - keep track of the original index
+    if not left_df[left_column].is_monotonic_increasing:
+        left_df = df.sort_values(left_column)
+        left_index = left_df.index._values
+        left_df.index = range(len(left_df))
     else:
-        left_index, right_index = _numba_equi_ge_join(
-            left_index,
-            right_index,
-            slice_starts,
-            slice_ends,
-            ge_arr1,
-            ge_arr2,
-            ge_strict,
+        left_index = left_df.index._values
+    if not right_df[right_column].is_monotonic_increasing:
+        right_df = right_df.sort_values(right_column)
+        right_index = right_df.index._values
+        right_df.index = range(len(right))
+    else:
+        right_index = right_df.index._values
+    shape = (len(left_df), len(gt_lt) + len(eqs))
+    left_regions = np.empty(shape=shape, dtype=np.intp, order="F")
+    left_regions[:] = -1
+    shape = (len(right_df), len(gt_lt) + len(eqs))
+    right_regions = np.empty(shape=shape, dtype=np.intp, order="F")
+    right_regions[:] = -1
+    for position, (left_column, right_column, _) in enumerate(eqs):
+        outcome = _equal_indices(
+            left=left_df[left_column], right=right_df[right_column]
         )
-
-    return left_index, right_index
-
-
-@njit(parallel=True)
-def _numba_equi_le_join(
-    left_index: np.ndarray,
-    right_index: np.ndarray,
-    slice_starts: np.ndarray,
-    slice_ends: np.ndarray,
-    le_arr1: np.ndarray,
-    le_arr2: np.ndarray,
-    le_strict: bool,
-) -> tuple[np.ndarray, np.ndarray]:
-    """
-    Get indices for an equi join
-    and a less than join
-    """
-    length = left_index.size
-    starts = np.empty(length, dtype=np.intp)
-    booleans = np.ones(length, dtype=np.bool_)
-    # sizes array is used to track the exact
-    # number of matches per slice_start
-    sizes = np.empty(length, dtype=np.intp)
-    counts = 0
-    for num in prange(length):
-        l1 = le_arr1[num]
-        slice_start = slice_starts[num]
-        slice_end = slice_ends[num]
-        r1 = le_arr2[slice_start:slice_end]
-        start = np.searchsorted(r1, l1, side="left")
-        if start < r1.size:
-            if le_strict and (l1 == r1[start]):
-                start = np.searchsorted(r1, l1, side="right")
-        if start == r1.size:
-            counts += 1
-            booleans[num] = False
-        else:
-            starts[num] = slice_start + start
-            sizes[num] = r1.size - start
-    if counts == length:
+        if outcome is None:
+            return None, None
+        left_indexer, right_indexer, search_indices = outcome
+        r_region = np.zeros(right_indexer.size, dtype=np.intp)
+        r_region[search_indices] = 1
+        r_region[0] -= 1
+        r_region = r_region.cumsum()
+        left_regions[left_indexer, position] = r_region[search_indices]
+        right_regions[right_indexer, position] = r_region
+    for position, (left_column, right_column, op) in enumerate(
+        gt_lt, start=len(eqs)
+    ):
+        outcome = _generic_func_cond_join(
+            left=left_df[left_column],
+            right=right_df[right_column],
+            op=op,
+            multiple_conditions=True,
+            keep="all",
+        )
+        if outcome is None:
+            return None, None
+        left_indexer, right_indexer, search_indices = outcome
+        if op in greater_than_join_types:
+            search_indices = right_indexer.size - search_indices
+            right_indexer = right_indexer[::-1]
+        r_region = np.zeros(right_indexer.size, dtype=np.intp)
+        r_region[search_indices] = 1
+        r_region[0] -= 1
+        r_region = r_region.cumsum()
+        left_regions[left_indexer, position] = r_region[search_indices]
+        right_regions[right_indexer, position] = r_region
+    r_region = None
+    search_indices = None
+    left_df = None
+    right_df = None
+    booleans = left_regions == -1
+    booleans = booleans.any(axis=1)
+    if booleans.all():
         return None, None
-    if counts > 0:
+    if booleans.any():
+        booleans = np.logical_not(booleans)
+        left_regions = left_regions[booleans]
         left_index = left_index[booleans]
+    booleans = right_regions == -1
+    booleans = booleans.any(axis=1)
+    if booleans.all():
+        return None, None
+    if booleans.any():
+        booleans = np.logical_not(booleans)
+        right_regions = right_regions[booleans]
+        right_index = right_index[booleans]
+    starts = right_regions[:, 0].searchsorted(left_regions[:, 0], side="left")
+    ends = right_regions[:, 0].searchsorted(left_regions[:, 0], side="right")
+    booleans = starts < ends
+    if not booleans.any():
+        return None, None
+    if not booleans.all():
+        booleans = np.logical_not(booleans)
         starts = starts[booleans]
-        slice_ends = slice_ends[booleans]
-        sizes = sizes[booleans]
+        ends = ends[booleans]
+        left_regions = left_regions[booleans]
+        left_index = left_index[booleans]
+    if keep == "all":
+        length = (ends - starts).sum()
+        left_indices = np.empty(length, dtype=np.intp)
+        right_indices = np.empty(length, dtype=np.intp)
+        return _numba_equi_join_keep_all(
+            left_regions=left_regions[:, 1:],
+            right_regions=right_regions[:, 1:],
+            left_index=left_index,
+            right_index=right_index,
+            left_indices=left_indices,
+            right_indices=right_indices,
+            starts=starts,
+            ends=ends,
+            len_eqs=len(eqs) - 1,
+            len_gt_lt=len(gt_lt),
+        )
+    if keep == "first":
+        return _numba_equi_join_keep_first(
+            left_regions=left_regions[:, 1:],
+            right_regions=right_regions[:, 1:],
+            left_index=left_index,
+            right_index=right_index,
+            starts=starts,
+            ends=ends,
+            len_eqs=len(eqs) - 1,
+            len_gt_lt=len(gt_lt),
+        )
+    return _numba_equi_join_keep_last(
+        left_regions=left_regions[:, 1:],
+        right_regions=right_regions[:, 1:],
+        left_index=left_index,
+        right_index=right_index,
+        starts=starts,
+        ends=ends,
+        len_eqs=len(eqs) - 1,
+        len_gt_lt=len(gt_lt),
+    )
 
-    slice_starts = starts
-    starts = None
-    # build the left and right indices
-    # idea is to populate the indices
-    # based on the number of matches
-    # per slice_start and ensure alignment with the
-    # slice_start during the iteration
-    cum_sizes = np.cumsum(sizes)
-    starts = np.empty(slice_ends.size, dtype=np.intp)
-    starts[0] = 0
-    starts[1:] = cum_sizes[:-1]
-    r_index = np.empty(cum_sizes[-1], dtype=np.intp)
-    l_index = np.empty(cum_sizes[-1], dtype=np.intp)
-    for num in prange(slice_ends.size):
-        start = starts[num]
-        r_ind = slice_starts[num]
-        l_ind = left_index[num]
-        width = sizes[num]
-        for n in range(width):
-            indexer = start + n
-            r_index[indexer] = right_index[r_ind + n]
-            l_index[indexer] = l_ind
 
-    return l_index, r_index
-
-
-@njit(parallel=True)
-def _numba_equi_ge_join(
+@njit(cache=True)
+def _numba_equi_join_keep_all(
+    left_regions: np.ndarray,
+    right_regions: np.ndarray,
     left_index: np.ndarray,
     right_index: np.ndarray,
-    slice_starts: np.ndarray,
-    slice_ends: np.ndarray,
-    ge_arr1: np.ndarray,
-    ge_arr2: np.ndarray,
-    ge_strict: bool,
-) -> tuple[np.ndarray, np.ndarray]:
+    left_indices: np.ndarray,
+    right_indices: np.ndarray,
+    starts: np.ndarray,
+    ends: np.ndarray,
+    len_eqs: int,
+    len_gt_lt: int,
+):
     """
-    Get indices for an equi join
-    and a greater than join
+    Get  indices where an equi join is present.
     """
-
+    # print('ll', left_regions)
+    # print('rr', right_regions)
+    # print('ss',starts)
+    # print('ee',ends)
+    # print('len1', len_eqs)
+    # print('len2',len_gt_lt)
     length = left_index.size
-    ends = np.empty(length, dtype=np.intp)
-    booleans = np.ones(length, dtype=np.bool_)
-    # sizes array is used to track the exact
-    # number of matches per slice_start
-    sizes = np.empty(length, dtype=np.intp)
-    counts = 0
-    for num in prange(length):
-        l1 = ge_arr1[num]
-        slice_start = slice_starts[num]
-        slice_end = slice_ends[num]
-        r1 = ge_arr2[slice_start:slice_end]
-        end = np.searchsorted(r1, l1, side="right")
-        if end > 0:
-            if ge_strict and (l1 == r1[end - 1]):
-                end = np.searchsorted(r1, l1, side="left")
-        if end == 0:
-            counts += 1
-            booleans[num] = False
-        else:
-            ends[num] = slice_start + end
-            sizes[num] = end
-    if counts == length:
+    n = 0
+    for ind in range(length):
+        _ind = np.uint64(ind)
+        start = starts[_ind]
+        end = ends[_ind]
+        lindex = left_index[_ind]
+        for num in range(start, end):
+            _num = np.uint64(num)
+            counter = 1
+            for loc in range(len_eqs):
+                loc_ = np.uint64(loc)
+                next_left = left_regions[_ind, loc_]
+                next_right = right_regions[_num, loc_]
+                if next_left != next_right:
+                    counter = 0
+                    break
+            if counter == 0:
+                continue
+            for loc in range(len_eqs, len_gt_lt + len_eqs):
+                loc_ = np.uint64(loc)
+                next_left = left_regions[_ind, loc_]
+                next_right = right_regions[_num, loc_]
+                if next_left > next_right:
+                    counter = 0
+                    break
+            if counter == 0:
+                continue
+            rindex = right_index[_num]
+            _n = np.uint64(n)
+            left_indices[_n] = lindex
+            right_indices[_n] = rindex
+            n += 1
+    if n == 0:
         return None, None
-    if counts > 0:
-        left_index = left_index[booleans]
-        ends = ends[booleans]
-        slice_starts = slice_starts[booleans]
-        sizes = sizes[booleans]
-    slice_ends = ends
-    ends = None
-    # build the left and right indices
-    # idea is to populate the indices
-    # based on the number of matches
-    # per slice_start and ensure alignment with the
-    # slice_start during the iteration
-    cum_sizes = np.cumsum(sizes)
-    starts = np.empty(slice_ends.size, dtype=np.intp)
-    starts[0] = 0
-    starts[1:] = cum_sizes[:-1]
-    r_index = np.empty(cum_sizes[-1], dtype=np.intp)
-    l_index = np.empty(cum_sizes[-1], dtype=np.intp)
-    for num in prange(slice_ends.size):
-        start = starts[num]
-        r_ind = slice_starts[num]
-        l_ind = left_index[num]
-        width = sizes[num]
-        for n in range(width):
-            indexer = start + n
-            r_index[indexer] = right_index[r_ind + n]
-            l_index[indexer] = l_ind
-
-    return l_index, r_index
+    return left_indices[:n], right_indices[:n]
 
 
-@njit(parallel=True)
-def _numba_equi_join_range_join(
+@njit(cache=True)
+def _numba_equi_join_keep_first(
+    left_regions: np.ndarray,
+    right_regions: np.ndarray,
     left_index: np.ndarray,
     right_index: np.ndarray,
-    slice_starts: np.ndarray,
-    slice_ends: np.ndarray,
-    ge_arr1: np.ndarray,
-    ge_arr2: np.ndarray,
-    ge_strict: bool,
-    le_arr1: np.ndarray,
-    le_arr2: np.ndarray,
-    le_strict: bool,
-    all_monotonic_increasing: bool,
-    cum_max_arr: np.ndarray,
-) -> tuple[np.ndarray, np.ndarray]:
+    starts: np.ndarray,
+    ends: np.ndarray,
+    len_eqs: int,
+    len_gt_lt: int,
+):
     """
-    Get indices for an equi join
-    and a range join
+    Get  indices where an equi join is present.
     """
     length = left_index.size
-    ends = np.empty(length, dtype=np.intp)
-    booleans = np.ones(length, dtype=np.bool_)
-    counts = 0
-    for num in prange(length):
-        l1 = ge_arr1[num]
-        slice_start = slice_starts[num]
-        slice_end = slice_ends[num]
-        r1 = ge_arr2[slice_start:slice_end]
-        end = np.searchsorted(r1, l1, side="right")
-        if end > 0:
-            if ge_strict and (l1 == r1[end - 1]):
-                end = np.searchsorted(r1, l1, side="left")
-        if end == 0:
-            counts += 1
-            booleans[num] = False
-        else:
-            ends[num] = slice_start + end
-    if counts == length:
+    left_indices = np.empty(length, dtype=np.intp)
+    right_indices = np.empty(length, dtype=np.intp)
+    n = 0
+    for ind in range(length):
+        _ind = np.uint64(ind)
+        start = starts[_ind]
+        end = ends[_ind]
+        matches = 0
+        for num in range(start, end):
+            _num = np.uint64(num)
+            counter = 1
+            for loc in range(len_eqs):
+                loc_ = np.uint64(loc)
+                next_left = left_regions[_ind, loc_]
+                next_right = right_regions[_num, loc_]
+                if next_left != next_right:
+                    counter = 0
+                    break
+            if counter == 0:
+                continue
+            for loc in range(len_eqs, len_gt_lt + len_eqs):
+                loc_ = np.uint64(loc)
+                next_left = left_regions[_ind, loc_]
+                next_right = right_regions[_num, loc_]
+                if next_left > next_right:
+                    counter = 0
+                    break
+            if counter == 0:
+                continue
+            rindex = right_index[_num]
+            if matches == 0:
+                base = rindex
+                matches = 1
+            elif rindex < base:
+                base = rindex
+        if matches == 0:
+            continue
+        _n = np.uint64(n)
+        left_indices[_n] = left_index[_ind]
+        right_indices[_n] = base
+        n += 1
+    if n == 0:
         return None, None
+    return left_indices[:n], right_indices[:n]
 
-    if counts > 0:
-        left_index = left_index[booleans]
-        le_arr1 = le_arr1[booleans]
-        ends = ends[booleans]
-        slice_starts = slice_starts[booleans]
-    slice_ends = ends
-    ends = None
 
+@njit(cache=True)
+def _numba_equi_join_keep_last(
+    left_regions: np.ndarray,
+    right_regions: np.ndarray,
+    left_index: np.ndarray,
+    right_index: np.ndarray,
+    starts: np.ndarray,
+    ends: np.ndarray,
+    len_eqs: int,
+    len_gt_lt: int,
+):
+    """
+    Get  indices where an equi join is present.
+    """
     length = left_index.size
-    starts = np.empty(length, dtype=np.intp)
-    booleans = np.ones(length, dtype=np.bool_)
-    if all_monotonic_increasing:
-        sizes = np.empty(length, dtype=np.intp)
-    counts = 0
-    for num in prange(length):
-        l1 = le_arr1[num]
-        slice_start = slice_starts[num]
-        slice_end = slice_ends[num]
-        r1 = cum_max_arr[slice_start:slice_end]
-        start = np.searchsorted(r1, l1, side="left")
-        if start < r1.size:
-            if le_strict and (l1 == r1[start]):
-                start = np.searchsorted(r1, l1, side="right")
-        if start == r1.size:
-            counts += 1
-            booleans[num] = False
-        else:
-            starts[num] = slice_start + start
-            if all_monotonic_increasing:
-                sizes[num] = r1.size - start
-    if counts == length:
+    left_indices = np.empty(length, dtype=np.intp)
+    right_indices = np.empty(length, dtype=np.intp)
+    n = 0
+    for ind in range(length):
+        _ind = np.uint64(ind)
+        start = starts[_ind]
+        end = ends[_ind]
+        matches = 0
+        for num in range(start, end):
+            _num = np.uint64(num)
+            counter = 1
+            for loc in range(len_eqs):
+                loc_ = np.uint64(loc)
+                next_left = left_regions[_ind, loc_]
+                next_right = right_regions[_num, loc_]
+                if next_left != next_right:
+                    counter = 0
+                    break
+            if counter == 0:
+                continue
+            for loc in range(len_eqs, len_gt_lt + len_eqs):
+                loc_ = np.uint64(loc)
+                next_left = left_regions[_ind, loc_]
+                next_right = right_regions[_num, loc_]
+                if next_left > next_right:
+                    counter = 0
+                    break
+            if counter == 0:
+                continue
+            rindex = right_index[_num]
+            if matches == 0:
+                base = rindex
+                matches = 1
+            elif rindex > base:
+                base = rindex
+        if matches == 0:
+            continue
+        _n = np.uint64(n)
+        left_indices[_n] = left_index[_ind]
+        right_indices[_n] = base
+        n += 1
+    if n == 0:
         return None, None
-    if counts > 0:
-        left_index = left_index[booleans]
-        le_arr1 = le_arr1[booleans]
-        starts = starts[booleans]
-        slice_ends = slice_ends[booleans]
-        if all_monotonic_increasing:
-            sizes = sizes[booleans]
-
-    slice_starts = starts
-    starts = None
-
-    # no need to run a comparison
-    # since all groups are monotonic increasing
-    # simply create left and right indices
-    if all_monotonic_increasing:
-        cum_sizes = np.cumsum(sizes)
-        starts = np.empty(slice_ends.size, dtype=np.intp)
-        starts[0] = 0
-        starts[1:] = cum_sizes[:-1]
-        r_index = np.empty(cum_sizes[-1], dtype=np.intp)
-        l_index = np.empty(cum_sizes[-1], dtype=np.intp)
-        for num in prange(slice_ends.size):
-            start = starts[num]
-            r_ind = slice_starts[num]
-            l_ind = left_index[num]
-            width = sizes[num]
-            for n in range(width):
-                indexer = start + n
-                r_index[indexer] = right_index[r_ind + n]
-                l_index[indexer] = l_ind
-
-        return l_index, r_index
-
-    # get exact no of rows for left and right index
-    # sizes is used to track the exact
-    # number of matches per slice_start
-    sizes = np.empty(slice_starts.size, dtype=np.intp)
-    counts = 0
-    for num in prange(slice_ends.size):
-        l1 = le_arr1[num]
-        start = slice_starts[num]
-        end = slice_ends[num]
-        r1 = le_arr2[start:end]
-        internal_count = 0
-        if le_strict:
-            for n in range(r1.size):
-                check = l1 < r1[n]
-                internal_count += check
-                counts += check
-        else:
-            for n in range(r1.size):
-                check = l1 <= r1[n]
-                internal_count += check
-                counts += check
-        sizes[num] = internal_count
-    # populate the left and right index
-    # idea is to populate the indices
-    # based on the number of matches
-    # per slice_start and ensure alignment with the
-    # slice_start during the iteration
-    r_index = np.empty(counts, dtype=np.intp)
-    l_index = np.empty(counts, dtype=np.intp)
-    starts = np.empty(sizes.size, dtype=np.intp)
-    starts[0] = 0
-    starts[1:] = np.cumsum(sizes)[:-1]
-    for num in prange(sizes.size):
-        l_ind = left_index[num]
-        l1 = le_arr1[num]
-        starter = slice_starts[num]
-        slicer = slice(starter, slice_ends[num])
-        r1 = le_arr2[slicer]
-        start = starts[num]
-        counter = sizes[num]
-        if le_strict:
-            for n in range(r1.size):
-                if not counter:
-                    break
-                check = l1 < r1[n]
-                if not check:
-                    continue
-                l_index[start] = l_ind
-                r_index[start] = right_index[starter + n]
-                counter -= 1
-                start += 1
-        else:
-            for n in range(r1.size):
-                if not counter:
-                    break
-                check = l1 <= r1[n]
-                if not check:
-                    continue
-                l_index[start] = l_ind
-                r_index[start] = right_index[starter + n]
-                counter -= 1
-                start += 1
-    return l_index, r_index
+    return left_indices[:n], right_indices[:n]
 
 
 @njit
-def _numba_equals(arr: np.ndarray, value: Any):
-    """
-    Get earliest position in `arr`
-    where arr[i] == `value`
-    """
-    min_idx = 0
-    max_idx = len(arr)
-    while min_idx < max_idx:
-        # to avoid overflow
-        mid_idx = min_idx + ((max_idx - min_idx) >> 1)
-        if arr[mid_idx] == value:
-            return mid_idx
-        if arr[mid_idx] < value:
-            min_idx = mid_idx + 1
-        else:
-            max_idx = mid_idx
-    return -1
-
-
-@njit
-def _numba_less_than(arr: np.ndarray, value: Any, strict: bool = False):
+def _numba_less_than(arr: np.ndarray, value: Any):
     """
     Get earliest position in `arr`
     where arr[i] <= `value`
@@ -596,41 +476,6 @@ def _numba_less_than(arr: np.ndarray, value: Any, strict: bool = False):
             max_idx = mid_idx
     # it is greater than the max value in the array
     if min_idx == len(arr):
-        return -1
-    _value = arr[np.uint64(min_idx)]
-    if strict & (value == _value):
-        min_idx = _numba_greater_than(arr=arr, value=value)
-    # check again
-    if min_idx == len(arr):
-        return -1
-    return min_idx
-
-
-@njit
-def _numba_greater_than(arr: np.ndarray, value: Any, strict: bool = False):
-    min_idx = 0
-    max_idx = len(arr)
-    """
-    Get earliest position in `arr`
-    where arr[i] > `value`
-    """
-    while min_idx < max_idx:
-        # to avoid overflow
-        mid_idx = min_idx + ((max_idx - min_idx) >> 1)
-        _mid_idx = np.uint64(mid_idx)
-        if value < arr[_mid_idx]:
-            max_idx = mid_idx
-        else:
-            min_idx = mid_idx + 1
-    # it is less than or equal
-    # to the min value in the array
-    if min_idx == 0:
-        return -1
-    _value = arr[np.uint64(min_idx - 1)]
-    if strict & (value == _value):
-        min_idx = _numba_less_than(arr=arr, value=value)
-    # check again
-    if min_idx == 0:
         return -1
     return min_idx
 
@@ -892,12 +737,16 @@ def _numba_multiple_non_equi_join(
     right_df = None
     booleans = left_regions == -1
     booleans = booleans.any(axis=1)
+    if booleans.all():
+        return None, None
     if booleans.any():
         booleans = np.logical_not(booleans)
         left_regions = left_regions[booleans]
         left_index = left_index[booleans]
     booleans = right_regions == -1
     booleans = booleans.any(axis=1)
+    if booleans.all():
+        return None, None
     if booleans.any():
         booleans = np.logical_not(booleans)
         right_regions = right_regions[booleans]
@@ -1792,7 +1641,7 @@ def _numba_non_equi_join_monotonic_increasing_keep_last(
     return left_indices[:n], right_indices[:n]
 
 
-# @njit(cache=True)
+@njit(cache=True)
 def _numba_non_equi_join_monotonic_keep_all(
     left_regions: np.ndarray,
     right_regions: np.ndarray,

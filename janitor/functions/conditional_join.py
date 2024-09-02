@@ -547,6 +547,7 @@ def _conditional_join_compute(
             )
     if result is None:
         result = np.array([], dtype=np.intp), np.array([], dtype=np.intp)
+
     # return result
 
     if return_matching_indices:
@@ -674,89 +675,36 @@ def _multiple_conditional_join_eq(
     if use_numba:
         from janitor.functions._numba import _numba_equi_join
 
-        eqs = None
-        for left_on, right_on, op in conditions:
-            if op == _JoinOperator.STRICTLY_EQUAL.value:
-                eqs = (left_on, right_on, op)
-                break
-
-        le_lt = None
-        ge_gt = None
-
+        gt_lt = []
+        eqs = []
+        rest = []
+        types = less_than_join_types.union(greater_than_join_types)
         for condition in conditions:
             *_, op = condition
-            if op in less_than_join_types:
-                if le_lt:
-                    continue
-                le_lt = condition
-            elif op in greater_than_join_types:
-                if ge_gt:
-                    continue
-                ge_gt = condition
-            if le_lt and ge_gt:
-                break
-        if not le_lt and not ge_gt:
+            if op in types:
+                gt_lt.append(condition)
+            elif op == "==":
+                eqs.append(condition)
+            else:
+                rest.append(condition)
+        if not gt_lt:
             raise ValueError(
                 "At least one less than or greater than "
                 "join condition should be present when an equi-join "
                 "is present, and use_numba is set to True."
             )
-        rest = [
-            condition
-            for condition in conditions
-            if condition not in {eqs, le_lt, ge_gt}
-        ]
-
-        right_columns = [eqs[1]]
-        df_columns = [eqs[0]]
-        # ensure the sort columns are unique
-        if ge_gt:
-            if ge_gt[1] not in right_columns:
-                right_columns.append(ge_gt[1])
-            if ge_gt[0] not in df_columns:
-                df_columns.append(ge_gt[0])
-        if le_lt:
-            if le_lt[1] not in right_columns:
-                right_columns.append(le_lt[1])
-            if le_lt[0] not in df_columns:
-                df_columns.append(le_lt[0])
-
-        right_df = right.loc(axis=1)[right_columns]
-        left_df = df.loc(axis=1)[df_columns]
-        any_nulls = left_df.isna().any(axis=1)
-        if any_nulls.all(axis=None):
-            return None
-        if any_nulls.any():
-            left_df = left_df.loc[~any_nulls]
-        any_nulls = right_df.isna().any(axis=1)
-        if any_nulls.all(axis=None):
-            return None
-        if any_nulls.any():
-            right_df = right.loc[~any_nulls]
-        equi_col = right_columns[0]
-        # check if the first column is sorted
-        # if sorted, check if the second column is sorted
-        # per group in the first column
-        right_is_sorted = right_df[equi_col].is_monotonic_increasing
-        if right_is_sorted:
-            grp = right_df.groupby(equi_col, sort=False)
-            non_equi_col = right_columns[1]
-            # groupby.is_monotonic_increasing uses apply under the hood
-            # the approach used below circumvents the Series creation
-            # (which isn't required here)
-            # and just gets a sequence of booleans, before calling `all`
-            # to get a single True or False.
-            right_is_sorted = all(
-                arr.is_monotonic_increasing for _, arr in grp[non_equi_col]
+        if not rest:
+            indices = _numba_equi_join(
+                df=df, right=right, eqs=eqs, gt_lt=gt_lt, keep=keep
             )
-        if not right_is_sorted:
-            right_df = right_df.sort_values(right_columns)
-        indices = _numba_equi_join(
-            df=left_df, right=right_df, eqs=eqs, ge_gt=ge_gt, le_lt=le_lt
-        )
-        if not rest or (indices is None):
+            if indices[0] is None:
+                return None
             return indices
-
+        indices = _numba_equi_join(
+            df=df, right=right, eqs=eqs, gt_lt=gt_lt, keep="all"
+        )
+        if indices[0] is None:
+            return None
         rest = (
             (df[left_on], right[right_on], op)
             for left_on, right_on, op in rest

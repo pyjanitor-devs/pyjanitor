@@ -801,27 +801,24 @@ def _less_than_indices(
     left, right, left_index, right_index, right_is_sorted, any_nulls = outcome
 
     search_indices = right.searchsorted(left, side="left")
-
     # if any of the positions in `search_indices`
     # is equal to the length of `right_keys`
     # that means the respective position in `left`
     # has no values from `right` that are less than
     # or equal, and should therefore be discarded
     len_right = right.size
-    rows_equal = search_indices == len_right
+    booleans = search_indices < len_right
 
-    if rows_equal.any():
-        rows_equal = np.logical_not(rows_equal)
-        left = left[rows_equal]
-        left_index = left_index[rows_equal]
-        search_indices = search_indices[rows_equal]
+    if not booleans.all():
+        left = left[booleans]
+        left_index = left_index[booleans]
+        search_indices = search_indices[booleans]
 
     # the idea here is that if there are any equal values
     # shift to the right to the immediate next position
     # that is not equal
     if strict:
-        rows_equal = right[search_indices]
-        rows_equal = left == rows_equal
+        booleans = left == right[search_indices]
         # replace positions where rows are equal
         # with positions from searchsorted('right')
         # positions from searchsorted('right') will never
@@ -830,21 +827,19 @@ def _less_than_indices(
         # positions where values are not equal for 2;
         # the furthermost will be 3, and searchsorted('right')
         # will return position 3.
-        if rows_equal.any():
+        if booleans.any():
             replacements = right.searchsorted(left, side="right")
             # now we can safely replace values
             # with strictly less than positions
-            search_indices = np.where(rows_equal, replacements, search_indices)
+            search_indices = np.where(booleans, replacements, search_indices)
         # check again if any of the values
         # have become equal to length of right
         # and get rid of them
-        rows_equal = search_indices == len_right
+        booleans = search_indices < len_right
 
-        if rows_equal.any():
-            rows_equal = np.logical_not(rows_equal)
-            left = left[rows_equal]
-            left_index = left_index[rows_equal]
-            search_indices = search_indices[rows_equal]
+        if not booleans.all():
+            left_index = left_index[booleans]
+            search_indices = search_indices[booleans]
 
         if not search_indices.size:
             return None
@@ -905,38 +900,34 @@ def _greater_than_indices(
     # is equal to 0 (less than 1), it implies that
     # left[position] is not greater than any value
     # in right
-    rows_equal = search_indices < 1
-    if rows_equal.any():
-        rows_equal = np.logical_not(rows_equal)
-        left = left[rows_equal]
-        left_index = left_index[rows_equal]
-        search_indices = search_indices[rows_equal]
+    booleans = search_indices > 0
+    if not booleans.all():
+        left = left[booleans]
+        left_index = left_index[booleans]
+        search_indices = search_indices[booleans]
 
     # the idea here is that if there are any equal values
     # shift downwards to the immediate next position
     # that is not equal
     if strict:
-        rows_equal = right[search_indices - 1]
-        rows_equal = left == rows_equal
+        booleans = left == right[search_indices - 1]
         # replace positions where rows are equal with
         # searchsorted('left');
         # this works fine since we will be using the value
         # as the right side of a slice, which is not included
         # in the final computed value
-        if rows_equal.any():
+        if booleans.any():
             replacements = right.searchsorted(left, side="left")
             # now we can safely replace values
             # with strictly greater than positions
-            search_indices = np.where(rows_equal, replacements, search_indices)
+            search_indices = np.where(booleans, replacements, search_indices)
         # any value less than 1 should be discarded
         # since the lowest value for binary search
         # with side='right' should be 1
-        rows_equal = search_indices < 1
-        if rows_equal.any():
-            rows_equal = np.logical_not(rows_equal)
-            left = left[rows_equal]
-            left_index = left_index[rows_equal]
-            search_indices = search_indices[rows_equal]
+        booleans = search_indices > 0
+        if not booleans.all():
+            left_index = left_index[booleans]
+            search_indices = search_indices[booleans]
 
         if not search_indices.size:
             return None

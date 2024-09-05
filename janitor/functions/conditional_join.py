@@ -484,7 +484,6 @@ def _conditional_join_compute(
         force=force,
         return_matching_indices=return_matching_indices,
     )
-
     eq_check = False
     le_lt_check = False
     for condition in conditions:
@@ -501,50 +500,47 @@ def _conditional_join_compute(
             le_lt_check = True
     df.index = range(len(df))
     right.index = range(len(right))
-    # reorganise if logic here
-    if (len(conditions) > 1) or eq_check:
-        if eq_check:
-            result = _multiple_conditional_join_eq(
-                df=df,
-                right=right,
-                conditions=conditions,
-                keep=keep,
-                use_numba=use_numba,
-                force=force,
-            )
-        elif le_lt_check:
-            result = _multiple_conditional_join_le_lt(
-                df=df,
-                right=right,
-                conditions=conditions,
-                keep=keep,
-                use_numba=use_numba,
-            )
-        else:
-            result = _multiple_conditional_join_ne(
-                df=df, right=right, conditions=conditions, keep=keep
-            )
-    else:
-        left_on, right_on, op = conditions[0]
-        if use_numba:
-            from janitor.functions._numba import _numba_single_non_equi_join
+    if eq_check:
+        result = _multiple_conditional_join_eq(
+            df=df,
+            right=right,
+            conditions=conditions,
+            keep=keep,
+            use_numba=use_numba,
+            force=force,
+        )
+    elif (len(conditions) > 1) & le_lt_check:
+        result = _multiple_conditional_join_le_lt(
+            df=df,
+            right=right,
+            conditions=conditions,
+            keep=keep,
+            use_numba=use_numba,
+        )
+    elif len(conditions) > 1:
+        result = _multiple_conditional_join_ne(
+            df=df, right=right, conditions=conditions, keep=keep
+        )
+    elif use_numba:
+        from janitor.functions._numba import _numba_single_non_equi_join
 
-            result = _numba_single_non_equi_join(
-                left=df[left_on],
-                right=right[right_on],
-                op=op,
-                keep=keep,
-            )
-            if result[0] is None:
-                result = None
-        else:
-            result = _generic_func_cond_join(
-                left=df[left_on],
-                right=right[right_on],
-                op=op,
-                multiple_conditions=False,
-                keep=keep,
-            )
+        result = _numba_single_non_equi_join(
+            left=df[left_on],
+            right=right[right_on],
+            op=op,
+            keep=keep,
+        )
+        if result[0] is None:
+            result = None
+    else:
+        result = _generic_func_cond_join(
+            left=df[left_on],
+            right=right[right_on],
+            op=op,
+            multiple_conditions=False,
+            keep=keep,
+        )
+
     if result is None:
         result = np.array([], dtype=np.intp), np.array([], dtype=np.intp)
 

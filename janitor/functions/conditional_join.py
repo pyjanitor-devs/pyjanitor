@@ -730,21 +730,27 @@ def _multiple_conditional_join_eq(
 
         return _keep_output(keep, *indices)
 
+    if (
+        return_ragged_arrays
+        & (len(conditions) == 1)
+        & (conditions[0][-1] == _JoinOperator.STRICTLY_EQUAL.value)
+    ):
+        left_on, right_on, op = conditions[0]
+        return _generic_func_cond_join(
+            left=df[left_on],
+            right=right[right_on],
+            op=op,
+            multiple_conditions=True,
+            keep="all",
+            return_ragged_arrays=return_ragged_arrays,
+        )
+
     eqs = [
         (left_on, right_on)
         for left_on, right_on, op in conditions
         if op == _JoinOperator.STRICTLY_EQUAL.value
     ]
-    if return_ragged_arrays & (len(eqs) == 1):
-        left_on, right_on = eqs[0]
-        return _generic_func_cond_join(
-            left=df[left_on],
-            right=right[right_on],
-            op=_JoinOperator.STRICTLY_EQUAL.value,
-            multiple_conditions=True,
-            keep="all",
-            return_ragged_arrays=return_ragged_arrays,
-        )
+
     left_on, right_on = zip(*eqs)
     left_on = [*left_on]
     right_on = [*right_on]

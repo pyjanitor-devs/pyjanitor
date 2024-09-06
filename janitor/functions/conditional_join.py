@@ -457,12 +457,14 @@ def _conditional_join_compute(
     use_numba: bool,
     indicator: Union[bool, str],
     force: bool,
-    return_matching_indices=False,
+    return_matching_indices: bool = False,
+    return_ragged_arrays: bool = False,
 ) -> pd.DataFrame:
     """
     This is where the actual computation
     for the conditional join takes place.
     """
+    check("return_ragged_arrays", return_ragged_arrays, [bool])
 
     (
         df,
@@ -512,6 +514,7 @@ def _conditional_join_compute(
             keep=keep,
             use_numba=use_numba,
             force=force,
+            return_ragged_arrays=return_ragged_arrays,
         )
     elif (len(conditions) > 1) & le_lt_check:
         result = _multiple_conditional_join_le_lt(
@@ -520,6 +523,7 @@ def _conditional_join_compute(
             conditions=conditions,
             keep=keep,
             use_numba=use_numba,
+            return_ragged_arrays=return_ragged_arrays,
         )
     elif len(conditions) > 1:
         result = _multiple_conditional_join_ne(
@@ -543,6 +547,7 @@ def _conditional_join_compute(
             op=op,
             multiple_conditions=False,
             keep=keep,
+            return_ragged_arrays=return_ragged_arrays,
         )
 
     if result is None:
@@ -655,6 +660,7 @@ def _multiple_conditional_join_eq(
     keep: str,
     use_numba: bool,
     force: bool,
+    return_ragged_arrays: bool,
 ) -> tuple:
     """
     Get indices for multiple conditions,
@@ -670,6 +676,7 @@ def _multiple_conditional_join_eq(
             conditions=conditions,
             keep=keep,
             use_numba=use_numba,
+            return_ragged_arrays=False,
         )
 
     if use_numba:
@@ -722,6 +729,16 @@ def _multiple_conditional_join_eq(
         for left_on, right_on, op in conditions
         if op == _JoinOperator.STRICTLY_EQUAL.value
     ]
+    if return_ragged_arrays & (len(eqs) == 1):
+        left_on, right_on = eqs[0]
+        return _generic_func_cond_join(
+            left=df[left_on],
+            right=right[right_on],
+            op=_JoinOperator.STRICTLY_EQUAL.value,
+            multiple_conditions=True,
+            keep="all",
+            return_ragged_arrays=return_ragged_arrays,
+        )
     left_on, right_on = zip(*eqs)
     left_on = [*left_on]
     right_on = [*right_on]
@@ -767,6 +784,7 @@ def _multiple_conditional_join_le_lt(
     conditions: list,
     keep: str,
     use_numba: bool,
+    return_ragged_arrays: bool,
 ) -> tuple:
     """
     Get indices for multiple conditions,
@@ -861,6 +879,8 @@ def _multiple_conditional_join_le_lt(
 
             if conditions:
                 _keep = None
+                return_ragged_arrays = False
+                right_is_sorted = False
             else:
                 first = ge_gt[1]
                 second = le_lt[1]
@@ -872,12 +892,20 @@ def _multiple_conditional_join_le_lt(
                     _keep = keep
                 else:
                     _keep = None
-
             indices = _range_indices(
-                df=df, right=right, first=ge_gt, second=le_lt, keep=_keep
+                df=df,
+                right=right,
+                first=ge_gt,
+                second=le_lt,
+                keep=_keep,
+                return_ragged_arrays=return_ragged_arrays,
+                right_is_sorted=right_is_sorted,
             )
-            if _keep:
+            if not indices:
+                return None
+            if _keep or (return_ragged_arrays & isinstance(indices[1], list)):
                 return indices
+
         # no optimised path
         # blow up the rows and prune
         else:
@@ -920,6 +948,8 @@ def _range_indices(
     first: tuple,
     second: tuple,
     keep: str,
+    right_is_sorted: bool,
+    return_ragged_arrays: bool,
 ) -> Union[tuple[np.ndarray, np.ndarray], None]:
     """
     Retrieve index positions for range/interval joins.
@@ -949,6 +979,7 @@ def _range_indices(
     any_nulls = right[right_on].isna()
     if any_nulls.any():
         right_c = right_c[~any_nulls]
+    any_nulls = right_c.hasnans
 
     outcome = _generic_func_cond_join(
         left=left_c,
@@ -1024,7 +1055,13 @@ def _range_indices(
         return left_index, right_index[starts]
     if keep == "last":
         return left_index, right_index[ends - 1]
+    if return_ragged_arrays & right_is_sorted & fastpath & (not any_nulls):
+        right_index = [slice(start, end) for start, end in zip(starts, ends)]
+        return left_index, right_index
     right_index = [right_index[start:end] for start, end in zip(starts, ends)]
+    if return_ragged_arrays & fastpath:
+        return left_index, right_index
+    # return right_index
     right_index = np.concatenate(right_index)
     left_index = left_index.repeat(repeater)
     if fastpath:
@@ -1371,10 +1408,16 @@ def get_join_indices(
     keep: Literal["first", "last", "all"] = "all",
     use_numba: bool = False,
     force: bool = False,
+    return_ragged_arrays: bool = False,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Convenience function to return the matching indices from an inner join.
 
     !!! info "New in version 0.27.0"
+
+    !!! abstract "Version Changed"
+
+        - 0.29.0
+            - Add support for ragged array indices.
 
     Args:
         df: A pandas DataFrame.
@@ -1391,6 +1434,11 @@ def get_join_indices(
         keep: Choose whether to return the first match, last match or all matches.
         force: If `True`, force the non-equi join conditions
             to execute before the equi join.
+        return_ragged_arrays: If `True`, return slices/ranges of matching right indices
+            for each matching left index. Not applicable if `use_numba` is `True`.
+            If `return_ragged_arrays` is `True`, the join condition
+            should be a single join, or a range join,
+            where the right columns are both monotonically increasing.
 
     Returns:
         A tuple of indices for the rows in the dataframes that match.
@@ -1407,4 +1455,5 @@ def get_join_indices(
         indicator=False,
         force=force,
         return_matching_indices=True,
+        return_ragged_arrays=return_ragged_arrays,
     )

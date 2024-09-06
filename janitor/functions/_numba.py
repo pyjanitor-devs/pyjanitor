@@ -12,7 +12,6 @@ from numba import njit, prange
 # https://numba.discourse.group/t/uint64-vs-int64-indexing-performance-difference/1500
 # indexing with unsigned integers offers more performance
 from janitor.functions.utils import (
-    _equal_indices,
     _generic_func_cond_join,
     greater_than_join_types,
 )
@@ -55,24 +54,7 @@ def _numba_equi_join(
     shape = (len(right_df), len(gt_lt) + len(eqs))
     right_regions = np.empty(shape=shape, dtype=np.intp, order="F")
     r_booleans = np.zeros(len(right), dtype=np.intp)
-    for position, (left_column, right_column, _) in enumerate(eqs):
-        outcome = _equal_indices(
-            left=left_df[left_column], right=right_df[right_column]
-        )
-        if outcome is None:
-            return None, None
-        left_indexer, right_indexer, search_indices = outcome
-        r_region = np.zeros(right_indexer.size, dtype=np.intp)
-        r_region[search_indices] = 1
-        r_region[0] -= 1
-        r_region = r_region.cumsum()
-        left_regions[left_indexer, position] = r_region[search_indices]
-        l_booleans[left_indexer] += 1
-        right_regions[right_indexer, position] = r_region
-        r_booleans[right_indexer] += 1
-    for position, (left_column, right_column, op) in enumerate(
-        gt_lt, start=len(eqs)
-    ):
+    for position, (left_column, right_column, op) in enumerate(eqs + gt_lt):
         outcome = _generic_func_cond_join(
             left=left_df[left_column],
             right=right_df[right_column],

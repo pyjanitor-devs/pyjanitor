@@ -78,7 +78,6 @@ from .truncate_datetime import truncate_datetime_dataframe
 from .update_where import update_where
 from .utils import (
     DropLabel,
-    col,
     get_columns,
     get_index_labels,
     patterns,
@@ -160,6 +159,5 @@ __all__ = [
     "unionize_dataframe_categories",
     "DropLabel",
     "get_index_labels",
-    "col",
     "get_columns",
 ]

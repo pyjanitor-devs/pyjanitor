@@ -733,8 +733,7 @@ def _null_checks_cond_join(left: pd.Series, right: pd.Series) -> tuple | None:
 
 
 def _equal_indices(
-    left: pd.Series,
-    right: pd.Series,
+    left: pd.Series, right: pd.Series, return_ragged_arrays: bool
 ) -> tuple:
     """
     Use binary search to get indices where left
@@ -742,13 +741,11 @@ def _equal_indices(
 
     A tuple of integer indexes
     for left and right is returned.
-
-    Specific to numba_equi_join
     """
     outcome = _null_checks_cond_join(left=left, right=right)
     if not outcome:
         return None
-    left, right, left_index, right_index, *_ = outcome
+    left, right, left_index, right_index, right_is_sorted, any_nulls = outcome
     starts = right.searchsorted(left, side="left")
     ends = right.searchsorted(left, side="right")
     l_booleans = starts < ends
@@ -758,6 +755,12 @@ def _equal_indices(
         left_index = left_index[l_booleans]
         starts = starts[l_booleans]
         ends = ends[l_booleans]
+    if return_ragged_arrays:
+        right = [slice(start, end) for start, end in zip(starts, ends)]
+        if right_is_sorted & (not any_nulls):
+            return left_index, right
+        right = [right_index[slicer] for slicer in right]
+        return left_index, right
     r_booleans = np.zeros(right.size, dtype=np.intp)
     r_booleans[starts] = -1
     r_booleans[ends - 1] = 1
@@ -769,6 +772,7 @@ def _equal_indices(
         right_index = right_index[r_booleans]
         right = right[r_booleans]
         starts = right.searchsorted(left, side="left")
+
     return left_index, right_index, starts
 
 
@@ -778,6 +782,7 @@ def _less_than_indices(
     strict: bool,
     multiple_conditions: bool,
     keep: str,
+    return_ragged_arrays: bool,
 ) -> tuple:
     """
     Use binary search to get indices where left
@@ -853,7 +858,12 @@ def _less_than_indices(
         return left_index, right_index[search_indices]
     if right_is_sorted & (keep == "first"):
         return left_index, search_indices
+    if return_ragged_arrays & right_is_sorted & (not any_nulls):
+        right = [slice(ind, len_right) for ind in search_indices]
+        return left_index, right
     right = [right_index[ind:len_right] for ind in search_indices]
+    if return_ragged_arrays:
+        return left_index, right
     if keep == "first":
         right = [arr.min() for arr in right]
         return left_index, right
@@ -871,6 +881,7 @@ def _greater_than_indices(
     strict: bool,
     multiple_conditions: bool,
     keep: str,
+    return_ragged_arrays: bool,
 ) -> tuple:
     """
     Use binary search to get indices where left
@@ -933,14 +944,19 @@ def _greater_than_indices(
             return None
     if multiple_conditions:
         return left_index, right_index, search_indices
-    if right_is_sorted and (keep == "first"):
+    if right_is_sorted & (keep == "first"):
         indexer = np.zeros_like(search_indices)
         return left_index, right_index[indexer]
-    if right_is_sorted and (keep == "last"):
-        if any_nulls:
-            return left_index, right_index[search_indices - 1]
+    if right_is_sorted & (keep == "last") & any_nulls:
+        return left_index, right_index[search_indices - 1]
+    if right_is_sorted & (keep == "last"):
         return left_index, search_indices - 1
+    if return_ragged_arrays & right_is_sorted & (not any_nulls):
+        right = [slice(0, ind) for ind in search_indices]
+        return left_index, right
     right = [right_index[:ind] for ind in search_indices]
+    if return_ragged_arrays:
+        return left_index, right
     if keep == "first":
         right = [arr.min() for arr in right]
         return left_index, right
@@ -1002,7 +1018,12 @@ def _not_equal_indices(left: pd.Series, right: pd.Series, keep: str) -> tuple:
     r1_nulls = np.concatenate([r1_nulls, r2_nulls])
 
     outcome = _less_than_indices(
-        left, right, strict=True, multiple_conditions=False, keep=keep
+        left,
+        right,
+        strict=True,
+        multiple_conditions=False,
+        keep=keep,
+        return_ragged_arrays=False,
     )
 
     if outcome is None:
@@ -1012,7 +1033,12 @@ def _not_equal_indices(left: pd.Series, right: pd.Series, keep: str) -> tuple:
         lt_left, lt_right = outcome
 
     outcome = _greater_than_indices(
-        left, right, strict=True, multiple_conditions=False, keep=keep
+        left,
+        right,
+        strict=True,
+        multiple_conditions=False,
+        keep=keep,
+        return_ragged_arrays=False,
     )
 
     if outcome is None:
@@ -1035,6 +1061,7 @@ def _generic_func_cond_join(
     op: str,
     multiple_conditions: bool,
     keep: str,
+    return_ragged_arrays: bool = False,
 ) -> tuple:
     """
     Generic function to call any of the individual functions
@@ -1057,6 +1084,7 @@ def _generic_func_cond_join(
             strict=strict,
             multiple_conditions=multiple_conditions,
             keep=keep,
+            return_ragged_arrays=return_ragged_arrays,
         )
     if op in greater_than_join_types:
         return _greater_than_indices(
@@ -1065,9 +1093,13 @@ def _generic_func_cond_join(
             strict=strict,
             multiple_conditions=multiple_conditions,
             keep=keep,
+            return_ragged_arrays=return_ragged_arrays,
         )
     if op == _JoinOperator.NOT_EQUAL.value:
         return _not_equal_indices(left=left, right=right, keep=keep)
+    return _equal_indices(
+        left=left, right=right, return_ragged_arrays=return_ragged_arrays
+    )
 
 
 def _keep_output(keep: str, left: np.ndarray, right: np.ndarray):
@@ -1080,103 +1112,6 @@ def _keep_output(keep: str, left: np.ndarray, right: np.ndarray):
         return grouped.index, grouped._values
     grouped = grouped.max()
     return grouped.index, grouped._values
-
-
-class col:
-    """Helper class for column selection within an expression.
-
-    Args:
-        column (Hashable): The name of the column to be selected.
-
-    Raises:
-        TypeError: If the `column` parameter is not hashable.
-
-    !!! info "New in version 0.25.0"
-
-    !!! warning
-
-        `col` is currently considered experimental.
-        The implementation and parts of the API
-        may change without warning.
-
-    """
-
-    def __init__(self, column: Hashable):
-        self.cols = column
-        check("column", self.cols, [Hashable])
-        self.join_args = None
-
-    def __gt__(self, other):
-        """Implements the greater-than comparison operator (`>`).
-
-        Args:
-            other (col): The other `col` object to compare to.
-
-        Returns:
-            col: The current `col` object.
-        """
-        self.join_args = (self.cols, other.cols, ">")
-        return self
-
-    def __ge__(self, other):
-        """Implements the greater-than-or-equal-to comparison operator (`>=`).
-
-        Args:
-            other (col): The other `col` object to compare to.
-
-        Returns:
-            col: The current `col` object.
-        """
-        self.join_args = (self.cols, other.cols, ">=")
-        return self
-
-    def __lt__(self, other):
-        """Implements the less-than comparison operator (`<`).
-
-        Args:
-            other (col): The other `col` object to compare to.
-
-        Returns:
-            col: The current `col` object.
-        """
-        self.join_args = (self.cols, other.cols, "<")
-        return self
-
-    def __le__(self, other):
-        """Implements the less-than-or-equal-to comparison operator (`<=`).
-
-        Args:
-            other (col): The other `col` object to compare to.
-
-        Returns:
-            col: The current `col` object.
-        """
-        self.join_args = (self.cols, other.cols, "<=")
-        return self
-
-    def __ne__(self, other):
-        """Implements the not-equal-to comparison operator (`!=`).
-
-        Args:
-            other (col): The other `col` object to compare to.
-
-        Returns:
-            col: The current `col` object.
-        """
-        self.join_args = (self.cols, other.cols, "!=")
-        return self
-
-    def __eq__(self, other):
-        """Implements the equal-to comparison operator (`==`).
-
-        Args:
-            other (col): The other `col` object to compare to.
-
-        Returns:
-            col: The current `col` object.
-        """
-        self.join_args = (self.cols, other.cols, "==")
-        return self
 
 
 def _change_case(

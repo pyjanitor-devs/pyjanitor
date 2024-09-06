@@ -88,7 +88,8 @@ def conditional_join(
 
     The join is done only on the columns.
 
-    For non-equi joins, only numeric, timedelta and date columns are supported.
+    For non-equi joins, or joins where `use_numba` is `True`,
+    only numeric, timedelta and date columns are supported.
 
     `inner`, `left`, `right` and `outer` joins are supported.
 
@@ -313,6 +314,7 @@ def _conditional_join_preliminary_checks(
     indicator: Union[bool, str],
     force: bool,
     return_matching_indices: bool = False,
+    return_ragged_arrays: bool = False,
 ) -> tuple:
     """
     Preliminary checks for conditional_join are conducted here.
@@ -396,6 +398,8 @@ def _conditional_join_preliminary_checks(
 
     check("force", force, [bool])
 
+    check("return_ragged_arrays", return_ragged_arrays, [bool])
+
     return (
         df,
         right,
@@ -407,6 +411,7 @@ def _conditional_join_preliminary_checks(
         use_numba,
         indicator,
         force,
+        return_ragged_arrays,
     )
 
 
@@ -464,7 +469,6 @@ def _conditional_join_compute(
     This is where the actual computation
     for the conditional join takes place.
     """
-    check("return_ragged_arrays", return_ragged_arrays, [bool])
 
     (
         df,
@@ -477,6 +481,7 @@ def _conditional_join_compute(
         use_numba,
         indicator,
         force,
+        return_ragged_arrays,
     ) = _conditional_join_preliminary_checks(
         df=df,
         right=right,
@@ -489,6 +494,7 @@ def _conditional_join_compute(
         indicator=indicator,
         force=force,
         return_matching_indices=return_matching_indices,
+        return_ragged_arrays=return_ragged_arrays,
     )
     eq_check = False
     le_lt_check = False

@@ -205,6 +205,18 @@ def test_check_force_type(dummy, series):
         dummy.conditional_join(series, ("id", "B", "<"), force=1)
 
 
+def test_check_return_ragged_arrays_type(dummy, series):
+    """
+    Raise TypeError if `return_ragged_arrays` is not boolean.
+    """
+    with pytest.raises(
+        TypeError, match="return_ragged_arrays should be one of.+"
+    ):
+        get_join_indices(
+            dummy, series, [("id", "B", "<")], return_ragged_arrays=1
+        )
+
+
 def test_check_how_value(dummy, series):
     """
     Raise ValueError if `how` is not one of

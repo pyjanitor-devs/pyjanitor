@@ -8,7 +8,6 @@ from typing import Any, Union
 import numpy as np
 import pandas as pd
 from numba import njit, prange
-from pandas.api.types import is_datetime64_dtype, is_extension_array_dtype
 
 # https://numba.discourse.group/t/uint64-vs-int64-indexing-performance-difference/1500
 # indexing with unsigned integers offers more performance
@@ -19,133 +18,18 @@ from janitor.functions.utils import (
 )
 
 
-def _convert_to_numpy(
-    left: np.ndarray, right: np.ndarray
-) -> tuple[np.ndarray, np.ndarray]:
-    """
-    Ensure array is a numpy array.
-    """
-    if is_extension_array_dtype(left):
-        array_dtype = left.dtype.numpy_dtype
-        left = left.astype(array_dtype)
-        right = right.astype(array_dtype)
-    if is_datetime64_dtype(left):
-        left = left.view(np.int64)
-        right = right.view(np.int64)
-    return left, right
-
-
 def _numba_equi_join(
     df: pd.DataFrame, right: pd.DataFrame, eqs: list, gt_lt: list, keep: str
 ) -> Union[tuple[np.ndarray, np.ndarray], None]:
     """
     Compute indices when an equi join is present.
     """
-    # the logic is to delay searching for actual matches
-    # while reducing the search space
-    # to get the smallest possible search area
-    # this serves as an alternative to pandas' hash join
-    # and in some cases,
-    # usually for many to many joins,
-    # can offer significant performance improvements.
-    # it relies on binary searches, within the groups,
-    # and relies on the fact that sorting ensures the first
-    # two columns from the right dataframe are in ascending order
-    # per group - this gives us the opportunity to
-    # only do a linear search, within the groups,
-    # for the last column (if any)
-    # (the third column is applicable only for range joins)
-    # Example :
-    #     df1:
-    #    id  value_1
-    # 0   1        2
-    # 1   1        5
-    # 2   1        7
-    # 3   2        1
-    # 4   2        3
-    # 5   3        4
-    #
-    #
-    #  df2:
-    #    id  value_2A  value_2B
-    # 0   1         0         1
-    # 1   1         3         5
-    # 2   1         7         9
-    # 3   1        12        15
-    # 4   2         0         1
-    # 5   2         2         4
-    # 6   2         3         6
-    # 7   3         1         3
-    #
-    #
-    # join condition ->
-    # ('id', 'id', '==') &
-    # ('value_1', 'value_2A','>') &
-    # ('value_1', 'value_2B', '<')
-    #
-    #
-    # note how for df2, id and value_2A
-    # are sorted per group
-    # the third column (relevant for range join)
-    # may or may not be sorted per group
-    # (the group is determined by the values of the id column)
-    # and as such, we do a linear search in that space, per group
-    #
-    # first we get the slice boundaries based on id -> ('id', 'id', '==')
-    # value     start       end
-    #  1         0           4
-    #  1         0           4
-    #  1         0           4
-    #  2         4           7
-    #  2         4           7
-    #  3         7           8
-    #
-    # next step is to get the slice end boundaries,
-    # based on the greater than condition
-    # -> ('value_1', 'value_2A', '>')
-    # the search will be within each boundary
-    # so for the first row, value_1 is 2
-    # the boundary search will be between 0, 4
-    # for the last row, value_1 is 4
-    # and its boundary search will be between 7, 8
-    # since value_2A is sorted per group,
-    # a binary search is employed
-    # value     start       end      value_1   new_end
-    #  1         0           4         2         1
-    #  1         0           4         5         2
-    #  1         0           4         7         2
-    #  2         4           7         1         4
-    #  2         4           7         3         6
-    #  3         7           8         4         8
-    #
-    # next step is to get the start boundaries,
-    # based on the less than condition
-    # -> ('value_1', 'value_2B', '<')
-    # note that we have new end boundaries,
-    # and as such, our boundaries will use that
-    # so for the first row, value_1 is 2
-    # the boundary search will be between 0, 1
-    # for the 5th row, value_1 is 3
-    # and its boundary search will be between 4, 6
-    # for value_2B, which is the third column
-    # sinc we are not sure whether it is sorted or not,
-    # a cumulative max array is used,
-    # to get the earliest possible slice start
-    # value     start       end      value_1   new_start   new_end
-    #  1         0           4         2         -1           1
-    #  1         0           4         5         -1           2
-    #  1         0           4         7         -1           2
-    #  2         4           7         1         -1           5
-    #  2         4           7         3         5            6
-    #  3         7           8         4         -1           8
-    #
-    # if there are no matches, boundary is reported as -1
-    # from above, we can see that our search space
-    # is limited to just 5, 6
-    # we can then search for actual matches
-    # 	id	value_1	id	value_2A	value_2B
-    # 	2	  3	    2	   2	       4
-    #
+    # implementation is based on the algorithm described in this paper -
+    # https://www.scitepress.org/papers/2018/68268/68268.pdf
+    # the algorithm described in the paper focuses on non-equi joins
+    # with a tweak however, this can be extended to include equi-joins
+    # also, unlike the non-equi joins where the left region <= right region
+    # the equi join is strict -> left_region == right_region
     left_df = df[:]
     right_df = right[:]
     left_column, right_column, _ = eqs[0]
@@ -167,10 +51,10 @@ def _numba_equi_join(
         right_index = right_df.index._values
     shape = (len(left_df), len(gt_lt) + len(eqs))
     left_regions = np.empty(shape=shape, dtype=np.intp, order="F")
-    left_regions[:] = -1
+    l_booleans = np.zeros(len(df), dtype=np.intp)
     shape = (len(right_df), len(gt_lt) + len(eqs))
     right_regions = np.empty(shape=shape, dtype=np.intp, order="F")
-    right_regions[:] = -1
+    r_booleans = np.zeros(len(right), dtype=np.intp)
     for position, (left_column, right_column, _) in enumerate(eqs):
         outcome = _equal_indices(
             left=left_df[left_column], right=right_df[right_column]
@@ -183,7 +67,9 @@ def _numba_equi_join(
         r_region[0] -= 1
         r_region = r_region.cumsum()
         left_regions[left_indexer, position] = r_region[search_indices]
+        l_booleans[left_indexer] += 1
         right_regions[right_indexer, position] = r_region
+        r_booleans[right_indexer] += 1
     for position, (left_column, right_column, op) in enumerate(
         gt_lt, start=len(eqs)
     ):
@@ -205,34 +91,33 @@ def _numba_equi_join(
         r_region[0] -= 1
         r_region = r_region.cumsum()
         left_regions[left_indexer, position] = r_region[search_indices]
+        l_booleans[left_indexer] += 1
         right_regions[right_indexer, position] = r_region
+        r_booleans[right_indexer] += 1
     r_region = None
     search_indices = None
     left_df = None
     right_df = None
-    booleans = left_regions == -1
-    booleans = booleans.any(axis=1)
-    if booleans.all():
+    booleans = l_booleans == len(gt_lt) + len(eqs)
+    if not booleans.any():
         return None, None
-    if booleans.any():
-        booleans = np.logical_not(booleans)
+    if not booleans.all():
         left_regions = left_regions[booleans]
         left_index = left_index[booleans]
-    booleans = right_regions == -1
-    booleans = booleans.any(axis=1)
-    if booleans.all():
+    booleans = r_booleans == len(gt_lt) + len(eqs)
+    if not booleans.any():
         return None, None
-    if booleans.any():
-        booleans = np.logical_not(booleans)
+    if not booleans.all():
         right_regions = right_regions[booleans]
         right_index = right_index[booleans]
+    l_booleans = None
+    r_booleans = None
     starts = right_regions[:, 0].searchsorted(left_regions[:, 0], side="left")
     ends = right_regions[:, 0].searchsorted(left_regions[:, 0], side="right")
     booleans = starts < ends
     if not booleans.any():
         return None, None
     if not booleans.all():
-        booleans = np.logical_not(booleans)
         starts = starts[booleans]
         ends = ends[booleans]
         left_regions = left_regions[booleans]
@@ -589,6 +474,7 @@ def _numba_multiple_non_equi_join(
     in >, >=, <, <=.
     Returns a tuple of left and right indices.
     """
+    # implementation is based on the algorithm described in this paper -
     # https://www.scitepress.org/papers/2018/68268/68268.pdf
 
     # summary:
@@ -754,10 +640,10 @@ def _numba_multiple_non_equi_join(
         right_is_sorted = True
     shape = (len(left_df), len(gt_lt))
     left_regions = np.empty(shape=shape, dtype=np.intp, order="F")
-    left_regions[:] = -1
+    l_booleans = np.zeros(len(df), dtype=np.intp)
     shape = (len(right_df), len(gt_lt))
     right_regions = np.empty(shape=shape, dtype=np.intp, order="F")
-    right_regions[:] = -1
+    r_booleans = np.zeros(len(right), dtype=np.intp)
     for position, (left_column, right_column, op) in enumerate(gt_lt):
         outcome = _generic_func_cond_join(
             left=left_df[left_column],
@@ -777,27 +663,27 @@ def _numba_multiple_non_equi_join(
         r_region[0] -= 1
         r_region = r_region.cumsum()
         left_regions[left_indexer, position] = r_region[search_indices]
+        l_booleans[left_indexer] += 1
         right_regions[right_indexer, position] = r_region
+        r_booleans[right_indexer] += 1
     r_region = None
     search_indices = None
     left_df = None
     right_df = None
-    booleans = left_regions == -1
-    booleans = booleans.any(axis=1)
-    if booleans.all():
+    booleans = l_booleans == len(gt_lt)
+    if not booleans.any():
         return None, None
-    if booleans.any():
-        booleans = np.logical_not(booleans)
+    if not booleans.all():
         left_regions = left_regions[booleans]
         left_index = left_index[booleans]
-    booleans = right_regions == -1
-    booleans = booleans.any(axis=1)
-    if booleans.all():
+    booleans = r_booleans == len(gt_lt)
+    if not booleans.any():
         return None, None
-    if booleans.any():
-        booleans = np.logical_not(booleans)
+    if not booleans.all():
         right_regions = right_regions[booleans]
         right_index = right_index[booleans]
+    l_booleans = None
+    r_booleans = None
     if gt_lt[0][-1] in greater_than_join_types:
         left_regions = left_regions[::-1]
         left_index = left_index[::-1]
@@ -807,11 +693,10 @@ def _numba_multiple_non_equi_join(
     else:
         right_index_flipped = False
     starts = right_regions[:, 0].searchsorted(left_regions[:, 0])
-    booleans = starts == len(right_regions)
-    if booleans.all():
+    booleans = starts < len(right_regions)
+    if not booleans.any():
         return None, None
-    if booleans.any():
-        booleans = np.logical_not(booleans)
+    if not booleans.all():
         starts = starts[booleans]
         left_regions = left_regions[booleans]
         left_index = left_index[booleans]
@@ -821,11 +706,10 @@ def _numba_multiple_non_equi_join(
     arr = None
     if check_increasing:
         search_indices = right_regions[:, 1].searchsorted(left_regions[:, 1])
-        booleans = search_indices == len(right_regions)
-        if booleans.all():
+        booleans = search_indices < len(right_regions)
+        if not booleans.any():
             return None, None
-        if booleans.any():
-            booleans = np.logical_not(booleans)
+        if not booleans.all():
             starts = starts[booleans]
             search_indices = search_indices[booleans]
             left_regions = left_regions[booleans]
@@ -837,24 +721,23 @@ def _numba_multiple_non_equi_join(
             ends[:] = len(right_regions)
     elif check_decreasing:
         ends = right_regions[::-1, 1].searchsorted(left_regions[:, 1])
-        booleans = starts == len(right_regions)
-        if booleans.all():
+        booleans = starts < len(right_regions)
+        if not booleans.any():
             return None, None
-        if booleans.any():
-            booleans = np.logical_not(booleans)
+        if not booleans.all():
             starts = starts[booleans]
             left_regions = left_regions[booleans]
             left_index = left_index[booleans]
         ends = len(right_regions) - ends
-        booleans = starts >= ends
-        if booleans.all():
+        booleans = starts < ends
+        if not booleans.any():
             return None, None
-        if booleans.any():
-            booleans = np.logical_not(booleans)
+        if not booleans.all():
             starts = starts[booleans]
             left_regions = left_regions[booleans]
             left_index = left_index[booleans]
             ends = ends[booleans]
+    booleans = None
     if (
         (check_decreasing | check_increasing)
         & right_is_sorted

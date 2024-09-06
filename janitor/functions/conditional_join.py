@@ -13,6 +13,10 @@ from pandas.api.types import (
     is_numeric_dtype,
     is_timedelta64_dtype,
 )
+from pandas.core.dtypes.concat import concat_compat
+from pandas.core.dtypes.missing import (
+    construct_1d_array_from_inferred_fill_value,
+)
 from pandas.core.reshape.merge import _MergeOperation
 
 from janitor.functions.utils import (
@@ -674,12 +678,12 @@ def _multiple_conditional_join_eq(
         gt_lt = []
         eqs = []
         rest = []
-        types = less_than_join_types.union(greater_than_join_types)
+        non_equi_types = less_than_join_types.union(greater_than_join_types)
         for condition in conditions:
             *_, op = condition
-            if op in types:
+            if op in non_equi_types:
                 gt_lt.append(condition)
-            elif op == "==":
+            elif op == _JoinOperator.STRICTLY_EQUAL.value:
                 eqs.append(condition)
             else:
                 rest.append(condition)
@@ -847,7 +851,6 @@ def _multiple_conditional_join_le_lt(
                 ge_gt = condition
             if le_lt and ge_gt:
                 break
-
         # optimised path
         if le_lt and ge_gt:
             conditions = [
@@ -875,7 +878,6 @@ def _multiple_conditional_join_le_lt(
             )
             if _keep:
                 return indices
-
         # no optimised path
         # blow up the rows and prune
         else:
@@ -897,6 +899,7 @@ def _multiple_conditional_join_le_lt(
                 multiple_conditions=False,
                 keep="all",
             )
+    # return indices
     if not indices:
         return None
     if conditions:
@@ -931,7 +934,6 @@ def _range_indices(
     # then within the positions,
     # get the positions where end_left is </<= end_right
     # this should reduce the search space
-
     left_on, right_on, op = first
     left_c = df[left_on]
     right_c = right[right_on]
@@ -958,7 +960,6 @@ def _range_indices(
 
     if outcome is None:
         return None
-
     left_index, right_index, ends = outcome
     left_on, right_on, op = second
     left_on = df.columns.get_loc(left_on)
@@ -996,7 +997,7 @@ def _range_indices(
             return None
         left_c, right_index, starts = outcome
     if left_c.size < left_index.size:
-        keep_rows = np.isin(left_index, left_c, assume_unique=True)
+        keep_rows = pd.Index(left_c).get_indexer(left_index) != -1
         ends = ends[keep_rows]
         left_index = left_c
     # no point searching within (a, b)
@@ -1180,81 +1181,187 @@ def _create_frame(
         return pd.DataFrame(frame, copy=False)
 
     if how == "inner":
-        return _inner(df, right, left_index, right_index, indicator)
+        return _inner(
+            df=df,
+            right=right,
+            left_index=left_index,
+            right_index=right_index,
+            indicator=indicator,
+        )
+    if how == "left":
+        indexer = pd.unique(left_index)
+        indexer = pd.Index(indexer).get_indexer(range(len(df)))
+        indexer = (indexer < 0).nonzero()[0]
+        length = indexer.size
+        if not length:
+            return _inner(
+                df=df,
+                right=right,
+                left_index=left_index,
+                right_index=right_index,
+                indicator=indicator,
+            )
 
-    if how != "outer":
+        right_dict = {}
+        for key, value in right.items():
+            array = value._values
+            value = array[right_index]
+            other = construct_1d_array_from_inferred_fill_value(
+                value=array[:1], length=length
+            )
+            value = concat_compat([value, other])
+            right_dict[key] = value
         if indicator:
             columns = df.columns.union(right.columns)
-        if how == "left":
-            right = {
-                key: value._values[right_index] for key, value in right.items()
-            }
-            if indicator:
-                indicator, arr = _add_indicator(
-                    indicator=indicator,
-                    how="inner",
-                    column_length=right_index.size,
-                    columns=columns,
-                )
-                right[indicator] = arr
-            right = pd.DataFrame(right, index=left_index, copy=False)
-        else:
-            df = {key: value._values[left_index] for key, value in df.items()}
-            if indicator:
-                indicator, arr = _add_indicator(
-                    indicator=indicator,
-                    how="inner",
-                    column_length=left_index.size,
-                    columns=columns,
-                )
-                df[indicator] = arr
-            df = pd.DataFrame(df, index=right_index, copy=False)
-        df, right = df.align(other=right, join=how, axis=0)
-        if indicator:
-            if (how == "left") and right[indicator].hasnans:
-                right[indicator] = right[indicator].fillna("left_only")
-            elif (how == "right") and df[indicator].hasnans:
-                df[indicator] = df[indicator].fillna("right_only")
-        indexer = range(len(df))
-        df.index = indexer
-        right.index = indexer
-
-        return pd.concat([df, right], axis=1, sort=False, copy=False)
-
-    both = _inner(df, right, left_index, right_index, indicator)
-    contents = []
-    columns = df.columns.union(right.columns)
-    left_index = np.setdiff1d(df.index, left_index)
-    if left_index.size:
-        df = df.take(left_index)
-        if indicator:
-            l_indicator, arr = _add_indicator(
+            name, arr1 = _add_indicator(
                 indicator=indicator,
-                how="left",
-                column_length=left_index.size,
-                columns=columns,
-            )
-            df[l_indicator] = arr
-        contents.append(df)
-
-    contents.append(both)
-
-    right_index = np.setdiff1d(right.index, right_index)
-    if right_index.size:
-        right = right.take(right_index)
-        if indicator:
-            r_indicator, arr = _add_indicator(
-                indicator=indicator,
-                how="right",
+                how="inner",
                 column_length=right_index.size,
                 columns=columns,
             )
-            right[r_indicator] = arr
-        contents.append(right)
+            name, arr2 = _add_indicator(
+                indicator=indicator,
+                how="left",
+                column_length=length,
+                columns=columns,
+            )
+            value = concat_compat([arr1, arr2])
+            right_dict[name] = value
+        left_dict = {}
+        for key, value in df.items():
+            array = value._values
+            top = array[left_index]
+            bottom = array[indexer]
+            value = concat_compat([top, bottom])
+            left_dict[key] = value
+        left_dict.update(right_dict)
+        return pd.DataFrame(left_dict, copy=False)
 
-    return pd.concat(
-        contents, axis=0, copy=False, sort=False, ignore_index=True
-    )
+    if how == "right":
+        indexer = pd.unique(right_index)
+        indexer = pd.Index(indexer).get_indexer(range(len(right)))
+        indexer = (indexer < 0).nonzero()[0]
+        length = indexer.size
+        if not length:
+            return _inner(
+                df=df,
+                right=right,
+                left_index=left_index,
+                right_index=right_index,
+                indicator=indicator,
+            )
+        left_dict = {}
+        for key, value in df.items():
+            array = value._values
+            value = array[left_index]
+            other = construct_1d_array_from_inferred_fill_value(
+                value=array[:1], length=length
+            )
+            value = concat_compat([value, other])
+            left_dict[key] = value
+        right_dict = {}
+        for key, value in right.items():
+            array = value._values
+            top = array[right_index]
+            bottom = array[indexer]
+            value = concat_compat([top, bottom])
+            right_dict[key] = value
+        if indicator:
+            columns = df.columns.union(right.columns)
+            name, arr1 = _add_indicator(
+                indicator=indicator,
+                how="inner",
+                column_length=left_index.size,
+                columns=columns,
+            )
+            name, arr2 = _add_indicator(
+                indicator=indicator,
+                how="right",
+                column_length=length,
+                columns=columns,
+            )
+            value = concat_compat([arr1, arr2])
+            right_dict[name] = value
+        left_dict.update(right_dict)
+        return pd.DataFrame(left_dict, copy=False)
+    # how == 'outer'
+    left_indexer = pd.unique(left_index)
+    left_indexer = pd.Index(left_indexer).get_indexer(range(len(df)))
+    left_indexer = (left_indexer < 0).nonzero()[0]
+    right_indexer = pd.unique(right_index)
+    right_indexer = pd.Index(right_indexer).get_indexer(range(len(right)))
+    right_indexer = (right_indexer < 0).nonzero()[0]
+
+    df_nulls_length = left_indexer.size
+    right_nulls_length = right_indexer.size
+    right_dict = {}
+    for key, value in right.items():
+        array = value._values
+        top = array[right_index]
+        top = [top]
+        if df_nulls_length:
+            middle = construct_1d_array_from_inferred_fill_value(
+                value=array[:1], length=df_nulls_length
+            )
+            top.append(middle)
+        if right_nulls_length:
+            bottom = array[right_indexer]
+            top.append(bottom)
+        if len(top) == 1:
+            top = top[0]
+        else:
+            top = concat_compat(top)
+        right_dict[key] = top
+    if indicator:
+        columns = df.columns.union(right.columns)
+        name, arr1 = _add_indicator(
+            indicator=indicator,
+            how="inner",
+            column_length=right_index.size,
+            columns=columns,
+        )
+        arr1 = [arr1]
+        if df_nulls_length:
+            name, arr2 = _add_indicator(
+                indicator=indicator,
+                how="left",
+                column_length=df_nulls_length,
+                columns=columns,
+            )
+            arr1.append(arr2)
+        if right_nulls_length:
+            name, arr3 = _add_indicator(
+                indicator=indicator,
+                how="right",
+                column_length=right_nulls_length,
+                columns=columns,
+            )
+            arr1.append(arr3)
+        if len(arr1) == 1:
+            arr1 = arr1[0]
+        else:
+            arr1 = concat_compat(arr1)
+        right_dict[name] = arr1
+    left_dict = {}
+    for key, value in df.items():
+        array = value._values
+        top = array[left_index]
+        top = [top]
+        if df_nulls_length:
+            middle = array[left_indexer]
+            top.append(middle)
+        if right_nulls_length:
+            bottom = construct_1d_array_from_inferred_fill_value(
+                value=array[:1], length=right_nulls_length
+            )
+            top.append(bottom)
+        if len(top) == 1:
+            top = top[0]
+        else:
+            top = concat_compat(top)
+        right_dict[key] = top
+    left_dict.update(right_dict)
+    return pd.DataFrame(left_dict, copy=False)
 
 
 def get_join_indices(

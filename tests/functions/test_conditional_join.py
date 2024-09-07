@@ -3635,8 +3635,8 @@ def test_eq_indices(df, right):
     expected = pd.Index(expected)
 
     actual, _ = get_join_indices(
-        df,
-        right,
+        df.dropna(subset=["E"]),
+        right.dropna(subset=["Dates"]),
         [
             ("E", "Dates", "=="),
         ],
@@ -4597,6 +4597,77 @@ def test_multiple_non_eq_last_numba(df, right):
             ("E", "Dates", "<"),
             how="inner",
             keep="last",
+            use_numba=True,
+        )
+        .sort_values(columns, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_non_eq_first(df, right):
+    """Test output for dual conditions - grab only the first match."""
+    columns = ["A", "Integers", "E", "Dates"]
+    expected = (
+        df[["A", "E"]]
+        .assign(index=df.index)
+        .merge(
+            right[["Integers", "Dates"]],
+            how="cross",
+        )
+        .loc[lambda df: df.A.gt(df.Integers) & df.E.lt(df.Dates)]
+        .groupby("index", sort=False)
+        .head(1)
+        .drop(columns="index")
+        .sort_values(columns, ignore_index=True)
+    )
+
+    actual = (
+        df[["A", "E"]]
+        .conditional_join(
+            right[["Integers", "Dates"]],
+            ("A", "Integers", ">"),
+            ("E", "Dates", "<"),
+            how="inner",
+            keep="first",
+        )
+        .sort_values(columns, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_non_eq_first_numba(df, right):
+    """Test output for dual conditions - grab only the first match."""
+    columns = ["A", "Integers", "E", "Dates"]
+    expected = (
+        df[["A", "E"]]
+        .assign(index=df.index)
+        .merge(
+            right[["Integers", "Dates"]],
+            how="cross",
+        )
+        .loc[lambda df: df.A.gt(df.Integers) & df.E.lt(df.Dates)]
+        .groupby("index", sort=False)
+        .head(1)
+        .drop(columns="index")
+        .sort_values(columns, ignore_index=True)
+    )
+
+    actual = (
+        df[["A", "E"]]
+        .conditional_join(
+            right[["Integers", "Dates"]],
+            ("A", "Integers", ">"),
+            ("E", "Dates", "<"),
+            how="inner",
+            keep="first",
             use_numba=True,
         )
         .sort_values(columns, ignore_index=True)

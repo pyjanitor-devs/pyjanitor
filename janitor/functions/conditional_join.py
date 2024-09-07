@@ -512,6 +512,19 @@ def _conditional_join_compute(
             le_lt_check = True
     df.index = range(len(df))
     right.index = range(len(right))
+    if (df.empty | right.empty) & return_matching_indices:
+        return np.array([], dtype=np.intp), np.array([], dtype=np.intp)
+    if df.empty | right.empty:
+        return _create_frame(
+            df=df,
+            right=right,
+            left_index=np.array([], dtype=np.intp),
+            right_index=np.array([], dtype=np.intp),
+            how=how,
+            df_columns=df_columns,
+            right_columns=right_columns,
+            indicator=indicator,
+        )
     if eq_check:
         result = _multiple_conditional_join_eq(
             df=df,
@@ -674,7 +687,6 @@ def _multiple_conditional_join_eq(
 
     Returns a tuple of (left_index, right_index)
     """
-
     if force:
         return _multiple_conditional_join_le_lt(
             df=df,

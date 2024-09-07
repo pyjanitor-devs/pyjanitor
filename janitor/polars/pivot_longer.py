@@ -415,7 +415,7 @@ def _pivot_longer(
     """
 
     if all((names_pattern is None, names_sep is None)):
-        return df.melt(
+        return df.unpivot(
             id_vars=index,
             value_vars=column_names,
             variable_name=names_to,

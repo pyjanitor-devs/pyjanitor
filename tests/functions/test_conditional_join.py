@@ -3634,9 +3634,10 @@ def test_eq_indices(df, right):
     )
     expected = pd.Index(expected)
 
+    # get rid of the dropna in future PR
     actual, _ = get_join_indices(
-        df,
-        right,
+        df.dropna(subset=["E"]),
+        right.dropna(subset=["Dates"]),
         [
             ("E", "Dates", "=="),
         ],

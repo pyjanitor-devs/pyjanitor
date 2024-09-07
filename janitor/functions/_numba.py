@@ -698,7 +698,7 @@ def _numba_multiple_non_equi_join(
             left_index = left_index[booleans]
         booleans = starts > search_indices
         starts = np.where(booleans, starts, search_indices)
-        if right_is_sorted & (len(gt_lt) == 2):
+        if len(gt_lt) == 2:
             ends = np.empty(left_index.size, dtype=np.intp)
             ends[:] = len(right_regions)
     elif check_decreasing:
@@ -720,6 +720,7 @@ def _numba_multiple_non_equi_join(
             left_index = left_index[booleans]
             ends = ends[booleans]
     booleans = None
+    # return check_increasing, check_decreasing
     if (
         (check_decreasing | check_increasing)
         & right_is_sorted
@@ -750,6 +751,60 @@ def _numba_multiple_non_equi_join(
         & (len(gt_lt) == 2)
     ):
         return left_index, right_index[ends - 1]
+    if (
+        (check_decreasing | check_decreasing)
+        & (len(gt_lt) == 2)
+        & (keep == "all")
+    ):
+        start_indices = np.empty(left_index.size, dtype=np.intp)
+        start_indices[0] = 0
+        indices = (ends - starts).cumsum()
+        start_indices[1:] = indices[:-1]
+        indices = indices[-1]
+        left_indices = np.empty(indices, dtype=np.intp)
+        right_indices = np.empty(indices, dtype=np.intp)
+        return _numba_non_equi_join_monotonic_keep_all_dual(
+            left_index=left_index,
+            right_index=right_index,
+            starts=starts,
+            ends=ends,
+            left_indices=left_indices,
+            right_indices=right_indices,
+            start_indices=start_indices,
+        )
+
+    if (
+        (check_decreasing | check_decreasing)
+        & (len(gt_lt) == 2)
+        & (keep == "first")
+    ):
+        left_indices = np.empty(left_index.size, dtype=np.intp)
+        right_indices = np.empty(left_index.size, dtype=np.intp)
+        return _numba_non_equi_join_monotonic_keep_first_dual(
+            left_index=left_index,
+            right_index=right_index,
+            starts=starts,
+            ends=ends,
+            left_indices=left_indices,
+            right_indices=right_indices,
+        )
+
+    if (
+        (check_decreasing | check_decreasing)
+        & (len(gt_lt) == 2)
+        & (keep == "last")
+    ):
+        left_indices = np.empty(left_index.size, dtype=np.intp)
+        right_indices = np.empty(left_index.size, dtype=np.intp)
+        return _numba_non_equi_join_monotonic_keep_last_dual(
+            left_index=left_index,
+            right_index=right_index,
+            starts=starts,
+            ends=ends,
+            left_indices=left_indices,
+            right_indices=right_indices,
+        )
+
     if (check_increasing) & (keep == "first"):
         return _numba_non_equi_join_monotonic_increasing_keep_first(
             left_regions=left_regions[:, 2:],
@@ -1747,6 +1802,91 @@ def _numba_non_equi_join_monotonic_increasing_keep_last(
         left_indices[_n] = left_index[_ind]
         right_indices[_n] = r_indices[_ind]
         n += 1
+    return left_indices, right_indices
+
+
+@njit(cache=True, parallel=True)
+def _numba_non_equi_join_monotonic_keep_all_dual(
+    left_index: np.ndarray,
+    right_index: np.ndarray,
+    starts: np.ndarray,
+    ends: np.ndarray,
+    start_indices: np.ndarray,
+    left_indices: np.ndarray,
+    right_indices: np.ndarray,
+):
+    """
+    Get indices for a dual non equi join
+    """
+    for ind in prange(left_index.size):
+        _ind = np.uint64(ind)
+        start = starts[_ind]
+        end = ends[_ind]
+        indexer = start_indices[_ind]
+        lindex = left_index[_ind]
+        for num in range(start, end):
+            _num = np.uint64(num)
+            rindex = right_index[_num]
+            _indexer = np.uint64(indexer)
+            left_indices[_indexer] = lindex
+            right_indices[_indexer] = rindex
+            indexer += 1
+    return left_indices, right_indices
+
+
+@njit(cache=True, parallel=True)
+def _numba_non_equi_join_monotonic_keep_first_dual(
+    left_index: np.ndarray,
+    right_index: np.ndarray,
+    starts: np.ndarray,
+    ends: np.ndarray,
+    left_indices: np.ndarray,
+    right_indices: np.ndarray,
+):
+    """
+    Get indices for a dual non equi join
+    """
+    for ind in prange(left_index.size):
+        _ind = np.uint64(ind)
+        start = starts[_ind]
+        end = ends[_ind]
+        lindex = left_index[_ind]
+        base_index = right_index[np.uint64(start)]
+        for num in range(start, end):
+            _num = np.uint64(num)
+            rindex = right_index[_num]
+            if rindex < base_index:
+                base_index = rindex
+        left_indices[_ind] = lindex
+        right_indices[_ind] = base_index
+    return left_indices, right_indices
+
+
+@njit(cache=True, parallel=True)
+def _numba_non_equi_join_monotonic_keep_last_dual(
+    left_index: np.ndarray,
+    right_index: np.ndarray,
+    starts: np.ndarray,
+    ends: np.ndarray,
+    left_indices: np.ndarray,
+    right_indices: np.ndarray,
+):
+    """
+    Get indices for a dual non equi join
+    """
+    for ind in prange(left_index.size):
+        _ind = np.uint64(ind)
+        start = starts[_ind]
+        end = ends[_ind]
+        lindex = left_index[_ind]
+        base_index = right_index[np.uint64(start)]
+        for num in range(start, end):
+            _num = np.uint64(num)
+            rindex = right_index[_num]
+            if rindex > base_index:
+                base_index = rindex
+        left_indices[_ind] = lindex
+        right_indices[_ind] = base_index
     return left_indices, right_indices
 
 

@@ -166,7 +166,7 @@ def _numba_equi_join(
     # this also lets us know if there are equi matches
     keep_rows = slice_starts < slice_ends
     if not keep_rows.any():
-        return None
+        return None, None
     if not keep_rows.all():
         left_index = left_index[keep_rows]
         slice_starts = slice_starts[keep_rows]
@@ -247,7 +247,7 @@ def _numba_equi_join(
         )
 
     if left_index is None:
-        return None
+        return None, None
 
     return left_index, right_index
 
@@ -567,15 +567,18 @@ def _numba_single_non_equi_join(
 ) -> tuple[np.ndarray, np.ndarray]:
     """Return matching indices for single non-equi join."""
     if op == "!=":
-        return _generic_func_cond_join(
+        outcome = _generic_func_cond_join(
             left=left, right=right, op=op, multiple_conditions=False, keep=keep
         )
+        if outcome is None:
+            return None, None
+        return outcome
 
     outcome = _generic_func_cond_join(
         left=left, right=right, op=op, multiple_conditions=True, keep="all"
     )
     if outcome is None:
-        return None
+        return None, None
     left_index, right_index, starts = outcome
     if op in less_than_join_types:
         counts = right_index.size - starts
@@ -766,7 +769,7 @@ def _numba_multiple_non_equi_join(
             op=op,
         )
         if result is None:
-            return None
+            return None, None
         (
             left_index,
             right_index,
@@ -797,7 +800,7 @@ def _numba_multiple_non_equi_join(
     booleans = starts == right_regions.shape[0]
     # left_region should be <= right_region
     if booleans.all(axis=None):
-        return None
+        return None, None
     if booleans.any(axis=None):
         booleans = ~booleans
         starts = starts[booleans]
@@ -818,7 +821,7 @@ def _numba_multiple_non_equi_join(
 
     booleans = booleans.any(axis=1)
     if booleans.all(axis=None):
-        return None
+        return None, None
     if booleans.any(axis=None):
         booleans = ~booleans
         left_regions = left_regions[booleans]

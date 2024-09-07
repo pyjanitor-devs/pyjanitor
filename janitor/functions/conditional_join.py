@@ -313,6 +313,7 @@ def _conditional_join_preliminary_checks(
     indicator: Union[bool, str],
     force: bool,
     return_matching_indices: bool = False,
+    return_ragged_arrays: bool = False,
 ) -> tuple:
     """
     Preliminary checks for conditional_join are conducted here.
@@ -396,6 +397,8 @@ def _conditional_join_preliminary_checks(
 
     check("force", force, [bool])
 
+    check("return_ragged_arrays", return_ragged_arrays, [bool])
+
     return (
         df,
         right,
@@ -407,6 +410,7 @@ def _conditional_join_preliminary_checks(
         use_numba,
         indicator,
         force,
+        return_ragged_arrays,
     )
 
 
@@ -457,7 +461,8 @@ def _conditional_join_compute(
     use_numba: bool,
     indicator: Union[bool, str],
     force: bool,
-    return_matching_indices=False,
+    return_matching_indices: bool = False,
+    return_ragged_arrays: bool = False,
 ) -> pd.DataFrame:
     """
     This is where the actual computation
@@ -475,6 +480,7 @@ def _conditional_join_compute(
         use_numba,
         indicator,
         force,
+        return_ragged_arrays,
     ) = _conditional_join_preliminary_checks(
         df=df,
         right=right,
@@ -487,8 +493,8 @@ def _conditional_join_compute(
         indicator=indicator,
         force=force,
         return_matching_indices=return_matching_indices,
+        return_ragged_arrays=return_ragged_arrays,
     )
-
     eq_check = False
     le_lt_check = False
     for condition in conditions:
@@ -505,50 +511,54 @@ def _conditional_join_compute(
             le_lt_check = True
     df.index = range(len(df))
     right.index = range(len(right))
+    if eq_check:
+        result = _multiple_conditional_join_eq(
+            df=df,
+            right=right,
+            conditions=conditions,
+            keep=keep,
+            use_numba=use_numba,
+            force=force,
+            return_ragged_arrays=return_ragged_arrays,
+        )
+    elif (len(conditions) > 1) & le_lt_check:
+        result = _multiple_conditional_join_le_lt(
+            df=df,
+            right=right,
+            conditions=conditions,
+            keep=keep,
+            use_numba=use_numba,
+            return_ragged_arrays=return_ragged_arrays,
+        )
+    elif len(conditions) > 1:
+        result = _multiple_conditional_join_ne(
+            df=df, right=right, conditions=conditions, keep=keep
+        )
+    elif use_numba:
+        from janitor.functions._numba import _numba_single_non_equi_join
 
-    if (len(conditions) > 1) or eq_check:
-        if eq_check:
-            result = _multiple_conditional_join_eq(
-                df=df,
-                right=right,
-                conditions=conditions,
-                keep=keep,
-                use_numba=use_numba,
-                force=force,
-            )
-        elif le_lt_check:
-            result = _multiple_conditional_join_le_lt(
-                df=df,
-                right=right,
-                conditions=conditions,
-                keep=keep,
-                use_numba=use_numba,
-            )
-        else:
-            result = _multiple_conditional_join_ne(
-                df=df, right=right, conditions=conditions, keep=keep
-            )
+        result = _numba_single_non_equi_join(
+            left=df[left_on],
+            right=right[right_on],
+            op=op,
+            keep=keep,
+        )
+        if result[0] is None:
+            result = None
     else:
-        left_on, right_on, op = conditions[0]
-        if use_numba:
-            from janitor.functions._numba import _numba_single_non_equi_join
+        result = _generic_func_cond_join(
+            left=df[left_on],
+            right=right[right_on],
+            op=op,
+            multiple_conditions=False,
+            keep=keep,
+            return_ragged_arrays=return_ragged_arrays,
+        )
 
-            result = _numba_single_non_equi_join(
-                left=df[left_on],
-                right=right[right_on],
-                op=op,
-                keep=keep,
-            )
-        else:
-            result = _generic_func_cond_join(
-                left=df[left_on],
-                right=right[right_on],
-                op=op,
-                multiple_conditions=False,
-                keep=keep,
-            )
     if result is None:
         result = np.array([], dtype=np.intp), np.array([], dtype=np.intp)
+
+    # return result
 
     if return_matching_indices:
         return result
@@ -655,6 +665,7 @@ def _multiple_conditional_join_eq(
     keep: str,
     use_numba: bool,
     force: bool,
+    return_ragged_arrays: bool,
 ) -> tuple:
     """
     Get indices for multiple conditions,
@@ -670,6 +681,7 @@ def _multiple_conditional_join_eq(
             conditions=conditions,
             keep=keep,
             use_numba=use_numba,
+            return_ragged_arrays=False,
         )
 
     if use_numba:
@@ -755,7 +767,9 @@ def _multiple_conditional_join_eq(
         indices = _numba_equi_join(
             df=left_df, right=right_df, eqs=eqs, ge_gt=ge_gt, le_lt=le_lt
         )
-        if not rest or (indices is None):
+        if indices[0] is None:
+            return None
+        if not rest:
             return indices
 
         rest = (
@@ -770,11 +784,27 @@ def _multiple_conditional_join_eq(
 
         return _keep_output(keep, *indices)
 
+    if (
+        return_ragged_arrays
+        & (len(conditions) == 1)
+        & (conditions[0][-1] == _JoinOperator.STRICTLY_EQUAL.value)
+    ):
+        left_on, right_on, op = conditions[0]
+        return _generic_func_cond_join(
+            left=df[left_on],
+            right=right[right_on],
+            op=op,
+            multiple_conditions=True,
+            keep="all",
+            return_ragged_arrays=return_ragged_arrays,
+        )
+
     eqs = [
         (left_on, right_on)
         for left_on, right_on, op in conditions
         if op == _JoinOperator.STRICTLY_EQUAL.value
     ]
+
     left_on, right_on = zip(*eqs)
     left_on = [*left_on]
     right_on = [*right_on]
@@ -820,6 +850,7 @@ def _multiple_conditional_join_le_lt(
     conditions: list,
     keep: str,
     use_numba: bool,
+    return_ragged_arrays: bool,
 ) -> tuple:
     """
     Get indices for multiple conditions,
@@ -844,7 +875,10 @@ def _multiple_conditional_join_le_lt(
             condition for condition in conditions if condition not in gt_lt
         ]
         if (len(gt_lt) > 1) and not conditions:
-            return _numba_multiple_non_equi_join(df, right, gt_lt, keep=keep)
+            result = _numba_multiple_non_equi_join(df, right, gt_lt, keep=keep)
+            if result[0] is None:
+                return None
+            return result
         if len(gt_lt) == 1:
             left_on, right_on, op = gt_lt[0]
             indices = _numba_single_non_equi_join(
@@ -854,6 +888,8 @@ def _multiple_conditional_join_le_lt(
             indices = _numba_multiple_non_equi_join(
                 df, right, gt_lt, keep="all"
             )
+        if indices[0] is None:
+            return None
     else:
         # there is an opportunity for optimization for range joins
         # which is usually `lower_value < value < upper_value`
@@ -899,7 +935,6 @@ def _multiple_conditional_join_le_lt(
                 ge_gt = condition
             if le_lt and ge_gt:
                 break
-
         # optimised path
         if le_lt and ge_gt:
             conditions = [
@@ -910,6 +945,8 @@ def _multiple_conditional_join_le_lt(
 
             if conditions:
                 _keep = None
+                return_ragged_arrays = False
+                right_is_sorted = False
             else:
                 first = ge_gt[1]
                 second = le_lt[1]
@@ -921,11 +958,18 @@ def _multiple_conditional_join_le_lt(
                     _keep = keep
                 else:
                     _keep = None
-
             indices = _range_indices(
-                df=df, right=right, first=ge_gt, second=le_lt, keep=_keep
+                df=df,
+                right=right,
+                first=ge_gt,
+                second=le_lt,
+                keep=_keep,
+                return_ragged_arrays=return_ragged_arrays,
+                right_is_sorted=right_is_sorted,
             )
-            if _keep:
+            if not indices:
+                return None
+            if _keep or (return_ragged_arrays & isinstance(indices[1], list)):
                 return indices
 
         # no optimised path
@@ -949,6 +993,7 @@ def _multiple_conditional_join_le_lt(
                 multiple_conditions=False,
                 keep="all",
             )
+    # return indices
     if not indices:
         return None
     if conditions:
@@ -969,6 +1014,8 @@ def _range_indices(
     first: tuple,
     second: tuple,
     keep: str,
+    right_is_sorted: bool,
+    return_ragged_arrays: bool,
 ) -> Union[tuple[np.ndarray, np.ndarray], None]:
     """
     Retrieve index positions for range/interval joins.
@@ -983,7 +1030,6 @@ def _range_indices(
     # then within the positions,
     # get the positions where end_left is </<= end_right
     # this should reduce the search space
-
     left_on, right_on, op = first
     left_c = df[left_on]
     right_c = right[right_on]
@@ -999,6 +1045,7 @@ def _range_indices(
     any_nulls = right[right_on].isna()
     if any_nulls.any():
         right_c = right_c[~any_nulls]
+    any_nulls = right_c.hasnans
 
     outcome = _generic_func_cond_join(
         left=left_c,
@@ -1010,7 +1057,6 @@ def _range_indices(
 
     if outcome is None:
         return None
-
     left_index, right_index, ends = outcome
     left_on, right_on, op = second
     left_on = df.columns.get_loc(left_on)
@@ -1048,7 +1094,7 @@ def _range_indices(
             return None
         left_c, right_index, starts = outcome
     if left_c.size < left_index.size:
-        keep_rows = np.isin(left_index, left_c, assume_unique=True)
+        keep_rows = pd.Index(left_c).get_indexer(left_index) != -1
         ends = ends[keep_rows]
         left_index = left_c
     # no point searching within (a, b)
@@ -1075,7 +1121,13 @@ def _range_indices(
         return left_index, right_index[starts]
     if keep == "last":
         return left_index, right_index[ends - 1]
+    if return_ragged_arrays & right_is_sorted & fastpath & (not any_nulls):
+        right_index = [slice(start, end) for start, end in zip(starts, ends)]
+        return left_index, right_index
     right_index = [right_index[start:end] for start, end in zip(starts, ends)]
+    if return_ragged_arrays & fastpath:
+        return left_index, right_index
+    # return right_index
     right_index = np.concatenate(right_index)
     left_index = left_index.repeat(repeater)
     if fastpath:
@@ -1416,10 +1468,16 @@ def get_join_indices(
     keep: Literal["first", "last", "all"] = "all",
     use_numba: bool = False,
     force: bool = False,
+    return_ragged_arrays: bool = False,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Convenience function to return the matching indices from an inner join.
 
     !!! info "New in version 0.27.0"
+
+    !!! abstract "Version Changed"
+
+        - 0.29.0
+            - Add support for ragged array indices.
 
     Args:
         df: A pandas DataFrame.
@@ -1436,6 +1494,11 @@ def get_join_indices(
         keep: Choose whether to return the first match, last match or all matches.
         force: If `True`, force the non-equi join conditions
             to execute before the equi join.
+        return_ragged_arrays: If `True`, return slices/ranges of matching right indices
+            for each matching left index. Not applicable if `use_numba` is `True`.
+            If `return_ragged_arrays` is `True`, the join condition
+            should be a single join, or a range join,
+            where the right columns are both monotonically increasing.
 
     Returns:
         A tuple of indices for the rows in the dataframes that match.
@@ -1452,4 +1515,5 @@ def get_join_indices(
         indicator=False,
         force=force,
         return_matching_indices=True,
+        return_ragged_arrays=return_ragged_arrays,
     )

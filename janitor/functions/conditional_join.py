@@ -572,8 +572,6 @@ def _conditional_join_compute(
     if result is None:
         result = np.array([], dtype=np.intp), np.array([], dtype=np.intp)
 
-    # return result
-
     if return_matching_indices:
         return result
 
@@ -951,7 +949,7 @@ def _multiple_conditional_join_le_lt(
                 multiple_conditions=False,
                 keep="all",
             )
-    # return indices
+
     if not indices:
         return None
     if conditions:
@@ -1085,7 +1083,6 @@ def _range_indices(
     right_index = [right_index[start:end] for start, end in zip(starts, ends)]
     if return_ragged_arrays & fastpath:
         return left_index, right_index
-    # return right_index
     right_index = np.concatenate(right_index)
     left_index = left_index.repeat(repeater)
     if fastpath:

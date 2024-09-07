@@ -2,13 +2,36 @@
 
 ## [Unreleased]
 
+## [v0.28.1] - 2024-08-09
+
+## [v0.28.0] - 2024-08-03
+
+-   [ENH] Added a `cartesian_product` function, as well as an `expand` method for pandas. - Issue #1293 @samukweku
+-   [ENH] Improve `pivot_longer` when `sort_by_appearance` is True. Added `pivot_longer_spec` for more control on how the dataframe should be unpivoted. -@samukweku #1361
+-   [ENH] Added `convert_excel_date` and `convert_matlab_date` methods for polars - Issue #1352
+-   [ENH] Added a `complete` method for polars. - Issue #1352 @samukweku
+-   [ENH] Added a `pivot_longer` method, and a `pivot_longer_spec` function for polars - Issue #1352 @samukweku
+-   [ENH] Added a `row_to_names` method for polars. Issue #1352 @samukweku
+-   [ENH] `read_commandline` function now supports polars - Issue #1352 @samukweku
+-   [ENH] `xlsx_cells` function now supports polars - Issue #1352 @samukweku
+-   [ENH] `xlsx_table` function now supports polars - Issue #1352 @samukweku
+-   [ENH] Added a `clean_names` method for polars - it can be used to clean the column names, or clean column values . Issue #1343 @samukweku
+-   [ENH] Improved performance for non-equi joins when using numba - @samukweku PR #1341
+-   [ENH] pandas Index,Series, DataFrame now supported in the `complete` method. - PR #1369 @samukweku
+-   [ENH] Improve performance for `first/last` in \`conditional_join, when the join columns in the right dataframe are sorted. - PR #1382 @samukweku
+
+## [v0.27.0] - 2024-03-21
+
 -   [BUG] Fix logic for groupby in complete. Index support deprecated. Fix deprecation warning for fillna in `complete` PR #1289 @samukweku
 -   [ENH] `select` function now supports variable arguments - PR #1288 @samukweku
 -   [ENH] `conditional_join` now supports timedelta dtype. - PR #1297 @samukweku
--   [ENH]  `get_join_indices` function added - returns only join indices between two dataframes. Issue #1310 @samukweku
+-   [ENH] `get_join_indices` function added - returns only join indices between two dataframes. Issue #1310 @samukweku
 -   [ENH] `explode_index` function added. - Issue #1283
 -   [ENH] `conditional_join` now supports timedelta dtype. - PR #1297
 -   [ENH] `change_index_dtype` added. - @samukweku Issue #1314
+-   [ENH] Add `glue` and `axis` parameters to `collapse_levels`. - Issue #211 @samukweku
+-   [ENH] `row_to_names` now supports multiple rows conversion to columns. - @samukweku Issue #1333
+-   [ENH] Fix warnings from Pandas. `truncate_datetime` now uses a vectorized option. -@samukweku #1337
 
 ## [v0.26.0] - 2023-09-18
 
@@ -353,7 +376,13 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.26.0...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.28.1...HEAD
+
+[v0.28.1]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.28.0...v0.28.1
+
+[v0.28.0]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.27.0...v0.28.0
+
+[v0.27.0]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.26.0...v0.27.0
 
 [v0.26.0]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.25.0...v0.26.0
 

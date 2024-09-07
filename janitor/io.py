@@ -3,16 +3,25 @@ from __future__ import annotations
 import inspect
 import os
 import subprocess
+import warnings
 from collections import defaultdict
 from glob import glob
 from io import StringIO
 from itertools import chain
-from typing import TYPE_CHECKING, Any, Iterable, NamedTuple, Union
+from typing import IO, TYPE_CHECKING, Any, Iterable, Mapping, Union
 
 import pandas as pd
 
+from janitor.utils import (
+    check,
+    deprecated_alias,
+    find_stack_level,
+    import_message,
+)
+
 from .errors import JanitorError
-from .utils import check, deprecated_alias, import_message
+
+warnings.simplefilter("always", DeprecationWarning)
 
 
 @deprecated_alias(seperate_df="separate_df", filespath="files_path")
@@ -84,7 +93,9 @@ def read_csvs(
     return dfs_dict
 
 
-def read_commandline(cmd: str, **kwargs: Any) -> pd.DataFrame:
+def read_commandline(
+    cmd: str, engine: str = "pandas", **kwargs: Any
+) -> Mapping:
     """Read a CSV file based on a command-line command.
 
     For example, you may wish to run the following command on `sep-quarter.csv`
@@ -102,26 +113,42 @@ def read_commandline(cmd: str, **kwargs: Any) -> pd.DataFrame:
     ```
 
     This function assumes that your command line command will return
-    an output that is parsable using `pandas.read_csv` and StringIO.
-    We default to using `pd.read_csv` underneath the hood.
-    Keyword arguments are passed through to read_csv.
+    an output that is parsable using the relevant engine and StringIO.
+    This function defaults to using `pd.read_csv` underneath the hood.
+    Keyword arguments are passed through as-is.
 
     Args:
         cmd: Shell command to preprocess a file on disk.
+        engine: DataFrame engine to process the output of the shell command.
+            Currently supports both pandas and polars.
         **kwargs: Keyword arguments that are passed through to
-            `pd.read_csv()`.
+            the engine's csv reader.
+
 
     Returns:
-        A pandas DataFrame parsed from the stdout of the underlying
+        A DataFrame parsed from the stdout of the underlying
             shell.
     """
 
     check("cmd", cmd, [str])
+    if engine not in {"pandas", "polars"}:
+        raise ValueError("engine should be either pandas or polars.")
     # adding check=True ensures that an explicit, clear error
     # is raised, so that the user can see the reason for the failure
     outcome = subprocess.run(
         cmd, shell=True, capture_output=True, text=True, check=True
     )
+    if engine == "polars":
+        try:
+            import polars as pl
+        except ImportError:
+            import_message(
+                submodule="polars",
+                package="polars",
+                conda_channel="conda-forge",
+                pip_install=True,
+            )
+        return pl.read_csv(StringIO(outcome.stdout), **kwargs)
     return pd.read_csv(StringIO(outcome.stdout), **kwargs)
 
 
@@ -130,17 +157,18 @@ if TYPE_CHECKING:
 
 
 def xlsx_table(
-    path: Union[str, Workbook],
-    sheetname: str,
+    path: Union[str, IO, Workbook],
+    sheetname: str = None,
     table: Union[str, list, tuple] = None,
-) -> Union[pd.DataFrame, dict]:
+    engine: str = "pandas",
+) -> Mapping:
     """Returns a DataFrame of values in a table in the Excel file.
 
     This applies to an Excel file, where the data range is explicitly
     specified as a Microsoft Excel table.
 
     If there is a single table in the sheet, or a string is provided
-    as an argument to the `table` parameter, a pandas DataFrame is returned;
+    as an argument to the `table` parameter, a DataFrame is returned;
     if there is more than one table in the sheet,
     and the `table` argument is `None`, or a list/tuple of names,
     a dictionary of DataFrames is returned, where the keys of the dictionary
@@ -148,12 +176,13 @@ def xlsx_table(
 
     Examples:
         >>> import pandas as pd
+        >>> import polars as pl
         >>> from janitor import xlsx_table
         >>> filename="../pyjanitor/tests/test_data/016-MSPTDA-Excel.xlsx"
 
         Single table:
 
-        >>> xlsx_table(filename, sheetname='Tables', table='dCategory')
+        >>> xlsx_table(filename, table='dCategory')
            CategoryID       Category
         0           1       Beginner
         1           2       Advanced
@@ -161,9 +190,23 @@ def xlsx_table(
         3           4    Competition
         4           5  Long Distance
 
+        >>> xlsx_table(filename, table='dCategory', engine='polars')
+        shape: (5, 2)
+        ┌────────────┬───────────────┐
+        │ CategoryID ┆ Category      │
+        │ ---        ┆ ---           │
+        │ i64        ┆ str           │
+        ╞════════════╪═══════════════╡
+        │ 1          ┆ Beginner      │
+        │ 2          ┆ Advanced      │
+        │ 3          ┆ Freestyle     │
+        │ 4          ┆ Competition   │
+        │ 5          ┆ Long Distance │
+        └────────────┴───────────────┘
+
         Multiple tables:
 
-        >>> out=xlsx_table(filename, sheetname="Tables", table=["dCategory", "dSalesReps"])
+        >>> out=xlsx_table(filename, table=["dCategory", "dSalesReps"])
         >>> out["dCategory"]
            CategoryID       Category
         0           1       Beginner
@@ -178,10 +221,10 @@ def xlsx_table(
         2           3         Chantel Zoya     SW
 
     Args:
-          path: Path to the Excel File. It can also be an openpyxl Workbook.
-          sheetname: Name of the sheet from which the tables
-                are to be extracted.
-          table: Name of a table, or list of tables in the sheet.
+        path: Path to the Excel File. It can also be an openpyxl Workbook.
+        table: Name of a table, or list of tables in the sheet.
+        engine: DataFrame engine. Should be either pandas or polars.
+            Defaults to pandas
 
     Raises:
         AttributeError: If a workbook is provided, and is a ReadOnlyWorksheet.
@@ -189,7 +232,7 @@ def xlsx_table(
         KeyError: If the provided table does not exist in the sheet.
 
     Returns:
-        A pandas DataFrame, or a dictionary of DataFrames,
+        A DataFrame, or a dictionary of DataFrames,
             if there are multiple arguments for the `table` parameter,
             or the argument to `table` is `None`.
     """  # noqa : E501
@@ -204,70 +247,99 @@ def xlsx_table(
             conda_channel="conda-forge",
             pip_install=True,
         )
+    # TODO: remove in version 1.0
+    if sheetname:
+        warnings.warn(
+            "The keyword argument "
+            "'sheetname' of 'xlsx_tables' is deprecated.",
+            DeprecationWarning,
+            stacklevel=find_stack_level(),
+        )
+    if engine not in {"pandas", "polars"}:
+        raise ValueError("engine should be one of pandas or polars.")
+    base_engine = pd
+    if engine == "polars":
+        try:
+            import polars as pl
+
+            base_engine = pl
+        except ImportError:
+            import_message(
+                submodule="polars",
+                package="polars",
+                conda_channel="conda-forge",
+                pip_install=True,
+            )
+
+    if table is not None:
+        check("table", table, [str, list, tuple])
+        if isinstance(table, (list, tuple)):
+            for num, entry in enumerate(table):
+                check(f"entry{num} in the table argument", entry, [str])
     if isinstance(path, Workbook):
-        ws = path[sheetname]
+        ws = path
     else:
         ws = load_workbook(
             filename=path, read_only=False, keep_links=False, data_only=True
         )
-        ws = ws[sheetname]
+    if ws.read_only:
+        raise ValueError("xlsx_table does not work in read only mode.")
 
-    try:
-        contents = ws.tables
-    except AttributeError as error:
-        raise AttributeError(
-            "Accessing the tables is not supported for ReadOnlyWorksheet"
-        ) from error
-
-    if not contents:
-        raise ValueError(f"There is no table in '{sheetname}' sheet.")
-
-    class TableArgs(NamedTuple):
+    def _create_dataframe_or_dictionary_from_table(
+        table_name_and_worksheet: tuple,
+    ):
         """
-        Named Tuple to easily index values
-        from the tables in the sheet.
+        Create DataFrame/dictionary if table exists in Workbook
         """
+        dictionary = {}
+        for table_name, worksheet in table_name_and_worksheet:
+            contents = worksheet.tables[table_name]
+            header_exist = contents.headerRowCount
+            coordinates = contents.ref
+            data = worksheet[coordinates]
+            if header_exist:
+                header, *data = data
+                header = [cell.value for cell in header]
+            else:
+                header = [f"C{num}" for num in range(len(data[0]))]
+            data = zip(*data)
+            data = ([entry.value for entry in cell] for cell in data)
+            data = dict(zip(header, data))
+            dictionary[table_name] = base_engine.DataFrame(data)
+        return dictionary
 
-        table_name: str
-        ref: str
-        headerRowCount: int
-
-    if isinstance(table, str):
-        table = [table]
-    if table is not None:
-        check("table", table, [str, list, tuple])
-        try:
-            data = []
-            for key in table:
-                outcome = TableArgs(
-                    key, contents[key].ref, contents[key].headerRowCount
-                )
-                data.append(outcome)
-        except KeyError as error:
-            raise KeyError(
-                f"Table {error} is not in the '{sheetname}' sheet."
-            ) from error
+    worksheets = [worksheet for worksheet in ws if worksheet.tables.items()]
+    if not any(worksheets):
+        raise ValueError("There are no tables in the Workbook.")
+    table_is_a_string = False
+    if table:
+        if isinstance(table, str):
+            table_is_a_string = True
+            table = [table]
+        table_names = (
+            entry for worksheet in worksheets for entry in worksheet.tables
+        )
+        missing = set(table).difference(table_names)
+        if missing:
+            raise KeyError(f"Tables {*missing,} do not exist in the Workbook.")
+        tables = [
+            (entry, worksheet)
+            for worksheet in worksheets
+            for entry in worksheet.tables
+            if entry in table
+        ]
     else:
-        data = (
-            TableArgs(key, contents[key].ref, contents[key].headerRowCount)
-            for key in contents
-        )
-
-    frame = {}
-    for table_arg in data:
-        content = [[cell.value for cell in row] for row in ws[table_arg.ref]]
-
-        if table_arg.headerRowCount:
-            header, *content = content
-        else:
-            header = [f"C{num}" for num in range(len(content[0]))]
-        frame[table_arg.table_name] = pd.DataFrame(
-            content, columns=header, copy=False
-        )
-
-    if len(frame) == 1:
-        _, frame = frame.popitem()
-    return frame
+        tables = [
+            (entry, worksheet)
+            for worksheet in worksheets
+            for entry in worksheet.tables
+        ]
+    data = _create_dataframe_or_dictionary_from_table(
+        table_name_and_worksheet=tables
+    )
+    if table_is_a_string:
+        return data[table[0]]
+    return data
 
 
 def xlsx_cells(
@@ -283,21 +355,24 @@ def xlsx_cells(
     border: bool = False,
     protection: bool = False,
     comment: bool = False,
+    engine: str = "pandas",
     **kwargs: Any,
-) -> Union[dict, pd.DataFrame]:
+) -> Mapping:
     """Imports data from spreadsheet without coercing it into a rectangle.
 
     Each cell is represented by a row in a dataframe, and includes the
     cell's coordinates, the value, row and column position.
     The cell formatting (fill, font, border, etc) can also be accessed;
     usually this is returned as a dictionary in the cell, and the specific
-    cell format attribute can be accessed using `pd.Series.str.get`.
+    cell format attribute can be accessed using `pd.Series.str.get`
+    or `pl.struct.field` if it is a polars DataFrame.
 
     Inspiration for this comes from R's [tidyxl][link] package.
     [link]: https://nacnudus.github.io/tidyxl/reference/tidyxl.html
 
     Examples:
         >>> import pandas as pd
+        >>> import polars as pl
         >>> from janitor import xlsx_cells
         >>> pd.set_option("display.max_columns", None)
         >>> pd.set_option("display.expand_frame_repr", False)
@@ -344,6 +419,40 @@ def xlsx_cells(
         7    00000000
         Name: fill, dtype: object
 
+        Access cell formatting in a polars DataFrame:
+
+        >>> out = xlsx_cells(filename, sheetnames="highlights", engine='polars', fill=True).get_column('fill')
+        >>> out
+        shape: (8,)
+        Series: 'fill' [struct[3]]
+        [
+           {null,{"00000000","rgb",0.0},{"00000000","rgb",0.0}}
+           {null,{"00000000","rgb",0.0},{"00000000","rgb",0.0}}
+           {null,{"00000000","rgb",0.0},{"00000000","rgb",0.0}}
+           {null,{"00000000","rgb",0.0},{"00000000","rgb",0.0}}
+           {"solid",{"FFFFFF00","rgb",0.0},{"FFFFFF00","rgb",0.0}}
+           {"solid",{"FFFFFF00","rgb",0.0},{"FFFFFF00","rgb",0.0}}
+           {null,{"00000000","rgb",0.0},{"00000000","rgb",0.0}}
+           {null,{"00000000","rgb",0.0},{"00000000","rgb",0.0}}
+        ]
+
+        Specific cell attributes can be acessed via Polars' struct:
+
+        >>> out.struct.field('fgColor').struct.field('rgb')
+        shape: (8,)
+        Series: 'rgb' [str]
+        [
+           "00000000"
+           "00000000"
+           "00000000"
+           "00000000"
+           "FFFFFF00"
+           "FFFFFF00"
+           "00000000"
+           "00000000"
+        ]
+
+
     Args:
         path: Path to the Excel File. It can also be an openpyxl Workbook.
         sheetnames: Names of the sheets from which the cells are to be extracted.
@@ -372,6 +481,7 @@ def xlsx_cells(
             It is usually returned as a dictionary.
         comment: If `True`, return comment properties of the cell.
             It is usually returned as a dictionary.
+        engine: DataFrame engine. Should be either pandas or polars.
         **kwargs: Any other attributes of the cell, that can be accessed from openpyxl.
 
     Raises:
@@ -380,7 +490,7 @@ def xlsx_cells(
             is not a openpyxl cell attribute.
 
     Returns:
-        A pandas DataFrame, or a dictionary of DataFrames.
+        A DataFrame, or a dictionary of DataFrames.
     """  # noqa : E501
 
     try:
@@ -408,6 +518,21 @@ def xlsx_cells(
         path = load_workbook(
             filename=path, read_only=read_only, keep_links=False
         )
+    if engine not in {"pandas", "polars"}:
+        raise ValueError("engine should be one of pandas or polars.")
+    base_engine = pd
+    if engine == "polars":
+        try:
+            import polars as pl
+
+            base_engine = pl
+        except ImportError:
+            import_message(
+                submodule="polars",
+                package="polars",
+                conda_channel="conda-forge",
+                pip_install=True,
+            )
     # start_point and end_point applies if the user is interested in
     # only a subset of the Excel File and knows the coordinates
     if start_point or end_point:
@@ -479,6 +604,7 @@ def xlsx_cells(
             start_point,
             end_point,
             include_blank_cells,
+            base_engine=base_engine,
         )
         for sheetname in sheetnames
     }
@@ -498,6 +624,7 @@ def _xlsx_cells(
     start_point: Union[str, int],
     end_point: Union[str, int],
     include_blank_cells: bool,
+    base_engine,
 ):
     """
     Function to process a single sheet. Returns a DataFrame.
@@ -513,7 +640,7 @@ def _xlsx_cells(
         path_is_workbook: True/False.
 
     Returns:
-        A pandas DataFrame.
+        A DataFrame.
     """
 
     if start_point:
@@ -525,15 +652,23 @@ def _xlsx_cells(
         if (cell.value is None) and (not include_blank_cells):
             continue
         for value in defaults:
-            frame[value].append(getattr(cell, value, None))
+            outcome = getattr(cell, value, None)
+            if value.startswith("is_"):
+                pass
+            elif outcome is not None:
+                outcome = str(outcome)
+            frame[value].append(outcome)
         for parent, boolean_value in parameters.items():
             check(f"The value for {parent}", boolean_value, [bool])
             if not boolean_value:
                 continue
             boolean_value = _object_to_dict(getattr(cell, parent, None))
+            if isinstance(boolean_value, dict) or (boolean_value is None):
+                pass
+            else:
+                boolean_value = str(boolean_value)
             frame[parent].append(boolean_value)
-
-    return pd.DataFrame(frame, copy=False)
+    return base_engine.DataFrame(frame)
 
 
 def _object_to_dict(obj):

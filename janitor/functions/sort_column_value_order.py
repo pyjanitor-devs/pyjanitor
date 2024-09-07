@@ -5,12 +5,13 @@ import pandas_flavor as pf
 
 from janitor.utils import check, check_column
 
-from .remove_columns import remove_columns  # noqa: F401
-
 
 @pf.register_dataframe_method
 def sort_column_value_order(
-    df: pd.DataFrame, column: str, column_value_order: dict, columns=None
+    df: pd.DataFrame,
+    column: str,
+    column_value_order: dict,
+    columns: str = None,
 ) -> pd.DataFrame:
     """This function adds precedence to certain values in a specified column,
     then sorts based on that column and any other specified columns.
@@ -65,7 +66,7 @@ def sort_column_value_order(
     if not column_value_order:
         raise ValueError("column_value_order dictionary cannot be empty")
 
-    df = df.assign(cond_order=df[column].replace(column_value_order))
+    df = df.assign(cond_order=df[column].map(column_value_order))
 
     sort_by = ["cond_order"]
     if columns is not None:

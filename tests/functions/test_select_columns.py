@@ -8,7 +8,8 @@ import pytest
 from pandas.api.types import is_numeric_dtype
 from pandas.testing import assert_frame_equal
 
-from janitor.functions.utils import DropLabel, get_columns, patterns
+from janitor.functions.select import DropLabel, get_columns
+from janitor.functions.utils import patterns
 
 
 @pytest.mark.functions
@@ -149,7 +150,7 @@ def df_dates():
     """pytest fixture"""
     start = datetime.datetime(2011, 1, 1)
     end = datetime.datetime(2012, 1, 1)
-    rng = pd.date_range(start, end, freq="BM")
+    rng = pd.date_range(start, end, freq="BME")
     return pd.DataFrame([np.random.randn(len(rng))], columns=rng)
 
 

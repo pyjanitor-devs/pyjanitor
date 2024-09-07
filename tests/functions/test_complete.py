@@ -40,17 +40,6 @@ def MI():
     return dfmi
 
 
-def test_multiindex_names_not_found(MI):
-    """
-    Raise ValueError if the passed label is not found
-    """
-    MI.index.names = list("ABCD")
-    with pytest.raises(
-        ValueError, match="group not present in dataframe columns!"
-    ):
-        MI.complete("group")
-
-
 @pytest.fixture
 def fill_df():
     """pytest fixture"""
@@ -88,88 +77,10 @@ def test_column_None(fill_df):
     assert_frame_equal(fill_df.complete(), fill_df)
 
 
-def test_empty_groups(fill_df):
-    """Raise ValueError if any of the groups is empty."""
-    with pytest.raises(
-        ValueError, match="entry in columns argument cannot be empty"
-    ):
-        fill_df.complete("group", {})
-
-
-def test_dict_not_list_like(fill_df):
-    """
-    Raise ValueError if `*columns`
-    is a dictionary, and the value
-    is not list-like.
-    """
-    with pytest.raises(ValueError):
-        fill_df.complete("group", {"item_id": "cities"})
-
-
-def test_dict_not_1D(fill_df):
-    """
-    Raise ValueError if `*columns`
-    is a dictionary, and the value
-    is not 1D array.
-    """
-    with pytest.raises(
-        ValueError, match="Kindly provide a 1-D array for item_id."
-    ):
-        fill_df.complete("group", {"item_id": fill_df})
-
-
-def test_dict_empty(fill_df):
-    """
-    Raise ValueError if `*columns`
-    is a dictionary, and the value
-    is an empty array.
-    """
-    with pytest.raises(
-        ValueError,
-        match="Kindly ensure the provided array for group "
-        "has at least one value.",
-    ):
-        fill_df.complete("item_id", {"group": pd.Series([], dtype=int)})
-
-
-def test_by_not_found(fill_df):
-    """Raise ValueError if `by` does not exist."""
-    with pytest.raises(ValueError):
-        fill_df.complete("group", "item_id", by="name")
-
-
-def test_group_None(fill_df):
-    """Raise ValueError if entry is None."""
-    with pytest.raises(
-        ValueError, match="label in the columns argument cannot be None."
-    ):
-        fill_df.complete("group", "item_id", None)
-
-
-def test_duplicate_groups(fill_df):
-    """Raise ValueError if there are duplicate groups."""
-    with pytest.raises(
-        ValueError, match="item_id should be in only one group."
-    ):
-        fill_df.complete("group", "item_id", ("item_id", "item_name"))
-
-
-def test_type_groups(fill_df):
-    """Raise TypeError if grouping is not a permitted type."""
-    with pytest.raises(TypeError):
-        fill_df.complete("group", "item_id", {1, 2, 3})
-
-
 def test_type_sort(fill_df):
     """Raise TypeError if `sort` is not boolean."""
     with pytest.raises(TypeError):
         fill_df.complete("group", "item_id", sort=11)
-
-
-def test_groups_not_found(fill_df):
-    """Raise ValueError if group does not exist."""
-    with pytest.raises(ValueError):
-        fill_df.complete("group", ("item_id", "name"))
 
 
 def test_fill_value(fill_df):
@@ -220,7 +131,7 @@ def test_all_strings_no_nulls(df):
     expected = (
         df.set_index(cols)  # noqa: PD013, PD010
         .unstack(cols[-1])  # noqa: PD010
-        .stack(dropna=False)  # noqa: PD013
+        .stack(future_stack=True)  # noqa: PD013
         .reset_index()
         .reindex(columns=columns)
     )
@@ -284,33 +195,6 @@ def test_dict_extension_array(df):
 
 @given(df=categoricaldf_strategy())
 @settings(deadline=None, max_examples=10)
-def test_dict_numpy(df):
-    """
-    Test `complete` output when *columns
-    is a dictionary, and value is
-    a numpy array.
-    """
-    cols = ["names", "numbers"]
-    df = df.assign(names=[*ascii_lowercase[: len(df)]])
-    new_numbers = np.arange(df.numbers.min(), df.numbers.max() + 1)
-    new_numbers = {"numbers": new_numbers}
-    cols = ["numbers", "names"]
-    result = df.complete(new_numbers, "names", sort=True)
-    columns = df.columns
-    new_index = range(df.numbers.min(), df.numbers.max() + 1)
-    new_index = pd.MultiIndex.from_product([new_index, df.names], names=cols)
-    expected = (
-        df.set_index(cols)
-        .reindex(new_index)
-        .reset_index()
-        .reindex(columns=columns)
-    )
-
-    assert_frame_equal(result, expected)
-
-
-@given(df=categoricaldf_strategy())
-@settings(deadline=None, max_examples=10)
 def test_dict_Index(df):
     """
     Test `complete` output when *columns
@@ -320,7 +204,7 @@ def test_dict_Index(df):
     cols = ["names", "numbers"]
     df = df.assign(names=[*ascii_lowercase[: len(df)]])
     new_numbers = pd.RangeIndex(
-        start=df.numbers.min(), stop=df.numbers.max() + 1
+        start=df.numbers.min(), stop=df.numbers.max() + 1, name="numbers"
     )
     new_numbers = {"numbers": new_numbers}
     cols = ["numbers", "names"]
@@ -340,19 +224,73 @@ def test_dict_Index(df):
 
 @given(df=categoricaldf_strategy())
 @settings(deadline=None, max_examples=10)
-def test_dict_duplicated(df):
+def test_complete_Index(df):
     """
     Test `complete` output when *columns
-    is a dictionary, and value is
-    duplicated.
+    is an Index.
     """
     cols = ["names", "numbers"]
     df = df.assign(names=[*ascii_lowercase[: len(df)]])
     new_numbers = pd.RangeIndex(
-        start=df.numbers.min(), stop=df.numbers.max() + 1
+        start=df.numbers.min(), stop=df.numbers.max() + 1, name="numbers"
     )
-    new_numbers = new_numbers.append(new_numbers)
-    new_numbers = {"numbers": new_numbers}
+    cols = ["numbers", "names"]
+    result = df.complete(new_numbers, "names", sort=True)
+    columns = df.columns
+    new_index = range(df.numbers.min(), df.numbers.max() + 1)
+    new_index = pd.MultiIndex.from_product([new_index, df.names], names=cols)
+    expected = (
+        df.set_index(cols)
+        .reindex(new_index)
+        .reset_index()
+        .reindex(columns=columns)
+    )
+
+    assert_frame_equal(result, expected)
+
+
+@given(df=categoricaldf_strategy())
+@settings(deadline=None, max_examples=10)
+def test_complete_Series(df):
+    """
+    Test `complete` output when *columns
+    is a Series.
+    """
+    cols = ["names", "numbers"]
+    df = df.assign(names=[*ascii_lowercase[: len(df)]])
+    new_numbers = range(df.numbers.min(), df.numbers.max() + 1)
+    new_numbers = pd.Series(new_numbers, name="numbers")
+    cols = ["numbers", "names"]
+    result = df.complete(new_numbers, "names", sort=True)
+    columns = df.columns
+    new_index = range(df.numbers.min(), df.numbers.max() + 1)
+    new_index = pd.MultiIndex.from_product([new_index, df.names], names=cols)
+    expected = (
+        df.set_index(cols)
+        .reindex(new_index)
+        .reset_index()
+        .reindex(columns=columns)
+    )
+
+    assert_frame_equal(result, expected)
+
+
+@given(df=categoricaldf_strategy())
+@settings(deadline=None, max_examples=10)
+def test_complete_callable(df):
+    """
+    Test `complete` output when *columns
+    is a callable.
+    """
+    cols = ["names", "numbers"]
+    df = df.assign(names=[*ascii_lowercase[: len(df)]])
+
+    def _index(df):
+        return pd.RangeIndex(
+            start=df.numbers.min(), stop=df.numbers.max() + 1, name="numbers"
+        )
+
+    new_numbers = _index(df=df)
     cols = ["numbers", "names"]
     result = df.complete(new_numbers, "names", sort=True)
     columns = df.columns
@@ -372,11 +310,14 @@ def test_dict_duplicated(df):
 def test_single_column(df):
     """Test `complete` output if a single column is provided."""
     result = df.complete("names")
-    assert_frame_equal(result, df)
+    assert_frame_equal(
+        result.sort_values(df.columns.tolist(), ignore_index=True),
+        df.sort_values(df.columns.tolist(), ignore_index=True),
+    )
 
 
-def test_tuple_column():
-    """Test `complete` output if a tuple is provided."""
+def test_seq_column():
+    """Test `complete` output if a sequence is provided."""
     df = pd.DataFrame(
         {
             "group": [2, 1, 1],
@@ -387,13 +328,74 @@ def test_tuple_column():
         }
     )
 
-    result = df.complete("group", ("item_id", "item_name"), sort=True)
+    result = df.complete("group", ["item_id", "item_name"], sort=True)
 
     columns = ["group", "item_id", "item_name"]
     expected = (
         df.set_index(columns)
         .unstack("group")
-        .stack(dropna=False)
+        .stack(future_stack=True)
+        .reset_index()
+        .reindex(columns=df.columns)
+        .sort_values(columns, ignore_index=True)
+    )
+    assert_frame_equal(result, expected)
+
+
+def test_pandas_dataframe():
+    """Test `complete` output if a DataFrame is provided."""
+    df = pd.DataFrame(
+        {
+            "group": [2, 1, 1],
+            "item_id": [2, 1, 2],
+            "item_name": ["b", "a", "b"],
+            "value1": [2, 1, 3],
+            "value2": [5, 4, 6],
+        }
+    )
+
+    result = df.complete(
+        "group",
+        df.loc[:, ["item_id", "item_name"]].drop_duplicates(),
+        sort=True,
+    )
+
+    columns = ["group", "item_id", "item_name"]
+    expected = (
+        df.set_index(columns)
+        .unstack("group")
+        .stack(future_stack=True)
+        .reset_index()
+        .reindex(columns=df.columns)
+        .sort_values(columns, ignore_index=True)
+    )
+    assert_frame_equal(result, expected)
+
+
+def test_pandas_multiindex():
+    """Test `complete` output if a MultiIndex is provided."""
+    df = pd.DataFrame(
+        {
+            "group": [2, 1, 1],
+            "item_id": [2, 1, 2],
+            "item_name": ["b", "a", "b"],
+            "value1": [2, 1, 3],
+            "value2": [5, 4, 6],
+        }
+    )
+    index = df.loc[:, ["item_id", "item_name"]].drop_duplicates()
+    index = pd.MultiIndex.from_frame(index)
+    result = df.complete(
+        "group",
+        index,
+        sort=True,
+    )
+
+    columns = ["group", "item_id", "item_name"]
+    expected = (
+        df.set_index(columns)
+        .unstack("group")
+        .stack(future_stack=True)
         .reset_index()
         .reindex(columns=df.columns)
         .sort_values(columns, ignore_index=True)
@@ -425,8 +427,8 @@ def test_complete_multiple_groupings():
     )
 
     result = df3.complete(
-        ("meta", "domain1"),
-        ("project_id", "question_count"),
+        ["meta", "domain1"],
+        ["project_id", "question_count"],
         fill_value={"tag_count": 0},
         sort=True,
     ).astype({"tag_count": int})
@@ -435,30 +437,33 @@ def test_complete_multiple_groupings():
 
 def test_fill_value_scalar(taxonomy_df):
     """Test output if the fill_value is a scalar."""
-    result = taxonomy_df.complete(
-        "Year", "Taxon", fill_value=0, sort=False
-    ).astype({"Abundance": int})
+    result = (
+        taxonomy_df.complete("Year", "Taxon", fill_value=0, sort=False)
+        .sort_values("Taxon", ignore_index=True)
+        .astype({"Abundance": int})
+    )
     expected = (
         taxonomy_df.set_index(["Year", "Taxon"])
         .unstack(fill_value=0)
-        .stack(dropna=False)
+        .stack(future_stack=True)
         .reset_index()
         .astype({"Taxon": "object"})
+        .sort_values("Taxon", ignore_index=True)
     )
 
     assert_frame_equal(result, expected)
 
 
 #  http://imachordata.com/2016/02/05/you-complete-me/
-def test_dict_tuple_callable(taxonomy_df):
+def test_dict_seq_callable(taxonomy_df):
     """
-    Test output if a dictionary and a tuple/list
+    Test output if a dictionary and a list
     are included in the `columns` parameter.
     """
 
     result = taxonomy_df.complete(
-        {"Year": lambda x: range(x.Year.min(), x.Year.max() + 1)},
-        ("Taxon", "Abundance"),
+        {"Year": lambda x: pd.RangeIndex(x.Year.min(), x.Year.max() + 1)},
+        ["Taxon", "Abundance"],
         sort=True,
     )
 
@@ -468,7 +473,7 @@ def test_dict_tuple_callable(taxonomy_df):
         .unstack("Year")
         .droplevel(0, 1)
         .reindex(columns=range(1999, 2005))
-        .stack(dropna=False)
+        .stack(future_stack=True)
         .reset_index()
         .iloc[:, :-1]
         .reindex(columns=["Year", "Taxon", "Abundance"])
@@ -478,15 +483,15 @@ def test_dict_tuple_callable(taxonomy_df):
     assert_frame_equal(result, expected)
 
 
-def test_dict_tuple(taxonomy_df):
+def test_dict_seq(taxonomy_df):
     """
-    Test output if a dictionary and a tuple/list
+    Test output if a dictionary and a list
     are included in the `columns` parameter.
     """
 
     result = taxonomy_df.complete(
-        {"Year": [2000, 1999, 2001, 2002, 2003, 2004]},
-        ("Taxon", "Abundance"),
+        {"Year": pd.Series([2000, 1999, 2001, 2002, 2003, 2004])},
+        ["Taxon", "Abundance"],
         sort=True,
     )
 
@@ -496,7 +501,7 @@ def test_dict_tuple(taxonomy_df):
         .unstack("Year")
         .droplevel(0, 1)
         .reindex(columns=range(1999, 2005))
-        .stack(dropna=False)
+        .stack(future_stack=True)
         .reset_index()
         .iloc[:, :-1]
         .reindex(columns=["Year", "Taxon", "Abundance"])
@@ -517,7 +522,7 @@ def test_complete_groupby():
     )
 
     result = df.complete(
-        {"year": lambda x: range(x.year.min(), x.year.max() + 1)},
+        {"year": lambda x: pd.Series(range(x.year.min(), x.year.max() + 1))},
         by="state",
         sort=True,
     )
@@ -525,7 +530,9 @@ def test_complete_groupby():
     expected = (
         df.set_index("year")
         .groupby("state")
-        .apply(lambda x: x.reindex(range(x.index.min(), x.index.max() + 1)))
+        .value.apply(
+            lambda x: x.reindex(range(x.index.min(), x.index.max() + 1))
+        )
         .drop(columns="state")
         .reset_index()
     )
@@ -537,7 +544,7 @@ def test_explicit_scalar(fill_df):
     """Test output if fill_value is a scalar, and explicit is False."""
     result = fill_df.complete(
         "group",
-        ("item_id", "item_name"),
+        ["item_id", "item_name"],
         fill_value=0,
         explicit=False,
     ).astype({"value2": int})
@@ -545,7 +552,7 @@ def test_explicit_scalar(fill_df):
     expected = (
         fill_df.set_index(columns)
         .unstack("group", fill_value=0)
-        .stack(dropna=False)
+        .stack(future_stack=True)
         .reset_index()
         .reindex(columns=fill_df.columns)
         .sort_values(columns, ignore_index=True)
@@ -561,7 +568,7 @@ def test_explicit_scalar_cat(fill_df):
     fill_df = fill_df.astype({"value1": "category"})
     result = fill_df.complete(
         "group",
-        ("item_id", "item_name"),
+        ["item_id", "item_name"],
         fill_value=0,
         explicit=False,
     ).astype({"value2": int})
@@ -570,7 +577,7 @@ def test_explicit_scalar_cat(fill_df):
     expected = (
         fill_df.set_index(columns)
         .unstack("group", fill_value=0)
-        .stack(dropna=False)
+        .stack(future_stack=True)
         .reset_index()
         .reindex(columns=fill_df.columns)
         .sort_values(columns, ignore_index=True)
@@ -590,71 +597,19 @@ def test_explicit_dict(fill_df):
     """Test output if fill_value is a dictionary, and explicit is False."""
     result = fill_df.complete(
         "group",
-        ("item_id", "item_name"),
+        ["item_id", "item_name"],
         fill_value={"value1": 0, "value2": 99},
         explicit=False,
         sort=True,
     ).astype({"value2": int})
-    expected = pd.DataFrame(
-        [
-            {
-                "group": 1,
-                "item_id": 1,
-                "item_name": "a",
-                "value1": 1.0,
-                "value2": 4,
-            },
-            {
-                "group": 1,
-                "item_id": 2,
-                "item_name": "a",
-                "value1": 0.0,
-                "value2": 99,
-            },
-            {
-                "group": 1,
-                "item_id": 2,
-                "item_name": "b",
-                "value1": 3.0,
-                "value2": 6,
-            },
-            {
-                "group": 1,
-                "item_id": 3,
-                "item_name": "b",
-                "value1": 0.0,
-                "value2": 99,
-            },
-            {
-                "group": 2,
-                "item_id": 1,
-                "item_name": "a",
-                "value1": 0.0,
-                "value2": 99,
-            },
-            {
-                "group": 2,
-                "item_id": 2,
-                "item_name": "a",
-                "value1": np.nan,
-                "value2": 5,
-            },
-            {
-                "group": 2,
-                "item_id": 2,
-                "item_name": "b",
-                "value1": 0.0,
-                "value2": 99,
-            },
-            {
-                "group": 2,
-                "item_id": 3,
-                "item_name": "b",
-                "value1": 4.0,
-                "value2": 7,
-            },
-        ]
-    )
+    expected = {
+        "group": [1, 1, 1, 1, 2, 2, 2, 2],
+        "item_id": [1, 2, 2, 3, 1, 2, 2, 3],
+        "item_name": ["a", "a", "b", "b", "a", "a", "b", "b"],
+        "value1": [1.0, 0.0, 3.0, 0.0, 0.0, np.nan, 0.0, 4.0],
+        "value2": [4, 99, 6, 99, 99, 5, 99, 7],
+    }
+    expected = pd.DataFrame(expected)
 
     assert_frame_equal(result, expected, check_dtype=False)
 
@@ -668,7 +623,7 @@ def test_explicit_(fill_df):
     trimmed = fill_df.select("value*", axis="columns", invert=True)
     result = trimmed.complete(
         "group",
-        ("item_id", "item_name"),
+        ["item_id", "item_name"],
         fill_value=0,
         explicit=False,
         sort=True,
@@ -692,88 +647,72 @@ def test_nulls(fill_df):
     """
     Test output if nulls are present
     """
-    actual = fill_df.complete(["value1"], "value2", sort=True)
-    ind = [fill_df.value1.dropna().unique(), fill_df.value2.unique()]
-    ind = pd.MultiIndex.from_product(ind, names=["value1", "value2"])
-    ind = pd.DataFrame([], index=ind)
-    expected = fill_df.merge(
-        ind, on=["value1", "value2"], how="outer", sort=True
+    columns = fill_df.columns.tolist()
+    actual = (
+        fill_df.complete(["value1"], "value2", sort=True)
+        .loc[:, columns]
+        .sort_values(columns, ignore_index=True)
     )
+    expected = (
+        fill_df.set_index(["value1", "value2"])
+        .unstack("value2")
+        .stack("value2", future_stack=True)
+        .reset_index()
+        .loc[:, columns]
+        .sort_values(columns, ignore_index=True)
+    )
+
     assert_frame_equal(actual, expected)
 
 
 def test_groupby_tuple():
     """Test output for groupby on a tuple of columns."""
     # https://stackoverflow.com/q/77123843/7175713
-    data_dict = {
-        "Grid Cell": [1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2],
-        "Site": [
-            "A",
-            "A",
-            "A",
-            "A",
-            "B",
-            "B",
-            "B",
-            "C",
-            "C",
-            "C",
-            "D",
-            "D",
-            "D",
-            "D",
-        ],
-        "Date": [
-            "1999-01-01",
-            "1999-02-01",
-            "1999-03-01",
-            "1999-04-01",
-            "1999-01-01",
-            "1999-02-01",
-            "1999-03-01",
-            "2000-01-01",
-            "2000-02-01",
-            "2000-03-01",
-            "2000-01-01",
-            "2000-02-01",
-            "2000-03-01",
-            "2000-04-01",
-        ],
-        "Value": [
-            -2.45,
-            -3.72,
-            1.34,
-            4.56,
-            0.23,
-            3.26,
-            6.76,
-            -7.45,
-            -6.43,
-            -2.18,
-            -10.72,
-            -8.97,
-            -5.32,
-            -1.73,
-        ],
-    }
+    data_dict = [
+        {"Grid Cell": 1, "Site": "A", "Date": "1999-01-01", "Value": -2.45},
+        {"Grid Cell": 1, "Site": "A", "Date": "1999-02-01", "Value": -3.72},
+        {"Grid Cell": 1, "Site": "A", "Date": "1999-03-01", "Value": 1.34},
+        {"Grid Cell": 1, "Site": "A", "Date": "1999-04-01", "Value": 4.56},
+        {"Grid Cell": 1, "Site": "B", "Date": "1999-01-01", "Value": 0.23},
+        {"Grid Cell": 1, "Site": "B", "Date": "1999-02-01", "Value": 3.26},
+        {"Grid Cell": 1, "Site": "B", "Date": "1999-03-01", "Value": 6.76},
+        {"Grid Cell": 2, "Site": "C", "Date": "2000-01-01", "Value": -7.45},
+        {"Grid Cell": 2, "Site": "C", "Date": "2000-02-01", "Value": -6.43},
+        {"Grid Cell": 2, "Site": "C", "Date": "2000-03-01", "Value": -2.18},
+        {"Grid Cell": 2, "Site": "D", "Date": "2000-01-01", "Value": -10.72},
+        {"Grid Cell": 2, "Site": "D", "Date": "2000-02-01", "Value": -8.97},
+        {"Grid Cell": 2, "Site": "D", "Date": "2000-03-01", "Value": -5.32},
+        {"Grid Cell": 2, "Site": "D", "Date": "2000-04-01", "Value": -1.73},
+    ]
     df = pd.DataFrame.from_dict(data_dict)
-    expected = df.complete("Date", "Site", by="Grid Cell").sort_values(
-        ["Grid Cell", "Site", "Date"], ignore_index=True
+    expected = (
+        df.complete("Date", "Site", by="Grid Cell")
+        .sort_values(["Grid Cell", "Site", "Date"], ignore_index=True)
+        .loc[:, ["Grid Cell", "Site", "Date", "Value"]]
     )
 
     # https://stackoverflow.com/a/77123963/7175713
-    def reindex(g):
-        idx = pd.MultiIndex.from_product(
-            [g["Grid Cell"].unique(), g["Site"].unique(), g["Date"].unique()],
-            names=["Grid Cell", "Site", "Date"],
-        )
-        return g.set_index(["Grid Cell", "Site", "Date"]).reindex(
-            idx, fill_value=np.nan
-        )
+    data = [
+        {"Grid Cell": 1, "Site": "A", "Date": "1999-01-01", "Value": -2.45},
+        {"Grid Cell": 1, "Site": "A", "Date": "1999-02-01", "Value": -3.72},
+        {"Grid Cell": 1, "Site": "A", "Date": "1999-03-01", "Value": 1.34},
+        {"Grid Cell": 1, "Site": "A", "Date": "1999-04-01", "Value": 4.56},
+        {"Grid Cell": 1, "Site": "B", "Date": "1999-01-01", "Value": 0.23},
+        {"Grid Cell": 1, "Site": "B", "Date": "1999-02-01", "Value": 3.26},
+        {"Grid Cell": 1, "Site": "B", "Date": "1999-03-01", "Value": 6.76},
+        {"Grid Cell": 1, "Site": "B", "Date": "1999-04-01", "Value": np.nan},
+        {"Grid Cell": 2, "Site": "C", "Date": "2000-01-01", "Value": -7.45},
+        {"Grid Cell": 2, "Site": "C", "Date": "2000-02-01", "Value": -6.43},
+        {"Grid Cell": 2, "Site": "C", "Date": "2000-03-01", "Value": -2.18},
+        {"Grid Cell": 2, "Site": "C", "Date": "2000-04-01", "Value": np.nan},
+        {"Grid Cell": 2, "Site": "D", "Date": "2000-01-01", "Value": -10.72},
+        {"Grid Cell": 2, "Site": "D", "Date": "2000-02-01", "Value": -8.97},
+        {"Grid Cell": 2, "Site": "D", "Date": "2000-03-01", "Value": -5.32},
+        {"Grid Cell": 2, "Site": "D", "Date": "2000-04-01", "Value": -1.73},
+    ]
 
-    actual = (
-        df.groupby("Grid Cell", group_keys=False).apply(reindex).reset_index()
-    )
+    actual = pd.DataFrame(data)
+
     assert_frame_equal(expected, actual)
 
 
@@ -788,5 +727,5 @@ def test_MI_1(MI):
         how="outer",
         sort=True,
     ).rename_axis(columns=[None, None])
-    actual = MI.iloc[:2].complete({("a", "bar"): range(1, 5)})
+    actual = MI.iloc[:2].complete({("a", "bar"): pd.Series(range(1, 5))})
     assert_frame_equal(actual, expected)

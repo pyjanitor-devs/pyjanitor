@@ -27,37 +27,49 @@ def test_dtype_by(df):
 def test_ascending_groupby_k_2(df):
     """Test ascending group by, k=2"""
     expected = (
-        df.groupby("result", sort=False)
+        df.groupby("result", sort=False)[["age", "major", "ID"]]
         .apply(lambda d: d.sort_values("age").head(2))
-        .droplevel(0)
+        .reset_index("result")
+        .sort_index(axis="columns")
     )
     assert_frame_equal(
-        df.groupby_topk("result", "age", 2, ignore_index=False), expected
+        df.groupby_topk("result", "age", 2, ignore_index=False).sort_index(
+            axis="columns"
+        ),
+        expected,
     )
 
 
 def test_ascending_groupby_non_numeric(df):
     """Test output for non-numeric column"""
     expected = (
-        df.groupby("result", sort=False)
+        df.groupby("result", sort=False)[["age", "major", "ID"]]
         .apply(lambda d: d.sort_values("major").head(2))
-        .droplevel(0)
+        .reset_index("result")
+        .sort_index(axis="columns")
     )
     assert_frame_equal(
-        df.groupby_topk("result", "major", 2, ignore_index=False), expected
+        df.groupby_topk("result", "major", 2, ignore_index=False).sort_index(
+            axis="columns"
+        ),
+        expected,
     )
 
 
 def test_descending_groupby_k_3(df):
     """Test descending group by, k=3"""
     expected = (
-        df.groupby("result", sort=False)
+        df.groupby("result", sort=False)[["age", "major", "ID"]]
         .apply(lambda d: d.sort_values("age", ascending=False).head(3))
-        .droplevel(0)
+        .reset_index("result")
         .reset_index(drop=True)
+        .sort_index(axis="columns")
     )
     assert_frame_equal(
-        df.groupby_topk("result", "age", 3, ascending=False), expected
+        df.groupby_topk("result", "age", 3, ascending=False).sort_index(
+            axis="columns"
+        ),
+        expected,
     )
 
 

@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pandas_flavor as pf
 
-from janitor.functions.utils import _index_converter, _select_index
+from janitor.functions.select import _index_converter, _select_index
 
 
 @pf.register_dataframe_method

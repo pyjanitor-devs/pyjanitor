@@ -65,5 +65,7 @@ def test_truncate_datetime_containing_NaT():
         {"dt": [x.replace(microsecond=0), pd.NaT], "foo": [np.nan, 3]}
     )
 
-    result = df.truncate_datetime_dataframe("second")
+    result = df.truncate_datetime_dataframe("second").assign(
+        dt=lambda df: df["dt"].dt.as_unit("ns")
+    )
     assert_frame_equal(result, expected)

@@ -45,6 +45,7 @@ nav:
       - Machine Learning: api/ml.md
       - Math: api/math.md
       # - PySpark: api/pyspark.md  # will be added back later
+      - Polars: api/polars.md
       - Timeseries: api/timeseries.md
       - XArray: api/xarray.md
   - Development Guide: devguide.md
@@ -62,9 +63,12 @@ plugins:
             docstring_style: "google"
             docstring_options:
               trim_doctest_flags: true
+              show_if_no_docstring: false
             show_root_toc_entry: false
+            show_root_heading: false
             show_submodules: true
             show_source: true
+            members_order: alphabetical
 # - mknotebooks:
 #     execute: true
 #     write_markdown: true

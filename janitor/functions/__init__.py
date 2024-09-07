@@ -2,18 +2,18 @@
 # General Functions
 
 pyjanitor's general-purpose data cleaning functions.
-
-NOTE: Instructions for future contributors:
-
-1. Place the source code of the functions in a file named after the function.
-2. Place utility functions in the same file.
-3. If you use a utility function from another source file,
-please refactor it out to `janitor.functions.utils`.
-4. Import the function into this file so that it shows up in the top-level API.
-5. Sort the imports in alphabetical order.
-6. Try to group related functions together (e.g. see `convert_date.py`)
-7. Never import utils.
 """
+
+# NOTE: Instructions for future contributors:
+
+# 1. Place the source code of the functions in a file named after the function.
+# 2. Place utility functions in the same file.
+# 3. If you use a utility function from another source file,
+# please refactor it out to `janitor.functions.utils`.
+# 4. Import the function into this file so that it shows up in the top-level API.
+# 5. Sort the imports in alphabetical order.
+# 6. Try to group related functions together (e.g. see `convert_date.py`)
+# 7. Never import utils.
 
 from .add_columns import add_columns
 from .also import also
@@ -40,7 +40,7 @@ from .drop_duplicate_columns import drop_duplicate_columns
 from .dropnotnull import dropnotnull
 from .encode_categorical import encode_categorical
 from .expand_column import expand_column
-from .expand_grid import expand_grid
+from .expand_grid import cartesian_product, expand, expand_grid
 from .explode_index import explode_index
 from .factorize_columns import factorize_columns
 from .fill import fill_direction, fill_empty
@@ -57,7 +57,7 @@ from .label_encode import label_encode
 from .limit_column_characters import limit_column_characters
 from .min_max_scale import min_max_scale
 from .move import move
-from .pivot import pivot_longer, pivot_wider
+from .pivot import pivot_longer, pivot_longer_spec, pivot_wider
 from .process_text import process_text
 from .remove_columns import remove_columns
 from .remove_empty import remove_empty
@@ -65,7 +65,14 @@ from .rename_columns import rename_column, rename_columns
 from .reorder_columns import reorder_columns
 from .round_to_fraction import round_to_fraction
 from .row_to_names import row_to_names
-from .select import select, select_columns, select_rows
+from .select import (
+    DropLabel,
+    get_columns,
+    get_index_labels,
+    select,
+    select_columns,
+    select_rows,
+)
 from .shuffle import shuffle
 from .sort_column_value_order import sort_column_value_order
 from .sort_naturally import sort_naturally
@@ -77,11 +84,6 @@ from .transform_columns import transform_column, transform_columns
 from .truncate_datetime import truncate_datetime_dataframe
 from .update_where import update_where
 from .utils import (
-    DropLabel,
-    col,
-    get_columns,
-    get_index_labels,
-    patterns,
     unionize_dataframe_categories,
 )
 
@@ -89,6 +91,7 @@ __all__ = [
     "add_columns",
     "also",
     "bin_numeric",
+    "cartesian_product",
     "case_when",
     "change_type",
     "change_index_dtype",
@@ -108,6 +111,7 @@ __all__ = [
     "drop_duplicate_columns",
     "dropnotnull",
     "encode_categorical",
+    "expand",
     "expand_column",
     "expand_grid",
     "explode_index",
@@ -132,6 +136,7 @@ __all__ = [
     "min_max_scale",
     "move",
     "pivot_longer",
+    "pivot_longer_spec",
     "pivot_wider",
     "process_text",
     "remove_columns",
@@ -155,10 +160,8 @@ __all__ = [
     "transform_columns",
     "truncate_datetime_dataframe",
     "update_where",
-    "patterns",
     "unionize_dataframe_categories",
     "DropLabel",
     "get_index_labels",
-    "col",
     "get_columns",
 ]

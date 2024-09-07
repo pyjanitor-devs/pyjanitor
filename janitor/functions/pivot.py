@@ -1,22 +1,20 @@
+from __future__ import annotations
+
+import operator
 import re
 import warnings
 from collections import defaultdict
 from functools import reduce
-from itertools import chain, zip_longest
-from typing import Callable, Optional, Pattern, Union
+from itertools import zip_longest
+from typing import Callable, Pattern
 
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
-from pandas.api.types import (
-    is_categorical_dtype,
-    is_extension_array_dtype,
-    is_list_like,
-)
+from pandas.api.types import is_extension_array_dtype, is_list_like
 from pandas.core.dtypes.concat import concat_compat
 
-from janitor.functions.utils import (
-    _computations_expand_grid,
+from janitor.functions.select import (
     _index_converter,
     _select_index,
     get_index_labels,
@@ -27,17 +25,17 @@ from janitor.utils import check, refactored_function
 @pf.register_dataframe_method
 def pivot_longer(
     df: pd.DataFrame,
-    index: Optional[Union[list, tuple, str, Pattern]] = None,
-    column_names: Optional[Union[list, tuple, str, Pattern]] = None,
-    names_to: Optional[Union[list, tuple, str]] = None,
-    values_to: Optional[str] = "value",
-    column_level: Optional[Union[int, str]] = None,
-    names_sep: Optional[Union[str, Pattern]] = None,
-    names_pattern: Optional[Union[list, tuple, str, Pattern]] = None,
-    names_transform: Optional[Union[str, Callable, dict]] = None,
+    index: list | tuple | str | Pattern = None,
+    column_names: list | tuple | str | Pattern = None,
+    names_to: list | tuple | str = None,
+    values_to: str = "value",
+    column_level: int | str = None,
+    names_sep: str | Pattern = None,
+    names_pattern: list | tuple | str | Pattern = None,
+    names_transform: str | Callable | dict = None,
     dropna: bool = False,
-    sort_by_appearance: Optional[bool] = False,
-    ignore_index: Optional[bool] = True,
+    sort_by_appearance: bool = False,
+    ignore_index: bool = True,
 ) -> pd.DataFrame:
     """Unpivots a DataFrame from *wide* to *long* format.
 
@@ -55,6 +53,9 @@ def pivot_longer(
 
     Column selection in `index` and `column_names` is possible using the
     [`select`][janitor.functions.select.select] syntax.
+
+    For more granular control on the unpivoting, have a look at
+    [`pivot_longer_spec`][janitor.functions.pivot.pivot_longer_spec].
 
     Examples:
         >>> import pandas as pd
@@ -99,7 +100,7 @@ def pivot_longer(
         6     setosa   Petal.Width    0.2
         7  virginica   Petal.Width    1.8
 
-        Split the column labels into parts:
+        Split the column labels into individual columns:
         >>> df.pivot_longer(
         ...     index = 'Species',
         ...     names_to = ('part', 'dimension'),
@@ -168,7 +169,7 @@ def pivot_longer(
         value        int64
         dtype: object
 
-        Use multiple `.value` to reshape dataframe:
+        Use multiple `.value` to reshape the dataframe:
         >>> df = pd.DataFrame(
         ...     [
         ...         {
@@ -202,7 +203,7 @@ def pivot_longer(
         1    50    2      20      40
 
         Convenient, flexible column selection in the `column_names` via
-        [`select`][janitor.functions.select.select] syntax:
+        the [`select`][janitor.functions.select.select] syntax:
         >>> df.pivot_longer(
         ...     column_names="*mean",
         ...     names_to=(".value", "time", ".value"),
@@ -221,7 +222,7 @@ def pivot_longer(
         0    50    1      10      30
         1    50    2      20      40
 
-        Reshape dataframe by passing a sequence to `names_pattern`:
+        Reshape the dataframe by passing a sequence to `names_pattern`:
         >>> df = pd.DataFrame({'hr1': [514, 573],
         ...                    'hr2': [545, 526],
         ...                    'team': ['Red Sox', 'Yankees'],
@@ -243,7 +244,7 @@ def pivot_longer(
         3  Yankees  526  2008
 
 
-        Reshape above dataframe by passing a dictionary to `names_pattern`:
+        Reshape the above dataframe by passing a dictionary to `names_pattern`:
         >>> df.pivot_longer(
         ...     index = 'team',
         ...     names_pattern = {"year":"year", "hr":"hr"}
@@ -266,16 +267,6 @@ def pivot_longer(
         ...             "Gin": [16, 200, 34],
         ...             "Vodka": [20, 33, 18],
         ...         },
-        ...         columns=[
-        ...             "City",
-        ...             "State",
-        ...             "Name",
-        ...             "Mango",
-        ...             "Orange",
-        ...             "Watermelon",
-        ...             "Gin",
-        ...             "Vodka",
-        ...         ],
         ...     )
         >>> df
               City    State      Name  Mango  Orange  Watermelon  Gin  Vodka
@@ -289,16 +280,16 @@ def pivot_longer(
         ...         values_to=("Pounds", "Ounces"),
         ...         names_pattern=["M|O|W", "G|V"],
         ...     )
-              City    State       Fruit  Pounds  Drink  Ounces
-        0  Houston    Texas       Mango       4    Gin    16.0
-        1   Austin    Texas       Mango      10    Gin   200.0
-        2   Hoover  Alabama       Mango      90    Gin    34.0
-        3  Houston    Texas      Orange      10  Vodka    20.0
-        4   Austin    Texas      Orange       8  Vodka    33.0
-        5   Hoover  Alabama      Orange      14  Vodka    18.0
-        6  Houston    Texas  Watermelon      40   None     NaN
-        7   Austin    Texas  Watermelon      99   None     NaN
-        8   Hoover  Alabama  Watermelon      43   None     NaN
+              City    State       Fruit  Drink  Pounds  Ounces
+        0  Houston    Texas       Mango    Gin       4    16.0
+        1   Austin    Texas       Mango    Gin      10   200.0
+        2   Hoover  Alabama       Mango    Gin      90    34.0
+        3  Houston    Texas      Orange  Vodka      10    20.0
+        4   Austin    Texas      Orange  Vodka       8    33.0
+        5   Hoover  Alabama      Orange  Vodka      14    18.0
+        6  Houston    Texas  Watermelon   None      40     NaN
+        7   Austin    Texas  Watermelon   None      99     NaN
+        8   Hoover  Alabama  Watermelon   None      43     NaN
 
         Replicate the above transformation with a nested dictionary passed to `names_pattern`
         - the outer keys in the `names_pattern` dictionary are passed to `names_to`,
@@ -311,16 +302,16 @@ def pivot_longer(
         ...         "Drink": {"Ounces": "G|V"},
         ...     },
         ... )
-              City    State       Fruit  Pounds  Drink  Ounces
-        0  Houston    Texas       Mango       4    Gin    16.0
-        1   Austin    Texas       Mango      10    Gin   200.0
-        2   Hoover  Alabama       Mango      90    Gin    34.0
-        3  Houston    Texas      Orange      10  Vodka    20.0
-        4   Austin    Texas      Orange       8  Vodka    33.0
-        5   Hoover  Alabama      Orange      14  Vodka    18.0
-        6  Houston    Texas  Watermelon      40   None     NaN
-        7   Austin    Texas  Watermelon      99   None     NaN
-        8   Hoover  Alabama  Watermelon      43   None     NaN
+              City    State       Fruit  Drink  Pounds  Ounces
+        0  Houston    Texas       Mango    Gin       4    16.0
+        1   Austin    Texas       Mango    Gin      10   200.0
+        2   Hoover  Alabama       Mango    Gin      90    34.0
+        3  Houston    Texas      Orange  Vodka      10    20.0
+        4   Austin    Texas      Orange  Vodka       8    33.0
+        5   Hoover  Alabama      Orange  Vodka      14    18.0
+        6  Houston    Texas  Watermelon   None      40     NaN
+        7   Austin    Texas  Watermelon   None      99     NaN
+        8   Hoover  Alabama  Watermelon   None      43     NaN
 
     !!! abstract "Version Changed"
 
@@ -346,7 +337,7 @@ def pivot_longer(
             also be a list/tuple of strings that will serve as new column
             names, if `name_sep` or `names_pattern` is provided.
             If `.value` is in `names_to`, new column names will be extracted
-            from part of the existing column names and overrides`values_to`.
+            from part of the existing column names and overrides `values_to`.
         values_to: Name of new column as a string that will contain what
             were previously the values of the columns in `column_names`.
             values_to can also be a list/tuple
@@ -419,6 +410,148 @@ def pivot_longer(
     )
 
 
+def pivot_longer_spec(
+    df: pd.DataFrame,
+    spec: pd.DataFrame,
+    sort_by_appearance: bool = False,
+    ignore_index: bool = True,
+    dropna: bool = False,
+    df_columns_is_unique: bool = True,
+) -> pd.DataFrame:
+    """A declarative interface to pivot a DataFrame from wide to long form,
+    where you describe how the data will be unpivoted,
+    using a DataFrame. This gives you, the user,
+    more control over unpivoting, where you create a “spec”
+    data frame that describes exactly how data stored
+    in the column names becomes variables.
+    It can come in handy for situations where
+    [`pivot_longer`][janitor.functions.pivot.pivot_longer]
+    seems inadequate for the transformation.
+
+    !!! info "New in version 0.28.0"
+
+    Examples:
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "Sepal.Length": [5.1, 5.9],
+        ...         "Sepal.Width": [3.5, 3.0],
+        ...         "Petal.Length": [1.4, 5.1],
+        ...         "Petal.Width": [0.2, 1.8],
+        ...         "Species": ["setosa", "virginica"],
+        ...     }
+        ... )
+        >>> df
+           Sepal.Length  Sepal.Width  Petal.Length  Petal.Width    Species
+        0           5.1          3.5           1.4          0.2     setosa
+        1           5.9          3.0           5.1          1.8  virginica
+        >>> spec = {'.name':['Sepal.Length','Petal.Length',
+        ...                  'Sepal.Width','Petal.Width'],
+        ...         '.value':['Length','Length','Width','Width'],
+        ...         'part':['Sepal','Petal','Sepal','Petal']}
+        >>> spec = pd.DataFrame(spec)
+        >>> spec
+                  .name  .value   part
+        0  Sepal.Length  Length  Sepal
+        1  Petal.Length  Length  Petal
+        2   Sepal.Width   Width  Sepal
+        3   Petal.Width   Width  Petal
+        >>> pivot_longer_spec(df=df,spec=spec)
+             Species   part  Length  Width
+        0     setosa  Sepal     5.1    3.5
+        1  virginica  Sepal     5.9    3.0
+        2     setosa  Petal     1.4    0.2
+        3  virginica  Petal     5.1    1.8
+
+    Args:
+        df: The source DataFrame to unpivot.
+        spec: A specification DataFrame.
+            At a minimum, the spec DataFrame
+            must have a '.name' and a '.value' columns.
+            The '.name' column  should contain the
+            columns in the source DataFrame that will be
+            transformed to long form.
+            The '.value' column gives the name of the column(s)
+            that the values in the source DataFrame will go into.
+            Additional columns in spec should be named to match columns
+            in the long format of the dataset and contain values
+            corresponding to columns pivoted from the wide format.
+            Note that these additional columns should not already exist
+            in the source DataFrame.
+        sort_by_appearance: Boolean value that determines
+            the final look of the DataFrame. If `True`, the unpivoted DataFrame
+            will be stacked in order of first appearance.
+        ignore_index: If `True`,
+            the original index is ignored. If `False`, the original index
+            is retained and the index labels will be repeated as necessary.
+        dropna: Determines whether or not to drop nulls
+            from the values columns. Default is `False`.
+        df_columns_is_unique: Boolean value to indicate if the source
+            DataFrame's columns is unique. Default is `True`.
+
+    Raises:
+        KeyError: If '.name' or '.value' is missing from the spec's columns.
+        ValueError: If the spec's columns is not unique,
+            or the labels in spec['.name'] is not unique.
+
+    Returns:
+        A pandas DataFrame.
+    """
+    check("spec", spec, [pd.DataFrame])
+    if not spec.columns.is_unique:
+        raise ValueError("Kindly ensure the spec's columns is unique.")
+    if ".name" not in spec.columns:
+        raise KeyError(
+            "Kindly ensure the spec DataFrame has a `.name` column."
+        )
+    if ".value" not in spec.columns:
+        raise KeyError(
+            "Kindly ensure the spec DataFrame has a `.value` column."
+        )
+    if spec.columns.tolist()[:2] != [".name", ".value"]:
+        raise ValueError(
+            "The first two columns of the spec DataFrame "
+            "should be '.name' and '.value', "
+            "with '.name' coming before '.value'."
+        )
+    if not spec[".name"].is_unique:
+        raise ValueError("The labels in the `.name` column should be unique.")
+
+    exclude = df.columns.intersection(spec.columns)
+    if not exclude.empty:
+        raise ValueError(
+            f"Labels {*exclude, } in the spec DataFrame already exist "
+            "as column labels in the source DataFrame. "
+            "Kindly ensure the spec DataFrame's columns "
+            "are not present in the source DataFrame."
+        )
+
+    check("dropna", dropna, [bool])
+    check("sort_by_appearance", sort_by_appearance, [bool])
+    check("ignore_index", ignore_index, [bool])
+    check("df_columns_is_unique", df_columns_is_unique, [bool])
+
+    index = df.columns.difference(spec[".name"], sort=False)
+    index = {name: df[name]._values for name in index}
+
+    df = df.loc[:, spec[".name"]]
+    if not df_columns_is_unique:
+        spec = pd.DataFrame({".name": df.columns}).merge(
+            spec, on=".name", how="inner"
+        )
+    others = [label for label in spec if label not in {".name", ".value"}]
+    return _pivot_longer_dot_value(
+        df=df,
+        spec=spec.drop(columns=".name"),
+        index=index,
+        others=others,
+        sort_by_appearance=sort_by_appearance,
+        ignore_index=ignore_index,
+        dropna=dropna,
+    )
+
+
 def _data_checks_pivot_longer(
     df,
     index,
@@ -445,7 +578,6 @@ def _data_checks_pivot_longer(
     Type annotations are not provided because this function is where type
     checking happens.
     """
-
     # checks here are only on the columns
     # a slice is safe
     df = df[:]
@@ -781,14 +913,14 @@ def _data_checks_pivot_longer(
 
 def _computations_pivot_longer(
     df: pd.DataFrame,
-    index: Union[list, None],
-    column_names: Union[list, None],
-    column_level: Union[int, str, None],
-    names_to: Union[list, None],
-    values_to: Union[list, str, None],
-    names_sep: Union[str, Pattern],
-    names_pattern: Union[list, tuple, str, Pattern],
-    names_transform: Union[str, Callable, dict, None],
+    index: list | tuple | str | Pattern | None,
+    column_names: list | tuple | str | Pattern | None,
+    names_to: list | tuple | str | None,
+    values_to: str,
+    column_level: int | str,
+    names_sep: str | Pattern,
+    names_pattern: list | tuple | str | Pattern | None,
+    names_transform: str | Callable | dict | None,
     dropna: bool,
     sort_by_appearance: bool,
     ignore_index: bool,
@@ -801,7 +933,12 @@ def _computations_pivot_longer(
     # where necessary ------->
     # if index is [1,2,3] then tiling makes it [1,2,3,1,2,3,...]
     # for column names, if it is [1,2,3], then repeats [1,1,1,2,2,2,3,3,3]
-    # dump down into arrays, and build a new dataframe, with copy = False
+    # if sort_by_appearance is True, then the index will be repeated,
+    # while the rest will be tiled ------------>
+    # if index is [1,2,3] then repeats [1,1,1,2,2,2,3,3,3]
+    # if column_names is [1,2,3] then tiling makes it [1,2,3,1,2,3,...]
+    # for performance reasons, we dump down into arrays,
+    # and build a new dataframe, with copy = False
     # since we have already made a copy of the original df
 
     checks = _data_checks_pivot_longer(
@@ -836,14 +973,23 @@ def _computations_pivot_longer(
     ) = checks
 
     if all((names_pattern is None, names_sep is None)):
-        return _base_melt(
+        spec = df.columns
+        others = spec.names
+        spec = {name: spec.get_level_values(name) for name in spec.names}
+        spec = pd.DataFrame(spec, copy=False)
+        spec[".value"] = values_to
+        if names_transform is not None:
+            spec = _names_transform(
+                spec=spec, others=others, names_transform=names_transform
+            )
+        return _pivot_longer_dot_value(
             df=df,
             index=index,
-            values_to=values_to,
-            names_transform=names_transform,
-            dropna=dropna,
+            others=others,
             sort_by_appearance=sort_by_appearance,
             ignore_index=ignore_index,
+            dropna=dropna,
+            spec=spec,
         )
 
     if names_sep is not None:
@@ -872,105 +1018,153 @@ def _computations_pivot_longer(
             ignore_index=ignore_index,
         )
 
+    if isinstance(values_to, (list, tuple)):
+        return _pivot_longer_values_to_sequence(
+            df=df,
+            index=index,
+            names_to=names_to,
+            names_pattern=names_pattern,
+            names_transform=names_transform,
+            dropna=dropna,
+            sort_by_appearance=sort_by_appearance,
+            values_to=values_to,
+            ignore_index=ignore_index,
+        )
+
     return _pivot_longer_names_pattern_sequence(
         df=df,
         index=index,
         names_to=names_to,
         names_pattern=names_pattern,
-        names_transform=names_transform,
         dropna=dropna,
         sort_by_appearance=sort_by_appearance,
-        values_to=values_to,
         ignore_index=ignore_index,
+    )
+
+
+def _pivot_longer_values_to_sequence(
+    df: pd.DataFrame,
+    index: dict,
+    names_to: list,
+    names_pattern: list | tuple,
+    names_transform: str | Callable | dict | None,
+    dropna: bool,
+    sort_by_appearance: bool,
+    values_to: list | tuple,
+    ignore_index: bool,
+) -> pd.DataFrame:
+    """
+    This takes care of pivoting scenarios where
+    values_to is a list/tuple.
+    """
+    columns = df.columns
+    booleans = [
+        columns.str.contains(regex, na=False, regex=True)
+        for regex in names_pattern
+    ]
+    # within each match, check the individual matches
+    # and raise an error if any is False
+    boolean_masks = (arr.any().item() for arr in booleans)
+    boolean_masks = zip(names_pattern, boolean_masks)
+    boolean_masks = (name for name, mask in boolean_masks if not mask)
+    for pattern in boolean_masks:
+        raise ValueError(f"No match was returned for the regex {pattern}")
+    values = np.select(booleans, values_to, None)
+    columns = np.select(booleans, names_to, None)
+    # only matched columns are retained
+    booleans = pd.notna(values)
+    df = df.loc[:, booleans]
+    values = values[booleans]
+    columns = columns[booleans]
+    # for multiple values_to,
+    # the `others` should be complete
+    # fill any missing values with None
+    # user can always resort to pivot_longer_spec
+    # for more control
+    spec = pd.Series(values, name=".value")
+    grouped = spec.groupby(spec, sort=False, observed=True, dropna=False)
+    grouped = grouped.size().max()
+    grouped = range(grouped)
+    spec = pd.MultiIndex.from_product(
+        [spec.unique(), grouped], names=[".value", None]
+    )
+    spec = pd.DataFrame(
+        spec.get_level_values(".value"),
+        index=spec.get_level_values(1),
+        copy=False,
+    )
+    mapping = defaultdict(list)
+    for name, column in zip(columns, df.columns):
+        mapping[name].append(column)
+    zipped = zip_longest(*mapping.values())
+    zipped = zip(*zipped)
+    zipped = dict(zip(mapping, zipped))
+    zipped = pd.DataFrame(zipped, copy=False)
+    spec = spec.join(zipped)
+    others = zipped.columns.tolist()
+    if names_transform is not None:
+        spec = _names_transform(
+            spec=spec, others=others, names_transform=names_transform
+        )
+    return _pivot_longer_dot_value(
+        df=df,
+        index=index,
+        others=others,
+        sort_by_appearance=sort_by_appearance,
+        ignore_index=ignore_index,
+        dropna=dropna,
+        spec=spec,
     )
 
 
 def _pivot_longer_names_pattern_sequence(
     df: pd.DataFrame,
-    index: Union[dict, None],
+    index: dict,
     names_to: list,
-    names_pattern: Union[list, tuple],
-    names_transform: Union[str, Callable, dict, None],
+    names_pattern: list | tuple,
     dropna: bool,
     sort_by_appearance: bool,
-    values_to: Union[str, list, tuple],
     ignore_index: bool,
 ) -> pd.DataFrame:
     """
     This takes care of pivoting scenarios where
     names_pattern is provided, and is a list/tuple.
     """
-    values_to_is_a_sequence = isinstance(values_to, (list, tuple))
-    values = df.columns
-
-    mapping = [
-        values.str.contains(regex, na=False, regex=True)
+    columns = df.columns
+    booleans = [
+        columns.str.contains(regex, na=False, regex=True)
         for regex in names_pattern
     ]
-
-    values = (arr.any() for arr in mapping)
     # within each match, check the individual matches
     # and raise an error if any is False
-    for position, boolean in enumerate(values):
-        if not boolean.item():
-            raise ValueError(
-                "No match was returned for the regex "
-                f"at position {position} -> {names_pattern[position]}."
-            )
-
-    if values_to_is_a_sequence:
-        mapping, outcome = np.select(mapping, values_to, None), np.select(
-            mapping, names_to, None
-        )
-    else:
-        mapping = np.select(mapping, names_to, None)
-
+    boolean_masks = (arr.any().item() for arr in booleans)
+    boolean_masks = zip(names_pattern, boolean_masks)
+    boolean_masks = (name for name, mask in boolean_masks if not mask)
+    for pattern in boolean_masks:
+        raise ValueError(f"No match was returned for the regex {pattern}")
+    values = np.select(booleans, names_to, None)
     # only matched columns are retained
-    values = pd.notna(mapping)
-    df = df.loc[:, values]
-    mapping = mapping[values]
-    if values_to_is_a_sequence:
-        names_to = zip(names_to, values_to)
-        names_to = [*chain.from_iterable(names_to)]
-        if index:
-            names_to = [*index] + names_to
-        outcome = outcome[values]
-        arr = defaultdict(list)
-        for label, name in zip(outcome, df.columns):
-            arr[label].append(name)
-        outcome = arr.keys()
-        arr = (entry for _, entry in arr.items())
-        arr = zip(*zip_longest(*arr))
-        arr = map(pd.Series, arr)
-        outcome = dict(zip(outcome, arr))
-    else:
-        outcome = None
-        names_to = None
-
-    mapping = pd.Series(mapping)
-    values, group_max = _headers_single_series(df=df, mapping=mapping)
-
-    df = _final_frame_longer(
+    booleans = pd.notna(values)
+    df = df.loc[:, booleans]
+    values = values[booleans]
+    spec = {".value": values}
+    spec = pd.DataFrame(spec, copy=False)
+    return _pivot_longer_dot_value(
         df=df,
-        reps=group_max,
         index=index,
-        outcome=outcome,
-        values=values,
-        names_to=names_to,
-        dropna=dropna,
-        names_transform=names_transform,
+        others=None,
         sort_by_appearance=sort_by_appearance,
         ignore_index=ignore_index,
+        dropna=dropna,
+        spec=spec,
     )
-
-    return df
 
 
 def _pivot_longer_names_pattern_str(
     df: pd.DataFrame,
-    index: Union[dict, None],
+    index: dict,
     names_to: list,
-    names_pattern: Union[str, Pattern],
+    names_pattern: str | Pattern,
     names_transform: bool,
     values_to: str,
     dropna: bool,
@@ -981,9 +1175,9 @@ def _pivot_longer_names_pattern_str(
     This takes care of pivoting scenarios where
     names_pattern is provided, and is a string/regex.
     """
-    mapping = df.columns.str.extract(names_pattern, expand=True)
+    spec = df.columns.str.extract(names_pattern, expand=True)
 
-    nulls_found = mapping.isna()
+    nulls_found = spec.isna()
 
     if nulls_found.any(axis=None):
         no_match = df.columns[nulls_found.any(axis="columns")]
@@ -994,42 +1188,36 @@ def _pivot_longer_names_pattern_str(
             "(with the correct groups) that matches all labels in the columns."
         )
 
-    mapping.columns = names_to
-
-    if ".value" not in names_to:
-        if len(names_to) == 1:
-            df.columns = mapping.iloc[:, 0]
-        else:
-            df.columns = pd.MultiIndex.from_frame(mapping)
-        return _base_melt(
-            df=df,
-            index=index,
-            values_to=values_to,
-            names_transform=names_transform,
-            dropna=dropna,
-            sort_by_appearance=sort_by_appearance,
-            ignore_index=ignore_index,
+    if ".value" in names_to:
+        spec, index, others = _dot_value_extra_checks(
+            index=index, names_to=names_to, spec=spec
         )
-
+    else:
+        spec.columns = names_to
+        spec[".value"] = values_to
+        others = [name for name in spec if name != ".value"]
+    if names_transform is not None:
+        spec = _names_transform(
+            spec=spec, others=others, names_transform=names_transform
+        )
     return _pivot_longer_dot_value(
         df=df,
         index=index,
+        others=others,
         sort_by_appearance=sort_by_appearance,
         ignore_index=ignore_index,
-        names_to=names_to,
         dropna=dropna,
-        names_transform=names_transform,
-        mapping=mapping,
+        spec=spec,
     )
 
 
 def _pivot_longer_names_sep(
     df: pd.DataFrame,
-    index: Union[dict, None],
+    index: dict,
     names_to: list,
-    names_sep: Union[str, Pattern],
+    names_sep: str | Pattern,
     values_to: str,
-    names_transform: bool,
+    names_transform: str | dict | Callable | None,
     dropna: bool,
     sort_by_appearance: bool,
     ignore_index: bool,
@@ -1039,95 +1227,50 @@ def _pivot_longer_names_sep(
     names_sep is provided.
     """
 
-    mapping = pd.Series(df.columns).str.split(names_sep, expand=True)
-    len_mapping_columns = len(mapping.columns)
+    spec = pd.Series(df.columns).str.split(names_sep, expand=True)
+    len_spec_columns = len(spec.columns)
     len_names_to = len(names_to)
 
-    if len_names_to != len_mapping_columns:
+    if len_names_to != len_spec_columns:
         raise ValueError(
             f"The length of names_to does not match "
             "the number of levels extracted. "
             f"The length of names_to is {len_names_to} "
             "while the number of levels extracted is "
-            f"{len_mapping_columns}."
+            f"{len_spec_columns}."
         )
 
-    mapping.columns = names_to
-
-    if ".value" not in names_to:
-        if len(names_to) == 1:
-            df.columns = mapping.iloc[:, 0]
-        else:
-            df.columns = pd.MultiIndex.from_frame(mapping)
-        return _base_melt(
-            df=df,
-            index=index,
-            values_to=values_to,
-            names_transform=names_transform,
-            dropna=dropna,
-            sort_by_appearance=sort_by_appearance,
-            ignore_index=ignore_index,
+    if ".value" in names_to:
+        spec, index, others = _dot_value_extra_checks(
+            index=index, names_to=names_to, spec=spec
         )
-
+    else:
+        spec.columns = names_to
+        spec[".value"] = values_to
+        others = [name for name in spec if name != ".value"]
+    if names_transform is not None:
+        spec = _names_transform(
+            spec=spec, others=others, names_transform=names_transform
+        )
     return _pivot_longer_dot_value(
         df=df,
         index=index,
+        others=others,
         sort_by_appearance=sort_by_appearance,
         ignore_index=ignore_index,
-        names_to=names_to,
         dropna=dropna,
-        names_transform=names_transform,
-        mapping=mapping,
-    )
-
-
-def _base_melt(
-    df: pd.DataFrame,
-    index: Union[dict, None],
-    values_to: str,
-    names_transform: Union[str, Callable, dict, None],
-    dropna: bool,
-    sort_by_appearance: bool,
-    ignore_index: bool,
-) -> pd.DataFrame:
-    """
-    Applicable where there is no `.value` in names_to.
-    """
-
-    columns = df.columns
-    reps = len(columns)
-    outcome = {name: columns.get_level_values(name) for name in columns.names}
-
-    if df.dtypes.map(is_extension_array_dtype).any(axis=None):
-        values = [arr._values for _, arr in df.items()]
-        values = concat_compat(values)
-    else:
-        values = df._values.ravel(order="F")
-    values = {values_to: values}
-
-    return _final_frame_longer(
-        df=df,
-        reps=reps,
-        index=index,
-        outcome=outcome,
-        values=values,
-        names_to=None,
-        dropna=dropna,
-        names_transform=names_transform,
-        sort_by_appearance=sort_by_appearance,
-        ignore_index=ignore_index,
+        spec=spec,
     )
 
 
 def _pivot_longer_dot_value(
     df: pd.DataFrame,
-    index: Union[dict, None],
+    spec: pd.DataFrame,
+    index: dict,
+    others: list,
     sort_by_appearance: bool,
     ignore_index: bool,
-    names_to: list,
     dropna: bool,
-    names_transform: Union[str, Callable, dict, None],
-    mapping: pd.DataFrame,
 ) -> pd.DataFrame:
     """
     Pivots the dataframe into the final form,
@@ -1136,14 +1279,85 @@ def _pivot_longer_dot_value(
 
     Returns a DataFrame.
     """
-    outcome = mapping.pop(".value")
-    if names_to.count(".value") > 1:
-        outcome = [arr for _, arr in outcome.items()]
-        outcome = reduce(lambda x, y: x + y, outcome)
+    if not others:
+        contents, reps = _stack_dot_value_only(
+            spec=spec,
+            df=df,
+            sort_by_appearance=sort_by_appearance,
+        )
+        index, _, df_index = _stack_non_dot_value(
+            spec=None,
+            reps=reps,
+            df=df,
+            index=index,
+            ignore_index=ignore_index,
+            sort_by_appearance=sort_by_appearance,
+        )
+        df = {**index, **contents}
+        df = pd.DataFrame(data=df, index=df_index, copy=False)
+        if dropna:
+            df = _pivot_longer_dropna(
+                df=df, contents=contents, ignore_index=ignore_index
+            )
+        return df
 
+    if spec.duplicated().any(axis=None):
+        raise ValueError("spec contains duplicate entries, cannot reshape.")
+
+    spec, contents = _stack_dot_value(
+        spec=spec,
+        others=others,
+        df=df,
+        sort_by_appearance=sort_by_appearance,
+    )
+
+    index, spec, df_index = _stack_non_dot_value(
+        spec=spec,
+        reps=len(spec),
+        df=df,
+        index=index,
+        ignore_index=ignore_index,
+        sort_by_appearance=sort_by_appearance,
+    )
+
+    df = {**index, **spec, **contents}
+    df = pd.DataFrame(data=df, index=df_index, copy=False)
+    if dropna:
+        df = _pivot_longer_dropna(
+            df=df, contents=contents, ignore_index=ignore_index
+        )
+    return df
+
+
+def _dot_value_extra_checks(
+    index: dict,
+    names_to: list,
+    spec: pd.DataFrame,
+):
+    """
+    Extra checks if '.value' is present
+    in names_to.
+    """
+
+    others = [name for name in names_to if name != ".value"]
+    if names_to.count(".value") > 1:
+        arrays = [
+            pos
+            for pos, name in zip(spec.columns, names_to)
+            if name == ".value"
+        ]
+        arrays = [spec.pop(pos) for pos in arrays]
+        arr = reduce(operator.add, arrays)
+        if others:
+            spec.columns = others
+        spec[".value"] = arr
+    else:
+        spec.columns = names_to
+
+    dot_value = spec[".value"]
     exclude = {
         word
-        for word in outcome.array
+        for word in dot_value.array
         if (word in names_to) and (word != ".value")
     }
     if exclude:
@@ -1154,73 +1368,73 @@ def _pivot_longer_dot_value(
         )
 
     if index:
-        exclude = set(index).intersection(outcome.array)
+        exclude = set(index).intersection(dot_value.array)
         if exclude:
             raise ValueError(
                 f"Labels {*exclude, } already exist "
                 "as column labels assigned to the dataframe's "
                 "index parameter. Kindly provide unique label(s)."
             )
+    return spec, index, others
 
-    if mapping.empty:
-        values, group_max = _headers_single_series(df=df, mapping=outcome)
-        outcome = None
 
-    else:
-        others = mapping.drop_duplicates()
-        mapping = pd.concat([outcome, mapping], axis=1, sort=False, copy=False)
-        # For multiple columns, the labels in `.value`
-        # should have every value in other
-        # and in the same order
-        # reindex ensures that, after getting a MultiIndex.from_product
-        columns = mapping.columns.tolist()
-        outcome = outcome.drop_duplicates()
-        if not mapping.duplicated().any(axis=None):
-            df.columns = pd.MultiIndex.from_frame(mapping)
-            indexer = {".value": outcome, "other": others}
-        else:
-            columns.append("".join(columns))
-            cumcount = mapping.groupby(
-                mapping.columns.tolist(), sort=False, observed=True
-            ).cumcount()
-            new_columns = [arr for _, arr in mapping.items()]
-            new_columns.append(cumcount)
-            new_columns = pd.MultiIndex.from_arrays(new_columns)
-            df.columns = new_columns
-            indexer = {
-                ".value": outcome,
-                "other": others,
-                "cumcount": cumcount.unique(),
-            }
-        indexer = _computations_expand_grid(indexer)
-        indexer = pd.DataFrame(indexer, copy=False)
-
-        indexer.columns = columns
-        df = df.reindex(columns=indexer, copy=False)
-        df.columns = df.columns.get_level_values(".value")
-        values = _dict_from_grouped_names(df=df)
-        outcome = indexer.loc[indexer[".value"] == outcome[0], others.columns]
-        group_max = len(outcome)
-
-    return _final_frame_longer(
-        df=df,
-        reps=group_max,
-        index=index,
-        outcome=outcome,
-        values=values,
-        names_to=None,
-        dropna=dropna,
-        names_transform=names_transform,
-        sort_by_appearance=sort_by_appearance,
-        ignore_index=ignore_index,
+def _stack_dot_value_only(
+    spec: pd.DataFrame,
+    df: pd.DataFrame,
+    sort_by_appearance: bool,
+) -> tuple:
+    """
+    Flip the .value into long form.
+    Applicable when only .value column exists in spec
+    """
+    if spec.nunique().item() == 1:
+        return _stack_dot_value_only_single_label(
+            spec=spec, df=df, sort_by_appearance=sort_by_appearance
+        )
+    return _stack_dot_value_only_multiple_labels(
+        spec=spec, df=df, sort_by_appearance=sort_by_appearance
     )
 
 
-def _headers_single_series(df: pd.DataFrame, mapping: pd.Series) -> tuple:
+def _stack_dot_value_only_single_label(
+    spec: pd.DataFrame,
+    df: pd.DataFrame,
+    sort_by_appearance: bool,
+) -> tuple:
     """
-    Extract headers and values for a single level.
-    Applies to `.value` for a single level extract,
-    or where names_pattern is a sequence.
+    Flip the .value into long form.
+    Applicable when only .value column exists in spec,
+    and .value.unique==1
+    """
+    reps = len(spec)
+    if df.dtypes.map(is_extension_array_dtype).any(axis=None):
+        contents = [arr._values for _, arr in df.items()]
+        contents = concat_compat(contents)
+        if sort_by_appearance:
+            length = contents.size
+            indexer = np.arange(length)
+            indexer = indexer.reshape((reps, -1))
+            indexer = indexer.ravel(order="F")
+            contents = contents[indexer]
+    else:
+        if sort_by_appearance:
+            contents = df._values.ravel()
+        else:
+            contents = df._values.ravel(order="F")
+    key = spec[".value"]._values[0]
+    contents = {key: contents}
+    return contents, reps
+
+
+def _stack_dot_value_only_multiple_labels(
+    spec: pd.DataFrame,
+    df: pd.DataFrame,
+    sort_by_appearance: bool,
+) -> tuple:
+    """
+    Flip the .value into long form.
+    Applicable when only .value column exists in spec
+    and .value.nunique > 1
     """
     # get positions of columns,
     # to ensure interleaving is possible
@@ -1237,125 +1451,265 @@ def _headers_single_series(df: pd.DataFrame, mapping: pd.Series) -> tuple:
     #    2   3   7   6   9  12
     # then x2 will pair with y1 and x1 will pair with y2
     # it is simply a first come first serve approach
-    outcome = mapping.groupby(mapping, sort=False, observed=True)
-    group_size = outcome.size()
-    group_max = group_size.max()
-    # the number of groups should be the same;
-    # if not, build a MultiIndex and reindex
-    # to get equal numbers for each label
-    if group_size.nunique() > 1:
-        positions = outcome.cumcount()
-        df.columns = pd.MultiIndex.from_arrays([mapping, positions])
-        indexer = group_size.index, np.arange(group_max)
-        indexer = pd.MultiIndex.from_product(indexer)
-        df = df.reindex(columns=indexer, copy=False)
-        df.columns = df.columns.get_level_values(0)
+    grouped = spec.groupby(".value", sort=False, dropna=False, observed=True)
+    grouping = grouped.size()
+    reps = grouping.max()
+    missing = grouping[grouping != reps]
+    if not missing.empty:
+        null_array = np.full(shape=len(df), fill_value=np.nan)
     else:
-        df.columns = mapping
-    outcome = _dict_from_grouped_names(df=df)
-    return outcome, group_max
+        null_array = None
+    mapp = defaultdict(list)
+    df.columns = range(df.columns.size)
+    for header, pos in zip(spec[".value"], df.columns):
+        mapp[header].append(pos)
+    zipped = zip_longest(*mapp.values())
+    zipped = zip(*zipped)
+    zipped = zip(mapp, zipped)
+    contents = defaultdict(list)
+    for label, positions in zipped:
+        for position in positions:
+            arr = df.get(position, null_array)
+            if isinstance(arr, pd.Series):
+                arr = arr._values
+            contents[label].append(arr)
+    contents = {label: concat_compat(arr) for label, arr in contents.items()}
+    if sort_by_appearance:
+        length = contents[grouping.index[0]].size
+        indexer = np.arange(length)
+        indexer = indexer.reshape((reps, -1))
+        indexer = indexer.ravel(order="F")
+        contents = {label: arr[indexer] for label, arr in contents.items()}
+    return contents, reps
 
 
-def _dict_from_grouped_names(df: pd.DataFrame) -> dict:
-    """
-    Create dictionary from multiple same names.
-    Applicable when collating the values for `.value`,
-    or when names_pattern is a list/tuple.
-    """
-    outcome = defaultdict(list)
-    for num, name in enumerate(df.columns):
-        arr = df.iloc[:, num]._values
-        outcome[name].append(arr)
-    return {name: concat_compat(arr) for name, arr in outcome.items()}
-
-
-def _final_frame_longer(
+def _stack_dot_value(
+    spec: pd.DataFrame,
+    others: list,
     df: pd.DataFrame,
-    reps: int,
-    index: Union[dict, None],
-    outcome: dict,
-    values: dict,
-    names_to: Union[list, None],
-    dropna: bool,
-    names_transform: Union[str, Callable, dict, None],
     sort_by_appearance: bool,
-    ignore_index: bool,
+) -> dict:
+    """
+    Flip the .value into long form.
+    """
+    if spec[".value"].nunique() == 1:
+        return _stack_dot_value_single_label(
+            spec=spec, sort_by_appearance=sort_by_appearance, df=df
+        )
+    return _stack_dot_value_multiple_labels(
+        spec=spec, df=df, others=others, sort_by_appearance=sort_by_appearance
+    )
+
+
+def _stack_dot_value_single_label(
+    spec: pd.DataFrame,
+    df: pd.DataFrame,
+    sort_by_appearance: bool,
+) -> dict:
+    """
+    Flip the .value into long form.
+    Applicable where .value.nunique == 1
+    """
+    _value = spec.pop(".value")
+    key = _value._values[0]
+    reps = len(spec)
+    if df.dtypes.map(is_extension_array_dtype).any(axis=None):
+        contents = [arr._values for _, arr in df.items()]
+        contents = concat_compat(contents)
+        if sort_by_appearance:
+            length = contents.size
+            indexer = np.arange(length)
+            indexer = indexer.reshape((reps, -1))
+            indexer = indexer.ravel(order="F")
+            contents = contents[indexer]
+    else:
+        if sort_by_appearance:
+            contents = df._values.ravel()
+        else:
+            contents = df._values.ravel(order="F")
+    contents = {key: contents}
+    return spec, contents
+
+
+def _stack_dot_value_multiple_labels(
+    spec: pd.DataFrame,
+    others: list,
+    df: pd.DataFrame,
+    sort_by_appearance: bool,
+) -> dict:
+    """
+    Flip the .value into long form.
+    Applicable where .value.nunique > 1
+    """
+    # the goal here is to align headers(labels from .value) with others
+    # headers must be the same for all others
+    # others must not lose track of their headers
+    _value = spec.pop(".value")
+    grouped = spec.groupby(others, sort=False, observed=True, dropna=False)
+    mapp = defaultdict(dict)
+    df.columns = range(df.columns.size)
+    for pos, header, _pos in zip(grouped.ngroup(), _value, df.columns):
+        dictionary = {header: _pos}
+        mapp[pos].update(dictionary)
+    uniqs = _value.unique()
+    _uniqs = set(uniqs)
+    missing = (_uniqs.difference(header) for _, header in mapp.items())
+    if any(missing):
+        null_array = np.full(shape=len(df), fill_value=np.nan)
+    else:
+        null_array = None
+    mapping = defaultdict(list)
+    for _, dictionary in mapp.items():
+        for label in uniqs:
+            column_position = dictionary.get(label)
+            mapping[label].append(column_position)
+    contents = defaultdict(list)
+    for label, list_of_positions in mapping.items():
+        for position in list_of_positions:
+            arr = df.get(position, null_array)
+            if isinstance(arr, pd.Series):
+                arr = arr._values
+            contents[label].append(arr)
+    contents = {label: concat_compat(arr) for label, arr in contents.items()}
+    if sort_by_appearance:
+        length = contents[uniqs[0]].size
+        indexer = np.arange(length)
+        indexer = indexer.reshape((grouped.ngroups, -1))
+        indexer = indexer.ravel(order="F")
+        contents = {label: arr[indexer] for label, arr in contents.items()}
+    return spec.drop_duplicates(), contents
+
+
+def _stack_non_dot_value(
+    spec, df, reps, index, ignore_index, sort_by_appearance
+) -> tuple:
+    """
+    Flip components that are not .value
+    into long form.
+    """
+    if sort_by_appearance:
+        return _stack_non_dot_value_sort(
+            spec=spec, df=df, reps=reps, index=index, ignore_index=ignore_index
+        )
+
+    return _stack_non_dot_value_do_not_sort(
+        spec=spec, df=df, reps=reps, index=index, ignore_index=ignore_index
+    )
+
+
+def _stack_non_dot_value_sort(spec, df, reps, index, ignore_index) -> tuple:
+    """
+    Flip components that are not .value
+    into long form.
+    """
+    len_df = len(df)
+    # taking a long route (instead of np.repeat/np.tile)
+    # to get a bit more performance
+    # in some cases perf has been 3x faster
+    if spec is not None:
+        shape = (len_df, reps)
+        indexer = np.empty(shape=shape, dtype=np.intp)
+        arr = np.arange(reps).reshape((1, reps))
+        indexer[:] = arr
+        indexer = indexer.ravel()
+        spec = {label: arr._values for label, arr in spec.items()}
+        spec = {label: arr[indexer] for label, arr in spec.items()}
+
+    if index or not ignore_index:
+        shape = (len_df, reps)
+        indexer = np.empty(shape=shape, dtype=np.intp)
+        arr = np.arange(len_df).reshape((len_df, 1))
+        indexer[:] = arr
+        indexer = indexer.ravel()
+        if index:
+            index = {label: arr[indexer] for label, arr in index.items()}
+    if ignore_index:
+        length = len_df * reps
+        df_index = range(length)
+    else:
+        df_index = df.index[indexer]
+    return index, spec, df_index
+
+
+def _stack_non_dot_value_do_not_sort(
+    spec, df, reps, index, ignore_index
+) -> tuple:
+    """
+    Flip components that are not .value
+    into long form.
+    """
+    len_df = len(df)
+    # taking a long route (instead of np.repeat/np.tile)
+    # to get a bit more performance
+    # in some cases perf has been 3x faster
+    if spec is not None:
+        shape = (reps, len_df)
+        indexer = np.empty(shape=shape, dtype=np.intp)
+        arr = np.arange(reps).reshape((reps, 1))
+        indexer[:] = arr
+        indexer = indexer.ravel()
+        spec = {label: arr._values for label, arr in spec.items()}
+        spec = {label: arr[indexer] for label, arr in spec.items()}
+
+    if index or not ignore_index:
+        shape = (reps, len_df)
+        indexer = np.empty(shape=shape, dtype=np.intp)
+        arr = np.arange(len_df).reshape((1, len_df))
+        indexer[:] = arr
+        indexer = indexer.ravel()
+        if index:
+            index = {label: arr[indexer] for label, arr in index.items()}
+    if ignore_index:
+        length = len_df * reps
+        df_index = range(length)
+    else:
+        df_index = df.index[indexer]
+    return index, spec, df_index
+
+
+def _pivot_longer_dropna(
+    df: pd.DataFrame, contents: dict, ignore_index: bool
 ) -> pd.DataFrame:
     """
-    Build final dataframe for pivot_longer.
+    Drop nulls from long form
     """
-    len_index = len(df)
-    indexer = np.tile(np.arange(len_index), reps)
-
-    if (names_transform is not None) & (outcome is not None):
-        if isinstance(names_transform, dict):
-            outcome = {
-                key: (
-                    arr.astype(names_transform[key], copy=False)
-                    if key in names_transform
-                    else arr
-                )
-                for key, arr in outcome.items()
-            }
-        else:
-            outcome = {
-                key: arr.astype(names_transform, copy=False)
-                for key, arr in outcome.items()
-            }
-    if outcome is not None:
-        outcome = {
-            name: arr._values.repeat(len_index)
-            for name, arr in outcome.items()
-        }
-    if dropna:
-        if len(values) == 1:
-            key = next(iter(values))
-            any_nulls = pd.isna(values[key])
-        else:
-            any_nulls = [pd.isna(arr) for _, arr in values.items()]
-            any_nulls = np.logical_and.reduce(any_nulls)
-        if any_nulls.any():
-            values = {name: arr[~any_nulls] for name, arr in values.items()}
-            indexer = indexer[~any_nulls]
-            if outcome is not None:
-                outcome = {
-                    name: arr[~any_nulls] for name, arr in outcome.items()
-                }
-
-    any_nulls = None
-
-    df_index = df.index[indexer]
-    if index:
-        index = {name: arr[indexer] for name, arr in index.items()}
-    else:
-        index = {}
-    if outcome is None:
-        outcome = {}
-
-    df = {**index, **outcome, **values}
-
-    if names_to:
-        # relevant if values_to is a sequence
-        # helps with reordering the data
-        # and is much faster than having to use `.loc`
-        # after the DataFrame is created
-        df = {name: df[name] for name in names_to}
-
-    df = pd.DataFrame(df, copy=False, index=df_index)
-    df_index = None
-
-    if sort_by_appearance:
-        indexer = indexer.argsort(kind="stable")
-        df = df.take(indexer)
-    indexer = None
-
+    nulls = [pd.isna(arr) for _, arr in contents.items()]
+    nulls = np.logical_and.reduce(nulls)
+    if not nulls.any():
+        return df
+    df = df.iloc[~nulls]
     if ignore_index:
         df.index = range(len(df))
-
-    if df.columns.names:
-        df.columns.names = [None]
-
     return df
+
+
+def _names_transform(
+    spec: pd.DataFrame, others: list, names_transform: str | Callable | dict
+) -> pd.DataFrame:
+    """
+    Convert names extracted from the dataframe's columns
+    to specified dtype(s) in names_transform.
+    """
+    if not others:
+        return spec
+    if isinstance(names_transform, dict):
+        for label in others:
+            dtype = names_transform.get(label)
+            if not dtype:
+                continue
+            spec[label] = spec[label].astype(dtype)
+        return spec
+    if isinstance(names_transform, str):
+        for label in others:
+            spec[label] = spec[label].astype(names_transform)
+        return spec
+    for label in others:
+        try:
+            # built-in functions (float, int, ...)
+            spec[label] = spec[label].astype(names_transform)
+        except TypeError:
+            spec[label] = names_transform(spec[label])
+    return spec
 
 
 @pf.register_dataframe_method
@@ -1367,10 +1721,10 @@ def _final_frame_longer(
 )
 def pivot_wider(
     df: pd.DataFrame,
-    index: Optional[Union[list, str]] = None,
-    names_from: Optional[Union[list, str]] = None,
-    values_from: Optional[Union[list, str]] = None,
-    flatten_levels: Optional[bool] = True,
+    index: list | str = None,
+    names_from: list | str = None,
+    values_from: list | str = None,
+    flatten_levels: bool = True,
     names_sep: str = "_",
     names_glue: str = None,
     reset_index: bool = True,
@@ -1568,15 +1922,15 @@ def pivot_wider(
 
 def _computations_pivot_wider(
     df: pd.DataFrame,
-    index: Optional[Union[list, str]] = None,
-    names_from: Optional[Union[list, str]] = None,
-    values_from: Optional[Union[list, str]] = None,
-    flatten_levels: Optional[bool] = True,
-    names_sep: str = "_",
-    names_glue: str = None,
-    reset_index: bool = True,
-    names_expand: bool = False,
-    index_expand: bool = False,
+    index: list | str | None,
+    names_from: list | str | None,
+    values_from: list | str | None,
+    flatten_levels: bool,
+    names_sep: str,
+    names_glue: str | None,
+    reset_index: bool,
+    names_expand: bool,
+    index_expand: bool,
 ) -> pd.DataFrame:
     """
     This is the main workhorse of the `pivot_wider` function.
@@ -1619,7 +1973,11 @@ def _computations_pivot_wider(
     indexer = out.index
     if index_expand and index:
         any_categoricals = (indexer.get_level_values(name) for name in index)
-        any_categoricals = any(map(is_categorical_dtype, any_categoricals))
+        any_categoricals = (
+            isinstance(entry, pd.CategoricalIndex)
+            for entry in any_categoricals
+        )
+        any_categoricals = any(any_categoricals)
         if any_categoricals:
             indexer = _expand(indexer, retain_categories=True)
             out = out.reindex(index=indexer)
@@ -1629,7 +1987,11 @@ def _computations_pivot_wider(
         any_categoricals = (
             indexer.get_level_values(name) for name in names_from
         )
-        any_categoricals = any(map(is_categorical_dtype, any_categoricals))
+        any_categoricals = (
+            isinstance(entry, pd.CategoricalIndex)
+            for entry in any_categoricals
+        )
+        any_categoricals = any(any_categoricals)
         if any_categoricals:
             retain_categories = True
             if flatten_levels & (
@@ -1834,7 +2196,7 @@ def _expand(indexer, retain_categories):
                         categories=arr.categories,
                         ordered=arr.ordered,
                     )
-                    if is_categorical_dtype(arr)
+                    if isinstance(arr, pd.CategoricalIndex)
                     else arr.unique()
                 )
                 for arr in indexer

@@ -14,7 +14,7 @@ from janitor.timeseries import _flag_jumps_single_col
 @pytest.fixture
 def timeseries_dataframe() -> pd.DataFrame:
     """Returns a time series dataframe."""
-    ts_index = pd.date_range("1/1/2019", periods=10, freq="1H")
+    ts_index = pd.date_range("1/1/2019", periods=10, freq="1h")
     c1 = [*range(10)]
     c2 = [*range(100, 110)]
     c3 = c1[::-1]

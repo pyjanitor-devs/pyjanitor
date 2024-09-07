@@ -4,7 +4,7 @@
 #
 #    pip-compile .requirements/dev.in
 #
-black==22.1.0
+black==24.3.0
     # via -r dev.in
 cfgv==3.3.1
     # via pre-commit
@@ -30,6 +30,8 @@ mypy-extensions==0.4.3
     # via black
 nodeenv==1.6.0
     # via pre-commit
+packaging==24.0
+    # via black
 pathspec==0.9.0
     # via black
 pep517==0.12.0
@@ -56,6 +58,8 @@ tomli==2.0.1
     # via
     #   black
     #   pep517
+typing-extensions==4.10.0
+    # via black
 virtualenv==20.13.3
     # via pre-commit
 wheel==0.38.1

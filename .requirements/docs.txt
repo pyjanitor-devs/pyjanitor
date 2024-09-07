@@ -10,7 +10,7 @@ backcall==0.2.0
     # via ipython
 biopython==1.80
     # via -r biology.in
-certifi==2023.7.22
+certifi==2024.7.4
     # via requests
 charset-normalizer==3.0.1
     # via requests
@@ -28,7 +28,7 @@ ghp-import==2.1.0
     # via mkdocs
 griffe==0.25.4
     # via mkdocstrings-python
-idna==3.4
+idna==3.7
     # via requests
 importlib-metadata==7.0.1
     # via
@@ -38,7 +38,7 @@ ipython==8.10.0
     # via -r docs.in
 jedi==0.18.2
     # via ipython
-jinja2==3.1.3
+jinja2==3.1.4
     # via
     #   mkdocs
     #   mkdocs-material
@@ -90,6 +90,8 @@ pexpect==4.8.0
     # via ipython
 pickleshare==0.7.5
     # via ipython
+polars==0.20.31
+    # via -r docs.in
 prompt-toolkit==3.0.36
     # via ipython
 ptyprocess==0.7.0
@@ -119,7 +121,7 @@ pyyaml-env-tag==0.1
     # via mkdocs
 regex==2022.10.31
     # via mkdocs-material
-requests==2.31.0
+requests==2.32.0
     # via mkdocs-material
 six==1.16.0
     # via
@@ -129,7 +131,7 @@ stack-data==0.6.2
     # via ipython
 sympy==1.11.1
     # via unyt
-tqdm==4.64.1
+tqdm==4.66.3
     # via -r chemistry.in
 traitlets==5.8.1
     # via
@@ -137,11 +139,11 @@ traitlets==5.8.1
     #   matplotlib-inline
 unyt==2.9.3
     # via -r engineering.in
-urllib3==1.26.18
+urllib3==1.26.19
     # via requests
 watchdog==2.2.1
     # via mkdocs
 wcwidth==0.2.6
     # via prompt-toolkit
-zipp==3.17.0
+zipp==3.19.1
     # via importlib-metadata

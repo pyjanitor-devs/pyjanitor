@@ -5,11 +5,16 @@ from hypothesis import given, settings
 from pandas import Timedelta
 from pandas.testing import assert_frame_equal, assert_index_equal
 
-from janitor import col, get_join_indices
+from janitor import get_join_indices
 from janitor.testing_utils.strategies import (
     conditional_df,
     conditional_right,
 )
+
+# turn on to view dataframes from failed tests
+# pd.set_option("display.max_columns", None)
+# pd.set_option("display.expand_frame_repr", False)
+# pd.set_option("max_colwidth", None)
 
 
 @pytest.fixture
@@ -43,7 +48,7 @@ def test_conditional_join():
         }
     )
     df1.conditional_join(
-        df2, col("value_1") > col("value_2A"), col("value_1") < col("value_2B")
+        df2, ("value_1", "value_2A", ">"), ("value_1", "value_2B", "<")
     )
 
 
@@ -207,28 +212,6 @@ def test_check_how_value(dummy, series):
     """
     with pytest.raises(ValueError, match="'how' should be one of.+"):
         dummy.conditional_join(series, ("id", "B", "<"), how="INNER")
-
-
-def test_check_sort_by_appearance_type(dummy, series):
-    """
-    Raise TypeError if `sort_by_appearance` is not a boolean.
-    """
-    with pytest.raises(
-        TypeError, match="sort_by_appearance should be one of.+"
-    ):
-        dummy.conditional_join(
-            series, ("id", "B", "<"), sort_by_appearance="True"
-        )
-
-
-def test_sort_by_appearance_warning(dummy, series):
-    """
-    Test warning if sort_by_appearance = True.
-    """
-    with pytest.warns(DeprecationWarning):
-        dummy.conditional_join(
-            series, ("id", "B", "<"), sort_by_appearance=True
-        )
 
 
 def test_df_columns(dummy):
@@ -400,7 +383,6 @@ def test_single_condition_less_than_floats_keep_first(df, right):
             right[["Numeric"]].sort_values("Numeric"),
             ("B", "Numeric", "<"),
             how="left",
-            sort_by_appearance=False,
             keep="first",
         )
         .sort_values(["B", "Numeric"], ignore_index=True)
@@ -431,7 +413,6 @@ def test_single_condition_greater_than_floats_keep_last(df, right):
             right[["Numeric"]].sort_values("Numeric"),
             ("B", "Numeric", ">"),
             how="left",
-            sort_by_appearance=False,
             keep="last",
         )
         .sort_values(["B", "Numeric"], ignore_index=True)
@@ -487,7 +468,6 @@ def test_single_condition_greater_than_floats_keep_last_numba(df, right):
             right[["Numeric"]].sort_values("Numeric"),
             ("B", "Numeric", ">"),
             how="left",
-            sort_by_appearance=False,
             keep="last",
             use_numba=True,
         )
@@ -537,7 +517,6 @@ def test_single_condition_less_than_floats_keep_last(df, right):
             right[["Numeric"]],
             ("B", "Numeric", ">"),
             how="left",
-            sort_by_appearance=False,
             keep="last",
         )
         .sort_values(["B", "Numeric"], ignore_index=True)
@@ -564,7 +543,6 @@ def test_single_condition_less_than_floats(df, right):
             right[["Numeric"]],
             ("B", "Numeric", "<"),
             how="inner",
-            sort_by_appearance=False,
         )
         .sort_values(["B", "Numeric"], ignore_index=True)
     )
@@ -595,7 +573,6 @@ def test_single_condition_less_than_floats_keep_first_numba(df, right):
             right[["Numeric"]],
             ("B", "Numeric", "<"),
             how="left",
-            sort_by_appearance=False,
             keep="first",
             use_numba=True,
         )
@@ -628,7 +605,6 @@ def test_single_condition_less_than_floats_keep_last_numba(df, right):
             right[["Numeric"]],
             ("B", "Numeric", ">"),
             how="left",
-            sort_by_appearance=False,
             keep="last",
             use_numba=True,
         )
@@ -670,7 +646,6 @@ def test_single_condition_less_than_ints_extension_array_numba_first_match(
             ("A", "Integers", "<"),
             how="inner",
             keep="first",
-            sort_by_appearance=False,
             use_numba=True,
         )
         .sort_values(["A", "Integers"], ignore_index=True)
@@ -709,7 +684,6 @@ def test_single_condition_less_than_ints_extension_array_numba_last_match(
             ("A", "Integers", "<"),
             how="inner",
             keep="last",
-            sort_by_appearance=False,
             use_numba=True,
         )
         .sort_values(["A", "Integers"], ignore_index=True)
@@ -737,7 +711,6 @@ def test_single_condition_less_than_ints(df, right):
             right[["Integers"]],
             ("A", "Integers", "<"),
             how="inner",
-            sort_by_appearance=False,
         )
         .sort_values(["A", "Integers"], ignore_index=True)
     )
@@ -764,7 +737,6 @@ def test_single_condition_less_than_ints_numba(df, right):
             right[["Integers"]],
             ("A", "Integers", "<"),
             how="inner",
-            sort_by_appearance=False,
             use_numba=True,
         )
         .sort_values(["A", "Integers"], ignore_index=True)
@@ -798,7 +770,6 @@ def test_single_condition_less_than_ints_extension_array(df, right):
         ("A", "Integers", "<"),
         how="inner",
         keep="first",
-        sort_by_appearance=False,
     )
 
     assert_frame_equal(expected, actual)
@@ -832,7 +803,6 @@ def test_single_condition_less_than_ints_extension_array_numba(df, right):
             ("A", "Integers", "<"),
             how="inner",
             keep="first",
-            sort_by_appearance=False,
             use_numba=True,
         )
         .sort_values(["A", "Integers"], ignore_index=True)
@@ -863,7 +833,6 @@ def test_single_condition_less_than_equal(df, right):
         ("E", "Dates", "<="),
         how="inner",
         keep="last",
-        sort_by_appearance=False,
     )
 
     assert_frame_equal(expected, actual)
@@ -895,7 +864,6 @@ def test_single_condition_less_than_equal_numba(df, right):
             how="inner",
             keep="last",
             use_numba=True,
-            sort_by_appearance=False,
         )
         .sort_values(["E", "Dates"], ignore_index=True)
     )
@@ -921,7 +889,6 @@ def test_single_condition_less_than_date(df, right):
             right[["Dates"]],
             ("E", "Dates", "<"),
             how="inner",
-            sort_by_appearance=False,
         )
         .sort_values(["E", "Dates"], ignore_index=True)
     )
@@ -947,7 +914,6 @@ def test_single_condition_less_than_date_numba(df, right):
             right[["Dates"]],
             ("E", "Dates", "<"),
             how="inner",
-            sort_by_appearance=False,
             use_numba=True,
         )
         .sort_values(["E", "Dates"], ignore_index=True)
@@ -974,7 +940,6 @@ def test_single_condition_greater_than_datetime(df, right):
             right[["Dates"]],
             ("E", "Dates", ">"),
             how="inner",
-            sort_by_appearance=False,
         )
         .sort_values(["E", "Dates"], ignore_index=True)
     )
@@ -1001,7 +966,6 @@ def test_single_condition_greater_than_datetime_numba(df, right):
             ("E", "Dates", ">"),
             how="inner",
             use_numba=True,
-            sort_by_appearance=False,
         )
         .sort_values(["E", "Dates"], ignore_index=True)
     )
@@ -1031,7 +995,6 @@ def test_single_condition_greater_than_ints(df, right):
         ("A", "Integers", ">="),
         how="inner",
         keep="first",
-        sort_by_appearance=False,
     )
 
     assert_frame_equal(expected, actual)
@@ -1062,7 +1025,6 @@ def test_single_condition_greater_than_ints_numba(df, right):
             ("A", "Integers", ">="),
             how="inner",
             keep="first",
-            sort_by_appearance=False,
             use_numba=True,
         )
         .sort_values(["A", "Integers"], ignore_index=True)
@@ -1095,7 +1057,6 @@ def test_single_condition_greater_than_floats_floats(df, right):
             ("B", "Numeric", ">"),
             how="inner",
             keep="last",
-            sort_by_appearance=False,
         )
         .sort_values(["B", "Numeric"], ignore_index=True)
     )
@@ -1127,7 +1088,6 @@ def test_single_condition_greater_than_floats_floats_numba(df, right):
             ("B", "Numeric", ">"),
             how="inner",
             keep="last",
-            sort_by_appearance=False,
             use_numba=True,
         )
         .sort_values(["B", "Numeric"], ignore_index=True)
@@ -1157,7 +1117,6 @@ def test_single_condition_greater_than_ints_extension_array(df, right):
             right[["Integers"]],
             ("A", "Integers", ">"),
             how="inner",
-            sort_by_appearance=False,
         )
         .sort_values(["A", "Integers"], ignore_index=True)
     )
@@ -1186,7 +1145,6 @@ def test_single_condition_greater_than_ints_extension_array_numba(df, right):
             right[["Integers"]],
             ("A", "Integers", ">"),
             how="inner",
-            sort_by_appearance=False,
             use_numba=True,
         )
         .sort_values(["A", "Integers"], ignore_index=True)
@@ -1214,7 +1172,6 @@ def test_single_condition_not_equal_ints(df, right):
             right[["Integers"]],
             ("A", "Integers", "!="),
             how="inner",
-            sort_by_appearance=False,
         )
         .sort_values(["A", "Integers"], ignore_index=True)
     )
@@ -1241,7 +1198,6 @@ def test_single_condition_not_equal_ints_numba(df, right):
             right[["Integers"]],
             ("A", "Integers", "!="),
             how="inner",
-            sort_by_appearance=False,
             use_numba=True,
         )
         .sort_values(["A", "Integers"], ignore_index=True)
@@ -1272,7 +1228,6 @@ def test_single_condition_not_equal_floats_only(df, right):
         ("B", "Numeric", "!="),
         how="inner",
         keep="last",
-        sort_by_appearance=False,
     )
 
     assert_frame_equal(expected, actual)
@@ -1303,7 +1258,6 @@ def test_single_condition_not_equal_floats_only_numba(df, right):
             ("B", "Numeric", "!="),
             how="inner",
             keep="last",
-            sort_by_appearance=False,
             use_numba=True,
         )
         .sort_values(["B", "Numeric"], ignore_index=True)
@@ -1334,7 +1288,6 @@ def test_single_condition_not_equal_datetime(df, right):
         ("E", "Dates", "!="),
         how="inner",
         keep="first",
-        sort_by_appearance=False,
     )
 
     assert_frame_equal(expected, actual)
@@ -1366,7 +1319,6 @@ def test_single_condition_not_equal_datetime_numba(df, right):
             how="inner",
             keep="first",
             use_numba=True,
-            sort_by_appearance=False,
         )
         .sort_values(["E", "Dates"], ignore_index=True)
     )
@@ -1493,7 +1445,6 @@ def test_how_left_sort(df, right):
             ("A", "Integers", "<="),
             how="left",
             indicator=True,
-            sort_by_appearance=True,
         )
         .sort_values(["A", "Integers"], ignore_index=True)
     )
@@ -1570,7 +1521,6 @@ def test_how_right_sort(df, right):
             ("E", "Dates", ">"),
             how="right",
             indicator=True,
-            sort_by_appearance=True,
         )
         .sort_values(["E", "Dates"], ignore_index=True)
         .sort_index(axis="columns")
@@ -1604,7 +1554,39 @@ def test_dual_conditions_gt_and_lt_dates(df, right):
             (middle, left_on, ">"),
             (middle, right_on, "<"),
             how="inner",
-            sort_by_appearance=False,
+        )
+        .sort_values(["E", "Dates", "Dates_Right"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_conditions_gt_and_lt_dates_numba(df, right):
+    """Test output for interval conditions."""
+
+    middle, left_on, right_on = ("E", "Dates", "Dates_Right")
+    expected = (
+        df[["E"]]
+        .merge(right[["Dates", "Dates_Right"]], how="cross")
+        .loc[
+            lambda df: df.E.between(
+                df.Dates, df.Dates_Right, inclusive="neither"
+            )
+        ]
+        .sort_values(["E", "Dates", "Dates_Right"], ignore_index=True)
+    )
+
+    actual = (
+        df[["E"]]
+        .conditional_join(
+            right[["Dates", "Dates_Right"]],
+            (middle, left_on, ">"),
+            (middle, right_on, "<"),
+            how="inner",
+            use_numba=True,
         )
         .sort_values(["E", "Dates", "Dates_Right"], ignore_index=True)
     )
@@ -1634,7 +1616,36 @@ def test_dual_conditions_ge_and_le_dates(df, right):
             ("E", "Dates", ">="),
             ("E", "Dates_Right", "<="),
             how="inner",
-            sort_by_appearance=False,
+        )
+        .sort_values(["E", "Dates", "Dates_Right"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
+def test_dual_conditions_ge_and_le_dates_numba(df, right):
+    """Test output for interval conditions."""
+
+    expected = (
+        df[["E"]]
+        .merge(right[["Dates", "Dates_Right"]], how="cross")
+        .loc[
+            lambda df: df.E.between(df.Dates, df.Dates_Right, inclusive="both")
+        ]
+        .sort_values(["E", "Dates", "Dates_Right"], ignore_index=True)
+    )
+
+    actual = (
+        df[["E"]]
+        .conditional_join(
+            right[["Dates", "Dates_Right"]],
+            ("E", "Dates", ">="),
+            ("E", "Dates_Right", "<="),
+            how="inner",
+            use_numba=True,
         )
         .sort_values(["E", "Dates", "Dates_Right"], ignore_index=True)
     )
@@ -1663,7 +1674,35 @@ def test_dual_conditions_le_and_ge_dates(df, right):
             ("E", "Dates_Right", "<="),
             ("E", "Dates", ">="),
             how="inner",
-            sort_by_appearance=False,
+        )
+        .sort_values(["E", "Dates", "Dates_Right"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
+def test_dual_conditions_le_and_ge_dates_numba(df, right):
+    """Test output for interval conditions, if "<" comes before ">"."""
+
+    expected = (
+        df[["E"]]
+        .merge(right[["Dates", "Dates_Right"]], how="cross")
+        .loc[
+            lambda df: df.E.between(df.Dates, df.Dates_Right, inclusive="both")
+        ]
+        .sort_values(["E", "Dates", "Dates_Right"], ignore_index=True)
+    )
+    actual = (
+        df[["E"]]
+        .conditional_join(
+            right[["Dates", "Dates_Right"]],
+            ("E", "Dates_Right", "<="),
+            ("E", "Dates", ">="),
+            how="inner",
+            use_numba=True,
         )
         .sort_values(["E", "Dates", "Dates_Right"], ignore_index=True)
     )
@@ -1695,7 +1734,38 @@ def test_dual_conditions_ge_and_le_dates_right_open(df, right):
             ("E", "Dates", ">"),
             ("E", "Dates_Right", "<="),
             how="inner",
-            sort_by_appearance=False,
+        )
+        .sort_values(["E", "Dates", "Dates_Right"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_conditions_ge_and_le_dates_right_open_numba(df, right):
+    """Test output for interval conditions."""
+
+    expected = (
+        df[["E"]]
+        .merge(right[["Dates", "Dates_Right"]], how="cross")
+        .loc[
+            lambda df: df.E.between(
+                df.Dates, df.Dates_Right, inclusive="right"
+            )
+        ]
+        .sort_values(["E", "Dates", "Dates_Right"], ignore_index=True)
+    )
+
+    actual = (
+        df[["E"]]
+        .conditional_join(
+            right[["Dates", "Dates_Right"]],
+            ("E", "Dates", ">"),
+            ("E", "Dates_Right", "<="),
+            how="inner",
+            use_numba=True,
         )
         .sort_values(["E", "Dates", "Dates_Right"], ignore_index=True)
     )
@@ -1723,7 +1793,34 @@ def test_dual_conditions_ge_and_le_numbers(df, right):
             ("B", "Numeric", ">="),
             ("B", "Floats", "<="),
             how="inner",
-            sort_by_appearance=False,
+        )
+        .sort_values(["B", "Numeric", "Floats"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_conditions_ge_and_le_numbers_numba(df, right):
+    """Test output for interval conditions, for numeric dtypes."""
+
+    expected = (
+        df[["B"]]
+        .merge(right[["Numeric", "Floats"]], how="cross")
+        .loc[lambda df: df.B.between(df.Numeric, df.Floats, inclusive="both")]
+        .sort_values(["B", "Numeric", "Floats"], ignore_index=True)
+    )
+
+    actual = (
+        df[["B"]]
+        .conditional_join(
+            right[["Numeric", "Floats"]],
+            ("B", "Numeric", ">="),
+            ("B", "Floats", "<="),
+            how="inner",
+            use_numba=True,
         )
         .sort_values(["B", "Numeric", "Floats"], ignore_index=True)
     )
@@ -1755,7 +1852,38 @@ def test_dual_conditions_le_and_ge_numbers(df, right):
             ("B", "Floats", "<="),
             ("B", "Numeric", ">="),
             how="inner",
-            sort_by_appearance=False,
+        )
+        .sort_values(["B", "Numeric", "Floats"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
+def test_dual_conditions_le_and_ge_numbers_numba(df, right):
+    """
+    Test output for interval conditions,
+    for numeric dtypes,
+    if "<" comes before ">".
+    """
+
+    expected = (
+        df[["B"]]
+        .merge(right[["Numeric", "Floats"]], how="cross")
+        .loc[lambda df: df.B.between(df.Numeric, df.Floats, inclusive="both")]
+        .sort_values(["B", "Numeric", "Floats"], ignore_index=True)
+    )
+
+    actual = (
+        df[["B"]]
+        .conditional_join(
+            right[["Numeric", "Floats"]],
+            ("B", "Floats", "<="),
+            ("B", "Numeric", ">="),
+            how="inner",
+            use_numba=True,
         )
         .sort_values(["B", "Numeric", "Floats"], ignore_index=True)
     )
@@ -1785,7 +1913,6 @@ def test_dual_conditions_gt_and_lt_numbers(df, right):
             ("B", "Floats", "<"),
             ("B", "Numeric", ">"),
             how="inner",
-            sort_by_appearance=False,
         )
         .sort_values(["B", "Numeric", "Floats"], ignore_index=True)
     )
@@ -1813,7 +1940,6 @@ def test_dual_conditions_gt_and_lt_numbers_left_open(df, right):
             ("B", "Floats", "<"),
             ("B", "Numeric", ">="),
             how="inner",
-            sort_by_appearance=False,
         )
         .sort_values(["B", "Numeric", "Floats"], ignore_index=True)
     )
@@ -1845,7 +1971,38 @@ def test_dual_conditions_gt_and_lt_numbers_(df, right):
             ("Floats", "B", ">"),
             ("Numeric", "B", "<"),
             how="inner",
-            sort_by_appearance=False,
+        )
+        .sort_values(["Numeric", "Floats", "B"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_conditions_gt_and_lt_numbers_numba_(df, right):
+    """
+    Test output for multiple conditions.
+    """
+
+    expected = (
+        right[["Numeric", "Floats"]]
+        .merge(df[["B"]], how="cross")
+        .loc[
+            lambda df: df.B.between(df.Numeric, df.Floats, inclusive="neither")
+        ]
+        .sort_values(["Numeric", "Floats", "B"], ignore_index=True)
+    )
+
+    actual = (
+        right[["Numeric", "Floats"]]
+        .conditional_join(
+            df[["B"]],
+            ("Floats", "B", ">"),
+            ("Numeric", "B", "<"),
+            how="inner",
+            use_numba=True,
         )
         .sort_values(["Numeric", "Floats", "B"], ignore_index=True)
     )
@@ -1890,7 +2047,6 @@ def test_dual_conditions_gt_and_lt_numbers_left_join(df, right):
             ("B", "Numeric", ">"),
             ("B", "Floats", "<"),
             how="left",
-            sort_by_appearance=True,
             indicator=True,
         )
         .sort_values(["B", "Numeric", "Floats"], ignore_index=True)
@@ -1976,7 +2132,6 @@ def test_dual_ne_extension(df, right):
             ("A", "Integers", "!="),
             ("B", "Numeric", "!="),
             how="inner",
-            sort_by_appearance=True,
         )
         .sort_values(filters, ignore_index=True)
         .loc[:, filters]
@@ -2008,7 +2163,6 @@ def test_dual_ne(df, right):
             ("A", "Integers", "!="),
             ("B", "Numeric", "!="),
             how="inner",
-            sort_by_appearance=False,
         )
         .sort_values(filters, ignore_index=True)
     )
@@ -2044,7 +2198,6 @@ def test_dual_ne_numba_extension(df, right):
             ("B", "Numeric", "!="),
             how="inner",
             use_numba=True,
-            sort_by_appearance=True,
         )
         .filter(filters)
         .sort_values(filters, ignore_index=True)
@@ -2076,7 +2229,6 @@ def test_dual_ne_dates(df, right):
             ("A", "Integers", "!="),
             ("E", "Dates", "!="),
             how="inner",
-            sort_by_appearance=False,
             indicator=True,
         )
         .sort_values(filters, ignore_index=True)
@@ -2109,7 +2261,6 @@ def test_dual_ne_numba_dates(df, right):
             ("E", "Dates", "!="),
             how="inner",
             use_numba=True,
-            sort_by_appearance=False,
         )
         .sort_values(filters, ignore_index=True)
     )
@@ -2145,7 +2296,6 @@ def test_multiple_ne_dates(df, right):
             ("E", "Dates", "!="),
             ("B", "Numeric", "!="),
             how="inner",
-            sort_by_appearance=False,
         )
         .sort_values(filters, ignore_index=True)
     )
@@ -2176,7 +2326,6 @@ def test_dual_conditions_eq_and_ne(df, right):
             ("B", "Numeric", "=="),
             ("E", "Dates", "!="),
             how="inner",
-            sort_by_appearance=False,
         )
         .sort_values(columns, ignore_index=True)
         .loc[:, columns]
@@ -2206,7 +2355,6 @@ def test_dual_conditions_ne_and_eq(df, right):
             ("A", "Integers", "!="),
             ("E", "Dates", "=="),
             how="inner",
-            sort_by_appearance=False,
         )
         .sort_values(filters, ignore_index=True)
     )
@@ -2242,7 +2390,6 @@ def test_gt_lt_ne_conditions(df, right):
             ("B", "Numeric", "<"),
             ("E", "Dates", "!="),
             how="inner",
-            sort_by_appearance=False,
         )
         .sort_values(filters, ignore_index=True)
     )
@@ -2279,7 +2426,6 @@ def test_gt_lt_ne_numba_conditions(df, right):
             ("E", "Dates", "!="),
             how="inner",
             use_numba=True,
-            sort_by_appearance=False,
         )
         .sort_values(filters, ignore_index=True)
     )
@@ -2310,7 +2456,6 @@ def test_gt_ne_conditions(df, right):
             ("A", "Integers", ">"),
             ("E", "Dates", "!="),
             how="inner",
-            sort_by_appearance=False,
         )
         .sort_values(filters, ignore_index=True)
     )
@@ -2342,7 +2487,6 @@ def test_gt_ne_numba_conditions(df, right):
             ("E", "Dates", "!="),
             how="inner",
             use_numba=True,
-            sort_by_appearance=False,
         )
         .sort_values(filters, ignore_index=True)
     )
@@ -2373,7 +2517,6 @@ def test_le_ne_conditions(df, right):
             ("A", "Integers", "<="),
             ("E", "Dates", "!="),
             how="inner",
-            sort_by_appearance=False,
         )
         .sort_values(filters, ignore_index=True)
     )
@@ -2405,7 +2548,6 @@ def test_le_ne_numba_conditions(df, right):
             ("E", "Dates", "!="),
             how="inner",
             use_numba=True,
-            sort_by_appearance=False,
         )
         .sort_values(filters, ignore_index=True)
     )
@@ -2441,7 +2583,6 @@ def test_gt_lt_ne_start(df, right):
             ("A", "Integers", ">"),
             ("B", "Numeric", "<"),
             how="inner",
-            sort_by_appearance=False,
         )
         .sort_values(filters, ignore_index=True)
     )
@@ -2478,7 +2619,6 @@ def test_ge_le_ne_extension_array(df, right):
             ("A", "Integers", "!="),
             ("B", "Numeric", "<"),
             how="inner",
-            sort_by_appearance=False,
         )
         .sort_values(filters, ignore_index=True)
     )
@@ -2516,7 +2656,6 @@ def test_ge_le_ne_extension_array_numba(df, right):
             ("B", "Numeric", "<"),
             how="inner",
             use_numba=True,
-            sort_by_appearance=False,
         )
         .sort_values(filters, ignore_index=True)
     )
@@ -2555,7 +2694,6 @@ def test_ge_lt_ne_extension(df, right):
             ("A", "Integers", "<"),
             ("E", "Dates_Right", "!="),
             how="inner",
-            sort_by_appearance=False,
         )
         .sort_values(filters, ignore_index=True)
     )
@@ -2595,7 +2733,6 @@ def test_ge_lt_ne_numba_extension(df, right):
             ("E", "Dates_Right", "!="),
             how="inner",
             use_numba=True,
-            sort_by_appearance=False,
         )
         .sort_values(filters, ignore_index=True)
     )
@@ -2626,7 +2763,6 @@ def test_eq_ge_and_le_numbers(df, right):
             ("A", "Integers", ">="),
             ("E", "Dates", "<="),
             how="inner",
-            sort_by_appearance=False,
         )
         .sort_values(columns, ignore_index=True)
     )
@@ -2658,7 +2794,6 @@ def test_dual_ge_and_le_diff_numbers_numba(df, right):
             ("E", "Dates", ">"),
             how="inner",
             use_numba=True,
-            sort_by_appearance=False,
         )
         .sort_values(columns, ignore_index=True)
     )
@@ -2689,7 +2824,6 @@ def test_dual_ge_and_le_diff_numbers(df, right):
             ("A", "Integers", "<="),
             ("E", "Dates", ">"),
             how="inner",
-            sort_by_appearance=False,
         )
         .sort_values(columns, ignore_index=True)
     )
@@ -2726,7 +2860,6 @@ def test_ge_lt_ne_extension_variant(df, right):
             ("A", "Integers", "!="),
             ("E", "Dates_Right", "!="),
             how="inner",
-            sort_by_appearance=False,
         )
         .sort_values(filters, ignore_index=True)
         .loc[:, filters]
@@ -2764,7 +2897,6 @@ def test_ge_lt_ne_extension_variant_numba(df, right):
             ("E", "Dates_Right", "!="),
             how="inner",
             use_numba=True,
-            sort_by_appearance=False,
         )
         .sort_values(filters, ignore_index=True)
         .loc[:, filters]
@@ -2795,7 +2927,6 @@ def test_ge_eq_and_le_numbers_variant(df, right):
             ("E", "Dates", "<="),
             ("B", "Floats", "=="),
             how="inner",
-            sort_by_appearance=True,
         )
         .sort_values(columns, ignore_index=True)
     )
@@ -2830,9 +2961,8 @@ def test_multiple_ge_eq_and_le_numbers(df, right):
             ("A", "Integers", ">="),
             ("E", "Dates", "<="),
             ("B", "Floats", "=="),
-            col("B") > col("Numeric"),
+            ("B", "Numeric", ">"),
             how="inner",
-            sort_by_appearance=True,
         )
         .sort_values(columns, ignore_index=True)
     )
@@ -2867,9 +2997,8 @@ def test_ge_eq_and_multiple_le_numbers(df, right):
             ("A", "Integers", ">="),
             ("E", "Dates", "<="),
             ("B", "Floats", "=="),
-            col("B") < col("Numeric"),
+            ("B", "Numeric", "<"),
             how="inner",
-            sort_by_appearance=True,
         )
         .sort_values(columns, ignore_index=True)
     )
@@ -2904,7 +3033,6 @@ def test_multiple_eqs_variant(df, right):
             ("B", "Floats", "=="),
             ("A", "Integers", "=="),
             how="inner",
-            sort_by_appearance=False,
         )
         .sort_values(columns, ignore_index=True)
     )
@@ -2918,24 +3046,25 @@ def test_multiple_eqs_variant(df, right):
 def test_dual_ge_and_le_range_numbers(df, right):
     """Test output for multiple conditions."""
 
-    columns = ["A", "E", "Integers", "Dates"]
+    columns = ["A", "E", "Integers", "Dates_Right"]
     expected = (
         df.merge(
             right,
             how="cross",
         )
-        .loc[lambda df: df.A.ge(df.Integers) & df.E.lt(df.Dates), columns]
+        .loc[
+            lambda df: df.A.ge(df.Integers) & df.E.lt(df.Dates_Right), columns
+        ]
         .sort_values(columns, ignore_index=True)
     )
 
     actual = (
         df[["A", "E"]]
         .conditional_join(
-            right[["Integers", "Dates"]],
-            ("E", "Dates", "<"),
+            right[["Integers", "Dates_Right"]],
+            ("E", "Dates_Right", "<"),
             ("A", "Integers", ">="),
             how="inner",
-            sort_by_appearance=False,
         )
         .sort_values(columns, ignore_index=True)
     )
@@ -2949,25 +3078,26 @@ def test_dual_ge_and_le_range_numbers(df, right):
 def test_dual_ge_and_le_range_numbers_numba(df, right):
     """Test output for multiple conditions."""
 
-    columns = ["A", "E", "Integers", "Dates"]
+    columns = ["A", "E", "Integers", "Dates_Right"]
     expected = (
         df.merge(
             right,
             how="cross",
         )
-        .loc[lambda df: df.A.ge(df.Integers) & df.E.lt(df.Dates), columns]
+        .loc[
+            lambda df: df.A.ge(df.Integers) & df.E.lt(df.Dates_Right), columns
+        ]
         .sort_values(columns, ignore_index=True)
     )
 
     actual = (
         df[["A", "E"]]
         .conditional_join(
-            right[["Integers", "Dates"]],
-            ("E", "Dates", "<"),
+            right[["Integers", "Dates_Right"]],
+            ("E", "Dates_Right", "<"),
             ("A", "Integers", ">="),
             how="inner",
             use_numba=True,
-            sort_by_appearance=False,
         )
         .sort_values(columns, ignore_index=True)
     )
@@ -3000,7 +3130,6 @@ def test_dual_ge_and_le_range_numbers_df_columns_only(df, right):
             how="inner",
             use_numba=False,
             right_columns=None,
-            sort_by_appearance=False,
         )
         .sort_values(columns, ignore_index=True)
     )
@@ -3032,7 +3161,6 @@ def test_dual_ge_and_le_range_numbers_right_only(df, right):
             ("A", "Integers", ">="),
             how="inner",
             df_columns=None,
-            sort_by_appearance=False,
         )
         .sort_values(columns, ignore_index=True)
     )
@@ -3063,7 +3191,6 @@ def test_ge_eq_and_le_numbers(df, right):
             ("E", "Dates", "<="),
             ("B", "Floats", "=="),
             how="inner",
-            sort_by_appearance=False,
         )
         .sort_values(columns, ignore_index=True)
     )
@@ -3095,7 +3222,6 @@ def test_ge_eq_and_le_numbers_force(df, right):
             ("B", "Floats", "=="),
             how="inner",
             force=True,
-            sort_by_appearance=False,
         )
         .sort_values(columns, ignore_index=True)
     )
@@ -3126,7 +3252,6 @@ def test_ge_eq_and_le_numbers_variant_numba(df, right):
             ("E", "Dates", ">"),
             ("B", "Floats", "=="),
             how="inner",
-            sort_by_appearance=False,
         )
         .sort_values(columns, ignore_index=True)
     )
@@ -3158,7 +3283,6 @@ def test_ge_eq_and_le_numbers_numba(df, right):
             ("B", "Floats", "=="),
             how="inner",
             use_numba=True,
-            sort_by_appearance=False,
         )
         .sort_values(columns, ignore_index=True)
     )
@@ -3190,7 +3314,6 @@ def test_ge_eq_and_le_integers_numba(df, right):
             ("B", "Floats", ">="),
             how="inner",
             use_numba=True,
-            sort_by_appearance=False,
         )
         .sort_values(columns, ignore_index=True)
     )
@@ -3222,7 +3345,6 @@ def test_ge_eq_and_lt_integers_numba(df, right):
             ("B", "Floats", "<"),
             how="inner",
             use_numba=True,
-            sort_by_appearance=False,
         )
         .sort_values(columns, ignore_index=True)
     )
@@ -3253,7 +3375,6 @@ def test_gt_eq_integers_numba(df, right):
             ("E", "Dates", ">"),
             how="inner",
             use_numba=True,
-            sort_by_appearance=False,
         )
         .sort_values(columns, ignore_index=True)
     )
@@ -3289,7 +3410,6 @@ def test_gt_eq_dates_numba(df, right):
             ("E", "Dates", "=="),
             how="inner",
             use_numba=True,
-            sort_by_appearance=False,
         )
         .sort_values(columns, ignore_index=True)
     )
@@ -3320,7 +3440,6 @@ def test_lt_eq_integers_numba(df, right):
             ("E", "Dates", "<"),
             how="inner",
             use_numba=True,
-            sort_by_appearance=False,
         )
         .sort_values(columns, ignore_index=True)
     )
@@ -3356,7 +3475,6 @@ def test_lt_eq_dates_numba(df, right):
             ("E", "Dates", "=="),
             how="inner",
             use_numba=True,
-            sort_by_appearance=False,
         )
         .sort_values(columns, ignore_index=True)
     )
@@ -3393,7 +3511,6 @@ def test_ge_eq_and_le_dates_numba(df, right):
             ("B", "Floats", ">"),
             how="inner",
             use_numba=True,
-            sort_by_appearance=False,
         )
         .sort_values(columns, ignore_index=True)
     )
@@ -3436,7 +3553,6 @@ def test_ge_eq_and_le_datess_numba(df, right):
             ("B", "Numeric", "!="),
             how="inner",
             use_numba=True,
-            sort_by_appearance=False,
         )
         .sort_values(columns, ignore_index=True)
     )
@@ -3470,8 +3586,10 @@ def test_ge_eq_and_le_datess_numba_indices(df, right):
     expected = pd.Index(expected)
 
     actual, _ = get_join_indices(
-        df[["B", "A", "E"]],
-        right[["Floats", "Integers", "Dates", "Numeric"]],
+        df[["B", "A", "E"]].dropna(subset=["E"]),
+        right[["Floats", "Integers", "Dates", "Numeric"]].dropna(
+            subset=["Dates"]
+        ),
         [
             ("A", "Integers", "<"),
             ("E", "Dates", "=="),
@@ -3520,12 +3638,10 @@ def test_eq_indices(df, right):
 @pytest.mark.turtle
 def test_ge_eq_and_le_datess_indices(df, right):
     """compare join indices for multiple conditions."""
-
     expected = (
         df.reset_index()
-        .dropna(subset=["E"])
         .merge(
-            right.dropna(subset=["Dates"]),
+            right,
             left_on="E",
             right_on="Dates",
             how="inner",
@@ -3583,7 +3699,42 @@ def test_multiple_non_equi(df, right):
             ("E", "Dates", "<="),
             ("B", "Floats", "<"),
             how="inner",
-            sort_by_appearance=False,
+        )
+        .sort_values(columns, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_multiple_non_equi_numba_(df, right):
+    """Test output for multiple conditions."""
+
+    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+    expected = (
+        df.merge(
+            right,
+            how="cross",
+        )
+        .loc[
+            lambda df: df.A.ge(df.Integers)
+            & df.E.le(df.Dates)
+            & df.B.lt(df.Floats),
+            columns,
+        ]
+        .sort_values(columns, ignore_index=True)
+    )
+
+    actual = (
+        df[["B", "A", "E"]]
+        .conditional_join(
+            right[["Floats", "Integers", "Dates"]],
+            ("A", "Integers", ">="),
+            ("E", "Dates", "<="),
+            ("B", "Floats", "<"),
+            how="inner",
         )
         .sort_values(columns, ignore_index=True)
     )
@@ -3622,7 +3773,45 @@ def test_multiple_non_equii(df, right):
             ("B", "Floats", "<"),
             ("B", "Numeric", ">"),
             how="inner",
-            sort_by_appearance=False,
+        )
+        .sort_values(columns, ignore_index=True)
+        .loc[:, columns]
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
+def test_multiple_non_equii_numba_(df, right):
+    """Test output for multiple conditions."""
+
+    columns = ["B", "A", "E", "Floats", "Integers", "Dates", "Numeric"]
+    expected = (
+        df.merge(
+            right,
+            how="cross",
+        )
+        .loc[
+            lambda df: df.A.ge(df.Integers)
+            & df.E.le(df.Dates)
+            & df.B.lt(df.Floats)
+            & df.B.gt(df.Numeric),
+            columns,
+        ]
+        .sort_values(columns, ignore_index=True)
+    )
+    expected = expected.filter(columns)
+    actual = (
+        df[["B", "A", "E"]]
+        .conditional_join(
+            right[["Floats", "Integers", "Dates", "Numeric"]],
+            ("A", "Integers", ">="),
+            ("E", "Dates", "<="),
+            ("B", "Floats", "<"),
+            ("B", "Numeric", ">"),
+            how="inner",
         )
         .sort_values(columns, ignore_index=True)
         .loc[:, columns]
@@ -3657,12 +3846,11 @@ def test_multiple_non_equii_col_syntax(df, right):
         df[["B", "A", "E"]]
         .conditional_join(
             right[["Floats", "Integers", "Dates", "Numeric"]],
-            col("A") >= col("Integers"),
-            col("E") <= col("Dates"),
-            col("B") < col("Floats"),
-            col("B") > col("Numeric"),
+            ("A", "Integers", ">="),
+            ("E", "Dates", "<="),
+            ("B", "Floats", "<"),
+            ("B", "Numeric", ">"),
             how="inner",
-            sort_by_appearance=False,
         )
         .sort_values(columns, ignore_index=True)
         .loc[:, columns]
@@ -3706,7 +3894,6 @@ def test_multiple_non_eqi(df, right):
             ("E", "Dates", ">"),
             ("b", "floats", ">"),
             how="inner",
-            sort_by_appearance=False,
         )
         .loc[:, ["b", "A", "E", "floats", "Integers", "Dates"]]
         .sort_values(
@@ -3753,7 +3940,6 @@ def test_multiple_non_eqi_numba(df, right):
             ("E", "Dates", ">"),
             ("b", "floats", ">"),
             how="inner",
-            sort_by_appearance=False,
         )
         .loc[:, ["b", "A", "E", "floats", "Integers", "Dates"]]
         .sort_values(
@@ -3770,7 +3956,7 @@ def test_multiple_non_eqi_numba(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_multiple_non_eq(df, right):
     """Test output for multiple conditions."""
-
+    columns = ["A", "Integers", "E", "Dates", "B", "Floats"]
     expected = (
         df[["B", "A", "E"]]
         .assign(index=df.index)
@@ -3783,20 +3969,23 @@ def test_multiple_non_eq(df, right):
             & df.A.lt(df.Integers)
             & df.E.lt(df.Dates)
         ]
-        .groupby("index")
+        .groupby("index", sort=False)
         .head(1)
         .drop(columns="index")
-        .reset_index(drop=True)
+        .sort_values(columns, ignore_index=True)
     )
 
-    actual = df[["B", "A", "E"]].conditional_join(
-        right[["Floats", "Integers", "Dates"]],
-        ("B", "Floats", "<="),
-        ("A", "Integers", "<"),
-        ("E", "Dates", "<"),
-        how="inner",
-        keep="first",
-        sort_by_appearance=False,
+    actual = (
+        df[["B", "A", "E"]]
+        .conditional_join(
+            right[["Floats", "Integers", "Dates"]],
+            ("B", "Floats", "<="),
+            ("A", "Integers", "<"),
+            ("E", "Dates", "<"),
+            how="inner",
+            keep="first",
+        )
+        .sort_values(columns, ignore_index=True)
     )
 
     assert_frame_equal(expected, actual)
@@ -3820,7 +4009,7 @@ def test_multiple_non_eq_numba(df, right):
             & df.A.lt(df.Integers)
             & df.E.lt(df.Dates)
         ]
-        .groupby("index")
+        .groupby("index", sort=False)
         .head(1)
         .drop(columns="index")
         .reset_index(drop=True)
@@ -3839,11 +4028,243 @@ def test_multiple_non_eq_numba(df, right):
             how="inner",
             keep="first",
             use_numba=True,
-            sort_by_appearance=False,
         )
         .sort_values(
             ["B", "A", "E", "Floats", "Integers", "Dates"], ignore_index=True
         )
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_multiple_non_eq_first(df, right):
+    """Test output for multiple conditions - grab only the first match."""
+    columns = ["A", "Integers", "E", "Dates", "B", "Floats"]
+    expected = (
+        df[["B", "A", "E"]]
+        .assign(index=df.index)
+        .merge(
+            right[["Floats", "Integers", "Dates"]],
+            how="cross",
+        )
+        .loc[
+            lambda df: df.B.le(df.Floats)
+            & df.A.gt(df.Integers)
+            & df.E.lt(df.Dates)
+        ]
+        .groupby("index", sort=False)
+        .head(1)
+        .drop(columns="index")
+        .sort_values(columns, ignore_index=True)
+    )
+
+    actual = (
+        df[["B", "A", "E"]]
+        .conditional_join(
+            right[["Floats", "Integers", "Dates"]],
+            ("B", "Floats", "<="),
+            ("A", "Integers", ">"),
+            ("E", "Dates", "<"),
+            how="inner",
+            keep="first",
+        )
+        .sort_values(columns, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_multiple_non_eq_first_numba(df, right):
+    """Test output for multiple conditions - grab only the first match."""
+    columns = ["A", "Integers", "E", "Dates", "B", "Floats"]
+    expected = (
+        df[["B", "A", "E"]]
+        .assign(index=df.index)
+        .merge(
+            right[["Floats", "Integers", "Dates"]],
+            how="cross",
+        )
+        .loc[
+            lambda df: df.B.le(df.Floats)
+            & df.A.gt(df.Integers)
+            & df.E.lt(df.Dates)
+        ]
+        .groupby("index", sort=False)
+        .head(1)
+        .drop(columns="index")
+        .sort_values(columns, ignore_index=True)
+    )
+
+    actual = (
+        df[["B", "A", "E"]]
+        .conditional_join(
+            right[["Floats", "Integers", "Dates"]],
+            ("B", "Floats", "<="),
+            ("A", "Integers", ">"),
+            ("E", "Dates", "<"),
+            how="inner",
+            keep="first",
+            use_numba=True,
+        )
+        .sort_values(columns, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_multiple_non_eq_last(df, right):
+    """Test output for multiple conditions - grab only the last match."""
+    columns = ["A", "Integers", "E", "Dates", "B", "Floats"]
+    expected = (
+        df[["B", "A", "E"]]
+        .assign(index=df.index)
+        .merge(
+            right[["Floats", "Integers", "Dates"]],
+            how="cross",
+        )
+        .loc[
+            lambda df: df.B.le(df.Floats)
+            & df.A.gt(df.Integers)
+            & df.E.lt(df.Dates)
+        ]
+        .groupby("index", sort=False)
+        .tail(1)
+        .drop(columns="index")
+        .sort_values(columns, ignore_index=True)
+    )
+
+    actual = (
+        df[["B", "A", "E"]]
+        .conditional_join(
+            right[["Floats", "Integers", "Dates"]],
+            ("B", "Floats", "<="),
+            ("A", "Integers", ">"),
+            ("E", "Dates", "<"),
+            how="inner",
+            keep="last",
+        )
+        .sort_values(columns, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_multiple_non_eq_last_numba(df, right):
+    """Test output for multiple conditions - grab only the last match."""
+    columns = ["A", "Integers", "E", "Dates", "B", "Floats"]
+    expected = (
+        df[["B", "A", "E"]]
+        .assign(index=df.index)
+        .merge(
+            right[["Floats", "Integers", "Dates"]],
+            how="cross",
+        )
+        .loc[
+            lambda df: df.B.le(df.Floats)
+            & df.A.gt(df.Integers)
+            & df.E.lt(df.Dates)
+        ]
+        .groupby("index", sort=False)
+        .tail(1)
+        .drop(columns="index")
+        .sort_values(columns, ignore_index=True)
+    )
+
+    actual = (
+        df[["B", "A", "E"]]
+        .conditional_join(
+            right[["Floats", "Integers", "Dates"]],
+            ("B", "Floats", "<="),
+            ("A", "Integers", ">"),
+            ("E", "Dates", "<"),
+            how="inner",
+            keep="last",
+            use_numba=True,
+        )
+        .sort_values(columns, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_non_eq_last(df, right):
+    """Test output for dual conditions - grab only the last match."""
+    columns = ["A", "Integers", "E", "Dates"]
+    expected = (
+        df[["A", "E"]]
+        .assign(index=df.index)
+        .merge(
+            right[["Integers", "Dates"]],
+            how="cross",
+        )
+        .loc[lambda df: df.A.gt(df.Integers) & df.E.lt(df.Dates)]
+        .groupby("index", sort=False)
+        .tail(1)
+        .drop(columns="index")
+        .sort_values(columns, ignore_index=True)
+    )
+
+    actual = (
+        df[["A", "E"]]
+        .conditional_join(
+            right[["Integers", "Dates"]],
+            ("A", "Integers", ">"),
+            ("E", "Dates", "<"),
+            how="inner",
+            keep="last",
+        )
+        .sort_values(columns, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_non_eq_last_numba(df, right):
+    """Test output for dual conditions - grab only the last match."""
+    columns = ["A", "Integers", "E", "Dates"]
+    expected = (
+        df[["A", "E"]]
+        .assign(index=df.index)
+        .merge(
+            right[["Integers", "Dates"]],
+            how="cross",
+        )
+        .loc[lambda df: df.A.gt(df.Integers) & df.E.lt(df.Dates)]
+        .groupby("index", sort=False)
+        .tail(1)
+        .drop(columns="index")
+        .sort_values(columns, ignore_index=True)
+    )
+
+    actual = (
+        df[["A", "E"]]
+        .conditional_join(
+            right[["Integers", "Dates"]],
+            ("A", "Integers", ">"),
+            ("E", "Dates", "<"),
+            how="inner",
+            keep="last",
+            use_numba=True,
+        )
+        .sort_values(columns, ignore_index=True)
     )
 
     assert_frame_equal(expected, actual)
@@ -3876,7 +4297,41 @@ def test_multiple_eqs(df, right):
             ("B", "Floats", "=="),
             ("A", "Integers", "=="),
             how="inner",
-            sort_by_appearance=False,
+        )
+        .sort_values(columns, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_multiple_eqs_numba_range(df, right):
+    """Test output for multiple conditions."""
+
+    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+    expected = (
+        df.merge(
+            right,
+            left_on=["A"],
+            right_on=["Integers"],
+            how="inner",
+            sort=False,
+        )
+        .loc[lambda df: df.E.lt(df.Dates) & df.B.gt(df.Floats), columns]
+        .sort_values(columns, ignore_index=True)
+    )
+    expected = expected.filter(columns)
+    actual = (
+        df[["B", "A", "E"]]
+        .conditional_join(
+            right[["Floats", "Integers", "Dates"]],
+            ("E", "Dates", "<"),
+            ("B", "Floats", ">"),
+            ("A", "Integers", "=="),
+            how="inner",
+            use_numba=True,
         )
         .sort_values(columns, ignore_index=True)
     )
@@ -3927,7 +4382,6 @@ def test_multiple_eqs_outer(df, right):
             ("B", "B", "=="),
             ("A", "Integers", "=="),
             how="outer",
-            sort_by_appearance=False,
             indicator=True,
         )
         .select(("right", "B"), axis="columns", invert=True)
@@ -3962,11 +4416,10 @@ def test_multiple_eqs_col_syntax(df, right):
         df[["B", "A", "E"]]
         .conditional_join(
             right[["Floats", "Integers", "Dates"]],
-            col("E") != col("Dates"),
-            col("B") == col("Floats"),
-            col("A") == col("Integers"),
+            ("E", "Dates", "!="),
+            ("B", "Floats", "=="),
+            ("A", "Integers", "=="),
             how="inner",
-            sort_by_appearance=False,
         )
         .sort_values(columns, ignore_index=True)
     )
@@ -3997,7 +4450,6 @@ def test_eq_strings(df, right):
         ("C", "Strings", "=="),
         ("A", "Integers", ">="),
         how="inner",
-        sort_by_appearance=False,
         df_columns=["C", "A"],
         right_columns=["Strings", "Integers"],
     ).sort_values(columns, ignore_index=True)
@@ -4024,7 +4476,6 @@ def test_extension_array_eq():
         ("id", "id", "=="),
         ("value_1", "value_2A", ">"),
         use_numba=False,
-        sort_by_appearance=False,
     )
     expected = (
         expected.drop(columns=("right", "id"))
@@ -4060,7 +4511,6 @@ def test_extension_array_eq_force():
         ("value_1", "value_2A", ">"),
         use_numba=False,
         force=True,
-        sort_by_appearance=False,
     )
     expected = (
         expected.drop(columns=("right", "id"))
@@ -4095,7 +4545,6 @@ def test_extension_array_eq_numba():
         ("id", "id", "=="),
         ("value_1", "value_2A", ">"),
         use_numba=True,
-        sort_by_appearance=False,
     )
     expected = (
         expected.drop(columns=("right", "id"))
@@ -4130,7 +4579,6 @@ def test_extension_array_eq_range():
         ("id", "id", "=="),
         ("value_1", "value_2A", ">"),
         ("value_1", "value_2B", "<"),
-        sort_by_appearance=True,
     )
     expected = expected.drop(columns=("right", "id")).droplevel(
         axis=1, level=0
@@ -4165,7 +4613,6 @@ def test_extension_array_eq_range_numba():
         ("id", "id", "=="),
         ("value_1", "value_2A", ">"),
         ("value_1", "value_2B", "<"),
-        sort_by_appearance=True,
         use_numba=True,
     )
     expected = expected.drop(columns=("right", "id")).droplevel(
@@ -4307,5 +4754,37 @@ def test_timedelta_dtype():
     expected = A.conditional_join(B, ("l", "ll", ">="), ("r", "rr", "<="))
     actual = A.merge(B, how="cross").loc[lambda f: f.l.ge(f.ll) & f.r.le(f.rr)]
     actual.index = range(len(actual))
+
+    assert_frame_equal(expected, actual)
+
+
+# https://stackoverflow.com/q/61948103/7175713
+def test_numba_equi_extension_array():
+    """
+    Test output for equi join and numba
+    """
+    df1 = pd.DataFrame(
+        {"id": [1, 1, 1, 2, 2, 3], "value_1": [2, 5, 7, 1, 3, 4]}
+    )
+    df2 = pd.DataFrame(
+        {
+            "id": [1, 1, 1, 1, 2, 2, 2, 3],
+            "value_2A": [0, 3, 7, 12, 0, 2, 3, 1],
+            "value_2B": [1, 9, 5, 15, 1, 6, 4, 3],
+        }
+    )
+    df1["value_1"] = df1["value_1"].astype(pd.Int64Dtype())
+    df2["value_2A"] = df2["value_2A"].astype(pd.Int64Dtype())
+    df2["value_2B"] = df2["value_2B"].astype(pd.Int64Dtype())
+    expected = df1.merge(df2, on="id").query("value_2A < value_1 < value_2B")
+    expected.index = range(expected.index.size)
+    actual = df1.conditional_join(
+        df2,
+        ("id", "id", "=="),
+        ("value_1", "value_2A", ">"),
+        ("value_1", "value_2B", "<"),
+        right_columns="value*",
+        use_numba=True,
+    )
 
     assert_frame_equal(expected, actual)

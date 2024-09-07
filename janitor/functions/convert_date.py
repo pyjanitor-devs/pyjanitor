@@ -1,24 +1,22 @@
-import datetime as dt
-from typing import Hashable
+from typing import Hashable, Union
 
 import pandas as pd
 import pandas_flavor as pf
-from pandas.api.types import is_numeric_dtype
 from pandas.errors import OutOfBoundsDatetime
 
-from janitor.utils import deprecated_alias
+from janitor.utils import deprecated_alias, refactored_function
 
 
 @pf.register_dataframe_method
-@deprecated_alias(column="column_name")
+@deprecated_alias(column="column_names")
 def convert_excel_date(
-    df: pd.DataFrame, column_name: Hashable
+    df: pd.DataFrame, column_names: Union[Hashable, list]
 ) -> pd.DataFrame:
     """Convert Excel's serial date format into Python datetime format.
 
-    This method mutates the original DataFrame.
+    This method does not mutate the original DataFrame.
 
-    Implementation is also from
+    Implementation is based on
     [Stack Overflow](https://stackoverflow.com/questions/38454403/convert-excel-style-date-with-pandas).
 
     Examples:
@@ -38,40 +36,36 @@ def convert_excel_date(
 
     Args:
         df: A pandas DataFrame.
-        column_name: A column name.
-
-    Raises:
-        ValueError: If there are non numeric values in the column.
+        column_names: A column name, or a list of column names.
 
     Returns:
         A pandas DataFrame with corrected dates.
     """  # noqa: E501
 
-    if not is_numeric_dtype(df[column_name]):
-        raise ValueError(
-            "There are non-numeric values in the column. "
-            "All values must be numeric."
+    if not isinstance(column_names, list):
+        column_names = [column_names]
+    # https://stackoverflow.com/a/65460255/7175713
+    dictionary = {
+        column_name: pd.to_datetime(
+            df[column_name], unit="D", origin="1899-12-30"
         )
+        for column_name in column_names
+    }
 
-    df[column_name] = pd.TimedeltaIndex(
-        df[column_name], unit="d"
-    ) + dt.datetime(
-        1899, 12, 30
-    )  # noqa: W503
-    return df
+    return df.assign(**dictionary)
 
 
 @pf.register_dataframe_method
-@deprecated_alias(column="column_name")
+@deprecated_alias(column="column_names")
 def convert_matlab_date(
-    df: pd.DataFrame, column_name: Hashable
+    df: pd.DataFrame, column_names: Union[Hashable, list]
 ) -> pd.DataFrame:
     """Convert Matlab's serial date number into Python datetime format.
 
-    Implementation is also from
+    Implementation is based on
     [Stack Overflow](https://stackoverflow.com/questions/13965740/converting-matlabs-datenum-format-to-python).
 
-    This method mutates the original DataFrame.
+    This method does not mutate the original DataFrame.
 
     Examples:
         >>> import pandas as pd
@@ -84,29 +78,37 @@ def convert_matlab_date(
         2  737124.498500
         3  737124.000000
         >>> df.convert_matlab_date('date')
-                                date
-        0 2018-03-06 00:00:00.000000
-        1 2018-03-05 19:34:50.563200
-        2 2018-03-05 11:57:50.399999
-        3 2018-03-05 00:00:00.000000
+                                   date
+        0 2018-03-06 00:00:00.000000000
+        1 2018-03-05 19:34:50.563199671
+        2 2018-03-05 11:57:50.399998876
+        3 2018-03-05 00:00:00.000000000
 
     Args:
         df: A pandas DataFrame.
-        column_name: A column name.
+        column_names: A column name, or a list of column names.
 
     Returns:
         A pandas DataFrame with corrected dates.
     """  # noqa: E501
-    days = pd.Series([dt.timedelta(v % 1) for v in df[column_name]])
-    df[column_name] = (
-        df[column_name].astype(int).apply(dt.datetime.fromordinal)
-        + days
-        - dt.timedelta(days=366)
-    )
-    return df
+    # https://stackoverflow.com/a/49135037/7175713
+    if not isinstance(column_names, list):
+        column_names = [column_names]
+    dictionary = {
+        column_name: pd.to_datetime(df[column_name] - 719529, unit="D")
+        for column_name in column_names
+    }
+
+    return df.assign(**dictionary)
 
 
 @pf.register_dataframe_method
+@refactored_function(
+    message=(
+        "This function will be deprecated in a 1.x release. "
+        "Please use `pd.to_datetime` instead."
+    )
+)
 @deprecated_alias(column="column_name")
 def convert_unix_date(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
     """Convert unix epoch time into Python datetime format.
@@ -115,6 +117,11 @@ def convert_unix_date(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
     datetime based on UTC!
 
     This method mutates the original DataFrame.
+
+    !!!note
+
+        This function will be deprecated in a 1.x release.
+        Please use `pd.to_datetime` instead.
 
     Examples:
         >>> import pandas as pd

@@ -48,7 +48,7 @@ def clone_using(
         ...     np.ones((4, 6)), new_name='new_and_improved', use_coords=False,
         ... )
         >>> new_da
-        <xarray.DataArray 'new_and_improved' (ax_1: 4, ax_2: 6)>
+        <xarray.DataArray 'new_and_improved' (ax_1: 4, ax_2: 6)> Size: 192B
         array([[1., 1., 1., 1., 1., 1.],
                [1., 1., 1., 1., 1., 1.],
                [1., 1., 1., 1., 1., 1.],
@@ -111,7 +111,7 @@ def convert_datetime_to_number(
     da_or_ds: Union[xr.DataArray, xr.Dataset],
     time_units: str,
     dim: str = "time",
-):
+) -> Union[xr.DataArray, xr.Dataset]:
     """Convert the coordinates of a datetime axis to a human-readable float
     representation.
 
@@ -130,10 +130,10 @@ def convert_datetime_to_number(
         ... )
         >>> da_minutes = da.convert_datetime_to_number("s", dim="time")
         >>> da_minutes
-        <xarray.DataArray (time: 6)>
+        <xarray.DataArray (time: 6)> Size: 48B
         array([2, 8, 0, 1, 7, 7])
         Coordinates:
-          * time     (time) float64 0.0 60.0 120.0 180.0 240.0 300.0
+          * time     (time) float64 48B 0.0 60.0 120.0 180.0 240.0 300.0
 
     Args:
         da_or_ds: XArray object.

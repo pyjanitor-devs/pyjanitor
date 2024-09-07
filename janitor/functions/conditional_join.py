@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import operator
-import warnings
 from typing import Any, Hashable, Literal, Optional, Union
 
 import numpy as np
@@ -20,13 +19,10 @@ from janitor.functions.utils import (
     _generic_func_cond_join,
     _JoinOperator,
     _keep_output,
-    col,
     greater_than_join_types,
     less_than_join_types,
 )
-from janitor.utils import check, check_column, find_stack_level
-
-warnings.simplefilter("always", DeprecationWarning)
+from janitor.utils import check, check_column
 
 
 @pf.register_dataframe_method
@@ -35,7 +31,6 @@ def conditional_join(
     right: Union[pd.DataFrame, pd.Series],
     *conditions: Any,
     how: Literal["inner", "left", "right", "outer"] = "inner",
-    sort_by_appearance: bool = False,
     df_columns: Optional[Any] = slice(None),
     right_columns: Optional[Any] = slice(None),
     keep: Literal["first", "last", "all"] = "all",
@@ -58,8 +53,16 @@ def conditional_join(
     Column selection in `df_columns` and `right_columns` is possible using the
     [`select`][janitor.functions.select.select] syntax.
 
-    Performance might be improved by setting `use_numba` to `True`.
+    Performance might be improved by setting `use_numba` to `True` -
+    this can be handy for equi joins that have lots of duplicated keys.
+    This can also be handy for non-equi joins, where there are more than
+    two join conditions,
+    or there is significant overlap in the range join columns.
     This assumes that `numba` is installed.
+
+    Noticeable performance can be observed for range joins,
+    if both join columns from the right dataframe
+    are monotonically increasing.
 
     This function returns rows, if any, where values from `df` meet the
     condition(s) for values from `right`. The conditions are passed in
@@ -67,8 +70,6 @@ def conditional_join(
     the form `(left_on, right_on, op)`; `left_on` is the column
     label from `df`, `right_on` is the column label from `right`,
     while `op` is the operator.
-
-    The `col` class is also supported in the `conditional_join` syntax.
 
     For multiple conditions, the and(`&`)
     operator is used to combine the results of the individual conditions.
@@ -78,6 +79,8 @@ def conditional_join(
     is executed before the equi join - pass `force=True` to force this.
 
     The operator can be any of `==`, `!=`, `<=`, `<`, `>=`, `>`.
+
+    There is no optimisation for the `!=` operator.
 
     The join is done only on the columns.
 
@@ -127,24 +130,11 @@ def conditional_join(
         3        4         3         5
         4        4         3         6
 
-        Use the `col` class:
-        >>> df1.conditional_join(
-        ...     df2,
-        ...     col("value_1") > col("value_2A"),
-        ...     col("value_1") < col("value_2B")
-        ... )
-           value_1  value_2A  value_2B
-        0        2         1         3
-        1        5         3         6
-        2        3         2         4
-        3        4         3         5
-        4        4         3         6
-
         Select specific columns, after the join:
         >>> df1.conditional_join(
         ...     df2,
-        ...     col("value_1") > col("value_2A"),
-        ...     col("value_1") < col("value_2B"),
+        ...     ("value_1", "value_2A", ">"),
+        ...     ("value_1", "value_2B", "<"),
         ...     right_columns='value_2B',
         ...     how='left'
         ... )
@@ -162,8 +152,8 @@ def conditional_join(
         ...  .rename(columns={'value_1':'left_column'})
         ...  .conditional_join(
         ...      df2,
-        ...      ("left_column", "value_2A", ">"),
-        ...      ("left_column", "value_2B", "<"),
+        ...     ("left_column", "value_2A", ">"),
+        ...     ("left_column", "value_2B", "<"),
         ...      right_columns='value_2B',
         ...      how='outer')
         ... )
@@ -183,8 +173,8 @@ def conditional_join(
         Get the first match:
         >>> df1.conditional_join(
         ...     df2,
-        ...     col("value_1") > col("value_2A"),
-        ...     col("value_1") < col("value_2B"),
+        ...     ("value_1", "value_2A", ">"),
+        ...     ("value_1", "value_2B", "<"),
         ...     keep='first'
         ... )
            value_1  value_2A  value_2B
@@ -196,8 +186,8 @@ def conditional_join(
         Get the last match:
         >>> df1.conditional_join(
         ...     df2,
-        ...     col("value_1") > col("value_2A"),
-        ...     col("value_1") < col("value_2B"),
+        ...     ("value_1", "value_2A", ">"),
+        ...     ("value_1", "value_2B", "<"),
         ...     keep='last'
         ... )
            value_1  value_2A  value_2B
@@ -239,6 +229,8 @@ def conditional_join(
             - Numba support for equi join
         - 0.27.0
             - Added support for timedelta dtype.
+        - 0.28.0
+            - `col` class deprecated.
 
     Args:
         df: A pandas DataFrame.
@@ -253,14 +245,6 @@ def conditional_join(
             of the individual conditions.
         how: Indicates the type of join to be performed.
             It can be one of `inner`, `left`, `right` or `outer`.
-        sort_by_appearance: If `how = inner` and
-            `sort_by_appearance = False`, there
-            is no guarantee that the original order is preserved.
-            Usually, this offers more performance.
-            If `how = left`, the row order from the left dataframe
-            is preserved; if `how = right`, the row order
-            from the right dataframe is preserved.
-            !!!warning "Deprecated in 0.25.0"
         df_columns: Columns to select from `df` in the final output dataframe.
             Column selection is based on the
             [`select`][janitor.functions.select.select] syntax.
@@ -285,17 +269,16 @@ def conditional_join(
     """  # noqa: E501
 
     return _conditional_join_compute(
-        df,
-        right,
-        conditions,
-        how,
-        sort_by_appearance,
-        df_columns,
-        right_columns,
-        keep,
-        use_numba,
-        indicator,
-        force,
+        df=df,
+        right=right,
+        conditions=conditions,
+        how=how,
+        df_columns=df_columns,
+        right_columns=right_columns,
+        keep=keep,
+        use_numba=use_numba,
+        indicator=indicator,
+        force=force,
     )
 
 
@@ -319,7 +302,6 @@ def _conditional_join_preliminary_checks(
     right: Union[pd.DataFrame, pd.Series],
     conditions: tuple,
     how: str,
-    sort_by_appearance: bool,
     df_columns: Any,
     right_columns: Any,
     keep: str,
@@ -359,10 +341,6 @@ def _conditional_join_preliminary_checks(
     if not conditions:
         raise ValueError("Kindly provide at least one join condition.")
 
-    conditions = [
-        cond.join_args if isinstance(cond, col) else cond
-        for cond in conditions
-    ]
     for condition in conditions:
         check("condition", condition, [tuple])
         len_condition = len(condition)
@@ -395,15 +373,6 @@ def _conditional_join_preliminary_checks(
             "'how' should be one of 'inner', 'left', 'right' or 'outer'."
         )
 
-    if sort_by_appearance:
-        warnings.warn(
-            "The keyword argument "
-            "'sort_by_appearance' of 'conditional_join' is deprecated.",
-            DeprecationWarning,
-            stacklevel=find_stack_level(),
-        )
-    check("sort_by_appearance", sort_by_appearance, [bool])
-
     if (df.columns.nlevels > 1) and (
         isinstance(df_columns, dict) or isinstance(right_columns, dict)
     ):
@@ -428,7 +397,6 @@ def _conditional_join_preliminary_checks(
         right,
         conditions,
         how,
-        sort_by_appearance,
         df_columns,
         right_columns,
         keep,
@@ -479,7 +447,6 @@ def _conditional_join_compute(
     right: pd.DataFrame,
     conditions: list,
     how: str,
-    sort_by_appearance: bool,
     df_columns: Any,
     right_columns: Any,
     keep: str,
@@ -498,7 +465,6 @@ def _conditional_join_compute(
         right,
         conditions,
         how,
-        sort_by_appearance,
         df_columns,
         right_columns,
         keep,
@@ -506,18 +472,17 @@ def _conditional_join_compute(
         indicator,
         force,
     ) = _conditional_join_preliminary_checks(
-        df,
-        right,
-        conditions,
-        how,
-        sort_by_appearance,
-        df_columns,
-        right_columns,
-        keep,
-        use_numba,
-        indicator,
-        force,
-        return_matching_indices,
+        df=df,
+        right=right,
+        conditions=conditions,
+        how=how,
+        df_columns=df_columns,
+        right_columns=right_columns,
+        keep=keep,
+        use_numba=use_numba,
+        indicator=indicator,
+        force=force,
+        return_matching_indices=return_matching_indices,
     )
 
     eq_check = False
@@ -525,7 +490,10 @@ def _conditional_join_compute(
     for condition in conditions:
         left_on, right_on, op = condition
         _conditional_join_type_check(
-            df[left_on], right[right_on], op, use_numba
+            left_column=df[left_on],
+            right_column=right[right_on],
+            op=op,
+            use_numba=use_numba,
         )
         if op == _JoinOperator.STRICTLY_EQUAL.value:
             eq_check = True
@@ -537,25 +505,31 @@ def _conditional_join_compute(
     if (len(conditions) > 1) or eq_check:
         if eq_check:
             result = _multiple_conditional_join_eq(
-                df,
-                right,
-                conditions,
-                keep,
-                use_numba,
-                force,
+                df=df,
+                right=right,
+                conditions=conditions,
+                keep=keep,
+                use_numba=use_numba,
+                force=force,
             )
         elif le_lt_check:
             result = _multiple_conditional_join_le_lt(
-                df, right, conditions, keep, use_numba
+                df=df,
+                right=right,
+                conditions=conditions,
+                keep=keep,
+                use_numba=use_numba,
             )
         else:
-            result = _multiple_conditional_join_ne(df, right, conditions, keep)
+            result = _multiple_conditional_join_ne(
+                df=df, right=right, conditions=conditions, keep=keep
+            )
     else:
         left_on, right_on, op = conditions[0]
         if use_numba:
-            from janitor.functions._numba import _numba_single_join
+            from janitor.functions._numba import _numba_single_non_equi_join
 
-            result = _numba_single_join(
+            result = _numba_single_non_equi_join(
                 left=df[left_on],
                 right=right[right_on],
                 op=op,
@@ -569,21 +543,22 @@ def _conditional_join_compute(
                 multiple_conditions=False,
                 keep=keep,
             )
-
     if result is None:
         result = np.array([], dtype=np.intp), np.array([], dtype=np.intp)
 
     if return_matching_indices:
         return result
 
+    left_index, right_index = result
     return _create_frame(
-        df,
-        right,
-        *result,
-        how,
-        df_columns,
-        right_columns,
-        indicator,
+        df=df,
+        right=right,
+        left_index=left_index,
+        right_index=right_index,
+        how=how,
+        df_columns=df_columns,
+        right_columns=right_columns,
+        indicator=indicator,
     )
 
 
@@ -648,9 +623,9 @@ def _multiple_conditional_join_ne(
     left_on, right_on, op = first
 
     indices = _generic_func_cond_join(
-        df[left_on],
-        right[right_on],
-        op,
+        left=df[left_on],
+        right=right[right_on],
+        op=op,
         multiple_conditions=False,
         keep="all",
     )
@@ -731,6 +706,7 @@ def _multiple_conditional_join_eq(
 
         right_columns = [eqs[1]]
         df_columns = [eqs[0]]
+        # ensure the sort columns are unique
         if ge_gt:
             if ge_gt[1] not in right_columns:
                 right_columns.append(ge_gt[1])
@@ -763,7 +739,8 @@ def _multiple_conditional_join_eq(
             grp = right_df.groupby(equi_col, sort=False)
             non_equi_col = right_columns[1]
             # groupby.is_monotonic_increasing uses apply under the hood
-            # this circumvents the Series creation (which isn't required here)
+            # the approach used below circumvents the Series creation
+            # (which isn't required here)
             # and just gets a sequence of booleans, before calling `all`
             # to get a single True or False.
             right_is_sorted = all(
@@ -771,8 +748,9 @@ def _multiple_conditional_join_eq(
             )
         if not right_is_sorted:
             right_df = right_df.sort_values(right_columns)
-        indices = _numba_equi_join(left_df, right_df, eqs, ge_gt, le_lt)
-
+        indices = _numba_equi_join(
+            df=left_df, right=right_df, eqs=eqs, ge_gt=ge_gt, le_lt=le_lt
+        )
         if not rest or (indices is None):
             return indices
 
@@ -848,8 +826,8 @@ def _multiple_conditional_join_le_lt(
     """
     if use_numba:
         from janitor.functions._numba import (
-            _numba_dual_join,
-            _numba_single_join,
+            _numba_multiple_non_equi_join,
+            _numba_single_non_equi_join,
         )
 
         gt_lt = [
@@ -861,13 +839,17 @@ def _multiple_conditional_join_le_lt(
         conditions = [
             condition for condition in conditions if condition not in gt_lt
         ]
+        if (len(gt_lt) > 1) and not conditions:
+            return _numba_multiple_non_equi_join(df, right, gt_lt, keep=keep)
         if len(gt_lt) == 1:
             left_on, right_on, op = gt_lt[0]
-            indices = _numba_single_join(
+            indices = _numba_single_non_equi_join(
                 df[left_on], right[right_on], op, keep="all"
             )
         else:
-            indices = _numba_dual_join(df, right, gt_lt)
+            indices = _numba_multiple_non_equi_join(
+                df, right, gt_lt, keep="all"
+            )
     else:
         # there is an opportunity for optimization for range joins
         # which is usually `lower_value < value < upper_value`
@@ -922,7 +904,25 @@ def _multiple_conditional_join_le_lt(
                 if condition not in (ge_gt, le_lt)
             ]
 
-            indices = _range_indices(df, right, ge_gt, le_lt)
+            if conditions:
+                _keep = None
+            else:
+                first = ge_gt[1]
+                second = le_lt[1]
+                right_is_sorted = (
+                    right[first].is_monotonic_increasing
+                    & right[second].is_monotonic_increasing
+                )
+                if right_is_sorted:
+                    _keep = keep
+                else:
+                    _keep = None
+
+            indices = _range_indices(
+                df=df, right=right, first=ge_gt, second=le_lt, keep=_keep
+            )
+            if _keep:
+                return indices
 
         # no optimised path
         # blow up the rows and prune
@@ -939,15 +939,14 @@ def _multiple_conditional_join_le_lt(
                 left_on, right_on, op = ge_gt
 
             indices = _generic_func_cond_join(
-                df[left_on],
-                right[right_on],
-                op,
+                left=df[left_on],
+                right=right[right_on],
+                op=op,
                 multiple_conditions=False,
                 keep="all",
             )
     if not indices:
         return None
-
     if conditions:
         conditions = (
             (df[left_on], right[right_on], op)
@@ -957,7 +956,6 @@ def _multiple_conditional_join_le_lt(
         indices = _generate_indices(*indices, conditions)
         if not indices:
             return None
-
     return _keep_output(keep, *indices)
 
 
@@ -966,7 +964,8 @@ def _range_indices(
     right: pd.DataFrame,
     first: tuple,
     second: tuple,
-):
+    keep: str,
+) -> Union[tuple[np.ndarray, np.ndarray], None]:
     """
     Retrieve index positions for range/interval joins.
 
@@ -989,6 +988,7 @@ def _range_indices(
     # this is helpful as we can convert extension arrays
     # to numpy arrays safely
     # and simplify the search logic below
+    # if there is no fastpath available
     any_nulls = df[left_on].isna()
     if any_nulls.any():
         left_c = left_c[~any_nulls]
@@ -1007,10 +1007,12 @@ def _range_indices(
     if outcome is None:
         return None
 
-    left_index, right_index, search_indices = outcome
+    left_index, right_index, ends = outcome
     left_on, right_on, op = second
-    right_c = right.loc[right_index, right_on]
-    left_c = df.loc[left_index, left_on]
+    left_on = df.columns.get_loc(left_on)
+    right_on = right.columns.get_loc(right_on)
+    right_c = right.iloc[right_index, right_on]
+    left_c = df.iloc[left_index, left_on]
     # if True, we can use a binary search
     # for more performance, instead of a linear search
     fastpath = right_c.is_monotonic_increasing
@@ -1024,15 +1026,13 @@ def _range_indices(
         )
         if outcome is None:
             return None
-        left_c, pos = outcome
+        left_c, starts = outcome
     else:
         # the aim here is to get the first match
         # where the left array is </<= than the right array
         # this is solved by getting the cumulative max
         # thus ensuring that the first match is obtained
         # via a binary search
-        # this allows us to avoid the less efficient linear search
-        # of using a for loop with a break to get the first match
         outcome = _generic_func_cond_join(
             left=left_c,
             right=right_c.cummax(),
@@ -1042,39 +1042,38 @@ def _range_indices(
         )
         if outcome is None:
             return None
-        left_c, right_index, pos = outcome
+        left_c, right_index, starts = outcome
     if left_c.size < left_index.size:
         keep_rows = np.isin(left_index, left_c, assume_unique=True)
-        search_indices = search_indices[keep_rows]
+        ends = ends[keep_rows]
         left_index = left_c
     # no point searching within (a, b)
     # if a == b
     # since range(a, b) yields none
-    keep_rows = pos < search_indices
+    keep_rows = starts < ends
 
     if not keep_rows.any():
         return None
 
     if not keep_rows.all():
         left_index = left_index[keep_rows]
-        pos = pos[keep_rows]
-        search_indices = search_indices[keep_rows]
+        starts = starts[keep_rows]
+        ends = ends[keep_rows]
 
-    repeater = search_indices - pos
-    if (repeater == 1).all():
+    repeater = ends - starts
+    if repeater.max() == 1:
         # no point running a comparison op
         # if the width is all 1
         # this also implies that the intervals
         # do not overlap on the right side
-        return left_index, right_index[pos]
-
-    right_index = [
-        right_index[start:end] for start, end in zip(pos, search_indices)
-    ]
-
+        return left_index, right_index[starts]
+    if keep == "first":
+        return left_index, right_index[starts]
+    if keep == "last":
+        return left_index, right_index[ends - 1]
+    right_index = [right_index[start:end] for start, end in zip(starts, ends)]
     right_index = np.concatenate(right_index)
-    left_index = np.repeat(left_index, repeater)
-
+    left_index = left_index.repeat(repeater)
     if fastpath:
         return left_index, right_index
     # here we search for actual positions
@@ -1083,6 +1082,7 @@ def _range_indices(
     # which are all in the original `df` and `right`
     # doing this allows some speed gains
     # while still ensuring correctness
+    left_on, right_on, op = second
     left_c = df[left_on]._values[left_index]
     right_c = right[right_on]._values[right_index]
     ext_arr = is_extension_array_dtype(left_c)
@@ -1099,7 +1099,7 @@ def _range_indices(
     return left_index, right_index
 
 
-def _create_multiindex_column(df: pd.DataFrame, right: pd.DataFrame):
+def _create_multiindex_column(df: pd.DataFrame, right: pd.DataFrame) -> tuple:
     """
     Create a MultiIndex column for conditional_join.
     """
@@ -1131,7 +1131,7 @@ def _create_frame(
     df_columns: Any,
     right_columns: Any,
     indicator: Union[bool, str],
-):
+) -> pd.DataFrame:
     """
     Create final dataframe
     """
@@ -1199,7 +1199,7 @@ def _create_frame(
         left_index: np.ndarray,
         right_index: np.ndarray,
         indicator: Union[bool, str],
-    ):
+    ) -> pd.DataFrame:
         """Computes an inner joined DataFrame.
 
         Args:
@@ -1341,7 +1341,6 @@ def get_join_indices(
         right=right,
         conditions=conditions,
         how="inner",
-        sort_by_appearance=False,
         df_columns=None,
         right_columns=None,
         keep=keep,

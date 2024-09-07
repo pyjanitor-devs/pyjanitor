@@ -88,7 +88,8 @@ def conditional_join(
 
     The join is done only on the columns.
 
-    For non-equi joins, only numeric, timedelta and date columns are supported.
+    For non-equi joins, or joins where `use_numba` is `True`,
+    only numeric, timedelta and date columns are supported.
 
     `inner`, `left`, `right` and `outer` joins are supported.
 
@@ -145,11 +146,11 @@ def conditional_join(
            value_1  value_2B
         0        2       3.0
         1        5       6.0
-        2        3       4.0
-        3        4       5.0
-        4        4       6.0
-        5        7       NaN
-        6        1       NaN
+        2        7       NaN
+        3        1       NaN
+        4        3       4.0
+        5        4       5.0
+        6        4       6.0
 
         Rename columns, before the join:
         >>> (df1
@@ -162,13 +163,13 @@ def conditional_join(
         ...      how='outer')
         ... )
             left_column  value_2B
-        0           2.0       3.0
-        1           5.0       6.0
-        2           3.0       4.0
-        3           4.0       5.0
-        4           4.0       6.0
-        5           7.0       NaN
-        6           1.0       NaN
+        0           7.0       NaN
+        1           1.0       NaN
+        2           2.0       3.0
+        3           5.0       6.0
+        4           3.0       4.0
+        5           4.0       5.0
+        6           4.0       6.0
         7           NaN       1.0
         8           NaN       9.0
         9           NaN      15.0
@@ -208,18 +209,18 @@ def conditional_join(
         ...     how='outer',
         ...     indicator=True
         ... )
-            value_1  value_2A  value_2B      _merge
-        0       2.0       1.0       3.0        both
-        1       5.0       3.0       6.0        both
-        2       3.0       2.0       4.0        both
-        3       4.0       3.0       5.0        both
-        4       4.0       3.0       6.0        both
-        5       7.0       NaN       NaN   left_only
-        6       1.0       NaN       NaN   left_only
-        7       NaN       0.0       1.0  right_only
-        8       NaN       7.0       9.0  right_only
-        9       NaN      12.0      15.0  right_only
-        10      NaN       0.0       1.0  right_only
+            value_1      _merge  value_2A  value_2B
+        0       7.0   left_only       NaN       NaN
+        1       1.0   left_only       NaN       NaN
+        2       2.0        both       1.0       3.0
+        3       5.0        both       3.0       6.0
+        4       3.0        both       2.0       4.0
+        5       4.0        both       3.0       5.0
+        6       4.0        both       3.0       6.0
+        7       NaN  right_only       0.0       1.0
+        8       NaN  right_only       7.0       9.0
+        9       NaN  right_only      12.0      15.0
+        10      NaN  right_only       0.0       1.0
 
     !!! abstract "Version Changed"
 
@@ -687,91 +688,36 @@ def _multiple_conditional_join_eq(
     if use_numba:
         from janitor.functions._numba import _numba_equi_join
 
-        eqs = None
-        for left_on, right_on, op in conditions:
-            if op == _JoinOperator.STRICTLY_EQUAL.value:
-                eqs = (left_on, right_on, op)
-                break
-
-        le_lt = None
-        ge_gt = None
-
+        gt_lt = []
+        eqs = []
+        rest = []
+        non_equi_types = less_than_join_types.union(greater_than_join_types)
         for condition in conditions:
             *_, op = condition
-            if op in less_than_join_types:
-                if le_lt:
-                    continue
-                le_lt = condition
-            elif op in greater_than_join_types:
-                if ge_gt:
-                    continue
-                ge_gt = condition
-            if le_lt and ge_gt:
-                break
-        if not le_lt and not ge_gt:
+            if op in non_equi_types:
+                gt_lt.append(condition)
+            elif op == _JoinOperator.STRICTLY_EQUAL.value:
+                eqs.append(condition)
+            else:
+                rest.append(condition)
+        if not gt_lt:
             raise ValueError(
                 "At least one less than or greater than "
                 "join condition should be present when an equi-join "
                 "is present, and use_numba is set to True."
             )
-        rest = [
-            condition
-            for condition in conditions
-            if condition not in {eqs, le_lt, ge_gt}
-        ]
-
-        right_columns = [eqs[1]]
-        df_columns = [eqs[0]]
-        # ensure the sort columns are unique
-        if ge_gt:
-            if ge_gt[1] not in right_columns:
-                right_columns.append(ge_gt[1])
-            if ge_gt[0] not in df_columns:
-                df_columns.append(ge_gt[0])
-        if le_lt:
-            if le_lt[1] not in right_columns:
-                right_columns.append(le_lt[1])
-            if le_lt[0] not in df_columns:
-                df_columns.append(le_lt[0])
-
-        right_df = right.loc(axis=1)[right_columns]
-        left_df = df.loc(axis=1)[df_columns]
-        any_nulls = left_df.isna().any(axis=1)
-        if any_nulls.all(axis=None):
-            return None
-        if any_nulls.any():
-            left_df = left_df.loc[~any_nulls]
-        any_nulls = right_df.isna().any(axis=1)
-        if any_nulls.all(axis=None):
-            return None
-        if any_nulls.any():
-            right_df = right.loc[~any_nulls]
-        equi_col = right_columns[0]
-        # check if the first column is sorted
-        # if sorted, check if the second column is sorted
-        # per group in the first column
-        right_is_sorted = right_df[equi_col].is_monotonic_increasing
-        if right_is_sorted:
-            grp = right_df.groupby(equi_col, sort=False)
-            non_equi_col = right_columns[1]
-            # groupby.is_monotonic_increasing uses apply under the hood
-            # the approach used below circumvents the Series creation
-            # (which isn't required here)
-            # and just gets a sequence of booleans, before calling `all`
-            # to get a single True or False.
-            right_is_sorted = all(
-                arr.is_monotonic_increasing for _, arr in grp[non_equi_col]
+        if not rest:
+            indices = _numba_equi_join(
+                df=df, right=right, eqs=eqs, gt_lt=gt_lt, keep=keep
             )
-        if not right_is_sorted:
-            right_df = right_df.sort_values(right_columns)
+            if indices[0] is None:
+                return None
+            return indices
         indices = _numba_equi_join(
-            df=left_df, right=right_df, eqs=eqs, ge_gt=ge_gt, le_lt=le_lt
+            df=df, right=right, eqs=eqs, gt_lt=gt_lt, keep="all"
         )
         if indices[0] is None:
             return None
-        if not rest:
-            return indices
-
         rest = (
             (df[left_on], right[right_on], op)
             for left_on, right_on, op in rest
@@ -1268,11 +1214,11 @@ def _create_frame(
         Returns:
             An inner joined DataFrame.
         """
-        dictionary = {}
-        for key, value in df.items():
-            dictionary[key] = value._values[left_index]
-        for key, value in right.items():
-            dictionary[key] = value._values[right_index]
+        frame = {key: value._values[left_index] for key, value in df.items()}
+        r_frame = {
+            key: value._values[right_index] for key, value in right.items()
+        }
+        frame.update(r_frame)
         if indicator:
             indicator, arr = _add_indicator(
                 indicator=indicator,
@@ -1280,8 +1226,8 @@ def _create_frame(
                 column_length=left_index.size,
                 columns=df.columns.union(right.columns),
             )
-            dictionary[indicator] = arr
-        return pd.DataFrame(dictionary, copy=False)
+            frame[indicator] = arr
+        return pd.DataFrame(frame, copy=False)
 
     if how == "inner":
         return _inner(
@@ -1304,13 +1250,8 @@ def _create_frame(
                 right_index=right_index,
                 indicator=indicator,
             )
-        dictionary = {}
-        for key, value in df.items():
-            array = value._values
-            top = array[left_index]
-            bottom = array[indexer]
-            value = concat_compat([top, bottom])
-            dictionary[key] = value
+
+        right_dict = {}
         for key, value in right.items():
             array = value._values
             value = array[right_index]
@@ -1318,7 +1259,7 @@ def _create_frame(
                 value=array[:1], length=length
             )
             value = concat_compat([value, other])
-            dictionary[key] = value
+            right_dict[key] = value
         if indicator:
             columns = df.columns.union(right.columns)
             name, arr1 = _add_indicator(
@@ -1334,8 +1275,16 @@ def _create_frame(
                 columns=columns,
             )
             value = concat_compat([arr1, arr2])
-            dictionary[name] = value
-        return pd.DataFrame(dictionary, copy=False)
+            right_dict[name] = value
+        left_dict = {}
+        for key, value in df.items():
+            array = value._values
+            top = array[left_index]
+            bottom = array[indexer]
+            value = concat_compat([top, bottom])
+            left_dict[key] = value
+        left_dict.update(right_dict)
+        return pd.DataFrame(left_dict, copy=False)
 
     if how == "right":
         indexer = pd.unique(right_index)
@@ -1350,7 +1299,7 @@ def _create_frame(
                 right_index=right_index,
                 indicator=indicator,
             )
-        dictionary = {}
+        left_dict = {}
         for key, value in df.items():
             array = value._values
             value = array[left_index]
@@ -1358,13 +1307,14 @@ def _create_frame(
                 value=array[:1], length=length
             )
             value = concat_compat([value, other])
-            dictionary[key] = value
+            left_dict[key] = value
+        right_dict = {}
         for key, value in right.items():
             array = value._values
             top = array[right_index]
             bottom = array[indexer]
             value = concat_compat([top, bottom])
-            dictionary[key] = value
+            right_dict[key] = value
         if indicator:
             columns = df.columns.union(right.columns)
             name, arr1 = _add_indicator(
@@ -1380,8 +1330,9 @@ def _create_frame(
                 columns=columns,
             )
             value = concat_compat([arr1, arr2])
-            dictionary[name] = value
-        return pd.DataFrame(dictionary, copy=False)
+            right_dict[name] = value
+        left_dict.update(right_dict)
+        return pd.DataFrame(left_dict, copy=False)
     # how == 'outer'
     left_indexer = pd.unique(left_index)
     left_indexer = pd.Index(left_indexer).get_indexer(range(len(df)))
@@ -1392,24 +1343,7 @@ def _create_frame(
 
     df_nulls_length = left_indexer.size
     right_nulls_length = right_indexer.size
-    dictionary = {}
-    for key, value in df.items():
-        array = value._values
-        top = array[left_index]
-        top = [top]
-        if df_nulls_length:
-            middle = array[left_indexer]
-            top.append(middle)
-        if right_nulls_length:
-            bottom = construct_1d_array_from_inferred_fill_value(
-                value=array[:1], length=right_nulls_length
-            )
-            top.append(bottom)
-        if len(top) == 1:
-            top = top[0]
-        else:
-            top = concat_compat(top)
-        dictionary[key] = top
+    right_dict = {}
     for key, value in right.items():
         array = value._values
         top = array[right_index]
@@ -1426,7 +1360,7 @@ def _create_frame(
             top = top[0]
         else:
             top = concat_compat(top)
-        dictionary[key] = top
+        right_dict[key] = top
     if indicator:
         columns = df.columns.union(right.columns)
         name, arr1 = _add_indicator(
@@ -1456,9 +1390,27 @@ def _create_frame(
             arr1 = arr1[0]
         else:
             arr1 = concat_compat(arr1)
-        dictionary[name] = arr1
-
-    return pd.DataFrame(dictionary, copy=False)
+        right_dict[name] = arr1
+    left_dict = {}
+    for key, value in df.items():
+        array = value._values
+        top = array[left_index]
+        top = [top]
+        if df_nulls_length:
+            middle = array[left_indexer]
+            top.append(middle)
+        if right_nulls_length:
+            bottom = construct_1d_array_from_inferred_fill_value(
+                value=array[:1], length=right_nulls_length
+            )
+            top.append(bottom)
+        if len(top) == 1:
+            top = top[0]
+        else:
+            top = concat_compat(top)
+        right_dict[key] = top
+    left_dict.update(right_dict)
+    return pd.DataFrame(left_dict, copy=False)
 
 
 def get_join_indices(

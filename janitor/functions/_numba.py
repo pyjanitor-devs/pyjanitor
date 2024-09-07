@@ -2,564 +2,401 @@
 
 from __future__ import annotations
 
-from typing import Union
+from math import ceil
+from typing import Any, Union
 
 import numpy as np
 import pandas as pd
 from numba import njit, prange
-from pandas.api.types import (
-    is_datetime64_dtype,
-    is_extension_array_dtype,
-)
 
+# https://numba.discourse.group/t/uint64-vs-int64-indexing-performance-difference/1500
+# indexing with unsigned integers offers more performance
 from janitor.functions.utils import (
     _generic_func_cond_join,
     greater_than_join_types,
-    less_than_join_types,
 )
 
 
-def _convert_to_numpy(
-    left: np.ndarray, right: np.ndarray
-) -> tuple[np.ndarray, np.ndarray]:
-    """
-    Ensure array is a numpy array.
-    """
-    if is_extension_array_dtype(left):
-        array_dtype = left.dtype.numpy_dtype
-        left = left.astype(array_dtype)
-        right = right.astype(array_dtype)
-    if is_datetime64_dtype(left):
-        left = left.view(np.int64)
-        right = right.view(np.int64)
-    return left, right
-
-
 def _numba_equi_join(
-    df: pd.DataFrame,
-    right: pd.DataFrame,
-    eqs: tuple,
-    ge_gt: tuple,
-    le_lt: tuple,
+    df: pd.DataFrame, right: pd.DataFrame, eqs: list, gt_lt: list, keep: str
 ) -> Union[tuple[np.ndarray, np.ndarray], None]:
     """
     Compute indices when an equi join is present.
     """
-    # the logic is to delay searching for actual matches
-    # while reducing the search space
-    # to get the smallest possible search area
-    # this serves as an alternative to pandas' hash join
-    # and in some cases,
-    # usually for many to many joins,
-    # can offer significant performance improvements.
-    # it relies on binary searches, within the groups,
-    # and relies on the fact that sorting ensures the first
-    # two columns from the right dataframe are in ascending order
-    # per group - this gives us the opportunity to
-    # only do a linear search, within the groups,
-    # for the last column (if any)
-    # (the third column is applicable only for range joins)
-    # Example :
-    #     df1:
-    #    id  value_1
-    # 0   1        2
-    # 1   1        5
-    # 2   1        7
-    # 3   2        1
-    # 4   2        3
-    # 5   3        4
-    #
-    #
-    #  df2:
-    #    id  value_2A  value_2B
-    # 0   1         0         1
-    # 1   1         3         5
-    # 2   1         7         9
-    # 3   1        12        15
-    # 4   2         0         1
-    # 5   2         2         4
-    # 6   2         3         6
-    # 7   3         1         3
-    #
-    #
-    # join condition ->
-    # ('id', 'id', '==') &
-    # ('value_1', 'value_2A','>') &
-    # ('value_1', 'value_2B', '<')
-    #
-    #
-    # note how for df2, id and value_2A
-    # are sorted per group
-    # the third column (relevant for range join)
-    # may or may not be sorted per group
-    # (the group is determined by the values of the id column)
-    # and as such, we do a linear search in that space, per group
-    #
-    # first we get the slice boundaries based on id -> ('id', 'id', '==')
-    # value     start       end
-    #  1         0           4
-    #  1         0           4
-    #  1         0           4
-    #  2         4           7
-    #  2         4           7
-    #  3         7           8
-    #
-    # next step is to get the slice end boundaries,
-    # based on the greater than condition
-    # -> ('value_1', 'value_2A', '>')
-    # the search will be within each boundary
-    # so for the first row, value_1 is 2
-    # the boundary search will be between 0, 4
-    # for the last row, value_1 is 4
-    # and its boundary search will be between 7, 8
-    # since value_2A is sorted per group,
-    # a binary search is employed
-    # value     start       end      value_1   new_end
-    #  1         0           4         2         1
-    #  1         0           4         5         2
-    #  1         0           4         7         2
-    #  2         4           7         1         4
-    #  2         4           7         3         6
-    #  3         7           8         4         8
-    #
-    # next step is to get the start boundaries,
-    # based on the less than condition
-    # -> ('value_1', 'value_2B', '<')
-    # note that we have new end boundaries,
-    # and as such, our boundaries will use that
-    # so for the first row, value_1 is 2
-    # the boundary search will be between 0, 1
-    # for the 5th row, value_1 is 3
-    # and its boundary search will be between 4, 6
-    # for value_2B, which is the third column
-    # sinc we are not sure whether it is sorted or not,
-    # a cumulative max array is used,
-    # to get the earliest possible slice start
-    # value     start       end      value_1   new_start   new_end
-    #  1         0           4         2         -1           1
-    #  1         0           4         5         -1           2
-    #  1         0           4         7         -1           2
-    #  2         4           7         1         -1           5
-    #  2         4           7         3         5            6
-    #  3         7           8         4         -1           8
-    #
-    # if there are no matches, boundary is reported as -1
-    # from above, we can see that our search space
-    # is limited to just 5, 6
-    # we can then search for actual matches
-    # 	id	value_1	id	value_2A	value_2B
-    # 	2	  3	    2	   2	       4
-    #
-    left_column, right_column, _ = eqs
-    # steal some perf here within the binary search
-    # search for uniques
-    # and later index them with left_positions
-    left_positions, left_arr = df[left_column].factorize(sort=False)
-    right_arr = right[right_column]._values
-    left_index = df.index._values
-    right_index = right.index._values
-    slice_starts = right_arr.searchsorted(left_arr, side="left")
-    slice_starts = slice_starts[left_positions]
-    slice_ends = right_arr.searchsorted(left_arr, side="right")
-    slice_ends = slice_ends[left_positions]
-    # check if there is a search space
-    # this also lets us know if there are equi matches
-    keep_rows = slice_starts < slice_ends
-    if not keep_rows.any():
-        return None, None
-    if not keep_rows.all():
-        left_index = left_index[keep_rows]
-        slice_starts = slice_starts[keep_rows]
-        slice_ends = slice_ends[keep_rows]
-
-    ge_arr1 = None
-    ge_arr2 = None
-    ge_strict = None
-    if ge_gt:
-        left_column, right_column, op = ge_gt
-        ge_arr1 = df.loc[left_index, left_column]._values
-        ge_arr2 = right[right_column]._values
-        ge_arr1, ge_arr2 = _convert_to_numpy(left=ge_arr1, right=ge_arr2)
-        ge_strict = True if op == ">" else False
-
-    le_arr1 = None
-    le_arr2 = None
-    le_strict = None
-    if le_lt:
-        left_column, right_column, op = le_lt
-        le_arr1 = df.loc[left_index, left_column]._values
-        le_arr2 = right[right_column]._values
-        le_arr1, le_arr2 = _convert_to_numpy(left=le_arr1, right=le_arr2)
-        le_strict = True if op == "<" else False
-
-    if le_lt and ge_gt:
-        group = right.groupby(eqs[1])[le_lt[1]]
-        # is the last column (le_lt) monotonic increasing?
-        # fast path if it is
-        all_monotonic_increasing = all(
-            arr.is_monotonic_increasing for _, arr in group
-        )
-        if all_monotonic_increasing:
-            cum_max_arr = le_arr2[:]
-        else:
-            cum_max_arr = group.cummax()._values
-            if is_extension_array_dtype(cum_max_arr):
-                array_dtype = cum_max_arr.dtype.numpy_dtype
-                cum_max_arr = cum_max_arr.astype(array_dtype)
-            if is_datetime64_dtype(cum_max_arr):
-                cum_max_arr = cum_max_arr.view(np.int64)
-
-        left_index, right_index = _numba_equi_join_range_join(
-            left_index,
-            right_index,
-            slice_starts,
-            slice_ends,
-            ge_arr1,
-            ge_arr2,
-            ge_strict,
-            le_arr1,
-            le_arr2,
-            le_strict,
-            all_monotonic_increasing,
-            cum_max_arr,
-        )
-
-    elif le_lt:
-        left_index, right_index = _numba_equi_le_join(
-            left_index,
-            right_index,
-            slice_starts,
-            slice_ends,
-            le_arr1,
-            le_arr2,
-            le_strict,
-        )
-
+    # implementation is based on the algorithm described in this paper -
+    # https://www.scitepress.org/papers/2018/68268/68268.pdf
+    # the algorithm described in the paper focuses on non-equi joins
+    # with a tweak however, this can be extended to include equi-joins
+    # also, unlike the non-equi joins where the left region <= right region
+    # the equi join is strict -> left_region == right_region
+    left_df = df[:]
+    right_df = right[:]
+    left_column, right_column, _ = eqs[0]
+    # sorting on the first column
+    # helps to achieve more performance
+    # when iterating to compare left and right regions for matches
+    # note - keep track of the original index
+    if not left_df[left_column].is_monotonic_increasing:
+        left_df = df.sort_values(left_column)
+        left_index = left_df.index._values
+        left_df.index = range(len(left_df))
     else:
-        left_index, right_index = _numba_equi_ge_join(
-            left_index,
-            right_index,
-            slice_starts,
-            slice_ends,
-            ge_arr1,
-            ge_arr2,
-            ge_strict,
+        left_index = left_df.index._values
+    if not right_df[right_column].is_monotonic_increasing:
+        right_df = right_df.sort_values(right_column)
+        right_index = right_df.index._values
+        right_df.index = range(len(right))
+    else:
+        right_index = right_df.index._values
+    shape = (len(left_df), len(gt_lt) + len(eqs))
+    left_regions = np.empty(shape=shape, dtype=np.intp, order="F")
+    l_booleans = np.zeros(len(df), dtype=np.intp)
+    shape = (len(right_df), len(gt_lt) + len(eqs))
+    right_regions = np.empty(shape=shape, dtype=np.intp, order="F")
+    r_booleans = np.zeros(len(right), dtype=np.intp)
+    for position, (left_column, right_column, op) in enumerate(eqs + gt_lt):
+        outcome = _generic_func_cond_join(
+            left=left_df[left_column],
+            right=right_df[right_column],
+            op=op,
+            multiple_conditions=True,
+            keep="all",
         )
-
-    if left_index is None:
+        if outcome is None:
+            return None, None
+        left_indexer, right_indexer, search_indices = outcome
+        if op in greater_than_join_types:
+            search_indices = right_indexer.size - search_indices
+            right_indexer = right_indexer[::-1]
+        r_region = np.zeros(right_indexer.size, dtype=np.intp)
+        r_region[search_indices] = 1
+        r_region[0] -= 1
+        r_region = r_region.cumsum()
+        left_regions[left_indexer, position] = r_region[search_indices]
+        l_booleans[left_indexer] += 1
+        right_regions[right_indexer, position] = r_region
+        r_booleans[right_indexer] += 1
+    r_region = None
+    search_indices = None
+    left_df = None
+    right_df = None
+    booleans = l_booleans == len(gt_lt) + len(eqs)
+    if not booleans.any():
         return None, None
-
-    return left_index, right_index
-
-
-@njit(parallel=True)
-def _numba_equi_le_join(
-    left_index: np.ndarray,
-    right_index: np.ndarray,
-    slice_starts: np.ndarray,
-    slice_ends: np.ndarray,
-    le_arr1: np.ndarray,
-    le_arr2: np.ndarray,
-    le_strict: bool,
-) -> tuple[np.ndarray, np.ndarray]:
-    """
-    Get indices for an equi join
-    and a less than join
-    """
-    length = left_index.size
-    starts = np.empty(length, dtype=np.intp)
-    booleans = np.ones(length, dtype=np.bool_)
-    # sizes array is used to track the exact
-    # number of matches per slice_start
-    sizes = np.empty(length, dtype=np.intp)
-    counts = 0
-    for num in prange(length):
-        l1 = le_arr1[num]
-        slice_start = slice_starts[num]
-        slice_end = slice_ends[num]
-        r1 = le_arr2[slice_start:slice_end]
-        start = np.searchsorted(r1, l1, side="left")
-        if start < r1.size:
-            if le_strict and (l1 == r1[start]):
-                start = np.searchsorted(r1, l1, side="right")
-        if start == r1.size:
-            counts += 1
-            booleans[num] = False
-        else:
-            starts[num] = slice_start + start
-            sizes[num] = r1.size - start
-    if counts == length:
-        return None, None
-    if counts > 0:
+    if not booleans.all():
+        left_regions = left_regions[booleans]
         left_index = left_index[booleans]
+    booleans = r_booleans == len(gt_lt) + len(eqs)
+    if not booleans.any():
+        return None, None
+    if not booleans.all():
+        right_regions = right_regions[booleans]
+        right_index = right_index[booleans]
+    l_booleans = None
+    r_booleans = None
+    starts = right_regions[:, 0].searchsorted(left_regions[:, 0], side="left")
+    ends = right_regions[:, 0].searchsorted(left_regions[:, 0], side="right")
+    booleans = starts < ends
+    if not booleans.any():
+        return None, None
+    if not booleans.all():
         starts = starts[booleans]
-        slice_ends = slice_ends[booleans]
-        sizes = sizes[booleans]
+        ends = ends[booleans]
+        left_regions = left_regions[booleans]
+        left_index = left_index[booleans]
+    if keep == "all":
+        return _numba_equi_join_keep_all(
+            left_regions=left_regions[:, 1:],
+            right_regions=right_regions[:, 1:],
+            left_index=left_index,
+            right_index=right_index,
+            starts=starts,
+            ends=ends,
+            len_eqs=len(eqs) - 1,
+            len_gt_lt=len(gt_lt),
+        )
+    if keep == "first":
+        return _numba_equi_join_keep_first(
+            left_regions=left_regions[:, 1:],
+            right_regions=right_regions[:, 1:],
+            left_index=left_index,
+            right_index=right_index,
+            starts=starts,
+            ends=ends,
+            len_eqs=len(eqs) - 1,
+            len_gt_lt=len(gt_lt),
+        )
+    return _numba_equi_join_keep_last(
+        left_regions=left_regions[:, 1:],
+        right_regions=right_regions[:, 1:],
+        left_index=left_index,
+        right_index=right_index,
+        starts=starts,
+        ends=ends,
+        len_eqs=len(eqs) - 1,
+        len_gt_lt=len(gt_lt),
+    )
 
-    slice_starts = starts
-    starts = None
-    # build the left and right indices
-    # idea is to populate the indices
-    # based on the number of matches
-    # per slice_start and ensure alignment with the
-    # slice_start during the iteration
-    cum_sizes = np.cumsum(sizes)
-    starts = np.empty(slice_ends.size, dtype=np.intp)
-    starts[0] = 0
-    starts[1:] = cum_sizes[:-1]
-    r_index = np.empty(cum_sizes[-1], dtype=np.intp)
-    l_index = np.empty(cum_sizes[-1], dtype=np.intp)
-    for num in prange(slice_ends.size):
-        start = starts[num]
-        r_ind = slice_starts[num]
-        l_ind = left_index[num]
-        width = sizes[num]
-        for n in range(width):
-            indexer = start + n
-            r_index[indexer] = right_index[r_ind + n]
-            l_index[indexer] = l_ind
 
-    return l_index, r_index
-
-
-@njit(parallel=True)
-def _numba_equi_ge_join(
+@njit(cache=True, parallel=True)
+def _numba_equi_join_keep_all(
+    left_regions: np.ndarray,
+    right_regions: np.ndarray,
     left_index: np.ndarray,
     right_index: np.ndarray,
-    slice_starts: np.ndarray,
-    slice_ends: np.ndarray,
-    ge_arr1: np.ndarray,
-    ge_arr2: np.ndarray,
-    ge_strict: bool,
-) -> tuple[np.ndarray, np.ndarray]:
+    starts: np.ndarray,
+    ends: np.ndarray,
+    len_eqs: int,
+    len_gt_lt: int,
+):
     """
-    Get indices for an equi join
-    and a greater than join
+    Get  indices where an equi join is present.
     """
-
+    # two-pass solution
+    # first pass gets the actual length
+    # second pass fills the arrays with indices
     length = left_index.size
-    ends = np.empty(length, dtype=np.intp)
-    booleans = np.ones(length, dtype=np.bool_)
-    # sizes array is used to track the exact
-    # number of matches per slice_start
-    sizes = np.empty(length, dtype=np.intp)
-    counts = 0
-    for num in prange(length):
-        l1 = ge_arr1[num]
-        slice_start = slice_starts[num]
-        slice_end = slice_ends[num]
-        r1 = ge_arr2[slice_start:slice_end]
-        end = np.searchsorted(r1, l1, side="right")
-        if end > 0:
-            if ge_strict and (l1 == r1[end - 1]):
-                end = np.searchsorted(r1, l1, side="left")
-        if end == 0:
-            counts += 1
-            booleans[num] = False
-        else:
-            ends[num] = slice_start + end
-            sizes[num] = end
-    if counts == length:
-        return None, None
-    if counts > 0:
-        left_index = left_index[booleans]
-        ends = ends[booleans]
-        slice_starts = slice_starts[booleans]
-        sizes = sizes[booleans]
-    slice_ends = ends
-    ends = None
-    # build the left and right indices
-    # idea is to populate the indices
-    # based on the number of matches
-    # per slice_start and ensure alignment with the
-    # slice_start during the iteration
-    cum_sizes = np.cumsum(sizes)
-    starts = np.empty(slice_ends.size, dtype=np.intp)
-    starts[0] = 0
-    starts[1:] = cum_sizes[:-1]
-    r_index = np.empty(cum_sizes[-1], dtype=np.intp)
-    l_index = np.empty(cum_sizes[-1], dtype=np.intp)
-    for num in prange(slice_ends.size):
-        start = starts[num]
-        r_ind = slice_starts[num]
-        l_ind = left_index[num]
-        width = sizes[num]
-        for n in range(width):
-            indexer = start + n
-            r_index[indexer] = right_index[r_ind + n]
-            l_index[indexer] = l_ind
+    total = 0
+    l_booleans = np.zeros(length, dtype=np.bool_)
+    for ind in prange(length):
+        _ind = np.uint64(ind)
+        start = starts[_ind]
+        end = ends[_ind]
+        boolean = False
+        for num in range(start, end):
+            _num = np.uint64(num)
+            counter = 1
+            for loc in range(len_eqs):
+                loc_ = np.uint64(loc)
+                next_left = left_regions[_ind, loc_]
+                next_right = right_regions[_num, loc_]
+                if next_left != next_right:
+                    counter = 0
+                    break
+            if counter == 0:
+                continue
+            for loc in range(len_eqs, len_gt_lt + len_eqs):
+                loc_ = np.uint64(loc)
+                next_left = left_regions[_ind, loc_]
+                next_right = right_regions[_num, loc_]
+                if next_left > next_right:
+                    counter = 0
+                    break
+            if counter == 0:
+                continue
+            total += 1
+            boolean = True
+        l_booleans[_ind] = boolean
+    left_indices = np.empty(total, dtype=np.intp)
+    right_indices = np.empty(total, dtype=np.intp)
+    n = 0
+    for ind in range(length):
+        _ind = np.uint64(ind)
+        if not l_booleans[_ind]:
+            continue
+        start = starts[_ind]
+        end = ends[_ind]
+        lindex = left_index[_ind]
+        for num in range(start, end):
+            _num = np.uint64(num)
+            counter = 1
+            for loc in range(len_eqs):
+                loc_ = np.uint64(loc)
+                next_left = left_regions[_ind, loc_]
+                next_right = right_regions[_num, loc_]
+                if next_left != next_right:
+                    counter = 0
+                    break
+            if counter == 0:
+                continue
+            for loc in range(len_eqs, len_gt_lt + len_eqs):
+                loc_ = np.uint64(loc)
+                next_left = left_regions[_ind, loc_]
+                next_right = right_regions[_num, loc_]
+                if next_left > next_right:
+                    counter = 0
+                    break
+            if counter == 0:
+                continue
+            rindex = right_index[_num]
+            _n = np.uint64(n)
+            left_indices[_n] = lindex
+            right_indices[_n] = rindex
+            n += 1
+    return left_indices, right_indices
 
-    return l_index, r_index
 
-
-@njit(parallel=True)
-def _numba_equi_join_range_join(
+@njit(cache=True, parallel=True)
+def _numba_equi_join_keep_first(
+    left_regions: np.ndarray,
+    right_regions: np.ndarray,
     left_index: np.ndarray,
     right_index: np.ndarray,
-    slice_starts: np.ndarray,
-    slice_ends: np.ndarray,
-    ge_arr1: np.ndarray,
-    ge_arr2: np.ndarray,
-    ge_strict: bool,
-    le_arr1: np.ndarray,
-    le_arr2: np.ndarray,
-    le_strict: bool,
-    all_monotonic_increasing: bool,
-    cum_max_arr: np.ndarray,
-) -> tuple[np.ndarray, np.ndarray]:
+    starts: np.ndarray,
+    ends: np.ndarray,
+    len_eqs: int,
+    len_gt_lt: int,
+):
     """
-    Get indices for an equi join
-    and a range join
+    Get  indices where an equi join is present.
     """
+    # two-pass solution
+    # first pass gets the actual length
+    # second pass fills the arrays with indices
     length = left_index.size
-    ends = np.empty(length, dtype=np.intp)
-    booleans = np.ones(length, dtype=np.bool_)
-    counts = 0
-    for num in prange(length):
-        l1 = ge_arr1[num]
-        slice_start = slice_starts[num]
-        slice_end = slice_ends[num]
-        r1 = ge_arr2[slice_start:slice_end]
-        end = np.searchsorted(r1, l1, side="right")
-        if end > 0:
-            if ge_strict and (l1 == r1[end - 1]):
-                end = np.searchsorted(r1, l1, side="left")
-        if end == 0:
-            counts += 1
-            booleans[num] = False
-        else:
-            ends[num] = slice_start + end
-    if counts == length:
+    total = 0
+    l_booleans = np.zeros(length, dtype=np.bool_)
+    r_indices = np.empty(length, dtype=np.intp)
+    for ind in prange(length):
+        _ind = np.uint64(ind)
+        start = starts[_ind]
+        end = ends[_ind]
+        matches = 0
+        base = -1
+        for num in range(start, end):
+            _num = np.uint64(num)
+            counter = 1
+            for loc in range(len_eqs):
+                loc_ = np.uint64(loc)
+                next_left = left_regions[_ind, loc_]
+                next_right = right_regions[_num, loc_]
+                if next_left != next_right:
+                    counter = 0
+                    break
+            if counter == 0:
+                continue
+            for loc in range(len_eqs, len_gt_lt + len_eqs):
+                loc_ = np.uint64(loc)
+                next_left = left_regions[_ind, loc_]
+                next_right = right_regions[_num, loc_]
+                if next_left > next_right:
+                    counter = 0
+                    break
+            if counter == 0:
+                continue
+            rindex = right_index[_num]
+            if matches == 0:
+                base = rindex
+                matches = 1
+            elif rindex < base:
+                base = rindex
+        if matches == 0:
+            continue
+        total += 1
+        l_booleans[_ind] = True
+        r_indices[_ind] = base
+    if total == 0:
         return None, None
+    left_indices = np.empty(total, dtype=np.intp)
+    right_indices = np.empty(total, dtype=np.intp)
+    n = 0
+    for ind in range(length):
+        _ind = np.uint64(ind)
+        if not l_booleans[_ind]:
+            continue
+        _n = np.uint64(n)
+        left_indices[_n] = left_index[_ind]
+        right_indices[_n] = r_indices[_ind]
+        n += 1
+    return left_indices, right_indices
 
-    if counts > 0:
-        left_index = left_index[booleans]
-        le_arr1 = le_arr1[booleans]
-        ends = ends[booleans]
-        slice_starts = slice_starts[booleans]
-    slice_ends = ends
-    ends = None
 
+@njit(cache=True, parallel=True)
+def _numba_equi_join_keep_last(
+    left_regions: np.ndarray,
+    right_regions: np.ndarray,
+    left_index: np.ndarray,
+    right_index: np.ndarray,
+    starts: np.ndarray,
+    ends: np.ndarray,
+    len_eqs: int,
+    len_gt_lt: int,
+):
+    """
+    Get  indices where an equi join is present.
+    """
+    # two-pass solution
+    # first pass gets the actual length
+    # second pass fills the arrays with indices
     length = left_index.size
-    starts = np.empty(length, dtype=np.intp)
-    booleans = np.ones(length, dtype=np.bool_)
-    if all_monotonic_increasing:
-        sizes = np.empty(length, dtype=np.intp)
-    counts = 0
-    for num in prange(length):
-        l1 = le_arr1[num]
-        slice_start = slice_starts[num]
-        slice_end = slice_ends[num]
-        r1 = cum_max_arr[slice_start:slice_end]
-        start = np.searchsorted(r1, l1, side="left")
-        if start < r1.size:
-            if le_strict and (l1 == r1[start]):
-                start = np.searchsorted(r1, l1, side="right")
-        if start == r1.size:
-            counts += 1
-            booleans[num] = False
-        else:
-            starts[num] = slice_start + start
-            if all_monotonic_increasing:
-                sizes[num] = r1.size - start
-    if counts == length:
+    total = 0
+    l_booleans = np.zeros(length, dtype=np.bool_)
+    r_indices = np.empty(length, dtype=np.intp)
+    for ind in prange(length):
+        _ind = np.uint64(ind)
+        start = starts[_ind]
+        end = ends[_ind]
+        matches = 0
+        base = -1
+        for num in range(start, end):
+            _num = np.uint64(num)
+            counter = 1
+            for loc in range(len_eqs):
+                loc_ = np.uint64(loc)
+                next_left = left_regions[_ind, loc_]
+                next_right = right_regions[_num, loc_]
+                if next_left != next_right:
+                    counter = 0
+                    break
+            if counter == 0:
+                continue
+            for loc in range(len_eqs, len_gt_lt + len_eqs):
+                loc_ = np.uint64(loc)
+                next_left = left_regions[_ind, loc_]
+                next_right = right_regions[_num, loc_]
+                if next_left > next_right:
+                    counter = 0
+                    break
+            if counter == 0:
+                continue
+            rindex = right_index[_num]
+            if matches == 0:
+                base = rindex
+                matches = 1
+            elif rindex > base:
+                base = rindex
+        if matches == 0:
+            continue
+        total += 1
+        l_booleans[_ind] = True
+        r_indices[_ind] = base
+    if total == 0:
         return None, None
-    if counts > 0:
-        left_index = left_index[booleans]
-        le_arr1 = le_arr1[booleans]
-        starts = starts[booleans]
-        slice_ends = slice_ends[booleans]
-        if all_monotonic_increasing:
-            sizes = sizes[booleans]
+    left_indices = np.empty(total, dtype=np.intp)
+    right_indices = np.empty(total, dtype=np.intp)
+    n = 0
+    for ind in range(length):
+        _ind = np.uint64(ind)
+        if not l_booleans[_ind]:
+            continue
+        _n = np.uint64(n)
+        left_indices[_n] = left_index[_ind]
+        right_indices[_n] = r_indices[_ind]
+        n += 1
+    return left_indices, right_indices
 
-    slice_starts = starts
-    starts = None
 
-    # no need to run a comparison
-    # since all groups are monotonic increasing
-    # simply create left and right indices
-    if all_monotonic_increasing:
-        cum_sizes = np.cumsum(sizes)
-        starts = np.empty(slice_ends.size, dtype=np.intp)
-        starts[0] = 0
-        starts[1:] = cum_sizes[:-1]
-        r_index = np.empty(cum_sizes[-1], dtype=np.intp)
-        l_index = np.empty(cum_sizes[-1], dtype=np.intp)
-        for num in prange(slice_ends.size):
-            start = starts[num]
-            r_ind = slice_starts[num]
-            l_ind = left_index[num]
-            width = sizes[num]
-            for n in range(width):
-                indexer = start + n
-                r_index[indexer] = right_index[r_ind + n]
-                l_index[indexer] = l_ind
-
-        return l_index, r_index
-
-    # get exact no of rows for left and right index
-    # sizes is used to track the exact
-    # number of matches per slice_start
-    sizes = np.empty(slice_starts.size, dtype=np.intp)
-    counts = 0
-    for num in prange(slice_ends.size):
-        l1 = le_arr1[num]
-        start = slice_starts[num]
-        end = slice_ends[num]
-        r1 = le_arr2[start:end]
-        internal_count = 0
-        if le_strict:
-            for n in range(r1.size):
-                check = l1 < r1[n]
-                internal_count += check
-                counts += check
+@njit
+def _numba_less_than(arr: np.ndarray, value: Any):
+    """
+    Get earliest position in `arr`
+    where arr[i] <= `value`
+    """
+    min_idx = 0
+    max_idx = len(arr)
+    while min_idx < max_idx:
+        # to avoid overflow
+        mid_idx = min_idx + ((max_idx - min_idx) >> 1)
+        _mid_idx = np.uint64(mid_idx)
+        if arr[_mid_idx] < value:
+            min_idx = mid_idx + 1
         else:
-            for n in range(r1.size):
-                check = l1 <= r1[n]
-                internal_count += check
-                counts += check
-        sizes[num] = internal_count
-    # populate the left and right index
-    # idea is to populate the indices
-    # based on the number of matches
-    # per slice_start and ensure alignment with the
-    # slice_start during the iteration
-    r_index = np.empty(counts, dtype=np.intp)
-    l_index = np.empty(counts, dtype=np.intp)
-    starts = np.empty(sizes.size, dtype=np.intp)
-    starts[0] = 0
-    starts[1:] = np.cumsum(sizes)[:-1]
-    for num in prange(sizes.size):
-        l_ind = left_index[num]
-        l1 = le_arr1[num]
-        starter = slice_starts[num]
-        slicer = slice(starter, slice_ends[num])
-        r1 = le_arr2[slicer]
-        start = starts[num]
-        counter = sizes[num]
-        if le_strict:
-            for n in range(r1.size):
-                if not counter:
-                    break
-                check = l1 < r1[n]
-                if not check:
-                    continue
-                l_index[start] = l_ind
-                r_index[start] = right_index[starter + n]
-                counter -= 1
-                start += 1
-        else:
-            for n in range(r1.size):
-                if not counter:
-                    break
-                check = l1 <= r1[n]
-                if not check:
-                    continue
-                l_index[start] = l_ind
-                r_index[start] = right_index[starter + n]
-                counter -= 1
-                start += 1
-    return l_index, r_index
+            max_idx = mid_idx
+    # it is greater than
+    # the max value in the array
+    if min_idx == len(arr):
+        return -1
+    return min_idx
 
 
 def _numba_single_non_equi_join(
@@ -573,32 +410,39 @@ def _numba_single_non_equi_join(
         if outcome is None:
             return None, None
         return outcome
-
     outcome = _generic_func_cond_join(
         left=left, right=right, op=op, multiple_conditions=True, keep="all"
     )
     if outcome is None:
         return None, None
     left_index, right_index, starts = outcome
-    if op in less_than_join_types:
-        counts = right_index.size - starts
-    else:
-        counts = starts[:]
-        starts = np.zeros(starts.size, dtype=np.intp)
-    if keep == "all":
-        return _get_indices_monotonic_non_equi(
+    if op in greater_than_join_types:
+        right_index = right_index[::-1]
+        starts = right_index.size - starts
+    left_regions = np.empty(shape=(1, 0), dtype=np.intp)
+    right_regions = np.empty(shape=(right_index.size, 0), dtype=np.intp)
+    if keep == "first":
+        return _numba_non_equi_join_monotonic_increasing_keep_first(
+            left_regions=left_regions,
+            right_regions=right_regions,
             left_index=left_index,
             right_index=right_index,
             starts=starts,
-            counts=counts,
         )
-    mapping = {"first": 1, "last": 0}
-    return _get_indices_monotonic_non_equi_first_or_last(
+    if keep == "last":
+        return _numba_non_equi_join_monotonic_increasing_keep_last(
+            left_regions=left_regions,
+            right_regions=right_regions,
+            left_index=left_index,
+            right_index=right_index,
+            starts=starts,
+        )
+    return _numba_non_equi_join_monotonic_increasing_keep_all(
+        left_regions=left_regions,
+        right_regions=right_regions,
         left_index=left_index,
         right_index=right_index,
         starts=starts,
-        counts=counts,
-        keep=mapping[keep],
     )
 
 
@@ -612,6 +456,7 @@ def _numba_multiple_non_equi_join(
     in >, >=, <, <=.
     Returns a tuple of left and right indices.
     """
+    # implementation is based on the algorithm described in this paper -
     # https://www.scitepress.org/papers/2018/68268/68268.pdf
 
     # summary:
@@ -752,1098 +597,1282 @@ def _numba_multiple_non_equi_join(
     # 3        4         3         5
     # 4        4         3         6
     ################################
-    left_indices = []
-    left_regions = []
-    right_indices = []
-    right_regions = []
-    left_index = slice(None)
-    right_index = slice(None)
-    for left_on, right_on, op in gt_lt:
-        left_on = df.columns.get_loc(left_on)
-        right_on = right.columns.get_loc(right_on)
-        left_arr = df.iloc[left_index, left_on]
-        right_arr = right.iloc[right_index, right_on]
-        result = _get_regions_non_equi(
-            left=left_arr,
-            right=right_arr,
+    left_df = df[:]
+    right_df = right[:]
+    left_column, right_column, _ = gt_lt[0]
+    # sorting on the first column
+    # helps to achieve more performance
+    # when iterating to compare left and right regions for matches
+    # note - keep track of the original index
+    if not left_df[left_column].is_monotonic_increasing:
+        left_df = df.sort_values(left_column)
+        left_index = left_df.index._values
+        left_df.index = range(len(left_df))
+    else:
+        left_index = left_df.index._values
+    if not right_df[right_column].is_monotonic_increasing:
+        right_df = right_df.sort_values(right_column)
+        # original_index and right_is_sorted
+        # is relevant where keep in {'first','last'}
+        right_index = right_df.index._values
+        right_df.index = range(len(right))
+        right_is_sorted = False
+    else:
+        right_index = right_df.index._values
+        right_is_sorted = True
+    shape = (len(left_df), len(gt_lt))
+    left_regions = np.empty(shape=shape, dtype=np.intp, order="F")
+    l_booleans = np.zeros(len(df), dtype=np.intp)
+    shape = (len(right_df), len(gt_lt))
+    right_regions = np.empty(shape=shape, dtype=np.intp, order="F")
+    r_booleans = np.zeros(len(right), dtype=np.intp)
+    for position, (left_column, right_column, op) in enumerate(gt_lt):
+        outcome = _generic_func_cond_join(
+            left=left_df[left_column],
+            right=right_df[right_column],
             op=op,
+            multiple_conditions=True,
+            keep="all",
         )
-        if result is None:
+        if outcome is None:
             return None, None
-        (
-            left_index,
-            right_index,
-            left_region,
-            right_region,
-        ) = result
-        left_index = pd.Index(left_index)
-        right_index = pd.Index(right_index)
-        left_indices.append(left_index)
-        right_indices.append(right_index)
-        left_regions.append(left_region)
-        right_regions.append(right_region)
-
-    right_index, right_regions = _align_indices_and_regions(
-        indices=right_indices, regions=right_regions
-    )
-
-    left_index, left_regions = _align_indices_and_regions(
-        indices=left_indices, regions=left_regions
-    )
-    left_regions = np.column_stack(left_regions)
-    right_regions = np.column_stack(right_regions)
-
-    left_region1 = left_regions[:, 0]
-    # first column is already sorted
-    right_region1 = right_regions[:, 0]
-    starts = right_region1.searchsorted(left_region1)
-    booleans = starts == right_regions.shape[0]
-    # left_region should be <= right_region
-    if booleans.all(axis=None):
+        left_indexer, right_indexer, search_indices = outcome
+        if op in greater_than_join_types:
+            search_indices = right_indexer.size - search_indices
+            right_indexer = right_indexer[::-1]
+        r_region = np.zeros(right_indexer.size, dtype=np.intp)
+        r_region[search_indices] = 1
+        r_region[0] -= 1
+        r_region = r_region.cumsum()
+        left_regions[left_indexer, position] = r_region[search_indices]
+        l_booleans[left_indexer] += 1
+        right_regions[right_indexer, position] = r_region
+        r_booleans[right_indexer] += 1
+    r_region = None
+    search_indices = None
+    left_df = None
+    right_df = None
+    booleans = l_booleans == len(gt_lt)
+    if not booleans.any():
         return None, None
-    if booleans.any(axis=None):
-        booleans = ~booleans
-        starts = starts[booleans]
-        left_index = left_index[booleans]
-        left_regions = left_regions[booleans]
-    # apply the same logic as above to the remaining columns
-    # exclude points where the left_region is greater than
-    # the max right_region at the search index
-    # there is no point keeping those points,
-    # since the left region should be <= right region
-    # no need to include the first columns in the check,
-    # since that has already been checked in the code above
-    left_regions = left_regions[:, 1:]
-    right_regions = right_regions[:, 1:]
-    cum_max_arr = np.maximum.accumulate(right_regions[::-1])[::-1]
-
-    booleans = left_regions > cum_max_arr[starts]
-
-    booleans = booleans.any(axis=1)
-    if booleans.all(axis=None):
-        return None, None
-    if booleans.any(axis=None):
-        booleans = ~booleans
+    if not booleans.all():
         left_regions = left_regions[booleans]
         left_index = left_index[booleans]
+    booleans = r_booleans == len(gt_lt)
+    if not booleans.any():
+        return None, None
+    if not booleans.all():
+        right_regions = right_regions[booleans]
+        right_index = right_index[booleans]
+    l_booleans = None
+    r_booleans = None
+    if gt_lt[0][-1] in greater_than_join_types:
+        left_regions = left_regions[::-1]
+        left_index = left_index[::-1]
+        right_regions = right_regions[::-1]
+        right_index = right_index[::-1]
+        right_index_flipped = True
+    else:
+        right_index_flipped = False
+    starts = right_regions[:, 0].searchsorted(left_regions[:, 0])
+    booleans = starts < len(right_regions)
+    if not booleans.any():
+        return None, None
+    if not booleans.all():
         starts = starts[booleans]
-    if len(gt_lt) == 2:
-        left_region = left_regions[:, 0]
-        right_region = right_regions[:, 0]
-        # there is a fast path if is_monotonic is True
-        # we can get the matches via binary search
-        if _is_monotonic_increasing(right_region):
-            is_monotonic = True
-            ends = right_region.searchsorted(left_region, side="left")
-            starts = np.maximum(starts, ends)
-            ends = right_index.size
-        elif _is_monotonic_decreasing(right_region):
-            is_monotonic = True
-            ends = right_region[::-1].searchsorted(left_region, side="left")
-            ends = right_region.size - ends
-        else:
-            is_monotonic = False
-            # get the max end, beyond which left_region is > right_region
-            cum_max_arr = cum_max_arr[:, 0]
-            # the lowest left_region will have the largest coverage
-            # that gives us the end
-            # beyond which no left region is <= right_region
-            ends = cum_max_arr[::-1].searchsorted(
-                left_region.min(), side="left"
-            )
-            ends = right_region.size - ends
-            right_index = right_index[:ends]
-            right_region = right_region[:ends]
-        if (ends - starts).max() == 1:
-            # no point running a comparison op
-            # if the width is all 1
-            return left_index, right_index[starts]
-        if is_monotonic and (keep == "all"):
-            return _get_indices_monotonic_non_equi(
-                left_index=left_index,
-                right_index=right_index,
-                starts=starts,
-                counts=ends - starts,
-            )
-        if is_monotonic:
-            mapping = {"first": 1, "last": 0}
-            return _get_indices_monotonic_non_equi_first_or_last(
-                left_index=left_index,
-                right_index=right_index,
-                starts=starts,
-                counts=ends - starts,
-                keep=mapping[keep],
-            )
-
-        if not _is_monotonic_increasing(starts):
-            sorter = np.lexsort((left_region, starts))
-            starts = starts[sorter]
-            left_region = left_region[sorter]
-            left_index = left_index[sorter]
-            sorter = None
-        positions, uniques = pd.factorize(right_region, sort=True)
-        frequency = pd.Index(positions).value_counts()
-        if keep == "all":
-            return _get_indices_dual_non_monotonic_non_equi(
-                left_region=left_region,
-                uniques=uniques,
-                right_region=right_region,
-                left_index=left_index,
-                right_index=right_index,
-                starts=starts,
-                ends=ends,
-                max_arr=cum_max_arr,
-                positions=positions,
-                max_freq=frequency.array[0],
-            )
-        if keep == "first":
-            return _get_indices_dual_non_monotonic_non_equi_first(
-                left_region=left_region,
-                uniques=uniques,
-                right_region=right_region,
-                left_index=left_index,
-                right_index=right_index,
-                starts=starts,
-                ends=ends,
-                max_arr=cum_max_arr,
-                positions=positions,
-                max_freq=frequency.array[0],
-            )
-        return _get_indices_dual_non_monotonic_non_equi_last(
-            left_region=left_region,
-            uniques=uniques,
-            right_region=right_region,
+        left_regions = left_regions[booleans]
+        left_index = left_index[booleans]
+    arr = pd.Index(right_regions[:, 1])
+    check_increasing = arr.is_monotonic_increasing
+    check_decreasing = arr.is_monotonic_decreasing
+    arr = None
+    if check_increasing:
+        search_indices = right_regions[:, 1].searchsorted(left_regions[:, 1])
+        booleans = search_indices < len(right_regions)
+        if not booleans.any():
+            return None, None
+        if not booleans.all():
+            starts = starts[booleans]
+            search_indices = search_indices[booleans]
+            left_regions = left_regions[booleans]
+            left_index = left_index[booleans]
+        booleans = starts > search_indices
+        starts = np.where(booleans, starts, search_indices)
+        if right_is_sorted & (len(gt_lt) == 2):
+            ends = np.empty(left_index.size, dtype=np.intp)
+            ends[:] = len(right_regions)
+    elif check_decreasing:
+        ends = right_regions[::-1, 1].searchsorted(left_regions[:, 1])
+        booleans = starts < len(right_regions)
+        if not booleans.any():
+            return None, None
+        if not booleans.all():
+            starts = starts[booleans]
+            left_regions = left_regions[booleans]
+            left_index = left_index[booleans]
+        ends = len(right_regions) - ends
+        booleans = starts < ends
+        if not booleans.any():
+            return None, None
+        if not booleans.all():
+            starts = starts[booleans]
+            left_regions = left_regions[booleans]
+            left_index = left_index[booleans]
+            ends = ends[booleans]
+    booleans = None
+    if (
+        (check_decreasing | check_increasing)
+        & right_is_sorted
+        & (keep == "first")
+        & (len(gt_lt) == 2)
+        & right_index_flipped
+    ):
+        return left_index, right_index[ends - 1]
+    if (
+        (check_decreasing | check_increasing)
+        & right_is_sorted
+        & (keep == "last")
+        & (len(gt_lt) == 2)
+        & right_index_flipped
+    ):
+        return left_index, right_index[starts]
+    if (
+        (check_decreasing | check_increasing)
+        & right_is_sorted
+        & (keep == "first")
+        & (len(gt_lt) == 2)
+    ):
+        return left_index, right_index[starts]
+    if (
+        (check_decreasing | check_increasing)
+        & right_is_sorted
+        & (keep == "last")
+        & (len(gt_lt) == 2)
+    ):
+        return left_index, right_index[ends - 1]
+    if (check_increasing) & (keep == "first"):
+        return _numba_non_equi_join_monotonic_increasing_keep_first(
+            left_regions=left_regions[:, 2:],
+            right_regions=right_regions[:, 2:],
+            left_index=left_index,
+            right_index=right_index,
+            starts=starts,
+        )
+    if (check_increasing) & (keep == "last"):
+        return _numba_non_equi_join_monotonic_increasing_keep_last(
+            left_regions=left_regions[:, 2:],
+            right_regions=right_regions[:, 2:],
+            left_index=left_index,
+            right_index=right_index,
+            starts=starts,
+        )
+    if check_increasing:
+        return _numba_non_equi_join_monotonic_increasing_keep_all(
+            left_regions=left_regions[:, 2:],
+            right_regions=right_regions[:, 2:],
+            left_index=left_index,
+            right_index=right_index,
+            starts=starts,
+        )
+    if (check_decreasing) & (keep == "first"):
+        return _numba_non_equi_join_monotonic_keep_first(
+            left_regions=left_regions[:, 2:],
+            right_regions=right_regions[:, 2:],
             left_index=left_index,
             right_index=right_index,
             starts=starts,
             ends=ends,
-            max_arr=cum_max_arr,
-            positions=positions,
-            max_freq=frequency.array[0],
         )
-    # idea here is to iterate on the region
-    # that has the lowest number of comparisions
-    # for each left region in the right region
-    # the region with the lowest number of comparisons
-    # is moved to the front of the array
-    # within this region, once we get a match,
-    # we check the other regions on that same row
-    # if they match, we keep the row, if not we discard
-    # and move on to the next one
-    if not _is_monotonic_increasing(starts):
-        sorter = starts.argsort(kind="stable")
-        starts = starts[sorter]
-        left_regions = left_regions[sorter]
-        left_index = left_index[sorter]
-        sorter = None
-    indices = cum_max_arr[starts] - left_regions
-    indices = indices.sum(axis=0)
-    indices = indices.argsort()
-    left_regions = left_regions[:, indices]
-    right_regions = right_regions[:, indices]
-    cum_max_arr = cum_max_arr[:, indices[0]]
-    positions, uniques = pd.factorize(right_regions[:, 0], sort=True)
-    frequency = pd.Index(positions).value_counts()
-    if keep == "all":
-        return _get_indices_multiple_non_equi(
-            left_regions=left_regions,
-            uniques=uniques,
-            right_regions=right_regions,
+
+    if (check_decreasing) & (keep == "last"):
+        return _numba_non_equi_join_monotonic_keep_last(
+            left_regions=left_regions[:, 2:],
+            right_regions=right_regions[:, 2:],
             left_index=left_index,
             right_index=right_index,
             starts=starts,
-            ends=right_index.size,
-            max_arr=cum_max_arr,
-            positions=positions,
-            max_freq=frequency.array[0],
+            ends=ends,
+        )
+
+    if check_decreasing:
+        return _numba_non_equi_join_monotonic_keep_all(
+            left_regions=left_regions[:, 2:],
+            right_regions=right_regions[:, 2:],
+            left_index=left_index,
+            right_index=right_index,
+            starts=starts,
+            ends=ends,
+        )
+    # logic here is based on grantjenks' sortedcontainers
+    # https://github.com/grantjenks/python-sortedcontainers
+    load_factor = 1_000
+    width = load_factor * 2
+    length = ceil(right_index.size / load_factor)
+    sorted_array = np.empty(
+        (width, length), dtype=right_regions.dtype, order="F"
+    )
+    positions_array = np.empty(
+        (width, length), dtype=right_regions.dtype, order="F"
+    )
+    # keep track of the max value per column
+    maxxes = np.empty(length, dtype=np.intp)
+    # keep track of the length of actual data for each column
+    lengths = np.empty(length, dtype=np.intp)
+    if keep == "all":
+        return _numba_non_equi_join_not_monotonic_keep_all(
+            left_regions=left_regions[:, 1:],
+            right_regions=right_regions[:, 1:],
+            left_index=left_index,
+            right_index=right_index,
+            maxxes=maxxes,
+            lengths=lengths,
+            sorted_array=sorted_array,
+            positions_array=positions_array,
+            starts=starts,
+            load_factor=load_factor,
         )
     if keep == "first":
-        return _get_indices_multiple_non_equi_first(
-            left_regions=left_regions,
-            uniques=uniques,
-            right_regions=right_regions,
+        return _numba_non_equi_join_not_monotonic_keep_first(
+            left_regions=left_regions[:, 1:],
+            right_regions=right_regions[:, 1:],
             left_index=left_index,
             right_index=right_index,
+            maxxes=maxxes,
+            lengths=lengths,
+            sorted_array=sorted_array,
+            positions_array=positions_array,
             starts=starts,
-            ends=right_index.size,
-            max_arr=cum_max_arr,
-            positions=positions,
-            max_freq=frequency.array[0],
+            load_factor=load_factor,
         )
-    return _get_indices_multiple_non_equi_last(
-        left_regions=left_regions,
-        uniques=uniques,
-        right_regions=right_regions,
+    # keep == 'last'
+    return _numba_non_equi_join_not_monotonic_keep_last(
+        left_regions=left_regions[:, 1:],
+        right_regions=right_regions[:, 1:],
         left_index=left_index,
         right_index=right_index,
+        maxxes=maxxes,
+        lengths=lengths,
+        sorted_array=sorted_array,
+        positions_array=positions_array,
         starts=starts,
-        ends=right_index.size,
-        max_arr=cum_max_arr,
-        positions=positions,
-        max_freq=frequency.array[0],
+        load_factor=load_factor,
     )
 
 
-def _is_monotonic_increasing(array: np.ndarray) -> np.ndarray:
-    """
-    numpy version of pandas' is_monotonic_increasing
-    """
-    return np.greater_equal(array[1:], array[:-1]).all()
-
-
-def _is_monotonic_decreasing(array: np.ndarray) -> np.ndarray:
-    """
-    numpy version of pandas' is_monotonic_decreasing
-    """
-    return np.less_equal(array[1:], array[:-1]).all()
-
-
-def _get_regions_non_equi(
-    left: pd.Series,
-    right: pd.Series,
-    op: str,
-) -> Union[tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray], None]:
-    """
-    Get the regions for `left` and `right`.
-    Strictly for non-equi joins,
-    specifically the  >, >= , <, <= operators.
-
-    Returns a tuple of indices and regions.
-    """
-    outcome = _generic_func_cond_join(
-        left=left,
-        right=right,
-        op=op,
-        multiple_conditions=True,
-        keep="all",
-    )
-    if not outcome:
-        return None
-    left_index, right_index, search_indices = outcome
-    if op in greater_than_join_types:
-        right_index = right_index[::-1]
-        search_indices = right_index.size - search_indices
-    right_region = np.zeros(right_index.size, dtype=np.intp)
-    right_region[search_indices] = 1
-    right_region = right_region.cumsum()
-    left_region = right_region[search_indices]
-    right_region = right_region[search_indices.min() :]
-    right_index = right_index[search_indices.min() :]
-    return (
-        left_index,
-        right_index,
-        left_region,
-        right_region,
-    )
-
-
-def _align_indices_and_regions(
-    indices, regions
-) -> tuple[np.ndarray, np.ndarray]:
-    """
-    align the indices and regions
-    obtained from _get_regions_non_equi.
-
-    A single index is returned, with the regions
-    properly aligned with the index.
-    """
-    *other_indices, index = indices
-    *other_regions, region = regions
-    outcome = [region]
-    for _index, _region in zip(other_indices, other_regions):
-        indexer = _index.get_indexer(index)
-        booleans = indexer == -1
-        if booleans.any():
-            indexer = indexer[~booleans]
-        _region = _region[indexer]
-        outcome.append(_region)
-    return index._values, outcome
-
-
-@njit(parallel=True)
-def _get_indices_monotonic_non_equi_first_or_last(
+@njit(cache=True)
+def _numba_non_equi_join_not_monotonic_keep_all(
+    left_regions: np.ndarray,
+    right_regions: np.ndarray,
     left_index: np.ndarray,
     right_index: np.ndarray,
+    maxxes: np.ndarray,
+    lengths: np.ndarray,
+    sorted_array: np.ndarray,
+    positions_array: np.ndarray,
     starts: np.ndarray,
-    counts: np.ndarray,
-    keep: int,
-) -> tuple[np.ndarray, np.ndarray]:
+    load_factor: int,
+):
     """
-    Retrieves the matching indices
-    for the left and right regions.
-    This returns just the first or last matching index
-    from the right, for each index in the left.
-    Strictly for non-equi joins,
-    where at most, only two join conditions are present.
-    This is a fast path, compared to
-    _get_indices_dual_non_monotonic_non_equi.
+    Get indices for non-equi join,
+    where the right regions are not monotonic
     """
-    r_index = np.empty(starts.size, dtype=np.intp)
-    if keep == 1:  # first
-        for num in prange(starts.size):
-            start = starts[np.uintp(num)]
-            size = counts[np.uintp(num)]
-            index = right_index[np.uintp(start)]
-            for n in range(size):
-                value = right_index[np.uintp(start + n)]
-                index = min(index, value)
-            r_index[np.uintp(num)] = index
-        return left_index, r_index
-    # keep == 'last'
-    for num in prange(starts.size):
-        start = starts[np.uintp(num)]
-        size = counts[np.uintp(num)]
-        index = right_index[np.uintp(start)]
-        for n in range(size):
-            value = right_index[np.uintp(start + n)]
-            index = max(index, value)
-        r_index[np.uintp(num)] = index
-    return left_index, r_index
-
-
-@njit(parallel=True)
-def _get_indices_monotonic_non_equi(
-    left_index: np.ndarray,
-    right_index: np.ndarray,
-    starts: np.ndarray,
-    counts: np.ndarray,
-) -> tuple[np.ndarray, np.ndarray]:
-    """
-    Retrieves the matching indices
-    for the left and right regions.
-    Strictly for non-equi joins,
-    where at most, only two join conditions are present.
-    This is a fast path, compared to
-    _get_indices_dual_non_monotonic_non_equi.
-    """
-    # compute the starting positions in the left index
-    # e.g if counts is [2, 4, 6]
-    # the starting positions in the left_index(l_index)
-    # will be 0, 2, 6, 12
-    cumulative_starts = counts.cumsum()
-    start_indices = np.zeros(starts.size, dtype=np.intp)
-    start_indices[1:] = cumulative_starts[:-1]
-    l_index = np.empty(cumulative_starts[-1], dtype=np.intp)
-    r_index = np.empty(cumulative_starts[-1], dtype=np.intp)
-    for num in prange(start_indices.size):
-        ind = start_indices[np.uintp(num)]
-        size = counts[np.uintp(num)]
-        l_ind = left_index[np.uintp(num)]
-        r_ind = starts[np.uintp(num)]
-        for n in range(size):
-            indexer = ind + n
-            r_indexer = r_ind + n
-            l_index[np.uintp(indexer)] = l_ind
-            r_index[np.uintp(indexer)] = right_index[np.uintp(r_indexer)]
-    return l_index, r_index
-
-
-@njit()
-def _get_indices_dual_non_monotonic_non_equi_first(
-    left_region: np.ndarray,
-    uniques: np.ndarray,
-    right_region: np.ndarray,
-    left_index: np.ndarray,
-    right_index: np.ndarray,
-    starts: np.ndarray,
-    positions: np.ndarray,
-    max_arr: np.ndarray,
-    ends: int,
-    max_freq: int,
-) -> tuple[np.ndarray, np.ndarray]:
-    """
-    Retrieves the matching indices
-    for the left and right regions.
-    Strictly for non-equi joins,
-    where only two join conditions are present.
-    """
-    nrows = positions.max() + 1
-    value_counts = np.zeros(nrows, dtype=np.intp)
-    indices = np.empty((nrows, max_freq), dtype=np.intp)
-    r_index = np.empty(starts.size, dtype=np.intp)
-    min_right_region = right_region.min()
-    previous_start = ends
-    previous_region = -1
-    previous_index = -1
-    # positions -----> [0 1 2 3 4 5]
-    # left_region ---> [0 1 1 5 5 6]
-    # right_region --> [7 7 7 7 7 7]
-    # note how the last value in the left_region(6)
-    # is less than the previous value(position 4) in the right_region (7)
-    # there is no need to search from 5 to 7 for position 4
-    # since that has already been captured in the iteration
-    # for 6 to 7 (position 5)
-    # the iterative search should not capture more than once
-    # and only capture relevant values
-    # in short, restrict the search space as much as permissible
-    # search starts from the bottom/max
-    for num in range(starts.size - 1, -1, -1):
-        start = starts[np.uintp(num)]
-        arr_max = max_arr[np.uintp(start)]
-        end = min(previous_start, ends)
-        l_region = left_region[np.uintp(num)]
-        previous_start = start
-        for n in range(start, end):
-            pos = positions[np.uintp(n)]
-            value_counts[np.uintp(pos)] += 1
-            indices[
-                np.uintp(pos), np.uintp(value_counts[np.uintp(pos)] - 1)
-            ] = n
-        if (l_region <= min_right_region) or ((ends - start) == 1):
-            index = right_index[np.uintp(start)]
-            counter = ends - start
-            for n in range(counter):
-                value = right_index[np.uintp(start + n)]
-                index = min(index, value)
-            r_index[np.uintp(num)] = index
-            previous_region = l_region
-            previous_index = index
-            continue
-        elif (start == end) and (previous_region == l_region):
-            r_index[np.uintp(num)] = previous_index
-            continue
-        posn = np.searchsorted(uniques, l_region, side="left")
-        max_posn = np.searchsorted(uniques, arr_max, side="right")
-        diff1 = ends - start
-        diff2 = max_posn - posn
-        index = right_index.max()
-        if diff1 < diff2:
-            for sz in range(start, ends):
-                pos = positions[np.uintp(sz)]
-                r_region = uniques[np.uintp(pos)]
-                status = l_region <= r_region
-                if not status:
-                    continue
-                value = right_index[np.uintp(sz)]
-                index = min(index, value)
-            r_index[np.uintp(num)] = index
-            previous_region = l_region
-            previous_index = index
-            continue
-        for nn in range(posn, max_posn):
-            counter = value_counts[np.uintp(nn)]
-            if not counter:
-                continue
-            for sz in range(counter):
-                pos = indices[np.uintp(nn), np.uintp(sz)]
-                value = right_index[np.uintp(pos)]
-                index = min(index, value)
-        r_index[np.uintp(num)] = index
-        previous_region = l_region
-        previous_index = index
-    return left_index, r_index
-
-
-@njit()
-def _get_indices_dual_non_monotonic_non_equi_last(
-    left_region: np.ndarray,
-    uniques: np.ndarray,
-    right_region: np.ndarray,
-    left_index: np.ndarray,
-    right_index: np.ndarray,
-    starts: np.ndarray,
-    positions: np.ndarray,
-    max_arr: np.ndarray,
-    ends: int,
-    max_freq: int,
-) -> tuple[np.ndarray, np.ndarray]:
-    """
-    Retrieves the matching indices
-    for the left and right regions.
-    Strictly for non-equi joins,
-    where only two join conditions are present.
-    """
-    nrows = positions.max() + 1
-    value_counts = np.zeros(nrows, dtype=np.intp)
-    indices = np.empty((nrows, max_freq), dtype=np.intp)
-    r_index = np.empty(starts.size, dtype=np.intp)
-    min_right_region = right_region.min()
-    previous_start = ends
-    previous_region = -1
-    previous_index = -1
-    # positions -----> [0 1 2 3 4 5]
-    # left_region ---> [0 1 1 5 5 6]
-    # right_region --> [7 7 7 7 7 7]
-    # note how the last value in the left_region(6)
-    # is less than the previous value(position 4) in the right_region (7)
-    # there is no need to search from 5 to 7 for position 4
-    # since that has already been captured in the iteration
-    # for 6 to 7 (position 5)
-    # the iterative search should not capture more than once
-    # and only capture relevant values
-    # in short, restrict the search space as much as permissible
-    # search starts from the bottom/max
-    for num in range(starts.size - 1, -1, -1):
-        start = starts[np.uintp(num)]
-        arr_max = max_arr[np.uintp(start)]
-        end = min(previous_start, ends)
-        l_region = left_region[np.uintp(num)]
-        previous_start = start
-        for n in range(start, end):
-            pos = positions[np.uintp(n)]
-            value_counts[np.uintp(pos)] += 1
-            indices[
-                np.uintp(pos), np.uintp(value_counts[np.uintp(pos)] - 1)
-            ] = n
-        if (l_region <= min_right_region) or ((ends - start) == 1):
-            index = right_index[np.uintp(start)]
-            counter = ends - start
-            for n in range(counter):
-                value = right_index[np.uintp(start + n)]
-                index = max(index, value)
-            r_index[np.uintp(num)] = index
-            previous_region = l_region
-            previous_index = index
-            continue
-        elif (start == end) and (previous_region == l_region):
-            r_index[np.uintp(num)] = previous_index
-            continue
-        posn = np.searchsorted(uniques, l_region, side="left")
-        max_posn = np.searchsorted(uniques, arr_max, side="right")
-        diff1 = ends - start
-        diff2 = max_posn - posn
-        index = -1
-        if diff1 < diff2:
-            for sz in range(start, ends):
-                pos = positions[np.uintp(sz)]
-                r_region = uniques[np.uintp(pos)]
-                status = l_region <= r_region
-                if not status:
-                    continue
-                value = right_index[np.uintp(sz)]
-                index = max(index, value)
-            r_index[np.uintp(num)] = index
-            previous_region = l_region
-            previous_index = index
-            continue
-        for nn in range(posn, max_posn):
-            counter = value_counts[np.uintp(nn)]
-            if not counter:
-                continue
-            for sz in range(counter):
-                pos = indices[np.uintp(nn), np.uintp(sz)]
-                value = right_index[np.uintp(pos)]
-                index = max(index, value)
-        r_index[np.uintp(num)] = index
-        previous_region = l_region
-        previous_index = index
-    return left_index, r_index
-
-
-@njit()
-def _get_indices_dual_non_monotonic_non_equi(
-    left_region: np.ndarray,
-    uniques: np.ndarray,
-    right_region: np.ndarray,
-    left_index: np.ndarray,
-    right_index: np.ndarray,
-    starts: np.ndarray,
-    positions: np.ndarray,
-    max_arr: np.ndarray,
-    ends: int,
-    max_freq: int,
-) -> tuple[np.ndarray, np.ndarray]:
-    """
-    Retrieves the matching indices
-    for the left and right regions.
-    Strictly for non-equi joins,
-    where only two join conditions are present.
-    """
-    # TODO: implement as a balanced binary tree
-    # which should be more performant?
-    # current implementation uses linear search
-
-    # two step pass
-    # first pass gets the length of the final indices
-
-    # https://numba.discourse.group/t/uint64-vs-int64-indexing-performance-difference/1500
-    # indexing with unsigned integers offers more performance
-    nrows = positions.max() + 1
-    value_counts = np.zeros(nrows, dtype=np.intp)
-    count_indices = np.empty(starts.size, dtype=np.intp)
-    min_right_region = right_region.min()
-    total_length = 0
-    previous_start = ends
-    previous_region = -1
-    previous_counter = 0
-    # positions -----> [0 1 2 3 4 5]
-    # left_region ---> [0 1 1 5 5 6]
-    # right_region --> [7 7 7 7 7 7]
-    # note how the last value in the left_region(6)
-    # is less than the previous value(position 4) in the right_region (7)
-    # there is no need to search from 5 to 7 for position 4
-    # since that has already been captured in the iteration
-    # for 6 to 7 (position 5)
-    # the iterative search should not capture more than once
-    # and only capture relevant values
-    # in short, restrict the search space as much as permissible
-    # search starts from the bottom/max
-    for num in range(starts.size - 1, -1, -1):
-        start = starts[np.uintp(num)]
-        arr_max = max_arr[np.uintp(start)]
-        end = min(previous_start, ends)
-        l_region = left_region[np.uintp(num)]
-        previous_start = start
-        counter = 0
-        for n in range(start, end):
-            pos = positions[np.uintp(n)]
-            value_counts[np.uintp(pos)] += 1
-        if (l_region <= min_right_region) or ((ends - start) == 1):
-            counter = ends - start
-            total_length += counter
-            count_indices[np.uintp(num)] = counter
-            previous_region = l_region
-            previous_counter = counter
-            continue
-        elif (start == end) and (previous_region == l_region):
-            total_length += previous_counter
-            count_indices[np.uintp(num)] = previous_counter
-            continue
-        posn = np.searchsorted(uniques, l_region, side="left")
-        max_posn = np.searchsorted(uniques, arr_max, side="right")
-        diff1 = ends - start
-        diff2 = max_posn - posn
-        if diff1 < diff2:
-            for sz in range(start, ends):
-                pos = positions[np.uintp(sz)]
-                r_region = uniques[np.uintp(pos)]
-                counter += l_region <= r_region
-            total_length += counter
-            count_indices[np.uintp(num)] = counter
-            previous_region = l_region
-            previous_counter = counter
-            continue
-        for nn in range(posn, max_posn):
-            counter += value_counts[np.uintp(nn)]
-        total_length += counter
-        count_indices[np.uintp(num)] = counter
-        previous_region = l_region
-        previous_counter = counter
-    # second pass populates the final indices with actual values
-    start_indices = np.zeros(starts.size, dtype=np.intp)
-    start_indices[1:] = count_indices.cumsum()[:-1]
-    l_index = np.empty(total_length, dtype=np.intp)
-    r_index = np.empty(total_length, dtype=np.intp)
-    value_counts = np.zeros(nrows, dtype=np.intp)
-    indices = np.empty((nrows, max_freq), dtype=np.intp)
-    previous_start = ends
-    previous_region = -1
-    previous_index = -1
-    for num in range(starts.size - 1, -1, -1):
-        start = starts[np.uintp(num)]
-        arr_max = max_arr[np.uintp(start)]
-        end = min(previous_start, ends)
-        l_region = left_region[np.uintp(num)]
-        indexer = start_indices[np.uintp(num)]
-        l_ind = left_index[np.uintp(num)]
-        previous_start = start
-        for n in range(start, end):
-            pos = positions[np.uintp(n)]
-            value_counts[np.uintp(pos)] += 1
-            indices[
-                np.uintp(pos), np.uintp(value_counts[np.uintp(pos)] - 1)
-            ] = n
-        # no need to compare
-        if (l_region <= min_right_region) or ((ends - start) == 1):
-            step = 0
-            for cnt in range(start, ends):
-                l_index[np.uintp(indexer + step)] = l_ind
-                r_index[np.uintp(indexer + step)] = right_index[np.uintp(cnt)]
-                step += 1
-            previous_region = l_region
-            previous_index = indexer
-            continue
-        # the work has already been done, no need to redo, just `steal`
-        elif (start == end) and (previous_region == l_region):
-            counter = count_indices[np.uintp(num)]
-            for ct in range(counter):
-                l_index[np.uintp(indexer + ct)] = l_ind
-                r_index[np.uintp(indexer + ct)] = r_index[
-                    np.uintp(previous_index + ct)
+    # first pass - get actual length
+    length = left_index.size
+    end = right_index.size
+    end -= 1
+    region = right_regions[np.uint64(end), 0]
+    sorted_array[0, 0] = region
+    positions_array[0, 0] = end
+    maxes_counter = 1
+    maxxes[0] = region
+    lengths[0] = 1
+    r_count = 0
+    total = 0
+    l_booleans = np.zeros(length, dtype=np.bool_)
+    for indexer in range(length - 1, -1, -1):
+        _indexer = np.uint64(indexer)
+        start = starts[_indexer]
+        for num in range(start, end):
+            _num = np.uint64(num)
+            region = right_regions[_num, 0]
+            arr = maxxes[:maxes_counter]
+            posn = _numba_less_than(arr=arr, value=region)
+            if posn == -1:
+                posn = maxes_counter - 1
+                posn_ = np.uint64(posn)
+                len_arr = lengths[posn_]
+                len_arr_ = np.uint64(len_arr)
+                sorted_array[len_arr_, posn_] = region
+                positions_array[len_arr_, posn_] = num
+                maxxes[posn_] = region
+                lengths[posn_] += 1
+            else:
+                # the sorted array is an adaptation
+                # of grantjenks' sortedcontainers
+                posn_ = np.uint64(posn)
+                len_arr = lengths[posn_]
+                arr = sorted_array[:len_arr, posn_]
+                insort_posn = _numba_less_than(arr=arr, value=region)
+                # shift downwards before inserting
+                for ind in range(len_arr - 1, insort_posn - 1, -1):
+                    ind_ = np.uint64(ind)
+                    _ind = np.uint64(ind + 1)
+                    sorted_array[_ind, posn_] = sorted_array[ind_, posn_]
+                    positions_array[_ind, posn_] = positions_array[ind_, posn_]
+                insort = np.uint64(insort_posn)
+                sorted_array[insort, posn_] = region
+                positions_array[insort, posn_] = num
+                lengths[posn_] += 1
+                maxxes[posn_] = sorted_array[np.uint64(len_arr), posn_]
+            r_count += 1
+            posn_ = np.uint64(posn)
+            check = (lengths[posn_] == (load_factor * 2)) & (
+                r_count < right_index.size
+            )
+            if check:
+                # shift from left+1 to right
+                for pos in range(maxes_counter - 1, posn, -1):
+                    forward = np.uint64(pos + 1)
+                    current = np.uint64(pos)
+                    sorted_array[:, forward] = sorted_array[:, current]
+                    positions_array[:, forward] = positions_array[:, current]
+                    maxxes[forward] = maxxes[current]
+                    lengths[forward] = lengths[current]
+                # share half the load from left to left+1
+                forward = np.uint64(posn + 1)
+                current = np.uint64(posn)
+                maxxes[forward] = sorted_array[-1, current]
+                lengths[forward] = load_factor
+                sorted_array[:load_factor, forward] = sorted_array[
+                    load_factor:, current
                 ]
-            previous_index = indexer
+                positions_array[:load_factor, forward] = positions_array[
+                    load_factor:, current
+                ]
+                lengths[current] = load_factor
+                maxxes[current] = sorted_array[
+                    np.uint64(load_factor - 1), current
+                ]
+                maxes_counter += 1
+        # now we do a binary search
+        # for left region in right region
+        l_region = left_regions[_indexer, 0]
+        arr = maxxes[:maxes_counter]
+        posn = _numba_less_than(arr=arr, value=l_region)
+        if posn == -1:
+            end = start
             continue
-        posn = np.searchsorted(uniques, l_region, side="left")
-        max_posn = np.searchsorted(uniques, arr_max, side="right")
-        diff1 = ends - start
-        diff2 = max_posn - posn
-        if diff1 < diff2:
-            step = 0
-            counter = count_indices[np.uintp(num)]
-            for sz in range(start, ends):
-                if not counter:
+        posn_ = np.uint64(posn)
+        len_arr = lengths[posn_]
+        arr = sorted_array[:len_arr, posn_]
+        _posn = _numba_less_than(arr=arr, value=l_region)
+        for ind in range(_posn, len_arr):
+            ind_ = np.uint64(ind)
+            counter = 1
+            # move along the columns
+            # and look for matches
+            for loc in range(1, right_regions.shape[1]):
+                loc_ = np.uint64(loc)
+                next_left = left_regions[_indexer, loc_]
+                r_pos = positions_array[ind_, posn_]
+                r_pos = np.uint64(r_pos)
+                next_right = right_regions[r_pos, loc_]
+                if next_left > next_right:
+                    counter = 0
                     break
-                pos = positions[np.uintp(sz)]
-                r_region = uniques[np.uintp(pos)]
-                if l_region > r_region:
-                    continue
-                l_index[np.uintp(indexer + step)] = l_ind
-                r_index[np.uintp(indexer + step)] = right_index[np.uintp(sz)]
-                step += 1
-                counter -= 1
-            previous_region = l_region
-            previous_index = indexer
-            continue
-        step = 0
-        # builds off a variant of counting sort
-        # still a linear search though
-        for nn in range(posn, max_posn):
-            counter = value_counts[np.uintp(nn)]
-            if not counter:
+            if counter == 0:
                 continue
-            for sz in range(counter):
-                pos = indices[np.uintp(nn), np.uintp(sz)]
-                r_ind = right_index[np.uintp(pos)]
-                l_index[np.uintp(indexer + step)] = l_ind
-                r_index[np.uintp(indexer + step)] = r_ind
-                step += 1
-        previous_region = l_region
-        previous_index = indexer
-    return l_index, r_index
-
-
-@njit()
-def _get_indices_multiple_non_equi_first(
-    left_regions: np.ndarray,
-    uniques: np.ndarray,
-    right_regions: np.ndarray,
-    left_index: np.ndarray,
-    right_index: np.ndarray,
-    starts: np.ndarray,
-    positions: np.ndarray,
-    ends: int,
-    max_arr: np.ndarray,
-    max_freq: int,
-) -> tuple[np.ndarray, np.ndarray]:
-    """
-    Retrieves the matching indices
-    for the left and right regions.
-    Strictly for non-equi joins,
-    where the join conditions are more than two.
-    """
-    # same as _get_indices_dual_non_monotonic_non_equi
-    # but with an extra check
-    # on the remaining regions per row
-    # to ensure they match
-    nrows = positions.max() + 1
-    value_counts = np.zeros(nrows, dtype=np.intp)
-    indices = np.empty((nrows, max_freq), dtype=np.intp)
-    r_index = np.empty(starts.size, dtype=np.intp)
-    booleans = np.zeros(starts.size, dtype=np.bool_)
-    previous_start = ends
-    ncols = right_regions.shape[1]
-    total_length = 0
-    # positions -----> [0 1 2 3 4 5]
-    # left_region ---> [0 1 1 5 5 6]
-    # right_region --> [7 7 7 7 7 7]
-    # note how the last value in the left_region(6)
-    # is less than the previous value(position 4) in the right_region (7)
-    # there is no need to search from 5 to 7 for position 4
-    # since that has already been captured in the iteration
-    # for 6 to 7 (position 5)
-    # the iterative search should not capture more than once
-    # and only capture relevant values
-    # in short, restrict the search space as much as permissible
-    # search starts from the bottom/max
-    for num in range(starts.size - 1, -1, -1):
-        start = starts[np.uintp(num)]
-        arr_max = max_arr[np.uintp(start)]
-        end = min(previous_start, ends)
-        previous_start = start
-        for n in range(start, end):
-            pos = positions[np.uintp(n)]
-            value_counts[np.uintp(pos)] += 1
-            indices[
-                np.uintp(pos), np.uintp(value_counts[np.uintp(pos)] - 1)
-            ] = n
-        posn = np.searchsorted(
-            uniques, left_regions[np.uintp(num), 0], side="left"
-        )
-        max_posn = np.searchsorted(uniques, arr_max, side="right")
-        index = right_index.max()
-        any_match = False
-        for nn in range(posn, max_posn):
-            counts = value_counts[np.uintp(nn)]
-            if not counts:
-                continue
-            for sz in range(counts):
-                pos = indices[np.uintp(nn), np.uintp(sz)]
-                status = True
-                # check the remaining regions for this row
-                # and ensure left_region<=right_region
-                # for each one
-                for col in range(1, ncols):
-                    l_value = left_regions[np.uintp(num), np.uintp(col)]
-                    r_value = right_regions[np.uintp(pos), np.uintp(col)]
-                    if l_value > r_value:
-                        status = False
+            total += 1
+        for ind in range(posn + 1, maxes_counter):
+            ind_ = np.uint64(ind)
+            len_arr = lengths[ind_]
+            for num in range(len_arr):
+                _num = np.uint64(num)
+                counter = 1
+                for loc in range(1, right_regions.shape[1]):
+                    loc_ = np.uint64(loc)
+                    next_left = left_regions[_indexer, loc_]
+                    r_pos = positions_array[_num, ind_]
+                    r_pos = np.uint64(r_pos)
+                    next_right = right_regions[r_pos, loc_]
+                    if next_left > next_right:
+                        counter = 0
                         break
-                if not status:
+                if counter == 0:
                     continue
-                any_match |= status
-                value = right_index[np.uintp(pos)]
-                index = min(index, value)
-        r_index[np.uintp(num)] = index
-        booleans[np.uintp(num)] = any_match
-        total_length += any_match
-    if total_length == starts.size:
-        return left_index, r_index
-    right_index = np.empty(total_length, dtype=np.intp)
-    l_index = np.empty(total_length, dtype=np.intp)
-    n = 0
-    for num in range(starts.size):
-        if n == total_length:
-            break
-        if not booleans[np.uintp(num)]:
+                total += 1
+        l_booleans[_indexer] = True
+        end = start
+    if total == 0:
+        return None, None
+    # second pass - fill arrays with indices
+    length = left_index.size
+    end = right_index.size
+    end -= 1
+    region = right_regions[np.uint64(end), 0]
+    sorted_array[0, 0] = region
+    positions_array[0, 0] = end
+    maxes_counter = 1
+    maxxes[0] = region
+    lengths[0] = 1
+    r_count = 0
+    left_indices = np.empty(total, dtype=np.intp)
+    right_indices = np.empty(total, dtype=np.intp)
+    begin = 0
+    for indexer in range(length - 1, -1, -1):
+        _indexer = np.uint64(indexer)
+        if not l_booleans[_indexer]:
             continue
-        l_index[np.uintp(n)] = left_index[np.uintp(num)]
-        right_index[np.uintp(n)] = r_index[np.uintp(num)]
-        n += 1
-    return l_index, right_index
-
-
-@njit()
-def _get_indices_multiple_non_equi_last(
-    left_regions: np.ndarray,
-    uniques: np.ndarray,
-    right_regions: np.ndarray,
-    left_index: np.ndarray,
-    right_index: np.ndarray,
-    starts: np.ndarray,
-    positions: np.ndarray,
-    ends: int,
-    max_arr: np.ndarray,
-    max_freq: int,
-) -> tuple[np.ndarray, np.ndarray]:
-    """
-    Retrieves the matching indices
-    for the left and right regions.
-    Strictly for non-equi joins,
-    where the join conditions are more than two.
-    """
-    # same as _get_indices_dual_non_monotonic_non_equi
-    # but with an extra check
-    # on the remaining regions per row
-    # to ensure they match
-    nrows = positions.max() + 1
-    value_counts = np.zeros(nrows, dtype=np.intp)
-    indices = np.empty((nrows, max_freq), dtype=np.intp)
-    r_index = np.empty(starts.size, dtype=np.intp)
-    booleans = np.zeros(starts.size, dtype=np.bool_)
-    previous_start = ends
-    ncols = right_regions.shape[1]
-    total_length = 0
-    # positions -----> [0 1 2 3 4 5]
-    # left_region ---> [0 1 1 5 5 6]
-    # right_region --> [7 7 7 7 7 7]
-    # note how the last value in the left_region(6)
-    # is less than the previous value(position 4) in the right_region (7)
-    # there is no need to search from 5 to 7 for position 4
-    # since that has already been captured in the iteration
-    # for 6 to 7 (position 5)
-    # the iterative search should not capture more than once
-    # and only capture relevant values
-    # in short, restrict the search space as much as permissible
-    # search starts from the bottom/max
-    for num in range(starts.size - 1, -1, -1):
-        start = starts[np.uintp(num)]
-        arr_max = max_arr[np.uintp(start)]
-        end = min(previous_start, ends)
-        previous_start = start
-        for n in range(start, end):
-            pos = positions[np.uintp(n)]
-            value_counts[np.uintp(pos)] += 1
-            indices[
-                np.uintp(pos), np.uintp(value_counts[np.uintp(pos)] - 1)
-            ] = n
-        posn = np.searchsorted(
-            uniques, left_regions[np.uintp(num), 0], side="left"
-        )
-        max_posn = np.searchsorted(uniques, arr_max, side="right")
-        index = -1
-        any_match = False
-        for nn in range(posn, max_posn):
-            counts = value_counts[np.uintp(nn)]
-            if not counts:
-                continue
-            for sz in range(counts):
-                pos = indices[np.uintp(nn), np.uintp(sz)]
-                status = True
-                # check the remaining regions for this row
-                # and ensure left_region<=right_region
-                # for each one
-                for col in range(1, ncols):
-                    l_value = left_regions[np.uintp(num), np.uintp(col)]
-                    r_value = right_regions[np.uintp(pos), np.uintp(col)]
-                    if l_value > r_value:
-                        status = False
-                        break
-                if not status:
-                    continue
-                any_match |= status
-                value = right_index[np.uintp(pos)]
-                index = max(index, value)
-        r_index[np.uintp(num)] = index
-        booleans[np.uintp(num)] = any_match
-        total_length += any_match
-    if total_length == starts.size:
-        return left_index, r_index
-    right_index = np.empty(total_length, dtype=np.intp)
-    l_index = np.empty(total_length, dtype=np.intp)
-    n = 0
-    for num in range(starts.size):
-        if n == total_length:
-            break
-        if not booleans[np.uintp(num)]:
+        start = starts[_indexer]
+        for num in range(start, end):
+            _num = np.uint64(num)
+            region = right_regions[_num, 0]
+            arr = maxxes[:maxes_counter]
+            posn = _numba_less_than(arr=arr, value=region)
+            if posn == -1:
+                posn = maxes_counter - 1
+                posn_ = np.uint64(posn)
+                len_arr = lengths[posn_]
+                len_arr_ = np.uint64(len_arr)
+                sorted_array[len_arr_, posn_] = region
+                positions_array[len_arr_, posn_] = num
+                maxxes[posn_] = region
+                lengths[posn_] += 1
+            else:
+                posn_ = np.uint64(posn)
+                len_arr = lengths[posn_]
+                arr = sorted_array[:len_arr, posn_]
+                insort_posn = _numba_less_than(arr=arr, value=region)
+                # shift downwards before inserting
+                for ind in range(len_arr - 1, insort_posn - 1, -1):
+                    ind_ = np.uint64(ind)
+                    _ind = np.uint64(ind + 1)
+                    sorted_array[_ind, posn_] = sorted_array[ind_, posn_]
+                    positions_array[_ind, posn_] = positions_array[ind_, posn_]
+                insort = np.uint64(insort_posn)
+                sorted_array[insort, posn_] = region
+                positions_array[insort, posn_] = num
+                lengths[posn_] += 1
+                maxxes[posn_] = sorted_array[np.uint64(len_arr), posn_]
+            r_count += 1
+            posn_ = np.uint64(posn)
+            check = (lengths[posn_] == (load_factor * 2)) & (
+                r_count < right_index.size
+            )
+            if check:
+                # shift from left+1 to right
+                for pos in range(maxes_counter - 1, posn, -1):
+                    forward = np.uint64(pos + 1)
+                    current = np.uint64(pos)
+                    sorted_array[:, forward] = sorted_array[:, current]
+                    positions_array[:, forward] = positions_array[:, current]
+                    maxxes[forward] = maxxes[current]
+                    lengths[forward] = lengths[current]
+                # share half the load from left to left+1
+                forward = np.uint64(posn + 1)
+                current = np.uint64(posn)
+                maxxes[forward] = sorted_array[-1, current]
+                lengths[forward] = load_factor
+                sorted_array[:load_factor, forward] = sorted_array[
+                    load_factor:, current
+                ]
+                positions_array[:load_factor, forward] = positions_array[
+                    load_factor:, current
+                ]
+                lengths[current] = load_factor
+                maxxes[current] = sorted_array[
+                    np.uint64(load_factor - 1), current
+                ]
+                maxes_counter += 1
+        # now we do a binary search
+        # for left region in right region
+        l_region = left_regions[_indexer, 0]
+        arr = maxxes[:maxes_counter]
+        posn = _numba_less_than(arr=arr, value=l_region)
+        if posn == -1:
+            end = start
             continue
-        l_index[np.uintp(n)] = left_index[np.uintp(num)]
-        right_index[np.uintp(n)] = r_index[np.uintp(num)]
-        n += 1
-    return l_index, right_index
-
-
-@njit()
-def _get_indices_multiple_non_equi(
-    left_regions: np.ndarray,
-    uniques: np.ndarray,
-    right_regions: np.ndarray,
-    left_index: np.ndarray,
-    right_index: np.ndarray,
-    starts: np.ndarray,
-    positions: np.ndarray,
-    ends: int,
-    max_arr: np.ndarray,
-    max_freq: int,
-) -> tuple[np.ndarray, np.ndarray]:
-    """
-    Retrieves the matching indices
-    for the left and right regions.
-    Strictly for non-equi joins,
-    where the join conditions are more than two.
-    """
-    # same as _get_indices_dual_non_monotonic_non_equi
-    # but with an extra check
-    # on the remaining regions per row
-    # to ensure they match
-    nrows = positions.max() + 1
-    value_counts = np.zeros(nrows, dtype=np.intp)
-    count_indices = np.empty(starts.size, dtype=np.intp)
-    indices = np.empty((nrows, max_freq), dtype=np.intp)
-    total_length = 0
-    true_count = 0
-    previous_start = ends
-    ncols = right_regions.shape[1]
-    # positions -----> [0 1 2 3 4 5]
-    # left_region ---> [0 1 1 5 5 6]
-    # right_region --> [7 7 7 7 7 7]
-    # note how the last value in the left_region(6)
-    # is less than the previous value(position 4) in the right_region (7)
-    # there is no need to search from 5 to 7 for position 4
-    # since that has already been captured in the iteration
-    # for 6 to 7 (position 5)
-    # the iterative search should not capture more than once
-    # and only capture relevant values
-    # in short, restrict the search space as much as permissible
-    # search starts from the bottom/max
-    for num in range(starts.size - 1, -1, -1):
-        start = starts[np.uintp(num)]
-        arr_max = max_arr[np.uintp(start)]
-        end = min(previous_start, ends)
-        previous_start = start
-        counter = 0
-        for n in range(start, end):
-            pos = positions[np.uintp(n)]
-            value_counts[np.uintp(pos)] += 1
-            indices[
-                np.uintp(pos), np.uintp(value_counts[np.uintp(pos)] - 1)
-            ] = n
-        posn = np.searchsorted(
-            uniques, left_regions[np.uintp(num), 0], side="left"
-        )
-        max_posn = np.searchsorted(uniques, arr_max, side="right")
-        for nn in range(posn, max_posn):
-            counts = value_counts[np.uintp(nn)]
-            if not counts:
-                continue
-            for sz in range(counts):
-                pos = indices[np.uintp(nn), np.uintp(sz)]
-                status = 1
-                # check the remaining regions for this row
-                # and ensure left_region<=right_region
-                # for each one
-                for col in range(1, ncols):
-                    l_value = left_regions[np.uintp(num), np.uintp(col)]
-                    r_value = right_regions[np.uintp(pos), np.uintp(col)]
-                    if l_value > r_value:
-                        status = 0
-                        break
-                counter += status
-                total_length += status
-        true_count += counter != 0
-        count_indices[np.uintp(num)] = counter
-    # get actual index points
-    start_indices = np.zeros(true_count, dtype=np.intp)
-    true_indices = np.empty(true_count, dtype=np.intp)
-    n = 0
-    sz = 0
-    cumcount = 0
-    for num in range(starts.size):
-        if n == true_count:
-            break
-        counts = count_indices[np.uintp(num)]
-        if not counts:
-            continue
-        true_indices[np.uintp(n)] = num
-        start_indices[np.uintp(sz)] = cumcount
-        n += 1
-        sz += 1
-        cumcount += counts
-
-    l_index = np.empty(total_length, dtype=np.intp)
-    r_index = np.empty(total_length, dtype=np.intp)
-    value_counts = np.zeros(nrows, dtype=np.intp)
-    indices = np.empty((nrows, max_freq), dtype=np.intp)
-    previous_start = ends
-    for num in range(true_count - 1, -1, -1):
-        true_num = true_indices[np.uintp(num)]
-        start = starts[np.uintp(true_num)]
-        arr_max = max_arr[np.uintp(start)]
-        end = min(previous_start, ends)
-        previous_start = start
-        for n in range(start, end):
-            pos = positions[np.uintp(n)]
-            value_counts[np.uintp(pos)] += 1
-            indices[np.uintp(pos), np.uintp(value_counts[pos] - 1)] = n
-        posn = np.searchsorted(
-            uniques, left_regions[np.uintp(true_num), 0], side="left"
-        )
-        max_posn = np.searchsorted(uniques, arr_max, side="right")
-        size = count_indices[np.uintp(true_num)]
-        l_ind = left_index[np.uintp(true_num)]
-        indexer = start_indices[np.uintp(num)]
-        for nn in range(posn, max_posn):
-            counts = value_counts[np.uintp(nn)]
-            if not counts:
-                continue
-            for sz in range(counts):
-                pos = indices[np.uintp(nn), np.uintp(sz)]
-                status = 1
-                # check the remaining regions for this row
-                # and ensure left_region<=right_region
-                # for each one
-                for col in range(1, ncols):
-                    l_value = left_regions[np.uintp(true_num), np.uintp(col)]
-                    r_value = right_regions[np.uintp(pos), np.uintp(col)]
-                    if l_value > r_value:
-                        status = 0
-                        break
-                if not status:
-                    continue
-                r_ind = right_index[np.uintp(pos)]
-                l_index[np.uintp(indexer)] = l_ind
-                r_index[np.uintp(indexer)] = r_ind
-                indexer += 1
-                size -= 1
-                if not size:
+        posn_ = np.uint64(posn)
+        len_arr = lengths[posn_]
+        arr = sorted_array[:len_arr, posn_]
+        _posn = _numba_less_than(arr=arr, value=l_region)
+        l_index = left_index[_indexer]
+        for ind in range(_posn, len_arr):
+            ind_ = np.uint64(ind)
+            counter = 1
+            # move along the columns
+            # and look for matches
+            for loc in range(1, right_regions.shape[1]):
+                loc_ = np.uint64(loc)
+                next_left = left_regions[_indexer, loc_]
+                r_pos = positions_array[ind_, posn_]
+                r_pos = np.uint64(r_pos)
+                next_right = right_regions[r_pos, loc_]
+                if next_left > next_right:
+                    counter = 0
                     break
-    return l_index, r_index
+            if counter == 0:
+                continue
+            begin_ = np.uint64(begin)
+            r_pos = positions_array[ind_, posn_]
+            r_pos = np.uint64(r_pos)
+            r_index = right_index[r_pos]
+            left_indices[begin_] = l_index
+            right_indices[begin_] = r_index
+            begin += 1
+        for ind in range(posn + 1, maxes_counter):
+            ind_ = np.uint64(ind)
+            len_arr = lengths[ind_]
+            for num in range(len_arr):
+                _num = np.uint64(num)
+                counter = 1
+                for loc in range(1, right_regions.shape[1]):
+                    loc_ = np.uint64(loc)
+                    next_left = left_regions[_indexer, loc_]
+                    r_pos = positions_array[_num, ind_]
+                    r_pos = np.uint64(r_pos)
+                    next_right = right_regions[r_pos, loc_]
+                    if next_left > next_right:
+                        counter = 0
+                        break
+                if counter == 0:
+                    continue
+                begin_ = np.uint64(begin)
+                left_indices[begin_] = l_index
+                r_pos = positions_array[_num, ind_]
+                r_pos = np.uint64(r_pos)
+                r_index = right_index[r_pos]
+                right_indices[begin_] = r_index
+                begin += 1
+        end = start
+    return left_indices, right_indices
+
+
+@njit(cache=True)
+def _numba_non_equi_join_not_monotonic_keep_first(
+    left_regions: np.ndarray,
+    right_regions: np.ndarray,
+    left_index: np.ndarray,
+    right_index: np.ndarray,
+    maxxes: np.ndarray,
+    lengths: np.ndarray,
+    sorted_array: np.ndarray,
+    positions_array: np.ndarray,
+    starts: np.ndarray,
+    load_factor: int,
+):
+    """
+    Get indices for non-equi join - first match
+    """
+    # first pass - get the actual length
+    length = left_index.size
+    end = right_index.size
+    end -= 1
+    region = right_regions[np.uint64(end), 0]
+    sorted_array[0, 0] = region
+    positions_array[0, 0] = end
+    maxes_counter = 1
+    maxxes[0] = region
+    lengths[0] = 1
+    r_count = 0
+    total = 0
+    l_booleans = np.zeros(length, dtype=np.bool_)
+    r_indices = np.empty(length, dtype=np.intp)
+    for indexer in range(length - 1, -1, -1):
+        _indexer = np.uint64(indexer)
+        start = starts[_indexer]
+        for num in range(start, end):
+            _num = np.uint64(num)
+            region = right_regions[_num, 0]
+            arr = maxxes[:maxes_counter]
+            posn = _numba_less_than(arr=arr, value=region)
+            if posn == -1:
+                posn = maxes_counter - 1
+                posn_ = np.uint64(posn)
+                len_arr = lengths[posn_]
+                len_arr_ = np.uint64(len_arr)
+                sorted_array[len_arr_, posn_] = region
+                positions_array[len_arr_, posn_] = num
+                maxxes[posn_] = region
+                lengths[posn_] += 1
+            else:
+                # the sorted array is an adaptation
+                # of grantjenks' sortedcontainers
+                posn_ = np.uint64(posn)
+                len_arr = lengths[posn_]
+                arr = sorted_array[:len_arr, posn_]
+                insort_posn = _numba_less_than(arr=arr, value=region)
+                # shift downwards before inserting
+                for ind in range(len_arr - 1, insort_posn - 1, -1):
+                    ind_ = np.uint64(ind)
+                    _ind = np.uint64(ind + 1)
+                    sorted_array[_ind, posn_] = sorted_array[ind_, posn_]
+                    positions_array[_ind, posn_] = positions_array[ind_, posn_]
+                insort = np.uint64(insort_posn)
+                sorted_array[insort, posn_] = region
+                positions_array[insort, posn_] = num
+                lengths[posn_] += 1
+                maxxes[posn_] = sorted_array[np.uint64(len_arr), posn_]
+            r_count += 1
+            posn_ = np.uint64(posn)
+            check = (lengths[posn_] == (load_factor * 2)) & (
+                r_count < right_index.size
+            )
+            if check:
+                # shift from left+1 to right
+                for pos in range(maxes_counter - 1, posn, -1):
+                    forward = np.uint64(pos + 1)
+                    current = np.uint64(pos)
+                    sorted_array[:, forward] = sorted_array[:, current]
+                    positions_array[:, forward] = positions_array[:, current]
+                    maxxes[forward] = maxxes[current]
+                    lengths[forward] = lengths[current]
+                # share half the load from left to left+1
+                forward = np.uint64(posn + 1)
+                current = np.uint64(posn)
+                maxxes[forward] = sorted_array[-1, current]
+                lengths[forward] = load_factor
+                sorted_array[:load_factor, forward] = sorted_array[
+                    load_factor:, current
+                ]
+                positions_array[:load_factor, forward] = positions_array[
+                    load_factor:, current
+                ]
+                lengths[current] = load_factor
+                maxxes[current] = sorted_array[
+                    np.uint64(load_factor - 1), current
+                ]
+                maxes_counter += 1
+        l_region = left_regions[_indexer, 0]
+        arr = maxxes[:maxes_counter]
+        posn = _numba_less_than(arr=arr, value=l_region)
+        if posn == -1:
+            end = start
+            continue
+        posn_ = np.uint64(posn)
+        len_arr = lengths[posn_]
+        arr = sorted_array[:len_arr, posn_]
+        _posn = _numba_less_than(arr=arr, value=l_region)
+        matches = 0
+        base_index = -1
+        for ind in range(_posn, len_arr):
+            ind_ = np.uint64(ind)
+            counter = 1
+            for loc in range(1, right_regions.shape[1]):
+                loc_ = np.uint64(loc)
+                next_left = left_regions[_indexer, loc_]
+                r_pos = positions_array[ind_, posn_]
+                r_pos = np.uint64(r_pos)
+                next_right = right_regions[r_pos, loc_]
+                if next_left > next_right:
+                    counter = 0
+                    break
+            if counter == 0:
+                continue
+            r_pos = positions_array[ind_, posn_]
+            r_pos = np.uint64(r_pos)
+            r_index = right_index[r_pos]
+            if matches == 0:
+                base_index = r_index
+                matches = 1
+            elif r_index < base_index:
+                base_index = r_index
+        # step into the remaining columns
+        for ind in range(posn + 1, maxes_counter):
+            ind_ = np.uint64(ind)
+            len_arr = lengths[ind_]
+            # step into the rows for each column
+            for num in range(len_arr):
+                _num = np.uint64(num)
+                counter = 1
+                for loc in range(1, right_regions.shape[1]):
+                    loc_ = np.uint64(loc)
+                    next_left = left_regions[_indexer, loc_]
+                    r_pos = positions_array[_num, ind_]
+                    r_pos = np.uint64(r_pos)
+                    next_right = right_regions[r_pos, loc_]
+                    if next_left > next_right:
+                        counter = 0
+                        break
+                if counter == 0:
+                    continue
+                r_pos = positions_array[_num, ind_]
+                r_pos = np.uint64(r_pos)
+                r_index = right_index[r_pos]
+                if matches == 0:
+                    base_index = r_index
+                    matches = 1
+                elif r_index < base_index:
+                    base_index = r_index
+        if matches == 0:
+            end = start
+            continue
+        total += 1
+        l_booleans[_indexer] = True
+        r_indices[_indexer] = base_index
+        end = start
+    if total == 0:
+        return None, None
+    # second pass - fill arrays with indices
+    left_indices = np.empty(total, dtype=np.intp)
+    right_indices = np.empty(total, dtype=np.intp)
+    n = 0
+    for ind in range(length):
+        _ind = np.uint64(ind)
+        if not l_booleans[_ind]:
+            continue
+        _n = np.uint64(n)
+        left_indices[_n] = left_index[_ind]
+        right_indices[_n] = r_indices[_ind]
+        n += 1
+    return left_indices, right_indices
+
+
+@njit(cache=True)
+def _numba_non_equi_join_not_monotonic_keep_last(
+    left_regions: np.ndarray,
+    right_regions: np.ndarray,
+    left_index: np.ndarray,
+    right_index: np.ndarray,
+    maxxes: np.ndarray,
+    lengths: np.ndarray,
+    sorted_array: np.ndarray,
+    positions_array: np.ndarray,
+    starts: np.ndarray,
+    load_factor: int,
+):
+    """
+    Get indices for non-equi join - last match
+    """
+    # first pass - get the actual length
+    length = left_index.size
+    end = right_index.size
+    end -= 1
+    region = right_regions[np.uint64(end), 0]
+    sorted_array[0, 0] = region
+    positions_array[0, 0] = end
+    maxes_counter = 1
+    maxxes[0] = region
+    lengths[0] = 1
+    r_count = 0
+    total = 0
+    l_booleans = np.zeros(length, dtype=np.bool_)
+    r_indices = np.empty(length, dtype=np.intp)
+    for indexer in range(length - 1, -1, -1):
+        _indexer = np.uint64(indexer)
+        start = starts[_indexer]
+        for num in range(start, end):
+            _num = np.uint64(num)
+            region = right_regions[_num, 0]
+            arr = maxxes[:maxes_counter]
+            posn = _numba_less_than(arr=arr, value=region)
+            if posn == -1:
+                posn = maxes_counter - 1
+                posn_ = np.uint64(posn)
+                len_arr = lengths[posn_]
+                len_arr_ = np.uint64(len_arr)
+                sorted_array[len_arr_, posn_] = region
+                positions_array[len_arr_, posn_] = num
+                maxxes[posn_] = region
+                lengths[posn_] += 1
+            else:
+                # the sorted array is an adaptation
+                # of grantjenks' sortedcontainers
+                posn_ = np.uint64(posn)
+                len_arr = lengths[posn_]
+                arr = sorted_array[:len_arr, posn_]
+                insort_posn = _numba_less_than(arr=arr, value=region)
+                # shift downwards before inserting
+                for ind in range(len_arr - 1, insort_posn - 1, -1):
+                    ind_ = np.uint64(ind)
+                    _ind = np.uint64(ind + 1)
+                    sorted_array[_ind, posn_] = sorted_array[ind_, posn_]
+                    positions_array[_ind, posn_] = positions_array[ind_, posn_]
+                insort = np.uint64(insort_posn)
+                sorted_array[insort, posn_] = region
+                positions_array[insort, posn_] = num
+                lengths[posn_] += 1
+                maxxes[posn_] = sorted_array[np.uint64(len_arr), posn_]
+            r_count += 1
+            posn_ = np.uint64(posn)
+            check = (lengths[posn_] == (load_factor * 2)) & (
+                r_count < right_index.size
+            )
+            if check:
+                # shift from left+1 to right
+                for pos in range(maxes_counter - 1, posn, -1):
+                    forward = np.uint64(pos + 1)
+                    current = np.uint64(pos)
+                    sorted_array[:, forward] = sorted_array[:, current]
+                    positions_array[:, forward] = positions_array[:, current]
+                    maxxes[forward] = maxxes[current]
+                    lengths[forward] = lengths[current]
+                # share half the load from left to left+1
+                forward = np.uint64(posn + 1)
+                current = np.uint64(posn)
+                maxxes[forward] = sorted_array[-1, current]
+                lengths[forward] = load_factor
+                sorted_array[:load_factor, forward] = sorted_array[
+                    load_factor:, current
+                ]
+                positions_array[:load_factor, forward] = positions_array[
+                    load_factor:, current
+                ]
+                lengths[current] = load_factor
+                maxxes[current] = sorted_array[
+                    np.uint64(load_factor - 1), current
+                ]
+                maxes_counter += 1
+        l_region = left_regions[_indexer, 0]
+        arr = maxxes[:maxes_counter]
+        posn = _numba_less_than(arr=arr, value=l_region)
+        if posn == -1:
+            end = start
+            continue
+        posn_ = np.uint64(posn)
+        len_arr = lengths[posn_]
+        arr = sorted_array[:len_arr, posn_]
+        _posn = _numba_less_than(arr=arr, value=l_region)
+        matches = 0
+        base_index = -1
+        for ind in range(_posn, len_arr):
+            ind_ = np.uint64(ind)
+            counter = 1
+            for loc in range(1, right_regions.shape[1]):
+                loc_ = np.uint64(loc)
+                next_left = left_regions[_indexer, loc_]
+                r_pos = positions_array[ind_, posn_]
+                r_pos = np.uint64(r_pos)
+                next_right = right_regions[r_pos, loc_]
+                if next_left > next_right:
+                    counter = 0
+                    break
+            if counter == 0:
+                continue
+            r_pos = positions_array[ind_, posn_]
+            r_pos = np.uint64(r_pos)
+            r_index = right_index[r_pos]
+            if matches == 0:
+                base_index = r_index
+                matches = 1
+            elif r_index > base_index:
+                base_index = r_index
+        # step into the remaining columns
+        for ind in range(posn + 1, maxes_counter):
+            ind_ = np.uint64(ind)
+            len_arr = lengths[ind_]
+            # step into the rows for each column
+            for num in range(len_arr):
+                _num = np.uint64(num)
+                counter = 1
+                for loc in range(1, right_regions.shape[1]):
+                    loc_ = np.uint64(loc)
+                    next_left = left_regions[_indexer, loc_]
+                    r_pos = positions_array[_num, ind_]
+                    r_pos = np.uint64(r_pos)
+                    next_right = right_regions[r_pos, loc_]
+                    if next_left > next_right:
+                        counter = 0
+                        break
+                if counter == 0:
+                    continue
+                r_pos = positions_array[_num, ind_]
+                r_pos = np.uint64(r_pos)
+                r_index = right_index[r_pos]
+                if matches == 0:
+                    base_index = r_index
+                    matches = 1
+                elif r_index > base_index:
+                    base_index = r_index
+        if matches == 0:
+            end = start
+            continue
+        total += 1
+        l_booleans[_indexer] = True
+        r_indices[_indexer] = base_index
+        end = start
+    if total == 0:
+        return None, None
+    # second pass - fill arrays with indices
+    left_indices = np.empty(total, dtype=np.intp)
+    right_indices = np.empty(total, dtype=np.intp)
+    n = 0
+    for ind in range(length):
+        _ind = np.uint64(ind)
+        if not l_booleans[_ind]:
+            continue
+        _n = np.uint64(n)
+        left_indices[_n] = left_index[_ind]
+        right_indices[_n] = r_indices[_ind]
+        n += 1
+    return left_indices, right_indices
+
+
+@njit(cache=True, parallel=True)
+def _numba_non_equi_join_monotonic_keep_first(
+    left_regions: np.ndarray,
+    right_regions: np.ndarray,
+    left_index: np.ndarray,
+    right_index: np.ndarray,
+    starts: np.ndarray,
+    ends: np.ndarray,
+):
+    """
+    Get  indices for a non equi join - first match.
+    """
+    length = left_index.size
+    total = 0
+    l_booleans = np.zeros(length, dtype=np.bool_)
+    r_indices = np.empty(length, dtype=np.intp)
+    for ind in prange(length):
+        _ind = np.uint64(ind)
+        start = starts[_ind]
+        end = ends[_ind]
+        matches = 0
+        base = -1
+        for num in range(start, end):
+            _num = np.uint64(num)
+            counter = 1
+            for loc in range(right_regions.shape[1]):
+                loc_ = np.uint64(loc)
+                next_left = left_regions[_ind, loc_]
+                next_right = right_regions[_num, loc_]
+                if next_left > next_right:
+                    counter = 0
+                    break
+            if counter == 0:
+                continue
+            rindex = right_index[_num]
+            if matches == 0:
+                base = rindex
+                matches = 1
+            elif rindex < base:
+                base = rindex
+        if matches == 0:
+            continue
+        total += 1
+        l_booleans[_ind] = True
+        r_indices[_ind] = base
+    if total == 0:
+        return None, None
+    n = 0
+    left_indices = np.empty(total, dtype=np.intp)
+    right_indices = np.empty(total, dtype=np.intp)
+    for ind in prange(length):
+        _ind = np.uint64(ind)
+        if not l_booleans[_ind]:
+            continue
+        _n = np.uint64(n)
+        left_indices[_n] = left_index[_ind]
+        right_indices[_n] = r_indices[_ind]
+        n += 1
+    return left_indices, right_indices
+
+
+@njit(cache=True, parallel=True)
+def _numba_non_equi_join_monotonic_increasing_keep_first(
+    left_regions: np.ndarray,
+    right_regions: np.ndarray,
+    left_index: np.ndarray,
+    right_index: np.ndarray,
+    starts: np.ndarray,
+):
+    """
+    Get  indices for a non equi join - first match
+    """
+    length = left_index.size
+    end = len(right_regions)
+    total = 0
+    l_booleans = np.zeros(length, dtype=np.bool_)
+    r_indices = np.empty(length, dtype=np.intp)
+    for ind in prange(length):
+        _ind = np.uint64(ind)
+        start = starts[_ind]
+        matches = 0
+        base = -1
+        for num in range(start, end):
+            _num = np.uint64(num)
+            counter = 1
+            for loc in range(right_regions.shape[1]):
+                loc_ = np.uint64(loc)
+                next_left = left_regions[_ind, loc_]
+                next_right = right_regions[_num, loc_]
+                if next_left > next_right:
+                    counter = 0
+                    break
+            if counter == 0:
+                continue
+            rindex = right_index[_num]
+            if matches == 0:
+                base = rindex
+                matches = 1
+            elif rindex < base:
+                base = rindex
+        if matches == 0:
+            continue
+        total += 1
+        l_booleans[_ind] = True
+        r_indices[_ind] = base
+    if total == 0:
+        return None, None
+    n = 0
+    left_indices = np.empty(total, dtype=np.intp)
+    right_indices = np.empty(total, dtype=np.intp)
+    for ind in prange(length):
+        _ind = np.uint64(ind)
+        if not l_booleans[_ind]:
+            continue
+        _n = np.uint64(n)
+        left_indices[_n] = left_index[_ind]
+        right_indices[_n] = r_indices[_ind]
+        n += 1
+    return left_indices, right_indices
+
+
+@njit(cache=True, parallel=True)
+def _numba_non_equi_join_monotonic_keep_last(
+    left_regions: np.ndarray,
+    right_regions: np.ndarray,
+    left_index: np.ndarray,
+    right_index: np.ndarray,
+    starts: np.ndarray,
+    ends: np.ndarray,
+):
+    """
+    Get  indices for a non equi join - last match.
+    """
+    length = left_index.size
+    total = 0
+    l_booleans = np.zeros(length, dtype=np.bool_)
+    r_indices = np.empty(length, dtype=np.intp)
+    for ind in prange(length):
+        _ind = np.uint64(ind)
+        start = starts[_ind]
+        end = ends[_ind]
+        matches = 0
+        base = -1
+        for num in range(start, end):
+            _num = np.uint64(num)
+            counter = 1
+            for loc in range(right_regions.shape[1]):
+                loc_ = np.uint64(loc)
+                next_left = left_regions[_ind, loc_]
+                next_right = right_regions[_num, loc_]
+                if next_left > next_right:
+                    counter = 0
+                    break
+            if counter == 0:
+                continue
+            rindex = right_index[_num]
+            if matches == 0:
+                base = rindex
+                matches = 1
+            elif rindex > base:
+                base = rindex
+        if matches == 0:
+            continue
+        total += 1
+        l_booleans[_ind] = True
+        r_indices[_ind] = base
+    if total == 0:
+        return None, None
+    n = 0
+    left_indices = np.empty(total, dtype=np.intp)
+    right_indices = np.empty(total, dtype=np.intp)
+    for ind in prange(length):
+        _ind = np.uint64(ind)
+        if not l_booleans[_ind]:
+            continue
+        _n = np.uint64(n)
+        left_indices[_n] = left_index[_ind]
+        right_indices[_n] = r_indices[_ind]
+        n += 1
+    return left_indices, right_indices
+
+
+@njit(cache=True, parallel=True)
+def _numba_non_equi_join_monotonic_increasing_keep_last(
+    left_regions: np.ndarray,
+    right_regions: np.ndarray,
+    left_index: np.ndarray,
+    right_index: np.ndarray,
+    starts: np.ndarray,
+):
+    """
+    Get  indices for a non equi join - last match.
+    """
+    length = left_index.size
+    end = len(right_regions)
+    total = 0
+    l_booleans = np.zeros(length, dtype=np.bool_)
+    r_indices = np.empty(length, dtype=np.intp)
+    for ind in prange(length):
+        _ind = np.uint64(ind)
+        start = starts[_ind]
+        matches = 0
+        base = -1
+        for num in range(start, end):
+            _num = np.uint64(num)
+            counter = 1
+            for loc in range(right_regions.shape[1]):
+                loc_ = np.uint64(loc)
+                next_left = left_regions[_ind, loc_]
+                next_right = right_regions[_num, loc_]
+                if next_left > next_right:
+                    counter = 0
+                    break
+            if counter == 0:
+                continue
+            rindex = right_index[_num]
+            if matches == 0:
+                base = rindex
+                matches = 1
+            elif rindex > base:
+                base = rindex
+        if matches == 0:
+            continue
+        total += 1
+        l_booleans[_ind] = True
+        r_indices[_ind] = base
+    if total == 0:
+        return None, None
+    n = 0
+    left_indices = np.empty(total, dtype=np.intp)
+    right_indices = np.empty(total, dtype=np.intp)
+    for ind in prange(length):
+        _ind = np.uint64(ind)
+        if not l_booleans[_ind]:
+            continue
+        _n = np.uint64(n)
+        left_indices[_n] = left_index[_ind]
+        right_indices[_n] = r_indices[_ind]
+        n += 1
+    return left_indices, right_indices
+
+
+@njit(cache=True, parallel=True)
+def _numba_non_equi_join_monotonic_keep_all(
+    left_regions: np.ndarray,
+    right_regions: np.ndarray,
+    left_index: np.ndarray,
+    right_index: np.ndarray,
+    starts: np.ndarray,
+    ends: np.ndarray,
+):
+    """
+    Get  indices for a non equi join.
+    """
+    length = left_index.size
+    total = 0
+    l_booleans = np.zeros(length, dtype=np.bool_)
+    for ind in prange(length):
+        _ind = np.uint64(ind)
+        start = starts[_ind]
+        end = ends[_ind]
+        for num in range(start, end):
+            _num = np.uint64(num)
+            counter = 1
+            for loc in range(right_regions.shape[1]):
+                loc_ = np.uint64(loc)
+                next_left = left_regions[_ind, loc_]
+                next_right = right_regions[_num, loc_]
+                if next_left > next_right:
+                    counter = 0
+                    break
+            if counter == 0:
+                continue
+            total += 1
+            l_booleans[_ind] = True
+    if total == 0:
+        return None, None
+    n = 0
+    left_indices = np.empty(total, dtype=np.intp)
+    right_indices = np.empty(total, dtype=np.intp)
+    for ind in range(length):
+        _ind = np.uint64(ind)
+        if not l_booleans[_ind]:
+            continue
+        start = starts[_ind]
+        end = ends[_ind]
+        lindex = left_index[_ind]
+        for num in range(start, end):
+            _num = np.uint64(num)
+            counter = 1
+            for loc in range(right_regions.shape[1]):
+                loc_ = np.uint64(loc)
+                next_left = left_regions[_ind, loc_]
+                next_right = right_regions[_num, loc_]
+                if next_left > next_right:
+                    counter = 0
+                    break
+            if counter == 0:
+                continue
+            rindex = right_index[_num]
+            _n = np.uint64(n)
+            left_indices[_n] = lindex
+            right_indices[_n] = rindex
+            n += 1
+    return left_indices, right_indices
+
+
+@njit(cache=True, parallel=True)
+def _numba_non_equi_join_monotonic_increasing_keep_all(
+    left_regions: np.ndarray,
+    right_regions: np.ndarray,
+    left_index: np.ndarray,
+    right_index: np.ndarray,
+    starts: np.ndarray,
+):
+    """
+    Get  indices for a non equi join.
+    """
+    length = left_index.size
+    end = len(right_regions)
+    total = 0
+    l_booleans = np.zeros(length, dtype=np.bool_)
+    for ind in prange(length):
+        _ind = np.uint64(ind)
+        start = starts[_ind]
+        for num in range(start, end):
+            _num = np.uint64(num)
+            counter = 1
+            for loc in range(right_regions.shape[1]):
+                loc_ = np.uint64(loc)
+                next_left = left_regions[_ind, loc_]
+                next_right = right_regions[_num, loc_]
+                if next_left > next_right:
+                    counter = 0
+                    break
+            if counter == 0:
+                continue
+            total += 1
+            l_booleans[_ind] = True
+    if total == 0:
+        return None, None
+    n = 0
+    left_indices = np.empty(total, dtype=np.intp)
+    right_indices = np.empty(total, dtype=np.intp)
+    for ind in range(length):
+        _ind = np.uint64(ind)
+        if not l_booleans[_ind]:
+            continue
+        start = starts[_ind]
+        lindex = left_index[_ind]
+        for num in range(start, end):
+            _num = np.uint64(num)
+            counter = 1
+            for loc in range(right_regions.shape[1]):
+                loc_ = np.uint64(loc)
+                next_left = left_regions[_ind, loc_]
+                next_right = right_regions[_num, loc_]
+                if next_left > next_right:
+                    counter = 0
+                    break
+            if counter == 0:
+                continue
+            rindex = right_index[_num]
+            _n = np.uint64(n)
+            left_indices[_n] = lindex
+            right_indices[_n] = rindex
+            n += 1
+    return left_indices, right_indices

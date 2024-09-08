@@ -421,8 +421,6 @@ def _numba_single_non_equi_join(
     if op in greater_than_join_types:
         right_index = right_index[::-1]
         starts = right_index.size - starts
-    ends = np.empty(left_index.size, dtype=np.intp)
-    ends[:] = right_index.size
     if keep == "first":
         left_indices = np.empty(left_index.size, dtype=np.intp)
         right_indices = np.empty(left_index.size, dtype=np.intp)

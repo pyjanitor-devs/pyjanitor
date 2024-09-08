@@ -746,33 +746,50 @@ def _equal_indices(
     if not outcome:
         return None
     left, right, left_index, right_index, right_is_sorted, any_nulls = outcome
-    starts = right.searchsorted(left, side="left")
-    ends = right.searchsorted(left, side="right")
-    l_booleans = starts < ends
-    if not l_booleans.any():
-        return None
-    if not l_booleans.all():
-        left_index = left_index[l_booleans]
-        starts = starts[l_booleans]
-        ends = ends[l_booleans]
+    # steal some perf here within the binary search
+    # search for uniques
+    # and later index them with left_positions
+    # it is assumed that users will only reach for this
+    # if the data is reasonably duplicated; if not
+    # pd.merge is superb especially if it's a one-to-one
+    # or one-to-many
+    positions, left = pd.factorize(left, sort=False)
     if return_ragged_arrays:
+        starts = right.searchsorted(left, side="left")
+        starts = starts[positions]
+        ends = right.searchsorted(left, side="right")
+        ends = ends[positions]
+        booleans = starts < ends
+        if not booleans.any():
+            return None
+        if not booleans.all():
+            left_index = left_index[booleans]
+            starts = starts[booleans]
+            ends = ends[booleans]
         right = [slice(start, end) for start, end in zip(starts, ends)]
         if right_is_sorted & (not any_nulls):
             return left_index, right
         right = [right_index[slicer] for slicer in right]
         return left_index, right
-    r_booleans = np.zeros(right.size, dtype=np.intp)
-    r_booleans[starts] = -1
-    r_booleans[ends - 1] = 1
-    r_booleans = r_booleans.cumsum()
-    r_booleans[ends - 1] = -1
-    r_booleans = r_booleans == -1
-    if not r_booleans.all():
-        left = left[l_booleans]
-        right_index = right_index[r_booleans]
-        right = right[r_booleans]
-        starts = right.searchsorted(left, side="left")
-
+    # necessary step to remove non matches in right
+    # vital to ensuring correct output in numba_equi_join
+    # when building the regions
+    booleans = pd.Index(left).get_indexer(right) != -1
+    if not booleans.any():
+        return None
+    if not booleans.all():
+        right_index = right_index[booleans]
+        right = right[booleans]
+    starts = right.searchsorted(left, side="left")
+    starts = starts[positions]
+    ends = right.searchsorted(left, side="right")
+    ends = ends[positions]
+    booleans = starts < ends
+    if not booleans.any():
+        return None
+    if not booleans.all():
+        left_index = left_index[booleans]
+        starts = starts[booleans]
     return left_index, right_index, starts
 
 

@@ -17,6 +17,8 @@ from janitor.functions.utils import (
 )
 
 
+# TODO: revert to former implementation
+# which is def. faster than this?
 def _numba_equi_join(
     df: pd.DataFrame, right: pd.DataFrame, eqs: list, gt_lt: list, keep: str
 ) -> Union[tuple[np.ndarray, np.ndarray], None]:

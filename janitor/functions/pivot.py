@@ -606,20 +606,19 @@ def _data_checks_pivot_longer(
 
     elif (index is None) and (column_names is not None):
         column_names = _select_index([column_names], df, axis="columns")
-        index = np.setdiff1d(
-            np.arange(df.columns.size),
-            pd.unique(_index_converter(column_names, df.columns)),
-            assume_unique=True,
-        )
+        index = _index_converter(column_names, df.columns)
+        index = pd.Index(pd.unique(index))
+        index = index.get_indexer(np.arange(df.columns.size)) == -1
         index = df.columns[index]
 
     elif (index is not None) and (column_names is None):
         index = _select_index([index], df, axis="columns")
-        column_names = np.setdiff1d(
-            np.arange(df.columns.size),
-            pd.unique(_index_converter(index, df.columns)),
-            assume_unique=True,
+        column_names = _index_converter(index, df.columns)
+        column_names = pd.Index(pd.unique(column_names))
+        column_names = (
+            column_names.get_indexer(np.arange(df.columns.size)) == -1
         )
+        column_names = column_names.nonzero()[0]
         if not column_names.size:
             column_names = None
         index = df.columns[index]

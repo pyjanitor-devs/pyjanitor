@@ -808,7 +808,7 @@ def test_names_pattern_list():
         .set_axis(["Task", "M"], axis="columns")
         .droplevel(-1)
         .reset_index()
-    )
+    ).loc[:, ["Activity", "General", "Task", "M"]]
 
     assert_frame_equal(result, actual)
 
@@ -1478,7 +1478,7 @@ def test_output_values_to_seq(multiple_values_to):
         names_pattern=[r"M|O|W"],
     )
 
-    assert_frame_equal(expected, actual)
+    assert_frame_equal(expected.loc[:, actual.columns.tolist()], actual)
 
 
 def test_output_values_to_seq1(multiple_values_to):
@@ -1706,6 +1706,7 @@ def test_preserve_extension_types():
     assert_frame_equal(expected, actual.loc[:, expected.columns.tolist()])
 
 
+@pytest.mark.xfail(reason="dropna deprecated")
 def test_dropna_sort_by_appearance():
     """
     Test output when `dropna=True` and

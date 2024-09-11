@@ -1555,6 +1555,14 @@ def reshape_by_spec_others(
             df_index = df.index[indexer]
         else:
             df_index = range(total)
+        shape = (len_df, len_cols)
+        indexer = np.empty(shape=shape, dtype=np.intp)
+        arr = np.arange(len_cols).reshape((1, len_cols))
+        indexer[:] = arr
+        indexer = indexer.ravel(order="C")
+        for key, value in spec.items():
+            value = value._values[indexer]
+            data[key] = value
         if dot_value_is_one & (not any_extension_array):
             for key, value in dictionary.items():
                 value = value.ravel(order="C")
@@ -1566,14 +1574,7 @@ def reshape_by_spec_others(
             for key, value in dictionary.items():
                 value = value[indexer]
                 data[key] = value
-        shape = (len_df, len_cols)
-        indexer = np.empty(shape=shape, dtype=np.intp)
-        arr = np.arange(len_cols).reshape((1, len_cols))
-        indexer[:] = arr
-        indexer = indexer.ravel(order="C")
-        for key, value in spec.items():
-            value = value._values[indexer]
-            data[key] = value
+
         return pd.DataFrame(data, index=df_index, copy=False)
     if index or (ignore_index is False):
         shape = (len_cols, len_df)
@@ -1590,13 +1591,6 @@ def reshape_by_spec_others(
     else:
         total = len_df * len_cols
         df_index = range(total)
-    if dot_value_is_one & (not any_extension_array):
-        for key, value in dictionary.items():
-            value = value.ravel(order="F")
-            data[key] = value
-    else:
-        for key, value in dictionary.items():
-            data[key] = value
     shape = (len_df, len_cols)
     indexer = np.empty(shape=shape, dtype=np.intp)
     arr = np.arange(len_cols).reshape((1, len_cols))
@@ -1605,6 +1599,14 @@ def reshape_by_spec_others(
     for key, value in spec.items():
         value = value._values[indexer]
         data[key] = value
+    if dot_value_is_one & (not any_extension_array):
+        for key, value in dictionary.items():
+            value = value.ravel(order="F")
+            data[key] = value
+    else:
+        for key, value in dictionary.items():
+            data[key] = value
+
     return pd.DataFrame(data, index=df_index, copy=False)
 
 

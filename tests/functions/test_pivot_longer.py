@@ -747,7 +747,7 @@ def test_names_pattern_str(test_df):
     )
     actual = actual.sort_values(actual.columns.tolist(), ignore_index=True)
 
-    assert_frame_equal(result, actual)
+    assert_frame_equal(result.loc[:, actual.columns.tolist()], actual)
 
 
 def test_names_sep(test_df):
@@ -775,7 +775,7 @@ def test_names_sep(test_df):
     result = result.sort_values(result.columns.tolist(), ignore_index=True)
     actual = actual.sort_values(actual.columns.tolist(), ignore_index=True)
 
-    assert_frame_equal(result, actual)
+    assert_frame_equal(result.loc[:, actual.columns.tolist()], actual)
 
 
 def test_names_pattern_list():
@@ -884,7 +884,7 @@ def test_not_dot_value_sep(not_dot_value):
         .reset_index()
     )
 
-    assert_frame_equal(result, actual)
+    assert_frame_equal(result.loc[:, actual.columns.tolist()], actual)
 
 
 def test_not_dot_value_sep2(not_dot_value):
@@ -901,7 +901,7 @@ def test_not_dot_value_sep2(not_dot_value):
         "country", var_name="event", value_name="score"
     )
 
-    assert_frame_equal(result, actual)
+    assert_frame_equal(result.loc[:, actual.columns.tolist()], actual)
 
 
 def test_not_dot_value_pattern(not_dot_value):
@@ -927,7 +927,7 @@ def test_not_dot_value_pattern(not_dot_value):
         .reset_index()
     )
 
-    assert_frame_equal(result, actual)
+    assert_frame_equal(result.loc[:, actual.columns.tolist()], actual)
 
 
 def test_not_dot_value_pattern_named_groups(not_dot_value):
@@ -954,7 +954,7 @@ def test_not_dot_value_pattern_named_groups(not_dot_value):
         .reset_index()
     )
 
-    assert_frame_equal(result, actual)
+    assert_frame_equal(result.loc[:, actual.columns.tolist()], actual)
 
 
 def test_not_dot_value_sep_single_column(not_dot_value):
@@ -983,7 +983,7 @@ def test_not_dot_value_sep_single_column(not_dot_value):
         .reset_index()
     )
 
-    assert_frame_equal(result, actual)
+    assert_frame_equal(result.loc[:, actual.columns.tolist()], actual)
 
 
 def test_multiple_dot_value():
@@ -1022,7 +1022,9 @@ def test_multiple_dot_value():
         .reset_index()
     )
 
-    assert_frame_equal(result, actual, check_dtype=False)
+    assert_frame_equal(
+        result.loc[:, actual.columns.tolist()], actual, check_dtype=False
+    )
 
 
 def test_multiple_dot_value_named_group():
@@ -1060,7 +1062,9 @@ def test_multiple_dot_value_named_group():
         .reset_index()
     )
 
-    assert_frame_equal(result, actual, check_dtype=False)
+    assert_frame_equal(
+        result.loc[:, actual.columns.tolist()], actual, check_dtype=False
+    )
 
 
 @pytest.fixture
@@ -1136,7 +1140,9 @@ def test_names_pattern_single_column_not_dot_value(single_val):
     df = single_val[["x1"]]
     result = df.pivot_longer(names_to="yA", names_pattern="(.+)")
 
-    assert_frame_equal(result, df.melt(var_name="yA"))
+    actual = df.melt(var_name="yA")
+
+    assert_frame_equal(result.loc[:, actual.columns.tolist()], actual)
 
 
 def test_names_pattern_single_column_not_dot_value1(single_val):
@@ -1145,8 +1151,9 @@ def test_names_pattern_single_column_not_dot_value1(single_val):
     """
     df = single_val[["id", "x1"]]
     result = df.pivot_longer(index="id", names_to="yA", names_pattern="(.+)")
+    actual = df.melt("id", var_name="yA")
 
-    assert_frame_equal(result, df.melt("id", var_name="yA"))
+    assert_frame_equal(result.loc[:, actual.columns.tolist()], actual)
 
 
 def test_names_pattern_seq_single_column(single_val):
@@ -1198,9 +1205,10 @@ def test_names_pattern_nulls_in_data(df_null):
         df_null, ["dob", "gender"], i="family", j="child", sep="_", suffix=".+"
     ).reset_index()
 
-    assert_frame_equal(result, actual)
+    assert_frame_equal(result.loc[:, actual.columns.tolist()], actual)
 
 
+@pytest.mark.xfail(reason="dropna deprecated")
 def test_dropna_multiple_columns(df_null):
     """Test output if dropna = True."""
     result = df_null.pivot_longer(

@@ -1211,15 +1211,6 @@ def _computations_pivot_longer(
             ignore_index=ignore_index,
             spec=spec,
         )
-        return _pivot_longer_dot_value(
-            df=df,
-            index=index,
-            others=others,
-            sort_by_appearance=sort_by_appearance,
-            ignore_index=ignore_index,
-            dropna=dropna,
-            spec=spec,
-        )
 
     if names_sep is not None:
         return _pivot_longer_names_sep(
@@ -1429,14 +1420,21 @@ def _pivot_longer_names_pattern_str(
         spec = _names_transform(
             spec=spec, others=others, names_transform=names_transform
         )
-    return _pivot_longer_dot_value(
+    if others:
+        return reshape_by_spec_others(
+            df=df,
+            index=index,
+            others=others,
+            sort_by_appearance=sort_by_appearance,
+            ignore_index=ignore_index,
+            spec=spec,
+        )
+    return reshape_by_spec(
         df=df,
+        spec=spec[".value"],
         index=index,
-        others=others,
-        sort_by_appearance=sort_by_appearance,
         ignore_index=ignore_index,
-        dropna=dropna,
-        spec=spec,
+        sort_by_appearance=sort_by_appearance,
     )
 
 
@@ -1481,14 +1479,21 @@ def _pivot_longer_names_sep(
         spec = _names_transform(
             spec=spec, others=others, names_transform=names_transform
         )
-    return _pivot_longer_dot_value(
+    if others:
+        return reshape_by_spec_others(
+            df=df,
+            index=index,
+            others=others,
+            sort_by_appearance=sort_by_appearance,
+            ignore_index=ignore_index,
+            spec=spec,
+        )
+    return reshape_by_spec(
         df=df,
+        spec=spec[".value"],
         index=index,
-        others=others,
-        sort_by_appearance=sort_by_appearance,
         ignore_index=ignore_index,
-        dropna=dropna,
-        spec=spec,
+        sort_by_appearance=sort_by_appearance,
     )
 
 

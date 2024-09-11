@@ -1479,9 +1479,8 @@ def reshape_by_spec_others(
     dot_value_is_one = spec[".value"].nunique() == 1
     any_extension_array = None
     if dot_value_is_one:
-        any_extension_array = df.dtypes.map(is_extension_array_dtype).any(
-            axis=None
-        )
+        any_extension_array = df.dtypes.map(is_extension_array_dtype)
+        any_extension_array = any_extension_array.any(axis=None)
         if any_extension_array:
             contents = [arr._values for _, arr in df.items()]
             contents = concat_compat(contents)

@@ -128,12 +128,6 @@ def test_df_columns_is_unique(df_checks):
         df_checks.pipe(pivot_longer_spec, spec=spec, df_columns_is_unique=1)
 
 
-def test_dropna(df_checks):
-    """Raise error if dropna is not boolean."""
-    with pytest.raises(TypeError, match="dropna should be one of.+"):
-        df_checks.pipe(pivot_longer_spec, spec=spec, dropna=1)
-
-
 def test_pivot_longer_spec(df_checks):
     """
     Test output if a specification is passed.
@@ -143,7 +137,9 @@ def test_pivot_longer_spec(df_checks):
         df_checks, stubnames="ht", i=["famid", "birth"], j="age"
     ).reset_index()
     assert_frame_equal(
-        actual.sort_values(actual.columns.tolist(), ignore_index=True),
+        actual.loc[:, expected.columns.tolist()].sort_values(
+            actual.columns.tolist(), ignore_index=True
+        ),
         expected.sort_values(actual.columns.tolist(), ignore_index=True),
     )
 

@@ -523,7 +523,7 @@ def test_pivot_index_only(df_checks):
         ["famid", "birth"], var_name="dim", value_name="num"
     )
 
-    assert_frame_equal(result, actual)
+    assert_frame_equal(result.loc[:, actual.columns.tolist()], actual)
 
 
 def test_pivot_column_only(df_checks):
@@ -542,7 +542,7 @@ def test_pivot_column_only(df_checks):
         ignore_index=False,
     )
 
-    assert_frame_equal(result, actual)
+    assert_frame_equal(result.loc[:, actual.columns.tolist()], actual)
 
 
 def test_pivot_sort_by_appearance(df_checks):
@@ -565,7 +565,7 @@ def test_pivot_sort_by_appearance(df_checks):
         .reset_index(drop=True)
     )
 
-    assert_frame_equal(result, actual)
+    assert_frame_equal(result.loc[:, actual.columns.tolist()], actual)
 
 
 def test_names_pat_str(df_checks):
@@ -602,7 +602,9 @@ def test_multiindex_column_level(df_multi):
     expected_output = df_multi.melt(
         id_vars="name", value_vars="names", col_level=0
     )
-    assert_frame_equal(result, expected_output)
+    assert_frame_equal(
+        result.loc[:, expected_output.columns.tolist()], expected_output
+    )
 
 
 def test_multiindex(df_multi):
@@ -613,7 +615,9 @@ def test_multiindex(df_multi):
     """
     result = df_multi.pivot_longer(index=[("name", "a")])
     expected_output = df_multi.melt(id_vars=[("name", "a")])
-    assert_frame_equal(result, expected_output)
+    assert_frame_equal(
+        result.loc[:, expected_output.columns.tolist()], expected_output
+    )
 
 
 def test_multiindex_names_to(df_multi):
@@ -627,7 +631,9 @@ def test_multiindex_names_to(df_multi):
         index=[("name", "a")], names_to=["variable_0", "variable_1"]
     )
     expected_output = df_multi.melt(id_vars=[("name", "a")])
-    assert_frame_equal(result, expected_output)
+    assert_frame_equal(
+        result.loc[:, expected_output.columns.tolist()], expected_output
+    )
 
 
 def test_multiindex_names_to_length_mismatch(df_multi):
@@ -1221,6 +1227,7 @@ def test_dropna_multiple_columns(df_null):
     assert_frame_equal(result, actual)
 
 
+@pytest.mark.xfail(reason="dropna deprecated")
 def test_dropna_single_column():
     """
     Test output if dropna = True,
@@ -1573,7 +1580,11 @@ def test_categorical(df_checks):
         ["famid", "birth"], names_transform="category"
     )
 
-    assert_frame_equal(actual, expected, check_categorical=False)
+    assert_frame_equal(
+        actual,
+        expected.loc[:, actual.columns.tolist()],
+        check_categorical=False,
+    )
 
 
 def test_names_transform_numeric():
@@ -1684,7 +1695,7 @@ def test_preserve_extension_types():
         .reset_index()
     )
 
-    assert_frame_equal(expected, actual)
+    assert_frame_equal(expected, actual.loc[:, expected.columns.tolist()])
 
 
 def test_dropna_sort_by_appearance():

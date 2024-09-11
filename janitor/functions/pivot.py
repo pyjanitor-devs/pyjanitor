@@ -320,6 +320,8 @@ def pivot_longer(
         - 0.24.1
             - `names_pattern` can accept a dictionary.
             - named groups supported in `names_pattern`.
+        - 0.29.0
+            - `dropna` parameter deprecated.
 
     Args:
         df: A pandas DataFrame.
@@ -464,6 +466,11 @@ def pivot_longer_spec(
         2     setosa  Petal     1.4    0.2
         3  virginica  Petal     5.1    1.8
 
+    !!! abstract "Version Changed"
+
+        - 0.29.0
+            - `dropna` parameter deprecated.
+
     Args:
         df: The source DataFrame to unpivot.
         spec: A specification DataFrame.
@@ -485,8 +492,6 @@ def pivot_longer_spec(
         ignore_index: If `True`,
             the original index is ignored. If `False`, the original index
             is retained and the index labels will be repeated as necessary.
-        dropna: Determines whether or not to drop nulls
-            from the values columns. Default is `False`.
         df_columns_is_unique: Boolean value to indicate if the source
             DataFrame's columns is unique. Default is `True`.
 
@@ -527,7 +532,6 @@ def pivot_longer_spec(
             "are not present in the source DataFrame."
         )
 
-    check("dropna", dropna, [bool])
     check("sort_by_appearance", sort_by_appearance, [bool])
     check("ignore_index", ignore_index, [bool])
     check("df_columns_is_unique", df_columns_is_unique, [bool])
@@ -541,15 +545,235 @@ def pivot_longer_spec(
             spec, on=".name", how="inner"
         )
     others = [label for label in spec if label not in {".name", ".value"}]
-    return _pivot_longer_dot_value(
+
+    if others:
+        return reshape_by_spec_others(
+            df=df,
+            spec=spec.drop(columns=".name"),
+            index=index,
+            others=others,
+            ignore_index=ignore_index,
+            sort_by_appearance=sort_by_appearance,
+        )
+    return reshape_by_spec(
         df=df,
-        spec=spec.drop(columns=".name"),
+        spec=spec[".value"],
         index=index,
-        others=others,
-        sort_by_appearance=sort_by_appearance,
         ignore_index=ignore_index,
-        dropna=dropna,
+        sort_by_appearance=sort_by_appearance,
     )
+
+
+def reshape_by_spec(
+    df: pd.DataFrame,
+    spec: pd.DataFrame,
+    index: dict,
+    ignore_index: bool,
+    sort_by_appearance: bool,
+) -> pd.DataFrame:
+    """
+    Reshape to long form, based on spec.
+    Specifically, if there are no other columns in spec
+    apart from `.value`
+    """
+    cols = range(df.columns.size)
+    zipped = zip(spec, cols)
+    dictionary = defaultdict(list)
+    lengths = defaultdict(int)
+    for header, col_pos in zipped:
+        arr = df.iloc[:, col_pos]._values
+        dictionary[header].append(arr)
+        lengths[header] += 1
+    max_size = max(lengths.values())
+    for header, length in lengths.items():
+        length = (max_size - length) * len(df)
+        if length:
+            array = np.full(length, fill_value=np.nan)
+            dictionary[header].append(array)
+
+    dictionary = {
+        label: concat_compat(array) for label, array in dictionary.items()
+    }
+    len_df = len(df)
+    data = {}
+    if sort_by_appearance:
+        shape = (len_df, max_size)
+        total = len_df * max_size
+        if index or (ignore_index is False):
+            indexer = np.empty(shape=shape, dtype=np.intp)
+            arr = np.arange(len_df).reshape((1, len_df))
+            indexer[:] = arr
+            indexer = indexer.ravel(order="F")
+        if index:
+            for key, value in index.items():
+                value = value[indexer]
+                data[key] = value
+        if ignore_index is False:
+            df_index = df.index[indexer]
+        else:
+            df_index = range(total)
+        indexer = np.arange(total, dtype=np.intp)
+        indexer = indexer.reshape(shape)
+        indexer = indexer.ravel(order="F")
+        for key, value in dictionary.items():
+            value = value[indexer]
+            data[key] = value
+        return pd.DataFrame(data, index=df_index, copy=False)
+    if index or (ignore_index is False):
+        shape = (max_size, len_df)
+        indexer = np.empty(shape=shape, dtype=np.intp)
+        arr = np.arange(len_df).reshape((1, len_df))
+        indexer[:] = arr
+        indexer = indexer.ravel(order="C")
+    if index:
+        for key, value in index.items():
+            value = value[indexer]
+            data[key] = value
+    if ignore_index is False:
+        df_index = df.index[indexer]
+    else:
+        total = len_df * max_size
+        df_index = range(total)
+    for key, value in dictionary.items():
+        data[key] = value
+    return pd.DataFrame(data, index=df_index, copy=False)
+
+
+def reshape_by_spec_others(
+    df: pd.DataFrame,
+    spec: pd.DataFrame,
+    index: dict,
+    others: list,
+    ignore_index: bool,
+    sort_by_appearance: bool,
+) -> pd.DataFrame:
+    """
+    Reshape to long form, based on spec.
+    Specifically, if there are other columns in spec
+    apart from `.value`
+    """
+    dot_value_is_one = spec[".value"].nunique() == 1
+    any_extension_array = None
+    if dot_value_is_one:
+        any_extension_array = df.dtypes.map(is_extension_array_dtype).any(
+            axis=None
+        )
+        if any_extension_array:
+            contents = [arr._values for _, arr in df.items()]
+            contents = concat_compat(contents)
+        else:
+            contents = df._values
+        dictionary = {spec[".value"]._values[0]: contents}
+        contents = None
+        spec = spec.loc[:, others]
+        len_df = len(df)
+        len_cols = len(spec)
+    else:
+        if spec.duplicated().any(axis=None):
+            raise ValueError(
+                "spec contains duplicate entries, cannot reshape."
+            )
+        grouped = spec.groupby(others, sort=False, observed=True, dropna=False)
+        group_pos = grouped.ngroup()
+        # pandas allows duplicate columns
+        # safer to use column positions instead of names,
+        cols = range(df.columns.size)
+        zipped = zip(group_pos, spec[".value"], cols)
+        data = defaultdict(dict)
+        headers = (
+            {}
+        )  # use a dict, instead of a set to maintain insertion order
+        for pos, header, col_pos in zipped:
+            headers[header] = 1
+            arr = df.iloc[:, col_pos]._values
+            dictionary = {header: arr}
+            data[pos].update(dictionary)
+        headers = headers.keys()
+        missing = (headers ^ header for _, header in data.items())
+        if any(missing):
+            null_array = np.full(shape=len(df), fill_value=np.nan)
+        else:
+            null_array = None
+        dictionary = defaultdict(list)
+        for _, dict_ in data.items():
+            for header in headers:
+                arr = dict_.get(header, null_array)
+                dictionary[header].append(arr)
+        dictionary = {
+            label: concat_compat(array) for label, array in dictionary.items()
+        }
+        group_pos = group_pos.unique()
+        len_df = len(df)
+        len_cols = group_pos.size
+        spec = spec.loc[:, others].drop_duplicates()
+    data = {}
+    if sort_by_appearance:
+        shape = (len_cols, len_df)
+        total = len_df * len_cols
+        if index or (ignore_index is False):
+            indexer = np.empty(shape=shape, dtype=np.intp)
+            arr = np.arange(len_df).reshape((1, len_df))
+            indexer[:] = arr
+            indexer = indexer.ravel(order="F")
+        if index:
+            for key, value in index.items():
+                value = value[indexer]
+                data[key] = value
+        if ignore_index is False:
+            df_index = df.index[indexer]
+        else:
+            df_index = range(total)
+        if dot_value_is_one & (not any_extension_array):
+            for key, value in dictionary.items():
+                value = value.ravel(order="C")
+                data[key] = value
+        else:
+            indexer = np.arange(total, dtype=np.intp)
+            indexer = indexer.reshape(shape)
+            indexer = indexer.ravel(order="F")
+            for key, value in dictionary.items():
+                value = value[indexer]
+                data[key] = value
+        shape = (len_df, len_cols)
+        indexer = np.empty(shape=shape, dtype=np.intp)
+        arr = np.arange(len_cols).reshape((1, len_cols))
+        indexer[:] = arr
+        indexer = indexer.ravel(order="C")
+        for key, value in spec.items():
+            value = value._values[indexer]
+            data[key] = value
+        return pd.DataFrame(data, index=df_index, copy=False)
+    if index or (ignore_index is False):
+        shape = (len_cols, len_df)
+        indexer = np.empty(shape=shape, dtype=np.intp)
+        arr = np.arange(len_df).reshape((1, len_df))
+        indexer[:] = arr
+        indexer = indexer.ravel(order="C")
+    if index:
+        for key, value in index.items():
+            value = value[indexer]
+            data[key] = value
+    if ignore_index is False:
+        df_index = df.index[indexer]
+    else:
+        total = len_df * len_cols
+        df_index = range(total)
+    if dot_value_is_one & (not any_extension_array):
+        for key, value in dictionary.items():
+            value = value.ravel(order="F")
+            data[key] = value
+    else:
+        for key, value in dictionary.items():
+            data[key] = value
+    shape = (len_df, len_cols)
+    indexer = np.empty(shape=shape, dtype=np.intp)
+    arr = np.arange(len_cols).reshape((1, len_cols))
+    indexer[:] = arr
+    indexer = indexer.ravel(order="F")
+    for key, value in spec.items():
+        value = value._values[indexer]
+        data[key] = value
+    return pd.DataFrame(data, index=df_index, copy=False)
 
 
 def _data_checks_pivot_longer(
@@ -608,16 +832,14 @@ def _data_checks_pivot_longer(
         column_names = _select_index([column_names], df, axis="columns")
         index = _index_converter(column_names, df.columns)
         index = pd.Index(pd.unique(index))
-        index = index.get_indexer(np.arange(df.columns.size)) == -1
+        index = index.get_indexer(range(df.columns.size)) == -1
         index = df.columns[index]
 
     elif (index is not None) and (column_names is None):
         index = _select_index([index], df, axis="columns")
         column_names = _index_converter(index, df.columns)
         column_names = pd.Index(pd.unique(column_names))
-        column_names = (
-            column_names.get_indexer(np.arange(df.columns.size)) == -1
-        )
+        column_names = column_names.get_indexer(range(df.columns.size)) == -1
         column_names = column_names.nonzero()[0]
         if not column_names.size:
             column_names = None
@@ -981,6 +1203,14 @@ def _computations_pivot_longer(
             spec = _names_transform(
                 spec=spec, others=others, names_transform=names_transform
             )
+        return reshape_by_spec_others(
+            df=df,
+            index=index,
+            others=others,
+            sort_by_appearance=sort_by_appearance,
+            ignore_index=ignore_index,
+            spec=spec,
+        )
         return _pivot_longer_dot_value(
             df=df,
             index=index,

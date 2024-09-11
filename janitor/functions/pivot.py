@@ -1028,7 +1028,6 @@ def _computations_pivot_longer(
             names_sep=names_sep,
             names_transform=names_transform,
             values_to=values_to,
-            dropna=dropna,
             sort_by_appearance=sort_by_appearance,
             ignore_index=ignore_index,
         )
@@ -1041,7 +1040,6 @@ def _computations_pivot_longer(
             names_pattern=names_pattern,
             names_transform=names_transform,
             values_to=values_to,
-            dropna=dropna,
             sort_by_appearance=sort_by_appearance,
             ignore_index=ignore_index,
         )
@@ -1053,7 +1051,6 @@ def _computations_pivot_longer(
             names_to=names_to,
             names_pattern=names_pattern,
             names_transform=names_transform,
-            dropna=dropna,
             sort_by_appearance=sort_by_appearance,
             values_to=values_to,
             ignore_index=ignore_index,
@@ -1064,7 +1061,6 @@ def _computations_pivot_longer(
         index=index,
         names_to=names_to,
         names_pattern=names_pattern,
-        dropna=dropna,
         sort_by_appearance=sort_by_appearance,
         ignore_index=ignore_index,
     )
@@ -1076,7 +1072,6 @@ def _pivot_longer_values_to_sequence(
     names_to: list,
     names_pattern: list | tuple,
     names_transform: str | Callable | dict | None,
-    dropna: bool,
     sort_by_appearance: bool,
     values_to: list | tuple,
     ignore_index: bool,
@@ -1151,7 +1146,6 @@ def _pivot_longer_names_pattern_sequence(
     index: dict,
     names_to: list,
     names_pattern: list | tuple,
-    dropna: bool,
     sort_by_appearance: bool,
     ignore_index: bool,
 ) -> pd.DataFrame:
@@ -1194,7 +1188,6 @@ def _pivot_longer_names_pattern_str(
     names_pattern: str | Pattern,
     names_transform: bool,
     values_to: str,
-    dropna: bool,
     sort_by_appearance: bool,
     ignore_index: bool,
 ) -> pd.DataFrame:
@@ -1252,7 +1245,6 @@ def _pivot_longer_names_sep(
     names_sep: str | Pattern,
     values_to: str,
     names_transform: str | dict | Callable | None,
-    dropna: bool,
     sort_by_appearance: bool,
     ignore_index: bool,
 ) -> pd.DataFrame:

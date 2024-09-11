@@ -1504,9 +1504,8 @@ def reshape_by_spec_others(
         cols = range(df.columns.size)
         zipped = zip(group_pos, spec[".value"], cols)
         data = defaultdict(dict)
-        headers = (
-            {}
-        )  # use a dict, instead of a set to maintain insertion order
+        # use a dict, instead of a set to maintain insertion order
+        headers = {}
         for pos, header, col_pos in zipped:
             headers[header] = 1
             arr = df.iloc[:, col_pos]._values

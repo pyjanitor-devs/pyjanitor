@@ -1557,7 +1557,8 @@ def reshape_by_spec(
         return pd.DataFrame(data, index=df_index, copy=False)
     if index or (ignore_index is False):
         # since no sort order is required here
-        # we simply ensure the index is repeated as much as the max_size ->
+        # we simply ensure the index
+        # is repeated as much as the max_size ->
         # [0, 1, 0, 1]
         shape = (max_size, len_df)
         indexer = np.empty(shape=shape, dtype=np.intp)
@@ -1593,6 +1594,84 @@ def reshape_by_spec_others(
     Specifically, if there are other columns in spec
     apart from `.value`
     """
+    # summary of implementation logic:
+    # think of the `others` as a grouper
+    # e.g df:
+    #    Sepal.Length  Sepal.Width  Petal.Length  Petal.Width    Species
+    # 0           5.1          3.5           1.4          0.2     setosa
+    # 1           5.9          3.0           5.1          1.8  virginica
+    # spec:
+    #           .name  .value   part
+    # 0  Sepal.Length  Length  Sepal
+    # 1  Petal.Length  Length  Petal
+    # 2   Sepal.Width   Width  Sepal
+    # 3   Petal.Width   Width  Petal
+    #
+    # just like with reshape_by_spec, we can see the pairing
+    # between .value and the the column names('.name')
+    # but also, we have a pairing for others -
+    # in the spec dataframe above, it is `part`
+    # we can see how `part` acts as a guard/grouper
+    # for .value and .name ->
+    #
+    # other > .value > .name
+    # Sepal-> {  Length,         Width}
+    # Sepal->{[Sepal.Length, Sepal.Width]}
+    # Petal->{   Length,         Width}
+    # Petal->{Petal.Length,  Petal.Width}
+    #
+    # the above translates into this form:
+    #
+    # part    Length              Width
+    # Sepal   Sepal.Length      Sepal.Width
+    # Petal   Petal.Length      Petal.Width
+    #
+    # the final dataframe will contain the values for each
+    # of the relevant column names
+    # if there is an imbalance in the grouping,
+    # then null arrays are introduced to keep things balanced
+    # e.g, lets assume spec is of the form below:
+    # spec:
+    #           .name  .value   part
+    # 0  Sepal.Length  Length  Sepal
+    # 1  Petal.Length  Length  Petal
+    # 2   Sepal.Width   Width  Sepal
+    # 3   Petal.Width   Width  Metal
+    #
+    # we can see that `part` has three unique labels ->
+    # Sepal -> 2 counts
+    # Petal -> 1 count
+    # Metal -> 1 count
+    #
+    # obviously there is an imbalance here,
+    # and this reflects in the grouping
+    #
+    # other > .value > .name
+    # Sepal-> {  Length,         Width}
+    # Sepal->{[Sepal.Length, Sepal.Width]}
+    # Petal->{   Length,         Width}
+    # Petal->{Petal.Length,       None}
+    # Metal->{   Length,         Width}
+    # Metal->{    None,       Petal.Width}
+    #
+    # which translates into ->
+    #
+    # part    Length              Width
+    # Sepal   Sepal.Length      Sepal.Width
+    # Petal   Petal.Length      None
+    # Metal   None              Petal.Width
+    #
+    # Based on the grouping above,
+    # when creating the final DataFrame,
+    # the entries with None will be filled with null arrays
+    # to keep the balance
+    #
+    # if .value is just a single label
+    # we can shortcut all the approach above
+    # also, we use column positions, instead of column names
+    # since pandas supports duplicate columns
+    # also the combination of .value and others should be unique
+    # identification per label in other should be clear/distinct
     dot_value_is_one = spec[".value"].nunique() == 1
     any_extension_array = None
     if dot_value_is_one:
@@ -1628,6 +1707,8 @@ def reshape_by_spec_others(
             dictionary = {header: arr}
             data[pos].update(dictionary)
         headers = headers.keys()
+        # ensure all headers are represented per `other`
+        # augment with nulls if necessary
         missing = (headers ^ header for _, header in data.items())
         if any(missing):
             null_array = np.full(shape=len(df), fill_value=np.nan)
@@ -1647,6 +1728,7 @@ def reshape_by_spec_others(
         spec = spec.loc[:, others].drop_duplicates()
     data = {}
     if sort_by_appearance:
+        # same concept used in reshape_by_spec applies here
         shape = (len_df, len_cols)
         total = len_df * len_cols
         if index or (ignore_index is False):
@@ -1662,6 +1744,9 @@ def reshape_by_spec_others(
             df_index = df.index[indexer]
         else:
             df_index = range(total)
+        # alignment of `others` with the sorted index
+        # if index is [0, 0, 1, 1]
+        # others is  [0, 1, 0, 1]
         shape = (len_df, len_cols)
         indexer = np.empty(shape=shape, dtype=np.intp)
         arr = np.arange(len_cols).reshape((1, len_cols))
@@ -1675,8 +1760,9 @@ def reshape_by_spec_others(
                 value = value.ravel(order="C")
                 data[key] = value
         else:
+            shape = (len_cols, len_df)
             indexer = np.arange(total, dtype=np.intp)
-            indexer = indexer.reshape(shape[::-1])
+            indexer = indexer.reshape(shape)
             indexer = indexer.ravel(order="F")
             for key, value in dictionary.items():
                 value = value[indexer]

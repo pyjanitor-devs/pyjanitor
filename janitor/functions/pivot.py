@@ -556,7 +556,7 @@ def pivot_longer_spec(
     others = [label for label in spec if label not in {".name", ".value"}]
 
     if others:
-        return reshape_by_spec_others(
+        return _reshape_by_spec_others(
             df=df,
             spec=spec.drop(columns=".name"),
             index=index,
@@ -564,7 +564,7 @@ def pivot_longer_spec(
             ignore_index=ignore_index,
             sort_by_appearance=sort_by_appearance,
         )
-    return reshape_by_spec(
+    return _reshape_by_spec(
         df=df,
         spec=spec[".value"],
         index=index,
@@ -1010,7 +1010,7 @@ def _computations_pivot_longer(
             spec = _names_transform(
                 spec=spec, others=others, names_transform=names_transform
             )
-        return reshape_by_spec_others(
+        return _reshape_by_spec_others(
             df=df,
             index=index,
             others=others,
@@ -1173,7 +1173,7 @@ def _pivot_longer_values_to_sequence(
         spec = _names_transform(
             spec=spec, others=others, names_transform=names_transform
         )
-    return reshape_by_spec_others(
+    return _reshape_by_spec_others(
         df=df,
         index=index,
         others=others,
@@ -1213,7 +1213,7 @@ def _pivot_longer_names_pattern_sequence(
     df = df.loc[:, booleans]
     values = values[booleans]
     spec = pd.Series(values, name=".value")
-    return reshape_by_spec(
+    return _reshape_by_spec(
         df=df,
         spec=spec,
         index=index,
@@ -1262,7 +1262,7 @@ def _pivot_longer_names_pattern_str(
             spec=spec, others=others, names_transform=names_transform
         )
     if others:
-        return reshape_by_spec_others(
+        return _reshape_by_spec_others(
             df=df,
             index=index,
             others=others,
@@ -1270,7 +1270,7 @@ def _pivot_longer_names_pattern_str(
             ignore_index=ignore_index,
             spec=spec,
         )
-    return reshape_by_spec(
+    return _reshape_by_spec(
         df=df,
         spec=spec[".value"],
         index=index,
@@ -1320,7 +1320,7 @@ def _pivot_longer_names_sep(
             spec=spec, others=others, names_transform=names_transform
         )
     if others:
-        return reshape_by_spec_others(
+        return _reshape_by_spec_others(
             df=df,
             index=index,
             others=others,
@@ -1328,7 +1328,7 @@ def _pivot_longer_names_sep(
             ignore_index=ignore_index,
             spec=spec,
         )
-    return reshape_by_spec(
+    return _reshape_by_spec(
         df=df,
         spec=spec[".value"],
         index=index,
@@ -1415,7 +1415,7 @@ def _names_transform(
     return spec
 
 
-def reshape_by_spec(
+def _reshape_by_spec(
     df: pd.DataFrame,
     spec: pd.DataFrame,
     index: dict,
@@ -1468,7 +1468,7 @@ def reshape_by_spec(
     # then x2 will pair with y1 and x1 will pair with y2
     # this is because `others` does not exist here -
     # `others` would have acted as a guard/combiner
-    # which is what happens in reshape_by_spec_others
+    # which is what happens in _reshape_by_spec_others
 
     # phase 1 - group labels, and get the counts per label
     cols = range(df.columns.size)
@@ -1581,7 +1581,7 @@ def reshape_by_spec(
     return pd.DataFrame(data, index=df_index, copy=False)
 
 
-def reshape_by_spec_others(
+def _reshape_by_spec_others(
     df: pd.DataFrame,
     spec: pd.DataFrame,
     index: dict,
@@ -1607,7 +1607,7 @@ def reshape_by_spec_others(
     # 2   Sepal.Width   Width  Sepal
     # 3   Petal.Width   Width  Petal
     #
-    # just like with reshape_by_spec, we can see the pairing
+    # just like with _reshape_by_spec, we can see the pairing
     # between .value and the the column names('.name')
     # but also, we have a pairing for others -
     # in the spec dataframe above, it is `part`
@@ -1728,7 +1728,7 @@ def reshape_by_spec_others(
         spec = spec.loc[:, others].drop_duplicates()
     data = {}
     if sort_by_appearance:
-        # same concept used in reshape_by_spec applies here
+        # same concept used in _reshape_by_spec applies here
         shape = (len_df, len_cols)
         total = len_df * len_cols
         if index or (ignore_index is False):

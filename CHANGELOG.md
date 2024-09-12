@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [DOC] Un-deprecate `join_apply` as no alternative currently exists - Issue #1399 @lbeltrame
+
 ## [v0.28.1] - 2024-08-09
 
 ## [v0.28.0] - 2024-08-03

@@ -518,12 +518,7 @@ def pivot_longer_spec(
         raise KeyError(
             "Kindly ensure the spec DataFrame has a `.value` column."
         )
-    if spec.columns.tolist()[:2] != [".name", ".value"]:
-        raise ValueError(
-            "The first two columns of the spec DataFrame "
-            "should be '.name' and '.value', "
-            "with '.name' coming before '.value'."
-        )
+
     if not spec[".name"].is_unique:
         raise ValueError("The labels in the `.name` column should be unique.")
 
@@ -556,6 +551,8 @@ def pivot_longer_spec(
         spec = pd.DataFrame({".name": df.columns}).merge(
             spec, on=".name", how="inner"
         )
+    # list comprehension used here, instead of set
+    # to maintain order
     others = [label for label in spec if label not in {".name", ".value"}]
 
     if others:
@@ -647,7 +644,9 @@ def _data_checks_pivot_longer(
 
     if column_names is None:
         return None
-
+    # ideally index names should be unique
+    # it is the column_names that may be duplicated
+    # since we are ultimately flipping them into long form
     index = {name: df[name]._values for name in index}
     df = df.iloc[:, column_names]
 
@@ -1101,6 +1100,49 @@ def _pivot_longer_values_to_sequence(
     df = df.loc[:, booleans]
     values = values[booleans]
     columns = columns[booleans]
+    # the aim is to ensure that values_to and names_to
+    # ultimately have the same number of entries
+    # let's take an example from SO
+    # https://stackoverflow.com/q/51519101/7175713
+    # In [6]: multiple_values_to
+    #       City    State      Name  Mango  Orange  Watermelon  Gin  Vodka
+    # 0  Houston    Texas      Aria      4      10          40   16     20
+    # 1   Austin    Texas  Penelope     10       8          99  200     33
+    # 2   Hoover  Alabama      Niko     90      14          43   34     18
+
+    ###
+    #  multiple_values_to.pivot_longer(
+    #     index=["City", "State"],
+    #     column_names=slice("Mango", "Vodka"),
+    #     names_to=("Fruit", "Drink"),
+    #     values_to=("Pounds", "Ounces"),
+    #     names_pattern=[r"M|O|W", r"G|V"],
+    #     names_transform={"Fruit": "category", "Drink": "category"},
+    # )
+
+    # from the above, we can see the expected pairing
+    # values_to > names_to > column_names
+    # pounds->fruits->[mango, orange, watermelon]
+    # ounces->drink->[gin, vodka]
+    # there are only two columns for ounces, drink
+    # compared to three columns for pounds, fruit
+    # we need to get ounces,drink to have three entries
+    # in the final spec DataFrame
+    # to match pounds, fruit
+    # that is what the code below covers
+    # with a combination of zip and zip_longest
+    # pairing the columns with zip_longest we get:
+    # [(mango, gin), (orange, vodka), (watermelon, None)]
+    # we then pair appropriately with (pounds, ounces)
+    # and (fruit, drink)
+    # which ultimately gives us this spec:
+    #    .value       Fruit  Drink
+    # 0  Pounds       Mango    Gin
+    # 1  Pounds      Orange  Vodka
+    # 2  Pounds  Watermelon   None
+    # 3  Ounces       Mango    Gin
+    # 4  Ounces      Orange  Vodka
+    # 5  Ounces  Watermelon   None
     data = defaultdict(list)
     headers = defaultdict(int)
     for value, col, cols in zip(values, columns, df.columns):
@@ -1170,11 +1212,10 @@ def _pivot_longer_names_pattern_sequence(
     booleans = pd.notna(values)
     df = df.loc[:, booleans]
     values = values[booleans]
-    spec = {".value": values}
-    spec = pd.DataFrame(spec, copy=False)
+    spec = pd.Series(values, name=".value")
     return reshape_by_spec(
         df=df,
-        spec=spec[".value"],
+        spec=spec,
         index=index,
         ignore_index=ignore_index,
         sort_by_appearance=sort_by_appearance,
@@ -1386,8 +1427,33 @@ def reshape_by_spec(
     Specifically, if there are no other columns in spec
     apart from `.value`
     """
-    # get positions of columns,
-    # to ensure interleaving is possible
+    # summary of implementation logic:
+    # for this usecase, only .value exists,
+    # there is no `ohers` ->
+    # spec:
+    # .value .name
+    #     x     x1
+    #     x     x2
+    #     y     y1
+    #     y     y2
+
+    # in the spec dataframe above,
+    # we can see the pairing between .value and .name
+    # we can also observe that there are two unique labels
+    # in .value -> x and y
+    # what we need to ensure is that when creating the long form
+    # both x and y have the same number of entries
+    # i.e if there are 2 counts of x and 3 counts of y,
+    # then the final dataframe must have 3 counts of x
+    # and 3 counts of y (the max size is what determines the final count)
+    # if the counts of x do not match the counts of y,
+    # then the label with the lesser size is augmented with
+    # an array of nans
+    # also, since pandas supports duplicate columns
+    # we get the positions of columns,
+    # instead of the column names.
+    # the column labels are interleaved
+    # on a first come first serve approach
     # so if we have a dataframe like below:
     #        id  x1  x2  y1  y2
     #    0   1   4   5   7  10
@@ -1400,7 +1466,11 @@ def reshape_by_spec(
     #    1   2   6   5   8  11
     #    2   3   7   6   9  12
     # then x2 will pair with y1 and x1 will pair with y2
-    # it is simply a first come first serve approach
+    # this is because `others` does not exist here -
+    # `others` would have acted as a guard/combiner
+    # which is what happens in reshape_by_spec_others
+
+    # phase 1 - group labels, and get the counts per label
     cols = range(df.columns.size)
     zipped = zip(spec, cols)
     dictionary = defaultdict(list)
@@ -1410,17 +1480,37 @@ def reshape_by_spec(
         dictionary[header].append(arr)
         lengths[header] += 1
     max_size = max(lengths.values())
+    # augment with nulls if the label counts differ
     for header, length in lengths.items():
         length = (max_size - length) * len(df)
         if length:
             array = np.full(length, fill_value=np.nan)
             dictionary[header].append(array)
-    dictionary = {
-        label: concat_compat(array) for label, array in dictionary.items()
-    }
     len_df = len(df)
     data = {}
     if sort_by_appearance:
+        # the index/dataframe's index determines the sort
+        # e.g df:
+        #    Sepal.Length  Sepal.Width  Petal.Length  Petal.Width    Species
+        # 0           5.1          3.5           1.4          0.2     setosa
+        # 1           5.9          3.0           5.1          1.8  virginica
+        # spec:
+        #  0    Length
+        #  1     Width
+        #  2    Length
+        #  3     Width
+        #  Name: .value, dtype: object)
+        # index:
+        # {'Species': array(['setosa', 'virginica'], dtype=object)}
+        #
+        # the max length is 2 (length:2, width:2)
+        # the index will be repeated as many times as the max length
+        # {'Species': array(['setosa', 'setosa',
+        # ...                'virginica', 'viriginica'], dtype=object)}
+        # if ignore_index is False, the same step as above will apply
+        # this requires building an index with the right numbers
+        # [0, 0, 1, 1] -> we use this to index the index/dataframe's index
+        # to get the right sort order
         shape = (len_df, max_size)
         total = len_df * max_size
         if index or (ignore_index is False):
@@ -1436,14 +1526,39 @@ def reshape_by_spec(
             df_index = df.index[indexer]
         else:
             df_index = range(total)
+        # for the actual data,
+        # we need to ensure it lines up with the sorted index
+        # dictionary:
+        # defaultdict(list,
+        # {'Length': [array([5.1, 5.9]), array([1.4, 5.1])],
+        #  'Width': [array([3.5, 3. ]), array([0.2, 1.8])]})
+        #
+        # first we combine the arrays into one array per label
+        # defaultdict(list,
+        # {'Length': array([5.1, 5.9, 1.4, 5.1]),
+        #  'Width': array([3.5, 3., 0.2, 1.8])})
+        #
+        # index length is 2, max_label_length is 2
+        # total length is 4 (2 * 2)
+        # we then create an indexer to flip the arrays
+        # to align with the sorted index
+        # indexer -> [0,2,1,3]
+        #
+        # summary: index order -> [0, 0, 1, 1]
+        #          dict order  -> [0, 2, 1, 3]
+        shape = (max_size, len_df)
         indexer = np.arange(total, dtype=np.intp)
-        indexer = indexer.reshape(shape[::-1])
+        indexer = indexer.reshape(shape)
         indexer = indexer.ravel(order="F")
         for key, value in dictionary.items():
+            value = concat_compat(value)
             value = value[indexer]
             data[key] = value
         return pd.DataFrame(data, index=df_index, copy=False)
     if index or (ignore_index is False):
+        # since no sort order is required here
+        # we simply ensure the index is repeated as much as the max_size ->
+        # [0, 1, 0, 1]
         shape = (max_size, len_df)
         indexer = np.empty(shape=shape, dtype=np.intp)
         arr = np.arange(len_df).reshape((1, len_df))
@@ -1458,7 +1573,9 @@ def reshape_by_spec(
     else:
         total = len_df * max_size
         df_index = range(total)
+    # no ordering is required for the actual data
     for key, value in dictionary.items():
+        value = concat_compat(value)
         data[key] = value
     return pd.DataFrame(data, index=df_index, copy=False)
 

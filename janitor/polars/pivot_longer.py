@@ -117,18 +117,19 @@ def pivot_longer_spec(
         A polars DataFrame/LazyFrame.
     """
     check("spec", spec, [pl.DataFrame])
-    if ".name" not in spec.columns:
+    spec_columns = spec.collect_schema().names()
+    if ".name" not in spec_columns:
         raise KeyError(
             "Kindly ensure the spec DataFrame has a `.name` column."
         )
-    if ".value" not in spec.columns:
+    if ".value" not in spec_columns:
         raise KeyError(
             "Kindly ensure the spec DataFrame has a `.value` column."
         )
     if spec.select(pl.col(".name").is_duplicated().any()).item():
         raise ValueError("The labels in the `.name` column should be unique.")
-
-    exclude = set(df.columns).intersection(spec.columns)
+    df_columns = df.collect_schema().names()
+    exclude = set(df_columns).intersection(spec_columns)
     if exclude:
         raise ValueError(
             f"Labels {*exclude, } in the spec dataframe already exist "
@@ -137,12 +138,12 @@ def pivot_longer_spec(
             "are not present in the source DataFrame."
         )
     index = [
-        label for label in df.columns if label not in spec.get_column(".name")
+        label for label in df_columns if label not in spec.get_column(".name")
     ]
     others = [
-        label for label in spec.columns if label not in {".name", ".value"}
+        label for label in spec_columns if label not in {".name", ".value"}
     ]
-    variable_name = "".join(df.columns + spec.columns)
+    variable_name = "".join(df_columns + spec_columns)
     variable_name = f"{variable_name}_"
     if others:
         dot_value_only = False
@@ -219,7 +220,7 @@ def pivot_longer(
         │ 5.9          ┆ 3.0         ┆ 5.1          ┆ 1.8         ┆ virginica │
         └──────────────┴─────────────┴──────────────┴─────────────┴───────────┘
 
-        Replicate polars' [melt](https://docs.pola.rs/py-polars/html/reference/dataframe/api/polars.DataFrame.melt.html#polars-dataframe-melt):
+        Replicate polars' [melt](https://docs.pola.rs/py-polars/html/reference/dataframe/api/polars.DataFrame.unpivot.html#polars-dataframe-melt):
         >>> df.pivot_longer(index = 'Species').sort(by=pl.all())
         shape: (8, 3)
         ┌───────────┬──────────────┬───────┐
@@ -415,7 +416,7 @@ def _pivot_longer(
     """
 
     if all((names_pattern is None, names_sep is None)):
-        return df.melt(
+        return df.unpivot(
             id_vars=index,
             value_vars=column_names,
             variable_name=names_to,
@@ -440,7 +441,7 @@ def _pivot_longer(
         names_pattern=names_pattern,
     )
 
-    variable_name = "".join(df.columns)
+    variable_name = "".join(df.collect_schema().names())
     variable_name = f"{variable_name}_"
     spec = _pivot_longer_create_spec(
         column_names=column_names,
@@ -462,7 +463,7 @@ def _pivot_longer(
             names_transform=names_transform,
         )
 
-    if {".name", ".value"}.symmetric_difference(spec.columns):
+    if {".name", ".value"}.symmetric_difference(spec.collect_schema().names()):
         dot_value_only = False
     else:
         dot_value_only = True
@@ -552,7 +553,7 @@ def _pivot_longer_create_spec(
         return spec.select(".name", ".value")
     _spec = spec.get_column(variable_name)
     _spec = _spec.struct.unnest()
-    fields = _spec.columns
+    fields = _spec.collect_schema().names()
 
     if len(set(names_to)) == 1:
         expression = pl.concat_str(fields).alias(".value")
@@ -591,7 +592,7 @@ def _pivot_longer_no_dot_value(
     # do the operation on a smaller size
     # and then blow it up after
     # it is usually much faster
-    # than running on the actual data
+    # than unpivoting and running the string operations after
     outcome = (
         df.select(pl.all().implode())
         .unpivot(
@@ -606,7 +607,11 @@ def _pivot_longer_no_dot_value(
     outcome = outcome.unnest(variable_name)
     if names_transform is not None:
         outcome = outcome.with_columns(names_transform)
-    columns = [name for name in outcome.columns if name not in names_to]
+    columns = [
+        name
+        for name in outcome.collect_schema().names()
+        if name not in names_to
+    ]
     outcome = outcome.explode(columns=columns)
     return outcome
 
@@ -621,7 +626,7 @@ def _pivot_longer_dot_value(
 ) -> pl.DataFrame | pl.LazyFrame:
     """
     flip polars Frame to long form,
-    if names_sep and .value in names_to.
+    if .value in names_to.
     """
     spec = spec.group_by(variable_name)
     spec = spec.agg(pl.all())
@@ -634,6 +639,17 @@ def _pivot_longer_dot_value(
         expressions.append(expression)
     expressions = [*index, *expressions]
     spec = spec.get_column(variable_name)
+    if dot_value_only:
+        outcome = (
+            df.select(expressions)
+            .unpivot(
+                index=index, variable_name=variable_name, value_name=".value"
+            )
+            .select(pl.exclude(variable_name))
+            .unnest(".value")
+        )
+        return outcome
+
     outcome = (
         df.select(expressions)
         .select(pl.all().implode())
@@ -641,18 +657,13 @@ def _pivot_longer_dot_value(
         .with_columns(spec)
     )
 
-    if dot_value_only:
-        columns = [
-            label for label in outcome.columns if label != variable_name
-        ]
-        outcome = outcome.explode(columns).unnest(".value")
-        outcome = outcome.select(pl.exclude(variable_name))
-        return outcome
     outcome = outcome.unnest(variable_name)
     if names_transform is not None:
         outcome = outcome.with_columns(names_transform)
     columns = [
-        label for label in outcome.columns if label not in spec.struct.fields
+        label
+        for label in outcome.collect_schema().names()
+        if label not in spec.struct.fields
     ]
     outcome = outcome.explode(columns)
     outcome = outcome.unnest(".value")
@@ -710,17 +721,17 @@ def _data_checks_pivot_longer(
     check("values_to", values_to, [str])
 
     if (index is None) and (column_names is None):
-        column_names = df.columns
+        column_names = df.collect_schema().names()
         index = []
     elif (index is None) and (column_names is not None):
-        column_names = df.select(column_names).columns
-        index = df.select(pl.exclude(column_names)).columns
+        column_names = df.select(column_names).collect_schema().names()
+        index = df.select(pl.exclude(column_names)).collect_schema().names()
     elif (index is not None) and (column_names is None):
-        index = df.select(index).columns
-        column_names = df.select(pl.exclude(index)).columns
+        index = df.select(index).collect_schema().names()
+        column_names = df.select(pl.exclude(index)).collect_schema().names()
     else:
-        index = df.select(index).columns
-        column_names = df.select(column_names).columns
+        index = df.select(index).collect_schema().names()
+        column_names = df.select(column_names).collect_schema().names()
 
     return (
         df,

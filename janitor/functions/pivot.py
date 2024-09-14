@@ -1478,8 +1478,33 @@ def _stack_dot_value_only_multiple_labels(
     Applicable when only .value column exists in spec
     and .value.nunique > 1
     """
-    # get positions of columns,
-    # to ensure interleaving is possible
+    # summary of implementation logic:
+    # for this usecase, only .value exists,
+    # there is no `ohers` ->
+    # spec:
+    # .value .name
+    #     x     x1
+    #     x     x2
+    #     y     y1
+    #     y     y2
+    #
+    # in the spec dataframe above,
+    # we can see the pairing between .value and .name
+    # we can also observe that there are two unique labels
+    # in .value -> x and y
+    # what we need to ensure is that when creating the long form
+    # both x and y have the same number of entries
+    # i.e if there are 2 counts of x and 3 counts of y,
+    # then the final dataframe must have 3 counts of x
+    # and 3 counts of y (the max size is what determines the final count)
+    # if the counts of x do not match the counts of y,
+    # then the label with the lesser size is augmented with
+    # an array of nans
+    # also, since pandas supports duplicate columns
+    # we get the positions of columns,
+    # instead of the column names.
+    # the column labels are interleaved
+    # on a first come first serve approach
     # so if we have a dataframe like below:
     #        id  x1  x2  y1  y2
     #    0   1   4   5   7  10
@@ -1492,7 +1517,8 @@ def _stack_dot_value_only_multiple_labels(
     #    1   2   6   5   8  11
     #    2   3   7   6   9  12
     # then x2 will pair with y1 and x1 will pair with y2
-    # it is simply a first come first serve approach
+    # this is because `others` does not exist here -
+    # `others` would have acted as a guard/combiner
     grouped = spec.groupby(".value", sort=False, dropna=False, observed=True)
     grouping = grouped.size()
     reps = grouping.max()

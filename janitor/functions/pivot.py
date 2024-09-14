@@ -606,27 +606,26 @@ def _data_checks_pivot_longer(
 
     elif (index is None) and (column_names is not None):
         column_names = _select_index([column_names], df, axis="columns")
-        index = np.setdiff1d(
-            np.arange(df.columns.size),
-            pd.unique(_index_converter(column_names, df.columns)),
-            assume_unique=True,
-        )
+        index = _index_converter(column_names, df.columns)
+        index = pd.Index(pd.unique(index))
+        index = index.get_indexer(range(df.columns.size)) == -1
         index = df.columns[index]
 
     elif (index is not None) and (column_names is None):
         index = _select_index([index], df, axis="columns")
-        column_names = np.setdiff1d(
-            np.arange(df.columns.size),
-            pd.unique(_index_converter(index, df.columns)),
-            assume_unique=True,
-        )
+        column_names = _index_converter(index, df.columns)
+        column_names = pd.Index(pd.unique(column_names))
+        column_names = column_names.get_indexer(range(df.columns.size)) == -1
+        column_names = column_names.nonzero()[0]
         if not column_names.size:
             column_names = None
         index = df.columns[index]
 
     if column_names is None:
         return None
-
+    # ideally index names should be unique
+    # it is the column_names that may be duplicated
+    # since we are ultimately flipping them into long form
     index = {name: df[name]._values for name in index}
     df = df.iloc[:, column_names]
 
@@ -1076,32 +1075,75 @@ def _pivot_longer_values_to_sequence(
     df = df.loc[:, booleans]
     values = values[booleans]
     columns = columns[booleans]
-    # for multiple values_to,
-    # the `others` should be complete
-    # fill any missing values with None
-    # user can always resort to pivot_longer_spec
-    # for more control
-    spec = pd.Series(values, name=".value")
-    grouped = spec.groupby(spec, sort=False, observed=True, dropna=False)
-    grouped = grouped.size().max()
-    grouped = range(grouped)
-    spec = pd.MultiIndex.from_product(
-        [spec.unique(), grouped], names=[".value", None]
-    )
-    spec = pd.DataFrame(
-        spec.get_level_values(".value"),
-        index=spec.get_level_values(1),
-        copy=False,
-    )
-    mapping = defaultdict(list)
-    for name, column in zip(columns, df.columns):
-        mapping[name].append(column)
-    zipped = zip_longest(*mapping.values())
-    zipped = zip(*zipped)
-    zipped = dict(zip(mapping, zipped))
-    zipped = pd.DataFrame(zipped, copy=False)
-    spec = spec.join(zipped)
-    others = zipped.columns.tolist()
+    # the aim is to ensure that values_to and names_to
+    # ultimately have the same number of entries
+    # let's take an example from SO
+    # https://stackoverflow.com/q/51519101/7175713
+    # In [6]: multiple_values_to
+    #       City    State      Name  Mango  Orange  Watermelon  Gin  Vodka
+    # 0  Houston    Texas      Aria      4      10          40   16     20
+    # 1   Austin    Texas  Penelope     10       8          99  200     33
+    # 2   Hoover  Alabama      Niko     90      14          43   34     18
+
+    ###
+    #  multiple_values_to.pivot_longer(
+    #     index=["City", "State"],
+    #     column_names=slice("Mango", "Vodka"),
+    #     names_to=("Fruit", "Drink"),
+    #     values_to=("Pounds", "Ounces"),
+    #     names_pattern=[r"M|O|W", r"G|V"],
+    #     names_transform={"Fruit": "category", "Drink": "category"},
+    # )
+
+    # from the above, we can see the expected pairing
+    # values_to > names_to > column_names
+    # pounds->fruits->[mango, orange, watermelon]
+    # ounces->drink->[gin, vodka]
+    # there are only two columns for ounces, drink
+    # compared to three columns for pounds, fruit
+    # we need to get ounces,drink to have three entries
+    # in the final spec DataFrame
+    # to match pounds, fruit
+    # that is what the code below covers
+    # with a combination of zip and zip_longest
+    # pairing the columns with zip_longest we get:
+    # [(mango, gin), (orange, vodka), (watermelon, None)]
+    # we then pair appropriately with (pounds, ounces)
+    # and (fruit, drink)
+    # which ultimately gives us this spec:
+    #    .value       Fruit  Drink
+    # 0  Pounds       Mango    Gin
+    # 1  Pounds      Orange  Vodka
+    # 2  Pounds  Watermelon   None
+    # 3  Ounces       Mango    Gin
+    # 4  Ounces      Orange  Vodka
+    # 5  Ounces  Watermelon   None
+    data = defaultdict(list)
+    headers = defaultdict(int)
+    for value, col, cols in zip(values, columns, df.columns):
+        data[col].append(cols)
+        headers[value] += 1
+    keys = list(headers.keys())
+    max_size = max(headers.values())
+    headers = np.repeat(keys, max_size)
+    keys = data.keys()
+    data = data.values()
+    data = zip_longest(*data)
+    data = zip(*data)
+    data = map(np.array, data)
+    data = dict(zip(keys, data))
+    length = len(keys)
+    shape = (max_size, length)
+    indexer = np.empty(shape=shape, dtype=np.intp)
+    arr = np.arange(max_size).reshape((max_size, 1))
+    indexer[:] = arr
+    indexer = indexer.ravel(order="F")
+    spec = {".value": headers}
+    for key, value in data.items():
+        value = value[indexer]
+        spec[key] = value
+    spec = pd.DataFrame(spec, copy=False)
+    others = list(keys)
     if names_transform is not None:
         spec = _names_transform(
             spec=spec, others=others, names_transform=names_transform
@@ -1541,9 +1583,84 @@ def _stack_dot_value_multiple_labels(
     Flip the .value into long form.
     Applicable where .value.nunique > 1
     """
-    # the goal here is to align headers(labels from .value) with others
-    # headers must be the same for all others
-    # others must not lose track of their headers
+    # summary of implementation logic:
+    # think of the `others` as a grouper
+    # e.g df:
+    #    Sepal.Length  Sepal.Width  Petal.Length  Petal.Width    Species
+    # 0           5.1          3.5           1.4          0.2     setosa
+    # 1           5.9          3.0           5.1          1.8  virginica
+    # spec:
+    #           .name  .value   part
+    # 0  Sepal.Length  Length  Sepal
+    # 1  Petal.Length  Length  Petal
+    # 2   Sepal.Width   Width  Sepal
+    # 3   Petal.Width   Width  Petal
+    #
+    # just like with _reshape_by_spec, we can see the pairing
+    # between .value and the the column names('.name')
+    # but also, we have a pairing for others -
+    # in the spec dataframe above, it is `part`
+    # we can see how `part` acts as a guard/grouper
+    # for .value and .name ->
+    #
+    # other > .value > .name
+    # Sepal-> {  Length,         Width}
+    # Sepal->{[Sepal.Length, Sepal.Width]}
+    # Petal->{   Length,         Width}
+    # Petal->{Petal.Length,  Petal.Width}
+    #
+    # the above translates into this form:
+    #
+    # part    Length              Width
+    # Sepal   Sepal.Length      Sepal.Width
+    # Petal   Petal.Length      Petal.Width
+    #
+    # the final dataframe will contain the values for each
+    # of the relevant column names
+    # if there is an imbalance in the grouping,
+    # then null arrays are introduced to keep things balanced
+    # e.g, lets assume spec is of the form below:
+    # spec:
+    #           .name  .value   part
+    # 0  Sepal.Length  Length  Sepal
+    # 1  Petal.Length  Length  Petal
+    # 2   Sepal.Width   Width  Sepal
+    # 3   Petal.Width   Width  Metal
+    #
+    # we can see that `part` has three unique labels ->
+    # Sepal -> 2 counts
+    # Petal -> 1 count
+    # Metal -> 1 count
+    #
+    # obviously there is an imbalance here,
+    # and this reflects in the grouping
+    #
+    # other > .value > .name
+    # Sepal-> {  Length,         Width}
+    # Sepal->{[Sepal.Length, Sepal.Width]}
+    # Petal->{   Length,         Width}
+    # Petal->{Petal.Length,       None}
+    # Metal->{   Length,         Width}
+    # Metal->{    None,       Petal.Width}
+    #
+    # which translates into ->
+    #
+    # part    Length              Width
+    # Sepal   Sepal.Length      Sepal.Width
+    # Petal   Petal.Length      None
+    # Metal   None              Petal.Width
+    #
+    # Based on the grouping above,
+    # when creating the final DataFrame,
+    # the entries with None will be filled with null arrays
+    # to keep the balance
+    #
+    # if .value is just a single label
+    # we can shortcut all the approach above
+    # also, we use column positions, instead of column names
+    # since pandas supports duplicate columns
+    # also the combination of .value and others should be unique
+    # identification per label in other should be clear/distinct
     _value = spec.pop(".value")
     grouped = spec.groupby(others, sort=False, observed=True, dropna=False)
     mapp = defaultdict(dict)

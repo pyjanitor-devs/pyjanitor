@@ -26,7 +26,11 @@ def pivot_longer_spec(
     A declarative interface to pivot a Polars Frame
     from wide to long form,
     where you describe how the data will be unpivoted,
-    using a DataFrame. This gives you, the user,
+    using a DataFrame.
+
+    It is modeled after tidyr's `pivot_longer_spec`.
+
+    This gives you, the user,
     more control over the transformation to long form,
     using a *spec* DataFrame that describes exactly
     how data stored in the column names
@@ -108,10 +112,12 @@ def pivot_longer_spec(
             corresponding to columns pivoted from the wide format.
             Note that these additional columns should not already exist
             in the source DataFrame.
+            If there are additional columns, the combination of these columns
+            and the `.value` column must be unique.
 
     Raises:
         KeyError: If `.name` or `.value` is missing from the spec's columns.
-        ValueError: If the labels in `spec['.name']` is not unique.
+        ValueError: If the labels in spec's `.name` column is not unique.
 
     Returns:
         A polars DataFrame/LazyFrame.
@@ -126,7 +132,7 @@ def pivot_longer_spec(
         raise KeyError(
             "Kindly ensure the spec DataFrame has a `.value` column."
         )
-    if spec.select(pl.col(".name").is_duplicated().any()).item():
+    if spec.get_column(".name").is_duplicated().any():
         raise ValueError("The labels in the `.name` column should be unique.")
     df_columns = df.collect_schema().names()
     exclude = set(df_columns).intersection(spec_columns)
@@ -137,12 +143,24 @@ def pivot_longer_spec(
             "Kindly ensure the spec DataFrame's columns "
             "are not present in the source DataFrame."
         )
+
     index = [
         label for label in df_columns if label not in spec.get_column(".name")
     ]
     others = [
         label for label in spec_columns if label not in {".name", ".value"}
     ]
+
+    if (len(others) == 1) & (spec.get_column(others[0]).dtype == pl.String):
+        # shortcut that avoids the implode/explode approach - and is faster
+        # if the requirements are met
+        # inspired by https://github.com/pola-rs/polars/pull/18519#issue-2500860927
+        return _pivot_longer_dot_value_string(
+            df=df,
+            index=index,
+            spec=spec,
+            variable_name=others[0],
+        )
     variable_name = "".join(df_columns + spec_columns)
     variable_name = f"{variable_name}_"
     if others:
@@ -376,8 +394,8 @@ def pivot_longer(
             specification as polars' `str.split` method.
         names_pattern: Determines how the column name is broken up.
             It can be a regular expression containing matching groups.
-            It takes the same
-            specification as polars' `str.extract_groups` method.
+            It takes the same specification as
+            polars' `str.extract_groups` method.
         names_transform: Use this option to change the types of columns that
             have been transformed to rows.
             This does not applies to the values' columns.
@@ -462,8 +480,25 @@ def _pivot_longer(
             variable_name=variable_name,
             names_transform=names_transform,
         )
-
     if {".name", ".value"}.symmetric_difference(spec.collect_schema().names()):
+        # shortcut that avoids the implode/explode approach - and is faster
+        # if the requirements are met
+        # inspired by https://github.com/pola-rs/polars/pull/18519#issue-2500860927
+        data = spec.get_column(variable_name)
+        others = data.struct.fields
+        data = data.struct[others[0]]
+        if (
+            (len(others) == 1)
+            & (data.dtype == pl.String)
+            & (names_transform is None)
+        ):
+            spec = spec.unnest(variable_name)
+            return _pivot_longer_dot_value_string(
+                df=df,
+                index=index,
+                spec=spec,
+                variable_name=others[0],
+            )
         dot_value_only = False
     else:
         dot_value_only = True
@@ -614,6 +649,35 @@ def _pivot_longer_no_dot_value(
     ]
     outcome = outcome.explode(columns=columns)
     return outcome
+
+
+def _pivot_longer_dot_value_string(
+    df: pl.DataFrame | pl.LazyFrame,
+    spec: pl.DataFrame,
+    index: ColumnNameOrSelector,
+    variable_name: str,
+) -> pl.DataFrame | pl.LazyFrame:
+    """
+    fastpath for .value - does not require implode/explode approach.
+    """
+    spec = spec.group_by(variable_name)
+    spec = spec.agg(pl.all())
+    expressions = []
+    for names, fields, header in zip(
+        spec.get_column(".name").to_list(),
+        spec.get_column(".value").to_list(),
+        spec.get_column(variable_name).to_list(),
+    ):
+        expression = pl.struct(names).struct.rename_fields(names=fields)
+        expression = expression.alias(header)
+        expressions.append(expression)
+    expressions = [*index, *expressions]
+    df = (
+        df.select(expressions)
+        .unpivot(index=index, variable_name=variable_name, value_name=".value")
+        .unnest(".value")
+    )
+    return df
 
 
 def _pivot_longer_dot_value(

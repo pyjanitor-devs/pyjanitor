@@ -13,6 +13,10 @@ from pandas.api.types import (
     is_numeric_dtype,
     is_timedelta64_dtype,
 )
+from pandas.core.dtypes.concat import concat_compat
+from pandas.core.dtypes.missing import (
+    construct_1d_array_from_inferred_fill_value,
+)
 from pandas.core.reshape.merge import _MergeOperation
 
 from janitor.functions.utils import (
@@ -141,11 +145,11 @@ def conditional_join(
            value_1  value_2B
         0        2       3.0
         1        5       6.0
-        2        7       NaN
-        3        1       NaN
-        4        3       4.0
-        5        4       5.0
-        6        4       6.0
+        2        3       4.0
+        3        4       5.0
+        4        4       6.0
+        5        7       NaN
+        6        1       NaN
 
         Rename columns, before the join:
         >>> (df1
@@ -158,13 +162,13 @@ def conditional_join(
         ...      how='outer')
         ... )
             left_column  value_2B
-        0           7.0       NaN
-        1           1.0       NaN
-        2           2.0       3.0
-        3           5.0       6.0
-        4           3.0       4.0
-        5           4.0       5.0
-        6           4.0       6.0
+        0           2.0       3.0
+        1           5.0       6.0
+        2           3.0       4.0
+        3           4.0       5.0
+        4           4.0       6.0
+        5           7.0       NaN
+        6           1.0       NaN
         7           NaN       1.0
         8           NaN       9.0
         9           NaN      15.0
@@ -204,18 +208,18 @@ def conditional_join(
         ...     how='outer',
         ...     indicator=True
         ... )
-            value_1      _merge  value_2A  value_2B
-        0       7.0   left_only       NaN       NaN
-        1       1.0   left_only       NaN       NaN
-        2       2.0        both       1.0       3.0
-        3       5.0        both       3.0       6.0
-        4       3.0        both       2.0       4.0
-        5       4.0        both       3.0       5.0
-        6       4.0        both       3.0       6.0
-        7       NaN  right_only       0.0       1.0
-        8       NaN  right_only       7.0       9.0
-        9       NaN  right_only      12.0      15.0
-        10      NaN  right_only       0.0       1.0
+            value_1  value_2A  value_2B      _merge
+        0       2.0       1.0       3.0        both
+        1       5.0       3.0       6.0        both
+        2       3.0       2.0       4.0        both
+        3       4.0       3.0       5.0        both
+        4       4.0       3.0       6.0        both
+        5       7.0       NaN       NaN   left_only
+        6       1.0       NaN       NaN   left_only
+        7       NaN       0.0       1.0  right_only
+        8       NaN       7.0       9.0  right_only
+        9       NaN      12.0      15.0  right_only
+        10      NaN       0.0       1.0  right_only
 
     !!! abstract "Version Changed"
 
@@ -1212,11 +1216,11 @@ def _create_frame(
         Returns:
             An inner joined DataFrame.
         """
-        frame = {key: value._values[left_index] for key, value in df.items()}
-        r_frame = {
-            key: value._values[right_index] for key, value in right.items()
-        }
-        frame.update(r_frame)
+        dictionary = {}
+        for key, value in df.items():
+            dictionary[key] = value._values[left_index]
+        for key, value in right.items():
+            dictionary[key] = value._values[right_index]
         if indicator:
             indicator, arr = _add_indicator(
                 indicator=indicator,
@@ -1224,85 +1228,185 @@ def _create_frame(
                 column_length=left_index.size,
                 columns=df.columns.union(right.columns),
             )
-            frame[indicator] = arr
-        return pd.DataFrame(frame, copy=False)
+            dictionary[indicator] = arr
+        return pd.DataFrame(dictionary, copy=False)
 
     if how == "inner":
-        return _inner(df, right, left_index, right_index, indicator)
-
-    if how != "outer":
+        return _inner(
+            df=df,
+            right=right,
+            left_index=left_index,
+            right_index=right_index,
+            indicator=indicator,
+        )
+    if how == "left":
+        indexer = pd.unique(left_index)
+        indexer = pd.Index(indexer).get_indexer(range(len(df)))
+        indexer = (indexer < 0).nonzero()[0]
+        length = indexer.size
+        if not length:
+            return _inner(
+                df=df,
+                right=right,
+                left_index=left_index,
+                right_index=right_index,
+                indicator=indicator,
+            )
+        dictionary = {}
+        for key, value in df.items():
+            array = value._values
+            top = array[left_index]
+            bottom = array[indexer]
+            value = concat_compat([top, bottom])
+            dictionary[key] = value
+        for key, value in right.items():
+            array = value._values
+            value = array[right_index]
+            other = construct_1d_array_from_inferred_fill_value(
+                value=array[:1], length=length
+            )
+            value = concat_compat([value, other])
+            dictionary[key] = value
         if indicator:
             columns = df.columns.union(right.columns)
-        if how == "left":
-            right = {
-                key: value._values[right_index] for key, value in right.items()
-            }
-            if indicator:
-                indicator, arr = _add_indicator(
-                    indicator=indicator,
-                    how="inner",
-                    column_length=right_index.size,
-                    columns=columns,
-                )
-                right[indicator] = arr
-            right = pd.DataFrame(right, index=left_index, copy=False)
-        else:
-            df = {key: value._values[left_index] for key, value in df.items()}
-            if indicator:
-                indicator, arr = _add_indicator(
-                    indicator=indicator,
-                    how="inner",
-                    column_length=left_index.size,
-                    columns=columns,
-                )
-                df[indicator] = arr
-            df = pd.DataFrame(df, index=right_index, copy=False)
-        df, right = df.align(other=right, join=how, axis=0)
-        if indicator:
-            if (how == "left") and right[indicator].hasnans:
-                right[indicator] = right[indicator].fillna("left_only")
-            elif (how == "right") and df[indicator].hasnans:
-                df[indicator] = df[indicator].fillna("right_only")
-        indexer = range(len(df))
-        df.index = indexer
-        right.index = indexer
-
-        return pd.concat([df, right], axis=1, sort=False, copy=False)
-
-    both = _inner(df, right, left_index, right_index, indicator)
-    contents = []
-    columns = df.columns.union(right.columns)
-    left_index = np.setdiff1d(df.index, left_index)
-    if left_index.size:
-        df = df.take(left_index)
-        if indicator:
-            l_indicator, arr = _add_indicator(
+            name, arr1 = _add_indicator(
                 indicator=indicator,
-                how="left",
-                column_length=left_index.size,
-                columns=columns,
-            )
-            df[l_indicator] = arr
-        contents.append(df)
-
-    contents.append(both)
-
-    right_index = np.setdiff1d(right.index, right_index)
-    if right_index.size:
-        right = right.take(right_index)
-        if indicator:
-            r_indicator, arr = _add_indicator(
-                indicator=indicator,
-                how="right",
+                how="inner",
                 column_length=right_index.size,
                 columns=columns,
             )
-            right[r_indicator] = arr
-        contents.append(right)
+            name, arr2 = _add_indicator(
+                indicator=indicator,
+                how="left",
+                column_length=length,
+                columns=columns,
+            )
+            value = concat_compat([arr1, arr2])
+            dictionary[name] = value
+        return pd.DataFrame(dictionary, copy=False)
 
-    return pd.concat(
-        contents, axis=0, copy=False, sort=False, ignore_index=True
-    )
+    if how == "right":
+        indexer = pd.unique(right_index)
+        indexer = pd.Index(indexer).get_indexer(range(len(right)))
+        indexer = (indexer < 0).nonzero()[0]
+        length = indexer.size
+        if not length:
+            return _inner(
+                df=df,
+                right=right,
+                left_index=left_index,
+                right_index=right_index,
+                indicator=indicator,
+            )
+        dictionary = {}
+        for key, value in df.items():
+            array = value._values
+            value = array[left_index]
+            other = construct_1d_array_from_inferred_fill_value(
+                value=array[:1], length=length
+            )
+            value = concat_compat([value, other])
+            dictionary[key] = value
+        for key, value in right.items():
+            array = value._values
+            top = array[right_index]
+            bottom = array[indexer]
+            value = concat_compat([top, bottom])
+            dictionary[key] = value
+        if indicator:
+            columns = df.columns.union(right.columns)
+            name, arr1 = _add_indicator(
+                indicator=indicator,
+                how="inner",
+                column_length=left_index.size,
+                columns=columns,
+            )
+            name, arr2 = _add_indicator(
+                indicator=indicator,
+                how="right",
+                column_length=length,
+                columns=columns,
+            )
+            value = concat_compat([arr1, arr2])
+            dictionary[name] = value
+        return pd.DataFrame(dictionary, copy=False)
+    # how == 'outer'
+    left_indexer = pd.unique(left_index)
+    left_indexer = pd.Index(left_indexer).get_indexer(range(len(df)))
+    left_indexer = (left_indexer < 0).nonzero()[0]
+    right_indexer = pd.unique(right_index)
+    right_indexer = pd.Index(right_indexer).get_indexer(range(len(right)))
+    right_indexer = (right_indexer < 0).nonzero()[0]
+
+    df_nulls_length = left_indexer.size
+    right_nulls_length = right_indexer.size
+    dictionary = {}
+    for key, value in df.items():
+        array = value._values
+        top = array[left_index]
+        top = [top]
+        if df_nulls_length:
+            middle = array[left_indexer]
+            top.append(middle)
+        if right_nulls_length:
+            bottom = construct_1d_array_from_inferred_fill_value(
+                value=array[:1], length=right_nulls_length
+            )
+            top.append(bottom)
+        if len(top) == 1:
+            top = top[0]
+        else:
+            top = concat_compat(top)
+        dictionary[key] = top
+    for key, value in right.items():
+        array = value._values
+        top = array[right_index]
+        top = [top]
+        if df_nulls_length:
+            middle = construct_1d_array_from_inferred_fill_value(
+                value=array[:1], length=df_nulls_length
+            )
+            top.append(middle)
+        if right_nulls_length:
+            bottom = array[right_indexer]
+            top.append(bottom)
+        if len(top) == 1:
+            top = top[0]
+        else:
+            top = concat_compat(top)
+        dictionary[key] = top
+    if indicator:
+        columns = df.columns.union(right.columns)
+        name, arr1 = _add_indicator(
+            indicator=indicator,
+            how="inner",
+            column_length=right_index.size,
+            columns=columns,
+        )
+        arr1 = [arr1]
+        if df_nulls_length:
+            name, arr2 = _add_indicator(
+                indicator=indicator,
+                how="left",
+                column_length=df_nulls_length,
+                columns=columns,
+            )
+            arr1.append(arr2)
+        if right_nulls_length:
+            name, arr3 = _add_indicator(
+                indicator=indicator,
+                how="right",
+                column_length=right_nulls_length,
+                columns=columns,
+            )
+            arr1.append(arr3)
+        if len(arr1) == 1:
+            arr1 = arr1[0]
+        else:
+            arr1 = concat_compat(arr1)
+        dictionary[name] = arr1
+
+    return pd.DataFrame(dictionary, copy=False)
 
 
 def get_join_indices(

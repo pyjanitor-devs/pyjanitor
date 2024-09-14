@@ -5,16 +5,8 @@ from typing import Callable
 import pandas as pd
 import pandas_flavor as pf
 
-from janitor.utils import refactored_function
-
 
 @pf.register_dataframe_method
-@refactored_function(
-    message=(
-        "This function will be deprecated in a 1.x release. "
-        "Please use `jn.transform_columns` instead."
-    )
-)
 def join_apply(
     df: pd.DataFrame,
     func: Callable,
@@ -28,12 +20,6 @@ def join_apply(
     that take any combination of information from any of the columns. The only
     requirement is that the function signature takes in a row from the
     DataFrame.
-
-    !!!note
-
-        This function will be deprecated in a 1.x release.
-        Please use [`jn.transform_column`][janitor.functions.transform_columns.transform_column]
-        instead.
 
     Examples:
         Sum the result of two columns into a new column.

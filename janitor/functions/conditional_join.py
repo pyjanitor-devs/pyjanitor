@@ -543,8 +543,7 @@ def _conditional_join_compute(
             op=op,
             keep=keep,
         )
-        if result[0] is None:
-            result = None
+
     else:
         result = _generic_func_cond_join(
             left=df[left_on],
@@ -767,7 +766,7 @@ def _multiple_conditional_join_eq(
         indices = _numba_equi_join(
             df=left_df, right=right_df, eqs=eqs, ge_gt=ge_gt, le_lt=le_lt
         )
-        if indices[0] is None:
+        if indices is None:
             return None
         if not rest:
             return indices
@@ -875,10 +874,7 @@ def _multiple_conditional_join_le_lt(
             condition for condition in conditions if condition not in gt_lt
         ]
         if (len(gt_lt) > 1) and not conditions:
-            result = _numba_multiple_non_equi_join(df, right, gt_lt, keep=keep)
-            if result[0] is None:
-                return None
-            return result
+            return _numba_multiple_non_equi_join(df, right, gt_lt, keep=keep)
         if len(gt_lt) == 1:
             left_on, right_on, op = gt_lt[0]
             indices = _numba_single_non_equi_join(
@@ -888,7 +884,7 @@ def _multiple_conditional_join_le_lt(
             indices = _numba_multiple_non_equi_join(
                 df, right, gt_lt, keep="all"
             )
-        if indices[0] is None:
+        if indices is None:
             return None
     else:
         # there is an opportunity for optimization for range joins

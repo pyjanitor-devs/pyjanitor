@@ -88,8 +88,7 @@ def conditional_join(
 
     The join is done only on the columns.
 
-    For non-equi joins, or joins where `use_numba` is `True`,
-    only numeric, timedelta and date columns are supported.
+    For non-equi joins, only numeric, timedelta and date columns are supported.
 
     `inner`, `left`, `right` and `outer` joins are supported.
 
@@ -512,19 +511,6 @@ def _conditional_join_compute(
             le_lt_check = True
     df.index = range(len(df))
     right.index = range(len(right))
-    if (df.empty | right.empty) & return_matching_indices:
-        return np.array([], dtype=np.intp), np.array([], dtype=np.intp)
-    if df.empty | right.empty:
-        return _create_frame(
-            df=df,
-            right=right,
-            left_index=np.array([], dtype=np.intp),
-            right_index=np.array([], dtype=np.intp),
-            how=how,
-            df_columns=df_columns,
-            right_columns=right_columns,
-            indicator=indicator,
-        )
     if eq_check:
         result = _multiple_conditional_join_eq(
             df=df,
@@ -557,8 +543,7 @@ def _conditional_join_compute(
             op=op,
             keep=keep,
         )
-        if result[0] is None:
-            result = None
+
     else:
         result = _generic_func_cond_join(
             left=df[left_on],
@@ -571,6 +556,8 @@ def _conditional_join_compute(
 
     if result is None:
         result = np.array([], dtype=np.intp), np.array([], dtype=np.intp)
+
+    # return result
 
     if return_matching_indices:
         return result
@@ -685,6 +672,7 @@ def _multiple_conditional_join_eq(
 
     Returns a tuple of (left_index, right_index)
     """
+
     if force:
         return _multiple_conditional_join_le_lt(
             df=df,
@@ -778,7 +766,9 @@ def _multiple_conditional_join_eq(
         indices = _numba_equi_join(
             df=left_df, right=right_df, eqs=eqs, ge_gt=ge_gt, le_lt=le_lt
         )
-        if not rest or (indices is None):
+        if indices is None:
+            return None
+        if not rest:
             return indices
 
         rest = (
@@ -884,10 +874,7 @@ def _multiple_conditional_join_le_lt(
             condition for condition in conditions if condition not in gt_lt
         ]
         if (len(gt_lt) > 1) and not conditions:
-            result = _numba_multiple_non_equi_join(df, right, gt_lt, keep=keep)
-            if result[0] is None:
-                return None
-            return result
+            return _numba_multiple_non_equi_join(df, right, gt_lt, keep=keep)
         if len(gt_lt) == 1:
             left_on, right_on, op = gt_lt[0]
             indices = _numba_single_non_equi_join(
@@ -897,7 +884,7 @@ def _multiple_conditional_join_le_lt(
             indices = _numba_multiple_non_equi_join(
                 df, right, gt_lt, keep="all"
             )
-        if indices[0] is None:
+        if indices is None:
             return None
     else:
         # there is an opportunity for optimization for range joins
@@ -1002,7 +989,7 @@ def _multiple_conditional_join_le_lt(
                 multiple_conditions=False,
                 keep="all",
             )
-
+    # return indices
     if not indices:
         return None
     if conditions:
@@ -1136,6 +1123,7 @@ def _range_indices(
     right_index = [right_index[start:end] for start, end in zip(starts, ends)]
     if return_ragged_arrays & fastpath:
         return left_index, right_index
+    # return right_index
     right_index = np.concatenate(right_index)
     left_index = left_index.repeat(repeater)
     if fastpath:

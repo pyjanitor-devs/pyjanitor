@@ -567,9 +567,12 @@ def _numba_single_non_equi_join(
 ) -> tuple[np.ndarray, np.ndarray]:
     """Return matching indices for single non-equi join."""
     if op == "!=":
-        return _generic_func_cond_join(
+        outcome = _generic_func_cond_join(
             left=left, right=right, op=op, multiple_conditions=False, keep=keep
         )
+        if outcome is None:
+            return None
+        return outcome
 
     outcome = _generic_func_cond_join(
         left=left, right=right, op=op, multiple_conditions=True, keep="all"

@@ -564,29 +564,6 @@ def _numba_equi_join_range_join(
     return l_index, r_index
 
 
-@njit
-def _numba_less_than(arr: np.ndarray, value: Any):
-    """
-    Get earliest position in `arr`
-    where arr[i] <= `value`
-    """
-    min_idx = 0
-    max_idx = len(arr)
-    while min_idx < max_idx:
-        # to avoid overflow
-        mid_idx = min_idx + ((max_idx - min_idx) >> 1)
-        _mid_idx = np.uint64(mid_idx)
-        if arr[_mid_idx] < value:
-            min_idx = mid_idx + 1
-        else:
-            max_idx = mid_idx
-    # it is greater than
-    # the max value in the array
-    if min_idx == len(arr):
-        return -1
-    return min_idx
-
-
 def _numba_single_non_equi_join(
     left: pd.Series, right: pd.Series, op: str, keep: str
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -1173,6 +1150,29 @@ def _numba_multiple_non_equi_join(
     if left_indices is None:
         return None
     return left_indices, right_indices
+
+
+@njit
+def _numba_less_than(arr: np.ndarray, value: Any):
+    """
+    Get earliest position in `arr`
+    where arr[i] <= `value`
+    """
+    min_idx = 0
+    max_idx = len(arr)
+    while min_idx < max_idx:
+        # to avoid overflow
+        mid_idx = min_idx + ((max_idx - min_idx) >> 1)
+        _mid_idx = np.uint64(mid_idx)
+        if arr[_mid_idx] < value:
+            min_idx = mid_idx + 1
+        else:
+            max_idx = mid_idx
+    # it is greater than
+    # the max value in the array
+    if min_idx == len(arr):
+        return -1
+    return min_idx
 
 
 @njit(cache=True)

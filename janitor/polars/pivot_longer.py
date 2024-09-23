@@ -150,24 +150,27 @@ def pivot_longer_spec(
     others = [
         label for label in spec_columns if label not in {".name", ".value"}
     ]
-
-    if (len(others) == 1) & (spec.get_column(others[0]).dtype == pl.String):
-        # shortcut that avoids the implode/explode approach - and is faster
-        # if the requirements are met
-        # inspired by https://github.com/pola-rs/polars/pull/18519#issue-2500860927
-        return _pivot_longer_dot_value_string(
-            df=df,
-            index=index,
-            spec=spec,
-            variable_name=others[0],
-        )
-    variable_name = "".join(df_columns + spec_columns)
-    variable_name = f"{variable_name}_"
     if others:
+        if (len(others) == 1) & (
+            spec.get_column(others[0]).dtype == pl.String
+        ):
+            # shortcut that avoids the implode/explode approach - and is faster
+            # if the requirements are met
+            # inspired by https://github.com/pola-rs/polars/pull/18519#issue-2500860927
+            return _pivot_longer_dot_value_string(
+                df=df,
+                index=index,
+                spec=spec,
+                variable_name=others[0],
+            )
+        variable_name = "".join(df_columns + spec_columns)
+        variable_name = f"{variable_name}_"
         dot_value_only = False
         expression = pl.struct(others).alias(variable_name)
         spec = spec.select(".name", ".value", expression)
     else:
+        variable_name = "".join(df_columns + spec_columns)
+        variable_name = f"{variable_name}_"
         dot_value_only = True
         expression = pl.cum_count(".value").over(".value").alias(variable_name)
         spec = spec.with_columns(expression)

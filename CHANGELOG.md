@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v0.29.1] - 2024-09-23
+
 ## [v0.29.0] - 2024-09-15
 
 -   [DOC] Un-deprecate `join_apply` as no alternative currently exists - Issue #1399 @lbeltrame
@@ -380,7 +382,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.29.0...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.29.1...HEAD
+
+[v0.29.1]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.29.0...v0.29.1
 
 [v0.29.0]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.28.1...v0.29.0
 

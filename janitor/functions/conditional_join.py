@@ -14,9 +14,6 @@ from pandas.api.types import (
     is_timedelta64_dtype,
 )
 from pandas.core.dtypes.concat import concat_compat
-from pandas.core.dtypes.missing import (
-    construct_1d_array_from_inferred_fill_value,
-)
 from pandas.core.reshape.merge import _MergeOperation
 
 from janitor.functions.utils import (
@@ -1513,3 +1510,20 @@ def get_join_indices(
         return_matching_indices=True,
         return_ragged_arrays=return_ragged_arrays,
     )
+
+
+# copied from pandas/core/dtypes/missing.py
+# seems function was introduced in 2.2.2
+# we should support lesser versions - at least 2.0.0
+def construct_1d_array_from_inferred_fill_value(
+    value: object, length: int
+) -> np.ndarray:
+    # Find our empty_value dtype by constructing an array
+    #  from our value and doing a .take on it
+    from pandas.core.algorithms import take_nd
+    from pandas.core.construction import sanitize_array
+    from pandas.core.indexes.base import Index
+
+    arr = sanitize_array(value, Index(range(1)), copy=False)
+    taker = -1 * np.ones(length, dtype=np.intp)
+    return take_nd(arr, taker)

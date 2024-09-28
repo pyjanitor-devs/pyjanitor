@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v0.29.2] - 2024-09-28
+
 ## [v0.29.1] - 2024-09-23
 
 ## [v0.29.0] - 2024-09-15
@@ -382,7 +384,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.29.1...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.29.2...HEAD
+
+[v0.29.2]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.29.1...v0.29.2
 
 [v0.29.1]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.29.0...v0.29.1
 

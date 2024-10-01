@@ -26,7 +26,7 @@ jobs:
         uses: conda-incubator/setup-miniconda@v2
         with:
           auto-update-conda: true
-          miniforge-variant: Mambaforge
+          miniforge-variant: Miniforge
           environment-file: environment-dev.yml
           use-mamba: true
 

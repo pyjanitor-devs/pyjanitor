@@ -1,0 +1,1262 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Python implementation of the R package janitor">
+      
+      
+      
+        <link rel="canonical" href="https://pyjanitor-devs.github.io/pyjanitor/devguide/">
+      
+      
+        <link rel="prev" href="../api/xarray/">
+      
+      
+        <link rel="next" href="../CHANGELOG/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.41">
+    
+    
+      
+        <title>Development Guide - pyjanitor documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.0253249f.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../css/apidocs.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="light-blue">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#development-guide" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="pyjanitor documentation" class="md-header__button md-logo" aria-label="pyjanitor documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M96 0C43 0 0 43 0 96v320c0 53 43 96 96 96h320c17.7 0 32-14.3 32-32s-14.3-32-32-32v-64c17.7 0 32-14.3 32-32V32c0-17.7-14.3-32-32-32H96m0 384h256v64H96c-17.7 0-32-14.3-32-32s14.3-32 32-32m32-240c0-8.8 7.2-16 16-16h192c8.8 0 16 7.2 16 16s-7.2 16-16 16H144c-8.8 0-16-7.2-16-16m16 48h192c8.8 0 16 7.2 16 16s-7.2 16-16 16H144c-8.8 0-16-7.2-16-16s7.2-16 16-16"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            pyjanitor documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Development Guide
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="light-blue"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/pyjanitor-devs/pyjanitor" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    pyjanitor-devs/pyjanitor
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="pyjanitor documentation" class="md-nav__button md-logo" aria-label="pyjanitor documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M96 0C43 0 0 43 0 96v320c0 53 43 96 96 96h320c17.7 0 32-14.3 32-32s-14.3-32-32-32v-64c17.7 0 32-14.3 32-32V32c0-17.7-14.3-32-32-32H96m0 384h256v64H96c-17.7 0-32-14.3-32-32s14.3-32 32-32m32-240c0-8.8 7.2-16 16-16h192c8.8 0 16 7.2 16 16s-7.2 16-16 16H144c-8.8 0-16-7.2-16-16m16 48h192c8.8 0 16 7.2 16 16s-7.2 16-16 16H144c-8.8 0-16-7.2-16-16s7.2-16 16-16"/></svg>
+
+    </a>
+    pyjanitor documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/pyjanitor-devs/pyjanitor" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    pyjanitor-devs/pyjanitor
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    API Reference
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            API Reference
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/functions/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Functions
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/biology/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Biology
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/chemistry/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Chemistry
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/engineering/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Engineering
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/finance/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Finance
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/io/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Input/Output (io)
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/ml/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Machine Learning
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/math/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Math
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/polars/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Polars
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/timeseries/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timeseries
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/xarray/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    XArray
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Development Guide
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Development Guide
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#development-containers-with-vscode" class="md-nav__link">
+    <span class="md-ellipsis">
+      Development Containers with VSCode
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#manual-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Manual Setup
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Manual Setup">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fork-the-repository" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fork the repository
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setup-the-conda-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Setup the conda environment
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#install-the-pre-commit-hooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      Install the pre-commit hooks
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#build-docs-locally" class="md-nav__link">
+    <span class="md-ellipsis">
+      Build docs locally
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#plan-out-the-change-youd-like-to-contribute" class="md-nav__link">
+    <span class="md-ellipsis">
+      Plan out the change you'd like to contribute
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-a-branch-for-local-development" class="md-nav__link">
+    <span class="md-ellipsis">
+      Create a branch for local development
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#write-the-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      Write the Code
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#check-your-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Check your environment
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#check-your-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      Check your code
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#commit-your-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Commit your changes
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#submit-a-pull-request-through-the-github-website" class="md-nav__link">
+    <span class="md-ellipsis">
+      Submit a pull request through the GitHub website
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fix-any-remaining-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fix any remaining issues
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#code-compatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      Code Compatibility
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#docstring-style" class="md-nav__link">
+    <span class="md-ellipsis">
+      Docstring Style
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tips" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tips
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CHANGELOG/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Changelog
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../AUTHORS/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Authors
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#development-containers-with-vscode" class="md-nav__link">
+    <span class="md-ellipsis">
+      Development Containers with VSCode
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#manual-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Manual Setup
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Manual Setup">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fork-the-repository" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fork the repository
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setup-the-conda-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Setup the conda environment
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#install-the-pre-commit-hooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      Install the pre-commit hooks
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#build-docs-locally" class="md-nav__link">
+    <span class="md-ellipsis">
+      Build docs locally
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#plan-out-the-change-youd-like-to-contribute" class="md-nav__link">
+    <span class="md-ellipsis">
+      Plan out the change you'd like to contribute
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-a-branch-for-local-development" class="md-nav__link">
+    <span class="md-ellipsis">
+      Create a branch for local development
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#write-the-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      Write the Code
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#check-your-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Check your environment
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#check-your-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      Check your code
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#commit-your-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Commit your changes
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#submit-a-pull-request-through-the-github-website" class="md-nav__link">
+    <span class="md-ellipsis">
+      Submit a pull request through the GitHub website
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fix-any-remaining-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fix any remaining issues
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#code-compatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      Code Compatibility
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#docstring-style" class="md-nav__link">
+    <span class="md-ellipsis">
+      Docstring Style
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tips" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tips
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="development-guide">Development Guide</h1>
+<p>For those of you who are interested in contributing code to the project,
+many previous contributors have wrestled with
+a variety of ways of getting set up.
+While we can't cover every single last configuration,
+we could cover some of the more common cases.
+Here they are for your benefit!</p>
+<h2 id="development-containers-with-vscode">Development Containers with VSCode</h2>
+<p>As of 29 May 2020, development containers are supported!
+This is the preferred way to get you started up and running,
+as it creates a uniform setup environment
+that is much easier for the maintainers to debug,
+because you are provided with a pre-built and clean development environment
+free of any assumptions of your own system.
+You don't have to wrestle with conda wait times if you don't want to!</p>
+<p>To get started:</p>
+<ol>
+<li>Fork the repository.</li>
+<li>Ensure you have Docker running on your local machine.</li>
+<li>Ensure you have VSCode running on your local machine.</li>
+<li>In VS Code, Install an extension called <code>Remote - Containers</code>.</li>
+<li>In Visual Studio Code,
+    click on the quick actions Status Bar item in the lower left corner.</li>
+<li>Then select "Remote Containers: Clone Repository In Container Volume".</li>
+<li>Enter in the URL of your fork of <code>pyjanitor</code>.</li>
+</ol>
+<p>VSCode will pull down the prebuilt Docker container,
+git clone the repository for you inside an isolated Docker volume,
+and mount the repository directory inside your Docker container.</p>
+<p>Follow best practices to submit a pull request by making a feature branch.
+Now, hack away, and submit in your pull request!</p>
+<p>You shouldn't be able to access the cloned repo
+on your local hard drive.
+If you do want local access, then clone the repo locally first
+before selecting "Remote Containers: Open Folder In Container".</p>
+<p>If you find something is broken because a utility is missing in the container,
+submit a PR with the appropriate build command inserted in the Dockerfile.
+Care has been taken to document what each step does,
+so please read the in-line documentation in the Dockerfile carefully.</p>
+<h2 id="manual-setup">Manual Setup</h2>
+<h3 id="fork-the-repository">Fork the repository</h3>
+<p>Firstly, begin by forking the <a href="https://github.com/pyjanitor-devs/pyjanitor"><code>pyjanitor</code> repo</a> on GitHub.
+Then, clone your fork locally:</p>
+<div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>git@github.com:&lt;your_github_username&gt;/pyjanitor.git
+</code></pre></div>
+<h3 id="setup-the-conda-environment">Setup the conda environment</h3>
+<p>Now, install your cloned repo into a conda environment.
+Assuming you have conda installed,
+this is how you set up your fork for local development</p>
+<p><div class="highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>pyjanitor/
+<span class="c1"># Activate the pyjanitor conda environment</span>
+<span class="nb">source</span><span class="w"> </span>activate<span class="w"> </span>pyjanitor-dev
+
+<span class="c1"># Create your conda environment</span>
+conda<span class="w"> </span>env<span class="w"> </span>create<span class="w"> </span>-f<span class="w"> </span>environment-dev.yml
+
+<span class="c1"># Install PyJanitor in development mode</span>
+python<span class="w"> </span>setup.py<span class="w"> </span>develop
+
+<span class="c1"># Register current virtual environment as a Jupyter Python kernel</span>
+python<span class="w"> </span>-m<span class="w"> </span>ipykernel<span class="w"> </span>install<span class="w"> </span>--user<span class="w"> </span>--name<span class="w"> </span>pyjanitor-dev<span class="w"> </span>--display-name<span class="w"> </span><span class="s2">&quot;PyJanitor development&quot;</span>
+</code></pre></div>
+If you plan to write any notebooks,
+make sure they run correctly inside the environment by
+selecting the correct kernel from the top right corner of JupyterLab!</p>
+<div class="admonition note">
+<p class="admonition-title">PyCharm Users</p>
+<p>For PyCharm users,
+here are some <code>instructions &lt;PYCHARM_USERS.html&gt;</code>__  to get your Conda environment set up.</p>
+</div>
+<h3 id="install-the-pre-commit-hooks">Install the pre-commit hooks</h3>
+<p><code>pre-commit</code> hooks are available
+to run code formatting checks automagically before git commits happen.
+If you did not have these installed before,
+run the following commands:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Update your environment to install pre-commit</span>
+conda<span class="w"> </span>env<span class="w"> </span>update<span class="w"> </span>-f<span class="w"> </span>environment-dev.yml
+<span class="c1"># Install pre-commit hooks</span>
+pre-commit<span class="w"> </span>install
+</code></pre></div>
+<h3 id="build-docs-locally">Build docs locally</h3>
+<p>You should also be able to preview the docs locally.
+To do this, from the main <code>pyjanitor</code> directory:</p>
+<p><div class="highlight"><pre><span></span><code>python<span class="w"> </span>-m<span class="w"> </span>mkdocs<span class="w"> </span>serve
+</code></pre></div>
+The command above allows you to view the documentation locally in your browser.</p>
+<p>If you get any errors about importing modules when running <code>mkdocs serve</code>,
+first activate the development environment:</p>
+<div class="highlight"><pre><span></span><code><span class="nb">source</span><span class="w"> </span>activate<span class="w"> </span>pyjanitor-dev<span class="w"> </span><span class="o">||</span><span class="w"> </span>conda<span class="w"> </span>activate<span class="w"> </span>pyjanitor-dev
+</code></pre></div>
+<h3 id="plan-out-the-change-youd-like-to-contribute">Plan out the change you'd like to contribute</h3>
+<p>The old adage rings true:</p>
+<blockquote>
+<p>failing to plan means planning to fail.</p>
+</blockquote>
+<p>We'd encourage you to flesh out the idea you'd like to contribute
+on the GitHub issue tracker before embarking on a contribution.
+Submitting new code, in particular,
+is one where the maintainers will need more consideration,
+after all, any new code submitted introduces a new maintenance burden,
+unless you the contributor would like to join the maintainers team!</p>
+<p>To kickstart the discussion,
+submit an issue to the <a href="https://github.com/pyjanitor-devs/pyjanitor"><code>pyjanitor</code> GitHub issue tracker</a>
+describing your planned changes.
+The issue tracker also helps us keep track of who is working on what.</p>
+<h3 id="create-a-branch-for-local-development">Create a branch for local development</h3>
+<p>New contributions to <code>pyjanitor</code>
+should be done in a new branch that you have
+based off the latest version of the <code>dev</code> branch.</p>
+<p>To create a new branch:</p>
+<div class="highlight"><pre><span></span><code>git<span class="w"> </span>checkout<span class="w"> </span>-b<span class="w"> </span>&lt;name-of-your-bugfix-or-feature&gt;<span class="w"> </span>dev
+</code></pre></div>
+<h3 id="write-the-code">Write the Code</h3>
+<p>As you work, remember to adhere to the coding standards and practices that pyjanitor follows. If in doubt, refer to existing code or bring up your questions in the GitHub issue you created. Some tips for writing code:</p>
+<p><strong>Commit Early, Commit Often:</strong> Make frequent, smaller commits. This helps to track progress and makes it easier for maintainers to follow your work. Include useful commit messages that describe the changes you're making:</p>
+<p><strong>Stay Updated with dev branch:</strong> Regularly pull the latest changes from the dev branch to ensure your feature branch is up-to-date, reducing the likelihood of merge conflicts:</p>
+<div class="highlight"><pre><span></span><code>git<span class="w"> </span>fetch<span class="w"> </span>origin<span class="w"> </span>dev
+git<span class="w"> </span>rebase<span class="w"> </span>origin/dev
+</code></pre></div>
+<p><strong>Write Tests:</strong> For every feature or bugfix, accompanying tests are essential.
+They ensure the feature works as expected or the bug is truly fixed.
+Tests should ideally run in less than 2 seconds.
+If using Hypothesis for testing,
+apply the <code>@settings(max_examples=10, timeout=None)</code> decorator.</p>
+<h3 id="check-your-environment">Check your environment</h3>
+<p>To ensure that your environment is properly set up, run the following command:</p>
+<div class="highlight"><pre><span></span><code>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;not turtle&quot;</span>
+</code></pre></div>
+<p>If all tests pass then your environment is setup for
+development and you are ready to contribute 🥳.</p>
+<h3 id="check-your-code">Check your code</h3>
+<p>When you're done making changes,
+commit your staged files with a meaningful message.
+If installed correctly, you will automatically run pre-commit hooks
+that check code for code style adherence.
+These same checks will be run on GitHub Actions,
+so no worries if you don't have the running locally.
+If the pre-commit hooks fail,
+be sure to fix the issues (as raised by them) before committing.
+If you feel lost on how to fix the code,
+please feel free to ping the maintainers on GitHub -
+we can take things slowly to get it right,
+and make this an educational opportunity for all who come by!</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>You can run <code>python -m pytest -m "not turtle"</code> to run the fast tests.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Running test locally</p>
+<p>When you run tests locally,
+the tests in <code>chemistry.py</code>, <code>biology.py</code>, <code>spark.py</code>
+are automatically skipped if you don't have
+the optional dependencies (e.g. <code>rdkit</code>) installed.</p>
+</div>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<ul>
+<li>pre-commit <strong>does not run</strong> your tests locally rather all tests are run in continuous integration (CI).</li>
+<li>All tests must pass in CI before the pull request is accepted,
+and the continuous integration system up on GitHub Actions
+will help run all of the tests before they are committed to the repository.</li>
+</ul>
+</div>
+<h3 id="commit-your-changes">Commit your changes</h3>
+<p>Now you can commit your changes and push your branch to GitHub:</p>
+<div class="highlight"><pre><span></span><code>git<span class="w"> </span>add<span class="w"> </span>.
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;Your detailed description of your changes.&quot;</span>
+git<span class="w"> </span>push<span class="w"> </span>origin<span class="w"> </span>&lt;name-of-your-bugfix-or-feature&gt;
+</code></pre></div>
+<h3 id="submit-a-pull-request-through-the-github-website">Submit a pull request through the GitHub website</h3>
+<p>Congratulations 🎉🎉🎉, you've made it to the penultimate step;
+your code is ready to be checked and reviewed by the maintainers!
+Head over to the GitHub website and create a pull request.
+When you are picking out which branch to merge into,
+a.k.a. the target branch, be sure to select <code>dev</code> (not <code>master</code>).</p>
+<h3 id="fix-any-remaining-issues">Fix any remaining issues</h3>
+<p>It's rare, but you might at this point still encounter issues,
+as the continuous integration (CI) system on GitHub Actions checks your code.
+Some of these might not be your fault;
+rather, it might well be the case that your code fell a little bit out of date
+as others' pull requests are merged into the repository.</p>
+<p>In any case, if there are any issues, the pipeline will fail out.
+We check for code style, docstring coverage, test coverage, and doc discovery.
+If you're comfortable looking at the pipeline logs, feel free to do so;
+they are open to all to view.
+Otherwise, one of the dev team members
+can help you with reviewing the code checks.</p>
+<h2 id="code-compatibility">Code Compatibility</h2>
+<p>pyjanitor supports Python 3.6+,
+so all contributed code must maintain this compatibility.</p>
+<h2 id="docstring-style">Docstring Style</h2>
+<p>We follow the Google docstring style, please read <a href="https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html">Napoleon's documentation</a> for a detailed introduction.</p>
+<p>We are using the following docstring section identifiers -- please stick to them if you are contributing a docstring change:</p>
+<ul>
+<li><strong>Examples:</strong> for sample code blocks demonstrating the use of pyjanitor. keep example blocks in the <code>pycon</code> (python-console) style, i.e., input code prefixed by <code>&gt;&gt;&gt;</code> and <code>...</code>, and output code with no prefix.</li>
+<li><strong>Args:</strong> for function parameters</li>
+<li><strong>Raises:</strong> for exceptions</li>
+<li><strong>Returns:</strong> for function return value(s)</li>
+<li><strong>Yields:</strong> for generator yield value(s)</li>
+</ul>
+<p>If possible, it is preferable to stick to this section ordering within each docstring.</p>
+<h2 id="tips">Tips</h2>
+<p>To run a subset of tests:</p>
+<div class="highlight"><pre><span></span><code>pytest<span class="w"> </span>tests.test_functions
+</code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.instant", "navigation.top", "toc.follow", "content.code.copy"], "search": "../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.83f73b43.min.js"></script>
+      
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      
+    
+  </body>
+</html>

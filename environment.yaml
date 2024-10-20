@@ -1,0 +1,29 @@
+# 14 August 2022: Temporarily commenting out.
+# See: https://github.com/pyjanitor-devs/pyjanitor/pull/1147#issuecomment-1214508157
+# for more context on why.
+# name: pyjanitor-doc
+# channels:
+#   - conda-forge
+# dependencies:
+#   - python
+#   # required
+#   - pandas
+#   - pandas-flavor
+#   - multipledispatch
+#   - scipy
+#   # optional
+#   - biopython
+#   - natsort
+#   - pyspark>=3.2.0
+#   - rdkit
+#   - tqdm
+#   - unyt
+#   - xarray
+#   - numba
+#   # doc
+#   - mkdocs
+#   - mkdocs-material
+#   # To fix #1146
+#   # - mkdocstrings-python
+#   - mkdocstrings=0.18.1
+#   - mkdocstrings-python-legacy=0.2.2

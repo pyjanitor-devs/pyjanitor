@@ -1,0 +1,1676 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Python implementation of the R package janitor">
+      
+      
+      
+        <link rel="canonical" href="https://pyjanitor-devs.github.io/pyjanitor/CHANGELOG/">
+      
+      
+        <link rel="prev" href="../devguide/">
+      
+      
+        <link rel="next" href="../AUTHORS/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.41">
+    
+    
+      
+        <title>Changelog - pyjanitor documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.0253249f.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../css/apidocs.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="light-blue">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#changelog" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="pyjanitor documentation" class="md-header__button md-logo" aria-label="pyjanitor documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M96 0C43 0 0 43 0 96v320c0 53 43 96 96 96h320c17.7 0 32-14.3 32-32s-14.3-32-32-32v-64c17.7 0 32-14.3 32-32V32c0-17.7-14.3-32-32-32H96m0 384h256v64H96c-17.7 0-32-14.3-32-32s14.3-32 32-32m32-240c0-8.8 7.2-16 16-16h192c8.8 0 16 7.2 16 16s-7.2 16-16 16H144c-8.8 0-16-7.2-16-16m16 48h192c8.8 0 16 7.2 16 16s-7.2 16-16 16H144c-8.8 0-16-7.2-16-16s7.2-16 16-16"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            pyjanitor documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Changelog
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="blue-grey" data-md-color-accent="light-blue"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/pyjanitor-devs/pyjanitor" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    pyjanitor-devs/pyjanitor
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="pyjanitor documentation" class="md-nav__button md-logo" aria-label="pyjanitor documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M96 0C43 0 0 43 0 96v320c0 53 43 96 96 96h320c17.7 0 32-14.3 32-32s-14.3-32-32-32v-64c17.7 0 32-14.3 32-32V32c0-17.7-14.3-32-32-32H96m0 384h256v64H96c-17.7 0-32-14.3-32-32s14.3-32 32-32m32-240c0-8.8 7.2-16 16-16h192c8.8 0 16 7.2 16 16s-7.2 16-16 16H144c-8.8 0-16-7.2-16-16m16 48h192c8.8 0 16 7.2 16 16s-7.2 16-16 16H144c-8.8 0-16-7.2-16-16s7.2-16 16-16"/></svg>
+
+    </a>
+    pyjanitor documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/pyjanitor-devs/pyjanitor" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    pyjanitor-devs/pyjanitor
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    API Reference
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            API Reference
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/functions/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Functions
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/biology/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Biology
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/chemistry/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Chemistry
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/engineering/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Engineering
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/finance/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Finance
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/io/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Input/Output (io)
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/ml/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Machine Learning
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/math/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Math
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/polars/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Polars
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/timeseries/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Timeseries
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/xarray/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    XArray
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../devguide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Development Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Changelog
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Changelog
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#unreleased" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unreleased
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0292-2024-09-28" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.29.2 - 2024-09-28
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0291-2024-09-23" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.29.1 - 2024-09-23
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0290-2024-09-15" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.29.0 - 2024-09-15
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0281-2024-08-09" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.28.1 - 2024-08-09
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0280-2024-08-03" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.28.0 - 2024-08-03
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0270-2024-03-21" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.27.0 - 2024-03-21
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0260-2023-09-18" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.26.0 - 2023-09-18
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0250-2023-07-27" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.25.0 - 2023-07-27
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0240-2022-11-12" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.24.0 - 2022-11-12
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0231-2022-05-03" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.23.1 - 2022-05-03
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0220-2021-11-21" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.22.0 - 2021-11-21
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0212-2021-09-01" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.21.2 - 2021-09-01
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0211-2021-08-29" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.21.1 - 2021-08-29
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0210-2021-07-16" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.21.0 - 2021-07-16
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v02014-2021-03-25" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.20.14 - 2021-03-25
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v02013-2021-02-25" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.20.13 - 2021-02-25
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v02012-2021-02-25" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.20.12 - 2021-02-25
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v02011-2021-02-24" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.20.11 - 2021-02-24
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v02010" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.20.10
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0209" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.20.9
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0208" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.20.8
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0207" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.20.7
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0206" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.20.6
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0205" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.20.5
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0201" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.20.1
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0200" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.20.0
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0190" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.19.0
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0183" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.18.3
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0182" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.18.2
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0181" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.18.1
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../AUTHORS/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Authors
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#unreleased" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unreleased
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0292-2024-09-28" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.29.2 - 2024-09-28
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0291-2024-09-23" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.29.1 - 2024-09-23
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0290-2024-09-15" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.29.0 - 2024-09-15
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0281-2024-08-09" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.28.1 - 2024-08-09
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0280-2024-08-03" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.28.0 - 2024-08-03
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0270-2024-03-21" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.27.0 - 2024-03-21
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0260-2023-09-18" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.26.0 - 2023-09-18
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0250-2023-07-27" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.25.0 - 2023-07-27
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0240-2022-11-12" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.24.0 - 2022-11-12
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0231-2022-05-03" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.23.1 - 2022-05-03
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0220-2021-11-21" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.22.0 - 2021-11-21
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0212-2021-09-01" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.21.2 - 2021-09-01
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0211-2021-08-29" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.21.1 - 2021-08-29
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0210-2021-07-16" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.21.0 - 2021-07-16
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v02014-2021-03-25" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.20.14 - 2021-03-25
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v02013-2021-02-25" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.20.13 - 2021-02-25
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v02012-2021-02-25" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.20.12 - 2021-02-25
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v02011-2021-02-24" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.20.11 - 2021-02-24
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v02010" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.20.10
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0209" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.20.9
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0208" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.20.8
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0207" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.20.7
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0206" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.20.6
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0205" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.20.5
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0201" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.20.1
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0200" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.20.0
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0190" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.19.0
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0183" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.18.3
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0182" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.18.2
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v0181" class="md-nav__link">
+    <span class="md-ellipsis">
+      v0.18.1
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="changelog">Changelog</h1>
+<h2 id="unreleased"><a href="https://github.com/pyjanitor-devs/pyjanitor/compare/v0.29.2...HEAD">Unreleased</a></h2>
+<h2 id="v0292-2024-09-28"><a href="https://github.com/pyjanitor-devs/pyjanitor/compare/v0.29.1...v0.29.2">v0.29.2</a> - 2024-09-28</h2>
+<h2 id="v0291-2024-09-23"><a href="https://github.com/pyjanitor-devs/pyjanitor/compare/v0.29.0...v0.29.1">v0.29.1</a> - 2024-09-23</h2>
+<h2 id="v0290-2024-09-15"><a href="https://github.com/pyjanitor-devs/pyjanitor/compare/v0.28.1...v0.29.0">v0.29.0</a> - 2024-09-15</h2>
+<ul>
+<li>[DOC] Un-deprecate <code>join_apply</code> as no alternative currently exists - Issue #1399 @lbeltrame</li>
+</ul>
+<h2 id="v0281-2024-08-09"><a href="https://github.com/pyjanitor-devs/pyjanitor/compare/v0.28.0...v0.28.1">v0.28.1</a> - 2024-08-09</h2>
+<h2 id="v0280-2024-08-03"><a href="https://github.com/pyjanitor-devs/pyjanitor/compare/v0.27.0...v0.28.0">v0.28.0</a> - 2024-08-03</h2>
+<ul>
+<li>[ENH] Added a <code>cartesian_product</code> function, as well as an <code>expand</code> method for pandas. - Issue #1293 @samukweku</li>
+<li>[ENH] Improve <code>pivot_longer</code> when <code>sort_by_appearance</code> is True. Added <code>pivot_longer_spec</code> for more control on how the dataframe should be unpivoted. -@samukweku #1361</li>
+<li>[ENH] Added <code>convert_excel_date</code> and <code>convert_matlab_date</code> methods for polars - Issue #1352</li>
+<li>[ENH] Added a <code>complete</code> method for polars. - Issue #1352 @samukweku</li>
+<li>[ENH] Added a <code>pivot_longer</code> method, and a <code>pivot_longer_spec</code> function for polars - Issue #1352 @samukweku</li>
+<li>[ENH] Added a <code>row_to_names</code> method for polars. Issue #1352 @samukweku</li>
+<li>[ENH] <code>read_commandline</code> function now supports polars - Issue #1352 @samukweku</li>
+<li>[ENH] <code>xlsx_cells</code> function now supports polars - Issue #1352 @samukweku</li>
+<li>[ENH] <code>xlsx_table</code> function now supports polars - Issue #1352 @samukweku</li>
+<li>[ENH] Added a <code>clean_names</code> method for polars - it can be used to clean the column names, or clean column values . Issue #1343 @samukweku</li>
+<li>[ENH] Improved performance for non-equi joins when using numba - @samukweku PR #1341</li>
+<li>[ENH] pandas Index,Series, DataFrame now supported in the <code>complete</code> method. - PR #1369 @samukweku</li>
+<li>[ENH] Improve performance for <code>first/last</code> in `conditional_join, when the join columns in the right dataframe are sorted. - PR #1382 @samukweku</li>
+</ul>
+<h2 id="v0270-2024-03-21"><a href="https://github.com/pyjanitor-devs/pyjanitor/compare/v0.26.0...v0.27.0">v0.27.0</a> - 2024-03-21</h2>
+<ul>
+<li>[BUG] Fix logic for groupby in complete. Index support deprecated. Fix deprecation warning for fillna in <code>complete</code> PR #1289 @samukweku</li>
+<li>[ENH] <code>select</code> function now supports variable arguments - PR #1288 @samukweku</li>
+<li>[ENH] <code>conditional_join</code> now supports timedelta dtype. - PR #1297 @samukweku</li>
+<li>[ENH] <code>get_join_indices</code> function added - returns only join indices between two dataframes. Issue #1310 @samukweku</li>
+<li>[ENH] <code>explode_index</code> function added. - Issue #1283</li>
+<li>[ENH] <code>conditional_join</code> now supports timedelta dtype. - PR #1297</li>
+<li>[ENH] <code>change_index_dtype</code> added. - @samukweku Issue #1314</li>
+<li>[ENH] Add <code>glue</code> and <code>axis</code> parameters to <code>collapse_levels</code>. - Issue #211 @samukweku</li>
+<li>[ENH] <code>row_to_names</code> now supports multiple rows conversion to columns. - @samukweku Issue #1333</li>
+<li>[ENH] Fix warnings from Pandas. <code>truncate_datetime</code> now uses a vectorized option. -@samukweku #1337</li>
+</ul>
+<h2 id="v0260-2023-09-18"><a href="https://github.com/pyjanitor-devs/pyjanitor/compare/v0.25.0...v0.26.0">v0.26.0</a> - 2023-09-18</h2>
+<ul>
+<li>[ENH] <code>clean_names</code> can now be applied to column values. Issue #995 @samukweku</li>
+<li>[BUG] Fix ImportError - Issue #1285 @samukweku</li>
+</ul>
+<h2 id="v0250-2023-07-27"><a href="https://github.com/pyjanitor-devs/pyjanitor/compare/v0.24.0...v0.25.0">v0.25.0</a> - 2023-07-27</h2>
+<ul>
+<li>[INF] Replace <code>pytest.ini</code> file with <code>pyproject.toml</code> file. PR #1204 @Zeroto521</li>
+<li>[INF] Extract docstrings tests from all tests. PR #1205 @Zeroto521</li>
+<li>[BUG] Address the <code>TypeError</code> when importing v0.24.0 (issue #1201 @xujiboy and @joranbeasley)</li>
+<li>[INF] Fixed issue with missing PyPI README. PR #1216 @thatlittleboy</li>
+<li>[INF] Update some <code>mkdocs</code> compatibility code. PR #1231 @thatlittleboy</li>
+<li>[INF] Migrated docstring style from Sphinx to Google for better compatibility with <code>mkdocstrings</code>. PR #1235 @thatlittleboy</li>
+<li>[INF] Prevent selection of chevrons (<code>&gt;&gt;&gt;</code>) and outputs in Example code blocks. PR #1237 @thatlittleboy</li>
+<li>[DEPR] Add deprecation warnings for <code>process_text</code>, <code>rename_column</code>, <code>rename_columns</code>, <code>filter_on</code>, <code>remove_columns</code>, <code>fill_direction</code>. Issue #1045 @samukweku</li>
+<li>[ENH] <code>pivot_longer</code> now supports named groups where <code>names_pattern</code> is a regular expression. A dictionary can now be passed to <code>names_pattern</code>, and is internally evaluated as a list/tuple of regular expressions. Issue #1209 @samukweku</li>
+<li>[ENH] Improve selection in <code>conditional_join</code>. Issue #1223 @samukweku</li>
+<li>[ENH] Add <code>col</code> class for selecting columns within an expression. Currently limited to use within <code>conditional_join</code>. PR #1260 @samukweku.</li>
+<li>[ENH] Performance improvement for range joins in <code>conditional_join</code>, when <code>use_numba = False</code>. Performance improvement for equi-join and a range join, when <code>use_numba = True</code>, for many to many join with wide ranges. PR #1256, #1267 @samukweku</li>
+<li>[DEPR] Add deprecation warning for <code>pivot_wider</code>. Issue #1045 @samukweku</li>
+<li>[BUG] Fix string column selection on a MultiIndex. Issue #1265. @samukweku</li>
+</ul>
+<h2 id="v0240-2022-11-12"><a href="https://github.com/pyjanitor-devs/pyjanitor/compare/v0.23.1...v0.24.0">v0.24.0</a> - 2022-11-12</h2>
+<ul>
+<li>[ENH] Add lazy imports to speed up the time taken to load pyjanitor (part 2)</li>
+<li>[DOC] Updated developer guide docs.</li>
+<li>[ENH] Allow column selection/renaming within conditional_join. Issue #1102. Also allow first or last match. Issue #1020 @samukweku.</li>
+<li>[ENH] New decorator <code>deprecated_kwargs</code> for breaking API. #1103 @Zeroto521</li>
+<li>[ENH] Extend select_columns to support non-string columns. Issue #1105 @samukweku</li>
+<li>[ENH] Performance improvement for groupby_topk. Issue #1093 @samukweku</li>
+<li>[ENH] <code>min_max_scale</code> drop <code>old_min</code> and <code>old_max</code> to fit sklearn's method API. Issue #1068 @Zeroto521</li>
+<li>[ENH] Add <code>jointly</code> option for <code>min_max_scale</code> support to transform each column values or entire values. Default transform each column, similar behavior to <code>sklearn.preprocessing.MinMaxScaler</code>. (Issue #1067, PR #1112, PR #1123) @Zeroto521</li>
+<li>[INF] Require pyspark minimal version is v3.2.0 to cut duplicates codes. Issue #1110 @Zeroto521</li>
+<li>[ENH] Add support for extension arrays in <code>expand_grid</code>. Issue #1121 @samukweku</li>
+<li>[ENH] Add <code>names_expand</code> and <code>index_expand</code> parameters to <code>pivot_wider</code> for exposing missing categoricals. Issue #1108 @samukweku</li>
+<li>[ENH] Add fix for slicing error when selecting columns in <code>pivot_wider</code>. Issue #1134 @samukweku</li>
+<li>[ENH] <code>dropna</code> parameter added to <code>pivot_longer</code>. Issue #1132 @samukweku</li>
+<li>[INF] Update <code>mkdocstrings</code> version and to fit its new coming features. PR #1138 @Zeroto521</li>
+<li>[BUG] Force <code>math.softmax</code> returning <code>Series</code>. PR #1139 @Zeroto521</li>
+<li>[INF] Set independent environment for building documentation. PR #1141 @Zeroto521</li>
+<li>[DOC] Add local documentation preview via github action artifact. PR #1149 @Zeroto521</li>
+<li>[ENH] Enable <code>encode_categorical</code> handle 2 (or more ) dimensions array. PR #1153 @Zeroto521</li>
+<li>[TST] Fix testcases failing on Window. Issue #1160 @Zeroto521, and @samukweku</li>
+<li>[INF] Cancel old workflow runs via Github Action <code>concurrency</code>. PR #1161 @Zeroto521</li>
+<li>[ENH] Faster computation for non-equi join, with a numba engine. Speed improvement for left/right joins when <code>sort_by_appearance</code> is False. Issue #1102 @samukweku</li>
+<li>[BUG] Avoid <code>change_type</code> mutating original <code>DataFrame</code>. PR #1162 @Zeroto521</li>
+<li>[ENH] The parameter <code>column_name</code> of <code>change_type</code> totally supports inputing multi-column now. #1163 @Zeroto521</li>
+<li>[ENH] Fix error when <code>sort_by_appearance=True</code> is combined with <code>dropna=True</code>. Issue #1168 @samukweku</li>
+<li>[ENH] Add explicit default parameter to <code>case_when</code> function. Issue #1159 @samukweku</li>
+<li>[BUG] pandas 1.5.x <code>_MergeOperation</code> doesn't have <code>copy</code> keyword anymore. Issue #1174 @Zeroto521</li>
+<li>[ENH] <code>select_rows</code> function added for flexible row selection. Generic <code>select</code> function added as well. Add support for MultiIndex selection via dictionary. Issue #1124 @samukweku</li>
+<li>[TST] Compat with macos and window, to fix <code>FailedHealthCheck</code> Issue #1181 @Zeroto521</li>
+<li>[INF] Merge two docs CIs (<code>docs-preview.yml</code> and <code>docs.yml</code>) to one. And add <code>documentation</code> pytest mark. PR #1183 @Zeroto521</li>
+<li>[INF] Merge <code>codecov.yml</code> (only works for the dev branch pushing event) into <code>tests.yml</code> (only works for PR event). PR #1185 @Zeroto521</li>
+<li>[TST] Fix failure for test/timeseries/test_fill_missing_timestamp. Issue #1184 @samukweku</li>
+<li>[BUG] Import <code>DataDescription</code> to fix: <code>AttributeError: 'DataFrame' object has no attribute 'data_description'</code>. PR #1191 @Zeroto521</li>
+</ul>
+<h2 id="v0231-2022-05-03"><a href="https://github.com/pyjanitor-devs/pyjanitor/compare/v0.22.0...v0.23.1">v0.23.1</a> - 2022-05-03</h2>
+<ul>
+<li>[DOC] Updated <code>fill.py</code> and <code>update_where.py</code> documentation with working examples.</li>
+<li>[ENH] Deprecate <code>num_bins</code> from <code>bin_numeric</code> in favour of <code>bins</code>, and allow generic <code>**kwargs</code> to be passed into <code>pd.cut</code>. Issue #969. @thatlittleboy</li>
+<li>[ENH] Fix <code>concatenate_columns</code> not working on category inputs @zbarry</li>
+<li>[INF] Simplify CI system @ericmjl</li>
+<li>[ENH] Added "read_commandline" function to janitor.io @BaritoneBeard</li>
+<li>[BUG] Fix bug with the complement parameter of <code>filter_on</code>. Issue #988. @thatlittleboy</li>
+<li>[ENH] Add <code>xlsx_table</code>, for reading tables from an Excel sheet. @samukweku</li>
+<li>[ENH] minor improvements for conditional_join; equality only joins are no longer supported; there has to be at least one non-equi join present. @samukweku</li>
+<li>[BUG] <code>sort_column_value_order</code> no longer mutates original dataframe.</li>
+<li>[BUG] Extend <code>fill_empty</code>'s <code>column_names</code> type range. Issue #998. @Zeroto521</li>
+<li>[BUG] Removed/updated error-inducing default arguments in <code>row_to_names</code> (#1004) and <code>round_to_fraction</code> (#1005). @thatlittleboy</li>
+<li>[ENH] <code>patterns</code> deprecated in favour of importing <code>re.compile</code>. #1007 @samukweku</li>
+<li>[ENH] Changes to kwargs in <code>encode_categorical</code>, where the values can either be a string or a 1D array. #1021 @samukweku</li>
+<li>[ENH] Add <code>fill_value</code> and <code>explicit</code> parameters to the <code>complete</code> function. #1019 @samukweku</li>
+<li>[ENH] Performance improvement for <code>expand_grid</code>. @samukweku</li>
+<li>[BUG] Make <code>factorize_columns</code> (PR #1028) and <code>truncate_datetime_dataframe</code> (PR #1040) functions non-mutating. @thatlittleboy</li>
+<li>[BUG] Fix SettingWithCopyWarning and other minor bugs when using <code>truncate_datetime_dataframe</code>, along with further performance improvements (PR #1040). @thatlittleboy</li>
+<li>[ENH] Performance improvement for <code>conditional_join</code>. @samukweku</li>
+<li>[ENH] Multiple <code>.value</code> is now supported in <code>pivot_longer</code>. Multiple values_to is also supported, when names_pattern is a list or tuple. <code>names_transform</code> parameter added, for efficient dtype transformation of unpivoted columns. #1034, #1048, #1051 @samukweku</li>
+<li>[ENH] Add <code>xlsx_cells</code> for reading a spreadsheet as a table of individual cells. #929 @samukweku.</li>
+<li>[ENH] Let <code>filter_string</code> suit parameters of <code>Series.str.contains</code> Issue #1003 and #1047. @Zeroto521</li>
+<li>[ENH] <code>names_glue</code> in <code>pivot_wider</code> now takes a string form, using str.format_map under the hood. <code>levels_order</code> is also deprecated. @samukweku</li>
+<li>[BUG] Fixed bug in <code>transform_columns</code> which ignored the <code>column_names</code> specification when <code>new_column_names</code> dictionary was provided as an argument, issue #1063. @thatlittleboy</li>
+<li>[BUG] <code>count_cumulative_unique</code> no longer modifies the column being counted in the output when <code>case_sensitive</code> argument is set to False, issue #1065. @thatlittleboy</li>
+<li>[BUG] Fix for gcc missing error in dev container</li>
+<li>[DOC] Added a step in the dev guide to install <code>Remote Container</code> in VS Code. @ashenafiyb</li>
+<li>[DOC] Convert <code>expand_column</code> and <code>find_replace</code> code examples to doctests, issue #972. @gahjelle</li>
+<li>[DOC] Convert <code>expand_column</code> code examples to doctests, issue #972. @gahjelle</li>
+<li>[DOC] Convert <code>get_dupes</code> code examples to doctests, issue #972. @ethompsy</li>
+<li>[DOC] Convert <code>engineering</code> code examples to doctests, issue #972 @ashenafiyb</li>
+<li>[DOC] Convert <code>groupby_topk</code> code examples to doctests, issue #972. @ethompsy</li>
+<li>[DOC] Add doctests to <code>math</code>, issue #972. @gahjelle</li>
+<li>[DOC] Add doctests to <code>math</code> and <code>ml</code>, issue #972. @gahjelle</li>
+<li>[DOC] Add doctests to <code>math</code>, <code>ml</code>, and <code>xarray</code>, issue #972. @gahjelle</li>
+</ul>
+<h2 id="v0220-2021-11-21"><a href="https://github.com/pyjanitor-devs/pyjanitor/compare/v0.21.2...v0.22.0">v0.22.0</a> - 2021-11-21</h2>
+<ul>
+<li>[BUG] Fix conditional join issue for multiple conditions, where pd.eval fails to evaluate if numexpr is installed. #898 @samukweku</li>
+<li>[ENH] Added <code>case_when</code> to handle multiple conditionals and replacement values. Issue #736. @robertmitchellv</li>
+<li>[ENH] Deprecate <code>new_column_names</code> and <code>merge_frame</code> from <code>process_text</code>. Only existing columns are supported. @samukweku</li>
+<li>[ENH] <code>complete</code> uses <code>pd.merge</code> internally, providing a simpler logic, with some speed improvements in certain cases over <code>pd.reindex</code>. @samukweku</li>
+<li>[ENH] <code>expand_grid</code> returns a MultiIndex DataFrame, allowing the user to decide how to manipulate the columns. @samukweku</li>
+<li>[INF] Simplify a bit linting, use pre-commit as the CI linting checker. @Zeroto521</li>
+<li>[ENH] Fix bug in <code>pivot_longer</code> for wrong output when <code>names_pattern</code> is a sequence with a single value. Issue #885 @samukweku</li>
+<li>[ENH] Deprecate <code>aggfunc</code> from <code>pivot_wider</code>; aggregation can be chained with pandas' <code>groupby</code>.</li>
+<li>[ENH] <code>As_Categorical</code> deprecated from <code>encode_categorical</code>; a tuple of <code>(categories, order)</code> suffices for **kwargs. @samukweku</li>
+<li>[ENH] Deprecate <code>names_sort</code> from <code>pivot_wider</code>.@samukweku</li>
+<li>[ENH] Add <code>softmax</code> to <code>math</code> module. Issue #902. @loganthomas</li>
+</ul>
+<h2 id="v0212-2021-09-01"><a href="https://github.com/pyjanitor-devs/pyjanitor/compare/v0.21.1...v0.21.2">v0.21.2</a> - 2021-09-01</h2>
+<ul>
+<li>[ENH] Fix warning message in <code>coalesce</code>, from bfill/fill;<code>coalesce</code> now uses variable arguments. Issue #882 @samukweku</li>
+<li>[INF] Add SciPy as explicit dependency in <code>base.in</code>. Issue #895 @ericmjl</li>
+</ul>
+<h2 id="v0211-2021-08-29"><a href="https://github.com/pyjanitor-devs/pyjanitor/compare/v0.21.0...v0.21.1">v0.21.1</a> - 2021-08-29</h2>
+<ul>
+<li>[DOC] Fix references and broken links in AUTHORS.rst. @loganthomas</li>
+<li>[DOC] Updated Broken links in the README and contributing docs. @nvamsikrishna05</li>
+<li>[INF] Update pre-commit hooks and remove mutable references. Issue #844. @loganthomas</li>
+<li>[INF] Add GitHub Release pointer to auto-release script. Issue #818. @loganthomas</li>
+<li>[INF] Updated black version in github actions code-checks to match pre-commit hooks. @nvamsikrishna05</li>
+<li>[ENH] Add reset_index flag to row_to_names function. @fireddd</li>
+<li>[ENH] Updated <code>label_encode</code> to use pandas factorize instead of scikit-learn LabelEncoder. @nvamsikrishna05</li>
+<li>[INF] Removed the scikit-learn package from the dependencies from environment-dev.yml and base.in files. @nvamsikrishna05</li>
+<li>[ENH] Add function to remove constant columns. @fireddd</li>
+<li>[ENH] Added <code>factorize_columns</code> method which will deprecate the <code>label_encode</code> method in future release. @nvamsikrishna05</li>
+<li>[DOC] Delete Read the Docs project and remove all readthedocs.io references from the repo. Issue #863. @loganthomas</li>
+<li>[DOC] Updated various documentation sources to reflect pyjanitor-dev ownership. @loganthomas</li>
+<li>[INF] Fix <code>isort</code> automatic checks. Issue #845. @loganthomas</li>
+<li>[ENH] <code>complete</code> function now uses variable args (*args) - @samukweku</li>
+<li>[ENH] Set <code>expand_column</code>'s <code>sep</code> default is <code>"|"</code>, same to <code>pandas.Series.str.get_dummies</code>. Issue #876. @Zeroto521</li>
+<li>[ENH] Deprecate <code>limit</code> from fill_direction. fill_direction now uses kwargs. @samukweku</li>
+<li>[ENH] Added <code>conditional_join</code> function that supports joins on non-equi operators. @samukweku</li>
+<li>[INF] Speed up pytest via <code>-n</code> (pytest-xdist) option. Issue #881. @Zeroto521</li>
+<li>[DOC] Add list mark to keep <code>select_columns</code>'s example same style. @Zeroto521</li>
+<li>[ENH] Updated <code>rename_columns</code> to take optional function argument for mapping. @nvamsikrishna05</li>
+</ul>
+<h2 id="v0210-2021-07-16"><a href="https://github.com/pyjanitor-devs/pyjanitor/compare/v0.20.14...v0.21.0">v0.21.0</a> - 2021-07-16</h2>
+<ul>
+<li>[ENH] Drop <code>fill_value</code> parameter from <code>complete</code>. Users can use <code>fillna</code> instead. @samukweku</li>
+<li>[BUG] Fix bug in <code>pivot_longer</code> with single level columns. @samukweku</li>
+<li>[BUG] Disable exchange rates API until we can find another one to hit. @ericmjl</li>
+<li>[ENH] Change <code>coalesce</code> to return columns; also use <code>bfill</code>, <code>ffill</code>,
+    which is faster than <code>combine_first</code> @samukweku</li>
+<li>[ENH] Use <code>eval</code> for string conditions in <code>update_where</code>. @samukweku</li>
+<li>[ENH] Add clearer error messages for <code>pivot_longer</code>. h/t to @tdhock
+    for the observation. Issue #836 @samukweku</li>
+<li>[ENH] <code>select_columns</code> now uses variable arguments (*args),
+    to provide a simpler selection without the need for lists. - @samukweku</li>
+<li>[ENH] <code>encode_categoricals</code> refactored to use generic functions
+    via <code>functools.dispatch</code>. - @samukweku</li>
+<li>[ENH] Updated convert_excel_date to throw meaningful error when values contain non-numeric. @nvamsikrishna05</li>
+</ul>
+<h2 id="v02014-2021-03-25"><a href="https://github.com/pyjanitor-devs/pyjanitor/compare/v0.20.13...v0.20.14">v0.20.14</a> - 2021-03-25</h2>
+<ul>
+<li>[ENH] Add <code>dropna</code> parameter to groupby_agg. @samukweku</li>
+<li>[ENH] <code>complete</code> adds a <code>by</code> parameter to expose explicit missing values per group, via groupby. @samukweku</li>
+<li>[ENH] Fix check_column to support single inputs - fixes <code>label_encode</code>. @zbarry</li>
+</ul>
+<h2 id="v02013-2021-02-25"><a href="https://github.com/pyjanitor-devs/pyjanitor/compare/v0.20.12...v0.20.13">v0.20.13</a> - 2021-02-25</h2>
+<ul>
+<li>[ENH] Performance improvements to <code>expand_grid</code>. @samukweku</li>
+<li>[HOTFIX] Add <code>multipledispatch</code> to pip requirements. @ericmjl</li>
+</ul>
+<h2 id="v02012-2021-02-25"><a href="https://github.com/pyjanitor-devs/pyjanitor/compare/v0.20.11...v0.20.12">v0.20.12</a> - 2021-02-25</h2>
+<ul>
+<li>[INF] Auto-release GitHub action maintenance. @loganthomas</li>
+</ul>
+<h2 id="v02011-2021-02-24"><a href="https://github.com/pyjanitor-devs/pyjanitor/compare/v0.20.10...v0.20.11">v0.20.11</a> - 2021-02-24</h2>
+<ul>
+<li>[INF] Setup auto-release GitHub action. @loganthomas</li>
+<li>[INF] Deploy <code>darglint</code> package for docstring linting. Issue #745. @loganthomas</li>
+<li>[ENH] Added optional truncation to <code>clean_names</code> function. Issue #753. @richardqiu</li>
+<li>[ENH] Added <code>timeseries.flag_jumps()</code> function. Issue #711. @loganthomas</li>
+<li>[ENH] <code>pivot_longer</code> can handle multiple values in paired columns, and can reshape
+    using a list/tuple of regular expressions in <code>names_pattern</code>. @samukweku</li>
+<li>[ENH] Replaced default numeric conversion of dataframe with a <code>dtypes</code> parameter,
+    allowing the user to control the data types. - @samukweku</li>
+<li>[INF] Loosen dependency specifications. Switch to pip-tools for managing
+    dependencies. Issue #760. @MinchinWeb</li>
+<li>[DOC] added pipenv installation instructions @evan-anderson</li>
+<li>[ENH] Add <code>pivot_wider</code> function, which is the inverse of the <code>pivot_longer</code>
+    function. @samukweku</li>
+<li>[INF] Add <code>openpyxl</code> to <code>environment-dev.yml</code>. @samukweku</li>
+<li>[ENH] Reduce code by reusing existing functions for fill_direction. @samukweku</li>
+<li>[ENH] Improvements to <code>pivot_longer</code> function, with improved speed and cleaner code.
+    <code>dtypes</code> parameter dropped; user can change dtypes with pandas' <code>astype</code> method, or
+    pyjanitor's <code>change_type</code> method. @samukweku</li>
+<li>[ENH] Add kwargs to <code>encode_categorical</code> function, to create ordered categorical columns,
+    or categorical columns with explicit categories. @samukweku</li>
+<li>[ENH] Improvements to <code>complete</code> method. Use <code>pd.merge</code> to handle duplicates and
+    null values. @samukweku</li>
+<li>[ENH] Add <code>new_column_names</code> parameter to <code>process_text</code>, allowing a user to
+    create a new column name after processing a text column. Also added a <code>merge_frame</code>
+    parameter, allowing dataframe merging, if the result of the text processing is a
+    dataframe.@samukweku</li>
+<li>[ENH] Add <code>aggfunc</code> parameter to pivot_wider. @samukweku</li>
+<li>[ENH] Modified the <code>check</code> function in utils to verify if a value is a callable. @samukweku</li>
+<li>[ENH] Add a base <code>_select_column</code> function, using <code>functools.singledispatch</code>,
+    to allow for flexible columns selection. @samukweku</li>
+<li>[ENH] pivot_longer and pivot_wider now support janitor.select_columns syntax,
+    allowing for more flexible and dynamic column selection. @samukweku</li>
+</ul>
+<h2 id="v02010"><a href="https://github.com/pyjanitor-devs/pyjanitor/compare/v0.20.9...v0.20.10">v0.20.10</a></h2>
+<ul>
+<li>[ENH] Added function <code>sort_timestamps_monotonically</code> to timeseries functions @UGuntupalli</li>
+<li>[ENH] Added the complete function for converting implicit missing values
+    to explicit ones. @samukweku</li>
+<li>[ENH] Further simplification of expand_grid. @samukweku</li>
+<li>[BUGFIX] Added copy() method to original dataframe, to avoid mutation. Issue #729. @samukweku</li>
+<li>[ENH] Added <code>also</code> method for running functions in chain with no return values.</li>
+<li>[DOC] Added a <code>timeseries</code> module section to website docs. Issue #742. @loganthomas</li>
+<li>[ENH] Added a <code>pivot_longer</code> function, a wrapper around <code>pd.melt</code> and similar to
+    tidyr's <code>pivot_longer</code> function. Also added an example notebook. @samukweku</li>
+<li>[ENH] Fixed code to returns error if <code>fill_value</code> is not a dictionary. @samukweku</li>
+<li>[INF] Welcome bot (.github/config.yml) for new users added. Issue #739. @samukweku</li>
+</ul>
+<h2 id="v0209"><a href="https://github.com/pyjanitor-devs/pyjanitor/compare/v0.20.8...v0.20.9">v0.20.9</a></h2>
+<ul>
+<li>[ENH] Updated groupby_agg function to account for null entries in the <code>by</code> argument. @samukweku</li>
+<li>[ENH] Added function <code>groupby_topk</code> to janitor functions @mphirke</li>
+</ul>
+<h2 id="v0208"><a href="https://github.com/pyjanitor-devs/pyjanitor/compare/v0.20.7...v0.20.8">v0.20.8</a></h2>
+<ul>
+<li>[ENH] Upgraded <code>update_where</code> function to use either the pandas query style,
+    or boolean indexing via the <code>loc</code> method. Also updated <code>find_replace</code> function to use the <code>loc</code>
+    method directly, instead of routing it through the <code>update_where</code> function. @samukweku</li>
+<li>[INF] Update <code>pandas</code> minimum version to 1.0.0. @hectormz</li>
+<li>[DOC] Updated the general functions API page to show all available functions. @samukweku</li>
+<li>[DOC] Fix the few lacking type annotations of functions. @VPerrollaz</li>
+<li>[DOC] Changed the signature from str to Optional[str] when initialized by None. @VPerrollaz</li>
+<li>[DOC] Add the Optional type for all signatures of the API. @VPerrollaz</li>
+<li>[TST] Updated test_expand_grid to account for int dtype difference in Windows OS @samukweku</li>
+<li>[TST] Make importing <code>pandas</code> testing functions follow uniform pattern. @hectormz</li>
+<li>[ENH] Added <code>process_text</code> wrapper function for all Pandas string methods. @samukweku</li>
+<li>[TST] Only skip tests for non-installed libraries on local machine. @hectormz</li>
+<li>[DOC] Fix minor issues in documentation. @hectormz</li>
+<li>[ENH] Added <code>fill_direction</code> function for forward/backward fills on missing values
+    for selected columns in a dataframe. @samukweku</li>
+<li>[ENH] Simpler logic and less lines of code for expand_grid function @samukweku</li>
+</ul>
+<h2 id="v0207"><a href="https://github.com/pyjanitor-devs/pyjanitor/compare/v0.20.5...v0.20.7">v0.20.7</a></h2>
+<ul>
+<li>[TST] Add a test for transform_column to check for nonmutation. @VPerrollaz</li>
+<li>[ENH] Contributed <code>expand_grid</code> function by @samukweku</li>
+</ul>
+<h2 id="v0206"><a href="https://github.com/pyjanitor-devs/pyjanitor/compare/v0.20.5...v0.20.7">v0.20.6</a></h2>
+<ul>
+<li>[DOC] Pep8 all examples. @VPerrollaz</li>
+<li>[TST] Add docstrings to tests @hectormz</li>
+<li>[INF] Add <code>debug-statements</code>, <code>requirements-txt-fixer</code>, and <code>interrogate</code> to <code>pre-commit</code>. @hectormz</li>
+<li>[ENH] Upgraded transform_column to use df.assign underneath the hood,
+    and also added option to transform column elementwise (via apply)
+    or columnwise (thus operating on a series). @ericmjl</li>
+</ul>
+<h2 id="v0205"><a href="https://github.com/pyjanitor-devs/pyjanitor/compare/v0.20.1...v0.20.5">v0.20.5</a></h2>
+<ul>
+<li>[INF] Replace <code>pycodestyle</code> with <code>flake8</code> in order to add <code>pandas-vet</code> linter @hectormz</li>
+<li>[ENH] <code>select_columns()</code> now raises <code>NameError</code> if column label in
+    <code>search_columns_labels</code> is missing from <code>DataFrame</code> columns. @smu095</li>
+</ul>
+<h2 id="v0201"><a href="https://github.com/pyjanitor-devs/pyjanitor/compare/v0.20.0...v0.20.1">v0.20.1</a></h2>
+<ul>
+<li>[DOC] Added an example for groupby_agg in general functions @samukweku</li>
+<li>[ENH] Contributed <code>sort_naturally()</code> function. @ericmjl</li>
+</ul>
+<h2 id="v0200"><a href="https://github.com/pyjanitor-devs/pyjanitor/compare/v0.19.0...v0.20.0">v0.20.0</a></h2>
+<ul>
+<li>[DOC] Edited transform_column dest_column_name kwarg description to be clearer on defaults by @evan-anderson.</li>
+<li>[ENH] Replace <code>apply()</code> in favor of <code>pandas</code> functions in several functions. @hectormz</li>
+<li>[ENH] Add <code>ecdf()</code> Series function by @ericmjl.</li>
+<li>[DOC] Update API policy for clarity. @ericmjl</li>
+<li>[ENH] Enforce string conversion when cleaning names. @ericmjl</li>
+<li>[ENH] Change <code>find_replace</code> implementation to use keyword arguments to specify columns to perform find and replace on. @ericmjl</li>
+<li>[ENH] Add <code>jitter()</code> dataframe function by @rahosbach</li>
+</ul>
+<h2 id="v0190"><a href="https://github.com/pyjanitor-devs/pyjanitor/compare/v0.18.3...v0.19.0">v0.19.0</a></h2>
+<ul>
+<li>[ENH] Add xarray support and clone_using / convert_datetime_to_number funcs by @zbarry.</li>
+</ul>
+<h2 id="v0183"><a href="https://github.com/pyjanitor-devs/pyjanitor/compare/v0.18.2...v0.18.3">v0.18.3</a></h2>
+<ul>
+<li>[ENH] Series toset() functionality #570 @eyaltrabelsi</li>
+<li>[ENH] Added option to coalesce function to not delete coalesced columns. @gddcunh</li>
+<li>[ENH] Added functionality to deconcatenate tuple/list/collections in a column to deconcatenate_column @zbarry</li>
+<li>[ENH] Fix error message when length of new_column_names is wrong @DollofCutty</li>
+<li>[DOC] Fixed several examples of functional syntax in <code>functions.py</code>. @bdice</li>
+<li>[DOC] Fix #noqa comments showing up in docs by @hectormz</li>
+<li>[ENH] Add unionizing a group of dataframes' categoricals. @zbarry</li>
+<li>[DOC] Fix contributions hyperlinks in <code>AUTHORS.rst</code> and contributions by @hectormz</li>
+<li>[INF] Add <code>pre-commit</code> hooks to repository by @ericmjl</li>
+<li>[DOC] Fix formatting code in <code>CONTRIBUTING.rst</code> by @hectormz</li>
+<li>[DOC] Changed the typing for most "column_name(s)" to Hashable rather than enforcing strings, to more closely match Pandas API by @dendrondal</li>
+<li>[INF] Edited pycodestyle and Black parameters to avoid venvs by @dendrondal</li>
+</ul>
+<h2 id="v0182"><a href="https://github.com/pyjanitor-devs/pyjanitor/compare/v0.18.1...v0.18.2">v0.18.2</a></h2>
+<ul>
+<li>[INF] Make requirements.txt smaller @eyaltrabelsi</li>
+<li>[ENH] Add a reset_index parameter to shuffle @eyaltrabelsi</li>
+<li>[DOC] Added contribution page link to readme @eyaltrabelsi</li>
+<li>[DOC] fix example for <code>update_where</code>, provide a bit more detail, and expand the bad_values example notebook to demonstrate its use by @anzelpwj.</li>
+<li>[INF] Fix pytest marks by @ericmjl (issue #520)</li>
+<li>[ENH] add example notebook with use of finance submodule methods by @rahosbach</li>
+<li>[DOC] added a couple of admonitions for Windows users. h/t @anzelpwj for debugging
+    help when a few tests failed for <code>win32</code> @Ram-N</li>
+<li>[ENH] Pyjanitor for PySpark @zjpoh</li>
+<li>[ENH] Add pyspark clean_names @zjpoh</li>
+<li>[ENH] Convert asserts to raise exceptions by @hectormz</li>
+<li>[ENH] Add decorator functions for missing and error handling @jiafengkevinchen</li>
+<li>[DOC] Update README with functional <code>pandas</code> API example. @ericmjl</li>
+<li>[INF] Move <code>get_features_targets()</code> to new <code>ml.py</code> module by @hectormz</li>
+<li>[ENH] Add chirality to morgan fingerprints in janitor.chemistry submodule by @Clayton-Springer</li>
+<li>[INF] <code>import_message</code> suggests python dist. appropriate installs by @hectormz</li>
+<li>[ENH] Add count_cumulative_unique() method to janitor.functions submodule by @rahosbach</li>
+<li>[ENH] Add <code>update_where()</code> method to <code>janitor.spark.functions</code> submodule by @zjpoh</li>
+</ul>
+<h2 id="v0181"><a href="https://github.com/pyjanitor-devs/pyjanitor/compare/v0.18.0...v0.18.1">v0.18.1</a></h2>
+<ul>
+<li>[ENH] extend find_replace functionality to allow both exact match and
+    regular-expression-based fuzzy match by @shandou</li>
+<li>[ENH] add preserve_position kwarg to deconcatenate_column with tests
+    by @shandou and @ericmjl</li>
+<li>[DOC] add contributions that did not leave <code>git</code> traces by @ericmjl</li>
+<li>[ENH] add inflation adjustment in finance submodule by @rahosbach</li>
+<li>[DOC] clarified how new functions should be implemented by @shandou</li>
+<li>[ENH] add optional removal of accents on functions.clean_names, enabled by
+    default by @mralbu</li>
+<li>[ENH] add camelCase conversion to snake_case on <code>clean_names</code> by @ericmjl,
+    h/t @jtaylor for sharing original</li>
+<li>[ENH] Added <code>null_flag</code> function which can mark null values in rows.
+    Implemented by @anzelpwj</li>
+<li>[ENH] add engineering submodule with unit conversion method by @rahosbach</li>
+<li>[DOC] add PyPI project description</li>
+<li>[ENH] add example notebook with use of finance submodule methods
+    by @rahosbach</li>
+</ul>
+<p>For changes that happened prior to v0.18.1,
+please consult the closed PRs,
+which can be found <a href="https://github.com/pyjanitor-devs/pyjanitor/pulls?q=is%3Apr+is%3Aclosed">here</a>.</p>
+<p>We thank all contributors
+who have helped make <code>pyjanitor</code>
+the package that it is today.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.instant", "navigation.top", "toc.follow", "content.code.copy"], "search": "../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.83f73b43.min.js"></script>
+      
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      
+    
+  </body>
+</html>

@@ -7,7 +7,7 @@
         - also
         - bin_numeric
         - case_when
-        - change_index_type
+        - change_index_dtype
         - change_type
         - clean_names
         - coalesce

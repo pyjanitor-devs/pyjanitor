@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import itertools
 import operator
 from typing import Any, Hashable, Literal, Optional, Union
 
@@ -775,7 +776,7 @@ def _multiple_conditional_join_eq(
 
         indices = _generate_indices(*indices, rest)
 
-        if not indices:
+        if indices is None:
             return None
 
         return _keep_output(keep, *indices)
@@ -795,6 +796,8 @@ def _multiple_conditional_join_eq(
             return_ragged_arrays=return_ragged_arrays,
         )
 
+    left_df = df[:]
+    right_df = right[:]
     eqs = [
         (left_on, right_on)
         for left_on, right_on, op in conditions
@@ -802,27 +805,42 @@ def _multiple_conditional_join_eq(
     ]
 
     left_on, right_on = zip(*eqs)
+    left_on = list(set(left_on))
+    right_on = list(set(right_on))
+    any_nulls = left_df.loc[:, left_on].isna().any(axis=1)
+    if any_nulls.all():
+        return None
+    if any_nulls.any():
+        left_df = left_df.loc[~any_nulls]
+    any_nulls = right_df.loc[:, right_on].isna().any(axis=1)
+    if any_nulls.all():
+        return None
+    if any_nulls.any():
+        right_df = right_df.loc[~any_nulls]
+    left_on, right_on = zip(*eqs)
     left_on = [*left_on]
     right_on = [*right_on]
-
     left_index, right_index = _MergeOperation(
-        df,
-        right,
+        left_df,
+        right_df,
         left_on=left_on,
         right_on=right_on,
         sort=False,
     )._get_join_indexers()
 
+    if left_index is not None:
+        if not left_index.size:
+            return None
+        left_index = left_df.index[left_index]
     # patch based on updates in internal code
     # pandas/core/reshape/merge.py#L1692
     # for pandas 2.2
-    if left_index is None:
-        left_index = df.index._values
-    if right_index is None:
-        right_index = right.index._values
-
-    if not left_index.size:
-        return None
+    elif left_index is None:
+        left_index = left_df.index._values
+    if right_index is not None:
+        right_index = right_df.index[right_index]
+    else:
+        right_index = right_df.index._values
 
     rest = [
         (df[left_on], right[right_on], op)
@@ -834,7 +852,7 @@ def _multiple_conditional_join_eq(
         return _keep_output(keep, left_index, right_index)
 
     indices = _generate_indices(left_index, right_index, rest)
-    if not indices:
+    if indices is None:
         return None
 
     return _keep_output(keep, *indices)
@@ -870,16 +888,26 @@ def _multiple_conditional_join_le_lt(
         conditions = [
             condition for condition in conditions if condition not in gt_lt
         ]
-        if (len(gt_lt) > 1) and not conditions:
-            return _numba_multiple_non_equi_join(df, right, gt_lt, keep=keep)
-        if len(gt_lt) == 1:
+        if len(gt_lt) > 1:
+            first_two = [op for *_, op in gt_lt[:2]]
+            range_join_ops = itertools.product(
+                less_than_join_types, greater_than_join_types
+            )
+            range_join_ops = map(set, range_join_ops)
+            is_range_join = set(first_two) in range_join_ops
+            if is_range_join and (first_two[0] in less_than_join_types):
+                gt_lt = [gt_lt[1], gt_lt[0], *gt_lt[2:]]
+            if not conditions:
+                return _numba_multiple_non_equi_join(
+                    df, right, gt_lt, keep=keep, is_range_join=is_range_join
+                )
+            indices = _numba_multiple_non_equi_join(
+                df, right, gt_lt, keep="all", is_range_join=False
+            )
+        else:
             left_on, right_on, op = gt_lt[0]
             indices = _numba_single_non_equi_join(
                 df[left_on], right[right_on], op, keep="all"
-            )
-        else:
-            indices = _numba_multiple_non_equi_join(
-                df, right, gt_lt, keep="all"
             )
         if indices is None:
             return None
@@ -913,29 +941,23 @@ def _multiple_conditional_join_le_lt(
         # the aim of this for loop is to see if there is
         # the possibility of a range join, and if there is,
         # then use the optimised path
-        le_lt = None
-        ge_gt = None
-        # keep the first match for le_lt or ge_gt
-        for condition in conditions:
-            *_, op = condition
-            if op in less_than_join_types:
-                if le_lt:
-                    continue
-                le_lt = condition
-            elif op in greater_than_join_types:
-                if ge_gt:
-                    continue
-                ge_gt = condition
-            if le_lt and ge_gt:
-                break
+        first_two = [op for *_, op in conditions[:2]]
+        range_join_ops = itertools.product(
+            less_than_join_types, greater_than_join_types
+        )
+        range_join_ops = map(set, range_join_ops)
+        is_range_join = set(first_two) in range_join_ops
         # optimised path
-        if le_lt and ge_gt:
+        if is_range_join:
+            if first_two[0] in less_than_join_types:
+                le_lt, ge_gt = conditions[:2]
+            else:
+                ge_gt, le_lt = conditions[:2]
             conditions = [
                 condition
                 for condition in conditions
                 if condition not in (ge_gt, le_lt)
             ]
-
             if conditions:
                 _keep = None
                 return_ragged_arrays = False
@@ -960,7 +982,7 @@ def _multiple_conditional_join_le_lt(
                 return_ragged_arrays=return_ragged_arrays,
                 right_is_sorted=right_is_sorted,
             )
-            if not indices:
+            if indices is None:
                 return None
             if _keep or (return_ragged_arrays & isinstance(indices[1], list)):
                 return indices
@@ -968,17 +990,17 @@ def _multiple_conditional_join_le_lt(
         # no optimised path
         # blow up the rows and prune
         else:
-            if le_lt:
-                conditions = [
-                    condition for condition in conditions if condition != le_lt
-                ]
-                left_on, right_on, op = le_lt
-            else:
-                conditions = [
-                    condition for condition in conditions if condition != ge_gt
-                ]
-                left_on, right_on, op = ge_gt
-
+            lt_or_gt = None
+            for condition in conditions:
+                if condition[-1] in less_than_join_types.union(
+                    greater_than_join_types
+                ):
+                    lt_or_gt = condition
+                    break
+            conditions = [
+                condition for condition in conditions if condition != lt_or_gt
+            ]
+            left_on, right_on, op = lt_or_gt
             indices = _generic_func_cond_join(
                 left=df[left_on],
                 right=right[right_on],
@@ -986,17 +1008,15 @@ def _multiple_conditional_join_le_lt(
                 multiple_conditions=False,
                 keep="all",
             )
-    # return indices
-    if not indices:
+    if indices is None:
         return None
     if conditions:
         conditions = (
             (df[left_on], right[right_on], op)
             for left_on, right_on, op in conditions
         )
-
         indices = _generate_indices(*indices, conditions)
-        if not indices:
+        if indices is None:
             return None
     return _keep_output(keep, *indices)
 
@@ -1120,7 +1140,6 @@ def _range_indices(
     right_index = [right_index[start:end] for start, end in zip(starts, ends)]
     if return_ragged_arrays & fastpath:
         return left_index, right_index
-    # return right_index
     right_index = np.concatenate(right_index)
     left_index = left_index.repeat(repeater)
     if fastpath:

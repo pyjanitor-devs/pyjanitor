@@ -554,8 +554,6 @@ def _conditional_join_compute(
     if result is None:
         result = np.array([], dtype=np.intp), np.array([], dtype=np.intp)
 
-    # return result
-
     if return_matching_indices:
         return result
 

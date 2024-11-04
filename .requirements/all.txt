@@ -191,7 +191,7 @@ pymdown-extensions==10.0
     # via
     #   mkdocs-material
     #   mkdocstrings
-pyspark==3.2.2
+pyspark==3.3.2
     # via -r spark.in
 pytest==7.0.1
     # via

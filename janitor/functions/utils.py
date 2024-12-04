@@ -487,7 +487,6 @@ def _greater_than_indices(
     if not outcome:
         return None
     left, right, left_index, right_index, right_is_sorted, any_nulls = outcome
-
     search_indices = right.searchsorted(left, side="right")
     # if any of the positions in `search_indices`
     # is equal to 0 (less than 1), it implies that

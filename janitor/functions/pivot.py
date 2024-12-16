@@ -327,10 +327,14 @@ def pivot_longer(
             Should be either a single column name, or a list/tuple of
             column names.
             `index` should be a list of tuples if the columns are a MultiIndex.
+            Column selection is possible using the
+            [`select`][janitor.functions.select.select] syntax.
         column_names: Name(s) of columns to unpivot. Should be either
             a single column name or a list/tuple of column names.
             `column_names` should be a list of tuples
             if the columns are a MultiIndex.
+            Column selection is possible using the
+            [`select`][janitor.functions.select.select] syntax.
         names_to: Name of new column as a string that will contain
             what were previously the column names in `column_names`.
             The default is `variable` if no value is provided. It can
@@ -420,10 +424,13 @@ def pivot_longer_spec(
 ) -> pd.DataFrame:
     """A declarative interface to pivot a DataFrame from wide to long form,
     where you describe how the data will be unpivoted,
-    using a DataFrame. This gives you, the user,
+    using a DataFrame.
+
+    This gives you, the user,
     more control over unpivoting, where you create a “spec”
     data frame that describes exactly how data stored
     in the column names becomes variables.
+
     It can come in handy for situations where
     [`pivot_longer`][janitor.functions.pivot.pivot_longer]
     seems inadequate for the transformation.
@@ -2380,3 +2387,151 @@ def _check_tuples_multiindex(indexer, args, param):
         )
 
     return args
+
+
+def pivot_wider_spec(
+    df: pd.DataFrame,
+    spec: pd.DataFrame,
+    index: list | tuple | str | Pattern = None,
+    reset_index: bool = True,
+) -> pd.DataFrame:
+    """A declarative interface to pivot a DataFrame from long to wide form,
+    where you describe how the data will be pivoted,
+    using a DataFrame.
+
+    This gives you, the user,
+    more control over pivoting, where you create a “spec”
+    data frame that describes exactly how data stored
+    in the column names becomes variables.
+
+    It can come in handy for situations where
+    `pd.DataFrame.pivot`
+    seems inadequate for the transformation.
+
+    !!! info "New in version 0.31.0"
+
+    Examples:
+        >>> import pandas as pd
+        >>> from janitor import pivot_wider_spec
+        >>> df = pd.DataFrame(
+        ... [
+        ...    {"famid": 1, "birth": 1, "age": 1, "ht": 2.8},
+        ...    {"famid": 1, "birth": 1, "age": 2, "ht": 3.4},
+        ...    {"famid": 1, "birth": 2, "age": 1, "ht": 2.9},
+        ...    {"famid": 1, "birth": 2, "age": 2, "ht": 3.8},
+        ...    {"famid": 1, "birth": 3, "age": 1, "ht": 2.2},
+        ...    {"famid": 1, "birth": 3, "age": 2, "ht": 2.9},
+        ...    {"famid": 2, "birth": 1, "age": 1, "ht": 2.0},
+        ...    {"famid": 2, "birth": 1, "age": 2, "ht": 3.2},
+        ...    {"famid": 2, "birth": 2, "age": 1, "ht": 1.8},
+        ...    {"famid": 2, "birth": 2, "age": 2, "ht": 2.8},
+        ...    {"famid": 2, "birth": 3, "age": 1, "ht": 1.9},
+        ...    {"famid": 2, "birth": 3, "age": 2, "ht": 2.4},
+        ...    {"famid": 3, "birth": 1, "age": 1, "ht": 2.2},
+        ...    {"famid": 3, "birth": 1, "age": 2, "ht": 3.3},
+        ...    {"famid": 3, "birth": 2, "age": 1, "ht": 2.3},
+        ...    {"famid": 3, "birth": 2, "age": 2, "ht": 3.4},
+        ...    {"famid": 3, "birth": 3, "age": 1, "ht": 2.1},
+        ...    {"famid": 3, "birth": 3, "age": 2, "ht": 2.9},
+        ... ]
+        ... )
+        >>> df
+            famid  birth  age   ht
+        0       1      1    1  2.8
+        1       1      1    2  3.4
+        2       1      2    1  2.9
+        3       1      2    2  3.8
+        4       1      3    1  2.2
+        5       1      3    2  2.9
+        6       2      1    1  2.0
+        7       2      1    2  3.2
+        8       2      2    1  1.8
+        9       2      2    2  2.8
+        10      2      3    1  1.9
+        11      2      3    2  2.4
+        12      3      1    1  2.2
+        13      3      1    2  3.3
+        14      3      2    1  2.3
+        15      3      2    2  3.4
+        16      3      3    1  2.1
+        17      3      3    2  2.9
+        >>> spec = {".name": ["ht1", "ht2"],
+        ...         ".value": ["ht", "ht"],
+        ...         "age": [1, 2]}
+        >>> spec = pd.DataFrame(spec)
+        >>> spec
+          .name .value  age
+        0   ht1     ht    1
+        1   ht2     ht    2
+        >>> pivot_wider_spec(df=df,spec=spec, index=['famid','birth'])
+           famid  birth  ht1  ht2
+        0      1      1  2.8  3.4
+        1      1      2  2.9  3.8
+        2      1      3  2.2  2.9
+        3      2      1  2.0  3.2
+        4      2      2  1.8  2.8
+        5      2      3  1.9  2.4
+        6      3      1  2.2  3.3
+        7      3      2  2.3  3.4
+        8      3      3  2.1  2.9
+
+    Args:
+        df: A pandas DataFrame.
+        spec: A specification DataFrame.
+            At a minimum, the spec DataFrame
+            must have a '.name' and a '.value' columns.
+            The '.name' column  should contain the
+            the names of the columns in the output DataFrame.
+            The '.value' column should contain the name of the column(s)
+            in the source DataFrame that will be serve as the values.
+            Additional columns in spec will serves as the columns
+            to be flipped to wide form.
+            Note that these additional columns should already exist
+            in the source DataFrame.
+        index: Name(s) of columns to use as identifier variables.
+            It should be either a single column name, or a list of column names.
+            If `index` is not provided, the DataFrame's index is used.
+            Column selection is possible using the
+            [`select`][janitor.functions.select.select] syntax.
+        reset_index: Determines whether to reset the `index`.
+            Applicable only if `index` is provided.
+
+    Returns:
+        A pandas DataFrame that has been unpivoted from long to wide form.
+    """  # noqa: E501
+    check("spec", spec, [pd.DataFrame])
+    check("reset_index", reset_index, [bool])
+    if not spec.columns.is_unique:
+        raise ValueError("Kindly ensure the spec's columns is unique.")
+    if ".name" not in spec.columns:
+        raise KeyError(
+            "Kindly ensure the spec DataFrame has a `.name` column."
+        )
+    if ".value" not in spec.columns:
+        raise KeyError(
+            "Kindly ensure the spec DataFrame has a `.value` column."
+        )
+    if spec.columns.tolist()[:2] != [".name", ".value"]:
+        raise ValueError(
+            "The first two columns of the spec DataFrame "
+            "should be '.name' and '.value', "
+            "with '.name' coming before '.value'."
+        )
+    if spec.columns.size == 2:
+        raise ValueError(
+            "Kindly provide the column(s) "
+            "to use to make new frame’s columns"
+        )
+    columns = spec.columns[2:]
+    values = spec[".value"].unique()
+    if index is not None:
+        index = _select_index([index], df, axis="columns")
+        index = df.columns[index].tolist()
+    df = df.pivot(index=index, columns=columns, values=values)
+    _index = spec.columns[1:].tolist()
+    spec = spec.set_index(_index).squeeze()
+    df = df.reindex(columns=spec.index)
+    df.columns = df.columns.map(spec)
+    if reset_index and index:
+        return df.reset_index()
+    return df

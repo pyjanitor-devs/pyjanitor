@@ -57,7 +57,12 @@ from .label_encode import label_encode
 from .limit_column_characters import limit_column_characters
 from .min_max_scale import min_max_scale
 from .move import move
-from .pivot import pivot_longer, pivot_longer_spec, pivot_wider
+from .pivot import (
+    pivot_longer,
+    pivot_longer_spec,
+    pivot_wider,
+    pivot_wider_spec,
+)
 from .process_text import process_text
 from .remove_columns import remove_columns
 from .remove_empty import remove_empty
@@ -138,6 +143,7 @@ __all__ = [
     "pivot_longer",
     "pivot_longer_spec",
     "pivot_wider",
+    "pivot_wider_spec",
     "process_text",
     "remove_columns",
     "remove_empty",

@@ -2392,13 +2392,82 @@ def pivot_wider_spec(
     index: list | tuple | str | Pattern = None,
     reset_index: bool = True,
 ) -> pd.DataFrame:
-    """
-    Provide specification to convert DataFrame from long to wide form.
+    """A declarative interface to pivot a DataFrame from long to wide form,
+    where you describe how the data will be pivoted,
+    using a DataFrame. This gives you, the user,
+    more control over pivoting, where you create a “spec”
+    data frame that describes exactly how data stored
+    in the column names becomes variables.
+    It can come in handy for situations where
+    `pd.DataFrame.pivot`
+    seems inadequate for the transformation.
 
-    !!! abstract "Version Changed"
+    !!! info "New in version 0.31.0"
 
-        - 0.24.0
-            - Added `reset_index`, `names_expand` and `index_expand` parameters.
+    Examples:
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame(
+        ... [
+        ...    {"famid": 1, "birth": 1, "age": 1, "ht": 2.8},
+        ...    {"famid": 1, "birth": 1, "age": 2, "ht": 3.4},
+        ...    {"famid": 1, "birth": 2, "age": 1, "ht": 2.9},
+        ...    {"famid": 1, "birth": 2, "age": 2, "ht": 3.8},
+        ...    {"famid": 1, "birth": 3, "age": 1, "ht": 2.2},
+        ...    {"famid": 1, "birth": 3, "age": 2, "ht": 2.9},
+        ...    {"famid": 2, "birth": 1, "age": 1, "ht": 2.0},
+        ...    {"famid": 2, "birth": 1, "age": 2, "ht": 3.2},
+        ...    {"famid": 2, "birth": 2, "age": 1, "ht": 1.8},
+        ...    {"famid": 2, "birth": 2, "age": 2, "ht": 2.8},
+        ...    {"famid": 2, "birth": 3, "age": 1, "ht": 1.9},
+        ...    {"famid": 2, "birth": 3, "age": 2, "ht": 2.4},
+        ...    {"famid": 3, "birth": 1, "age": 1, "ht": 2.2},
+        ...    {"famid": 3, "birth": 1, "age": 2, "ht": 3.3},
+        ...    {"famid": 3, "birth": 2, "age": 1, "ht": 2.3},
+        ...    {"famid": 3, "birth": 2, "age": 2, "ht": 3.4},
+        ...    {"famid": 3, "birth": 3, "age": 1, "ht": 2.1},
+        ...    {"famid": 3, "birth": 3, "age": 2, "ht": 2.9},
+        ... ]
+        ... )
+        >>> df
+            famid  birth  age   ht
+        0       1      1    1  2.8
+        1       1      1    2  3.4
+        2       1      2    1  2.9
+        3       1      2    2  3.8
+        4       1      3    1  2.2
+        5       1      3    2  2.9
+        6       2      1    1  2.0
+        7       2      1    2  3.2
+        8       2      2    1  1.8
+        9       2      2    2  2.8
+        10      2      3    1  1.9
+        11      2      3    2  2.4
+        12      3      1    1  2.2
+        13      3      1    2  3.3
+        14      3      2    1  2.3
+        15      3      2    2  3.4
+        16      3      3    1  2.1
+        17      3      3    2  2.9
+        >>> spec = {".name": ["ht1", "ht2"],
+        ...         ".value": ["ht", "ht"],
+        ...         "age": [1, 2]}
+        ... spec = pd.DataFrame(spec)
+        >>> spec
+          .name .value  age
+        0   ht1     ht    1
+        1   ht2     ht    2
+        >>> pivot_wider_spec(df=df,spec=spec)
+           famid  birth  ht1  ht2
+        0      1      1  2.8  3.4
+        1      1      2  2.9  3.8
+        2      1      3  2.2  2.9
+        3      2      1  2.0  3.2
+        4      2      2  1.8  2.8
+        5      2      3  1.9  2.4
+        6      3      1  2.2  3.3
+        7      3      2  2.3  3.4
+        8      3      3  2.1  2.9
 
     Args:
         df: A pandas DataFrame.

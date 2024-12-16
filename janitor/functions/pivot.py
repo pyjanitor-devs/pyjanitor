@@ -2406,7 +2406,7 @@ def pivot_wider_spec(
 
     Examples:
         >>> import pandas as pd
-        >>> import janitor
+        >>> from janitor import pivot_wider_spec
         >>> df = pd.DataFrame(
         ... [
         ...    {"famid": 1, "birth": 1, "age": 1, "ht": 2.8},
@@ -2529,42 +2529,3 @@ def pivot_wider_spec(
     if reset_index and index:
         return df.reset_index()
     return df
-    # if _index:
-    #     df = df.set_index(_index)
-    # # use a pivot, then rename
-    # # the below code may work for polars?
-    # if len(grouper) == 1:
-    #     _grouper = grouper[0]
-    # else:
-    #     _grouper = grouper
-    # grouped = df.groupby(_grouper, sort=False, observed=True)
-    # mapper = defaultdict(dict)
-    # if len(grouper) > 1:
-    #     spec_grouper = pd.MultiIndex.from_frame(spec.loc[:, grouper])
-    # else:
-    #     spec_grouper = spec[grouper[0]]
-    # for grouper, old_name, new_name in zip(
-    #     spec_grouper, spec[".value"], spec[".name"]
-    # ):
-    #     mapper[grouper].update({old_name: new_name})
-    # frames = []
-    # for grouper, frame in grouped:
-    #     mapping = mapper[grouper]
-    #     frame = frame.loc[:, [*mapping]]
-    #     frame.columns = frame.columns.map(mapping)
-    #     frames.append(frame)
-    # frames = pd.concat(frames, axis=1)
-    # return frames
-
-
-# names_from -> .name -> columns(pandas)
-# values_from -> .value-> values(pandas)
-# index = df.columns
-# - .name.unique()
-# - .value.unique()
-# - remaining columns
-# if no idex, then df.index is used
-
-# where does .value and other columns intersect?
-# group by other columns, and select .value
-# df.groupby(index + other column)[.value.unique()]

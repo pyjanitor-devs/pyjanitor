@@ -424,10 +424,13 @@ def pivot_longer_spec(
 ) -> pd.DataFrame:
     """A declarative interface to pivot a DataFrame from wide to long form,
     where you describe how the data will be unpivoted,
-    using a DataFrame. This gives you, the user,
+    using a DataFrame.
+
+    This gives you, the user,
     more control over unpivoting, where you create a “spec”
     data frame that describes exactly how data stored
     in the column names becomes variables.
+
     It can come in handy for situations where
     [`pivot_longer`][janitor.functions.pivot.pivot_longer]
     seems inadequate for the transformation.
@@ -2460,7 +2463,7 @@ def pivot_wider_spec(
           .name .value  age
         0   ht1     ht    1
         1   ht2     ht    2
-        >>> pivot_wider_spec(df=df,spec=spec)
+        >>> pivot_wider_spec(df=df,spec=spec, index=['famid','birth'])
            famid  birth  ht1  ht2
         0      1      1  2.8  3.4
         1      1      2  2.9  3.8

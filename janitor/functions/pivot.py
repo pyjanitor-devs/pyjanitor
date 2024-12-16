@@ -2452,7 +2452,7 @@ def pivot_wider_spec(
         >>> spec = {".name": ["ht1", "ht2"],
         ...         ".value": ["ht", "ht"],
         ...         "age": [1, 2]}
-        ... spec = pd.DataFrame(spec)
+        >>> spec = pd.DataFrame(spec)
         >>> spec
           .name .value  age
         0   ht1     ht    1

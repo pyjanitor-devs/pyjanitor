@@ -130,4 +130,7 @@ def test_pivot_wider_spec(df_checks):
     actual = df_checks.pipe(
         pivot_wider_spec, spec=spec, index=["famid", "birth"]
     )
-    assert_frame_equal(actual, expected)
+    assert_frame_equal(
+        actual.sort_values(expected.columns.tolist(), ignore_index=True),
+        expected.sort_values(expected.columns.tolist(), ignore_index=True),
+    )

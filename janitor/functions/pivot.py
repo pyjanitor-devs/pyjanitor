@@ -2394,10 +2394,13 @@ def pivot_wider_spec(
 ) -> pd.DataFrame:
     """A declarative interface to pivot a DataFrame from long to wide form,
     where you describe how the data will be pivoted,
-    using a DataFrame. This gives you, the user,
+    using a DataFrame.
+
+    This gives you, the user,
     more control over pivoting, where you create a “spec”
     data frame that describes exactly how data stored
     in the column names becomes variables.
+
     It can come in handy for situations where
     `pd.DataFrame.pivot`
     seems inadequate for the transformation.

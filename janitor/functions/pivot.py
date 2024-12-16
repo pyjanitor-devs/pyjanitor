@@ -327,10 +327,14 @@ def pivot_longer(
             Should be either a single column name, or a list/tuple of
             column names.
             `index` should be a list of tuples if the columns are a MultiIndex.
+            Column selection is possible using the
+            [`select`][janitor.functions.select.select] syntax.
         column_names: Name(s) of columns to unpivot. Should be either
             a single column name or a list/tuple of column names.
             `column_names` should be a list of tuples
             if the columns are a MultiIndex.
+            Column selection is possible using the
+            [`select`][janitor.functions.select.select] syntax.
         names_to: Name of new column as a string that will contain
             what were previously the column names in `column_names`.
             The default is `variable` if no value is provided. It can
@@ -2380,3 +2384,118 @@ def _check_tuples_multiindex(indexer, args, param):
         )
 
     return args
+
+
+def pivot_wider_spec(
+    df: pd.DataFrame,
+    spec: pd.DataFrame,
+    index: list | tuple | str | Pattern = None,
+    reset_index: bool = True,
+) -> pd.DataFrame:
+    """
+    Provide specification to convert DataFrame from long to wide form.
+
+    !!! abstract "Version Changed"
+
+        - 0.24.0
+            - Added `reset_index`, `names_expand` and `index_expand` parameters.
+
+    Args:
+        df: A pandas DataFrame.
+        spec: A specification DataFrame.
+            At a minimum, the spec DataFrame
+            must have a '.name' and a '.value' columns.
+            The '.name' column  should contain the
+            the names of the columns in the output DataFrame.
+            The '.value' column should contain the name of the column(s)
+            in the source DataFrame that will be serve as the values.
+            Additional columns in spec will serves as the columns
+            to be flipped to wide form.
+            Note that these additional columns should already exist
+            in the source DataFrame.
+        index: Name(s) of columns to use as identifier variables.
+            It should be either a single column name, or a list of column names.
+            If `index` is not provided, the DataFrame's index is used.
+            Column selection is possible using the
+            [`select`][janitor.functions.select.select] syntax.
+        reset_index: Determines whether to reset the `index`.
+            Applicable only if `index` is provided.
+
+    Returns:
+        A pandas DataFrame that has been unpivoted from long to wide form.
+    """  # noqa: E501
+    check("spec", spec, [pd.DataFrame])
+    check("reset_index", reset_index, [bool])
+    if not spec.columns.is_unique:
+        raise ValueError("Kindly ensure the spec's columns is unique.")
+    if ".name" not in spec.columns:
+        raise KeyError(
+            "Kindly ensure the spec DataFrame has a `.name` column."
+        )
+    if ".value" not in spec.columns:
+        raise KeyError(
+            "Kindly ensure the spec DataFrame has a `.value` column."
+        )
+    if spec.columns.tolist()[:2] != [".name", ".value"]:
+        raise ValueError(
+            "The first two columns of the spec DataFrame "
+            "should be '.name' and '.value', "
+            "with '.name' coming before '.value'."
+        )
+    if spec.columns.size == 2:
+        raise ValueError(
+            "Kindly provide the column(s) "
+            "to use to make new frame’s columns"
+        )
+    columns = spec.columns[2:]
+    values = spec[".value"].unique()
+    if index is not None:
+        index = _select_index([index], df, axis="columns")
+        index = df.columns[index].tolist()
+    df = df.pivot(index=index, columns=columns, values=values)
+    _index = spec.columns[1:].tolist()
+    spec = spec.set_index(_index).squeeze()
+    df = df.reindex(columns=spec.index)
+    df.columns = df.columns.map(spec)
+    if reset_index and index:
+        return df.reset_index()
+    return df
+    # if _index:
+    #     df = df.set_index(_index)
+    # # use a pivot, then rename
+    # # the below code may work for polars?
+    # if len(grouper) == 1:
+    #     _grouper = grouper[0]
+    # else:
+    #     _grouper = grouper
+    # grouped = df.groupby(_grouper, sort=False, observed=True)
+    # mapper = defaultdict(dict)
+    # if len(grouper) > 1:
+    #     spec_grouper = pd.MultiIndex.from_frame(spec.loc[:, grouper])
+    # else:
+    #     spec_grouper = spec[grouper[0]]
+    # for grouper, old_name, new_name in zip(
+    #     spec_grouper, spec[".value"], spec[".name"]
+    # ):
+    #     mapper[grouper].update({old_name: new_name})
+    # frames = []
+    # for grouper, frame in grouped:
+    #     mapping = mapper[grouper]
+    #     frame = frame.loc[:, [*mapping]]
+    #     frame.columns = frame.columns.map(mapping)
+    #     frames.append(frame)
+    # frames = pd.concat(frames, axis=1)
+    # return frames
+
+
+# names_from -> .name -> columns(pandas)
+# values_from -> .value-> values(pandas)
+# index = df.columns
+# - .name.unique()
+# - .value.unique()
+# - remaining columns
+# if no idex, then df.index is used
+
+# where does .value and other columns intersect?
+# group by other columns, and select .value
+# df.groupby(index + other column)[.value.unique()]

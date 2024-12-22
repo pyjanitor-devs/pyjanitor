@@ -8,6 +8,7 @@ dependencies:
   - bump2version=1.0.1
   - cairo
   - conda
+  - cython
   - hypothesis
   - ipykernel
   - ipython

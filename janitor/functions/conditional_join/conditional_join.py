@@ -18,7 +18,7 @@ from pandas.api.types import (
 from pandas.core.dtypes.concat import concat_compat
 from pandas.core.reshape.merge import _MergeOperation
 
-from janitor.functions.utils import (
+from janitor.functions.conditional_join.helper import (
     _generic_func_cond_join,
     _JoinOperator,
     _keep_output,
@@ -1546,7 +1546,7 @@ def _numba_single_non_equi_join(
         return _generic_func_cond_join(
             left=left, right=right, op=op, multiple_conditions=False, keep=keep
         )
-    from janitor.functions import _numba
+    from janitor.functions.conditional_join import _numba
 
     outcome = _generic_func_cond_join(
         left=left, right=right, op=op, multiple_conditions=True, keep="all"
@@ -1898,7 +1898,7 @@ def _numba_multiple_non_equi_join(
             rest=rest,
             starts=starts,
         )
-    from janitor.functions import _numba
+    from janitor.functions.conditional_join import _numba
 
     # logic here is based on grantjenks' sortedcontainers
     # https://github.com/grantjenks/python-sortedcontainers
@@ -2034,7 +2034,7 @@ def _range_join_sorted(
     if both columns from the right
     are monotonically sorted
     """
-    from janitor.functions import _numba
+    from janitor.functions.conditional_join import _numba
 
     left_on, right_on, op = first
     outcome = _generic_func_cond_join(
@@ -2195,7 +2195,7 @@ def _range_join_right_region_monotonic_decreasing(
     if the second column in the right region
     is monotonic decreasing
     """
-    from janitor.functions import _numba
+    from janitor.functions.conditional_join import _numba
 
     ends = right_regions[::-1, 1].searchsorted(left_regions[:, 1])
     ends = len(right_regions) - ends
@@ -2318,7 +2318,7 @@ def _numba_non_equi_join_monotonic_increasing(
     if the second column in the right region
     is monotonic increasing
     """
-    from janitor.functions import _numba
+    from janitor.functions.conditional_join import _numba
 
     _starts = right_regions[:, 1].searchsorted(left_regions[:, 1])
     starts = np.where(starts > _starts, starts, _starts)
@@ -2532,7 +2532,7 @@ def _numba_equi_join(
     # 	id	value_1	id	value_2A	value_2B
     # 	2	  3	    2	   2	       4
     #
-    from janitor.functions import _numba
+    from janitor.functions.conditional_join import _numba
 
     left_column, right_column, _ = eqs
     # steal some perf here within the binary search

@@ -28,7 +28,7 @@ repos:
 
   # The interim replacement for darglint is pydoclint.
   - repo: https://github.com/jsh9/pydoclint
-    rev: 0.5.13
+    rev: 0.5.14
     hooks:
       - id: pydoclint
         args:

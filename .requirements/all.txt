@@ -36,13 +36,13 @@ darglint==1.8.1
     # via -r dev.in
 decorator==5.1.1
     # via ipython
-distlib==0.3.4
+distlib==0.3.9
     # via virtualenv
 execnet==1.9.0
     # via pytest-xdist
 executing==0.8.3
     # via stack-data
-filelock==3.6.0
+filelock==3.16.1
     # via virtualenv
 flake8==4.0.1
     # via
@@ -153,7 +153,7 @@ pickleshare==0.7.5
     # via ipython
 pip-tools==6.5.1
     # via -r dev.in
-platformdirs==2.5.1
+platformdirs==4.3.6
     # via
     #   black
     #   virtualenv
@@ -226,7 +226,6 @@ six==1.16.0
     #   asttokens
     #   multipledispatch
     #   python-dateutil
-    #   virtualenv
 sortedcontainers==2.4.0
     # via hypothesis
 stack-data==0.2.0
@@ -255,7 +254,7 @@ typing-extensions==4.9.0
     # via black
 unyt==2.8.0
     # via -r engineering.in
-virtualenv==20.13.3
+virtualenv==20.26.6
     # via pre-commit
 watchdog==2.1.6
     # via mkdocs

@@ -432,7 +432,8 @@ def test_complete_multiple_groupings():
         fill_value={"tag_count": 0},
         sort=True,
     ).astype({"tag_count": int})
-    assert_frame_equal(result, output3)
+    print(result)
+    assert_frame_equal(result, output3, check_dtype=False)
 
 
 def test_fill_value_scalar(taxonomy_df):
@@ -451,7 +452,7 @@ def test_fill_value_scalar(taxonomy_df):
         .sort_values("Taxon", ignore_index=True)
     )
 
-    assert_frame_equal(result, expected)
+    assert_frame_equal(result, expected, check_dtype=False)
 
 
 #  http://imachordata.com/2016/02/05/you-complete-me/

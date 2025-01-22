@@ -3,7 +3,7 @@
 from functools import wraps
 
 try:
-    from pandas.api.extensions import register_dataframe_accessor
+    from pyspark.pandas.extensions import register_dataframe_accessor
 
 except ImportError:
     from janitor.utils import import_message

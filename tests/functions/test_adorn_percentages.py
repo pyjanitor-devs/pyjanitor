@@ -17,7 +17,7 @@ def test_adorn_percentages_row():
     df = pd.DataFrame(data)
 
     result = adorn_percentages(
-        df, "Category", "Subcategory", axis="row", fmt=True
+        df, "Category", "Subcategory", axis="row", fmt=True, include_ns=False
     )
 
     assert result.shape[0] == 3
@@ -41,7 +41,7 @@ def test_adorn_percentages_col():
     df = pd.DataFrame(data)
 
     result = adorn_percentages(
-        df, "Category", "Subcategory", axis="col", fmt=True
+        df, "Category", "Subcategory", axis="col", fmt=True, include_ns=False
     )
 
     assert result.shape[0] == 3
@@ -65,7 +65,7 @@ def test_adorn_percentages_all():
     df = pd.DataFrame(data)
 
     result = adorn_percentages(
-        df, "Category", "Subcategory", axis="all", fmt=True
+        df, "Category", "Subcategory", axis="all", fmt=True, include_ns=False
     )
 
     assert result.shape[0] == 3
@@ -98,14 +98,14 @@ def test_adorn_percentages_with_ns_row():
     assert result.shape[1] > 1
     # Should have more than one column (including percentages and raw counts)
     assert "(" in result.iloc[0, 1]
-    # Check that the raw counts are included
+    # Check that raw counts are included
 
 
 @pytest.mark.functions
 def test_adorn_percentages_with_ns_col():
     """
-    Test that adorn_percentages correctly calculates
-        column percentages with raw counts.
+    Test that adorn_percentages correctly calculates column percentages
+    with raw counts.
     """
     data = {
         "Category": ["A", "A", "B", "B", "C", "C", "A", "B", "C", "A"],
@@ -123,14 +123,14 @@ def test_adorn_percentages_with_ns_col():
     assert result.shape[1] > 1
     # Should have more than one column (including percentages and raw counts)
     assert "(" in result.iloc[0, 1]
-    # Check that the raw counts are included
+    # Check that raw counts are included
 
 
 @pytest.mark.functions
 def test_adorn_percentages_with_ns_all():
     """
-    Test that adorn_percentages correctly
-    calculates total (global) percentages with raw counts.
+    Test that adorn_percentages correctly calculates total (global) percentages
+    with raw counts.
     """
     data = {
         "Category": ["A", "A", "B", "B", "C", "C", "A", "B", "C", "A"],
@@ -148,4 +148,4 @@ def test_adorn_percentages_with_ns_all():
     assert result.shape[1] > 1
     # Should have more than one column (including percentages and raw counts)
     assert "(" in result.iloc[0, 1]
-    # Check that the raw counts are included
+    # Check that raw counts are included

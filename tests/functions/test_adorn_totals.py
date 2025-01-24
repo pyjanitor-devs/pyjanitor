@@ -3,7 +3,7 @@ import pytest
 
 from janitor.functions.adorn import adorn_totals
 
-# Données d'exemple
+# Sample data
 data = {
     "Category": ["A", "A", "B", "B", "C", "C", "A", "B", "C", "A"],
     "Subcategory": ["X", "Y", "X", "Y", "X", "Y", "X", "Y", "X", "X"],
@@ -16,37 +16,37 @@ df = pd.DataFrame(data)
 @pytest.mark.functions
 def test_adorn_totals_row():
     """
-    Test que adorn_totals ajoute correctement une ligne 'Total' au tableau croisé.
+    Test that adorn_totals correctly adds a 'Total' row to the crosstab.
     """
     result = adorn_totals(df, "Category", "Subcategory", axis=0)
 
     assert (
         "Total" in result.index
-    ), "La ligne 'Total' doit être présente dans le tableau."
+    ), "The 'Total' row must be present in the crosstab."
     assert (
         result.loc["Total"].sum() == df["Value"].count()
-    ), "La somme de la ligne 'Total' doit correspondre au total des comptes."
+    ), "The sum of the 'Total' row must match the total count of the values."
 
 
 @pytest.mark.functions
 def test_adorn_totals_column():
     """
-    Test que adorn_totals ajoute correctement une colonne 'Total' au tableau croisé.
+    Test that adorn_totals correctly adds a 'Total' column to the crosstab.
     """
     result = adorn_totals(df, "Category", "Subcategory", axis=1)
 
     assert (
         "Total" in result.columns
-    ), "La colonne 'Total' doit être présente dans le tableau."
+    ), "The 'Total' column must be present in the crosstab."
     assert (
         result["Total"].sum() == df["Value"].count()
-    ), "La somme de la colonne 'Total' doit correspondre au total des comptes."
+    ), "The sum of the 'Total' column must match the total count of the values."
 
 
 @pytest.mark.functions
 def test_adorn_totals_empty_df():
     """
-    Test que adorn_totals fonctionne correctement avec un DataFrame vide.
+    Test that adorn_totals works correctly with an empty DataFrame.
     """
     empty_df = pd.DataFrame(columns=["Category", "Subcategory", "Value"])
     result_row = adorn_totals(empty_df, "Category", "Subcategory", axis=0)
@@ -54,10 +54,10 @@ def test_adorn_totals_empty_df():
 
     assert (
         result_row.empty
-    ), "Le tableau croisé doit être vide lorsqu'un DataFrame vide est utilisé."
+    ), "The crosstab must be empty when an empty DataFrame is used."
     assert (
         result_col.empty
-    ), "Le tableau croisé doit être vide lorsqu'un DataFrame vide est utilisé."
+    ), "The crosstab must be empty when an empty DataFrame is used."
 
 
 @pytest.mark.functions
@@ -79,7 +79,7 @@ def test_adorn_totals_invalid_axis():
 @pytest.mark.functions
 def test_adorn_totals_large_data():
     """
-    Test que adorn_totals fonctionne correctement avec un DataFrame plus grand.
+    Test that adorn_totals works correctly with a larger DataFrame.
     """
     large_data = {
         "Category": ["A"] * 1000 + ["B"] * 1000,
@@ -91,7 +91,7 @@ def test_adorn_totals_large_data():
 
     assert (
         "Total" in result.index
-    ), "La ligne 'Total' doit être présente dans le tableau pour un grand DataFrame."
+    ), "The 'Total' row must be present in the crosstab for a large DataFrame."
     assert result.loc["Total"].sum() == len(
         large_data["Value"]
-    ), "La somme de la ligne 'Total' doit correspondre au total des comptes."
+    ), "The sum of the 'Total' row must match the total count of the values."

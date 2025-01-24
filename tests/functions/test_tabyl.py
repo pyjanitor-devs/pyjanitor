@@ -7,7 +7,7 @@ from janitor.functions.adorn import tabyl
 @pytest.mark.functions
 def test_tabyl_basic_counts():
     """
-    Test que tabyl génère correctement un tableau croisé avec des comptes bruts.
+    Test that tabyl correctly generates a crosstab with raw counts.
     """
     data = {
         "Category": ["A", "A", "B", "B", "C", "C", "A", "B", "C", "A"],
@@ -37,13 +37,13 @@ def test_tabyl_basic_counts():
     ), f"Expected at least 5 columns, got {result.shape[1]}"
     assert (
         result.iloc[:, 1:].sum().sum() == 10
-    )  # La somme des comptes doit être égale à 10
+    )  # The sum of the counts should be equal to 10
 
 
 @pytest.mark.functions
 def test_tabyl_with_percentages_row():
     """
-    Test que tabyl calcule correctement les pourcentages par ligne.
+    Test that tabyl correctly calculates percentages by row.
     """
     data = {
         "Category": ["A", "A", "B", "B", "C", "C", "A", "B", "C", "A"],
@@ -90,7 +90,7 @@ def test_tabyl_with_percentages_row():
 @pytest.mark.functions
 def test_tabyl_with_percentages_col():
     """
-    Test que tabyl calcule correctement les pourcentages par colonne.
+    Test that tabyl correctly calculates percentages by column.
     """
     data = {
         "Category": ["A", "A", "B", "B", "C", "C", "A", "B", "C", "A"],
@@ -137,7 +137,7 @@ def test_tabyl_with_percentages_col():
 @pytest.mark.functions
 def test_tabyl_with_percentages_all():
     """
-    Test que tabyl calcule correctement les pourcentages totaux.
+    Test that tabyl correctly calculates total percentages.
     """
     data = {
         "Category": ["A", "A", "B", "B", "C", "C", "A", "B", "C", "A"],

@@ -149,3 +149,37 @@ def test_adorn_percentages_with_ns_all():
     # Should have more than one column (including percentages and raw counts)
     assert "(" in result.iloc[0, 1]
     # Check that raw counts are included
+
+
+@pytest.mark.functions
+def test_adorn_percentages_empty_pivot():
+    """
+    Test that adorn_percentages returns an empty DataFrame if the pivot is empty.
+    """
+    # DataFrame sans colonnes valides pour le pivot
+    data = {"NonExistentColumn": [], "AnotherColumn": [], "Value": []}
+    df = pd.DataFrame(data)
+
+    # Appel de la fonction avec des colonnes inexistantes
+    result = adorn_percentages(df, "NonExistentColumn", "AnotherColumn")
+
+    # Vérifie que le résultat est un DataFrame vide
+    assert result.empty, "Expected an empty DataFrame when pivot is empty."
+
+
+@pytest.mark.functions
+def test_adorn_percentages_invalid_axis():
+    """
+    Test that adorn_percentages raises a ValueError for an invalid axis argument.
+    """
+    data = {
+        "Category": ["A", "B"],
+        "Subcategory": ["X", "Y"],
+        "Value": [10, 20],
+    }
+    df = pd.DataFrame(data)
+
+    with pytest.raises(
+        ValueError, match="The 'axis' argument must be 'row', 'col', or 'all'."
+    ):
+        adorn_percentages(df, "Category", "Subcategory", axis="invalid")

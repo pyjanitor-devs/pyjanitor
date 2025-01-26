@@ -179,3 +179,81 @@ def test_tabyl_with_percentages_all():
     assert (
         result_numeric.select_dtypes(include=["float", "int"]).max().max() <= 1
     )
+
+
+@pytest.mark.functions
+def test_tabyl_missing_col1():
+    """
+    Test that tabyl raises an error if col1 is missing from the DataFrame.
+    """
+    data = {"Category": ["A", "B"], "Subcategory": ["X", "Y"]}
+    df = pd.DataFrame(data)
+
+    with pytest.raises(
+        ValueError, match="Column 'Region' is not in the DataFrame."
+    ):
+        tabyl(df, "Region")
+
+
+@pytest.mark.functions
+def test_tabyl_missing_col2():
+    """
+    Test that tabyl raises an error if col2 is missing from the DataFrame.
+    """
+    data = {"Category": ["A", "B"], "Subcategory": ["X", "Y"]}
+    df = pd.DataFrame(data)
+
+    with pytest.raises(
+        ValueError, match="Column 'Value' is not in the DataFrame."
+    ):
+        tabyl(df, "Category", "Value")
+
+
+@pytest.mark.functions
+def test_tabyl_missing_col3():
+    """
+    Test that tabyl raises an error if col3 is missing from the DataFrame.
+    """
+    data = {"Category": ["A", "B"], "Subcategory": ["X", "Y"]}
+    df = pd.DataFrame(data)
+
+    with pytest.raises(
+        ValueError, match="Column 'Region' is not in the DataFrame."
+    ):
+        tabyl(df, "Category", "Subcategory", "Region")
+
+
+@pytest.mark.functions
+def test_tabyl_single_column():
+    """
+    Test that tabyl works correctly with only col1 specified.
+    """
+    data = {"Category": ["A", "B", "A", "C", "B", "A", "C"]}
+    df = pd.DataFrame(data)
+
+    result = tabyl(df, "Category")
+    assert result.shape[0] == 3  # Three unique values in 'Category'
+    assert (
+        result["count"].sum() == 7
+    )  # Total count should match the number of rows
+
+
+@pytest.mark.functions
+def test_tabyl_invalid_percentage_axis():
+    """
+    Test that tabyl raises an error for invalid percentage_axis values.
+    """
+    data = {"Category": ["A", "B"], "Subcategory": ["X", "Y"]}
+    df = pd.DataFrame(data)
+
+    with pytest.raises(
+        ValueError,
+        match="`percentage_axis` must be one of 'row', 'col', or 'all'.",
+    ):
+        tabyl(
+            df,
+            "Category",
+            "Subcategory",
+            show_percentages=True,
+            percentage_axis="invalid",
+        )

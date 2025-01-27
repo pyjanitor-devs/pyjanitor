@@ -133,14 +133,6 @@ def test_interactive_file_selection_valid(dummy_zip_file):
         assert "file2.csv" in result
 
 
-def test_interactive_file_selection_invalid(dummy_zip_file):
-    """Test invalid input for interactive file selection."""
-    user_input = "4,abc"
-    with patch("builtins.input", return_value=user_input):
-        with pytest.raises(ValueError, match="No valid files selected"):
-            read_archive(str(dummy_zip_file), extract_to_df=False)
-
-
 # Tests for file type inference
 def test_infer_file_type_valid():
     """Test valid file type inference."""

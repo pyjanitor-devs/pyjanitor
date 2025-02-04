@@ -673,7 +673,7 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
 
     Returns an array of integers.
     """
-    level_label = {}
+
     index = getattr(df, axis)
     if not isinstance(index, pd.MultiIndex):
         return _select_index(list(arg), df, axis)
@@ -687,6 +687,7 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
             "in the MultiIndex, and should either be all "
             "strings or integers."
         )
+    level_label = {}
     for key, value in arg.items():
         if isinstance(value, dispatch_callable):
             indexer = index.get_level_values(key)
@@ -757,14 +758,14 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
 def _column_sel_dispatch(cols, df, axis):  # noqa: F811
     """
     Base function for selection on a Pandas Index object.
-    Returns the inverse of the passed label(s).
+    Returns the inverse of the passed label(s),
+    or the set difference if it is part of a list of labels.
 
     Returns an array of integers.
     """
     arr = _select_index(cols.label, df, axis)
     index = np.arange(getattr(df, axis).size)
-    arr = _index_converter(arr, index)
-    return np.delete(index, arr)
+    return _index_converter(arr, index)
 
 
 @_select_index.register(set)
@@ -797,27 +798,43 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
             indices = index.get_indexer_for(list(arg))
             if (indices != -1).all():
                 return indices
-    # treat multiple DropLabel instances as a single unit
-    checks = (isinstance(entry, DropLabel) for entry in arg)
-    if sum(checks) > 1:
-        drop_labels = (entry for entry in arg if isinstance(entry, DropLabel))
-        drop_labels = [entry.label for entry in drop_labels]
-        drop_labels = DropLabel(drop_labels)
-        arg = [entry for entry in arg if not isinstance(entry, DropLabel)]
-        arg.append(drop_labels)
-    indices = [_select_index(entry, df, axis) for entry in arg]
+
+    include = []
+    exclude = []
+    for entry in arg:
+        if isinstance(entry, DropLabel):
+            exclude.append(entry)
+        else:
+            outcome = _select_index(entry, df, axis)
+            include.append(outcome)
+    if exclude:
+        if len(exclude) > 1:
+            exclude = [entry.label for entry in exclude]
+            exclude = DropLabel(exclude)
+        else:
+            exclude = exclude[0]
+        exclude = _select_index(exclude, df, axis)
+    len_exclude = len(exclude)
+    if len_exclude and not include:
+        index_arr = np.arange(getattr(df, axis).size)
+        return np.delete(index_arr, exclude)
+    if include and len_exclude:
+        include = [_index_converter(arr, index) for arr in include]
+        include = np.concatenate(include)
+        mask = np.isin(include, exclude)
+        return include[~mask]
     # single entry does not need to be combined
     # or materialized if possible;
     # this offers more performance
-    if len(indices) == 1:
-        if is_scalar(indices[0]):
-            return indices
-        indices = indices[0]
-        if is_list_like(indices):
-            indices = np.asanyarray(indices)
-        return indices
-    indices = [_index_converter(arr, index) for arr in indices]
-    return np.concatenate(indices)
+    if len(include) == 1:
+        if is_scalar(include[0]):
+            return include
+        include = include[0]
+        if is_list_like(include):
+            include = np.asanyarray(include)
+        return include
+    include = [_index_converter(arr, index) for arr in include]
+    return np.concatenate(include)
 
 
 def _index_converter(arr, index):

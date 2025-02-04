@@ -152,13 +152,13 @@ def select_columns(
 
         Exclude columns with the `DropLabel` class:
         >>> from janitor import DropLabel
-        >>> df.select_columns(DropLabel(slice("name", "awake")), "conservation")
-           brainwt   bodywt  conservation
-        0      NaN   50.000            lc
-        1  0.01550    0.480           NaN
-        2      NaN    1.350            nt
-        3  0.00029    0.019            lc
-        4  0.42300  600.000  domesticated
+        >>> df.select_columns(DropLabel(slice("name", "awake")))
+           brainwt   bodywt
+        0      NaN   50.000
+        1  0.01550    0.480
+        2      NaN    1.350
+        3  0.00029    0.019
+        4  0.42300  600.000
 
         Selection on MultiIndex columns:
         >>> d = {'num_legs': [4, 4, 2, 2],

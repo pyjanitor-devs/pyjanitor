@@ -95,7 +95,7 @@ Contributors
 - [@sauln](https://github.com/sauln) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3Asauln)
 - [@richardqiu](https://github.com/richardqiu) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3Arichardqiu)
 - [@MinchinWeb](https://github.com/MinchinWeb) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3AMinchinWeb)
-- [@BaritoneBeard](https://github.com/BaritoneBeard) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3ABaritoneBeard)
+- [@BaritoneBeard](https://github.com/Nalmeder) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3ANalmeder)
 - [@Sousa8697](https://github.com/Sousa8697) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3ASousa8697)
 - [@MollyCroke](https://github.com/MollyCroke) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3AMollyCroke)
 - [@ericclessantostv](https://github.com/ericlessantostv) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3Aericclessantostv)

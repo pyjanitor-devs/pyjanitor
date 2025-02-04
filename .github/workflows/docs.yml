@@ -23,12 +23,11 @@ jobs:
 
       # See: https://github.com/marketplace/actions/setup-miniconda
       - name: Setup miniconda
-        uses: conda-incubator/setup-miniconda@v2
+        uses: conda-incubator/setup-miniconda@v3
         with:
           auto-update-conda: true
-          miniforge-variant: Mambaforge
           environment-file: environment-dev.yml
-          use-mamba: true
+          miniforge-version: latest
 
       - name: Install pyjanitor
         # use editable mode to avoid _pytest.pathlib.ImportPathMismatchError

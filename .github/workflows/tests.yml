@@ -41,13 +41,11 @@ jobs:
 
       # See: https://github.com/marketplace/actions/setup-miniconda
       - name: Setup miniconda
-        uses: conda-incubator/setup-miniconda@v2
+        uses: conda-incubator/setup-miniconda@v3
         with:
           auto-update-conda: true
-          miniforge-variant: Mambaforge
-          channels: conda-forge
           environment-file: environment-dev.yml
-          use-mamba: true
+          miniforge-version: latest
 
       - name: Install pyjanitor
         run: python -m pip install -e .

@@ -2355,7 +2355,12 @@ def test_dual_conditions_ne_and_eq(df, right):
     filters = ["A", "E", "Integers", "Dates"]
     expected = (
         df[["A", "E"]]
-        .merge(right[["Integers", "Dates"]], left_on="E", right_on="Dates")
+        .dropna(subset="E")
+        .merge(
+            right[["Integers", "Dates"]].dropna(subset="Dates"),
+            left_on="E",
+            right_on="Dates",
+        )
         .loc[lambda df: df.A.ne(df.Integers)]
         .sort_values(filters, ignore_index=True)
     )
@@ -2924,8 +2929,13 @@ def test_ge_eq_and_le_numbers_variant(df, right):
 
     columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
     expected = (
-        df.merge(
-            right, left_on="B", right_on="Floats", how="inner", sort=False
+        df.dropna(subset="B")
+        .merge(
+            right.dropna(subset="Floats"),
+            left_on="B",
+            right_on="Floats",
+            how="inner",
+            sort=False,
         )
         .loc[lambda df: df.A.ge(df.Integers) & df.E.le(df.Dates), columns]
         .sort_values(columns, ignore_index=True)
@@ -3249,8 +3259,13 @@ def test_ge_eq_and_le_numbers_variant_numba(df, right):
 
     columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
     expected = (
-        df.merge(
-            right, left_on="B", right_on="Floats", how="inner", sort=False
+        df.dropna(subset="B")
+        .merge(
+            right.dropna(subset="Floats"),
+            left_on="B",
+            right_on="Floats",
+            how="inner",
+            sort=False,
         )
         .loc[lambda df: df.A.lt(df.Integers) & df.E.gt(df.Dates), columns]
         .sort_values(columns, ignore_index=True)
@@ -3598,10 +3613,8 @@ def test_ge_eq_and_le_datess_numba_indices(df, right):
     expected = pd.Index(expected)
 
     actual, _ = get_join_indices(
-        df[["B", "A", "E"]].dropna(subset=["E"]),
-        right[["Floats", "Integers", "Dates", "Numeric"]].dropna(
-            subset=["Dates"]
-        ),
+        df[["B", "A", "E"]],
+        right[["Floats", "Integers", "Dates", "Numeric"]],
         [
             ("A", "Integers", "<"),
             ("E", "Dates", "=="),
@@ -3634,10 +3647,9 @@ def test_eq_indices(df, right):
     )
     expected = pd.Index(expected)
 
-    # get rid of the dropna in future PR
     actual, _ = get_join_indices(
-        df.dropna(subset=["E"]),
-        right.dropna(subset=["Dates"]),
+        df,
+        right,
         [
             ("E", "Dates", "=="),
         ],
@@ -3676,15 +3688,11 @@ def test_eq_indices_ragged_arrays(df, right):
         ],
         return_ragged_arrays=True,
     )
-    if isinstance(ractual, list):
-        ractual = [right.index[arr] for arr in ractual]
-        ractual = np.concatenate(ractual)
-    ractual = pd.Index(ractual)
-    lactual = pd.Index(lactual)
-    if isinstance(ractual, list):
+    if isinstance(ractual, (slice, list)):
         ractual = [right.index[arr] for arr in ractual]
         lengths = [len(arr) for arr in ractual]
         ractual = np.concatenate(ractual)
+        ractual = pd.Index(ractual)
         lactual = pd.Index(lactual).repeat(lengths)
     ractual = pd.Index(ractual)
     lactual = pd.Index(lactual)
@@ -4046,9 +4054,10 @@ def test_range_indices_ragged_arrays(df, right):
 def test_ge_eq_and_le_datess_indices(df, right):
     """compare join indices for multiple conditions."""
     expected = (
-        df.reset_index()
+        df.dropna(subset="E")
+        .reset_index()
         .merge(
-            right,
+            right.dropna(subset="Dates"),
             left_on="E",
             right_on="Dates",
             how="inner",

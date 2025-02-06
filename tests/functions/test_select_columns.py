@@ -44,6 +44,27 @@ def test_select_column_names_droplabel(dataframe, invert, expected):
     assert_frame_equal(df, dataframe[expected])
 
 
+def test_select_column_names_droplabel_mix():
+    "Test DropLabel, mixed with other labels"
+    data = {
+        "rowid": [1, 2],
+        "species": ["Adelie", "Adelie"],
+        "island": ["Torgersen", "Torgersen"],
+        "bill_length_mm": [39.1, 39.5],
+        "bill_depth_mm": [18.7, 17.4],
+        "flipper_length_mm": [181.0, 186.0],
+        "body_mass_g": [3750.0, 3800.0],
+        "sex": ["male", "female"],
+        "year": [2007, 2007],
+    }
+
+    df = pd.DataFrame(data)
+    selectors = [pd.api.types.is_numeric_dtype, DropLabel(["year", "rowid"])]
+    actual = df.select(selectors)
+    expected = df.select_dtypes("number").drop(columns=["year", "rowid"])
+    assert_frame_equal(actual, expected)
+
+
 @pytest.mark.functions
 def test_select_column_names_droplabel_multiple(dataframe):
     "Base DataFrame"

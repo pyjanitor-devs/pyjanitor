@@ -1,5 +1,4 @@
-"""Biology and bioinformatics-oriented data cleaning functions.
-"""
+"""Biology and bioinformatics-oriented data cleaning functions."""
 
 import pandas as pd
 import pandas_flavor as pf

@@ -1,4 +1,4 @@
-""" Backend functions for pyspark."""
+"""Backend functions for pyspark."""
 
 from functools import wraps
 

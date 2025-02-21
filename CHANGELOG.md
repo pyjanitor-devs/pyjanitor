@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-  [ENH] Add support for pd.Series.select - Issue #1394 @samukweku
+
 ## [v0.30.0] - 2024-12-04
 
 ## [v0.29.2] - 2024-09-28

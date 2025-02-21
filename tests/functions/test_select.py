@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
-from pandas.testing import assert_frame_equal
+from pandas.testing import assert_frame_equal, assert_series_equal
 
 from janitor.functions.select import DropLabel
 
@@ -20,6 +20,22 @@ def dataframe():
         index=index,
         columns=["col1", "col2"],
     )
+
+
+def test_series_axis(dataframe):
+    """Raise if object is a  Series and axis is a column"""
+    with pytest.raises(
+        ValueError, match="axis can only be `index` for a Series object."
+    ):
+        dataframe.iloc[:, 0].select("bar", axis="columns")
+
+
+def test_series_select(dataframe):
+    """Test output when selecting on a Series"""
+    series = dataframe.iloc[:, 0]
+    actual = series.select(index="bar")
+    expected = series.loc[["bar"]]
+    assert_series_equal(actual, expected)
 
 
 def test_args_and_rows_and_columns(dataframe):

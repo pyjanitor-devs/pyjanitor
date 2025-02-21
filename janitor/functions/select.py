@@ -328,15 +328,16 @@ def select_rows(
 
 
 @pf.register_dataframe_method
+@pf.register_series_method
 @deprecated_alias(rows="index")
 def select(
-    df: pd.DataFrame,
+    df: pd.DataFrame | pd.Series,
     *args: tuple,
     index: Any = None,
     columns: Any = None,
     axis: str = "columns",
     invert: bool = False,
-) -> pd.DataFrame:
+) -> pd.DataFrame | pd.Series:
     """Method-chainable selection of rows and columns.
 
     It accepts a string, shell-like glob strings `(*string*)`,
@@ -346,6 +347,8 @@ def select(
     is possible with a dictionary.
 
     This method does not mutate the original DataFrame.
+
+    If the pandas object is a Series, selection is possible only on the index.
 
     Selection can be inverted with the `DropLabel` class.
 
@@ -366,6 +369,8 @@ def select(
         - 0.26.0
             - Added variable `args`, `invert` and `axis` parameters.
             - `rows` keyword deprecated in favour of `index`.
+        - 0.31.0
+            - Add support for pd.Series.
 
     Examples:
         >>> import pandas as pd
@@ -431,7 +436,6 @@ def select(
     Returns:
         A pandas DataFrame with the specified rows and/or columns selected.
     """  # noqa: E501
-
     if args:
         check("invert", invert, [bool])
         if (index is not None) or (columns is not None):
@@ -441,6 +445,8 @@ def select(
             )
         if axis == "index":
             return _select(df, rows=list(args), columns=columns, invert=invert)
+        if (axis == "columns") & isinstance(df, pd.Series):
+            raise ValueError("axis can only be `index` for a Series object.")
         if axis == "columns":
             return _select(df, columns=list(args), rows=index, invert=invert)
         raise ValueError("axis should be either 'index' or 'columns'.")
@@ -851,15 +857,16 @@ def _index_converter(arr, index):
 
 
 def _select(
-    df: pd.DataFrame,
+    df: pd.DataFrame | pd.Series,
     invert: bool = False,
     rows=None,
     columns=None,
-) -> pd.DataFrame:
+) -> pd.DataFrame | pd.Series:
     """
     Index DataFrame on the index or columns.
+    If it is a Series, indexing is only on the index.
 
-    Returns a DataFrame.
+    Returns a DataFrame or Series.
     """
     if rows is None:
         row_indexer = slice(None)
@@ -870,6 +877,8 @@ def _select(
             row_indexer[outcome] = False
         else:
             row_indexer = outcome
+    if isinstance(df, pd.Series):
+        return df.iloc[row_indexer]
     if columns is None:
         column_indexer = slice(None)
     else:

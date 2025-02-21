@@ -434,7 +434,7 @@ def select(
         ValueError: If args and index/columns are provided.
 
     Returns:
-        A pandas DataFrame with the specified rows and/or columns selected.
+        A pandas DataFrame or Series with the specified rows and/or columns selected.
     """  # noqa: E501
     if args:
         check("invert", invert, [bool])

@@ -338,7 +338,7 @@ def select(
     axis: str = "columns",
     invert: bool = False,
 ) -> pd.DataFrame | pd.Series:
-    """Method-chainable selection of rows and columns.
+    """Method-chainable selection of rows and/or columns.
 
     It accepts a string, shell-like glob strings `(*string*)`,
     regex, slice, array-like object, or a list of the previous options.
@@ -346,7 +346,7 @@ def select(
     Selection on a MultiIndex on a level, or multiple levels,
     is possible with a dictionary.
 
-    This method does not mutate the original DataFrame.
+    This method does not mutate the original DataFrame or Series.
 
     If the pandas object is a Series, selection is possible only on the index.
 

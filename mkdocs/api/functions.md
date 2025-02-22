@@ -2,6 +2,8 @@
 
 ::: janitor.functions
     options:
+      filters:
+      - "!^_"
       members:
         - add_columns
         - also

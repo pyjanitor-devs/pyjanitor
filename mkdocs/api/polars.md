@@ -2,6 +2,8 @@
 
 ::: janitor.polars
     options:
+      filters:
+      - "!^_"
       members:
         - clean_names
         - complete

@@ -1,4 +1,4 @@
-""" Machine learning specific functions. """
+"""Machine learning specific functions."""
 
 from typing import Hashable, Iterable, List, Optional, Tuple, Union
 

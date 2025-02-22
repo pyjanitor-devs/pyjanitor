@@ -1,4 +1,4 @@
-""" Time series-specific data cleaning functions. """
+"""Time series-specific data cleaning functions."""
 
 import itertools
 from typing import Dict, Union

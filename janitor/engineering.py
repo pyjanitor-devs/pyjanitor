@@ -1,5 +1,4 @@
-"""Engineering-specific data cleaning functions.
-"""
+"""Engineering-specific data cleaning functions."""
 
 import numpy as np
 import pandas as pd

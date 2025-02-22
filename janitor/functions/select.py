@@ -445,8 +445,6 @@ def select(
             )
         if axis == "index":
             return _select(df, rows=list(args), columns=columns, invert=invert)
-        if (axis == "columns") & isinstance(df, pd.Series):
-            raise ValueError("axis can only be `index` for a Series object.")
         if axis == "columns":
             return _select(df, columns=list(args), rows=index, invert=invert)
         raise ValueError("axis should be either 'index' or 'columns'.")
@@ -868,6 +866,8 @@ def _select(
 
     Returns a DataFrame or Series.
     """
+    if (columns is not None) and isinstance(df, pd.Series):
+        raise ValueError("columns axis is not supported for pd.Series.select")
     if rows is None:
         row_indexer = slice(None)
     else:

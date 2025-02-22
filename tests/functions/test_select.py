@@ -25,7 +25,7 @@ def dataframe():
 def test_series_axis(dataframe):
     """Raise if object is a  Series and axis is a column"""
     with pytest.raises(
-        ValueError, match="axis can only be `index` for a Series object."
+        ValueError, match="columns axis is not supported for pd.Series.select"
     ):
         dataframe.iloc[:, 0].select("bar", axis="columns")
 

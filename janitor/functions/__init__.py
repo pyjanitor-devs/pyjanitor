@@ -57,6 +57,7 @@ from .label_encode import label_encode
 from .limit_column_characters import limit_column_characters
 from .min_max_scale import min_max_scale
 from .move import move
+from .mutate import mutate
 from .pivot import (
     pivot_longer,
     pivot_longer_spec,
@@ -140,6 +141,7 @@ __all__ = [
     "limit_column_characters",
     "min_max_scale",
     "move",
+    "mutate",
     "pivot_longer",
     "pivot_longer_spec",
     "pivot_wider",

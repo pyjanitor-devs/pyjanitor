@@ -2,16 +2,6 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal
 
-# @pytest.fixture
-# def df_mutate():
-#     return pd.DataFrame(
-#         {
-#             "col1": [5, 10, 15],
-#             "col2": [3, 6, 9],
-#             "col3": [10, 100, 1_000],
-#         }
-#     )
-
 
 @pytest.fixture
 def df_mutate():
@@ -96,5 +86,45 @@ def test_mutate_dict_by_tuple(df_mutate):
         avg_run_mean=df_mutate.groupby("combine_id")["avg_run"].transform(
             "mean"
         )
+    )
+    assert_frame_equal(actual, expected)
+
+
+def test_mutate_tuple_count_not_eq_2(df_mutate):
+    """Raise error if length of tuple is not 2"""
+    with pytest.raises(ValueError, match="the tuple has to be a length of 2"):
+        df_mutate.mutate(("avg_run",))
+
+
+def test_mutate_df_tuple(df_mutate):
+    "Test output for a tuple"
+    actual = df_mutate.mutate(("avg_run", "sqrt"))
+    expected = df_mutate.assign(avg_run=df_mutate["avg_run"].transform("sqrt"))
+    assert_frame_equal(actual, expected)
+
+
+def test_mutate_by_tuple(df_mutate):
+    """Test output for a dictionary"""
+    actual = df_mutate.mutate(("avg_run", "mean"), by="combine_id")
+    expected = df_mutate.assign(
+        avg_run=df_mutate.groupby("combine_id")["avg_run"].transform("mean")
+    )
+    assert_frame_equal(actual, expected)
+
+
+def test_mutate_tuple_df_callable(df_mutate):
+    """Test output for a dictionary"""
+    actual = df_mutate.mutate(("avg_run", lambda df: df.sum()))
+    expected = df_mutate.assign(avg_run=df_mutate["avg_run"].sum())
+    assert_frame_equal(actual, expected)
+
+
+def test_mutate_tuple_by_callable(df_mutate):
+    """Test output for a dictionary"""
+    actual = df_mutate.mutate(
+        ("avg_run", lambda df: df.sum()), by="combine_id"
+    )
+    expected = df_mutate.assign(
+        avg_run=df_mutate.groupby("combine_id")["avg_run"].transform("sum")
     )
     assert_frame_equal(actual, expected)

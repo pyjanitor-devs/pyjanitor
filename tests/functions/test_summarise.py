@@ -118,3 +118,14 @@ def test_summarise_tuple_by_callable(df_summarise):
     )
     expected = df_summarise.groupby("combine_id").agg({"avg_run": "sum"})
     assert_frame_equal(actual, expected)
+
+
+def test_summarise_tuple_by_callable_dataframe(df_summarise):
+    """Test output for a tuple"""
+    actual = df_summarise.summarise(
+        ("avg_run", lambda df: df.agg(["sum", "mean"])), by="combine_id"
+    )
+    expected = df_summarise.groupby("combine_id").agg(
+        {"avg_run": ["sum", "mean"]}
+    )
+    assert_frame_equal(actual, expected)

@@ -126,10 +126,13 @@ def summarise(
     for arg in args:
         aggregate = _mutator(arg, df=df, by=by)
         dictionary.update(aggregate)
-    scalar_values = map(is_scalar, dictionary.values())
-    if all(scalar_values):
+    values = map(is_scalar, dictionary.values())
+    if all(values):
         return pd.Series(dictionary)
-    return pd.DataFrame(dictionary)
+    values = (isinstance(obj, pd.Series) for obj in dictionary.values())
+    if all(values):
+        return pd.DataFrame(dictionary)
+    return pd.concat(dictionary, axis=1, sort=False, copy=False)
 
 
 @singledispatch

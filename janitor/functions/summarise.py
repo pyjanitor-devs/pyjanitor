@@ -16,7 +16,7 @@ from janitor.functions.select import get_index_labels
 @pf.register_dataframe_method
 def summarise(
     df: pd.DataFrame,
-    *args,
+    *args: tuple[dict | tuple],
     by: Any = None,
 ) -> pd.DataFrame | pd.Series:
     """
@@ -35,52 +35,72 @@ def summarise(
 
     The argument provided to *args* should be either a dictionary or a tuple.
 
+    - dictionary argument:
     If the argument is a dictionary,
     the value should be either a string, a callable or a tuple.
-    If it is a string or a callable, the key of the dictionary
-    should be an existing column name.
-    Note that if the value is a string,
-    the string should be a pandas string function,
-    e.g "sum", "mean", etc.
-    If the value of the dictionary is a tuple,
-    it should be of length 2, and of the form
-    `(column_name, mutation_func)`,
-    where column_name should exist in the DataFrame,
-    and mutation_func should be either a string or a callable.
-    Note that if mutation_func is a string,
-    the string should be a pandas string function,
-    e.g "sum", "mean", etc.
-    The key in the dictionary can be a new column name.
 
+        - If it is a string or a callable, the key of the dictionary
+        should be an existing column name.
+        Note that if the value is a string,
+        the string should be a pandas string function,
+        e.g "sum", "mean", etc.
+
+        - If the value of the dictionary is a tuple,
+        it should be of length 2, and of the form
+        `(column_name, mutation_func)`,
+        where `column_name` should exist in the DataFrame,
+        and `mutation_func` should be either a string or a callable.
+        Note that if `mutation_func` is a string,
+        the string should be a pandas string function,
+        e.g "sum", "mean", etc.
+        The key in the dictionary can be a new column name.
+
+    - tuple argument:
     If the argument is a tuple, it should be of length 2,
     and of the form
     `(column_name, mutation_func)`,
     where column_name should exist in the DataFrame,
-    and mutation_func should be either a string or a callable.
-    Note that if mutation_func is a string,
-    the string should be a pandas string function,
-    e.g "sum", "mean", etc.
-    Note that column_name can be anyting supported by
-    the `jn.select` function; as such multiple columns
-    can be processed here - they will be processed individually.
+    and `mutation_func` should be either a string or a callable.
 
-    Aggregated columns cannot be reused in `summarize`.
+        - Note that if `mutation_func` is a string,
+        the string should be a pandas string function,
+        e.g "sum", "mean", etc.
+
+        - Note that `column_name` can be anything supported by
+        the
+        [`select`][janitor.functions.select.select] syntax;
+        as such multiple columns can be processed here -
+        they will be processed individually.
+
+    Aggregated columns cannot be reused in `summarise`.
+
+
+    `by` can be a `DataFrameGroupBy` object; it is assumed that
+    `by` was created from `df` - the onus is on the user to
+    ensure that, or the aggregations may yield incorrect results.
 
     `by` accepts anything supported by `pd.DataFrame.groupby`.
-    `by` can be a DataFrameGroupBy object; it is assumed that
-    `by` was created from `df`; the onus is on the user to
-    ensure that, or the aggregations may yield incorrect results.
+
     Arguments supported in `pd.DataFrame.groupby`
     can also be passed to `by` via a dictionary.
 
-    Example:
-
+    Examples:
+        >>> import pandas as pd
+        >>> import janitor
         >>> data = {'avg_jump': [3, 4, 1, 2, 3, 4],
         ...         'avg_run': [3, 4, 1, 3, 2, 4],
         ...         'combine_id': [100200, 100200,
         ...                        101200, 101200,
         ...                        102201, 103202]}
         >>> df = pd.DataFrame(data)
+        >>> df
+           avg_jump  avg_run  combine_id
+        0         3        3      100200
+        1         4        4      100200
+        2         1        1      101200
+        3         2        3      101200
+        4         3        2      102201
+        5         4        4      103202
         >>> df.summarise(("avg_run","mean"), by='combine_id')
                     avg_run
         combine_id
@@ -88,7 +108,6 @@ def summarise(
         101200          2.0
         102201          2.0
         103202          4.0
-
         >>> df.summarise({"avg_run":"mean"}, by='combine_id')
                     avg_run
         combine_id
@@ -96,7 +115,6 @@ def summarise(
         101200          2.0
         102201          2.0
         103202          4.0
-
         >>> df.summarise({"avg_run_2":("avg_run","mean")}, by='combine_id')
                     avg_run_2
         combine_id
@@ -105,14 +123,19 @@ def summarise(
         102201            2.0
         103202            4.0
 
-    :param df: A pandas DataFrame.
-    :param args: Either a dictionary or a tuple.
-    :param by: Column(s) to group by.
-    :raises ValueError: If a tuple is passed and the length is not 2.
-    :returns: A pandas DataFrame or Series with summarised columns.
+    Args:
+        df: A pandas DataFrame.
+        args: Either a dictionary or a tuple.
+        by: Column(s) to group by.
+
+    Raises:
+        ValueError: If a tuple is passed and the length is not 2.
+
+    Returns:
+        A pandas DataFrame or Series with aggregated columns.
+
     """  # noqa: E501
 
-    df = df.copy()
     if by is not None:
         # it is assumed that by is created from df
         # onus is on user to ensure that

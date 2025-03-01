@@ -64,6 +64,8 @@ def summarise(
     the `jn.select` function; as such multiple columns
     can be processed here - they will be processed individually.
 
+    Aggregated columns cannot be reused in `summarize`.
+
     `by` accepts anything supported by `pd.DataFrame.groupby`.
     `by` can be a DataFrameGroupBy object; it is assumed that
     `by` was created from `df`; the onus is on the user to

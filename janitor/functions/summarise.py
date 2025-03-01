@@ -35,42 +35,55 @@ def summarise(
 
     The argument provided to *args* should be either a dictionary or a tuple.
 
-    - dictionary argument:
+    - **dictionary argument**:
     If the argument is a dictionary,
-    the value should be either a string, a callable or a tuple.
+    the value in the `{key:value}` pairing
+    should be either a string, a callable or a tuple.
 
-        - If it is a string or a callable, the key of the dictionary
+        - If the value in the dictionary
+        is a string or a callable,
+        the key of the dictionary
         should be an existing column name.
-        Note that if the value is a string,
-        the string should be a pandas string function,
-        e.g "sum", "mean", etc.
+
+        !!!note
+
+            - If the value is a string,
+            the string should be a pandas string function,
+            e.g "sum", "mean", etc.
 
         - If the value of the dictionary is a tuple,
         it should be of length 2, and of the form
         `(column_name, mutation_func)`,
         where `column_name` should exist in the DataFrame,
         and `mutation_func` should be either a string or a callable.
-        Note that if `mutation_func` is a string,
-        the string should be a pandas string function,
-        e.g "sum", "mean", etc.
+
+        !!!note
+
+            - If `mutation_func` is a string,
+            the string should be a pandas string function,
+            e.g "sum", "mean", etc.
+
         The key in the dictionary can be a new column name.
 
-    - tuple argument:
+    - **tuple argument**:
     If the argument is a tuple, it should be of length 2,
     and of the form
     `(column_name, mutation_func)`,
     where column_name should exist in the DataFrame,
     and `mutation_func` should be either a string or a callable.
 
-        - Note that if `mutation_func` is a string,
-        the string should be a pandas string function,
-        e.g "sum", "mean", etc.
+        !!!note
 
-        - Note that `column_name` can be anything supported by
-        the
-        [`select`][janitor.functions.select.select] syntax;
-        as such multiple columns can be processed here -
-        they will be processed individually.
+            - if `mutation_func` is a string,
+            the string should be a pandas string function,
+            e.g "sum", "mean", etc.
+
+        !!!note
+
+            - `column_name` can be anything supported by the
+            [`select`][janitor.functions.select.select] syntax;
+            as such multiple columns can be processed here -
+            they will be processed individually.
 
     Aggregated columns cannot be reused in `summarise`.
 
@@ -169,6 +182,7 @@ def _mutator(arg, df, by):
 
 @_mutator.register(dict)
 def _(arg, df, by):
+    """Dispatch function for dictionary"""
     if by is None:
         val = df
     else:
@@ -189,6 +203,7 @@ def _(arg, df, by):
 
 @_mutator.register(tuple)
 def _(arg, df, by):
+    """Dispatch function for tuple"""
     if len(arg) != 2:
         raise ValueError("the tuple has to be a length of 2")
     column_names, mutator = arg
@@ -198,6 +213,7 @@ def _(arg, df, by):
 
 
 def _process_maybe_callable(func: callable, obj):
+    """Function to handle callables"""
     try:
         column = obj.agg(func)
     except:  # noqa: E722
@@ -206,12 +222,14 @@ def _process_maybe_callable(func: callable, obj):
 
 
 def _process_maybe_string(func: str, obj):
+    """Function to handle pandas string functions"""
     # treat as a pandas approved string function
     # https://pandas.pydata.org/docs/user_guide/groupby.html#built-in-aggregation-methods
     return obj.agg(func)
 
 
 def _process_within_dict(mutator, obj):
+    """Handle str/callables within a dictionary"""
     if isinstance(mutator, str):
         return _process_maybe_string(func=mutator, obj=obj)
     return _process_maybe_callable(func=mutator, obj=obj)

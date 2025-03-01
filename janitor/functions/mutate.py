@@ -7,6 +7,7 @@ import pandas as pd
 import pandas_flavor as pf
 from pandas.api.types import is_scalar
 from pandas.core.common import apply_if_callable
+from pandas.core.groupby.generic import DataFrameGroupBy
 
 from janitor.functions.select import get_index_labels
 
@@ -62,6 +63,9 @@ def mutate(
     and appended to the DataFrame.
 
     `by` accepts anything supported by `pd.DataFrame.groupby`.
+    `by` can be a DataFrameGroupBy object; it is assumed that
+    `by` was created from `df`; the onus is on the user to
+    ensure that, or the aggregations may yield incorrect results.
     Arguments supported in `pd.DataFrame.groupby`
     can also be passed to `by` via a dictionary.
 
@@ -139,7 +143,11 @@ def mutate(
 
     df = df.copy()
     if by is not None:
-        if isinstance(by, dict):
+        # it is assumed that by is created from df
+        # onus is on user to ensure that
+        if isinstance(by, DataFrameGroupBy):
+            pass
+        elif isinstance(by, dict):
             by = df.groupby(**by)
         else:
             if is_scalar(by):

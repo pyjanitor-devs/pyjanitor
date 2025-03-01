@@ -73,45 +73,6 @@ def summarise(
 
     Example:
 
-        >>> import pandas as pd
-        >>> import numpy as np
-        >>> import janitor
-        >>> df = pd.DataFrame({
-        ...     "col1": [5, 10, 15],
-        ...     "col2": [3, 6, 9],
-        ...     "col3": [10, 100, 1_000],
-        ... })
-        >>> df.summarise({"col4": ('col1', np.log10)})
-           col1  col2  col3      col4
-        0     5     3    10  0.698970
-        1    10     6   100  1.000000
-        2    15     9  1000  1.176091
-
-        >>> df.summarise(
-        ...     {"col4": ('col1',np.log10),
-        ...      "col1": np.log10}
-        ...     )
-               col1  col2  col3      col4
-        0  0.698970     3    10  0.698970
-        1  1.000000     6   100  1.000000
-        2  1.176091     9  1000  1.176091
-
-    Example: Transformation with a tuple:
-
-        >>> df.summarise(("col1", np.log10))
-               col1  col2  col3
-        0  0.698970     3    10
-        1  1.000000     6   100
-        2  1.176091     9  1000
-
-        >>> df.summarise(("col*", np.log10))
-               col1      col2  col3
-        0  0.698970  0.477121   1.0
-        1  1.000000  0.778151   2.0
-        2  1.176091  0.954243   3.0
-
-    Example: Transformation in the presence of a groupby:
-
         >>> data = {'avg_jump': [3, 4, 1, 2, 3, 4],
         ...         'avg_run': [3, 4, 1, 3, 2, 4],
         ...         'combine_id': [100200, 100200,
@@ -119,22 +80,28 @@ def summarise(
         ...                        102201, 103202]}
         >>> df = pd.DataFrame(data)
         >>> df.summarise(("avg_run","mean"), by='combine_id')
-           avg_jump  avg_run  combine_id
-        0         3      3.5      100200
-        1         4      3.5      100200
-        2         1      2.0      101200
-        3         2      2.0      101200
-        4         3      2.0      102201
-        5         4      4.0      103202
+                    avg_run
+        combine_id
+        100200          3.5
+        101200          2.0
+        102201          2.0
+        103202          4.0
+
+        >>> df.summarise({"avg_run":"mean"}, by='combine_id')
+                    avg_run
+        combine_id
+        100200          3.5
+        101200          2.0
+        102201          2.0
+        103202          4.0
 
         >>> df.summarise({"avg_run_2":("avg_run","mean")}, by='combine_id')
-           avg_jump  avg_run  combine_id  avg_run_2
-        0         3        3      100200        3.5
-        1         4        4      100200        3.5
-        2         1        1      101200        2.0
-        3         2        3      101200        2.0
-        4         3        2      102201        2.0
-        5         4        4      103202        4.0
+                    avg_run_2
+        combine_id
+        100200            3.5
+        101200            2.0
+        102201            2.0
+        103202            4.0
 
     :param df: A pandas DataFrame.
     :param args: Either a dictionary or a tuple.

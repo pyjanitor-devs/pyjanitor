@@ -4,6 +4,7 @@
 
 -  [ENH] Added support for pd.Series.select - Issue #1394 @samukweku
 -  [ENH] Added suport for janitor.mutate - Issue #1226 @samukweku
+-  [ENH] Added support for janitor.summarise - Issue #1225 @samukweku
 
 ## [v0.30.0] - 2024-12-04
 

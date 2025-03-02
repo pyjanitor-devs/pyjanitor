@@ -56,6 +56,7 @@
         - shuffle
         - sort_column_value_order
         - sort_naturally
+        - summarise
         - take_first
         - then
         - to_datetime

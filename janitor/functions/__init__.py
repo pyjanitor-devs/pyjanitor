@@ -82,6 +82,7 @@ from .select import (
 from .shuffle import shuffle
 from .sort_column_value_order import sort_column_value_order
 from .sort_naturally import sort_naturally
+from .summarise import summarise
 from .take_first import take_first
 from .then import then
 from .to_datetime import to_datetime
@@ -160,6 +161,7 @@ __all__ = [
     "shuffle",
     "sort_column_value_order",
     "sort_naturally",
+    "summarise",
     "take_first",
     "then",
     "to_datetime",

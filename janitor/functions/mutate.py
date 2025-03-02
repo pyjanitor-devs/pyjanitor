@@ -33,7 +33,7 @@ def mutate(
     mutate creates new columns that are functions of existing columns.
     It can also modify columns (if the name is the same as an existing column).
 
-    The argument provided to *args* should be either a dictionary or a tuple or a callable.
+    The argument provided to *args* should be either a dictionary, a tuple or a callable.
 
     - **dictionary argument**:
     If the argument is a dictionary,

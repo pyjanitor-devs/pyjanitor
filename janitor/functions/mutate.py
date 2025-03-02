@@ -104,6 +104,8 @@ def mutate(
         ...     "col2": [3, 6, 9],
         ...     "col3": [10, 100, 1_000],
         ... })
+
+        Transformation via a dictionary:
         >>> df.mutate(
         ...     {"col4": ('col1',np.log10),
         ...      "col1": np.log10}
@@ -112,6 +114,8 @@ def mutate(
         0  0.698970     3    10  0.698970
         1  1.000000     6   100  1.000000
         2  1.176091     9  1000  1.176091
+
+        Transformation via a tuple:
         >>> df.mutate(("col1", np.log10))
                col1  col2  col3
         0  0.698970     3    10
@@ -123,7 +127,7 @@ def mutate(
         1  1.000000  0.778151   2.0
         2  1.176091  0.954243   3.0
 
-    Example: Transformation in the presence of a groupby:
+        Transformation in the presence of a groupby:
         >>> data = {'avg_jump': [3, 4, 1, 2, 3, 4],
         ...         'avg_run': [3, 4, 1, 3, 2, 4],
         ...         'combine_id': [100200, 100200,

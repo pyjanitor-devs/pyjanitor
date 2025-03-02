@@ -126,7 +126,7 @@ def test_mutate_dict_df_tuple(df_mutate):
 def test_mutate_dict_by_tuple(df_mutate):
     """Test output for a dictionary"""
     actual = df_mutate.mutate(
-        {"avg_run_mean": ("avg_run", "mean")}, by="combine_id"
+        {"avg_run_mean": ("avg_run", "mean")}, by={"by": "combine_id"}
     )
     expected = df_mutate.assign(
         avg_run_mean=df_mutate.groupby("combine_id")["avg_run"].transform(

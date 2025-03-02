@@ -134,14 +134,6 @@ def mutate(
         ...                        101200, 101200,
         ...                        102201, 103202]}
         >>> df = pd.DataFrame(data)
-        >>> df.mutate(("avg_run","mean"), by='combine_id')
-           avg_jump  avg_run  combine_id
-        0         3      3.5      100200
-        1         4      3.5      100200
-        2         1      2.0      101200
-        3         2      2.0      101200
-        4         3      2.0      102201
-        5         4      4.0      103202
         >>> df.mutate({"avg_run_2":("avg_run","mean")}, by='combine_id')
            avg_jump  avg_run  combine_id  avg_run_2
         0         3        3      100200        3.5

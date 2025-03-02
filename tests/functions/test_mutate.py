@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal
@@ -11,6 +12,45 @@ def df_mutate():
         "combine_id": [100200, 100200, 101200, 101200, 102201, 103202],
     }
     return pd.DataFrame(data)
+
+
+def test_mutate_callable_dataframe(df_mutate):
+    """Test output for callable"""
+    expected = df_mutate.mutate(lambda df: df.add(1))
+    actual = df_mutate.add(1)
+    assert_frame_equal(actual, expected)
+
+
+def test_mutate_callable_series(df_mutate):
+    """Test output for callable"""
+    expected = df_mutate.mutate(lambda df: df.sum(axis=1).rename("new_column"))
+    actual = df_mutate.assign(new_column=lambda df: df.sum(axis=1))
+    assert_frame_equal(actual, expected)
+
+
+def test_mutate_callable_unnamed_series(df_mutate):
+    """Raise if Series is unnamed"""
+    with pytest.raises(
+        ValueError, match="Ensure the pandas Series object has a name"
+    ):
+        df_mutate.mutate(lambda df: df.sum(axis=1))
+
+
+def test_mutate_callable_by_grouped_object(df_mutate):
+    """Test output for callable"""
+    grp = df_mutate.groupby("combine_id")
+    actual = df_mutate.mutate(lambda df: df.avg_run.transform("sum"), by=grp)
+    expected = df_mutate.assign(avg_run=grp["avg_run"].transform("sum"))
+    assert_frame_equal(actual, expected)
+
+
+def test_mutate_callable(df_mutate):
+    "Raise if output of callable is not a pandas Series/DataFrame"
+    with pytest.raises(
+        TypeError,
+        match="The output from a callable should be a named Series or a DataFrame",
+    ):
+        df_mutate.mutate(lambda df: np.sum(df["avg_run"]))
 
 
 def test_mutate_check_copy(df_mutate):

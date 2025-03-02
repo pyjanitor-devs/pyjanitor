@@ -33,7 +33,7 @@ def mutate(
     mutate creates new columns that are functions of existing columns.
     It can also modify columns (if the name is the same as an existing column).
 
-    The argument provided to *args* should be either a dictionary or a tuple.
+    The argument provided to *args* should be either a dictionary or a tuple or a callable.
 
     - **dictionary argument**:
     If the argument is a dictionary,
@@ -86,6 +86,14 @@ def mutate(
             as such multiple columns can be processed here -
             they will be processed individually.
 
+
+
+    - **callable argument**:
+    If the argument is a callable, the callable is applied
+    on the DataFrame or GroupBy object.
+    The result from the callable should be a pandas Series
+    or DataFrame.
+
     `by` can be a `DataFrameGroupBy` object; it is assumed that
     `by` was created from `df` - the onus is on the user to
     ensure that, or the aggregations may yield incorrect results.
@@ -129,6 +137,13 @@ def mutate(
         0  0.698970  0.477121   1.0
         1  1.000000  0.778151   2.0
         2  1.176091  0.954243   3.0
+
+        Transformation via a callable:
+        >>> df.mutate(lambda df: df.sum(axis=1).rename('total'))
+           col1  col2  col3  total
+        0     5     3    10     18
+        1    10     6   100    116
+        2    15     9  1000   1024
 
         Transformation in the presence of a groupby:
         >>> data = {'avg_jump': [3, 4, 1, 2, 3, 4],
@@ -178,8 +193,26 @@ def mutate(
 
 @singledispatch
 def _mutator(arg, df, by):
-    raise NotImplementedError(
-        f"janitor.mutate is not supported for {type(arg)}"
+    if not callable(arg):
+        raise NotImplementedError(
+            f"janitor.mutate is not supported for {type(arg)}"
+        )
+    if by is None:
+        val = df
+    else:
+        val = by
+    outcome = _process_maybe_callable(func=arg, obj=val)
+    if isinstance(outcome, pd.Series):
+        if not outcome.name:
+            raise ValueError("Ensure the pandas Series object has a name")
+        df[outcome.name] = outcome
+        return df
+    if isinstance(outcome, pd.DataFrame):
+        for column in outcome:
+            df[column] = outcome[column]
+        return df
+    raise TypeError(
+        "The output from a callable should be a named Series or a DataFrame"
     )
 
 

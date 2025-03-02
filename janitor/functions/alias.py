@@ -16,24 +16,31 @@ def alias(series: pd.Series, alias: Any = None) -> pd.Series:
     Examples:
         >>> import pandas as pd
         >>> import janitor
-        >>> s = pd.Series([1, 2, 3, 5, 5], index=["a", "b", "c", "d", "e"])
+        >>> s = pd.Series([1, 2, 3], name='series')
         >>> s
-        a    1
-        b    2
-        c    3
-        d    5
-        e    5
-        dtype: int64
-        >>> s.toset()
-        {1, 2, 3, 5}
+        0    1
+        1    2
+        2    3
+        Name: series, dtype: int64
+        >>> s.alias('series_new')
+        0    1
+        1    2
+        2    3
+        Name: series_new, dtype: int64
+        >>> s.alias(str.upper)
+        0    1
+        1    2
+        2    3
+        Name: SERIES, dtype: int64
 
     Args:
-        series: A pandas series.
+        series: A pandas Series.
+        alias: scalar or callable to create a new name for the pandas Series.
 
     Returns:
-        A set of values.
+        A new pandas Series.
     """
-
+    series = series[:]
     if alias is None:
         return series
     if callable(alias):

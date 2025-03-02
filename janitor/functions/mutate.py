@@ -12,6 +12,7 @@ from pandas.core.common import apply_if_callable
 from pandas.core.groupby.generic import DataFrameGroupBy
 
 from janitor.functions.select import get_index_labels
+from janitor.utils import check
 
 
 @pf.register_dataframe_method
@@ -19,6 +20,7 @@ def mutate(
     df: pd.DataFrame,
     *args: tuple[dict | tuple],
     by: Any = None,
+    copy: bool = True,
 ) -> pd.DataFrame:
     """
 
@@ -93,7 +95,8 @@ def mutate(
     Arguments supported in `pd.DataFrame.groupby`
     can also be passed to `by` via a dictionary.
 
-    Mutation occurs on the original DataFrame if `by` is present.
+    Mutation does not occur on the original DataFrame;
+    change this behaviour by passing `copy=False`.
 
     Examples:
         >>> import pandas as pd
@@ -154,7 +157,7 @@ def mutate(
     Returns:
         A pandas DataFrame or Series with aggregated columns.
     """  # noqa: E501
-
+    check("copy", copy, [bool])
     if by is not None:
         if isinstance(by, DataFrameGroupBy):
             # it is assumed that by is created from df
@@ -166,7 +169,7 @@ def mutate(
             if is_scalar(by):
                 by = [by]
             by = df.groupby(by, sort=False, observed=True)
-    else:
+    if copy:
         df = df.copy(deep=None)
     for arg in args:
         df = _mutator(arg, df=df, by=by)

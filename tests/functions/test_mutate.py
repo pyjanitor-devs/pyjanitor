@@ -13,6 +13,12 @@ def df_mutate():
     return pd.DataFrame(data)
 
 
+def test_mutate_check_copy(df_mutate):
+    """Test copy argument is a boolean"""
+    with pytest.raises(TypeError, match="copy should be one of.+"):
+        df_mutate.mutate({"a": "b"}, copy=1)
+
+
 def test_mutate_wrong_arg(df_mutate):
     """
     Raise if wrong arg is provided
@@ -32,7 +38,7 @@ def test_mutate_dict_df_str(df_mutate):
 
 def test_mutate_dict_by_str(df_mutate):
     """Test output for a dictionary"""
-    actual = df_mutate.copy().mutate({"avg_run": "mean"}, by="combine_id")
+    actual = df_mutate.mutate({"avg_run": "mean"}, by="combine_id")
     expected = df_mutate.assign(
         avg_run=df_mutate.groupby("combine_id")["avg_run"].transform("mean")
     )
@@ -48,7 +54,7 @@ def test_mutate_dict_df_callable(df_mutate):
 
 def test_mutate_dict_by_callable(df_mutate):
     """Test output for a dictionary"""
-    actual = df_mutate.copy().mutate(
+    actual = df_mutate.mutate(
         {"avg_run": lambda df: df.sum()}, by="combine_id"
     )
     expected = df_mutate.assign(
@@ -59,7 +65,7 @@ def test_mutate_dict_by_callable(df_mutate):
 
 def test_mutate_dict_by_transform_callable(df_mutate):
     """Test output for a dictionary"""
-    actual = df_mutate.copy().mutate(
+    actual = df_mutate.mutate(
         {"avg_run": lambda df: df.transform("sum")}, by="combine_id"
     )
     expected = df_mutate.assign(
@@ -105,7 +111,7 @@ def test_mutate_df_tuple(df_mutate):
 
 def test_mutate_by_tuple(df_mutate):
     """Test output for a dictionary"""
-    actual = df_mutate.copy().mutate(("avg_run", "mean"), by="combine_id")
+    actual = df_mutate.mutate(("avg_run", "mean"), by="combine_id")
     expected = df_mutate.assign(
         avg_run=df_mutate.groupby("combine_id")["avg_run"].transform("mean")
     )
@@ -121,7 +127,7 @@ def test_mutate_tuple_df_callable(df_mutate):
 
 def test_mutate_tuple_by_callable(df_mutate):
     """Test output for a dictionary"""
-    actual = df_mutate.copy().mutate(
+    actual = df_mutate.mutate(
         ("avg_run", lambda df: df.sum()), by="combine_id"
     )
     expected = df_mutate.assign(
@@ -133,6 +139,6 @@ def test_mutate_tuple_by_callable(df_mutate):
 def test_mutate_tuple_by_grouped_object(df_mutate):
     """Test output for a dictionary"""
     grp = df_mutate.groupby("combine_id")
-    actual = df_mutate.copy().mutate(("avg_run", lambda df: df.sum()), by=grp)
+    actual = df_mutate.mutate(("avg_run", lambda df: df.sum()), by=grp)
     expected = df_mutate.assign(avg_run=grp["avg_run"].transform("sum"))
     assert_frame_equal(actual, expected)

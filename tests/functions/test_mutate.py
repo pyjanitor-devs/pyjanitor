@@ -32,7 +32,7 @@ def test_mutate_dict_df_str(df_mutate):
 
 def test_mutate_dict_by_str(df_mutate):
     """Test output for a dictionary"""
-    actual = df_mutate.mutate({"avg_run": "mean"}, by="combine_id")
+    actual = df_mutate.copy().mutate({"avg_run": "mean"}, by="combine_id")
     expected = df_mutate.assign(
         avg_run=df_mutate.groupby("combine_id")["avg_run"].transform("mean")
     )
@@ -48,7 +48,7 @@ def test_mutate_dict_df_callable(df_mutate):
 
 def test_mutate_dict_by_callable(df_mutate):
     """Test output for a dictionary"""
-    actual = df_mutate.mutate(
+    actual = df_mutate.copy().mutate(
         {"avg_run": lambda df: df.sum()}, by="combine_id"
     )
     expected = df_mutate.assign(
@@ -59,7 +59,7 @@ def test_mutate_dict_by_callable(df_mutate):
 
 def test_mutate_dict_by_transform_callable(df_mutate):
     """Test output for a dictionary"""
-    actual = df_mutate.mutate(
+    actual = df_mutate.copy().mutate(
         {"avg_run": lambda df: df.transform("sum")}, by="combine_id"
     )
     expected = df_mutate.assign(
@@ -105,7 +105,7 @@ def test_mutate_df_tuple(df_mutate):
 
 def test_mutate_by_tuple(df_mutate):
     """Test output for a dictionary"""
-    actual = df_mutate.mutate(("avg_run", "mean"), by="combine_id")
+    actual = df_mutate.copy().mutate(("avg_run", "mean"), by="combine_id")
     expected = df_mutate.assign(
         avg_run=df_mutate.groupby("combine_id")["avg_run"].transform("mean")
     )
@@ -121,10 +121,18 @@ def test_mutate_tuple_df_callable(df_mutate):
 
 def test_mutate_tuple_by_callable(df_mutate):
     """Test output for a dictionary"""
-    actual = df_mutate.mutate(
+    actual = df_mutate.copy().mutate(
         ("avg_run", lambda df: df.sum()), by="combine_id"
     )
     expected = df_mutate.assign(
         avg_run=df_mutate.groupby("combine_id")["avg_run"].transform("sum")
     )
+    assert_frame_equal(actual, expected)
+
+
+def test_mutate_tuple_by_grouped_object(df_mutate):
+    """Test output for a dictionary"""
+    grp = df_mutate.groupby("combine_id")
+    actual = df_mutate.copy().mutate(("avg_run", lambda df: df.sum()), by=grp)
+    expected = df_mutate.assign(avg_run=grp["avg_run"].transform("sum"))
     assert_frame_equal(actual, expected)

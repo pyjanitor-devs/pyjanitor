@@ -1,5 +1,7 @@
 """Implementation of mutate."""
 
+from __future__ import annotations
+
 from functools import singledispatch
 from typing import Any
 
@@ -15,7 +17,7 @@ from janitor.functions.select import get_index_labels
 @pf.register_dataframe_method
 def mutate(
     df: pd.DataFrame,
-    *args,
+    *args: tuple[dict | tuple],
     by: Any = None,
 ) -> pd.DataFrame:
     """
@@ -31,46 +33,69 @@ def mutate(
 
     The argument provided to *args* should be either a dictionary or a tuple.
 
+    - **dictionary argument**:
     If the argument is a dictionary,
-    the value should be either a string, a callable or a tuple.
-    If it is a string or a callable, the key of the dictionary
-    should be an existing column name.
-    Note that if the value is a string,
-    the string should be a pandas string function,
-    e.g "sqrt", "mean", etc.
-    If the value of the dictionary is a tuple,
-    it should be of length 2, and of the form
-    `(column_name, mutation_func)`,
-    where column_name should exist in the DataFrame,
-    and mutation_func should be either a string or a callable.
-    Note that if mutation_func is a string,
-    the string should be a pandas string function,
-    e.g "sqrt", "mean", etc.
-    The key in the dictionary can be a new column name,
-    which will be created and added to the DataFrame.
+    the value in the `{key:value}` pairing
+    should be either a string, a callable or a tuple.
 
+        - If the value in the dictionary
+        is a string or a callable,
+        the key of the dictionary
+        should be an existing column name.
+
+        !!!note
+
+            - If the value is a string,
+            the string should be a pandas string function,
+            e.g "sum", "mean", etc.
+
+        - If the value of the dictionary is a tuple,
+        it should be of length 2, and of the form
+        `(column_name, mutation_func)`,
+        where `column_name` should exist in the DataFrame,
+        and `mutation_func` should be either a string or a callable.
+        The key in the dictionary can be a new column name.
+
+        !!!note
+
+            - If `mutation_func` is a string,
+            the string should be a pandas string function,
+            e.g "sum", "mean", etc.
+
+
+
+    - **tuple argument**:
     If the argument is a tuple, it should be of length 2,
     and of the form
     `(column_name, mutation_func)`,
-    where column_name should exist in the DataFrame,
-    and mutation_func should be either a string or a callable.
-    Note that if mutation_func is a string,
-    the string should be a pandas string function,
-    e.g "sqrt", "mean", etc.
-    Note that column_name can be anyting supported by
-    the `jn.select` function; as such multiple columns
-    can be processed here - they will be processed individually
-    and appended to the DataFrame.
+    where `column_name` should exist in the DataFrame,
+    and `mutation_func` should be either a string or a callable.
+
+        !!!note
+
+            - if `mutation_func` is a string,
+            the string should be a pandas string function,
+            e.g "sum", "mean", etc.
+
+        !!!note
+
+            - `column_name` can be anything supported by the
+            [`select`][janitor.functions.select.select] syntax;
+            as such multiple columns can be processed here -
+            they will be processed individually.
+
+    `by` can be a `DataFrameGroupBy` object; it is assumed that
+    `by` was created from `df` - the onus is on the user to
+    ensure that, or the aggregations may yield incorrect results.
 
     `by` accepts anything supported by `pd.DataFrame.groupby`.
-    `by` can be a DataFrameGroupBy object; it is assumed that
-    `by` was created from `df`; the onus is on the user to
-    ensure that, or the aggregations may yield incorrect results.
+
     Arguments supported in `pd.DataFrame.groupby`
     can also be passed to `by` via a dictionary.
 
-    Example:
+    Mutation occurs on the original DataFrame if `by` is present.
 
+    Examples:
         >>> import pandas as pd
         >>> import numpy as np
         >>> import janitor
@@ -79,12 +104,6 @@ def mutate(
         ...     "col2": [3, 6, 9],
         ...     "col3": [10, 100, 1_000],
         ... })
-        >>> df.mutate({"col4": ('col1', np.log10)})
-           col1  col2  col3      col4
-        0     5     3    10  0.698970
-        1    10     6   100  1.000000
-        2    15     9  1000  1.176091
-
         >>> df.mutate(
         ...     {"col4": ('col1',np.log10),
         ...      "col1": np.log10}
@@ -93,15 +112,11 @@ def mutate(
         0  0.698970     3    10  0.698970
         1  1.000000     6   100  1.000000
         2  1.176091     9  1000  1.176091
-
-    Example: Transformation with a tuple:
-
         >>> df.mutate(("col1", np.log10))
                col1  col2  col3
         0  0.698970     3    10
         1  1.000000     6   100
         2  1.176091     9  1000
-
         >>> df.mutate(("col*", np.log10))
                col1      col2  col3
         0  0.698970  0.477121   1.0
@@ -109,7 +124,6 @@ def mutate(
         2  1.176091  0.954243   3.0
 
     Example: Transformation in the presence of a groupby:
-
         >>> data = {'avg_jump': [3, 4, 1, 2, 3, 4],
         ...         'avg_run': [3, 4, 1, 3, 2, 4],
         ...         'combine_id': [100200, 100200,
@@ -124,7 +138,6 @@ def mutate(
         3         2      2.0      101200
         4         3      2.0      102201
         5         4      4.0      103202
-
         >>> df.mutate({"avg_run_2":("avg_run","mean")}, by='combine_id')
            avg_jump  avg_run  combine_id  avg_run_2
         0         3        3      100200        3.5
@@ -134,18 +147,22 @@ def mutate(
         4         3        2      102201        2.0
         5         4        4      103202        4.0
 
-    :param df: A pandas DataFrame.
-    :param args: Either a dictionary or a tuple.
-    :param by: Column(s) to group by.
-    :raises ValueError: If a tuple is passed and the length is not 2.
-    :returns: A pandas DataFrame with mutated columns.
+    Args:
+        df: A pandas DataFrame.
+        args: Either a dictionary or a tuple.
+        by: Column(s) to group by.
+
+    Raises:
+        ValueError: If a tuple is passed and the length is not 2.
+
+    Returns:
+        A pandas DataFrame or Series with aggregated columns.
     """  # noqa: E501
 
-    df = df.copy()
     if by is not None:
-        # it is assumed that by is created from df
-        # onus is on user to ensure that
         if isinstance(by, DataFrameGroupBy):
+            # it is assumed that by is created from df
+            # onus is on user to ensure that
             pass
         elif isinstance(by, dict):
             by = df.groupby(**by)
@@ -153,6 +170,8 @@ def mutate(
             if is_scalar(by):
                 by = [by]
             by = df.groupby(by, sort=False, observed=True)
+    else:
+        df = df.copy(deep=None)
     for arg in args:
         df = _mutator(arg, df=df, by=by)
     return df
@@ -167,6 +186,7 @@ def _mutator(arg, df, by):
 
 @_mutator.register(dict)
 def _(arg, df, by):
+    """Dispatch function for dictionary"""
     if by is None:
         val = df
     else:
@@ -185,6 +205,7 @@ def _(arg, df, by):
 
 @_mutator.register(tuple)
 def _(arg, df, by):
+    """Dispatch function for tuple"""
     if len(arg) != 2:
         raise ValueError("the tuple has to be a length of 2")
     column_names, mutator = arg
@@ -194,6 +215,7 @@ def _(arg, df, by):
 
 
 def _process_maybe_callable(func: callable, obj):
+    """Function to handle callables"""
     try:
         column = obj.transform(func)
     except:  # noqa: E722
@@ -202,12 +224,14 @@ def _process_maybe_callable(func: callable, obj):
 
 
 def _process_maybe_string(func: str, obj):
+    """Function to handle pandas string functions"""
     # treat as a pandas approved string function
     # https://pandas.pydata.org/docs/user_guide/groupby.html#built-in-aggregation-methods
     return obj.transform(func)
 
 
 def _process_within_dict(mutator, obj):
+    """Handle str/callables within a dictionary"""
     if isinstance(mutator, str):
         return _process_maybe_string(func=mutator, obj=obj)
     return _process_maybe_callable(func=mutator, obj=obj)

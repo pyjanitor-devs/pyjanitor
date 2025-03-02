@@ -85,6 +85,13 @@ def summarise(
             as such multiple columns can be processed here -
             they will be processed individually.
 
+    - **callable argument**:
+    If the argument is a callable, the callable is applied
+    on the DataFrame or GroupBy object.
+    The result from the callable should be a pandas Series
+    or DataFrame.
+
+
     Aggregated columns cannot be reused in `summarise`.
 
 
@@ -114,6 +121,17 @@ def summarise(
         3         2        3      101200
         4         3        2      102201
         5         4        4      103202
+
+        Aggregation via a callable:
+        >>> df.summarise(lambda df: df.sum(),by='combine_id')
+                    avg_jump  avg_run
+        combine_id
+        100200             7        7
+        101200             3        4
+        102201             3        2
+        103202             4        4
+
+        Aggregation via a tuple:
         >>> df.summarise(("avg_run","mean"), by='combine_id')
                     avg_run
         combine_id
@@ -121,6 +139,8 @@ def summarise(
         101200          2.0
         102201          2.0
         103202          4.0
+
+        Aggregation via a dictionary:
         >>> df.summarise({"avg_run":"mean"}, by='combine_id')
                     avg_run
         combine_id
@@ -167,17 +187,27 @@ def summarise(
     values = map(is_scalar, dictionary.values())
     if all(values):
         return pd.Series(dictionary)
-    values = (isinstance(obj, pd.Series) for obj in dictionary.values())
-    if all(values):
-        return pd.DataFrame(dictionary)
     return pd.concat(dictionary, axis=1, sort=False, copy=False)
 
 
 @singledispatch
 def _mutator(arg, df, by):
-    raise NotImplementedError(
-        f"janitor.summarise is not supported for {type(arg)}"
-    )
+    if not callable(arg):
+        raise NotImplementedError(
+            f"janitor.summarise is not supported for {type(arg)}"
+        )
+    if by is None:
+        val = df
+    else:
+        val = by
+    outcome = _process_maybe_callable(func=arg, obj=val)
+    if isinstance(outcome, pd.Series):
+        if not outcome.name:
+            raise ValueError("Ensure the pandas Series object has a name")
+        return {outcome.name: outcome}
+    # assumption: should return a DataFrame
+    outcome = {key: outcome[key] for key in outcome}
+    return outcome
 
 
 @_mutator.register(dict)

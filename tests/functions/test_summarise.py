@@ -23,6 +23,29 @@ def test_summarise_wrong_arg(df_summarise):
         df_summarise.summarise(1)
 
 
+def test_mutate_callable_series_unnamed(df_summarise):
+    """Test output for callable"""
+    with pytest.raises(
+        ValueError, match="Ensure the pandas Series object has a name"
+    ):
+        df_summarise.summarise(lambda df: df.mean())
+
+
+def test_mutate_callable_series(df_summarise):
+    """Test output for callable"""
+    expected = df_summarise.summarise(lambda df: df.mean().rename("mean"))
+    actual = df_summarise.mean().to_frame("mean")
+    assert_frame_equal(actual, expected)
+
+
+def test_summarise_by_callable_grp(df_summarise):
+    """Test output for a callable"""
+    grp = df_summarise.groupby("combine_id")
+    actual = df_summarise.summarise(lambda df: df.sum(), by=grp)
+    expected = grp.sum()
+    assert_frame_equal(actual, expected)
+
+
 def test_summarise_dict_df_str(df_summarise):
     """Test output for a dictionary"""
     actual = df_summarise.summarise({"avg_run": "mean"})

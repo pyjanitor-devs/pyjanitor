@@ -32,7 +32,9 @@ def test_summarise_dict_df_str(df_summarise):
 
 def test_summarise_dict_by_str(df_summarise):
     """Test output for a dictionary"""
-    actual = df_summarise.summarise({"avg_run": "mean"}, by="combine_id")
+    actual = df_summarise.summarise(
+        {"avg_run": "mean"}, by={"by": "combine_id"}
+    )
     expected = df_summarise.groupby("combine_id").agg({"avg_run": "mean"})
     assert_frame_equal(actual, expected)
 

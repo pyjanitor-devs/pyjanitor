@@ -43,6 +43,7 @@
         - limit_column_characters
         - min_max_scale
         - move
+        - mutate
         - pivot
         - process_text
         - remove_columns

@@ -16,6 +16,7 @@ pyjanitor's general-purpose data cleaning functions.
 # 7. Never import utils.
 
 from .add_columns import add_columns
+from .alias import alias
 from .also import also
 from .bin_numeric import bin_numeric
 from .case_when import case_when
@@ -96,6 +97,7 @@ from .utils import (
 
 __all__ = [
     "add_columns",
+    "alias",
     "also",
     "bin_numeric",
     "cartesian_product",

@@ -6,6 +6,7 @@
       - "!^_"
       members:
         - add_columns
+        - alias
         - also
         - bin_numeric
         - case_when

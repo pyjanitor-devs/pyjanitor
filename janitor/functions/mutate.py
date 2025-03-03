@@ -33,7 +33,11 @@ def mutate(
     mutate creates new columns that are functions of existing columns.
     It can also modify columns (if the name is the same as an existing column).
 
-    The argument provided to *args* should be either a dictionary, a tuple or a callable.
+    The argument provided to *args* should be either
+    a dictionary, a callable or a tuple; however,
+    anything can be passed, as long as it can
+    be aligned with the original DataFrame.
+
 
     - **dictionary argument**:
     If the argument is a dictionary,
@@ -193,10 +197,6 @@ def mutate(
 
 @singledispatch
 def _mutator(arg, df, by):
-    if not callable(arg):
-        raise NotImplementedError(
-            f"janitor.mutate is not supported for {type(arg)}"
-        )
     if by is None:
         val = df
     else:
@@ -212,7 +212,7 @@ def _mutator(arg, df, by):
             df[column] = outcome[column]
         return df
     raise TypeError(
-        "The output from a callable should be a named Series or a DataFrame"
+        "The output from the mutation should be a named Series or a DataFrame"
     )
 
 

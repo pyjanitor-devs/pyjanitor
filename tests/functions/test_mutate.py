@@ -48,7 +48,7 @@ def test_mutate_callable(df_mutate):
     "Raise if output of callable is not a pandas Series/DataFrame"
     with pytest.raises(
         TypeError,
-        match="The output from a callable should be a named Series or a DataFrame",
+        match="The output from the mutation should be a named Series or a DataFrame",
     ):
         df_mutate.mutate(lambda df: np.sum(df["avg_run"]))
 
@@ -64,7 +64,8 @@ def test_mutate_wrong_arg(df_mutate):
     Raise if wrong arg is provided
     """
     with pytest.raises(
-        NotImplementedError, match="janitor.mutate is not supported for.+"
+        TypeError,
+        match="The output from the mutation should be a named Series or a DataFrame",
     ):
         df_mutate.mutate(1)
 

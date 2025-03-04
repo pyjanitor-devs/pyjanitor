@@ -8,6 +8,7 @@ from typing import Any
 import pandas as pd
 import pandas_flavor as pf
 from pandas.api.types import is_scalar
+from pandas.core.common import apply_if_callable
 from pandas.core.groupby.generic import DataFrameGroupBy
 
 from janitor.functions.select import get_index_labels
@@ -33,7 +34,10 @@ def summarise(
     the output will have a single row
     summarising all observations in the input.
 
-    The argument provided to *args* should be either a dictionary or a tuple.
+    The argument provided to *args* should be either
+    a dictionary, a callable or a tuple; however,
+    anything can be passed, as long as it fits
+    within pandas' aggregation semantics.
 
     - **dictionary argument**:
     If the argument is a dictionary,
@@ -187,15 +191,11 @@ def summarise(
     values = map(is_scalar, dictionary.values())
     if all(values):
         return pd.Series(dictionary)
-    return pd.concat(dictionary, axis=1, sort=False, copy=False)
+    return pd.concat(dictionary, axis="columns", sort=False, copy=False)
 
 
 @singledispatch
 def _mutator(arg, df, by):
-    if not callable(arg):
-        raise NotImplementedError(
-            f"janitor.summarise is not supported for {type(arg)}"
-        )
     if by is None:
         val = df
     else:
@@ -205,9 +205,8 @@ def _mutator(arg, df, by):
         if not outcome.name:
             raise ValueError("Ensure the pandas Series object has a name")
         return {outcome.name: outcome}
-    # assumption: should return a DataFrame
-    outcome = {key: outcome[key] for key in outcome}
-    return outcome
+    # assumption: a mapping - DataFrame/dictionary/...
+    return {**outcome}
 
 
 @_mutator.register(dict)
@@ -247,7 +246,7 @@ def _process_maybe_callable(func: callable, obj):
     try:
         column = obj.agg(func)
     except:  # noqa: E722
-        column = func(obj)
+        column = apply_if_callable(maybe_callable=func, obj=obj)
     return column
 
 

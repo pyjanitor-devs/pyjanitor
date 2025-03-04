@@ -13,16 +13,6 @@ def df_summarise():
     return pd.DataFrame(data)
 
 
-def test_summarise_wrong_arg(df_summarise):
-    """
-    Raise if wrong arg is provided
-    """
-    with pytest.raises(
-        NotImplementedError, match="janitor.summarise is not supported for.+"
-    ):
-        df_summarise.summarise(1)
-
-
 def test_mutate_callable_series_unnamed(df_summarise):
     """Test output for callable"""
     with pytest.raises(

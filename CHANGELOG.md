@@ -2,10 +2,12 @@
 
 ## [Unreleased]
 
--  [ENH] Added support for pd.Series.select - Issue #1394 @samukweku
--  [ENH] Added suport for janitor.mutate - Issue #1226 @samukweku
--  [ENH] Added support for janitor.summarise - Issue #1225 @samukweku
--  [ENH] Added support for janitor.alias - Issue #1449 @samukweku
+## [v0.31.0] - 2025-03-07
+
+-   [ENH] Added support for pd.Series.select - Issue #1394 @samukweku
+-   [ENH] Added suport for janitor.mutate - Issue #1226 @samukweku
+-   [ENH] Added support for janitor.summarise - Issue #1225 @samukweku
+-   [ENH] Added support for janitor.alias - Issue #1449 @samukweku
 
 ## [v0.30.0] - 2024-12-04
 
@@ -391,7 +393,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.30.0...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.31.0...HEAD
+
+[v0.31.0]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.30.0...v0.31.0
 
 [v0.30.0]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.29.2...v0.30.0
 

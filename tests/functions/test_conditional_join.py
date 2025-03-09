@@ -63,6 +63,44 @@ def test_df_columns_right_columns_both_None(dummy, series):
         )
 
 
+def test_type_row_count(dummy, series):
+    """Test type for row_count"""
+    with pytest.raises(TypeError, match="row_count should be one of.+"):
+        dummy.conditional_join(series, ("id", "B", ">"), row_count={"a": 2})
+
+
+def test_duplicated_row_count(dummy, series):
+    """raise if row_count is duplicated"""
+    with pytest.raises(
+        pd.errors.DuplicateLabelError, match="id already exists as a column.+"
+    ):
+        dummy.conditional_join(series, ("id", "B", ">"), row_count="id")
+
+
+def test_how_row_count(dummy, series):
+    """raise if how != left"""
+    with pytest.raises(
+        ValueError, match="row_count applies only when `how=left`"
+    ):
+        dummy.conditional_join(
+            series, ("id", "B", ">"), row_count="row_count", how="inner"
+        )
+
+
+def test_keep_row_count(dummy, series):
+    """raise if keep != all"""
+    with pytest.raises(
+        ValueError, match="row_count applies only when `keep=all`"
+    ):
+        dummy.conditional_join(
+            series,
+            ("id", "B", ">"),
+            row_count="row_count",
+            how="left",
+            keep="first",
+        )
+
+
 def test_df_multiindex(dummy, series):
     """Raise ValueError if `df` columns is a MultiIndex."""
     with pytest.raises(

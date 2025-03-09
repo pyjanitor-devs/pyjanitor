@@ -39,6 +39,7 @@ def conditional_join(
     keep: Literal["first", "last", "all"] = "all",
     use_numba: bool = False,
     indicator: Optional[Union[bool, str]] = False,
+    row_count: str = None,
     force: bool = False,
 ) -> pd.DataFrame:
     """The conditional_join function operates similarly to `pd.merge`,
@@ -234,6 +235,8 @@ def conditional_join(
             - Added support for timedelta dtype.
         - 0.28.0
             - `col` class deprecated.
+        - 0.32.0
+            - `row_count` added.
 
     Args:
         df: A pandas DataFrame.
@@ -264,6 +267,8 @@ def conditional_join(
             `right_only` for observations whose merge key
             only appears in the right DataFrame, and `both` if the observation’s
             merge key is found in both DataFrames.
+        row_count: If not None, adds a new column that captures the number of matching rows
+            from `right` for each row in `df`.
         force: If `True`, force the non-equi join conditions to execute before the equi join.
 
 
@@ -282,6 +287,7 @@ def conditional_join(
         use_numba=use_numba,
         indicator=indicator,
         force=force,
+        row_count=row_count,
     )
 
 
@@ -313,6 +319,7 @@ def _conditional_join_preliminary_checks(
     force: bool,
     return_matching_indices: bool = False,
     return_ragged_arrays: bool = False,
+    row_count: str = None,
 ) -> tuple:
     """
     Preliminary checks for conditional_join are conducted here.
@@ -398,6 +405,17 @@ def _conditional_join_preliminary_checks(
 
     check("return_ragged_arrays", return_ragged_arrays, [bool])
 
+    if row_count is not None:
+        check("row_count", row_count, [Hashable])
+        if row_count in df.columns:
+            raise pd.errors.DuplicateLabelError(
+                f"{row_count} already exists as a column label in df."
+            )
+        if keep != "all":
+            raise ValueError("row_count applies only when `keep=all`")
+        if how != "left":
+            raise ValueError("row_count applies only when `how=left`")
+
     return (
         df,
         right,
@@ -410,6 +428,7 @@ def _conditional_join_preliminary_checks(
         indicator,
         force,
         return_ragged_arrays,
+        row_count,
     )
 
 
@@ -462,6 +481,7 @@ def _conditional_join_compute(
     force: bool,
     return_matching_indices: bool = False,
     return_ragged_arrays: bool = False,
+    row_count: str = None,
 ) -> pd.DataFrame:
     """
     This is where the actual computation
@@ -480,6 +500,7 @@ def _conditional_join_compute(
         indicator,
         force,
         return_ragged_arrays,
+        row_count,
     ) = _conditional_join_preliminary_checks(
         df=df,
         right=right,
@@ -493,6 +514,7 @@ def _conditional_join_compute(
         force=force,
         return_matching_indices=return_matching_indices,
         return_ragged_arrays=return_ragged_arrays,
+        row_count=row_count,
     )
     eq_check = False
     le_lt_check = False
@@ -519,6 +541,7 @@ def _conditional_join_compute(
             use_numba=use_numba,
             force=force,
             return_ragged_arrays=return_ragged_arrays,
+            row_count=row_count,
         )
     elif (len(conditions) > 1) & le_lt_check:
         result = _multiple_conditional_join_le_lt(
@@ -528,11 +551,34 @@ def _conditional_join_compute(
             keep=keep,
             use_numba=use_numba,
             return_ragged_arrays=return_ragged_arrays,
+            row_count=row_count,
         )
     elif len(conditions) > 1:
         result = _multiple_conditional_join_ne(
-            df=df, right=right, conditions=conditions, keep=keep
+            df=df,
+            right=right,
+            conditions=conditions,
+            keep=keep,
+            row_count=row_count,
         )
+    elif row_count:
+        result = _generic_func_cond_join(
+            left=df[left_on],
+            right=right[right_on],
+            op=op,
+            multiple_conditions=False,
+            keep=keep,
+            return_ragged_arrays=False,
+            row_count=row_count,
+        )
+        if (df_columns is not None) and (df_columns != slice(None)):
+            df = df.select(columns=df_columns)
+        df = df.assign(row_count=0)
+        if result is None:
+            return df
+        df[row_count] = result
+        return df
+
     elif use_numba:
         result = _numba_single_non_equi_join(
             left=df[left_on],
@@ -549,6 +595,7 @@ def _conditional_join_compute(
             multiple_conditions=False,
             keep=keep,
             return_ragged_arrays=return_ragged_arrays,
+            row_count=None,
         )
 
     if result is None:
@@ -616,6 +663,7 @@ def _multiple_conditional_join_ne(
     right: pd.DataFrame,
     conditions: list[tuple[pd.Series, pd.Series, str]],
     keep: str,
+    row_count: Hashable = None,
 ) -> tuple:
     """
     Get indices for multiple conditions,
@@ -648,7 +696,9 @@ def _multiple_conditional_join_ne(
 
     if not indices:
         return None
-
+    if row_count:
+        left_index, _ = indices
+        return left_index.value_counts(sort=False).rename(row_count)
     return _keep_output(keep, *indices)
 
 
@@ -660,6 +710,7 @@ def _multiple_conditional_join_eq(
     use_numba: bool,
     force: bool,
     return_ragged_arrays: bool,
+    row_count: Hashable = None,
 ) -> tuple:
     """
     Get indices for multiple conditions,
@@ -676,6 +727,7 @@ def _multiple_conditional_join_eq(
             keep=keep,
             use_numba=use_numba,
             return_ragged_arrays=False,
+            row_count=row_count,
         )
 
     if use_numba:
@@ -844,12 +896,16 @@ def _multiple_conditional_join_eq(
     ]
 
     if not rest:
+        if row_count:
+            return left_index.value_counts(sort=False).rename(row_count)
         return _keep_output(keep, left_index, right_index)
 
     indices = _generate_indices(left_index, right_index, rest)
     if indices is None:
         return None
-
+    if row_count:
+        left_index, _ = indices
+        return left_index.value_counts(sort=False).rename(row_count)
     return _keep_output(keep, *indices)
 
 
@@ -860,6 +916,7 @@ def _multiple_conditional_join_le_lt(
     keep: str,
     use_numba: bool,
     return_ragged_arrays: bool,
+    row_count: Hashable = None,
 ) -> tuple:
     """
     Get indices for multiple conditions,
@@ -971,6 +1028,7 @@ def _multiple_conditional_join_le_lt(
                 keep=_keep,
                 return_ragged_arrays=return_ragged_arrays,
                 right_is_sorted=right_is_sorted,
+                row_count=row_count if not conditions else None,
             )
             if indices is None:
                 return None
@@ -1008,6 +1066,9 @@ def _multiple_conditional_join_le_lt(
         indices = _generate_indices(*indices, conditions)
         if indices is None:
             return None
+    if row_count:
+        left_index, _ = indices
+        return left_index.value_counts(sort=False).rename(row_count)
     return _keep_output(keep, *indices)
 
 
@@ -1019,6 +1080,7 @@ def _range_indices(
     keep: str,
     right_is_sorted: bool,
     return_ragged_arrays: bool,
+    row_count: Hashable = None,
 ) -> Union[tuple[np.ndarray, np.ndarray], None]:
     """
     Retrieve index positions for range/interval joins.
@@ -1114,6 +1176,8 @@ def _range_indices(
         ends = ends[keep_rows]
 
     repeater = ends - starts
+    if row_count and fastpath:
+        return pd.Series(index=left_index, data=repeater, name=row_count)
     if repeater.max() == 1:
         # no point running a comparison op
         # if the width is all 1
@@ -1153,6 +1217,10 @@ def _range_indices(
     if not mask.all():
         left_index = left_index[mask]
         right_index = right_index[mask]
+
+    if row_count:
+        row_count = left_index.value_counts(sort=False).rename(row_count)
+        return row_count
 
     return left_index, right_index
 

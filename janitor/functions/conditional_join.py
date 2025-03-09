@@ -573,10 +573,11 @@ def _conditional_join_compute(
         )
         if (df_columns is not None) and (df_columns != slice(None)):
             df = df.select(columns=df_columns)
+
         df = df.assign(row_count=0)
         if result is None:
             return df
-        df[row_count] = result
+        df.update(result)
         return df
 
     elif use_numba:

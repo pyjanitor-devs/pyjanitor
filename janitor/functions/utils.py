@@ -359,8 +359,7 @@ def _equal_indices(
         left_index = left_index[booleans]
         starts = starts[booleans]
     if row_count:
-        row_count = ends - starts
-        return pd.Series(index=left_index, data=row_count, name=row_count)
+        return pd.Series(index=left_index, data=ends - starts, name=row_count)
     return left_index, right_index, starts
 
 
@@ -438,8 +437,9 @@ def _less_than_indices(
         if not search_indices.size:
             return None
     if row_count:
-        row_count = len_right - search_indices
-        return pd.Series(index=left_index, data=row_count, name=row_count)
+        return pd.Series(
+            index=left_index, data=len_right - search_indices, name=row_count
+        )
     if multiple_conditions:
         return left_index, right_index, search_indices
     if right_is_sorted & (keep == "last"):

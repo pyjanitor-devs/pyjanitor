@@ -603,6 +603,74 @@ def test_single_condition_less_than_floats(df, right):
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
+def test_single_condition_lt_floats_row_count(df, right):
+    """Test output for a single condition. "<"."""
+    df = df.loc[:, ["B"]].assign(index=df.index)
+    right = right.loc[:, ["Numeric"]]
+    expected = (
+        df.merge(right, how="cross")
+        .loc[lambda df: df.B.lt(df.Numeric)]
+        .groupby(["B", "index"])
+        .size()
+        .rename("row_count")
+    )
+    expected = (
+        df.merge(expected, how="left", on=["B", "index"])
+        .assign(row_count=lambda df: df.row_count.fillna(0).astype(int))
+        .sort_values(["B", "index"], ignore_index=True)
+        .drop(columns="index")
+    )
+    actual = (
+        df.conditional_join(
+            right,
+            ("B", "Numeric", "<"),
+            how="left",
+            row_count="row_count",
+            df_columns="B",
+        )
+        .astype({"row_count": int})
+        .sort_values(["B"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_le_floats_row_count(df, right):
+    """Test output for a single condition. "<="."""
+
+    expected = (
+        df[["B"]]
+        .merge(right[["Numeric"]], how="cross")
+        .loc[lambda df: df.B.le(df.Numeric)]
+        .groupby("B")
+        .agg(row_count=("B", "size"))
+    )
+    expected = (
+        df[["B"]]
+        .merge(expected, how="left", left_on="B", right_index=True)
+        .assign(row_count=lambda df: df.row_count.fillna(0).astype(int))
+        .sort_values("B", ignore_index=True)
+    )
+    actual = (
+        df[["B"]]
+        .conditional_join(
+            right[["Numeric"]],
+            ("B", "Numeric", "<="),
+            how="left",
+            row_count="row_count",
+        )
+        .sort_values(["B"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
 def test_single_condition_less_than_floats_keep_first_numba(df, right):
     """Test output for a single condition. "<"."""
 

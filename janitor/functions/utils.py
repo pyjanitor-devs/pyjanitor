@@ -660,6 +660,7 @@ def _not_equal_row_count(
     null_count = pd.Series(
         index=left.index, data=right.isna().sum(), name=row_count
     )
+    null_count[left.isna()] += right.notna().sum()
     outcome = _less_than_indices(
         left,
         right,
@@ -667,21 +668,21 @@ def _not_equal_row_count(
         multiple_conditions=False,
         keep="all",
         return_ragged_arrays=False,
-        row_count="row_count",
+        row_count=row_count,
     )
     if outcome is not None:
-        null_count += outcome
-    outcome = _less_than_indices(
+        null_count = null_count.add(outcome, fill_value=0)
+    outcome = _greater_than_indices(
         left,
         right,
         strict=True,
         multiple_conditions=False,
         keep="all",
         return_ragged_arrays=False,
-        row_count="row_count",
+        row_count=row_count,
     )
     if outcome is not None:
-        null_count += outcome
+        null_count = null_count.add(outcome, fill_value=0)
     if not null_count.sum(axis=None):
         return None
     return null_count

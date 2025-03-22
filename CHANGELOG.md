@@ -1,7 +1,7 @@
 # Changelog
 
 ## [Unreleased]
-
+-   [ENH] Added `row_count` parameter for janitor.conditional_join - Issue #1269 @samukweku
 ## [v0.31.0] - 2025-03-07
 
 -   [ENH] Added support for pd.Series.select - Issue #1394 @samukweku

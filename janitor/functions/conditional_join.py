@@ -39,6 +39,7 @@ def conditional_join(
     keep: Literal["first", "last", "all"] = "all",
     use_numba: bool = False,
     indicator: Optional[Union[bool, str]] = False,
+    row_count: str = None,
     force: bool = False,
 ) -> pd.DataFrame:
     """The conditional_join function operates similarly to `pd.merge`,
@@ -234,6 +235,8 @@ def conditional_join(
             - Added support for timedelta dtype.
         - 0.28.0
             - `col` class deprecated.
+        - 0.32.0
+            - Added `row_count` parameter.
 
     Args:
         df: A pandas DataFrame.
@@ -264,6 +267,8 @@ def conditional_join(
             `right_only` for observations whose merge key
             only appears in the right DataFrame, and `both` if the observation’s
             merge key is found in both DataFrames.
+        row_count: If not None, adds a new column that captures the number of matching rows
+            from `right` for each row in `df`.
         force: If `True`, force the non-equi join conditions to execute before the equi join.
 
 
@@ -282,6 +287,7 @@ def conditional_join(
         use_numba=use_numba,
         indicator=indicator,
         force=force,
+        row_count=row_count,
     )
 
 
@@ -313,6 +319,7 @@ def _conditional_join_preliminary_checks(
     force: bool,
     return_matching_indices: bool = False,
     return_ragged_arrays: bool = False,
+    row_count: str = None,
 ) -> tuple:
     """
     Preliminary checks for conditional_join are conducted here.
@@ -398,6 +405,17 @@ def _conditional_join_preliminary_checks(
 
     check("return_ragged_arrays", return_ragged_arrays, [bool])
 
+    if row_count is not None:
+        check("row_count", row_count, [Hashable])
+        if row_count in df.columns:
+            raise pd.errors.DuplicateLabelError(
+                f"{row_count} already exists as a column label in df."
+            )
+        if keep != "all":
+            raise ValueError("row_count applies only when `keep=all`")
+        if how != "left":
+            raise ValueError("row_count applies only when `how=left`")
+
     return (
         df,
         right,
@@ -410,6 +428,7 @@ def _conditional_join_preliminary_checks(
         indicator,
         force,
         return_ragged_arrays,
+        row_count,
     )
 
 
@@ -462,6 +481,7 @@ def _conditional_join_compute(
     force: bool,
     return_matching_indices: bool = False,
     return_ragged_arrays: bool = False,
+    row_count: str = None,
 ) -> pd.DataFrame:
     """
     This is where the actual computation
@@ -480,6 +500,7 @@ def _conditional_join_compute(
         indicator,
         force,
         return_ragged_arrays,
+        row_count,
     ) = _conditional_join_preliminary_checks(
         df=df,
         right=right,
@@ -493,6 +514,7 @@ def _conditional_join_compute(
         force=force,
         return_matching_indices=return_matching_indices,
         return_ragged_arrays=return_ragged_arrays,
+        row_count=row_count,
     )
     eq_check = False
     le_lt_check = False
@@ -519,6 +541,7 @@ def _conditional_join_compute(
             use_numba=use_numba,
             force=force,
             return_ragged_arrays=return_ragged_arrays,
+            row_count=row_count,
         )
     elif (len(conditions) > 1) & le_lt_check:
         result = _multiple_conditional_join_le_lt(
@@ -528,10 +551,15 @@ def _conditional_join_compute(
             keep=keep,
             use_numba=use_numba,
             return_ragged_arrays=return_ragged_arrays,
+            row_count=row_count,
         )
     elif len(conditions) > 1:
         result = _multiple_conditional_join_ne(
-            df=df, right=right, conditions=conditions, keep=keep
+            df=df,
+            right=right,
+            conditions=conditions,
+            keep=keep,
+            row_count=row_count,
         )
     elif use_numba:
         result = _numba_single_non_equi_join(
@@ -539,8 +567,8 @@ def _conditional_join_compute(
             right=right[right_on],
             op=op,
             keep=keep,
+            row_count=row_count,
         )
-
     else:
         result = _generic_func_cond_join(
             left=df[left_on],
@@ -549,11 +577,21 @@ def _conditional_join_compute(
             multiple_conditions=False,
             keep=keep,
             return_ragged_arrays=return_ragged_arrays,
+            row_count=row_count,
         )
+    if row_count:
+        if (df_columns is not None) and (df_columns != slice(None)):
+            df = df.select(columns=df_columns)
+        df = df[:]
+        df[row_count] = 0
+        if result is None:
+            return df
+        _, result = df[row_count].align(result, join="left", fill_value=0)
+        df[row_count] = result
+        return df
 
     if result is None:
         result = np.array([], dtype=np.intp), np.array([], dtype=np.intp)
-
     if return_matching_indices:
         return result
 
@@ -616,6 +654,7 @@ def _multiple_conditional_join_ne(
     right: pd.DataFrame,
     conditions: list[tuple[pd.Series, pd.Series, str]],
     keep: str,
+    row_count: Hashable = None,
 ) -> tuple:
     """
     Get indices for multiple conditions,
@@ -648,7 +687,9 @@ def _multiple_conditional_join_ne(
 
     if not indices:
         return None
-
+    if row_count:
+        left_index, _ = indices
+        return pd.Index(left_index).value_counts(sort=False).rename(row_count)
     return _keep_output(keep, *indices)
 
 
@@ -660,6 +701,7 @@ def _multiple_conditional_join_eq(
     use_numba: bool,
     force: bool,
     return_ragged_arrays: bool,
+    row_count: Hashable = None,
 ) -> tuple:
     """
     Get indices for multiple conditions,
@@ -676,6 +718,7 @@ def _multiple_conditional_join_eq(
             keep=keep,
             use_numba=use_numba,
             return_ragged_arrays=False,
+            row_count=row_count,
         )
 
     if use_numba:
@@ -744,7 +787,7 @@ def _multiple_conditional_join_eq(
         # per group in the first column
         right_is_sorted = right_df[equi_col].is_monotonic_increasing
         if right_is_sorted:
-            grp = right_df.groupby(equi_col, sort=False)
+            grp = right_df.groupby(equi_col, sort=False, observed=True)
             non_equi_col = right_columns[1]
             # groupby.is_monotonic_increasing uses apply under the hood
             # the approach used below circumvents the Series creation
@@ -756,25 +799,23 @@ def _multiple_conditional_join_eq(
             )
         if not right_is_sorted:
             right_df = right_df.sort_values(right_columns)
-        indices = _numba_equi_join(
-            df=left_df, right=right_df, eqs=eqs, ge_gt=ge_gt, le_lt=le_lt
-        )
-        if indices is None:
-            return None
-        if not rest:
-            return indices
-
-        rest = (
-            (df[left_on], right[right_on], op)
+        rest = [
+            (
+                df.loc[left_df.index, left_on],
+                right.loc[right_df.index, right_on],
+                op,
+            )
             for left_on, right_on, op in rest
+        ]
+        return _numba_equi_join(
+            df=left_df,
+            right=right_df,
+            eqs=eqs,
+            ge_gt=ge_gt,
+            le_lt=le_lt,
+            rest=rest,
+            row_count=row_count if row_count else None,
         )
-
-        indices = _generate_indices(*indices, rest)
-
-        if indices is None:
-            return None
-
-        return _keep_output(keep, *indices)
 
     if (
         return_ragged_arrays
@@ -790,7 +831,6 @@ def _multiple_conditional_join_eq(
             keep="all",
             return_ragged_arrays=return_ragged_arrays,
         )
-
     left_df = df[:]
     right_df = right[:]
     eqs = [
@@ -844,12 +884,16 @@ def _multiple_conditional_join_eq(
     ]
 
     if not rest:
+        if row_count:
+            return left_index.value_counts(sort=False).rename(row_count)
         return _keep_output(keep, left_index, right_index)
 
     indices = _generate_indices(left_index, right_index, rest)
     if indices is None:
         return None
-
+    if row_count:
+        left_index, _ = indices
+        return pd.Index(left_index).value_counts(sort=False).rename(row_count)
     return _keep_output(keep, *indices)
 
 
@@ -860,6 +904,7 @@ def _multiple_conditional_join_le_lt(
     keep: str,
     use_numba: bool,
     return_ragged_arrays: bool,
+    row_count: Hashable = None,
 ) -> tuple:
     """
     Get indices for multiple conditions,
@@ -887,17 +932,24 @@ def _multiple_conditional_join_le_lt(
             is_range_join = set(first_two) in range_join_ops
             if is_range_join and (first_two[0] in less_than_join_types):
                 gt_lt = [gt_lt[1], gt_lt[0], *gt_lt[2:]]
-            if not conditions:
-                return _numba_multiple_non_equi_join(
-                    df, right, gt_lt, keep=keep, is_range_join=is_range_join
-                )
+            gt_lt.extend(conditions)
             indices = _numba_multiple_non_equi_join(
-                df, right, gt_lt, keep="all", is_range_join=False
+                df,
+                right,
+                gt_lt,
+                keep=keep,
+                is_range_join=is_range_join,
+                row_count=(row_count if row_count else None),
             )
+            return indices
         else:
             left_on, right_on, op = gt_lt[0]
             indices = _numba_single_non_equi_join(
-                df[left_on], right[right_on], op, keep="all"
+                left=df[left_on],
+                right=right[right_on],
+                op=op,
+                keep="all",
+                row_count=None,
             )
         if indices is None:
             return None
@@ -971,9 +1023,13 @@ def _multiple_conditional_join_le_lt(
                 keep=_keep,
                 return_ragged_arrays=return_ragged_arrays,
                 right_is_sorted=right_is_sorted,
+                row_count=row_count if not conditions else None,
             )
             if indices is None:
                 return None
+            if row_count and not conditions:
+
+                return indices
             if _keep or (return_ragged_arrays & isinstance(indices[1], list)):
                 return indices
 
@@ -1008,6 +1064,10 @@ def _multiple_conditional_join_le_lt(
         indices = _generate_indices(*indices, conditions)
         if indices is None:
             return None
+
+    if row_count:
+        left_index, _ = indices
+        return pd.Index(left_index).value_counts(sort=False).rename(row_count)
     return _keep_output(keep, *indices)
 
 
@@ -1019,6 +1079,7 @@ def _range_indices(
     keep: str,
     right_is_sorted: bool,
     return_ragged_arrays: bool,
+    row_count: Hashable = None,
 ) -> Union[tuple[np.ndarray, np.ndarray], None]:
     """
     Retrieve index positions for range/interval joins.
@@ -1057,7 +1118,6 @@ def _range_indices(
         multiple_conditions=True,
         keep="all",
     )
-
     if outcome is None:
         return None
     left_index, right_index, ends = outcome
@@ -1069,6 +1129,7 @@ def _range_indices(
     # if True, we can use a binary search
     # for more performance, instead of a linear search
     fastpath = right_c.is_monotonic_increasing
+
     if fastpath:
         outcome = _generic_func_cond_join(
             left=left_c,
@@ -1114,6 +1175,9 @@ def _range_indices(
         ends = ends[keep_rows]
 
     repeater = ends - starts
+    if row_count and (fastpath or repeater.max() == 1):
+        return pd.Series(index=left_index, data=repeater, name=row_count)
+
     if repeater.max() == 1:
         # no point running a comparison op
         # if the width is all 1
@@ -1149,10 +1213,15 @@ def _range_indices(
 
     if ext_arr:
         mask = mask.to_numpy(dtype=bool, na_value=False)
-
     if not mask.all():
         left_index = left_index[mask]
         right_index = right_index[mask]
+
+    if row_count:
+        row_count = (
+            pd.Index(left_index).value_counts(sort=False).rename(row_count)
+        )
+        return row_count
 
     return left_index, right_index
 
@@ -1539,9 +1608,23 @@ def construct_1d_array_from_inferred_fill_value(
 
 
 def _numba_single_non_equi_join(
-    left: pd.Series, right: pd.Series, op: str, keep: str
+    left: pd.Series,
+    right: pd.Series,
+    op: str,
+    keep: str,
+    row_count: str | None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Return matching indices for single non-equi join."""
+    if row_count:
+        return _generic_func_cond_join(
+            left=left,
+            right=right,
+            op=op,
+            multiple_conditions=False,
+            keep=keep,
+            return_ragged_arrays=False,
+            row_count=row_count,
+        )
     if op == "!=":
         return _generic_func_cond_join(
             left=left, right=right, op=op, multiple_conditions=False, keep=keep
@@ -1557,28 +1640,18 @@ def _numba_single_non_equi_join(
     if op in greater_than_join_types:
         right_index = right_index[::-1]
         starts = right_index.size - starts
-    if keep == "first":
+    if keep in {"first", "last"}:
         left_indices = np.empty(left_index.size, dtype=np.intp)
         right_indices = np.empty(left_index.size, dtype=np.intp)
-        return (
-            _numba._numba_non_equi_join_monotonic_increasing_keep_first_dual(
-                left_index=left_index,
-                right_index=right_index,
-                starts=starts,
-                left_indices=left_indices,
-                right_indices=right_indices,
-            )
-        )
-    if keep == "last":
-        left_indices = np.empty(left_index.size, dtype=np.intp)
-        right_indices = np.empty(left_index.size, dtype=np.intp)
-        return _numba._numba_non_equi_join_monotonic_increasing_keep_last_dual(
+        return _numba._numba_non_equi_join_monotonic_increasing_keep_first_or_last_dual(
             left_index=left_index,
             right_index=right_index,
             starts=starts,
             left_indices=left_indices,
             right_indices=right_indices,
+            position=keep == "first",
         )
+
     start_indices = np.empty(left_index.size, dtype=np.intp)
     start_indices[0] = 0
     indices = (right_index.size - starts).cumsum()
@@ -1602,6 +1675,7 @@ def _numba_multiple_non_equi_join(
     gt_lt: list,
     keep: str,
     is_range_join: bool,
+    row_count: str = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     # https://www.scitepress.org/papers/2018/68268/68268.pdf
@@ -1751,22 +1825,8 @@ def _numba_multiple_non_equi_join(
     # 3        4         3         5
     # 4        4         3         6
     ################################
-    mapping = {">": 0, ">=": 1, "<": 2, "<=": 3}
+    mapping = {">": 0, ">=": 1, "<": 2, "<=": 3, "!=": 4}
     first, second, *rest = gt_lt
-    if rest:
-        left_on, right_on, _ = zip(*rest)
-        left_on = list(set(left_on))
-        any_nulls = df.loc[:, left_on].isna().any(axis=1)
-        if any_nulls.all():
-            return None
-        if any_nulls.any():
-            df = df.loc[~any_nulls]
-        right_on = list(set(right_on))
-        any_nulls = right.loc[:, right_on].isna().any(axis=1)
-        if any_nulls.all():
-            return None
-        if any_nulls.any():
-            right = right.loc[~any_nulls]
     if right[first[1]].is_monotonic_increasing:
         right_is_sorted = True
     else:
@@ -1783,8 +1843,8 @@ def _numba_multiple_non_equi_join(
             mapping=mapping,
             rest=rest,
             right_is_sorted=right_is_sorted,
+            row_count=row_count,
         )
-
     if not df[first[0]].is_monotonic_increasing:
         df = df.sort_values(first[0], ignore_index=False)
     left_index = df.index._values
@@ -1859,7 +1919,6 @@ def _numba_multiple_non_equi_join(
         left_regions = left_regions[booleans]
         left_index = left_index[booleans]
         l_index = l_index[booleans]
-
     rest = tuple(
         (
             df.loc[l_index, left_on].to_numpy(),
@@ -1868,7 +1927,6 @@ def _numba_multiple_non_equi_join(
         )
         for left_on, right_on, op in rest
     )
-
     # a range join will have > and <
     # > and < will be in opposite directions
     # if the first condition is >
@@ -1886,6 +1944,7 @@ def _numba_multiple_non_equi_join(
             starts=starts,
             gt_lt=gt_lt,
             right_is_sorted=right_is_sorted,
+            row_count=row_count,
         )
     if pd.Index(right_regions[:, 1]).is_monotonic_increasing:
         return _numba_non_equi_join_monotonic_increasing(
@@ -1897,6 +1956,7 @@ def _numba_multiple_non_equi_join(
             gt_lt=gt_lt,
             rest=rest,
             starts=starts,
+            row_count=row_count,
         )
     from janitor.functions import _numba
 
@@ -1931,10 +1991,15 @@ def _numba_multiple_non_equi_join(
                 positions_array=positions_array,
                 starts=starts,
                 load_factor=load_factor,
+                row_count=True if row_count else False,
             )
         )
-    elif (keep == "first") & (len(gt_lt) == 2):
 
+        if row_count and (left_indices is None):
+            return pd.Series(index=left_indices, data=0)
+        if row_count:
+            return pd.Series(index=left_indices, data=right_indices)
+    elif (keep == "first") & (len(gt_lt) == 2):
         left_indices, right_indices = (
             _numba._numba_non_equi_join_not_monotonic_dual_keep_first(
                 left_regions=left_regions[:, 1],
@@ -1979,8 +2044,15 @@ def _numba_multiple_non_equi_join(
                 positions_array=positions_array,
                 load_factor=load_factor,
                 starts=starts,
+                row_count=True if row_count else False,
             )
         )
+        if row_count and (left_indices is None):
+            return pd.Series(index=left_index, data=0, name=row_count)
+        if row_count:
+            return pd.Series(
+                index=left_indices, data=right_indices, name=row_count
+            )
     elif keep == "first":
         left_indices, right_indices = (
             _numba._numba_non_equi_join_not_monotonic_keep_first(
@@ -2028,6 +2100,7 @@ def _range_join_sorted(
     mapping: dict,
     rest: list,
     right_is_sorted: bool,
+    row_count: str | None,
 ) -> tuple:
     """
     Get indices for a  range join
@@ -2073,6 +2146,8 @@ def _range_join_sorted(
         starts = starts[keep_rows]
         ends = ends[keep_rows]
     repeater = ends - starts
+    if (len(gt_lt) == 2) and row_count:
+        return pd.Series(index=left_index, data=repeater, name=row_count)
     if (len(gt_lt) == 2) & (repeater.max() == 1):
         # no point running a comparison op
         # if the width is all 1
@@ -2081,29 +2156,19 @@ def _range_join_sorted(
         return left_index, right_index[starts]
     if (len(gt_lt) == 2) & (keep == "first") & right_is_sorted:
         return left_index, right_index[starts]
-    if (len(gt_lt) == 2) & (keep == "first"):
-        left_indices = np.empty(left_index.size, dtype=np.intp)
-        right_indices = np.empty(left_index.size, dtype=np.intp)
-        return _numba._numba_range_join_sorted_keep_first_dual(
-            left_index=left_index,
-            right_index=right_index,
-            starts=starts,
-            ends=ends,
-            left_indices=left_indices,
-            right_indices=right_indices,
-        )
     if (len(gt_lt) == 2) & (keep == "last") & right_is_sorted:
         return left_index, right_index[ends - 1]
-    if (len(gt_lt) == 2) & (keep == "last"):
+    if (len(gt_lt) == 2) & (keep in {"first", "last"}):
         left_indices = np.empty(left_index.size, dtype=np.intp)
         right_indices = np.empty(left_index.size, dtype=np.intp)
-        return _numba._numba_range_join_sorted_keep_last_dual(
+        return _numba._numba_range_join_sorted_keep_first_or_last_dual(
             left_index=left_index,
             right_index=right_index,
             starts=starts,
             ends=ends,
             left_indices=left_indices,
             right_indices=right_indices,
+            position=keep == "first",
         )
     if (len(gt_lt) == 2) & (keep == "all"):
         start_indices = np.empty(left_index.size, dtype=np.intp)
@@ -2138,6 +2203,7 @@ def _range_join_sorted(
     start_indices[1:] = indices[:-1]
     indices = indices[-1]
     indices = np.ones(indices, dtype=np.bool_)
+
     if keep == "all":
         left_indices, right_indices = (
             _numba._range_join_sorted_multiple_keep_all(
@@ -2148,23 +2214,18 @@ def _range_join_sorted(
                 right_index=right_index,
                 indices=indices,
                 start_indices=start_indices,
+                row_count=True if row_count else False,
             )
         )
-    elif keep == "first":
-        left_indices, right_indices = (
-            _numba._range_join_sorted_multiple_keep_first(
-                rest,
-                left_index=left_index,
-                starts=starts,
-                ends=ends,
-                right_index=right_index,
-                indices=indices,
-                start_indices=start_indices,
+        if row_count and (left_indices is None):
+            return None
+        if row_count:
+            return pd.Series(
+                index=left_indices, data=right_indices, name=row_count
             )
-        )
     else:
         left_indices, right_indices = (
-            _numba._range_join_sorted_multiple_keep_last(
+            _numba._range_join_sorted_multiple_keep_first_or_last(
                 rest,
                 left_index=left_index,
                 starts=starts,
@@ -2172,6 +2233,7 @@ def _range_join_sorted(
                 right_index=right_index,
                 indices=indices,
                 start_indices=start_indices,
+                position=keep == "first",
             )
         )
     if left_indices is None:
@@ -2189,6 +2251,7 @@ def _range_join_right_region_monotonic_decreasing(
     rest: tuple,
     starts: np.ndarray,
     right_is_sorted: bool,
+    row_count: str,
 ):
     """
     Get indices for a range join,
@@ -2230,15 +2293,19 @@ def _range_join_right_region_monotonic_decreasing(
     if (keep == "last") & (len(gt_lt) == 2):
         left_indices = np.empty(left_index.size, dtype=np.intp)
         right_indices = np.empty(left_index.size, dtype=np.intp)
-        return _numba._numba_range_join_sorted_keep_last_dual(
+        return _numba._numba_range_join_sorted_keep_first_or_last_dual(
             left_index=left_index,
             right_index=right_index,
             starts=starts,
             ends=ends,
             left_indices=left_indices,
             right_indices=right_indices,
+            position=keep == "first",
         )
     if (keep == "all") & (len(gt_lt) == 2):
+        if row_count:
+            repeater = ends - starts
+            return pd.Series(index=left_index, data=repeater, name=row_count)
         start_indices = np.empty(left_index.size, dtype=np.intp)
         start_indices[0] = 0
         indices = (ends - starts).cumsum()
@@ -2271,11 +2338,18 @@ def _range_join_right_region_monotonic_decreasing(
                 right_index=right_index,
                 indices=indices,
                 start_indices=start_indices,
+                row_count=row_count,
             )
         )
-    elif keep == "first":
+        if row_count and (left_indices is None):
+            return None
+        if row_count:
+            return pd.Series(
+                index=left_indices, data=right_indices, name=row_count
+            )
+    else:
         left_indices, right_indices = (
-            _numba._range_join_sorted_multiple_keep_first(
+            _numba._range_join_sorted_multiple_keep_first_or_last(
                 rest,
                 left_index=left_index,
                 starts=starts,
@@ -2283,21 +2357,10 @@ def _range_join_right_region_monotonic_decreasing(
                 right_index=right_index,
                 indices=indices,
                 start_indices=start_indices,
+                position=keep == "first",
             )
         )
 
-    else:
-        left_indices, right_indices = (
-            _numba._range_join_sorted_multiple_keep_last(
-                rest,
-                left_index=left_index,
-                starts=starts,
-                ends=ends,
-                right_index=right_index,
-                indices=indices,
-                start_indices=start_indices,
-            )
-        )
     if left_indices is None:
         return None
     return left_indices, right_indices
@@ -2312,6 +2375,7 @@ def _numba_non_equi_join_monotonic_increasing(
     gt_lt: tuple,
     rest: tuple,
     starts: np.ndarray,
+    row_count: str,
 ):
     """
     Get indices for a non equi join,
@@ -2334,29 +2398,21 @@ def _numba_non_equi_join_monotonic_increasing(
             (left_arr[booleans], right_arr, op)
             for left_arr, right_arr, op in rest
         )
-    if (keep == "first") & (len(gt_lt) == 2):
+    if (keep in {"first", "last"}) & (len(gt_lt) == 2):
         left_indices = np.empty(left_index.size, dtype=np.intp)
         right_indices = np.empty(left_index.size, dtype=np.intp)
-        return (
-            _numba._numba_non_equi_join_monotonic_increasing_keep_first_dual(
-                left_index=left_index,
-                right_index=right_index,
-                starts=starts,
-                left_indices=left_indices,
-                right_indices=right_indices,
-            )
-        )
-    if (keep == "last") & (len(gt_lt) == 2):
-        left_indices = np.empty(left_index.size, dtype=np.intp)
-        right_indices = np.empty(left_index.size, dtype=np.intp)
-        return _numba._numba_non_equi_join_monotonic_increasing_keep_last_dual(
+        return _numba._numba_non_equi_join_monotonic_increasing_keep_first_or_last_dual(
             left_index=left_index,
             right_index=right_index,
             starts=starts,
             left_indices=left_indices,
             right_indices=right_indices,
+            position=keep == "first",
         )
     if (keep == "all") & (len(gt_lt) == 2):
+        if row_count:
+            repeater = right_index.size - starts
+            return pd.Series(index=left_index, data=repeater, name=row_count)
         start_indices = np.empty(left_index.size, dtype=np.intp)
         start_indices[0] = 0
         indices = (right_index.size - starts).cumsum()
@@ -2378,26 +2434,16 @@ def _numba_non_equi_join_monotonic_increasing(
     start_indices[1:] = indices[:-1]
     indices = indices[-1]
     indices = np.ones(indices, dtype=np.bool_)
-    if keep == "first":
+    if keep in {"first", "last"}:
         left_indices, right_indices = (
-            _numba._numba_non_equi_join_monotonic_increasing_keep_first(
+            _numba._numba_non_equi_join_monotonic_increasing_keep_first_or_last(
                 rest,
                 left_index=left_index,
                 starts=starts,
                 right_index=right_index,
                 indices=indices,
                 start_indices=start_indices,
-            )
-        )
-    elif keep == "last":
-        left_indices, right_indices = (
-            _numba._numba_non_equi_join_monotonic_increasing_keep_last(
-                rest,
-                left_index=left_index,
-                starts=starts,
-                right_index=right_index,
-                indices=indices,
-                start_indices=start_indices,
+                position=keep == "first",
             )
         )
 
@@ -2410,8 +2456,14 @@ def _numba_non_equi_join_monotonic_increasing(
                 right_index=right_index,
                 indices=indices,
                 start_indices=start_indices,
+                row_count=True if row_count else False,
             )
         )
+        if row_count and (left_indices is None):
+            return pd.Series(index=left_index, data=0)
+        if row_count:
+            return pd.Series(index=left_indices, data=right_indices)
+
     if left_indices is None:
         return None
     return left_indices, right_indices
@@ -2423,6 +2475,8 @@ def _numba_equi_join(
     eqs: tuple,
     ge_gt: tuple,
     le_lt: tuple,
+    rest: tuple,
+    row_count: str,
 ) -> Union[tuple[np.ndarray, np.ndarray], None]:
     """
     Compute indices when an equi join is present.
@@ -2534,6 +2588,7 @@ def _numba_equi_join(
     #
     from janitor.functions import _numba
 
+    mapping = {">": 0, ">=": 1, "<": 2, "<=": 3, "!=": 4}
     left_column, right_column, _ = eqs
     # steal some perf here within the binary search
     # search for uniques
@@ -2555,7 +2610,14 @@ def _numba_equi_join(
         left_index = left_index[keep_rows]
         slice_starts = slice_starts[keep_rows]
         slice_ends = slice_ends[keep_rows]
-
+    rest = tuple(
+        (
+            left.loc[left_index].to_numpy(),
+            right.to_numpy(),
+            mapping[op],
+        )
+        for left, right, op in rest
+    )
     ge_arr1 = None
     ge_arr2 = None
     ge_strict = None
@@ -2575,7 +2637,8 @@ def _numba_equi_join(
         le_arr2 = right[right_column]._values
         le_arr1, le_arr2 = _convert_to_numpy(left=le_arr1, right=le_arr2)
         le_strict = True if op == "<" else False
-
+        op = mapping[op]
+    all_monotonic_increasing = False
     if le_lt and ge_gt:
         group = right.groupby(eqs[1])[le_lt[1]]
         # is the last column (le_lt) monotonic increasing?
@@ -2583,53 +2646,126 @@ def _numba_equi_join(
         all_monotonic_increasing = all(
             arr.is_monotonic_increasing for _, arr in group
         )
-        if all_monotonic_increasing:
-            cum_max_arr = le_arr2[:]
-        else:
-            cum_max_arr = group.cummax()._values
-            if is_extension_array_dtype(cum_max_arr):
-                array_dtype = cum_max_arr.dtype.numpy_dtype
-                cum_max_arr = cum_max_arr.astype(array_dtype)
-            if is_datetime64_dtype(cum_max_arr):
-                cum_max_arr = cum_max_arr.view(np.int64)
 
-        left_index, right_index = _numba._numba_equi_join_range_join(
+    if le_lt and ge_gt and all_monotonic_increasing and not rest:
+        left_index, right_index = _numba._numba_equi_join_range_join_monotonic(
+            left_index=left_index,
+            right_index=right_index,
+            slice_starts=slice_starts,
+            slice_ends=slice_ends,
+            ge_arr1=ge_arr1,
+            ge_arr2=ge_arr2,
+            ge_strict=ge_strict,
+            le_arr1=le_arr1,
+            le_arr2=le_arr2,
+            le_strict=le_strict,
+            row_count=True if row_count else False,
+        )
+
+    elif le_lt and ge_gt and all_monotonic_increasing:
+        left_index, right_index = (
+            _numba._numba_equi_join_range_join_multiple_monotonic(
+                left_index=left_index,
+                right_index=right_index,
+                slice_starts=slice_starts,
+                slice_ends=slice_ends,
+                ge_arr1=ge_arr1,
+                ge_arr2=ge_arr2,
+                ge_strict=ge_strict,
+                le_arr1=le_arr1,
+                le_arr2=le_arr2,
+                le_strict=le_strict,
+                row_count=True if row_count else False,
+                tupled=rest,
+            )
+        )
+
+    elif le_lt and ge_gt:
+        conditions = [(le_arr1, le_arr2, op)]
+        conditions.extend(rest)
+        left_index, right_index = (
+            _numba._numba_equi_join_range_join_non_monotonic(
+                left_index=left_index,
+                right_index=right_index,
+                slice_starts=slice_starts,
+                slice_ends=slice_ends,
+                ge_arr1=ge_arr1,
+                ge_arr2=ge_arr2,
+                ge_strict=ge_strict,
+                row_count=True if row_count else False,
+                tupled=conditions,
+            )
+        )
+
+    elif le_lt and not rest:
+        (
             left_index,
             right_index,
-            slice_starts,
-            slice_ends,
-            ge_arr1,
-            ge_arr2,
-            ge_strict,
-            le_arr1,
-            le_arr2,
-            le_strict,
-            all_monotonic_increasing,
-            cum_max_arr,
+        ) = _numba._numba_equi_single_le_ge_join(
+            left_index=left_index,
+            right_index=right_index,
+            slice_starts=slice_starts,
+            slice_ends=slice_ends,
+            arr1=le_arr1,
+            arr2=le_arr2,
+            strict=le_strict,
+            less_than=True,
+            row_count=True if row_count else False,
         )
 
     elif le_lt:
-        left_index, right_index = _numba._numba_equi_le_join(
+        (
             left_index,
             right_index,
-            slice_starts,
-            slice_ends,
-            le_arr1,
-            le_arr2,
-            le_strict,
+        ) = _numba._numba_equi_single_le_ge_tupled_join(
+            left_index=left_index,
+            right_index=right_index,
+            slice_starts=slice_starts,
+            slice_ends=slice_ends,
+            arr1=le_arr1,
+            arr2=le_arr2,
+            strict=le_strict,
+            less_than=True,
+            row_count=True if row_count else False,
+            tupled=rest if rest else None,
         )
 
-    else:
-        left_index, right_index = _numba._numba_equi_ge_join(
+    elif ge_gt and not rest:
+        (
             left_index,
             right_index,
-            slice_starts,
-            slice_ends,
-            ge_arr1,
-            ge_arr2,
-            ge_strict,
+        ) = _numba._numba_equi_single_le_ge_join(
+            left_index=left_index,
+            right_index=right_index,
+            slice_starts=slice_starts,
+            slice_ends=slice_ends,
+            arr1=ge_arr1,
+            arr2=ge_arr2,
+            strict=ge_strict,
+            less_than=False,
+            row_count=True if row_count else False,
         )
 
+    elif ge_gt:
+        (
+            left_index,
+            right_index,
+        ) = _numba._numba_equi_single_le_ge_tupled_join(
+            left_index=left_index,
+            right_index=right_index,
+            slice_starts=slice_starts,
+            slice_ends=slice_ends,
+            arr1=ge_arr1,
+            arr2=ge_arr2,
+            strict=ge_strict,
+            less_than=False,
+            row_count=True if row_count else False,
+            tupled=rest if rest else None,
+        )
+    if row_count and (left_index is None):
+        return pd.Series(index=df.index, data=0, name=row_count)
+    if row_count:
+        return pd.Series(index=left_index, data=right_index, name=row_count)
     if left_index is None:
         return None
 

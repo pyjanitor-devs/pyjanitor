@@ -298,7 +298,10 @@ def _null_checks_cond_join(
 
 
 def _equal_indices(
-    left: pd.Series, right: pd.Series, return_ragged_arrays: bool
+    left: pd.Series,
+    right: pd.Series,
+    return_ragged_arrays: bool,
+    row_count: Hashable = None,
 ) -> tuple:
     """
     Use binary search to get indices where left
@@ -355,6 +358,8 @@ def _equal_indices(
     if not booleans.all():
         left_index = left_index[booleans]
         starts = starts[booleans]
+    if row_count:
+        return pd.Series(index=left_index, data=ends - starts, name=row_count)
     return left_index, right_index, starts
 
 
@@ -365,6 +370,7 @@ def _less_than_indices(
     multiple_conditions: bool,
     keep: str,
     return_ragged_arrays: bool,
+    row_count: Hashable = None,
 ) -> tuple:
     """
     Use binary search to get indices where left
@@ -430,6 +436,10 @@ def _less_than_indices(
 
         if not search_indices.size:
             return None
+    if row_count:
+        return pd.Series(
+            index=left_index, data=len_right - search_indices, name=row_count
+        )
     if multiple_conditions:
         return left_index, right_index, search_indices
     if right_is_sorted & (keep == "last"):
@@ -464,6 +474,7 @@ def _greater_than_indices(
     multiple_conditions: bool,
     keep: str,
     return_ragged_arrays: bool,
+    row_count: Hashable = None,
 ) -> tuple:
     """
     Use binary search to get indices where left
@@ -523,6 +534,8 @@ def _greater_than_indices(
 
         if not search_indices.size:
             return None
+    if row_count:
+        return pd.Series(index=left_index, data=search_indices, name=row_count)
     if multiple_conditions:
         return left_index, right_index, search_indices
     if right_is_sorted & (keep == "first"):
@@ -636,12 +649,52 @@ def _not_equal_indices(left: pd.Series, right: pd.Series, keep: str) -> tuple:
     return _keep_output(keep, left, right)
 
 
+def _not_equal_row_count(
+    left: pd.Series, right: pd.Series, row_count: Hashable
+) -> tuple | None:
+    """
+    Get row count where
+    `left` is exactly  not equal to `right`.
+    """
+
+    null_count = pd.Series(
+        index=left.index, data=right.isna().sum(), name=row_count
+    )
+    null_count[left.isna()] += right.notna().sum()
+    outcome = _less_than_indices(
+        left,
+        right,
+        strict=True,
+        multiple_conditions=False,
+        keep="all",
+        return_ragged_arrays=False,
+        row_count=row_count,
+    )
+    if outcome is not None:
+        null_count = null_count.add(outcome, fill_value=0)
+    outcome = _greater_than_indices(
+        left,
+        right,
+        strict=True,
+        multiple_conditions=False,
+        keep="all",
+        return_ragged_arrays=False,
+        row_count=row_count,
+    )
+    if outcome is not None:
+        null_count = null_count.add(outcome, fill_value=0)
+    if not null_count.sum(axis=None):
+        return None
+    return null_count
+
+
 def _generic_func_cond_join(
     left: pd.Series,
     right: pd.Series,
     op: str,
     multiple_conditions: bool,
     keep: str,
+    row_count: Hashable = None,
     return_ragged_arrays: bool = False,
 ) -> tuple:
     """
@@ -666,6 +719,7 @@ def _generic_func_cond_join(
             multiple_conditions=multiple_conditions,
             keep=keep,
             return_ragged_arrays=return_ragged_arrays,
+            row_count=row_count,
         )
     if op in greater_than_join_types:
         return _greater_than_indices(
@@ -675,11 +729,19 @@ def _generic_func_cond_join(
             multiple_conditions=multiple_conditions,
             keep=keep,
             return_ragged_arrays=return_ragged_arrays,
+            row_count=row_count,
+        )
+    if (op == _JoinOperator.NOT_EQUAL.value) and row_count:
+        return _not_equal_row_count(
+            left=left, right=right, row_count=row_count
         )
     if op == _JoinOperator.NOT_EQUAL.value:
         return _not_equal_indices(left=left, right=right, keep=keep)
     return _equal_indices(
-        left=left, right=right, return_ragged_arrays=return_ragged_arrays
+        left=left,
+        right=right,
+        return_ragged_arrays=return_ragged_arrays,
+        row_count=row_count,
     )
 
 

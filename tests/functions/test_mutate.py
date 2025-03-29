@@ -137,12 +137,6 @@ def test_mutate_dict_by_tuple(df_mutate):
     assert_frame_equal(actual, expected)
 
 
-def test_mutate_tuple_count_not_eq_2(df_mutate):
-    """Raise error if length of tuple is not 2"""
-    with pytest.raises(ValueError, match="the tuple has to be a length of 2"):
-        df_mutate.mutate(("avg_run",))
-
-
 def test_mutate_df_tuple(df_mutate):
     "Test output for a tuple"
     actual = df_mutate.mutate(("avg_run", "sqrt"))

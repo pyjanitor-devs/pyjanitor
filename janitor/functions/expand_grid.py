@@ -502,7 +502,7 @@ def _compute_cartesian_product(inputs: tuple, sort: bool) -> dict:
         return contents
 
     lengths = (len(key) for key in contents if isinstance(key, tuple))
-    lengths = max(lengths)
+    lengths = max(lengths, default=0)
     others = {}
     # manage differing tuple lengths
     # or a mix of tuples and scalars

@@ -19,7 +19,7 @@ def summarise(
     df: pd.DataFrame,
     *args: tuple[dict | tuple],
     by: Any = None,
-) -> pd.DataFrame | pd.Series:
+) -> pd.DataFrame:
     """
 
     !!! info "New in version 0.31.0"
@@ -42,12 +42,14 @@ def summarise(
     - **dictionary argument**:
     If the argument is a dictionary,
     the value in the `{key:value}` pairing
-    should be either a string, a callable or a tuple.
+    should be either a string, a callable, or a tuple.
 
         - If the value in the dictionary
         is a string or a callable,
         the key of the dictionary
         should be an existing column name.
+
+        The function is applied on the `df[column_name]` series.
 
         !!!note
 
@@ -57,28 +59,24 @@ def summarise(
 
         - If the value of the dictionary is a tuple,
         it should be of length 2, and of the form
-        `(column_name, mutation_func)`,
+        `(column_name, aggfunc)`,
         where `column_name` should exist in the DataFrame,
-        and `mutation_func` should be either a string or a callable.
+        and `aggfunc` should be either a string or a callable.
 
-        !!!note
+        This option allows for custom renaming of the aggregation output,
+        where the key in the dictionary can be a new column name.
 
-            - If `mutation_func` is a string,
-            the string should be a pandas string function,
-            e.g "sum", "mean", etc.
-
-        The key in the dictionary can be a new column name.
 
     - **tuple argument**:
     If the argument is a tuple, it should be of length 2,
     and of the form
-    `(column_name, mutation_func)`,
+    `(column_name, aggfunc)`,
     where column_name should exist in the DataFrame,
-    and `mutation_func` should be either a string or a callable.
+    and `aggfunc` should be either a string or a callable.
 
         !!!note
 
-            - if `mutation_func` is a string,
+            - if `aggfunc` is a string,
             the string should be a pandas string function,
             e.g "sum", "mean", etc.
 
@@ -88,6 +86,7 @@ def summarise(
             [`select`][janitor.functions.select.select] syntax;
             as such multiple columns can be processed here -
             they will be processed individually.
+
 
     - **callable argument**:
     If the argument is a callable, the callable is applied
@@ -169,7 +168,7 @@ def summarise(
         ValueError: If a tuple is passed and the length is not 2.
 
     Returns:
-        A pandas DataFrame or Series with aggregated columns.
+        A pandas DataFrame with aggregated columns.
 
     """  # noqa: E501
 
@@ -184,32 +183,92 @@ def summarise(
             if is_scalar(by):
                 by = [by]
             by = df.groupby(by, sort=False, observed=True)
-    dictionary = {}
+
+    _args = []
+    mapping = {}
     for arg in args:
-        aggregate = _mutator(arg, df=df, by=by)
-        dictionary.update(aggregate)
-    values = map(is_scalar, dictionary.values())
-    if all(values):
-        return pd.Series(dictionary)
-    return pd.concat(dictionary, axis="columns", sort=False, copy=False)
+        if not isinstance(arg, (dict, tuple)):
+            _args.append(arg)
+            continue
+        if isinstance(arg, dict):
+            for key, aggfunc in arg.items():
+                if isinstance(aggfunc, tuple):
+                    if len(aggfunc) != 2:
+                        raise ValueError("the tuple has to be a length of 2")
+                mapping[key] = aggfunc
+            continue
+        if len(arg) != 2:
+            raise ValueError("the tuple has to be a length of 2")
+        column_name, aggfunc = arg
+        column_names = get_index_labels(
+            arg=[column_name], df=df, axis="columns"
+        )
+        for column_name in column_names:
+            mapping[column_name] = aggfunc
+    _args.append(mapping)
+    contents = []
+    for arg in _args:
+        aggregate = _aggfunc(arg, df=df, by=by)
+        contents.extend(aggregate)
+    counts = 0
+    for entry in contents:
+        if isinstance(entry, pd.DataFrame):
+            length = entry.columns.nlevels
+        elif isinstance(entry.name, tuple):
+            length = len(entry.name)
+        else:
+            length = 1
+        counts = max(counts, length)
+    contents_ = []
+    for entry in contents:
+        if isinstance(entry, pd.DataFrame):
+            length_ = entry.columns.nlevels
+            length = counts - length_
+            if length:
+                patch = [""] * length
+                columns = [
+                    entry.columns.get_level_values(n) for n in range(length_)
+                ]
+                columns.append(patch)
+                names = [*entry.columns.names]
+                names.extend([None] * length)
+                columns = pd.MultiIndex.from_arrays(columns, names=names)
+                entry.columns = columns
+        elif is_scalar(entry.name):
+            length = counts - 1
+            if length:
+                patch = [""] * length
+                name = (entry.name, *patch)
+                entry.name = name
+        elif isinstance(entry.name, tuple):
+            length = counts - len(entry.name)
+            if length:
+                patch = [""] * length
+                name = (*entry.name, *patch)
+                entry.name = name
+        contents_.append(entry)
+    return pd.concat(contents_, axis=1, copy=False, sort=False)
 
 
 @singledispatch
-def _mutator(arg, df, by):
+def _aggfunc(arg, df, by):
     if by is None:
         val = df
     else:
         val = by
     outcome = _process_maybe_callable(func=arg, obj=val)
+    if not isinstance(outcome, (pd.Series, pd.DataFrame)):
+        raise TypeError(
+            "Expected a pandas Series or DataFrame; "
+            f"instead got {type(outcome)}"
+        )
     if isinstance(outcome, pd.Series):
         if not outcome.name:
             raise ValueError("Ensure the pandas Series object has a name")
-        return {outcome.name: outcome}
-    # assumption: a mapping - DataFrame/dictionary/...
-    return {**outcome}
+    return [outcome]
 
 
-@_mutator.register(dict)
+@_aggfunc.register(dict)
 def _(arg, df, by):
     """Dispatch function for dictionary"""
     if by is None:
@@ -217,28 +276,39 @@ def _(arg, df, by):
     else:
         val = by
 
-    dictionary = {}
-    for column_name, mutator in arg.items():
-        if isinstance(mutator, tuple):
-            column, func = mutator
-            column = _process_within_dict(mutator=func, obj=val[column])
-        else:
-            column = _process_within_dict(
-                mutator=mutator, obj=val[column_name]
+    contents = []
+    for column_name, aggfunc in arg.items():
+        if isinstance(aggfunc, tuple):
+            column, func = aggfunc
+            column_ = _handle_tuple_groupby_selection(by=by, column=column)
+            column = _apply_func_to_obj(aggfunc=func, obj=val[column_])
+            if isinstance(column, pd.DataFrame) and column.shape[-1] == 1:
+                column = column.squeeze()
+            column = _convert_obj_to_named_series(
+                obj=column,
+                column_name=column_name,
+                function=func,
             )
-        dictionary[column_name] = column
-    return dictionary
-
-
-@_mutator.register(tuple)
-def _(arg, df, by):
-    """Dispatch function for tuple"""
-    if len(arg) != 2:
-        raise ValueError("the tuple has to be a length of 2")
-    column_names, mutator = arg
-    column_names = get_index_labels(arg=[column_names], df=df, axis="columns")
-    mapping = {column_name: mutator for column_name in column_names}
-    return _mutator(mapping, df=df, by=by)
+            if not isinstance(column, pd.Series):
+                raise TypeError(
+                    "Expected a pandas Series object; "
+                    f"instead got {type(column)}"
+                )
+        else:
+            column_ = _handle_tuple_groupby_selection(
+                by=by, column=column_name
+            )
+            column = _apply_func_to_obj(aggfunc=aggfunc, obj=val[column_])
+            column = _convert_obj_to_named_series(
+                obj=column,
+                column_name=column_name,
+                function=aggfunc,
+            )
+        column = _rename_column_in_by(
+            column=column, column_name=column_name, by=by
+        )
+        contents.append(column)
+    return contents
 
 
 def _process_maybe_callable(func: callable, obj):
@@ -257,8 +327,39 @@ def _process_maybe_string(func: str, obj):
     return obj.agg(func)
 
 
-def _process_within_dict(mutator, obj):
+def _apply_func_to_obj(aggfunc, obj):
     """Handle str/callables within a dictionary"""
-    if isinstance(mutator, str):
-        return _process_maybe_string(func=mutator, obj=obj)
-    return _process_maybe_callable(func=mutator, obj=obj)
+    if isinstance(aggfunc, str):
+        return _process_maybe_string(func=aggfunc, obj=obj)
+    return _process_maybe_callable(func=aggfunc, obj=obj)
+
+
+def _handle_tuple_groupby_selection(by: Any, column: Any):
+    """
+    Properly handle a tuple column selection in the presence of a groupby
+    """
+    if (by is not None) and isinstance(column, tuple):
+        return [column]
+    return column
+
+
+def _convert_obj_to_named_series(obj, function: Any, column_name: Any):
+    if isinstance(obj, pd.Series):
+        obj.name = column_name
+        return obj
+    if not is_scalar(obj):
+        return obj
+    if isinstance(function, str):
+        function_name = function
+    else:
+        function_name = function.__name__
+    return pd.Series(data=obj, index=[function_name], name=column_name)
+
+
+def _rename_column_in_by(column, column_name, by):
+    if by is None:
+        return column
+    elif isinstance(column, pd.DataFrame) and is_scalar(column_name):
+        columns = pd.MultiIndex.from_product([[column_name], column.columns])
+        column.columns = columns
+    return column

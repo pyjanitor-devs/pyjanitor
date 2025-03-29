@@ -257,15 +257,15 @@ def _aggfunc(arg, df, by):
     else:
         val = by
     outcome = _process_maybe_callable(func=arg, obj=val)
-    if not isinstance(outcome, (pd.Series, pd.DataFrame)):
-        raise TypeError(
-            "Expected a pandas Series or DataFrame; "
-            f"instead got {type(outcome)}"
-        )
     if isinstance(outcome, pd.Series):
         if not outcome.name:
             raise ValueError("Ensure the pandas Series object has a name")
-    return [outcome]
+        return [outcome]
+    if isinstance(outcome, pd.DataFrame):
+        return [outcome]
+    raise TypeError(
+        "The output from the aggregation should be a named Series or a DataFrame"
+    )
 
 
 @_aggfunc.register(dict)

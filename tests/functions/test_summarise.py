@@ -56,7 +56,8 @@ def test_summarise_callable_series_unnamed(df_summarise):
 def test_summarise_callable_not_pandas_object(df_summarise):
     """Raise if output is not a pandas Series/DataFrame"""
     with pytest.raises(
-        TypeError, match="Expected a pandas Series or DataFrame;.+"
+        TypeError,
+        match="The output from the aggregation should be a named Series or a DataFrame",
     ):
         df_summarise.summarise(lambda df: df.avg_jump.mean())
 

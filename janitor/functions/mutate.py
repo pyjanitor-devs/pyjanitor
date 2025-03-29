@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from functools import singledispatch
-from typing import Any, NamedTuple, Optional
+from typing import Any
 
 import pandas as pd
 import pandas_flavor as pf
@@ -239,45 +239,12 @@ def _(arg, df, by):
 @_mutator.register(tuple)
 def _(arg, df, by):
     """Dispatch function for tuple"""
-    arg = TupleFunc(*arg)
-    arg_alias = arg.alias
-    if arg_alias:
-        check("alias", arg_alias, [str, list, callable])
-        if isinstance(arg_alias, list):
-            for entry in arg_alias:
-                check("entry in alias list", entry, [str])
-    column_names = get_index_labels(arg=[arg.columns], df=df, axis="columns")
-    if by is None:
-        val = df
-    else:
-        val = by
-    for column_name in column_names:
-        column = _apply_func_to_obj(aggfunc=arg.func, obj=val[column_name])
-        print(arg.func.__name__, "func name")
-        if not arg_alias:
-            df[column_name] = column
-        # assumes column is not > 1D array
-        elif isinstance(arg.alias, str):
-            df[arg_alias] = column
-        elif isinstance(arg_alias, list):
-            # assumes column is a dataframe
-            # no check is done to assert lengths from arg_alias and column
-            for current_label, new_label in zip(column.columns, arg.alias):
-                df[new_label] = column[current_label]
-        else:
-            if isinstance(column, pd.DataFrame):
-                column = {**column}
-            elif isinstance(column, pd.Series):
-                column = {column.name: column}
-            else:
-                column = {column_name: column}
-            for name, series in column.items():
-                if isinstance(name, tuple):
-                    new_label = arg_alias((column, *name))
-                else:
-                    new_label = arg_alias((column_name, name))
-                df[new_label] = series
-    return df
+    if len(arg) != 2:
+        raise ValueError("the tuple has to be a length of 2")
+    column_names, mutator = arg
+    column_names = get_index_labels(arg=[column_names], df=df, axis="columns")
+    mapping = {column_name: mutator for column_name in column_names}
+    return _mutator(mapping, df=df, by=by)
 
 
 def _process_maybe_callable(func: callable, obj):
@@ -301,13 +268,3 @@ def _apply_func_to_obj(mutator, obj):
     if isinstance(mutator, str):
         return _process_maybe_string(func=mutator, obj=obj)
     return _process_maybe_callable(func=mutator, obj=obj)
-
-
-class TupleFunc(NamedTuple):
-    """
-    Helper class for tuple argument for summarise/mutate function
-    """
-
-    columns: str
-    func: Any
-    alias: Optional[str | callable | list] = None

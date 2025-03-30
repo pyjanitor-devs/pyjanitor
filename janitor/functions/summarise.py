@@ -183,31 +183,8 @@ def summarise(
             if is_scalar(by):
                 by = [by]
             by = df.groupby(by, sort=False, observed=True)
-
-    _args = []
-    mapping = {}
-    for arg in args:
-        if not isinstance(arg, (dict, tuple)):
-            _args.append(arg)
-            continue
-        if isinstance(arg, dict):
-            for key, aggfunc in arg.items():
-                if isinstance(aggfunc, tuple):
-                    if len(aggfunc) != 2:
-                        raise ValueError("the tuple has to be a length of 2")
-                mapping[key] = aggfunc
-            continue
-        if len(arg) != 2:
-            raise ValueError("the tuple has to be a length of 2")
-        column_name, aggfunc = arg
-        column_names = get_index_labels(
-            arg=[column_name], df=df, axis="columns"
-        )
-        for column_name in column_names:
-            mapping[column_name] = aggfunc
-    _args.append(mapping)
     contents = []
-    for arg in _args:
+    for arg in args:
         aggregate = _aggfunc(arg, df=df, by=by)
         contents.extend(aggregate)
     counts = 0
@@ -268,6 +245,17 @@ def _aggfunc(arg, df, by):
     )
 
 
+@_aggfunc.register(tuple)
+def _(arg, df, by):
+    """Dispatch function for tuple"""
+    if len(arg) != 2:
+        raise ValueError("the tuple has to be a length of 2")
+    column_name, aggfunc = arg
+    column_names = get_index_labels(arg=[column_name], df=df, axis="columns")
+    mapping = {column_name: aggfunc for column_name in column_names}
+    return _aggfunc(mapping, df=df, by=by)
+
+
 @_aggfunc.register(dict)
 def _(arg, df, by):
     """Dispatch function for dictionary"""
@@ -279,6 +267,8 @@ def _(arg, df, by):
     contents = []
     for column_name, aggfunc in arg.items():
         if isinstance(aggfunc, tuple):
+            if len(aggfunc) != 2:
+                raise ValueError("the tuple has to be a length of 2")
             column, func = aggfunc
             column_ = _handle_tuple_groupby_selection(by=by, column=column)
             column = _apply_func_to_obj(aggfunc=func, obj=val[column_])

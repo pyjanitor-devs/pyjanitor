@@ -69,13 +69,13 @@ def mutate(
             e.g "sum", "mean", etc.
 
 
+
     - **tuple argument**:
-    If the argument is a tuple, it should be of length 3,
+    If the argument is a tuple, it should be of length 2,
     and of the form
-    `(column_name, mutation_func, alias)`,
+    `(column_name, mutation_func)`,
     where `column_name` should exist in the DataFrame,
     and `mutation_func` should be either a string or a callable.
-    `alias` is optional and serves to rename the output columns.
 
         !!!note
 
@@ -90,10 +90,7 @@ def mutate(
             as such multiple columns can be processed here -
             they will be processed individually.
 
-        !!!note
 
-            - `alias` should either be a string, or a callable
-            (the callable will be applied on the column name(s))
 
     - **callable argument**:
     If the argument is a callable, the callable is applied

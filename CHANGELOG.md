@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 -   [ENH] Added `row_count` parameter for janitor.conditional_join - Issue #1269 @samukweku
+-   [ENH] Add accessor for pandas DataFrameGroupBy objects. - Issue #587 @samukweku
 ## [v0.31.0] - 2025-03-07
 
 -   [ENH] Added support for pd.Series.select - Issue #1394 @samukweku

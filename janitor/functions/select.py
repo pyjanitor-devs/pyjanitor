@@ -330,17 +330,34 @@ def select_rows(
 
 
 @register_groupby_method
+def pull(df: DataFrameGroupBy, label: Any) -> pd.Series:
+    """
+    Return a Series from the underlying DataFrame in the DataFrameGroupBy object.
+
+    !!! info "New in version 0.32.0"
+
+    Args:
+        df: A pandas DataFrameGroupBy object.
+        label: column to select
+
+    Returns:
+        A pandas Series
+    """
+    return df.obj[label]
+
+
+@register_groupby_method
 @pf.register_dataframe_method
 @pf.register_series_method
 @deprecated_alias(rows="index")
 def select(
-    df: pd.DataFrame | pd.Series,
+    df: pd.DataFrame | pd.Series | DataFrameGroupBy,
     *args: tuple,
     index: Any = None,
     columns: Any = None,
     axis: str = "columns",
     invert: bool = False,
-) -> pd.DataFrame | pd.Series:
+) -> pd.DataFrame | pd.Series | DataFrameGroupBy:
     """Method-chainable selection of rows and/or columns.
 
     It accepts a string, shell-like glob strings `(*string*)`,
@@ -374,6 +391,8 @@ def select(
             - `rows` keyword deprecated in favour of `index`.
         - 0.31.0
             - Add support for pd.Series.
+        - 0.32.0
+            - Add support for DataFrameGroupBy.
 
     Examples:
         >>> import pandas as pd
@@ -485,6 +504,12 @@ def get_index_labels(
     return index[_select_index(arg, df, axis)]
 
 
+@refactored_function(
+    message=(
+        "This function will be deprecated in a 1.x release. "
+        "Please use `jn.select` instead."
+    )
+)
 def get_columns(
     group: DataFrameGroupBy | SeriesGroupBy, label: Any
 ) -> DataFrameGroupBy | SeriesGroupBy:
@@ -494,6 +519,11 @@ def get_columns(
     [`select`][janitor.functions.select.select] syntax.
 
     !!! info "New in version 0.25.0"
+
+    !!!note
+
+        This function will be deprecated in a 1.x release.
+        Please use `jn.select` instead.
 
     Args:
         group: A Pandas GroupBy object.

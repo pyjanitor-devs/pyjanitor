@@ -36,9 +36,7 @@ class CachedAccessor:
     single argument ``data``.
     """
 
-    def __init__(
-        self, name: str, accessor: DataFrameGroupBy
-    ) -> None:  # ignore: DOC105
+    def __init__(self, name: str, accessor: DataFrameGroupBy) -> None:
         self._name = name
         self._accessor = accessor
 

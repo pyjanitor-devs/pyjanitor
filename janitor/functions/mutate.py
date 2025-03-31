@@ -177,6 +177,8 @@ def mutate(
         A pandas DataFrame or Series with aggregated columns.
     """  # noqa: E501
     check("copy", copy, [bool])
+    if copy:
+        df = df.copy(deep=None)
     if by is not None:
         if isinstance(by, DataFrameGroupBy):
             # it is assumed that by is created from df
@@ -188,8 +190,7 @@ def mutate(
             if is_scalar(by):
                 by = [by]
             by = df.groupby(by, sort=False, observed=True)
-    if copy:
-        df = df.copy(deep=None)
+
     for arg in args:
         df = _mutator(arg, df=df, by=by)
     return df

@@ -479,6 +479,20 @@ def test_select_groupby(dataframe):
     assert_frame_equal(expected, actual)
 
 
+def test_select_groupby_args(dataframe):
+    """Test output on a grouped object"""
+    expected = dataframe.select_dtypes("number").groupby(dataframe["a"]).sum()
+    actual = dataframe.groupby("a").select(is_numeric_dtype).sum()
+    assert_frame_equal(expected, actual)
+
+
+def test_select_groupby_columns(dataframe):
+    """Test output on a grouped object"""
+    expected = dataframe.select_dtypes("number").groupby(dataframe["a"]).sum()
+    actual = dataframe.groupby("a").select(columns=is_numeric_dtype).sum()
+    assert_frame_equal(expected, actual)
+
+
 def test_select_str_multiindex(multiindex):
     """Test str selection on a MultiIndex - exact match"""
     expected = multiindex.select_columns("bar")

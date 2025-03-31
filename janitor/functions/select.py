@@ -23,6 +23,8 @@ from pandas.core.groupby.generic import DataFrameGroupBy, SeriesGroupBy
 from janitor.functions.utils import _is_str_or_cat
 from janitor.utils import check, deprecated_alias, refactored_function
 
+from .groupby_flavor import register_groupby_method
+
 
 @pf.register_dataframe_method
 @refactored_function(
@@ -327,6 +329,7 @@ def select_rows(
     return _select(df, rows=list(args), invert=invert)
 
 
+@register_groupby_method
 @pf.register_dataframe_method
 @pf.register_series_method
 @deprecated_alias(rows="index")
@@ -436,6 +439,10 @@ def select(
     Returns:
         A pandas DataFrame or Series with the specified rows and/or columns selected.
     """  # noqa: E501
+    if args and isinstance(df, DataFrameGroupBy):
+        return get_columns(group=df, label=list(args))
+    if isinstance(df, DataFrameGroupBy):
+        return get_columns(group=df, label=[columns])
     if args:
         check("invert", invert, [bool])
         if (index is not None) or (columns is not None):

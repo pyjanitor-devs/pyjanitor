@@ -497,6 +497,7 @@ def _compute_cartesian_product(inputs: tuple, sort: bool) -> dict:
                 pandas_object = pandas_object.sort_values()
             array = pandas_object._values[indexer]
             contents[pandas_object.name] = array
+
     if all(map(is_scalar, contents)):
         return contents
 

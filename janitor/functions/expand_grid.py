@@ -456,7 +456,6 @@ def cartesian_product(*inputs: tuple, sort: bool = False) -> pd.DataFrame:
         else:
             contents.append(entry)
     outcome = _compute_cartesian_product(inputs=contents, sort=sort)
-    return outcome
     # the values in the outcome dictionary are copies,
     # based on numpy indexing semantics;
     # as such, it is safe to pass copy=False

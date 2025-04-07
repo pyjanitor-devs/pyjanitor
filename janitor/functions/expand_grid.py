@@ -456,6 +456,7 @@ def cartesian_product(*inputs: tuple, sort: bool = False) -> pd.DataFrame:
         else:
             contents.append(entry)
     outcome = _compute_cartesian_product(inputs=contents, sort=sort)
+    return outcome
     # the values in the outcome dictionary are copies,
     # based on numpy indexing semantics;
     # as such, it is safe to pass copy=False
@@ -497,12 +498,11 @@ def _compute_cartesian_product(inputs: tuple, sort: bool) -> dict:
                 pandas_object = pandas_object.sort_values()
             array = pandas_object._values[indexer]
             contents[pandas_object.name] = array
-
     if all(map(is_scalar, contents)):
         return contents
 
     lengths = (len(key) for key in contents if isinstance(key, tuple))
-    lengths = max(lengths, default=0)
+    lengths = max(lengths)
     others = {}
     # manage differing tuple lengths
     # or a mix of tuples and scalars

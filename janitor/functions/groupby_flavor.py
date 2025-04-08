@@ -1,5 +1,6 @@
 # variant of pandas' accessor
 
+# copied from pandas' accessor file - pandas/pandas/core/accessor.py
 """
 
 accessor.py contains base classes for implementing accessor properties

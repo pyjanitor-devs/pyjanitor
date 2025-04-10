@@ -23,8 +23,6 @@ from pandas.core.groupby.generic import DataFrameGroupBy, SeriesGroupBy
 from janitor.functions.utils import _is_str_or_cat
 from janitor.utils import check, deprecated_alias, refactored_function
 
-from .groupby_flavor import register_groupby_method
-
 
 @pf.register_dataframe_method
 @refactored_function(
@@ -329,7 +327,7 @@ def select_rows(
     return _select(df, rows=list(args), invert=invert)
 
 
-@register_groupby_method
+@pf.register_groupby_method
 def pull(df: DataFrameGroupBy, label: Any) -> pd.Series:
     """
     Return a Series from the underlying DataFrame in the DataFrameGroupBy object.
@@ -346,7 +344,7 @@ def pull(df: DataFrameGroupBy, label: Any) -> pd.Series:
     return df.obj[label]
 
 
-@register_groupby_method
+@pf.register_groupby_method
 @pf.register_dataframe_method
 @pf.register_series_method
 @deprecated_alias(rows="index")

@@ -177,6 +177,8 @@ def mutate(
         A pandas DataFrame or Series with aggregated columns.
     """  # noqa: E501
     check("copy", copy, [bool])
+    if copy:
+        df = df.copy(deep=None)
     if by is not None:
         if isinstance(by, DataFrameGroupBy):
             # it is assumed that by is created from df
@@ -188,8 +190,7 @@ def mutate(
             if is_scalar(by):
                 by = [by]
             by = df.groupby(by, sort=False, observed=True)
-    if copy:
-        df = df.copy(deep=None)
+
     for arg in args:
         df = _mutator(arg, df=df, by=by)
     return df
@@ -226,11 +227,9 @@ def _(arg, df, by):
     for column_name, mutator in arg.items():
         if isinstance(mutator, tuple):
             column, func = mutator
-            column = _process_within_dict(mutator=func, obj=val[column])
+            column = _apply_func_to_obj(mutator=func, obj=val[column])
         else:
-            column = _process_within_dict(
-                mutator=mutator, obj=val[column_name]
-            )
+            column = _apply_func_to_obj(mutator=mutator, obj=val[column_name])
         df[column_name] = column
     return df
 
@@ -262,7 +261,7 @@ def _process_maybe_string(func: str, obj):
     return obj.transform(func)
 
 
-def _process_within_dict(mutator, obj):
+def _apply_func_to_obj(mutator, obj):
     """Handle str/callables within a dictionary"""
     if isinstance(mutator, str):
         return _process_maybe_string(func=mutator, obj=obj)

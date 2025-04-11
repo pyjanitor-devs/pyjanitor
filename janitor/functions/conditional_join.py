@@ -41,6 +41,7 @@ def conditional_join(
     indicator: Optional[Union[bool, str]] = False,
     row_count: str = None,
     force: bool = False,
+    agg: dict = None,
 ) -> pd.DataFrame:
     """The conditional_join function operates similarly to `pd.merge`,
     but supports joins on inequality operators,
@@ -237,6 +238,7 @@ def conditional_join(
             - `col` class deprecated.
         - 0.32.0
             - Added `row_count` parameter.
+            - Added `agg` parameter.
 
     Args:
         df: A pandas DataFrame.
@@ -270,6 +272,10 @@ def conditional_join(
         row_count: If not None, adds a new column that captures the number of matching rows
             from `right` for each row in `df`.
         force: If `True`, force the non-equi join conditions to execute before the equi join.
+        agg: dictionary of aggregates, and applies only if `use_numba=True`.
+            It should be a key value pairing, where the key is an existing column name,
+            while the value should be one of `min`,`max`,`sum`,`size`,`count`.
+            It is expected that all columns should share the same dtype.
 
 
     Returns:
@@ -288,6 +294,7 @@ def conditional_join(
         indicator=indicator,
         force=force,
         row_count=row_count,
+        agg=agg,
     )
 
 
@@ -320,6 +327,7 @@ def _conditional_join_preliminary_checks(
     return_matching_indices: bool = False,
     return_ragged_arrays: bool = False,
     row_count: str = None,
+    agg: dict = None,
 ) -> tuple:
     """
     Preliminary checks for conditional_join are conducted here.
@@ -361,12 +369,11 @@ def _conditional_join_preliminary_checks(
                 f"{condition} however is of length {len_condition}."
             )
 
-    for left_on, right_on, op in conditions:
-        check("left_on", left_on, [Hashable])
-        check("right_on", right_on, [Hashable])
+    lefts, rights, ops = zip(*conditions)
+    check_column(df=df, column_names=lefts, present=True)
+    check_column(df=right, column_names=rights, present=True)
+    for op in ops:
         check("operator", op, [str])
-        check_column(df, [left_on])
-        check_column(right, [right_on])
         _check_operator(op)
 
     if (
@@ -416,6 +423,39 @@ def _conditional_join_preliminary_checks(
         if how != "left":
             raise ValueError("row_count applies only when `how=left`")
 
+    if agg is not None:
+        check("agg", agg, [dict])
+        check_column(df=df, column_names=agg, present=True)
+        unique_dtypes = set()
+        for column_name, aggfunc in agg.items():
+            if aggfunc not in {"min", "max", "size", "count", "sum"}:
+                raise ValueError(
+                    "The aggregate function should be one of "
+                    "'min','max','size','count','sum' '"
+                )
+            column = df[column_name]
+            if (
+                not is_numeric_dtype(column)
+                and not is_datetime64_dtype(column)
+                and not is_timedelta64_dtype(column)
+            ):
+                raise TypeError(
+                    "Only numeric, timedelta and datetime types "
+                    "are supported for aggregation; "
+                    f"{column_name} has a dtype {column.dtype}."
+                )
+            column_dtype = column.dtype
+            if not unique_dtypes:
+                unique_dtypes.add(column_dtype)
+            elif column_dtype not in unique_dtypes:
+                raise ValueError(
+                    "All columns in the aggregation should have the same dtype"
+                )
+        if keep != "all":
+            raise ValueError("agg applies only when `keep=all`")
+        if how != "left":
+            raise ValueError("agg applies only when `how=left`")
+
     return (
         df,
         right,
@@ -429,6 +469,7 @@ def _conditional_join_preliminary_checks(
         force,
         return_ragged_arrays,
         row_count,
+        agg,
     )
 
 
@@ -479,6 +520,7 @@ def _conditional_join_compute(
     use_numba: bool,
     indicator: Union[bool, str],
     force: bool,
+    agg: dict,
     return_matching_indices: bool = False,
     return_ragged_arrays: bool = False,
     row_count: str = None,
@@ -501,6 +543,7 @@ def _conditional_join_compute(
         force,
         return_ragged_arrays,
         row_count,
+        agg,
     ) = _conditional_join_preliminary_checks(
         df=df,
         right=right,
@@ -515,6 +558,7 @@ def _conditional_join_compute(
         return_matching_indices=return_matching_indices,
         return_ragged_arrays=return_ragged_arrays,
         row_count=row_count,
+        agg=agg,
     )
     eq_check = False
     le_lt_check = False
@@ -1587,6 +1631,7 @@ def get_join_indices(
         force=force,
         return_matching_indices=True,
         return_ragged_arrays=return_ragged_arrays,
+        agg=None,
     )
 
 

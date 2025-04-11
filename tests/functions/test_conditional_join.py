@@ -63,6 +63,59 @@ def test_df_columns_right_columns_both_None(dummy, series):
         )
 
 
+def test_agg_wrong_type(dummy, series):
+    """Test type for agg"""
+    with pytest.raises(TypeError, match="agg should be one of.+"):
+        dummy.conditional_join(series, ("id", "B", ">"), agg=("a", "sum"))
+
+
+def test_agg_wrong_aggregate(dummy, series):
+    """Test value for agg"""
+    with pytest.raises(
+        ValueError, match="The aggregate function should be one of.+"
+    ):
+        dummy.conditional_join(series, ("id", "B", ">"), agg={"id": "minimum"})
+
+
+def test_agg_multiple_dtypes(dummy, series):
+    """Test column dtypes for agg"""
+    with pytest.raises(
+        ValueError,
+        match="All columns in the aggregation should have the same dtype",
+    ):
+        dummy.astype({"value_1": "float"}).conditional_join(
+            series, ("id", "B", ">"), agg={"id": "min", "value_1": "max"}
+        )
+
+
+def test_agg_wrong_column_dtype(dummy, series):
+    """Test column dtype for agg"""
+    with pytest.raises(
+        TypeError, match="Only numeric, timedelta and datetime types.+"
+    ):
+        dummy.conditional_join(series, ("S", "B", ">"), agg={"S": "max"})
+
+
+def test_how_agg_count(dummy, series):
+    """raise if how != left"""
+    with pytest.raises(ValueError, match="agg applies only when `how=left`"):
+        dummy.conditional_join(
+            series, ("id", "B", ">"), agg={"id": "sum"}, how="inner"
+        )
+
+
+def test_keep_agg_count(dummy, series):
+    """raise if keep != all"""
+    with pytest.raises(ValueError, match="agg applies only when `keep=all`"):
+        dummy.conditional_join(
+            series,
+            ("id", "B", ">"),
+            agg={"id": "sum"},
+            how="left",
+            keep="first",
+        )
+
+
 def test_type_row_count(dummy, series):
     """Test type for row_count"""
     with pytest.raises(TypeError, match="row_count should be one of.+"):
@@ -162,18 +215,6 @@ def test_check_condition_length(dummy, series):
         ValueError, match="condition should have only three elements;.+"
     ):
         dummy.conditional_join(series, ("id", "B", "C", "<"))
-
-
-def test_check_left_on_type(dummy, series):
-    """Raise TypeError if left_on is not a hashable."""
-    with pytest.raises(TypeError, match="left_on should be one of.+"):
-        dummy.conditional_join(series, ([1], "B", "<"))
-
-
-def test_check_right_on_type(dummy, series):
-    """Raise TypeError if right_on is not a hashable."""
-    with pytest.raises(TypeError, match="right_on should be one of.+"):
-        dummy.conditional_join(series, ("id", {1}, "<"))
 
 
 def test_check_op_type(dummy, series):

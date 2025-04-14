@@ -114,3 +114,4 @@ Contributors
 - [@joranbeasley](https://github.com/joranbeasley) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%joranbeasley)
 -[@kianmeng](https://github.com/kianmeng) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/pull/1290#issue-1906020324)
 - [@lbeltrame](https://github.com/lbeltrame) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/pull/1401)
+- [@Sarra99](https://github.com/Sarra99) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3ASarra99)

@@ -19,7 +19,7 @@ from janitor.functions.select import (
     _select_index,
     get_index_labels,
 )
-from janitor.utils import check, refactored_function
+from janitor.utils import check
 
 
 @pf.register_dataframe_method

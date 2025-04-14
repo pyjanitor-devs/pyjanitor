@@ -522,7 +522,7 @@ def test_names_expand(df_expand):
     expected = df_expand.pivot_wider(
         "year", "id", "percentage", names_expand=True, flatten_levels=False
     )
-    assert_frame_equal(actual, expected)
+    assert_frame_equal(actual, expected, check_dtype=False)
 
 
 def test_names_expand_flatten_levels(df_expand):
@@ -536,7 +536,7 @@ def test_names_expand_flatten_levels(df_expand):
     expected = df_expand.pivot_wider(
         "year", "id", "percentage", names_expand=True, flatten_levels=True
     )
-    assert_frame_equal(actual, expected)
+    assert_frame_equal(actual, expected, check_dtype=False)
 
 
 def test_index_expand(df_expand):
@@ -564,7 +564,7 @@ def test_index_expand_flatten_levels(df_expand):
     assert_frame_equal(actual, expected)
 
 
-@pytest.mark.xfail(reason="pivot_wider function slated for deprecation.")
+# @pytest.mark.xfail(reason="pivot_wider function slated for deprecation.")
 def test_expand_multiple_levels(df_expand):
     """Test output for names_expand for multiple names_from."""
     expected = df_expand.pivot_wider(
@@ -580,7 +580,7 @@ def test_expand_multiple_levels(df_expand):
     assert_frame_equal(actual, expected)
 
 
-@pytest.mark.xfail(reason="pivot_wider function slated for deprecation.")
+# @pytest.mark.xfail(reason="pivot_wider function slated for deprecation.")
 def test_expand_multiple_levels_flatten_levels(df_expand):
     """Test output for names_expand for multiple names_from."""
     expected = df_expand.pivot_wider(

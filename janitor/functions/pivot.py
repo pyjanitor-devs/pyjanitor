@@ -1863,12 +1863,6 @@ def _names_transform(
 
 
 @pf.register_dataframe_method
-@refactored_function(
-    message=(
-        "This function will be deprecated in a 1.x release. "
-        "Please use `pd.DataFrame.pivot` instead."
-    )
-)
 def pivot_wider(
     df: pd.DataFrame,
     index: list | str = None,
@@ -1882,11 +1876,6 @@ def pivot_wider(
     index_expand: bool = False,
 ) -> pd.DataFrame:
     """Reshapes data from *long* to *wide* form.
-
-    !!!note
-
-        This function will be deprecated in a 1.x release.
-        Please use `pd.DataFrame.pivot` instead.
 
     The number of columns are increased, while decreasing
     the number of rows. It is the inverse of the

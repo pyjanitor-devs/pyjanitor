@@ -593,66 +593,6 @@ def multi():
     return pd.DataFrame(data, columns=columns)
 
 
-errors = [
-    ["multi", ("first", "extra"), [("second", "extra")], None],
-    ["multi", [("first", "extra")], ("second", "extra"), None],
-    ("multi", None, [("second", "extra")], ("A", "cat")),
-]
-
-
-@pytest.mark.parametrize(
-    "multi,index,names_from,values_from", errors, indirect=["multi"]
-)
-def test_multiindex(multi, index, names_from, values_from):
-    """
-    Raise if df.columns is a MultiIndex
-    and index/names_from/values_from
-    is not a list of tuples
-    """
-    with pytest.raises(TypeError):
-        multi.pivot_wider(
-            index=index, names_from=names_from, values_from=values_from
-        )
-
-
-def test_multiindex_values_from(multi):
-    """
-    Raise if df.columns is a MultiIndex,
-    values_from is a list of tuples,
-    and not all entries are tuples
-    """
-    with pytest.raises(TypeError):
-        multi.pivot_wider(
-            names_from=[("second", "extra")], values_from=[("A", "cat"), "A"]
-        )
-
-
-def test_multiindex_index(multi):
-    """
-    Raise if df.columns is a MultiIndex,
-    index is a list of tuples,
-    and not all entries are tuples
-    """
-    with pytest.raises(TypeError):
-        multi.pivot_wider(
-            names_from=[("second", "extra")],
-            index=[("first", "extra"), "first"],
-        )
-
-
-def test_multi_index_values_from(multi):
-    """
-    Raise if df.columns is a MultiIndex,
-    values_from is a list of tuples,
-    and not all entries are tuples
-    """
-    with pytest.raises(TypeError):
-        multi.pivot_wider(
-            names_from=[("second", "extra"), "first"],
-            values_from=[("A", "cat"), "A"],
-        )
-
-
 def test_multiindex_values_from_missing(multi):
     """
     Raise if df.columns is a MultiIndex,

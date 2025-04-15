@@ -2217,37 +2217,15 @@ def _data_checks_pivot_wider(
     checking happens.
     """
 
-    is_multi_index = isinstance(df.columns, pd.MultiIndex)
-
     if names_from is None:
         raise ValueError(
             "pivot_wider() is missing 1 required argument: 'names_from'"
-        )
-
-    if is_multi_index and not isinstance(names_from, list):
-        raise TypeError(
-            "For a MultiIndex column, pass a list of tuples "
-            "to the names_from argument."
-        )
-    if is_multi_index:
-        names_from = _check_tuples_multiindex(
-            df.columns, names_from, "names_from"
         )
     names_from = get_index_labels([names_from], df, axis="columns")
 
     if values_from is None:
         values_from_ = df.columns.difference(names_from)
-    elif is_multi_index and not isinstance(values_from, list):
-        raise TypeError(
-            "For a MultiIndex column, pass a list of tuples "
-            "to the values_from argument."
-        )
-    elif is_multi_index:
-        values_from = _check_tuples_multiindex(
-            df.columns, values_from, "index"
-        )
-
-    if values_from is not None:
+    else:
         values_from_ = get_index_labels([values_from], df, axis="columns")
 
     if index is None:
@@ -2257,13 +2235,6 @@ def _data_checks_pivot_wider(
         else:
             index = list(index)
     else:
-        if is_multi_index and not isinstance(index, list):
-            raise TypeError(
-                "For a MultiIndex column, pass a list of tuples "
-                "to the index argument."
-            )
-        if is_multi_index:
-            index = _check_tuples_multiindex(df.columns, index, "index")
         index = get_index_labels([index], df, axis="columns")
         index = list(index)
     names_from = list(names_from)

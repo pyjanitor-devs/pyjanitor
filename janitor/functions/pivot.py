@@ -2315,30 +2315,6 @@ def _expand(indexer, retain_categories):
     return indexer
 
 
-def _check_tuples_multiindex(indexer, args, param):
-    """
-    Check entries for tuples,
-    if indexer is a MultiIndex.
-
-    Returns a list of tuples.
-    """
-    all_tuples = (isinstance(arg, tuple) for arg in args)
-    if not all(all_tuples):
-        raise TypeError(
-            f"{param} must be a list of tuples "
-            "when the columns are a MultiIndex."
-        )
-
-    not_found = set(args).difference(indexer)
-    if any(not_found):
-        raise KeyError(
-            f"Tuples {*not_found,} in the {param} "
-            "argument do not exist in the dataframe's columns."
-        )
-
-    return args
-
-
 def pivot_wider_spec(
     df: pd.DataFrame,
     spec: pd.DataFrame,

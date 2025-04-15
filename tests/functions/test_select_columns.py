@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from pandas.api.types import is_numeric_dtype
-from pandas.testing import assert_frame_equal, assert_series_equal
+from pandas.testing import assert_frame_equal
 
 from janitor.functions.select import DropLabel, get_columns
 from janitor.functions.utils import patterns
@@ -477,21 +477,6 @@ def test_select_groupby(dataframe):
     expected = dataframe.select_dtypes("number").groupby(dataframe["a"]).sum()
     actual = dataframe.groupby("a").pipe(get_columns, is_numeric_dtype).sum()
     assert_frame_equal(expected, actual)
-
-
-def test_pull(dataframe):
-    """Test output on a grouped object"""
-    expected = (
-        dataframe.select_dtypes("number")
-        .groupby(dataframe["a"])
-        .obj["Bell__Chart"]
-    )
-    actual = (
-        dataframe.groupby("a")
-        .pipe(get_columns, is_numeric_dtype)
-        .pull("Bell__Chart")
-    )
-    assert_series_equal(expected, actual)
 
 
 def test_select_groupby_args(dataframe):

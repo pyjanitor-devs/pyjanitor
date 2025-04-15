@@ -328,23 +328,6 @@ def select_rows(
 
 
 @pf.register_groupby_method
-def pull(df: DataFrameGroupBy, label: Any) -> pd.Series:
-    """
-    Return a Series from the underlying DataFrame in the DataFrameGroupBy object.
-
-    !!! info "New in version 0.32.0"
-
-    Args:
-        df: A pandas DataFrameGroupBy object.
-        label: column to select
-
-    Returns:
-        A pandas Series
-    """
-    return df.obj[label]
-
-
-@pf.register_groupby_method
 @pf.register_dataframe_method
 @pf.register_series_method
 @deprecated_alias(rows="index")

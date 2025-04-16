@@ -6,12 +6,12 @@ import warnings
 from collections import defaultdict
 from functools import reduce
 from itertools import zip_longest
-from typing import Callable, Pattern
+from typing import Any, Callable, Pattern
 
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
-from pandas.api.types import is_extension_array_dtype, is_list_like
+from pandas.api.types import is_extension_array_dtype, is_scalar
 from pandas.core.dtypes.concat import concat_compat
 
 from janitor.functions.select import (
@@ -25,8 +25,8 @@ from janitor.utils import check
 @pf.register_dataframe_method
 def pivot_longer(
     df: pd.DataFrame,
-    index: list | tuple | str | Pattern = None,
-    column_names: list | tuple | str | Pattern = None,
+    index: Any = None,
+    column_names: Any = None,
     names_to: list | tuple | str = None,
     values_to: str = "value",
     column_level: int | str = None,
@@ -919,8 +919,8 @@ def _data_checks_pivot_longer(
 
 def _computations_pivot_longer(
     df: pd.DataFrame,
-    index: list | tuple | str | Pattern | None,
-    column_names: list | tuple | str | Pattern | None,
+    index: Any,
+    column_names: Any,
     names_to: list | tuple | str | None,
     values_to: str,
     column_level: int | str,
@@ -1865,7 +1865,7 @@ def _names_transform(
 @pf.register_dataframe_method
 def pivot_wider(
     df: pd.DataFrame,
-    index: list | str = None,
+    index: Any = None,
     names_from: list | str = None,
     values_from: list | str = None,
     flatten_levels: bool = True,
@@ -2061,7 +2061,7 @@ def pivot_wider(
 
 def _computations_pivot_wider(
     df: pd.DataFrame,
-    index: list | str | None,
+    index: Any,
     names_from: list | str | None,
     values_from: list | str | None,
     flatten_levels: bool,
@@ -2217,71 +2217,32 @@ def _data_checks_pivot_wider(
     checking happens.
     """
 
-    is_multi_index = isinstance(df.columns, pd.MultiIndex)
-    if index is not None:
-        if is_multi_index:
-            if not isinstance(index, list):
-                raise TypeError(
-                    "For a MultiIndex column, pass a list of tuples "
-                    "to the index argument."
-                )
-            index = _check_tuples_multiindex(df.columns, index, "index")
-        else:
-            if is_list_like(index):
-                index = list(index)
-            index = get_index_labels(index, df, axis="columns")
-            if not is_list_like(index):
-                index = [index]
-            else:
-                index = list(index)
-
     if names_from is None:
         raise ValueError(
             "pivot_wider() is missing 1 required argument: 'names_from'"
         )
+    names_from = get_index_labels([names_from], df, axis="columns")
 
-    if is_multi_index:
-        if not isinstance(names_from, list):
-            raise TypeError(
-                "For a MultiIndex column, pass a list of tuples "
-                "to the names_from argument."
-            )
-        names_from = _check_tuples_multiindex(
-            df.columns, names_from, "names_from"
-        )
+    if values_from is None:
+        values_from_ = df.columns.difference(names_from)
     else:
-        if is_list_like(names_from):
-            names_from = list(names_from)
-        names_from = get_index_labels(names_from, df, axis="columns")
-        if not is_list_like(names_from):
-            names_from = [names_from]
-        else:
-            names_from = list(names_from)
+        values_from_ = get_index_labels([values_from], df, axis="columns")
 
-    if values_from is not None:
-        if is_multi_index:
-            if not isinstance(values_from, list):
-                raise TypeError(
-                    "For a MultiIndex column, pass a list of tuples "
-                    "to the values_from argument."
-                )
-            out = _check_tuples_multiindex(
-                df.columns, values_from, "values_from"
-            )
+    if index is None:
+        index = df.columns.difference(names_from).difference(values_from)
+        if index.empty:
+            index = None
         else:
-            if is_list_like(values_from):
-                values_from = list(values_from)
-            out = get_index_labels(values_from, df, axis="columns")
-            if not is_list_like(out):
-                out = [out]
-            else:
-                out = list(out)
-        # hack to align with pd.pivot
-        if values_from == out[0]:
-            values_from = out[0]
-        else:
-            values_from = out
-
+            index = list(index)
+    else:
+        index = get_index_labels([index], df, axis="columns")
+        index = list(index)
+    names_from = list(names_from)
+    if is_scalar(values_from) and (values_from is not None):
+        if values_from == values_from_[0]:
+            pass
+    else:
+        values_from = list(values_from_)
     check("flatten_levels", flatten_levels, [bool])
 
     if names_sep is not None:
@@ -2352,30 +2313,6 @@ def _expand(indexer, retain_categories):
                 ordered=indexer.ordered,
             )
     return indexer
-
-
-def _check_tuples_multiindex(indexer, args, param):
-    """
-    Check entries for tuples,
-    if indexer is a MultiIndex.
-
-    Returns a list of tuples.
-    """
-    all_tuples = (isinstance(arg, tuple) for arg in args)
-    if not all(all_tuples):
-        raise TypeError(
-            f"{param} must be a list of tuples "
-            "when the columns are a MultiIndex."
-        )
-
-    not_found = set(args).difference(indexer)
-    if any(not_found):
-        raise KeyError(
-            f"Tuples {*not_found,} in the {param} "
-            "argument do not exist in the dataframe's columns."
-        )
-
-    return args
 
 
 def pivot_wider_spec(

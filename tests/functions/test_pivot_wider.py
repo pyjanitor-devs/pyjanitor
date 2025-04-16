@@ -23,43 +23,24 @@ def df_checks_output():
     )
 
 
-@pytest.mark.xfail(reason="list-like is converted to list.")
-def test_type_index(df_checks_output):
-    """Raise TypeError if wrong type is provided for the `index`."""
-    with pytest.raises(TypeError):
-        df_checks_output.pivot_wider(index={"geoid"}, names_from="variable")
-
-    with pytest.raises(TypeError):
-        df_checks_output.pivot_wider(
-            index=("geoid", "name"), names_from="variable"
-        )
-
-
-@pytest.mark.xfail(reason="list-like is converted to list.")
-def test_type_names_from(df_checks_output):
-    """Raise TypeError if wrong type is provided for `names_from`."""
-    with pytest.raises(TypeError):
-        df_checks_output.pivot_wider(index="geoid", names_from={"variable"})
-
-    with pytest.raises(TypeError):
-        df_checks_output.pivot_wider(index="geoid", names_from=("variable",))
-
-
 def test_names_from_none(df_checks_output):
     """Raise ValueError if no value is provided for `names_from`."""
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match=r"pivot_wider\(\) is missing 1 required argument.+",
+    ):
         df_checks_output.pivot_wider(index="geoid", names_from=None)
 
 
 def test_presence_index1(df_checks_output):
     """Raise KeyError if labels in `index` do not exist."""
-    with pytest.raises(KeyError):
+    with pytest.raises(KeyError, match="No match was returned.+"):
         df_checks_output.pivot_wider(index="geo", names_from="variable")
 
 
 def test_presence_index2(df_checks_output):
     """Raise KeyError if labels in `index` do not exist."""
-    with pytest.raises(KeyError):
+    with pytest.raises(KeyError, match="No match was returned.+"):
         df_checks_output.pivot_wider(
             index=["geoid", "Name"], names_from="variable"
         )
@@ -67,11 +48,13 @@ def test_presence_index2(df_checks_output):
 
 def test_presence_names_from1(df_checks_output):
     """Raise KeyError if labels in `names_from` do not exist."""
-    with pytest.raises(KeyError):
+    with pytest.raises(KeyError, match="No match was returned.+"):
         df_checks_output.pivot_wider(index="geoid", names_from="estmt")
 
 
-def test_presence_names_from2(df_checks_output):
+def test_presence_names_from2(
+    df_checks_output, match="No match was returned.+"
+):
     """Raise KeyError if labels in `names_from` do not exist."""
     with pytest.raises(KeyError):
         df_checks_output.pivot_wider(index="geoid", names_from=["estimat"])
@@ -220,27 +203,24 @@ def test_pivot_long_wide_long():
     assert_frame_equal(result, df_in)
 
 
-@pytest.mark.xfail(reason="doesn't match, since pivot implicitly sorts")
 def test_pivot_wide_long_wide():
     """
     Test that transformation from pivot_longer to wider and
     back to longer returns the same source dataframe.
     """
+    # pivot implicitly sorts
+    # hence the need for ordered categorical
     df = pd.DataFrame(
         {
             "name": ["Wilbur", "Petunia", "Gregory"],
             "a": [67, 80, 64],
             "b": [56, 90, 50],
         }
-    )
+    ).encode_categorical(name="appearance")
 
     result = df.pivot_longer(
         column_names=["a", "b"], names_to="drug", values_to="heartrate"
-    )
-
-    result = result.pivot_wider(
-        index="name", names_from="drug", values_from="heartrate"
-    )
+    ).pivot_wider(index="name", names_from="drug", values_from="heartrate")
 
     assert_frame_equal(result, df)
 
@@ -274,10 +254,6 @@ def test_flatten_levels_false():
     )
 
 
-# some changes have been made to pd.pivot
-# which affects this test
-# ultimately pivot_wider will be deprecated in 1.x release
-# users are already advised to use pd.pivot instead
 def test_no_index():
     """Test output if no `index` is supplied."""
     df_in = pd.DataFrame(
@@ -305,10 +281,6 @@ def test_no_index():
     assert_frame_equal(result, expected_output)
 
 
-# some changes have been made to pd.pivot
-# which affects this test
-# ultimately pivot_wider will be deprecated in 1.x release
-# users are already advised to use pd.pivot instead
 def test_no_index_names_from_order():
     """Test output if no `index` is supplied and column order is maintained."""
     df_in = pd.DataFrame(
@@ -564,32 +536,28 @@ def test_index_expand_flatten_levels(df_expand):
     assert_frame_equal(actual, expected)
 
 
-@pytest.mark.xfail(
-    reason="pivot_wider function WAS slated for deprecation. -- additional fixes are needed."
-)
 def test_expand_multiple_levels(df_expand):
     """Test output for names_expand for multiple names_from."""
     expected = df_expand.pivot_wider(
-        "id",
-        ("year", "gender"),
-        "percentage",
+        index="id",
+        names_from=["year", "gender"],
+        values_from="percentage",
         names_expand=True,
         flatten_levels=False,
-    )
-    actual = df_expand.complete("year", "gender", "id").pivot(
-        index="id", columns=("year", "gender"), values="percentage"
+    ).loc[pd.unique(df_expand["id"])]
+    actual = (
+        df_expand.complete("year", "gender", "id")
+        .pivot(index="id", columns=("year", "gender"), values="percentage")
+        .loc[pd.unique(df_expand["id"])]
     )
     assert_frame_equal(actual, expected)
 
 
-@pytest.mark.xfail(
-    reason="pivot_wider function WAS slated for deprecation. -- additional fixes are needed."
-)
 def test_expand_multiple_levels_flatten_levels(df_expand):
     """Test output for names_expand for multiple names_from."""
     expected = df_expand.pivot_wider(
         "id",
-        ("year", "gender"),
+        ["year", "gender"],
         "percentage",
         names_expand=True,
         flatten_levels=True,
@@ -597,6 +565,7 @@ def test_expand_multiple_levels_flatten_levels(df_expand):
     actual = (
         df_expand.complete("year", "gender", "id")
         .pivot(index="id", columns=("year", "gender"), values="percentage")
+        .loc[pd.unique(expected["id"])]
         .collapse_levels()
         .reset_index()
     )
@@ -622,66 +591,6 @@ def multi():
     )
 
     return pd.DataFrame(data, columns=columns)
-
-
-errors = [
-    ["multi", ("first", "extra"), [("second", "extra")], None],
-    ["multi", [("first", "extra")], ("second", "extra"), None],
-    ("multi", None, [("second", "extra")], ("A", "cat")),
-]
-
-
-@pytest.mark.parametrize(
-    "multi,index,names_from,values_from", errors, indirect=["multi"]
-)
-def test_multiindex(multi, index, names_from, values_from):
-    """
-    Raise if df.columns is a MultiIndex
-    and index/names_from/values_from
-    is not a list of tuples
-    """
-    with pytest.raises(TypeError):
-        multi.pivot_wider(
-            index=index, names_from=names_from, values_from=values_from
-        )
-
-
-def test_multiindex_values_from(multi):
-    """
-    Raise if df.columns is a MultiIndex,
-    values_from is a list of tuples,
-    and not all entries are tuples
-    """
-    with pytest.raises(TypeError):
-        multi.pivot_wider(
-            names_from=[("second", "extra")], values_from=[("A", "cat"), "A"]
-        )
-
-
-def test_multiindex_index(multi):
-    """
-    Raise if df.columns is a MultiIndex,
-    index is a list of tuples,
-    and not all entries are tuples
-    """
-    with pytest.raises(TypeError):
-        multi.pivot_wider(
-            names_from=[("second", "extra")],
-            index=[("first", "extra"), "first"],
-        )
-
-
-def test_multi_index_values_from(multi):
-    """
-    Raise if df.columns is a MultiIndex,
-    values_from is a list of tuples,
-    and not all entries are tuples
-    """
-    with pytest.raises(TypeError):
-        multi.pivot_wider(
-            names_from=[("second", "extra"), "first"],
-            values_from=[("A", "cat"), "A"],
-        )
 
 
 def test_multiindex_values_from_missing(multi):

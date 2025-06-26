@@ -327,17 +327,18 @@ def select_rows(
     return _select(df, rows=list(args), invert=invert)
 
 
+@pf.register_groupby_method
 @pf.register_dataframe_method
 @pf.register_series_method
 @deprecated_alias(rows="index")
 def select(
-    df: pd.DataFrame | pd.Series,
+    df: pd.DataFrame | pd.Series | DataFrameGroupBy,
     *args: tuple,
     index: Any = None,
     columns: Any = None,
     axis: str = "columns",
     invert: bool = False,
-) -> pd.DataFrame | pd.Series:
+) -> pd.DataFrame | pd.Series | DataFrameGroupBy:
     """Method-chainable selection of rows and/or columns.
 
     It accepts a string, shell-like glob strings `(*string*)`,
@@ -371,6 +372,8 @@ def select(
             - `rows` keyword deprecated in favour of `index`.
         - 0.31.0
             - Add support for pd.Series.
+        - 0.32.0
+            - Add support for DataFrameGroupBy.
 
     Examples:
         >>> import pandas as pd
@@ -436,6 +439,10 @@ def select(
     Returns:
         A pandas DataFrame or Series with the specified rows and/or columns selected.
     """  # noqa: E501
+    if args and isinstance(df, DataFrameGroupBy):
+        return get_columns(group=df, label=list(args))
+    if isinstance(df, DataFrameGroupBy):
+        return get_columns(group=df, label=[columns])
     if args:
         check("invert", invert, [bool])
         if (index is not None) or (columns is not None):
@@ -478,6 +485,12 @@ def get_index_labels(
     return index[_select_index(arg, df, axis)]
 
 
+@refactored_function(
+    message=(
+        "This function will be deprecated in a 1.x release. "
+        "Please use `jn.select` instead."
+    )
+)
 def get_columns(
     group: DataFrameGroupBy | SeriesGroupBy, label: Any
 ) -> DataFrameGroupBy | SeriesGroupBy:
@@ -487,6 +500,11 @@ def get_columns(
     [`select`][janitor.functions.select.select] syntax.
 
     !!! info "New in version 0.25.0"
+
+    !!!note
+
+        This function will be deprecated in a 1.x release.
+        Please use `jn.select` instead.
 
     Args:
         group: A Pandas GroupBy object.

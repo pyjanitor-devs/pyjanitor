@@ -440,9 +440,9 @@ def select(
         A pandas DataFrame or Series with the specified rows and/or columns selected.
     """  # noqa: E501
     if args and isinstance(df, DataFrameGroupBy):
-        return get_columns(group=df, label=list(args))
+        return _get_columns_on_a_grouped_object(group=df, label=list(args))
     if isinstance(df, DataFrameGroupBy):
-        return get_columns(group=df, label=[columns])
+        return _get_columns_on_a_grouped_object(group=df, label=[columns])
     if args:
         check("invert", invert, [bool])
         if (index is not None) or (columns is not None):
@@ -505,6 +505,24 @@ def get_columns(
 
         This function will be deprecated in a 1.x release.
         Please use `jn.select` instead.
+
+    Args:
+        group: A Pandas GroupBy object.
+        label: column(s) to select.
+
+    Returns:
+        A pandas groupby object.
+    """
+    return _get_columns_on_a_grouped_object(group=group, label=label)
+
+
+def _get_columns_on_a_grouped_object(
+    group: DataFrameGroupBy | SeriesGroupBy, label: Any
+) -> DataFrameGroupBy | SeriesGroupBy:
+    """
+    Helper function for selecting columns on a grouped object,
+    using the
+    [`select`][janitor.functions.select.select] syntax.
 
     Args:
         group: A Pandas GroupBy object.

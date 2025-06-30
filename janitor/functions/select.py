@@ -401,7 +401,7 @@ def select(
     [`select_columns`][janitor.functions.select.select_columns] section.
 
     Args:
-        df: A pandas DataFrame.
+        df: A pandas DataFrame or a GroupBy object.
         *args: Valid inputs include: an exact index name to look for,
             a shell-style glob string (e.g. `*_thing_*`),
             a regular expression,

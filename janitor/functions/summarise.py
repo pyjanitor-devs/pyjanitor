@@ -108,6 +108,8 @@ def summarise(
     Arguments supported in `pd.DataFrame.groupby`
     can also be passed to `by` via a dictionary.
 
+    If `df` is a `DataFrameGroupBy` object, `by` is ignored.
+
     Examples:
         >>> import pandas as pd
         >>> import janitor
@@ -161,7 +163,7 @@ def summarise(
         103202            4.0
 
     Args:
-        df: A pandas DataFrame.
+        df: A pandas DataFrame or DataFrameGroupBy object.
         args: Either a dictionary or a tuple.
         by: Column(s) to group by.
 

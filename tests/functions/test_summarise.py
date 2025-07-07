@@ -77,6 +77,14 @@ def test_summarise_by_callable_grp(df_summarise):
     assert_frame_equal(actual, expected)
 
 
+def test_summarise_by_callable_grp_grouped(df_summarise):
+    """Test output for a callable"""
+    grp = df_summarise.groupby("combine_id")
+    actual = grp.summarise(lambda df: df.sum())
+    expected = grp.sum()
+    assert_frame_equal(actual, expected)
+
+
 def test_summarise_dict_df_str(df_summarise):
     """Test output for a dictionary"""
     actual = df_summarise.summarise({"avg_run": "mean"})

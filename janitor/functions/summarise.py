@@ -14,9 +14,10 @@ from pandas.core.groupby.generic import DataFrameGroupBy
 from janitor.functions.select import get_index_labels
 
 
+@pf.register_groupby_method
 @pf.register_dataframe_method
 def summarise(
-    df: pd.DataFrame,
+    df: pd.DataFrame | DataFrameGroupBy,
     *args: tuple[dict | tuple],
     by: Any = None,
 ) -> pd.DataFrame:
@@ -171,8 +172,10 @@ def summarise(
         A pandas DataFrame with aggregated columns.
 
     """  # noqa: E501
-
-    if by is not None:
+    if isinstance(df, DataFrameGroupBy):
+        by = df
+        df = df.obj
+    elif by is not None:
         # it is assumed that by is created from df
         # onus is on user to ensure that
         if isinstance(by, DataFrameGroupBy):
@@ -233,7 +236,7 @@ def _aggfunc(arg, df, by):
         val = df
     else:
         val = by
-    outcome = _process_maybe_callable(func=arg, obj=val)
+    outcome = apply_if_callable(maybe_callable=arg, obj=val)
     if isinstance(outcome, pd.Series):
         if not outcome.name:
             raise ValueError("Ensure the pandas Series object has a name")
@@ -270,10 +273,11 @@ def _(arg, df, by):
             if len(aggfunc) != 2:
                 raise ValueError("the tuple has to be a length of 2")
             column, func = aggfunc
-            column_ = _handle_tuple_groupby_selection(by=by, column=column)
-            column = _apply_func_to_obj(aggfunc=func, obj=val[column_])
-            if isinstance(column, pd.DataFrame) and column.shape[-1] == 1:
+            column = val.agg({column: func})
+            try:
                 column = column.squeeze()
+            except AttributeError:
+                pass
             column = _convert_obj_to_named_series(
                 obj=column,
                 column_name=column_name,
@@ -285,18 +289,19 @@ def _(arg, df, by):
                     f"instead got {type(column)}"
                 )
         else:
-            column_ = _handle_tuple_groupby_selection(
-                by=by, column=column_name
-            )
-            column = _apply_func_to_obj(aggfunc=aggfunc, obj=val[column_])
+            column = val.agg({column_name: aggfunc})
+            try:
+                column = column.squeeze()
+            except AttributeError:
+                pass
             column = _convert_obj_to_named_series(
                 obj=column,
                 column_name=column_name,
                 function=aggfunc,
             )
-        column = _rename_column_in_by(
-            column=column, column_name=column_name, by=by
-        )
+        # column = _rename_column_in_by(
+        #     column=column, column_name=column_name, by=by
+        # )
         contents.append(column)
     return contents
 
@@ -304,6 +309,7 @@ def _(arg, df, by):
 def _process_maybe_callable(func: callable, obj):
     """Function to handle callables"""
     try:
+        print("stuch")
         column = obj.agg(func)
     except:  # noqa: E722
         column = apply_if_callable(maybe_callable=func, obj=obj)
@@ -314,14 +320,19 @@ def _process_maybe_string(func: str, obj):
     """Function to handle pandas string functions"""
     # treat as a pandas approved string function
     # https://pandas.pydata.org/docs/user_guide/groupby.html#built-in-aggregation-methods
+    print("hmmmm")
     return obj.agg(func)
 
 
 def _apply_func_to_obj(aggfunc, obj):
     """Handle str/callables within a dictionary"""
-    if isinstance(aggfunc, str):
-        return _process_maybe_string(func=aggfunc, obj=obj)
-    return _process_maybe_callable(func=aggfunc, obj=obj)
+    # try:
+    print("dorme", obj)
+    column = obj.agg(aggfunc)
+    # except:  # noqa: E722
+    #     print('excuse')
+    #     column = apply_if_callable(maybe_callable=aggfunc, obj=obj)
+    return column
 
 
 def _handle_tuple_groupby_selection(by: Any, column: Any):

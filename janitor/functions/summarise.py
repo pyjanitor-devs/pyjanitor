@@ -301,49 +301,8 @@ def _(arg, df, by):
                 column_name=column_name,
                 function=aggfunc,
             )
-        # column = _rename_column_in_by(
-        #     column=column, column_name=column_name, by=by
-        # )
         contents.append(column)
     return contents
-
-
-def _process_maybe_callable(func: callable, obj):
-    """Function to handle callables"""
-    try:
-        print("stuch")
-        column = obj.agg(func)
-    except:  # noqa: E722
-        column = apply_if_callable(maybe_callable=func, obj=obj)
-    return column
-
-
-def _process_maybe_string(func: str, obj):
-    """Function to handle pandas string functions"""
-    # treat as a pandas approved string function
-    # https://pandas.pydata.org/docs/user_guide/groupby.html#built-in-aggregation-methods
-    print("hmmmm")
-    return obj.agg(func)
-
-
-def _apply_func_to_obj(aggfunc, obj):
-    """Handle str/callables within a dictionary"""
-    # try:
-    print("dorme", obj)
-    column = obj.agg(aggfunc)
-    # except:  # noqa: E722
-    #     print('excuse')
-    #     column = apply_if_callable(maybe_callable=aggfunc, obj=obj)
-    return column
-
-
-def _handle_tuple_groupby_selection(by: Any, column: Any):
-    """
-    Properly handle a tuple column selection in the presence of a groupby
-    """
-    if (by is not None) and isinstance(column, tuple):
-        return [column]
-    return column
 
 
 def _convert_obj_to_named_series(obj, function: Any, column_name: Any):
@@ -357,12 +316,3 @@ def _convert_obj_to_named_series(obj, function: Any, column_name: Any):
     else:
         function_name = function.__name__
     return pd.Series(data=obj, index=[function_name], name=column_name)
-
-
-def _rename_column_in_by(column, column_name, by):
-    if by is None:
-        return column
-    elif isinstance(column, pd.DataFrame) and is_scalar(column_name):
-        columns = pd.MultiIndex.from_product([[column_name], column.columns])
-        column.columns = columns
-    return column

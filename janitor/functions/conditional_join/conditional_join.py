@@ -18,14 +18,15 @@ from pandas.api.types import (
 from pandas.core.dtypes.concat import concat_compat
 from pandas.core.reshape.merge import _MergeOperation
 
-from janitor.functions.utils import (
+from janitor.utils import check, check_column
+
+from .helpers import (
     _generic_func_cond_join,
     _JoinOperator,
     _keep_output,
     greater_than_join_types,
     less_than_join_types,
 )
-from janitor.utils import check, check_column
 
 
 @pf.register_dataframe_method

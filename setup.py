@@ -6,6 +6,7 @@ import re
 from pathlib import Path
 from pprint import pprint
 
+from Cython.Build import cythonize
 from setuptools import find_packages, setup
 
 HERE = os.path.abspath(os.path.dirname(__file__))
@@ -130,4 +131,5 @@ setup(
     python_requires=">=3.6",
     long_description=generate_long_description(),
     long_description_content_type="text/markdown",
+    ext_modules=cythonize("../pyjanitor/janitor/cython/test_cython.py"),
 )

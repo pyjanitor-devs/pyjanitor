@@ -1136,7 +1136,7 @@ def _range_indices(
         outcome = _less_than_indices(
             left=left_c.array,
             left_index=left_c.index.values,
-            right=right_c,
+            right=right_c.array,
             strict=op == _JoinOperator.LESS_THAN.value,
         )
         if outcome is None:
@@ -1186,7 +1186,7 @@ def _range_indices(
     outcome = _less_than_indices(
         left=left_c.array,
         left_index=left_c.index.values,
-        right=right_c,
+        right=right_c.array,
         strict=op == _JoinOperator.LESS_THAN.value,
     )
     if outcome is None:

@@ -481,7 +481,7 @@ def _conditional_join_compute(
     right_columns: Any,
     keep: str,
     use_numba: bool,
-    indicator: Union[bool, str],
+    indicator: bool | str,
     force: bool,
     return_matching_indices: bool = False,
     return_ragged_arrays: bool = False,
@@ -580,16 +580,7 @@ def _conditional_join_compute(
             keep=keep,
             return_ragged_arrays=return_ragged_arrays,
         )
-    if row_count:
-        if (df_columns is not None) and (df_columns != slice(None)):
-            df = df.select(columns=df_columns)
-        df = df[:]
-        df[row_count] = 0
-        if result is None:
-            return df
-        _, result = df[row_count].align(result, join="left", fill_value=0)
-        df[row_count] = result
-        return df
+    return result
 
     if result is None:
         result = np.array([], dtype=np.intp), np.array([], dtype=np.intp)
@@ -979,75 +970,100 @@ def _multiple_conditional_join_le_lt(
         # the aim of this for loop is to see if there is
         # the possibility of a range join, and if there is,
         # then use the optimised path
-        first_two = [op for *_, op in conditions[:2]]
-        range_join_ops = itertools.product(
-            less_than_join_types, greater_than_join_types
-        )
-        range_join_ops = map(set, range_join_ops)
-        is_range_join = set(first_two) in range_join_ops
+
+        le_lt = None
+        ge_gt = None
+        # keep the first match for le_lt or ge_gt
+        for condition in conditions:
+            *_, op = condition
+            if op in less_than_join_types:
+                if le_lt:
+                    continue
+                le_lt = condition
+            elif op in greater_than_join_types:
+                if ge_gt:
+                    continue
+                ge_gt = condition
+            if le_lt and ge_gt:
+                break
+
         # optimised path
-        if is_range_join:
-            if first_two[0] in less_than_join_types:
-                le_lt, ge_gt = conditions[:2]
-            else:
-                ge_gt, le_lt = conditions[:2]
+        if le_lt and ge_gt:
             conditions = [
                 condition
                 for condition in conditions
                 if condition not in (ge_gt, le_lt)
             ]
-            if conditions:
-                _keep = None
-                return_ragged_arrays = False
-                right_is_sorted = False
-            else:
-                first = ge_gt[1]
-                second = le_lt[1]
-                right_is_sorted = (
-                    right[first].is_monotonic_increasing
-                    & right[second].is_monotonic_increasing
-                )
-                if right_is_sorted:
-                    _keep = keep
-                else:
-                    _keep = None
+
             indices = _range_indices(
                 df=df,
                 right=right,
                 first=ge_gt,
                 second=le_lt,
-                keep=_keep,
-                return_ragged_arrays=return_ragged_arrays,
             )
+            return indices
             if indices is None:
                 return None
-            if row_count and not conditions:
-
-                return indices
-            if _keep or (return_ragged_arrays & isinstance(indices[1], list)):
-                return indices
+            if indices.get("fastpath") and not conditions:
+                left_index = indices["left_index"]
+                right_index = indices["right_index"]
+                if return_ragged_arrays:
+                    return dict(
+                        left_index=left_index,
+                        right_index=right_index,
+                        starts=indices["starts"],
+                        ends=indices["ends"],
+                    )
+                repeater = indices["ends"] - indices["starts"]
+                if repeater.max() == 1:
+                    # no point running a comparison op
+                    # if the width is all 1
+                    # this also implies that the intervals
+                    # do not overlap on the right side
+                    return left_index, right_index[indices["starts"]]
+                if (keep == "first") and indices["right_is_sorted"]:
+                    return left_index, right_index[indices["starts"]]
+                if (keep == "last") and indices["right_is_sorted"]:
+                    return left_index, right_index[indices["ends"] - 1]
+                right_index = [
+                    right_index[start:end]
+                    for start, end in zip(indices["starts"], indices["ends"])
+                ]
+                if keep == "first":
+                    right_index = [arr.min() for arr in right_index]
+                    return left_index, right_index
+                if keep == "last":
+                    right_index = [arr.max() for arr in right_index]
+                    return left_index, right_index
+                right_index = np.concatenate(right_index)
+                left_index = left_index.repeat(repeater)
+                return left_index, right_index
+            if not condition:
+                return indices["left_index"], indices["right_index"]
+            else:
+                indices = indices["left_index"], indices["right_index"]
 
         # no optimised path
         # blow up the rows and prune
         else:
-            lt_or_gt = None
-            for condition in conditions:
-                if condition[-1] in less_than_join_types.union(
-                    greater_than_join_types
-                ):
-                    lt_or_gt = condition
-                    break
-            conditions = [
-                condition for condition in conditions if condition != lt_or_gt
-            ]
-            left_on, right_on, op = lt_or_gt
+            if le_lt:
+                conditions = [
+                    condition for condition in conditions if condition != le_lt
+                ]
+                left_on, right_on, op = le_lt
+            else:
+                conditions = [
+                    condition for condition in conditions if condition != ge_gt
+                ]
+                left_on, right_on, op = ge_gt
+
             indices = _generic_func_cond_join(
                 left=df[left_on],
                 right=right[right_on],
                 op=op,
-                multiple_conditions=False,
                 keep="all",
             )
+
     if indices is None:
         return None
     if conditions:
@@ -1066,9 +1082,7 @@ def _range_indices(
     right: pd.DataFrame,
     first: tuple,
     second: tuple,
-    keep: str,
-    return_ragged_arrays: bool,
-) -> tuple[np.ndarray, np.ndarray] | None:
+) -> dict | None:
     """
     Retrieve index positions for range/interval joins.
 
@@ -1082,7 +1096,8 @@ def _range_indices(
     # then within the positions,
     # get the positions where end_left is </<= end_right
     # this should reduce the search space
-
+    l_index = df.index
+    r_index = right.index
     any_nulls = df.isna().any(axis=1)
     if any_nulls.all():
         return None
@@ -1096,7 +1111,7 @@ def _range_indices(
 
     left_on, right_on, op = first
     left_c = df[left_on]
-    right_c, _ = _sort_if_not_monotonic(series=right[right_on])
+    right_c, right_is_sorted = _sort_if_not_monotonic(series=right[right_on])
     outcome = _greater_than_indices(
         left=left_c.array,
         left_index=left_c.index.values,
@@ -1106,7 +1121,7 @@ def _range_indices(
 
     if outcome is None:
         return None
-    left_index, ends = outcome
+    left_index, search_indices = outcome
     left_on, right_on, op = second
     left_on = df.columns.get_loc(left_on)
     right_on = right.columns.get_loc(right_on)
@@ -1115,15 +1130,59 @@ def _range_indices(
     left_c = df.iloc[left_index, left_on]
     # if True, we can use a binary search
     # for more performance, instead of a linear search
-    fastpath = right_c.is_monotonic_increasing
+    right_c, right_is_sorted = _sort_if_not_monotonic(series=right_c)
+    if right_is_sorted:
+        ends = search_indices[:]
+        outcome = _less_than_indices(
+            left=left_c.array,
+            left_index=left_c.index.values,
+            right=right_c,
+            strict=op == _JoinOperator.LESS_THAN.value,
+        )
+        if outcome is None:
+            return None
+        left_c, starts = outcome
+        if left_c.size < left_index.size:
+            keep_rows = np.isin(left_index, left_c, assume_unique=True)
+            ends = ends[keep_rows]
+            left_index = left_c
+        # no point searching within (a, b)
+        # if a == b
+        # since range(a, b) yields none
+        keep_rows = starts < ends
 
-    if not fastpath:
-        # the aim here is to get the first match
-        # where the left array is </<= than the right array
-        # this is solved by getting the cumulative max
-        # thus ensuring that the first match is obtained
-        # via a binary search
-        right_c = right_c.cummax()
+        if not keep_rows.any():
+            return None
+
+        if not keep_rows.all():
+            left_index = left_index[keep_rows]
+            starts = starts[keep_rows]
+            ends = ends[keep_rows]
+        return dict(
+            left_index=left_index,
+            right_index=right_index,
+            starts=starts,
+            ends=ends,
+            fastpath=right_is_sorted,
+            right_is_sorted=right_is_sorted,
+        )
+    left_regions = np.zeros(shape=(l_index.size, 2), dtype=np.intp, order="F")
+    l_booleans = np.zeros(l_index.size, dtype=np.intp)
+    right_regions = np.zeros(shape=(r_index.size, 2), dtype=np.intp, order="F")
+    r_booleans = np.zeros(r_index.size, dtype=np.intp)
+
+    search_indices = right_index.size - search_indices
+    right_index = right_index[::-1]
+
+    r_region = np.zeros(right_index.size, dtype=np.intp)
+    r_region[search_indices] = 1
+    r_region[0] -= 1
+    r_region = r_region.cumsum()
+    left_regions[left_index, 0] = r_region[search_indices]
+    l_booleans[left_index] += 1
+    right_regions[right_index, 0] = r_region
+    r_booleans[right_index[search_indices.min() :]] += 1
+
     outcome = _less_than_indices(
         left=left_c.array,
         left_index=left_c.index.values,
@@ -1132,68 +1191,118 @@ def _range_indices(
     )
     if outcome is None:
         return None
-    left_c, starts = outcome
-    if left_c.size < left_index.size:
-        keep_rows = np.isin(left_c, left_index, assume_unique=True)
-        ends = ends[keep_rows]
-        left_index = left_c
-    # no point searching within (a, b)
-    # if a == b
-    # since range(a, b) yields none
-    keep_rows = starts < ends
+    left_index, search_indices = outcome
+    right_index = right_c.index.values
+    r_region = np.zeros(right_index.size, dtype=np.intp)
+    r_region[search_indices] = 1
+    r_region[0] -= 1
+    r_region = r_region.cumsum()
+    left_regions[left_index, 1] = r_region[search_indices]
+    l_booleans[left_index] += 1
+    right_regions[right_index, 1] = r_region
+    r_booleans[right_index[search_indices.min() :]] += 1
 
-    if not keep_rows.any():
+    r_region = None
+    search_indices = None
+    left_index = None
+    right_index = None
+    booleans = l_booleans == 2
+    if not booleans.any():
         return None
+    if not booleans.all():
+        left_regions = left_regions[booleans]
+        l_index = l_index[booleans]
+    booleans = r_booleans == 2
+    if not booleans.any():
+        return None
+    if not booleans.all():
+        right_regions = right_regions[booleans]
+        r_index = r_index[booleans]
+    l_booleans = None
+    r_booleans = None
 
-    if not keep_rows.all():
-        left_index = left_index[keep_rows]
-        starts = starts[keep_rows]
-        ends = ends[keep_rows]
+    return left_index, r_index, left_regions, right_regions
 
-    repeater = ends - starts
+    # if not right_is_sorted:
+    #     # use the l_booleans and r_booleans
+    #     # to track rows that have complete matches
 
-    if repeater.max() == 1:
-        # no point running a comparison op
-        # if the width is all 1
-        # this also implies that the intervals
-        # do not overlap on the right side
-        return left_index, right_index[starts]
-    if keep == "first":
-        return left_index, right_index[starts]
-    if keep == "last":
-        return left_index, right_index[ends - 1]
-    if return_ragged_arrays and fastpath:
-        return dict(
-            left_index=left_index,
-            right_index=right_index,
-            starts=starts,
-            ends=ends,
-        )
-    right_index = [right_index[start:end] for start, end in zip(starts, ends)]
-    right_index = np.concatenate(right_index)
-    left_index = left_index.repeat(repeater)
-    if fastpath:
-        return left_index, right_index
-    # here we search for actual positions
-    # where left_c is </<= right_c
-    # safe to index the arrays, since we are picking the positions
-    # which are all in the original `df` and `right`
-    # doing this allows some speed gains
-    # while still ensuring correctness
-    left_on, right_on, op = second
-    left_c = df[left_on]._values[left_index]
-    right_c = right[right_on]._values[right_index]
-    ext_arr = is_extension_array_dtype(left_c)
-    op = operator_map[op]
-    mask = op(left_c, right_c)
+    #     # the aim here is to get the first match
+    #     # where the left array is </<= than the right array
+    #     # this is solved by getting the cumulative max
+    #     # thus ensuring that the first match is obtained
+    #     # via a binary search
+    #     right_c = right_c.cummax()
+    # outcome = _less_than_indices(
+    #     left=left_c.array,
+    #     left_index=left_c.index.values,
+    #     right=right_c,
+    #     strict=op == _JoinOperator.LESS_THAN.value,
+    # )
+    # if outcome is None:
+    #     return None
+    # left_c, starts = outcome
+    # if left_c.size < left_index.size:
+    #     keep_rows = np.isin(left_index, left_c, assume_unique=True)
+    #     ends = ends[keep_rows]
+    #     left_index = left_c
+    # # no point searching within (a, b)
+    # # if a == b
+    # # since range(a, b) yields none
+    # keep_rows = starts < ends
 
-    if ext_arr:
-        mask = mask.to_numpy(dtype=bool, na_value=False)
-    if not mask.all():
-        left_index = left_index[mask]
-        right_index = right_index[mask]
+    # if not keep_rows.any():
+    #     return None
 
-    return left_index, right_index
+    # if not keep_rows.all():
+    #     left_index = left_index[keep_rows]
+    #     starts = starts[keep_rows]
+    #     ends = ends[keep_rows]
+    # if fastpath:
+    #     return dict(
+    #         left_index=left_index,
+    #         right_index=right_index,
+    #         starts=starts,
+    #         ends=ends,
+    #         fastpath=fastpath,
+    #         right_is_sorted=right_is_sorted,
+    #     )
+    # # here we search for actual positions
+    # # where left_c is </<= right_c
+    # # safe to index the arrays, since we are picking the positions
+    # # which are all in the original `df` and `right`
+    # # doing this allows some speed gains
+    # # while still ensuring correctness
+    # repeater = ends - starts
+    # if repeater.max() == 1:
+    #     # no point running a comparison op
+    #     # if the width is all 1
+    #     # this also implies that the intervals
+    #     # do not overlap on the right side
+    #     return dict(
+    #         left_index=left_index,
+    #         right_index=right_index[starts],
+    #         fastpath=fastpath,
+    #     )
+    # right_index = [right_index[start:end] for start, end in zip(starts, ends)]
+    # right_index = np.concatenate(right_index)
+    # left_index = left_index.repeat(repeater)
+    # left_on, right_on, op = second
+    # left_c = df[left_on]._values[left_index]
+    # right_c = right[right_on]._values[right_index]
+    # ext_arr = is_extension_array_dtype(left_c)
+    # op = operator_map[op]
+    # mask = op(left_c, right_c)
+
+    # if ext_arr:
+    #     mask = mask.to_numpy(dtype=bool, na_value=False)
+    # if not mask.all():
+    #     left_index = left_index[mask]
+    #     right_index = right_index[mask]
+
+    # return dict(
+    #     left_index=left_index, right_index=right_index, fastpath=fastpath
+    # )
 
 
 def _create_multiindex_column(df: pd.DataFrame, right: pd.DataFrame) -> tuple:

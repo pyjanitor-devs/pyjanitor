@@ -971,23 +971,36 @@ def _multiple_conditional_join_le_lt(
         # the aim of this for loop is to see if there is
         # the possibility of a range join, and if there is,
         # then use the optimised path
-
+        l_cols = set()
+        r_cols = set()
+        # check for possibility of a range join
+        # keep the first match for le_lt or ge_gt
         le_lt = None
         ge_gt = None
-        # keep the first match for le_lt or ge_gt
-        for condition in conditions:
-            *_, op = condition
-            if op in less_than_join_types:
-                if le_lt:
-                    continue
-                le_lt = condition
+        for left_on, right_on, op in conditions:
+            if op == _JoinOperator.NOT_EQUAL.value:
+                continue
+            l_cols.add(left_on)
+            r_cols.add(right_on)
+            if (op in less_than_join_types) and le_lt:
+                continue
+            elif op in less_than_join_types:
+                le_lt = (left_on, right_on, op)
+            elif (op in greater_than_join_types) and ge_gt:
+                continue
             elif op in greater_than_join_types:
-                if ge_gt:
-                    continue
-                ge_gt = condition
-            if le_lt and ge_gt:
-                break
-
+                ge_gt = (left_on, right_on, op)
+        # get rid of nulls, if any
+        any_nulls = df.loc[:, [*l_cols]].isna().any(axis=1)
+        if any_nulls.all():
+            return None
+        if any_nulls.any():
+            df = df.loc[~any_nulls]
+        any_nulls = right.loc[:, [*r_cols]].isna().any(axis=1)
+        if any_nulls.all():
+            return None
+        if any_nulls.any():
+            right = right.loc[~any_nulls]
         # optimised path
         if le_lt and ge_gt:
             conditions = [
@@ -995,7 +1008,6 @@ def _multiple_conditional_join_le_lt(
                 for condition in conditions
                 if condition not in (ge_gt, le_lt)
             ]
-
             indices = _range_indices(
                 df=df,
                 right=right,
@@ -1038,7 +1050,9 @@ def _multiple_conditional_join_le_lt(
                 right_index = np.concatenate(right_index)
                 left_index = left_index.repeat(repeater)
                 return left_index, right_index
-            if not conditions:
+            elif indices.get("fastpath"):
+                pass
+            elif not conditions:
                 if keep == "first":
                     outcome = cond_join.build_indices_non_monotonic_dual_range_join_keep_first(  # noqa: E501
                         left_index=indices["left_index"],
@@ -1072,8 +1086,27 @@ def _multiple_conditional_join_le_lt(
                     return None
                 return outcome
             else:
-                indices = indices["left_index"], indices["right_index"]
-
+                not_equals = []
+                le_lt_ge_gt_eq = []
+                for condition in conditions:
+                    *_, op = condition
+                    if op == _JoinOperator.NOT_EQUAL.value:
+                        not_equals.append(condition)
+                    else:
+                        le_lt_ge_gt_eq.append(condition)
+                left_index = indices["left_index"]
+                right_index = indices["right_index"]
+                mapping = {">": 0, ">=": 1, "<": 2, "<=": 3, "!=": 4}
+                conditions = []
+                for left_on, right_on, op in le_lt_ge_gt_eq:
+                    left_arr = df.loc[left_index, left_on].to_numpy()
+                    right_arr = right.loc[right_index, right_on].to_numpy()
+                    left_arr, right_arr = _convert_to_numpy(
+                        left=left_arr, right=right_arr
+                    )
+                    condition = (left_arr, right_arr, mapping[op])
+                    conditions.append(condition)
+                return conditions
         # no optimised path
         # blow up the rows and prune
         else:
@@ -1127,18 +1160,6 @@ def _range_indices(
     # then within the positions,
     # get the positions where end_left is </<= end_right
     # this should reduce the search space
-
-    any_nulls = df.isna().any(axis=1)
-    if any_nulls.all():
-        return None
-    if any_nulls.any():
-        df = df.loc[any_nulls]
-    any_nulls = right.isna().any(axis=1)
-    if any_nulls.all():
-        return None
-    if any_nulls.any():
-        right = right.loc[any_nulls]
-
     left_on, right_on, op = first
     left_c = df[left_on]
     right_c, right_is_sorted = _sort_if_not_monotonic(series=right[right_on])
@@ -1153,11 +1174,9 @@ def _range_indices(
         return None
     left_index, ends = outcome
     left_on, right_on, op = second
-    left_on = df.columns.get_loc(left_on)
-    right_on = right.columns.get_loc(right_on)
     right_index = right_c.index.values
-    right_c = right.iloc[right_index, right_on]
-    left_c = df.iloc[left_index, left_on]
+    right_c = right.loc[right_index, right_on]
+    left_c = df.loc[left_index, left_on]
     # if True, we can use a binary search
     # for more performance, instead of a linear search
     right_c, fastpath = _sort_if_not_monotonic(series=right_c)

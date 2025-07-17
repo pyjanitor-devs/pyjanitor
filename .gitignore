@@ -143,6 +143,3 @@ tags
 *.profraw
 /scratch.py
 midpoint.csv
-
-
-../janitor/cython_functions/*.c

@@ -1001,7 +1001,7 @@ def _multiple_conditional_join_le_lt(
             return None
         if any_nulls.any():
             right = right.loc[~any_nulls]
-        # optimised path
+        # range join
         if le_lt and ge_gt:
             conditions = [
                 condition
@@ -1052,61 +1052,191 @@ def _multiple_conditional_join_le_lt(
                 return left_index, right_index
             elif indices.get("fastpath"):
                 pass
-            elif not conditions:
-                if keep == "first":
-                    outcome = cond_join.build_indices_non_monotonic_dual_range_join_keep_first(  # noqa: E501
-                        left_index=indices["left_index"],
-                        right_index=indices["right_index"],
-                        starts=indices["starts"],
-                        ends=indices["ends"],
-                        lookup=indices["lookup"],
-                    )
-                    if outcome is None:
-                        return None
-                    return outcome
-                if keep == "last":
-                    outcome = cond_join.build_indices_non_monotonic_dual_range_join_keep_last(  # noqa: E501
-                        left_index=indices["left_index"],
-                        right_index=indices["right_index"],
-                        starts=indices["starts"],
-                        ends=indices["ends"],
-                        lookup=indices["lookup"],
-                    )
-                    if outcome is None:
-                        return None
-                    return outcome
-                outcome = cond_join.build_indices_non_monotonic_dual_range_join_keep_all(  # noqa: E501
-                    left_index=indices["left_index"],
-                    right_index=indices["right_index"],
-                    starts=indices["starts"],
-                    ends=indices["ends"],
-                    lookup=indices["lookup"],
-                )
-                if outcome is None:
-                    return None
-                return outcome
             else:
-                not_equals = []
-                le_lt_ge_gt_eq = []
-                for condition in conditions:
-                    *_, op = condition
-                    if op == _JoinOperator.NOT_EQUAL.value:
-                        not_equals.append(condition)
-                    else:
-                        le_lt_ge_gt_eq.append(condition)
                 left_index = indices["left_index"]
                 right_index = indices["right_index"]
-                mapping = {">": 0, ">=": 1, "<": 2, "<=": 3, "!=": 4}
-                conditions = []
-                for left_on, right_on, op in le_lt_ge_gt_eq:
-                    left_arr = df.loc[left_index, left_on].to_numpy()
-                    right_arr = right.loc[right_index, right_on].to_numpy()
+                # not_equals = [
+                #     condition
+                #     for condition in conditions
+                #     if condition[-1] == _JoinOperator.NOT_EQUAL.value
+                # ]
+                others = [
+                    condition
+                    for condition in conditions
+                    if condition[-1] != _JoinOperator.NOT_EQUAL.value
+                ]
+                others = [indices["condition"]] + others
+                mapping = {">": 0, ">=": 1, "<": 2, "<=": 3, "==": 4}
+                starts = indices["starts"]
+                ends = indices["ends"]
+                sizes = ends - starts
+
+                matches = np.ones(sizes.sum(), dtype=np.int8)
+                booleans = np.ones(sizes.size, dtype=np.int8)
+                counts_array = np.zeros(sizes.size, dtype=np.intp)
+                for left_on, right_on, op in others:
+                    left_arr = df.loc[left_index, left_on].to_numpy(copy=False)
+                    right_arr = right.loc[right_index, right_on].to_numpy(
+                        copy=False
+                    )
                     left_arr, right_arr = _convert_to_numpy(
                         left=left_arr, right=right_arr
                     )
-                    condition = (left_arr, right_arr, mapping[op])
-                    conditions.append(condition)
-                return conditions
+                    matches, booleans, counts_array, any_match, bools_all = (
+                        cond_join.get_positive_matches(
+                            starts=starts,
+                            ends=ends,
+                            left_array=left_arr,
+                            right_array=right_arr,
+                            op=mapping[op],
+                            matches=matches,
+                            booleans=booleans,
+                            counts_array=counts_array,
+                        )
+                    )
+                    if not any_match:
+                        return None
+
+                if not bools_all:
+                    booleans = booleans.astype(np.bool_, copy=False)
+                    left_index = left_index[booleans]
+                    counts_array = counts_array[booleans]
+
+                start_indices = np.empty(counts_array.size, dtype=np.intp)
+                start_indices[0] = 0
+                start_indices[1:] = counts_array.cumsum()[:-1]
+                return (
+                    start_indices,
+                    matches,
+                    booleans,
+                    counts_array,
+                    starts,
+                    ends,
+                    left_index,
+                    any_match,
+                )
+                #     if is_integer_dtype(arr_or_dtype=left_arr):
+                #         ints.append(left_arr)
+                #         ints.append(right_arr)
+                #         ints_count += 1
+                #         ints_dtype = left_arr.dtype
+                #     else:
+                #         floats.append(left_arr)
+                #         floats.append(right_arr)
+                #         floats_count += 1
+                #         floats_dtype = right_arr.dtype
+                #     ops.append(mapping[op])
+                # l_size = left_index.size
+                # r_size = right_index.size
+                # row_length = max(l_size, r_size)
+                # if ints_count:
+                #     counts = ints_count * 2
+                #     ints_array = np.zeros(
+                #         (row_length, counts), dtype=ints_dtype
+                #     )
+                #     for num in range(counts):
+                #         if num % 2:
+                #             ints_array[:r_size, num] = ints[num]
+                #         else:
+                #             ints_array[:l_size, num] = ints[num]
+                # else:
+                #     ints_array = None
+                # if floats_count:
+                #     counts = floats_count * 2
+                #     floats_array = np.zeros(
+                #         (row_length, counts), dtype=floats_dtype
+                #     )
+                #     for num in range(counts):
+                #         if num % 2:
+                #             floats_array[:r_size, num] = floats[num]
+                #         else:
+                #             floats_array[:l_size, num] = floats[num]
+                # else:
+                #     floats_array = None
+                # ops = np.array(ops, dtype=np.int8)
+                # floats = None
+                # ints = None
+                # print("ops", ops, ints_count)
+                # print(ints_array)
+                # return (
+                #     cond_join.build_indices_non_monotonic_range_join_keep_all(
+                #         left_index=left_index,
+                #         right_index=right_index,
+                #         starts=indices["starts"],
+                #         ends=indices["ends"],
+                #         ints_array=ints_array,
+                #         floats_array=None,
+                #         ops=ops,
+                #         ints_count=ints_count,
+                #         floats_count=floats_count,
+                #     )
+                # )
+                # return (
+                #     others,
+                #     ints,
+                #     floats,
+                #     ints_array,
+                #     floats_array,
+                # )
+                # not_equals = []
+                # ints = []
+                # floats = []
+                # ints_count = 0
+                # floats_count = 0
+                # ints_dtype = None
+                # floats_dtype = None
+                # ints_array = np.array([], dtype="int64")
+                # floats_array = np.array([], dtype="float64")
+                # mapping = {">": 0, ">=": 1, "<": 2, "<=": 3, "==": 4}
+                # ops = []
+                # for condition in conditions:
+                #     left_on, right_on, op = condition
+                #     if op == _JoinOperator.NOT_EQUAL.value:
+                #         not_equals.append(condition)
+                #     else:
+                #         left_arr = df.loc[left_index, left_on].to_numpy()
+                #         right_arr = right.loc[right_index, right_on].to_numpy()
+                #         left_arr, right_arr = _convert_to_numpy(
+                #             left=left_arr, right=right_arr
+                #         )
+                #         if is_integer_dtype(arr_or_dtype=left_arr):
+                #             ints.append(left_arr)
+                #             ints.append(right_arr)
+                #             ints_count += 1
+                #             ints_dtype = left_arr.dtype
+                #         else:
+                #             floats.append(left_arr)
+                #             floats.append(right_arr)
+                #             floats_count += 1
+                #             floats_dtype = right_arr.dtype
+                #         ops.append(mapping[op])
+                # l_size = left_index.size
+                # r_size = right_index.size
+                # row_length = max(l_size, r_size)
+                # if ints_count:
+                #     counts = ints_count * 2
+                #     ints_array = np.zeros(
+                #         (row_length, counts), dtype=ints_dtype
+                #     )
+                #     for num in range(counts):
+                #         if num % 2:
+                #             ints_array[:r_size, num] = ints[num]
+                #         else:
+                #             ints_array[:l_size, num] = ints[num]
+                # if floats_count:
+                #     counts = floats_count * 2
+                #     floats_array = np.zeros(
+                #         (row_length, counts), dtype=floats_dtype
+                #     )
+                #     for num in range(counts):
+                #         if num % 2:
+                #             floats_array[:r_size, num] = floats[num]
+                #         else:
+                #             floats_array[:l_size, num] = floats[num]
+                # ops = np.array(ops, dtype=np.int8)
+                # floats = None
+                # ints = None
+                # return ops, ints_array
         # no optimised path
         # blow up the rows and prune
         else:
@@ -1179,7 +1309,9 @@ def _range_indices(
     left_c = df.loc[left_index, left_on]
     # if True, we can use a binary search
     # for more performance, instead of a linear search
-    right_c, fastpath = _sort_if_not_monotonic(series=right_c)
+    fastpath = right_c.is_monotonic_increasing
+    if not fastpath:
+        right_c = right_c.cummax()
     outcome = _less_than_indices(
         left=left_c.array,
         left_index=left_c.index.values,
@@ -1212,15 +1344,15 @@ def _range_indices(
             fastpath=fastpath,
             right_is_sorted=right_is_sorted,
         )
-    lookup = np.empty(right_index.max() + 1, dtype=np.intp)
-    lookup[right_index] = np.arange(right_index.size, dtype=np.intp)
-    right_index = right_c.index.values
+    # lookup = np.empty(right_index.max() + 1, dtype=np.intp)
+    # lookup[right_index] = np.arange(right_index.size, dtype=np.intp)
+    # right_index = right_c.index.values
     return dict(
         left_index=left_index,
         right_index=right_index,
         starts=starts,
         ends=ends,
-        lookup=lookup,
+        condition=second,
         fastpath=fastpath,
     )
 

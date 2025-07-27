@@ -77,6 +77,14 @@ def test_summarise_by_callable_grp(df_summarise):
     assert_frame_equal(actual, expected)
 
 
+def test_summarise_by_callable_grp_grouped(df_summarise):
+    """Test output for a callable"""
+    grp = df_summarise.groupby("combine_id")
+    actual = grp.summarise(lambda df: df.sum())
+    expected = grp.sum()
+    assert_frame_equal(actual, expected)
+
+
 def test_summarise_dict_df_str(df_summarise):
     """Test output for a dictionary"""
     actual = df_summarise.summarise({"avg_run": "mean"})
@@ -164,6 +172,13 @@ def test_summarise_by_tuple(df_summarise):
     assert_frame_equal(actual, expected)
 
 
+def test_summarise_by_tuple_grouped(df_summarise):
+    """Test output for a tuple"""
+    actual = df_summarise.groupby("combine_id").summarise(("avg_run", "mean"))
+    expected = df_summarise.groupby("combine_id").agg({"avg_run": "mean"})
+    assert_frame_equal(actual, expected)
+
+
 def test_summarise_tuple_df_callable(df_summarise):
     """Test output for a tuple"""
     actual = df_summarise.summarise(("avg_run", lambda df: df.sum()))
@@ -180,24 +195,12 @@ def test_summarise_tuple_by_callable(df_summarise):
     assert_frame_equal(actual, expected)
 
 
-def test_summarise_tuple_by_callable_dataframe(df_summarise):
+def test_summarise_tuple_by_callable_grouped(df_summarise):
     """Test output for a tuple"""
-    actual = df_summarise.summarise(
-        ("avg_run", lambda df: df.agg(["sum", "mean"])), by="combine_id"
+    actual = df_summarise.groupby("combine_id").summarise(
+        ("avg_run", lambda df: df.sum())
     )
-    expected = df_summarise.groupby("combine_id").agg(
-        {"avg_run": ["sum", "mean"]}
-    )
-    assert_frame_equal(actual, expected)
-
-
-def test_summarise_tuple_grouped_object(df_summarise):
-    """Test output for a tuple"""
-    grp = df_summarise.groupby("combine_id")
-    actual = df_summarise.summarise(
-        ("avg_run", lambda df: df.agg(["sum", "mean"])), by=grp
-    )
-    expected = grp.agg({"avg_run": ["sum", "mean"]})
+    expected = df_summarise.groupby("combine_id").agg({"avg_run": "sum"})
     assert_frame_equal(actual, expected)
 
 
@@ -258,6 +261,26 @@ def test_summarise_MI_different_levels_tuple(dfmi):
         {("a", "bar"): "sum", ("rar",): (("a", "foo"), "mean")},
         ("b", "min"),
         by={"level": "A"},
+    )
+    actual.columns = ["A", "B", "C", "D"]
+    grp = dfmi.groupby(level="A")
+    expected = grp.agg(
+        {
+            ("a", "bar"): "sum",
+            ("a", "foo"): "mean",
+            ("b", "bah"): "min",
+            ("b", "foo"): "min",
+        }
+    )
+    expected.columns = ["A", "B", "C", "D"]
+    assert_frame_equal(actual, expected)
+
+
+def test_summarise_MI_different_levels_tuple_grouped(dfmi):
+    """Test summarise on a MultiIndex"""
+    actual = dfmi.groupby(level="A").summarise(
+        {("a", "bar"): "sum", ("rar",): (("a", "foo"), "mean")},
+        ("b", "min"),
     )
     actual.columns = ["A", "B", "C", "D"]
     grp = dfmi.groupby(level="A")

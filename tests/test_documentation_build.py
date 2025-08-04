@@ -1,7 +1,6 @@
 """Tests for documentation build."""
 
 import os
-from pathlib import Path
 
 import pytest
 
@@ -26,8 +25,7 @@ def test_docs_general_functions_present():
     # I put in a subsample of general functions.
     # This can be made much more robust.
     rendered_correctly = False
-    filepath = Path.cwd().parents[0] / "site/api/functions/index.html"
-    with open(filepath, "r+") as f:
+    with open("./site/api/functions/index.html", "r+") as f:
         for line in f.readlines():
             if "add_columns" in line or "update_where" in line:
                 rendered_correctly = True

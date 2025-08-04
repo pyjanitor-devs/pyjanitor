@@ -1,7 +1,6 @@
 """Tests for documentation build."""
 
 import os
-from pathlib import Path
 
 import pytest
 
@@ -20,15 +19,11 @@ def test_docs_general_functions_present():
     This is an awesome thing that we could use help with in the future.
     """
     # Build docs using mkdocs
-    result = os.system("mkdocs build --clean")
-    print(result)
+    os.system("mkdocs build --clean")
     # We want to check that the following keywords are all present.
     # I put in a subsample of general functions.
     # This can be made much more robust.
     rendered_correctly = False
-    directory = Path.cwd().parents[0] / "pyjanitor/site/api"
-    print("directory", directory)
-    print([*directory.iterdir()])
     with open("./site/api/functions.html", "r+") as f:
         for line in f.readlines():
             if "add_columns" in line or "update_where" in line:

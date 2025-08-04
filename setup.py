@@ -6,7 +6,6 @@ import re
 from pathlib import Path
 from pprint import pprint
 
-import numpy as np
 from setuptools import Extension, find_packages, setup
 
 try:
@@ -129,7 +128,7 @@ if USE_CYTHON:
         [
             "../pyjanitor/janitor/cython_functions/cond_join.py",
         ],
-        include_dirs=[np.get_include()],
+        # include_dirs=[np.get_include()],
     )
     ext_modules = cythonize(ext_modules)
 else:

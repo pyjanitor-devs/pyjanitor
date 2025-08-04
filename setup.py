@@ -136,7 +136,7 @@ if USE_CYTHON:
 else:
     ext_modules = [
         Extension(
-            "janitor.cython_functions.cond_join",
+            "cython_functions.cond_join",
             [
                 "../pyjanitor/janitor/cython_functions/cond_join.c",
             ],

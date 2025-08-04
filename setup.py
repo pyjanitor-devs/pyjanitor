@@ -127,7 +127,7 @@ if USE_CYTHON:
         Extension(
             "janitor.cython_functions.cond_join",
             [
-                "../pyjanitor/janitor/cython_functions/cond_join.py",
+                "./janitor/cython_functions/cond_join.py",
             ],
             # include_dirs=[np.get_include()],
         )
@@ -138,7 +138,7 @@ else:
         Extension(
             "janitor.cython_functions.cond_join",
             [
-                "../pyjanitor/janitor/cython_functions/cond_join.c",
+                "./janitor/cython_functions/cond_join.c",
             ],
             # include_dirs=[np.get_include()],
         )

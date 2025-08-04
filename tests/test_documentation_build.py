@@ -26,7 +26,9 @@ def test_docs_general_functions_present():
     # I put in a subsample of general functions.
     # This can be made much more robust.
     rendered_correctly = False
-    print(Path.cwd().parents[0])
+    directory = Path.cwd().parents[0]
+    print("directory", directory)
+    print([*directory.iterdir()])
     with open("./site/api/functions/index.html", "r+") as f:
         for line in f.readlines():
             if "add_columns" in line or "update_where" in line:

@@ -1,7 +1,8 @@
 import importlib
 
 import pytest
-from helpers import running_on_ci
+
+from ..helpers import running_on_ci
 
 pytestmark = pytest.mark.skipif(
     (importlib.util.find_spec("rdkit") is None) & ~running_on_ci(),

@@ -1,6 +1,7 @@
 import pytest
-from helpers import running_on_ci
 from pandas.testing import assert_frame_equal
+
+from ...helpers import running_on_ci
 
 if running_on_ci():
     import pyspark

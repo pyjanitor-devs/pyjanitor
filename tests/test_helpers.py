@@ -1,6 +1,6 @@
 """Tests for test helper functions."""
 
-from helpers import running_on_ci
+from .helpers import running_on_ci
 
 
 def test_running_on_ci_local(monkeypatch):

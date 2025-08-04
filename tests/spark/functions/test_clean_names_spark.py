@@ -1,7 +1,8 @@
 import pytest
-from helpers import running_on_ci
 
 from janitor.errors import JanitorError
+
+from ...helpers import running_on_ci
 
 if running_on_ci():
     import pyspark

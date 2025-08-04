@@ -123,22 +123,26 @@ def generate_long_description() -> str:
 
 
 if USE_CYTHON:
-    ext_modules = Extension(
-        "janitor.cython_functions.cond_join",
-        [
-            "../pyjanitor/janitor/cython_functions/cond_join.py",
-        ],
-        # include_dirs=[np.get_include()],
-    )
+    ext_modules = [
+        Extension(
+            "janitor.cython_functions.cond_join",
+            [
+                "../pyjanitor/janitor/cython_functions/cond_join.py",
+            ],
+            # include_dirs=[np.get_include()],
+        )
+    ]
     ext_modules = cythonize(ext_modules)
 else:
-    ext_modules = Extension(
-        "janitor.cython_functions.cond_join",
-        [
-            "../pyjanitor/janitor/cython_functions/cond_join.c",
-        ],
-        # include_dirs=[np.get_include()],
-    )
+    ext_modules = [
+        Extension(
+            "janitor.cython_functions.cond_join",
+            [
+                "../pyjanitor/janitor/cython_functions/cond_join.c",
+            ],
+            # include_dirs=[np.get_include()],
+        )
+    ]
 
 setup(
     name="pyjanitor",

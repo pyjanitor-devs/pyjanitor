@@ -46,6 +46,9 @@ markers = [
     "documentation: tests for documentation",
     "turtle: tests that take more than 5 seconds to execute",
 ]
+addopts = [
+    "--import-mode=importlib",
+]
 
 
 [tool.ruff]

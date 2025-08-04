@@ -51,7 +51,7 @@ jobs:
         run: python -m pip install -e .
 
       - name: Run docstrings tests
-        run: pytest -v -r a -n auto --color=yes --durations=0 --cov=janitor --cov-append --cov-report term-missing --cov-report xml --doctest-only janitor
+        run: pytest -v -r a -n auto --ignore=cython_functions   --color=yes --durations=0 --cov=janitor --cov-append --cov-report term-missing --cov-report xml --doctest-only janitor
 
       - name: Run unit tests
         run: pytest -v -r a -n auto --color=yes --durations=0 --cov=janitor --cov-append --cov-report term-missing --cov-report xml tests

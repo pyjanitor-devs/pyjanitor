@@ -138,7 +138,7 @@ else:
         [
             "../pyjanitor/janitor/cython_functions/cond_join.c",
         ],
-        include_dirs=[np.get_include()],
+        # include_dirs=[np.get_include()],
     )
 
 setup(

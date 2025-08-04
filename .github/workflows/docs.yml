@@ -28,6 +28,7 @@ jobs:
           auto-update-conda: true
           environment-file: environment-dev.yml
           miniforge-version: latest
+          channels: conda-forge, defaults
 
       - name: Install pyjanitor
         # use editable mode to avoid _pytest.pathlib.ImportPathMismatchError

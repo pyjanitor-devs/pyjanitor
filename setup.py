@@ -7,8 +7,14 @@ from pathlib import Path
 from pprint import pprint
 
 import numpy as np
-from Cython.Build import cythonize
 from setuptools import Extension, find_packages, setup
+
+try:
+    from Cython.Build import cythonize
+
+    USE_CYTHON = True
+except ImportError:
+    USE_CYTHON = False
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 
@@ -117,11 +123,23 @@ def generate_long_description() -> str:
     return long_description
 
 
-ext_modules = Extension(
-    "janitor.cython_functions.cond_join",
-    ["../pyjanitor/janitor/cython_functions/cond_join.py"],
-    include_dirs=[np.get_include()],
-)
+if USE_CYTHON:
+    ext_modules = Extension(
+        "janitor.cython_functions.cond_join",
+        [
+            "../pyjanitor/janitor/cython_functions/cond_join.py",
+        ],
+        include_dirs=[np.get_include()],
+    )
+    ext_modules = cythonize(ext_modules)
+else:
+    ext_modules = Extension(
+        "janitor.cython_functions.cond_join",
+        [
+            "../pyjanitor/janitor/cython_functions/cond_join.c",
+        ],
+        include_dirs=[np.get_include()],
+    )
 
 setup(
     name="pyjanitor",
@@ -138,5 +156,5 @@ setup(
     python_requires=">=3.6",
     long_description=generate_long_description(),
     long_description_content_type="text/markdown",
-    ext_modules=cythonize(ext_modules),
+    ext_modules=ext_modules,
 )

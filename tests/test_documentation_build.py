@@ -29,7 +29,7 @@ def test_docs_general_functions_present():
     directory = Path.cwd().parents[0] / "pyjanitor/site/api"
     print("directory", directory)
     print([*directory.iterdir()])
-    with open("./site/api/functions/index.html", "r+") as f:
+    with open("./site/api/functions.html", "r+") as f:
         for line in f.readlines():
             if "add_columns" in line or "update_where" in line:
                 rendered_correctly = True

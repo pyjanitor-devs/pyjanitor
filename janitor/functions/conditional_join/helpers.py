@@ -1,5 +1,4 @@
 # helper functions for conditional_join.py
-import operator
 from enum import Enum
 from typing import Hashable, Sequence
 
@@ -597,75 +596,6 @@ def _multiple_conditions_get_indices(
         counts_array=counts_array,
         booleans=booleans,
     )
-
-
-def _get_indices_for_not_equals(
-    df: pd.DataFrame,
-    right: pd.DataFrame,
-    not_equals: list,
-    left_index: np.ndarray,
-    right_index: np.ndarray,
-):
-    """
-    Get indices if op == '!=';
-    applies to multiple conditions,
-    where `!=` is not the only operator
-    """
-    conds = []
-    for left_on, right_on, op in not_equals:
-        left_series = df.loc[left_index, left_on]
-        right_series = right.loc[right_index, right_on]
-        condition = (left_series, right_series, op)
-        conds.append(condition)
-    return _generate_indices(
-        left_index=left_index,
-        right_index=right_index,
-        conditions=conds,
-    )
-
-
-operator_map = {
-    _JoinOperator.STRICTLY_EQUAL.value: operator.eq,
-    _JoinOperator.LESS_THAN.value: operator.lt,
-    _JoinOperator.LESS_THAN_OR_EQUAL.value: operator.le,
-    _JoinOperator.GREATER_THAN.value: operator.gt,
-    _JoinOperator.GREATER_THAN_OR_EQUAL.value: operator.ge,
-    _JoinOperator.NOT_EQUAL.value: operator.ne,
-}
-
-
-def _generate_indices(
-    left_index: np.ndarray,
-    right_index: np.ndarray,
-    conditions: list[tuple[pd.Series, pd.Series, str]],
-) -> tuple:
-    """
-    Run a for loop to get the final indices.
-    This iteratively goes through each condition,
-    builds a boolean array,
-    and gets indices for rows that meet the condition requirements.
-    `conditions` is a list of tuples, where a tuple is of the form:
-    `(Series from df, Series from right, operator)`.
-    """
-    booleans = np.ones(left_index.size, dtype=np.bool_)
-    for condition in conditions:
-        left, right, op = condition
-        left = left.array
-        right = right.array
-        op = operator_map[op]
-        mask = op(left, right)
-        if not mask.any():
-            return None
-        if pd.api.types.is_extension_array_dtype(mask):
-            mask = mask.to_numpy(dtype=bool, na_value=False, copy=False)
-        booleans &= mask
-    if not booleans.any():
-        return None
-    if not booleans.all():
-        left_index = left_index[booleans]
-        right_index = right_index[booleans]
-
-    return left_index, right_index
 
 
 def _remove_nulls_multiple_conditions(df: pd.DataFrame, columns: Sequence):

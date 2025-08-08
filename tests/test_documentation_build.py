@@ -25,7 +25,7 @@ def test_docs_general_functions_present():
     # I put in a subsample of general functions.
     # This can be made much more robust.
     rendered_correctly = False
-    directory = Path.cwd().parents[0] / "pyjanitor/site/api"
+    directory = Path.cwd().parents[0] / "pyjanitor/site/api/functions"
     print("dir", directory.exists())
     print("contents", [*directory.iterdir()])
     with open("./site/api/functions.html", "r+") as f:

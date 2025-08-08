@@ -92,8 +92,9 @@ def conditional_join(
     is executed before the equi join - pass `force=True` to force this.
 
     There may be scenarios for an equi-join, where pandas' merge
-    may not be performant - if you have a single equi-join and the
-    columns have a lot of duplicate values;
+    may not be performant - if you have a range join combined
+    with a single equi-join, and the columns involved in the equi-join
+    have a lot of duplicate values;
     pass `use_pandas_merge_for_equi_join=False` for an alternative
     approach that may offer reduced computation time.
 

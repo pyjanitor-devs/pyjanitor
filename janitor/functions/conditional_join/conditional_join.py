@@ -43,7 +43,15 @@ def conditional_join(
     force: bool = False,
     use_pandas_merge_for_equi_join: bool = True,
 ) -> pd.DataFrame:
-    """The conditional_join function operates similarly to `pd.merge`,
+    """
+
+    !!!note
+
+        Before reaching for `conditional_join`,
+        see if `pd.merge`, `pd.merge_asof`, or `pd.IntervalIndex`
+        meets your needs .
+
+    The conditional_join function operates similarly to `pd.merge`,
     but supports joins on inequality operators,
     or a combination of equi and non-equi joins.
 
@@ -603,7 +611,6 @@ def _conditional_join_compute(
             return_ranges=return_ranges,
             row_count=row_count,
         )
-    # return result
     if row_count:
         if (df_columns is not None) and (df_columns != slice(None)):
             df = df.select(columns=df_columns)

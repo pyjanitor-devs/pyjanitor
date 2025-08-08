@@ -209,10 +209,15 @@ def _multiple_conditional_join_eq(
         # based on the sort above
         # we do need to check le_lt though and see if
         # we can steal some perf. there for a true range join
+        # we should only check if it is duplicated
+        # is unique check can sometimes be expensive?
         grouper = equals[0][1]
-        grouped = right.groupby([grouper], sort=False, observed=True)
-        grouped = grouped[le_lt[1]]
-        is_fastpath_range_join = grouped.is_monotonic_increasing.all()
+        if right[grouper].is_unique:
+            is_fastpath_range_join = True
+        else:
+            grouped = right.groupby([grouper], sort=False, observed=True)
+            grouped = grouped[le_lt[1]]
+            is_fastpath_range_join = grouped.is_monotonic_increasing.all()
     # is there any >/>=/</<=?
     elif outcome.get("less_than_or_greater_than"):
         (_, col, _), *conditions = outcome["conditions"]

@@ -156,6 +156,19 @@ def test_indicator_exists(dummy, series):
         dummy.conditional_join(series, ("id", "B", ">"), indicator="id")
 
 
+def test_use_pandas_merge_for_equi_join_type(dummy, series):
+    """Raise TypeError if use_pandas_merge_for_equi_join is not a boolean."""
+    with pytest.raises(
+        TypeError, match="use_pandas_merge_for_equi_join should be one of.+"
+    ):
+        dummy.conditional_join(
+            series,
+            ("id", "B", "=="),
+            ("id", "B", ">"),
+            use_pandas_merge_for_equi_join=1,
+        )
+
+
 def test_check_condition_length(dummy, series):
     """Raise ValueError if any condition is not length 3."""
     with pytest.raises(
@@ -3194,6 +3207,38 @@ def test_dual_conditions_eq_and_ne(df, right):
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
+def test_dual_conditions_eq_and_ne_binary_search(df, right):
+    """Test output for equal and not equal conditions."""
+
+    columns = ["B", "Numeric", "E", "Dates"]
+    expected = (
+        df.dropna(subset=["B"])
+        .merge(
+            right.dropna(subset=["Numeric"]), left_on="B", right_on="Numeric"
+        )
+        .loc[lambda df: df.E.ne(df.Dates), columns]
+        .sort_values(columns, ignore_index=True)
+    )
+
+    actual = (
+        df.dropna(subset=["B"])
+        .conditional_join(
+            right.dropna(subset=["Numeric"]),
+            ("B", "Numeric", "=="),
+            ("E", "Dates", "!="),
+            how="inner",
+            use_pandas_merge_for_equi_join=False,
+        )
+        .sort_values(columns, ignore_index=True)
+        .loc[:, columns]
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
 def test_conditions_eq_and_lt_ne(df, right):
     """Test output for equal and not equal conditions."""
 
@@ -4840,6 +4885,37 @@ def test_ge_eq_and_le_numbers(df, right):
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
+def test_ge_eq_and_le_numbers_binary_search(df, right):
+    """Test output for multiple conditions."""
+
+    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+    expected = (
+        df.merge(
+            right, left_on="B", right_on="Floats", how="inner", sort=False
+        )
+        .loc[lambda df: df.A.ge(df.Integers) & df.E.le(df.Dates), columns]
+        .sort_values(columns, ignore_index=True)
+    )
+
+    actual = (
+        df[["B", "A", "E"]]
+        .conditional_join(
+            right[["Floats", "Integers", "Dates"]],
+            ("A", "Integers", ">="),
+            ("E", "Dates", "<="),
+            ("B", "Floats", "=="),
+            how="inner",
+            use_pandas_merge_for_equi_join=False,
+        )
+        .sort_values(columns, ignore_index=True)
+    )
+    actual = actual.filter(columns)
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
 def test_ge_eq_and_le_numbers_force(df, right):
     """Test output for multiple conditions."""
 
@@ -5308,6 +5384,38 @@ def test_eq_indices(df, right):
     assert_index_equal(expected, actual, check_names=False)
 
 
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
+def test_eq_indices_binary_search(df, right):
+    """compare join indices for single condition."""
+
+    expected = (
+        df.reset_index()
+        .dropna(subset=["E"])
+        .merge(
+            right.dropna(subset=["Dates"]),
+            left_on="E",
+            right_on="Dates",
+            how="inner",
+            sort=False,
+        )
+        .loc[:, "index"]
+    )
+    expected = pd.Index(expected)
+
+    actual, _ = get_join_indices(
+        df,
+        right,
+        [
+            ("E", "Dates", "=="),
+        ],
+        use_pandas_merge_for_equi_join=False,
+    )
+    actual = df.index[actual]
+    assert_index_equal(expected, actual, check_names=False)
+
+
 @pytest.mark.xfail(reason="will need to change the return output")
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
@@ -5740,6 +5848,45 @@ def test_ge_eq_and_le_datess_indices(df, right):
             ("B", "Floats", ">"),
             ("B", "Numeric", "!="),
         ],
+    )
+    actual = df.index[actual]
+    assert_index_equal(expected, actual, check_names=False)
+
+
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
+def test_ge_eq_and_le_datess_indices_binary_search(df, right):
+    """compare join indices for multiple conditions."""
+    expected = (
+        df.dropna(subset="E")
+        .reset_index()
+        .merge(
+            right.dropna(subset="Dates"),
+            left_on="E",
+            right_on="Dates",
+            how="inner",
+            sort=False,
+        )
+        .loc[
+            lambda df: df.B.gt(df.Floats)
+            & df.A.lt(df.Integers)
+            & df.B.ne(df.Numeric),
+            "index",
+        ]
+    )
+    expected = pd.Index(expected)
+
+    actual, _ = get_join_indices(
+        df[["B", "A", "E"]],
+        right[["Floats", "Integers", "Dates", "Numeric"]],
+        [
+            ("A", "Integers", "<"),
+            ("E", "Dates", "=="),
+            ("B", "Floats", ">"),
+            ("B", "Numeric", "!="),
+        ],
+        use_pandas_merge_for_equi_join=False,
     )
     actual = df.index[actual]
     assert_index_equal(expected, actual, check_names=False)
@@ -6788,6 +6935,48 @@ def test_multiple_eq_ne_row_count(df, right):
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
+def test_multiple_eq_ne_row_count_binary_search(df, right):
+    """Test output for multiple conditions."""
+    df = df.assign(index=df.index)
+    expected = (
+        df.merge(right, how="cross")
+        .loc[
+            lambda df: df.A.eq(df.Integers)
+            & df.E.ne(df.Dates)
+            & df.B.eq(df.Floats)
+        ]
+        .groupby(["A", "B", "E", "index"], dropna=False)
+        .size()
+        .rename("counter")
+    )
+    expected = (
+        df.merge(expected, how="left", on=["B", "E", "index"])
+        .assign(counter=lambda df: df.counter.fillna(0).astype(int))
+        .sort_values(["A", "B", "E", "index"], ignore_index=True)
+        .loc[:, ["A", "B", "E", "counter"]]
+    )
+    actual = (
+        df.conditional_join(
+            right,
+            ("A", "Integers", "=="),
+            ("E", "Dates", "!="),
+            ("B", "Floats", "=="),
+            how="left",
+            row_count="counter",
+            df_columns=["A", "B", "E"],
+            use_numba=False,
+            use_pandas_merge_for_equi_join=False,
+        )
+        .astype({"counter": int})
+        .sort_values(["A", "B", "E"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
 def test_multiple_eq_range_row_count(df, right):
     """Test output for multiple conditions."""
     df = df.assign(index=df.index)
@@ -6818,6 +7007,48 @@ def test_multiple_eq_range_row_count(df, right):
             row_count="counter",
             df_columns=["A", "B", "E"],
             use_numba=False,
+        )
+        .astype({"counter": int})
+        .sort_values(["A", "B", "E"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_multiple_eq_range_row_count_binary_search(df, right):
+    """Test output for multiple conditions."""
+    df = df.assign(index=df.index)
+    expected = (
+        df.merge(right, how="cross")
+        .loc[
+            lambda df: df.A.eq(df.Integers)
+            & df.E.lt(df.Dates)
+            & df.B.gt(df.Floats)
+        ]
+        .groupby(["A", "B", "E", "index"], dropna=False)
+        .size()
+        .rename("counter")
+    )
+    expected = (
+        df.merge(expected, how="left", on=["B", "E", "index"])
+        .assign(counter=lambda df: df.counter.fillna(0).astype(int))
+        .sort_values(["A", "B", "E", "index"], ignore_index=True)
+        .loc[:, ["A", "B", "E", "counter"]]
+    )
+    actual = (
+        df.conditional_join(
+            right,
+            ("A", "Integers", "=="),
+            ("E", "Dates", "<"),
+            ("B", "Floats", ">"),
+            how="left",
+            row_count="counter",
+            df_columns=["A", "B", "E"],
+            use_numba=False,
+            use_pandas_merge_for_equi_join=False,
         )
         .astype({"counter": int})
         .sort_values(["A", "B", "E"], ignore_index=True)
@@ -7250,6 +7481,41 @@ def test_extension_array_eq_range():
     assert_frame_equal(expected, actual)
 
 
+def test_extension_array_eq_range_binary_search():
+    """Extension arrays when matching on equality."""
+    df1 = pd.DataFrame(
+        {"id": [1, 1, 1, 2, 2, 3], "value_1": [2, 5, 7, 1, 3, 4]}
+    )
+    df1 = df1.astype({"value_1": "Int64"})
+    df2 = pd.DataFrame(
+        {
+            "id": [1, 1, 1, 1, 2, 2, 2, 3],
+            "value_2A": [0, 3, 7, 12, 0, 2, 3, 1],
+            "value_2B": [1, 5, 9, 15, 1, 4, 6, 3],
+        }
+    )
+    df2 = df2.astype({"value_2A": "Int64", "value_2B": "Int64"})
+    expected = df1.conditional_join(
+        df2,
+        ("id", "id", "=="),
+        ("value_1", "value_2A", ">"),
+        ("value_1", "value_2B", "<"),
+        use_pandas_merge_for_equi_join=False,
+    )
+    expected = expected.drop(columns=("right", "id")).droplevel(
+        axis=1, level=0
+    )
+    actual = (
+        df1.merge(df2, on="id")
+        .loc[
+            lambda df: df.value_1.gt(df.value_2A) & df.value_1.lt(df.value_2B)
+        ]
+        .reset_index(drop=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
 def test_extension_array_eq_range_numba():
     """Extension arrays when matching on equality."""
     df1 = pd.DataFrame(
@@ -7324,7 +7590,6 @@ def test_right_empty():
 def test_no_match():
     """
     Test output for equality merge,
-     where binary search is triggered,
      and there are no matches.
     """
     df1 = pd.DataFrame({"A": [1, 2, 2, 3], "B": range(0, 4)})
@@ -7337,6 +7602,31 @@ def test_no_match():
     actual.columns = list("ABC")
     expected = df1.conditional_join(
         df2, ("A", "A", "=="), ("B", "B", ">")
+    ).drop(columns=("right", "A"))
+    expected.columns = list("ABC")
+
+    assert_frame_equal(expected, actual)
+
+
+def test_no_match_binary_search():
+    """
+    Test output for equality merge,
+     where binary search is triggered,
+     and there are no matches.
+    """
+    df1 = pd.DataFrame({"A": [1, 2, 2, 3], "B": range(0, 4)})
+    df2 = pd.DataFrame({"A": [1, 2, 2, 3], "B": range(4, 8)})
+    actual = (
+        df1.merge(df2, on="A", sort=False)
+        .loc[lambda df: df.B_x > df.B_y]
+        .reset_index(drop=True)
+    )
+    actual.columns = list("ABC")
+    expected = df1.conditional_join(
+        df2,
+        ("A", "A", "=="),
+        ("B", "B", ">"),
+        use_pandas_merge_for_equi_join=False,
     ).drop(columns=("right", "A"))
     expected.columns = list("ABC")
 

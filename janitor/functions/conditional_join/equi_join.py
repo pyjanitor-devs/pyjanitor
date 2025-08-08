@@ -19,7 +19,8 @@ def _multiple_conditional_join_eq(
     use_numba: bool,
     force: bool,
     return_ranges: bool,
-    row_count: Hashable = None,
+    row_count: Hashable | None,
+    use_pandas_merge_for_equi_join: bool,
 ) -> tuple:
     """
     Get indices for multiple conditions,
@@ -150,7 +151,10 @@ def _multiple_conditional_join_eq(
         return None
 
     equals = outcome["equals"]
-    check = _is_binary_search_appropriate(df=df, equals=equals)
+    if use_pandas_merge_for_equi_join:
+        check = False
+    else:
+        check = _is_binary_search_appropriate(df=df, equals=equals)
     if not check:
         left_on = []
         right_on = []

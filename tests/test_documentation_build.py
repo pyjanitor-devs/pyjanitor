@@ -27,7 +27,7 @@ def test_docs_general_functions_present():
     rendered_correctly = False
     directory = Path.cwd().parents[0] / "site/api"
     print("dir", directory.exists())
-    print("contents", [*dir.iterdir()])
+    print("contents", [*directory.iterdir()])
     with open("./site/api/functions.html", "r+") as f:
         for line in f.readlines():
             if "add_columns" in line or "update_where" in line:

@@ -612,6 +612,7 @@ def _conditional_join_compute(
             return_ranges=return_ranges,
             row_count=row_count,
         )
+    # return result
     if row_count:
         if (df_columns is not None) and (df_columns != slice(None)):
             df = df.select(columns=df_columns)

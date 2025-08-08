@@ -352,9 +352,36 @@ def _multiple_conditional_join_eq(
             keep=keep,
         )
     # no range join, but at least one </<=/>/>= is present
-    condition, *conditions = outcome["conditions"]
-    indices["sizes"] = indices["ends"] - indices["starts"]
     indices["booleans"] = np.ones(indices["left_index"].size, dtype=np.int8)
+    if indices["size_is_all_1"]:
+        indices = helpers._build_start_indices(indices=indices)
+        indices = helpers._get_positive_matches(
+            df=df,
+            right=right,
+            indices=indices,
+            conditions=outcome["conditions"],
+            booleans=indices["booleans"],
+        )
+        if indices is None:
+            return None
+        if row_count:
+            return pd.Series(
+                index=indices["left_index"],
+                data=indices["counts_array"],
+                name=row_count,
+            )
+        return helpers._multiple_conditions_get_indices(
+            left_index=indices["left_index"],
+            right_index=indices["right_index"],
+            starts=indices["starts"],
+            start_indices=indices["start_indices"],
+            booleans=indices["booleans"],
+            sizes=indices["sizes"],
+            counts_array=indices["counts_array"],
+            matches=indices["matches"],
+            keep=keep,
+        )
+    condition, *conditions = outcome["conditions"]
     indices = _update_search_indices_equi_join(
         df=df, right=right, indices=indices, condition=condition
     )

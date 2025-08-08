@@ -192,32 +192,16 @@ def _multiple_conditional_join_eq(
         return helpers._keep_output(
             keep=keep, left=left_index, right=right_index
         )
-    # can we steal some performance, if there is a true range join?
-    is_fastpath_range_join = False
     _, col, _ = equals[0]
     sorter = {col: 1}
     ge_gt = None
     le_lt = None
     if outcome.get("is_range_join"):
-        ge_gt, le_lt, *conditions = outcome["conditions"]
-        sorter[col] = 1
+        ge_gt, *conditions = outcome["conditions"]
         _, col, _ = ge_gt
         sorter[col] = 1
         sorter = [*sorter]
         right = right.sort_values(by=sorter, ignore_index=False, kind="stable")
-        # we already know that ge_gt is increasing monotonic,
-        # based on the sort above
-        # we do need to check le_lt though and see if
-        # we can steal some perf. there for a true range join
-        # we should only check if it is duplicated
-        # is unique check can sometimes be expensive?
-        grouper = equals[0][1]
-        if right[grouper].is_unique:
-            is_fastpath_range_join = True
-        else:
-            grouped = right.groupby([grouper], sort=False, observed=True)
-            grouped = grouped[le_lt[1]]
-            is_fastpath_range_join = grouped.is_monotonic_increasing.all()
     # is there any >/>=/</<=?
     elif outcome.get("less_than_or_greater_than"):
         (_, col, _), *conditions = outcome["conditions"]
@@ -237,12 +221,15 @@ def _multiple_conditional_join_eq(
     if indices is None:
         return None
     left_index, right_index, starts, ends = indices
+    sizes = ends - starts
+    size_is_all_1 = (sizes == 1).all()
     indices = dict(
         left_index=left_index,
         right_index=right_index,
         starts=starts,
         ends=ends,
-        sizes=ends - starts,
+        sizes=sizes,
+        size_is_all_1=size_is_all_1,
     )
     if return_ranges and not outcome.get("conditions"):
         return indices
@@ -288,6 +275,24 @@ def _multiple_conditional_join_eq(
             keep=keep,
         )
     # range join only
+    is_fastpath_range_join = False
+    if outcome.get("is_range_join") and not size_is_all_1:
+        # we already know that ge_gt is increasing monotonic,
+        # (we sorted on both eq and ge_gt)
+        # we do need to check le_lt though and see if
+        # we can steal some perf. there for a true range join
+        # if it is, then we can use a binary search
+        # to skip non matched entries
+        # no point doing a binary search here
+        # ideally it should be duplicated enough
+        # to justify the check
+        # for a size of 1, a linear search will be much faster
+        grouper = outcome["equals"]
+        grouper = grouper[0][1]
+        grouped = right.groupby([grouper], sort=False, observed=True)
+        le_lt = outcome["conditions"][1][1]
+        grouped = grouped[le_lt]
+        is_fastpath_range_join = grouped.is_monotonic_increasing.all()
     if is_fastpath_range_join:
         ge_gt, le_lt, *conditions = outcome["conditions"]
         indices = _get_prelim_indices_range_join(

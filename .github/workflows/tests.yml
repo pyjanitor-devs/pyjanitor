@@ -47,11 +47,14 @@ jobs:
           environment-file: environment-dev.yml
           miniforge-version: latest
 
+      - name: Run setup inplace
+        run: python setup.py build_ext --inplace
+
+
       - name: Install pyjanitor
         run: python -m pip install -e .
 
-      - name: Run setup inplace
-        run: python setup.py build_ext --inplace
+
 
       - name: Run docstrings tests
         run: pytest -v -r a -n auto --color=yes --durations=0 --cov=janitor --cov-append --cov-report term-missing --cov-report xml --doctest-only janitor

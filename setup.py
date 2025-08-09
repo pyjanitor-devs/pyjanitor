@@ -125,8 +125,8 @@ def generate_long_description() -> str:
 if USE_CYTHON:
     ext_modules = [
         Extension(
-            "janitor.cython_functions.cond_join",
-            [
+            name="janitor.cython_functions.cond_join",
+            sources=[
                 "./janitor/cython_functions/cond_join.py",
             ],
         )
@@ -135,8 +135,8 @@ if USE_CYTHON:
 else:
     ext_modules = [
         Extension(
-            "janitor.cython_functions.cond_join",
-            [
+            name="janitor.cython_functions.cond_join",
+            sources=[
                 "./janitor/cython_functions/cond_join.c",
             ],
         )

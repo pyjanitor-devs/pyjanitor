@@ -51,8 +51,6 @@ jobs:
       - name: Install pyjanitor
         run: python -m pip install -e . -vvv --isolated
 
-
-
       - name: Run docstrings tests
         run: pytest -v -r a -n auto --color=yes --durations=0 --cov=janitor --cov-append --cov-report term-missing --cov-report xml --doctest-only janitor
 

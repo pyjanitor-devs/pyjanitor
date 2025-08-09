@@ -48,6 +48,7 @@ markers = [
 ]
 addopts = [
     "--import-mode=importlib",
+    "--numprocesses=auto"
 ]
 
 

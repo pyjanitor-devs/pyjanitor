@@ -47,9 +47,6 @@ jobs:
           environment-file: environment-dev.yml
           miniforge-version: latest
 
-      - name: Run setup inplace
-        run: python setup.py build_ext --inplace
-
 
       - name: Install pyjanitor
         run: python -m pip install -e . -vvv --isolated

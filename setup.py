@@ -8,6 +8,13 @@ from pprint import pprint
 
 from setuptools import Extension, find_packages, setup
 
+try:
+    from Cython.Build import cythonize
+
+    USE_CYTHON = True
+except ImportError:
+    USE_CYTHON = False
+
 HERE = os.path.abspath(os.path.dirname(__file__))
 
 
@@ -115,14 +122,25 @@ def generate_long_description() -> str:
     return long_description
 
 
-ext_modules = [
-    Extension(
-        "janitor.cython_functions.cond_join",
-        [
-            "./janitor/cython_functions/cond_join.c",
-        ],
-    )
-]
+if USE_CYTHON:
+    ext_modules = [
+        Extension(
+            "janitor.cython_functions.cond_join",
+            [
+                "./janitor/cython_functions/cond_join.py",
+            ],
+        )
+    ]
+    ext_modules = cythonize(ext_modules)
+else:
+    ext_modules = [
+        Extension(
+            "janitor.cython_functions.cond_join",
+            [
+                "./janitor/cython_functions/cond_join.c",
+            ],
+        )
+    ]
 
 setup(
     name="pyjanitor",

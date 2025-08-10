@@ -149,6 +149,17 @@ def _multiple_conditional_join_le_lt(
         )
     # range join
     ge_gt, le_lt, *conditions = outcome["conditions"]
+    right_is_sorted = False
+    check1 = right[ge_gt[1]].is_monotonic_increasing
+    if check1:
+        right_is_sorted = True
+    check2 = right[le_lt[1]].is_monotonic_increasing
+    if not all((check1, check2)):
+        sorter = {}
+        sorter[ge_gt[1]] = 1
+        sorter[le_lt[1]] = 1
+        sorter = [*sorter]
+        right = right.sort_values(by=sorter, ignore_index=False, kind="stable")
     indices = _range_indices(
         df=df,
         right=right,
@@ -157,6 +168,7 @@ def _multiple_conditional_join_le_lt(
     )
     if indices is None:
         return None
+    indices["right_is_sorted"] = right_is_sorted
     if condition := indices.get("condition"):
         conditions = [condition] + conditions
     if indices.get("fastpath") and not conditions:
@@ -165,17 +177,15 @@ def _multiple_conditional_join_le_lt(
             right_index=indices["right_index"],
             starts=indices["starts"],
             ends=indices["ends"],
+            sizes=indices["sizes"],
             booleans=indices["booleans"],
             right_is_sorted=indices.get("right_is_sorted"),
             row_count=row_count,
             return_ranges=return_ranges,
+            total=indices["total"],
+            matches=indices["matches"],
             keep=keep,
         )
-    booleans = indices["booleans"]
-    sizes = indices["ends"] - indices["starts"]
-    if not booleans.all():
-        sizes = np.where(booleans, sizes, 0)
-    indices["sizes"] = sizes
     indices = helpers._build_start_indices(indices=indices)
     booleans = indices["booleans"].astype(np.int8, copy=False)
     indices = helpers._get_positive_matches(
@@ -256,32 +266,28 @@ def _get_indices_fastpath_range_joins_dual(
     right_index: np.ndarray,
     starts: np.ndarray,
     ends: np.ndarray,
+    sizes: np.ndarray,
     booleans: np.ndarray,
     right_is_sorted: bool,
     row_count: Hashable,
     return_ranges: bool,
+    total: int,
+    matches: int,
     keep: str,
 ) -> tuple[np.ndarray, np.ndarray] | pd.Series | dict:
     """
     Get indices if both right columns are sorted,
     and the number of join conditions is 2
     """
-    left_index = left_index
-    right_index = right_index
-    starts = starts
-    ends = ends
-    booleans = booleans
     if row_count:
-        data = ends - starts
-        if not booleans.all():
-            data = np.where(booleans, data, 0)
         return pd.Series(
             index=left_index,
-            data=data,
+            data=sizes,
             name=row_count,
         )
     if return_ranges:
         if not booleans.all():
+            booleans = booleans.astype(np.bool_, copy=False)
             starts = starts[booleans]
             ends = ends[booleans]
             left_index = left_index[booleans]
@@ -291,22 +297,18 @@ def _get_indices_fastpath_range_joins_dual(
             starts=starts,
             ends=ends,
         )
-
     if (keep == "first") and right_is_sorted:
         if not booleans.all():
+            booleans = booleans.astype(np.bool_, copy=False)
             starts = starts[booleans]
             left_index = left_index[booleans]
         return left_index, right_index[starts]
     if (keep == "last") and right_is_sorted:
         if not booleans.all():
+            booleans = booleans.astype(np.bool_, copy=False)
             ends = ends[booleans]
             left_index = left_index[booleans]
         return left_index, right_index[ends - 1]
-    total = ends - starts
-    if not booleans.all():
-        total = np.where(booleans, total, 0)
-    matches = booleans.sum()
-    booleans = booleans.astype(np.int8, copy=False)
     return helpers._build_indices_fast_path_range_join_only(
         left_index=left_index,
         right_index=right_index,
@@ -314,7 +316,7 @@ def _get_indices_fastpath_range_joins_dual(
         ends=ends,
         booleans=booleans,
         keep=keep,
-        total=total.sum(),
+        total=total,
         matches=matches,
     )
 
@@ -340,64 +342,48 @@ def _range_indices(
     # this should reduce the search space
     left_on, right_on, op = first
     left_c = df[left_on]
-    right_c, right_is_sorted = helpers._sort_if_not_monotonic(
-        series=right[right_on]
+    right_c = right[right_on]
+    length = len(df)
+    len_right = len(right)
+    starts = np.zeros(length, dtype=np.intp)
+    ends = np.empty(length, dtype=np.intp)
+    ends[:] = len_right
+    booleans = np.ones(length, dtype=np.int8)
+    sizes = np.empty(length, dtype=np.intp)
+    sizes[:] = len_right
+    indices = dict(
+        left_index=df.index._values,
+        right_index=right.index._values,
+        starts=starts,
+        ends=ends,
+        sizes=sizes,
+        booleans=booleans,
     )
-    outcome = helpers._greater_than_indices(
-        left=left_c.array,
-        left_index=left_c.index.values,
-        right=right_c.array,
-        strict=op == helpers._JoinOperator.GREATER_THAN.value,
+    indices = helpers._update_search_indices(
+        left_array=df[left_on]._values,
+        right_array=right[right_on]._values,
+        indices=indices,
+        op=op,
     )
-
-    if outcome is None:
+    if indices is None:
         return None
-    left_index, ends = outcome
     left_on, right_on, op = second
-    right_index = right_c.index.values
-    right_c = right.loc[right_index, right_on]
-    left_c = df.loc[left_index, left_on]
+    right_c = right[right_on]
+    left_c = df[left_on]
     # if True, we can use a binary search
     # for more performance, instead of a linear search
     fastpath = right_c.is_monotonic_increasing
     if not fastpath:
         right_c = right_c.cummax()
-    outcome = helpers._less_than_indices(
-        left=left_c.array,
-        left_index=left_c.index.values,
-        right=right_c.array,
-        strict=op == helpers._JoinOperator.LESS_THAN.value,
+    indices = helpers._update_search_indices(
+        left_array=left_c._values,
+        right_array=right_c._values,
+        indices=indices,
+        op=op,
     )
-    if outcome is None:
+    if indices is None:
         return None
-    left_c, starts = outcome
-    if left_c.size < left_index.size:
-        keep_rows = np.isin(left_index, left_c, assume_unique=True)
-        ends = ends[keep_rows]
-        left_index = left_c
-    # no point searching within (a, b)
-    # if a == b
-    # since range(a, b) yields none
-    booleans = starts < ends
-    if not booleans.any():
-        return None
-    if fastpath:
-        return dict(
-            left_index=left_index,
-            right_index=right_index,
-            starts=starts,
-            ends=ends,
-            fastpath=fastpath,
-            right_is_sorted=right_is_sorted,
-            booleans=booleans,
-        )
-
-    return dict(
-        left_index=left_index,
-        right_index=right_index,
-        starts=starts,
-        ends=ends,
-        condition=second,
-        fastpath=fastpath,
-        booleans=booleans,
-    )
+    indices["fastpath"] = fastpath
+    if not fastpath:
+        indices["condition"] = second
+    return indices

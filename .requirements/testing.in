@@ -1,6 +1,5 @@
 pytest-cov
 pytest-xdist
-pytest-sugar
 pytest>=3.4.2
 hypothesis>=4.4.0
 interrogate

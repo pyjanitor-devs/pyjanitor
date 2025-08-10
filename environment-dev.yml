@@ -40,7 +40,6 @@ dependencies:
   - pytest
   - pytest-cov
   - pytest-xdist
-  - pytest-sugar
   - pytest-doctestplus
   - python-language-server
   - rdkit

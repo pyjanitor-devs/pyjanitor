@@ -4,6 +4,9 @@ from typing import Hashable, Sequence
 
 import numpy as np
 import pandas as pd
+from pandas.core.algorithms import take_nd
+from pandas.core.construction import sanitize_array
+from pandas.core.indexes.base import Index
 
 from janitor.cython_functions import cond_join
 
@@ -794,7 +797,12 @@ def _convert_to_numpy(
         array_dtype = left.dtype.numpy_dtype
         left = left.to_numpy(dtype=array_dtype, na_value=-1, copy=False)
         right = right.to_numpy(dtype=array_dtype, na_value=-1, copy=False)
-    if pd.api.types.is_datetime64_dtype(left):
+    if pd.api.types.is_timedelta64_dtype(left):
+        left = left.to_numpy(copy=False)
+        right = right.to_numpy(copy=False)
+    if pd.api.types.is_datetime64_dtype(
+        left
+    ) or pd.api.types.is_timedelta64_dtype(left):
         left = left.view(np.int64)
         right = right.view(np.int64)
     return left, right
@@ -922,10 +930,77 @@ def construct_1d_array_from_inferred_fill_value(
 ) -> np.ndarray:
     # Find our empty_value dtype by constructing an array
     #  from our value and doing a .take on it
-    from pandas.core.algorithms import take_nd
-    from pandas.core.construction import sanitize_array
-    from pandas.core.indexes.base import Index
-
     arr = sanitize_array(value, Index(range(1)), copy=False)
     taker = -1 * np.ones(length, dtype=np.intp)
     return take_nd(arr, taker)
+
+
+def _update_search_indices(
+    left_array: np.ndarray,
+    right_array: np.ndarray,
+    indices: dict,
+    op: str,
+):
+    """
+    Update `starts` or `ends`
+    """
+    left_array, right_array = _convert_to_numpy(
+        left=left_array, right=right_array
+    )
+    new_ends = None
+    new_starts = None
+    if op == ">":
+        new_ends, booleans, sizes, total, matches = (
+            cond_join.update_search_indices_greater_than_strict(
+                left_array=left_array,
+                right_array=right_array,
+                starts=indices["starts"],
+                ends=indices["ends"],
+                booleans=indices["booleans"],
+                sizes=indices["sizes"],
+            )
+        )
+    elif op == ">=":
+        new_ends, booleans, sizes, total, matches = (
+            cond_join.update_search_indices_greater_than(
+                left_array=left_array,
+                right_array=right_array,
+                starts=indices["starts"],
+                ends=indices["ends"],
+                booleans=indices["booleans"],
+                sizes=indices["sizes"],
+            )
+        )
+    elif op == "<":
+        new_starts, booleans, sizes, total, matches = (
+            cond_join.update_search_indices_less_than_strict(
+                left_array=left_array,
+                right_array=right_array,
+                starts=indices["starts"],
+                ends=indices["ends"],
+                booleans=indices["booleans"],
+                sizes=indices["sizes"],
+            )
+        )
+    elif op == "<=":
+        new_starts, booleans, sizes, total, matches = (
+            cond_join.update_search_indices_less_than(
+                left_array=left_array,
+                right_array=right_array,
+                starts=indices["starts"],
+                ends=indices["ends"],
+                booleans=indices["booleans"],
+                sizes=indices["sizes"],
+            )
+        )
+    if matches == 0:
+        return None
+    if new_ends is not None:
+        indices["ends"] = new_ends
+    if new_starts is not None:
+        indices["starts"] = new_starts
+    indices["booleans"] = booleans
+    indices["total"] = total
+    indices["matches"] = matches
+    indices["sizes"] = sizes
+    return indices

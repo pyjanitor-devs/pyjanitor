@@ -152,10 +152,10 @@ def _multiple_conditional_join_eq(
 
     equals = outcome["equals"]
     if use_pandas_merge_for_equi_join:
-        check = False
+        use_binary_search = False
     else:
-        check = _is_binary_search_appropriate(df=df, equals=equals)
-    if not check:
+        use_binary_search = _is_binary_search_appropriate(df=df, equals=equals)
+    if not use_binary_search:
         left_on = []
         right_on = []
         for l_col, r_col, _ in equals:
@@ -197,8 +197,10 @@ def _multiple_conditional_join_eq(
     ge_gt = None
     le_lt = None
     if outcome.get("is_range_join"):
-        ge_gt, *conditions = outcome["conditions"]
+        ge_gt, le_lt, *conditions = outcome["conditions"]
         _, col, _ = ge_gt
+        sorter[col] = 1
+        _, col, _ = le_lt
         sorter[col] = 1
         sorter = [*sorter]
         right = right.sort_values(by=sorter, ignore_index=False, kind="stable")

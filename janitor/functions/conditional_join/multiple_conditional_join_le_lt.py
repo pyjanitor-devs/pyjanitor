@@ -344,13 +344,11 @@ def _range_indices(
     left_c = df[left_on]
     right_c = right[right_on]
     length = len(df)
-    len_right = len(right)
     starts = np.zeros(length, dtype=np.intp)
     ends = np.empty(length, dtype=np.intp)
-    ends[:] = len_right
+    ends[:] = len(right)
     booleans = np.ones(length, dtype=np.int8)
-    sizes = np.empty(length, dtype=np.intp)
-    sizes[:] = len_right
+    sizes = np.zeros(length, dtype=np.intp)
     indices = dict(
         left_index=df.index._values,
         right_index=right.index._values,

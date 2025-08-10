@@ -942,7 +942,7 @@ def _update_search_indices(
     op: str,
 ):
     """
-    Update `starts` or `ends`
+    Update `starts` or `ends` for non-equi
     """
     left_array, right_array = _convert_to_numpy(
         left=left_array, right=right_array
@@ -1003,4 +1003,55 @@ def _update_search_indices(
     indices["total"] = total
     indices["matches"] = matches
     indices["sizes"] = sizes
+    return indices
+
+
+def _update_search_indices_equi(
+    left_array: np.ndarray,
+    right_array: np.ndarray,
+):
+    """
+    Update `starts` or `ends` for equi
+    """
+    length = left_array.size
+    booleans = np.ones(length, dtype=np.int8)
+    sizes = np.zeros(length, dtype=np.intp)
+    starts = np.zeros(length, dtype=np.intp)
+    ends = np.empty(length, dtype=np.intp)
+    ends[:] = right_array.size
+    left_array, right_array = _convert_to_numpy(
+        left=left_array, right=right_array
+    )
+    starts, booleans, sizes, total, matches = (
+        cond_join.update_search_indices_strictly_equal_min(
+            left_array=left_array,
+            right_array=right_array,
+            starts=starts,
+            ends=ends,
+            booleans=booleans,
+            sizes=sizes,
+        )
+    )
+    if matches == 0:
+        return None
+    ends, booleans, sizes, total, matches = (
+        cond_join.update_search_indices_strictly_equal_max(
+            left_array=left_array,
+            right_array=right_array,
+            starts=starts,
+            ends=ends,
+            booleans=booleans,
+            sizes=sizes,
+        )
+    )
+    if matches == 0:
+        return None
+    indices = {
+        "starts": starts,
+        "ends": ends,
+        "booleans": booleans,
+        "total": total,
+        "matches": matches,
+        "sizes": sizes,
+    }
     return indices

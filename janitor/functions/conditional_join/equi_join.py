@@ -4,8 +4,6 @@ import numpy as np
 import pandas as pd
 from pandas.core.reshape.merge import _MergeOperation
 
-from janitor.cython_functions import cond_join
-
 from . import helpers
 from .multiple_conditional_join_le_lt import _multiple_conditional_join_le_lt
 from .numba_equi_join import _numba_equi_join
@@ -194,8 +192,6 @@ def _multiple_conditional_join_eq(
         )
     _, col, _ = equals[0]
     sorter = {col: 1}
-    ge_gt = None
-    le_lt = None
     if outcome.get("is_range_join"):
         ge_gt, le_lt, *conditions = outcome["conditions"]
         _, col, _ = ge_gt
@@ -218,21 +214,16 @@ def _multiple_conditional_join_eq(
             right = right.sort_values(
                 by=sorter, ignore_index=False, kind="stable"
             )
-    l_col, r_col, _ = equals[0]
-    indices = helpers._equal_indices(left=df[l_col], right=right[r_col])
+    left_on, right_on, _ = equals[0]
+    left_c = df[left_on]
+    right_c = right[right_on]
+    indices = helpers._update_search_indices_equi(
+        left_array=left_c._values, right_array=right_c._values
+    )
     if indices is None:
         return None
-    left_index, right_index, starts, ends = indices
-    sizes = ends - starts
-    size_is_all_1 = (sizes == 1).all()
-    indices = dict(
-        left_index=left_index,
-        right_index=right_index,
-        starts=starts,
-        ends=ends,
-        sizes=sizes,
-        size_is_all_1=size_is_all_1,
-    )
+    indices["left_index"] = df.index._values
+    indices["right_index"] = right.index._values
     if return_ranges and not outcome.get("conditions"):
         return indices
     if not outcome.get("conditions"):
@@ -241,10 +232,10 @@ def _multiple_conditional_join_eq(
             right_index=indices["right_index"],
             starts=indices["starts"],
             ends=indices["ends"],
-            booleans=np.ones(indices["left_index"].size, dtype=np.int8),
+            booleans=indices["booleans"],
             keep=keep,
-            total=indices["sizes"].sum(),
-            matches=indices["left_index"].size,
+            total=indices["total"],
+            matches=indices["matches"],
         )
     # != only
     if not outcome.get("less_than_or_greater_than"):
@@ -278,7 +269,8 @@ def _multiple_conditional_join_eq(
         )
     # range join only
     is_fastpath_range_join = False
-    if outcome.get("is_range_join") and not size_is_all_1:
+    max_size_is_1 = indices["sizes"].max() == 1
+    if outcome.get("is_range_join") and not max_size_is_1:
         # we already know that ge_gt is increasing monotonic,
         # (we sorted on both eq and ge_gt)
         # we do need to check le_lt though and see if
@@ -288,7 +280,10 @@ def _multiple_conditional_join_eq(
         # no point doing a binary search here
         # ideally it should be duplicated enough
         # to justify the check
-        # for a size of 1, a linear search will be much faster
+        # for a max size of 1, a linear search will be much faster
+        # TODO: instead of a max size of 1
+        # should we set a miminum threshold for linear search?
+        # maybe 50?100?500?
         grouper = outcome["equals"]
         grouper = grouper[0][1]
         grouped = right.groupby([grouper], sort=False, observed=True)
@@ -297,8 +292,23 @@ def _multiple_conditional_join_eq(
         is_fastpath_range_join = grouped.is_monotonic_increasing.all()
     if is_fastpath_range_join:
         ge_gt, le_lt, *conditions = outcome["conditions"]
-        indices = _get_prelim_indices_range_join(
-            df=df, right=right, le_lt=le_lt, ge_gt=ge_gt, indices=indices
+        left_on, right_on, op = ge_gt
+        left_array = df[left_on]._values
+        right_array = right[right_on]._values
+        indices = helpers._update_search_indices(
+            left_array=df[left_on]._values,
+            right_array=right[right_on]._values,
+            indices=indices,
+            op=op,
+        )
+        if indices is None:
+            return None
+        left_on, right_on, op = le_lt
+        indices = helpers._update_search_indices(
+            left_array=df[left_on]._values,
+            right_array=right[right_on]._values,
+            indices=indices,
+            op=op,
         )
         if indices is None:
             return None
@@ -354,8 +364,7 @@ def _multiple_conditional_join_eq(
             keep=keep,
         )
     # no range join, but at least one </<=/>/>= is present
-    indices["booleans"] = np.ones(indices["left_index"].size, dtype=np.int8)
-    if indices["size_is_all_1"]:
+    if max_size_is_1:
         indices = helpers._build_start_indices(indices=indices)
         indices = helpers._get_positive_matches(
             df=df,
@@ -383,9 +392,11 @@ def _multiple_conditional_join_eq(
             matches=indices["matches"],
             keep=keep,
         )
-    condition, *conditions = outcome["conditions"]
-    indices = _update_search_indices_equi_join(
-        df=df, right=right, indices=indices, condition=condition
+    (left_on, right_on, op), *conditions = outcome["conditions"]
+    left_array = df[left_on]._values
+    right_array = right[right_on]._values
+    indices = helpers._update_search_indices(
+        left_array=left_array, right_array=right_array, indices=indices, op=op
     )
     if indices is None:
         return None
@@ -427,108 +438,6 @@ def _multiple_conditional_join_eq(
         matches=indices["matches"],
         keep=keep,
     )
-
-
-def _update_search_indices_equi_join(
-    df: pd.DataFrame,
-    right: pd.DataFrame,
-    indices: dict,
-    condition: tuple,
-):
-    """
-    Update `starts` or `ends` for an equi join
-    """
-    left_on, right_on, op = condition
-    left_array = df.loc[indices["left_index"], left_on]._values
-    right_array = right.loc[indices["right_index"], right_on]._values
-    left_array, right_array = helpers._convert_to_numpy(
-        left=left_array, right=right_array
-    )
-    new_ends = None
-    new_starts = None
-    if op == ">":
-        new_ends, booleans, sizes, total, matches = (
-            cond_join.update_search_indices_greater_than_strict(
-                left_array=left_array,
-                right_array=right_array,
-                starts=indices["starts"],
-                ends=indices["ends"],
-                booleans=indices["booleans"],
-                sizes=indices["sizes"],
-            )
-        )
-    elif op == ">=":
-        new_ends, booleans, sizes, total, matches = (
-            cond_join.update_search_indices_greater_than(
-                left_array=left_array,
-                right_array=right_array,
-                starts=indices["starts"],
-                ends=indices["ends"],
-                booleans=indices["booleans"],
-                sizes=indices["sizes"],
-            )
-        )
-    elif op == "<":
-        new_starts, booleans, sizes, total, matches = (
-            cond_join.update_search_indices_less_than_strict(
-                left_array=left_array,
-                right_array=right_array,
-                starts=indices["starts"],
-                ends=indices["ends"],
-                booleans=indices["booleans"],
-                sizes=indices["sizes"],
-            )
-        )
-    elif op == "<=":
-        new_starts, booleans, sizes, total, matches = (
-            cond_join.update_search_indices_less_than(
-                left_array=left_array,
-                right_array=right_array,
-                starts=indices["starts"],
-                ends=indices["ends"],
-                booleans=indices["booleans"],
-                sizes=indices["sizes"],
-            )
-        )
-    if matches == 0:
-        return None
-    if new_ends is not None:
-        indices["ends"] = new_ends
-    if new_starts is not None:
-        indices["starts"] = new_starts
-    indices["booleans"] = booleans
-    indices["total"] = total
-    indices["matches"] = matches
-    indices["sizes"] = sizes
-    return indices
-
-
-def _get_prelim_indices_range_join(
-    df: pd.DataFrame,
-    right: pd.DataFrame,
-    le_lt: tuple,
-    ge_gt: tuple,
-    indices: dict,
-):
-    """
-    Get preliminary indices for a range join
-    """
-    indices["sizes"] = np.zeros(indices["left_index"].size, dtype=np.intp)
-    indices["booleans"] = np.ones(indices["left_index"].size, dtype=np.int8)
-    indices = _update_search_indices_equi_join(
-        df=df,
-        right=right,
-        indices=indices,
-        condition=ge_gt,
-    )
-    if indices is None:
-        return None
-    indices = _update_search_indices_equi_join(
-        df=df, right=right, condition=le_lt, indices=indices
-    )
-    if indices is None:
-        return None
-    return indices
 
 
 def _is_binary_search_appropriate(df: pd.DataFrame, equals: list) -> bool:

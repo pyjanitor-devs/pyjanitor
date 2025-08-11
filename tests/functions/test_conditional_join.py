@@ -5380,7 +5380,7 @@ def test_eq_indices(df, right):
             ("E", "Dates", "=="),
         ],
     )
-    actual = df.index[actual]
+    actual = pd.Index(actual)
     assert_index_equal(expected, actual, check_names=False)
 
 
@@ -5404,7 +5404,7 @@ def test_eq_indices_binary_search(df, right):
     )
     expected = pd.Index(expected)
 
-    actual, _ = get_join_indices(
+    actual = get_join_indices(
         df,
         right,
         [
@@ -5412,11 +5412,14 @@ def test_eq_indices_binary_search(df, right):
         ],
         use_pandas_merge_for_equi_join=False,
     )
-    actual = df.index[actual]
+    if isinstance(actual, tuple):
+        actual, _ = actual
+    else:
+        actual = actual["left_index"]
+    actual = pd.Index(actual)
     assert_index_equal(expected, actual, check_names=False)
 
 
-@pytest.mark.skip(reason="will need to change the return output")
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
@@ -5436,10 +5439,9 @@ def test_eq_indices_ragged_arrays(df, right):
         .loc[:, ["lindex", "rindex"]]
         .sort_values(["lindex", "rindex"])
     )
-    rindex = pd.Index(expected["rindex"])
     lindex = pd.Index(expected["lindex"])
 
-    lactual, ractual = get_join_indices(
+    actual, _ = get_join_indices(
         df,
         right,
         [
@@ -5447,25 +5449,10 @@ def test_eq_indices_ragged_arrays(df, right):
         ],
         return_ranges=True,
     )
-    if isinstance(ractual, (slice, list)):
-        ractual = [right.index[arr] for arr in ractual]
-        lengths = [len(arr) for arr in ractual]
-        ractual = np.concatenate(ractual)
-        ractual = pd.Index(ractual)
-        lactual = pd.Index(lactual).repeat(lengths)
-    ractual = pd.Index(ractual)
-    lactual = pd.Index(lactual)
-    sorter = np.lexsort((ractual, lactual))
-    lactual = lactual[sorter]
-    ractual = ractual[sorter]
-    sorter = np.lexsort((rindex, lindex))
-    lindex = lindex[sorter]
-    rindex = rindex[sorter]
-    assert_index_equal(rindex, ractual, check_names=False)
-    assert_index_equal(lindex, lactual, check_names=False)
+    actual = pd.Index(actual)
+    assert_index_equal(lindex, actual, check_names=False)
 
 
-@pytest.mark.skip(reason="will need to change the return output")
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
@@ -5479,10 +5466,9 @@ def test_le_indices_ragged_arrays(df, right):
         )
         .loc[lambda df: df.E.le(df.Dates), ["lindex", "rindex"]]
     )
-    rindex = pd.Index(expected["rindex"])
-    lindex = pd.Index(expected["lindex"])
+    lindex = pd.Index(expected["lindex"]).unique()
 
-    lactual, ractual = get_join_indices(
+    actual = get_join_indices(
         df,
         right,
         [
@@ -5490,26 +5476,14 @@ def test_le_indices_ragged_arrays(df, right):
         ],
         return_ranges=True,
     )
-    if isinstance(ractual, list):
-        ractual = [right.index[arr] for arr in ractual]
-        lengths = [len(arr) for arr in ractual]
-        ractual = np.concatenate(ractual)
-        lactual = pd.Index(lactual).repeat(lengths)
-    ractual = pd.Index(ractual)
-    lactual = pd.Index(lactual)
-    ractual = pd.Index(ractual)
-    lactual = pd.Index(lactual)
-    sorter = np.lexsort((ractual, lactual))
-    lactual = lactual[sorter]
-    ractual = ractual[sorter]
-    sorter = np.lexsort((rindex, lindex))
-    lindex = lindex[sorter]
-    rindex = rindex[sorter]
-    assert_index_equal(rindex, ractual, check_names=False)
-    assert_index_equal(lindex, lactual, check_names=False)
+    if isinstance(actual, tuple):
+        actual, _ = actual
+    else:
+        actual = actual["left_index"]
+    actual = pd.Index(actual).unique()
+    assert_index_equal(lindex, actual, check_names=False)
 
 
-@pytest.mark.skip(reason="will need to change the return output")
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
@@ -5524,10 +5498,9 @@ def test_lt_indices_ragged_arrays(df, right):
         )
         .loc[lambda df: df.E.lt(df.Dates), ["lindex", "rindex"]]
     )
-    rindex = pd.Index(expected["rindex"])
-    lindex = pd.Index(expected["lindex"])
+    lindex = pd.Index(expected["lindex"]).unique()
 
-    lactual, ractual = get_join_indices(
+    actual = get_join_indices(
         df,
         right,
         [
@@ -5535,24 +5508,14 @@ def test_lt_indices_ragged_arrays(df, right):
         ],
         return_ranges=True,
     )
-    if isinstance(ractual, list):
-        ractual = [right.index[arr] for arr in ractual]
-        lengths = [len(arr) for arr in ractual]
-        ractual = np.concatenate(ractual)
-        lactual = pd.Index(lactual).repeat(lengths)
-    ractual = pd.Index(ractual)
-    lactual = pd.Index(lactual)
-    sorter = np.lexsort((ractual, lactual))
-    lactual = lactual[sorter]
-    ractual = ractual[sorter]
-    sorter = np.lexsort((rindex, lindex))
-    lindex = lindex[sorter]
-    rindex = rindex[sorter]
-    assert_index_equal(rindex, ractual, check_names=False)
-    assert_index_equal(lindex, lactual, check_names=False)
+    if isinstance(actual, tuple):
+        actual, _ = actual
+    else:
+        actual = actual["left_index"]
+    actual = pd.Index(actual).unique()
+    assert_index_equal(lindex, actual, check_names=False)
 
 
-@pytest.mark.skip(reason="will need to change the return output")
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
@@ -5567,10 +5530,9 @@ def test_gt_indices_ragged_arrays(df, right):
         )
         .loc[lambda df: df.E.gt(df.Dates), ["lindex", "rindex"]]
     )
-    rindex = pd.Index(expected["rindex"])
-    lindex = pd.Index(expected["lindex"])
+    lindex = pd.Index(expected["lindex"]).unique()
 
-    lactual, ractual = get_join_indices(
+    actual = get_join_indices(
         df,
         right,
         [
@@ -5578,24 +5540,14 @@ def test_gt_indices_ragged_arrays(df, right):
         ],
         return_ranges=True,
     )
-    if isinstance(ractual, list):
-        ractual = [right.index[arr] for arr in ractual]
-        lengths = [len(arr) for arr in ractual]
-        ractual = np.concatenate(ractual)
-        lactual = pd.Index(lactual).repeat(lengths)
-    ractual = pd.Index(ractual)
-    lactual = pd.Index(lactual)
-    sorter = np.lexsort((ractual, lactual))
-    lactual = lactual[sorter]
-    ractual = ractual[sorter]
-    sorter = np.lexsort((rindex, lindex))
-    lindex = lindex[sorter]
-    rindex = rindex[sorter]
-    assert_index_equal(rindex, ractual, check_names=False)
-    assert_index_equal(lindex, lactual, check_names=False)
+    if isinstance(actual, tuple):
+        actual, _ = actual
+    else:
+        actual = actual["left_index"]
+    actual = pd.Index(actual).unique()
+    assert_index_equal(lindex, actual, check_names=False)
 
 
-@pytest.mark.skip(reason="will need to change the return output")
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
@@ -5611,10 +5563,9 @@ def test_ge_indices_ragged_arrays(df, right):
         )
         .loc[lambda df: df.E.ge(df.Dates), ["lindex", "rindex"]]
     )
-    rindex = pd.Index(expected["rindex"])
-    lindex = pd.Index(expected["lindex"])
+    lindex = pd.Index(expected["lindex"]).unique()
 
-    lactual, ractual = get_join_indices(
+    actual = get_join_indices(
         df,
         right,
         [
@@ -5622,24 +5573,14 @@ def test_ge_indices_ragged_arrays(df, right):
         ],
         return_ranges=True,
     )
-    if isinstance(ractual, list):
-        ractual = [right.index[arr] for arr in ractual]
-        lengths = [len(arr) for arr in ractual]
-        ractual = np.concatenate(ractual)
-        lactual = pd.Index(lactual).repeat(lengths)
-    ractual = pd.Index(ractual)
-    lactual = pd.Index(lactual)
-    sorter = np.lexsort((ractual, lactual))
-    lactual = lactual[sorter]
-    ractual = ractual[sorter]
-    sorter = np.lexsort((rindex, lindex))
-    lindex = lindex[sorter]
-    rindex = rindex[sorter]
-    assert_index_equal(rindex, ractual, check_names=False)
-    assert_index_equal(lindex, lactual, check_names=False)
+    if isinstance(actual, tuple):
+        actual, _ = actual
+    else:
+        actual = actual["left_index"]
+    actual = pd.Index(actual).unique()
+    assert_index_equal(lindex, actual, check_names=False)
 
 
-@pytest.mark.skip(reason="will need to change the return output")
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
@@ -5657,33 +5598,22 @@ def test_le_gt_indices_ragged_arrays(df, right):
             ["lindex", "rindex"],
         ]
     )
-    rindex = pd.Index(expected["rindex"])
-    lindex = pd.Index(expected["lindex"])
+    lindex = pd.Index(expected["lindex"]).unique()
 
-    lactual, ractual = get_join_indices(
+    actual = get_join_indices(
         df,
         right,
         [("E", "Dates", "<="), ("B", "Numeric", ">")],
         return_ranges=True,
     )
-    if isinstance(ractual, list):
-        ractual = [right.index[arr] for arr in ractual]
-        lengths = [len(arr) for arr in ractual]
-        ractual = np.concatenate(ractual)
-        lactual = pd.Index(lactual).repeat(lengths)
-    ractual = pd.Index(ractual)
-    lactual = pd.Index(lactual)
-    sorter = np.lexsort((ractual, lactual))
-    lactual = lactual[sorter]
-    ractual = ractual[sorter]
-    sorter = np.lexsort((rindex, lindex))
-    lindex = lindex[sorter]
-    rindex = rindex[sorter]
-    assert_index_equal(rindex, ractual, check_names=False)
-    assert_index_equal(lindex, lactual, check_names=False)
+    if isinstance(actual, tuple):
+        actual, _ = actual
+    else:
+        actual = actual["left_index"]
+    actual = pd.Index(actual).unique()
+    assert_index_equal(lindex, actual, check_names=False)
 
 
-@pytest.mark.skip(reason="will need to change the return output")
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
@@ -5701,33 +5631,22 @@ def test_le_ge_indices_ragged_arrays(df, right):
             ["lindex", "rindex"],
         ]
     )
-    rindex = pd.Index(expected["rindex"])
-    lindex = pd.Index(expected["lindex"])
+    lindex = pd.Index(expected["lindex"]).unique()
 
-    lactual, ractual = get_join_indices(
+    actual = get_join_indices(
         df,
         right,
         [("E", "Dates", "<="), ("B", "Numeric", ">=")],
         return_ranges=True,
     )
-    if isinstance(ractual, list):
-        ractual = [right.index[arr] for arr in ractual]
-        lengths = [len(arr) for arr in ractual]
-        ractual = np.concatenate(ractual)
-        lactual = pd.Index(lactual).repeat(lengths)
-    ractual = pd.Index(ractual)
-    lactual = pd.Index(lactual)
-    sorter = np.lexsort((ractual, lactual))
-    lactual = lactual[sorter]
-    ractual = ractual[sorter]
-    sorter = np.lexsort((rindex, lindex))
-    lindex = lindex[sorter]
-    rindex = rindex[sorter]
-    assert_index_equal(rindex, ractual, check_names=False)
-    assert_index_equal(lindex, lactual, check_names=False)
+    if isinstance(actual, tuple):
+        actual, _ = actual
+    else:
+        actual = actual["left_index"]
+    actual = pd.Index(actual).unique()
+    assert_index_equal(lindex, actual, check_names=False)
 
 
-@pytest.mark.skip(reason="will need to change the return output")
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
@@ -5745,33 +5664,22 @@ def test_ge_le_indices_ragged_arrays(df, right):
             ["lindex", "rindex"],
         ]
     )
-    rindex = pd.Index(expected["rindex"])
-    lindex = pd.Index(expected["lindex"])
+    lindex = pd.Index(expected["lindex"]).unique()
 
-    lactual, ractual = get_join_indices(
+    actual = get_join_indices(
         df,
         right,
         [("E", "Dates", ">="), ("B", "Numeric", "<=")],
         return_ranges=True,
     )
-    if isinstance(ractual, list):
-        ractual = [right.index[arr] for arr in ractual]
-        lengths = [len(arr) for arr in ractual]
-        ractual = np.concatenate(ractual)
-        lactual = pd.Index(lactual).repeat(lengths)
-    ractual = pd.Index(ractual)
-    lactual = pd.Index(lactual)
-    sorter = np.lexsort((ractual, lactual))
-    lactual = lactual[sorter]
-    ractual = ractual[sorter]
-    sorter = np.lexsort((rindex, lindex))
-    lindex = lindex[sorter]
-    rindex = rindex[sorter]
-    assert_index_equal(rindex, ractual, check_names=False)
-    assert_index_equal(lindex, lactual, check_names=False)
+    if isinstance(actual, tuple):
+        actual, _ = actual
+    else:
+        actual = actual["left_index"]
+    actual = pd.Index(actual).unique()
+    assert_index_equal(lindex, actual, check_names=False)
 
 
-@pytest.mark.skip(reason="will need to change the return output")
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
@@ -5789,30 +5697,20 @@ def test_range_indices_ragged_arrays(df, right):
             ["lindex", "rindex"],
         ]
     )
-    rindex = pd.Index(expected["rindex"])
-    lindex = pd.Index(expected["lindex"])
+    l_index = pd.Index(expected["lindex"]).unique()
 
-    lactual, ractual = get_join_indices(
+    actual = get_join_indices(
         df,
         right,
         [("E", "Dates", "<"), ("B", "Numeric", ">")],
         return_ranges=True,
     )
-    if isinstance(ractual, list):
-        ractual = [right.index[arr] for arr in ractual]
-        lengths = [len(arr) for arr in ractual]
-        ractual = np.concatenate(ractual)
-        lactual = pd.Index(lactual).repeat(lengths)
-    ractual = pd.Index(ractual)
-    lactual = pd.Index(lactual)
-    sorter = np.lexsort((ractual, lactual))
-    lactual = lactual[sorter]
-    ractual = ractual[sorter]
-    sorter = np.lexsort((rindex, lindex))
-    lindex = lindex[sorter]
-    rindex = rindex[sorter]
-    assert_index_equal(rindex, ractual, check_names=False)
-    assert_index_equal(lindex, lactual, check_names=False)
+    if isinstance(actual, tuple):
+        actual, _ = actual
+    else:
+        actual = actual["left_index"]
+    actual = pd.Index(actual).unique()
+    assert_index_equal(l_index, actual, check_names=False)
 
 
 @settings(deadline=None, max_examples=10)
@@ -5849,7 +5747,7 @@ def test_ge_eq_and_le_datess_indices(df, right):
             ("B", "Numeric", "!="),
         ],
     )
-    actual = df.index[actual]
+    actual = pd.Index(actual)
     assert_index_equal(expected, actual, check_names=False)
 
 
@@ -5875,9 +5773,9 @@ def test_ge_eq_and_le_datess_indices_binary_search(df, right):
             "index",
         ]
     )
-    expected = pd.Index(expected)
+    expected = pd.Index(expected).unique()
 
-    actual, _ = get_join_indices(
+    actual = get_join_indices(
         df[["B", "A", "E"]],
         right[["Floats", "Integers", "Dates", "Numeric"]],
         [
@@ -5888,7 +5786,11 @@ def test_ge_eq_and_le_datess_indices_binary_search(df, right):
         ],
         use_pandas_merge_for_equi_join=False,
     )
-    actual = df.index[actual]
+    if isinstance(actual, tuple):
+        actual, _ = actual
+    else:
+        actual = actual["left_index"]
+    actual = pd.Index(actual).unique()
     assert_index_equal(expected, actual, check_names=False)
 
 

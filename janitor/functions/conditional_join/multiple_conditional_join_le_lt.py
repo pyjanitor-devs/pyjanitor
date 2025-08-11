@@ -149,12 +149,10 @@ def _multiple_conditional_join_le_lt(
         )
     # range join
     ge_gt, le_lt, *conditions = outcome["conditions"]
-    right_is_sorted = False
     check1 = right[ge_gt[1]].is_monotonic_increasing
-    if check1:
-        right_is_sorted = True
     check2 = right[le_lt[1]].is_monotonic_increasing
-    if not all((check1, check2)):
+    right_is_sorted = all((check1, check2))
+    if not right_is_sorted:
         sorter = {}
         sorter[ge_gt[1]] = 1
         sorter[le_lt[1]] = 1

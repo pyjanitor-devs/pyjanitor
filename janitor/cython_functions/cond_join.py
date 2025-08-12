@@ -499,8 +499,6 @@ def update_search_indices_less_than_strict(
     Update search indices for a `<` condition
     """
     len_left: cython.long = left_array.shape[0]
-    new_starts = np.empty(len_left, dtype="int64")
-    starts_view: cython.long[::1] = new_starts
     match: cython.long = 0
     total: cython.long = 0
     num: cython.Py_ssize_t
@@ -534,13 +532,14 @@ def update_search_indices_less_than_strict(
             booleans[num] = 0
             sizes[num] = 0
             continue
-        starts_view[num] = min_idx
+        starts[num] = min_idx
         size: cython.long = end - min_idx
         sizes[num] = size
         total += size
         match += 1
     return (
-        new_starts,
+        np.asarray(starts),
+        np.asarray(ends),
         np.asarray(booleans),
         np.asarray(sizes),
         total,
@@ -562,8 +561,6 @@ def update_search_indices_less_than(
     Update search indices for a `<=` condition
     """
     len_left: cython.long = left_array.shape[0]
-    new_starts = np.empty(len_left, dtype="int64")
-    starts_view: cython.long[::1] = new_starts
     num: cython.Py_ssize_t
     match: cython.long = 0
     total: cython.long = 0
@@ -590,13 +587,14 @@ def update_search_indices_less_than(
             booleans[num] = 0
             sizes[num] = 0
             continue
-        starts_view[num] = min_idx
+        starts[num] = min_idx
         size: cython.long = end - min_idx
         sizes[num] = size
         match += 1
         total += size
     return (
-        new_starts,
+        np.asarray(starts),
+        np.asarray(ends),
         np.asarray(booleans),
         np.asarray(sizes),
         total,
@@ -618,8 +616,6 @@ def update_search_indices_strictly_equal_min(
     Update search indices for a `==` condition
     """
     len_left: cython.long = left_array.shape[0]
-    new_starts = np.empty(len_left, dtype="int64")
-    starts_view: cython.long[::1] = new_starts
     num: cython.Py_ssize_t
     match: cython.long = 0
     total: cython.long = 0
@@ -653,13 +649,14 @@ def update_search_indices_strictly_equal_min(
             booleans[num] = 0
             sizes[num] = 0
             continue
-        starts_view[num] = min_idx
+        starts[num] = min_idx
         size: cython.long = end - min_idx
         sizes[num] = size
         match += 1
         total += size
     return (
-        new_starts,
+        np.asarray(starts),
+        np.asarray(ends),
         np.asarray(booleans),
         np.asarray(sizes),
         total,
@@ -681,8 +678,6 @@ def update_search_indices_strictly_equal_max(
     Update search indices for a `==` condition
     """
     len_left: cython.long = left_array.shape[0]
-    new_ends = np.zeros(len_left, dtype="int64")
-    ends_view: cython.long[::1] = new_ends
     num: cython.Py_ssize_t
     match: cython.long = 0
     total: cython.long = 0
@@ -718,12 +713,19 @@ def update_search_indices_strictly_equal_max(
             sizes[num] = 0
             continue
         booleans[num] = 1
-        ends_view[num] = min_idx
+        ends[num] = min_idx
         size: cython.long = min_idx - start
         sizes[num] = size
         total += size
         match += 1
-    return new_ends, np.asarray(booleans), np.asarray(sizes), total, match
+    return (
+        np.asarray(starts),
+        np.asarray(ends),
+        np.asarray(booleans),
+        np.asarray(sizes),
+        total,
+        match,
+    )
 
 
 @cython.boundscheck(False)
@@ -740,8 +742,6 @@ def update_search_indices_greater_than_strict(
     Update search indices for a `>` condition
     """
     len_left: cython.long = left_array.shape[0]
-    new_ends = np.zeros(len_left, dtype="int64")
-    ends_view: cython.long[::1] = new_ends
     num: cython.Py_ssize_t
     match: cython.long = 0
     total: cython.long = 0
@@ -777,12 +777,19 @@ def update_search_indices_greater_than_strict(
             sizes[num] = 0
             continue
         booleans[num] = 1
-        ends_view[num] = min_idx
+        ends[num] = min_idx
         size: cython.long = min_idx - start
         sizes[num] = size
         total += size
         match += 1
-    return new_ends, np.asarray(booleans), np.asarray(sizes), total, match
+    return (
+        np.asarray(starts),
+        np.asarray(ends),
+        np.asarray(booleans),
+        np.asarray(sizes),
+        total,
+        match,
+    )
 
 
 @cython.boundscheck(False)
@@ -799,8 +806,6 @@ def update_search_indices_greater_than(
     Update search indices for a `>=` condition
     """
     len_left: cython.long = left_array.shape[0]
-    new_ends = np.zeros(len_left, dtype="int64")
-    ends_view: cython.long[::1] = new_ends
     num: cython.Py_ssize_t
     match: cython.long = 0
     total: cython.long = 0
@@ -828,12 +833,19 @@ def update_search_indices_greater_than(
             sizes[num] = 0
             continue
         booleans[num] = 1
-        ends_view[num] = min_idx
+        ends[num] = min_idx
         size: cython.long = min_idx - start
         sizes[num] = size
         total += size
         match += 1
-    return new_ends, np.asarray(booleans), np.asarray(sizes), total, match
+    return (
+        np.asarray(starts),
+        np.asarray(ends),
+        np.asarray(booleans),
+        np.asarray(sizes),
+        total,
+        match,
+    )
 
 
 @cython.boundscheck(False)

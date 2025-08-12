@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import itertools
 from typing import Hashable
 
@@ -111,16 +113,39 @@ def _multiple_conditional_join_le_lt(
     if right is None:
         return None
     if not outcome.get("is_range_join"):
-        indices = _get_indices_no_range_join(
-            df=df,
-            right=right,
-            conditions=outcome["conditions"],
+        right_on = outcome["conditions"][0][1]
+        if not right[right_on].is_monotonic_increasing:
+            right = right.sort_values(
+                right_on, kind="stable", ignore_index=False
+            )
+        (left_on, right_on, op), *conditions = outcome["conditions"]
+        left_array, right_array = helpers._convert_to_numpy(
+            left=df[left_on]._values, right=right[right_on]._values
+        )
+        length = len(df)
+        starts = np.zeros(length, dtype=np.intp)
+        ends = np.empty(length, dtype=np.intp)
+        ends[:] = len(right)
+        booleans = np.ones(length, dtype=np.int8)
+        sizes = np.zeros(length, dtype=np.intp)
+        indices = {
+            "left_index": df.index._values,
+            "right_index": right.index._values,
+            "starts": starts,
+            "ends": ends,
+            "booleans": booleans,
+            "sizes": sizes,
+            "conditions": conditions,
+        }
+        indices = helpers._update_search_indices(
+            left_array=left_array,
+            right_array=right_array,
+            indices=indices,
+            op=op,
         )
         if indices is None:
             return None
-        indices["sizes"] = indices["ends"] - indices["starts"]
         indices = helpers._build_start_indices(indices=indices)
-        booleans = np.ones(indices["sizes"].size, dtype=np.int8)
         indices = helpers._get_positive_matches(
             df=df,
             right=right,
@@ -212,51 +237,6 @@ def _multiple_conditional_join_le_lt(
         matches=indices["matches"],
         keep=keep,
     )
-
-
-def _get_indices_no_range_join(
-    df: pd.DataFrame,
-    right: pd.DataFrame,
-    conditions: list,
-) -> tuple[np.ndarray, np.ndarray] | None:
-    """
-    Get outcome when there is no range join
-    """
-    (left_on, right_on, op), *conditions = conditions
-    left_c = df[left_on]
-    left_index = left_c.index._values
-    right_c = right[right_on]
-    right_c, _ = helpers._sort_if_not_monotonic(series=right[right_on])
-    if op in helpers.less_than_join_types:
-        outcome = helpers._less_than_indices(
-            left=left_c.array,
-            left_index=left_index,
-            right=right_c.array,
-            strict=op == "<",
-        )
-        if outcome is None:
-            return None
-        left_index, starts = outcome
-        ends = np.empty(left_index.size, dtype=np.intp)
-        ends[:] = right_c.size
-    else:
-        outcome = helpers._greater_than_indices(
-            left=left_c.array,
-            left_index=left_index,
-            right=right_c.array,
-            strict=op == ">",
-        )
-        if outcome is None:
-            return None
-        left_index, ends = outcome
-        starts = np.zeros(left_index.size, dtype=np.intp)
-    return {
-        "left_index": left_index,
-        "right_index": right_c.index._values,
-        "starts": starts,
-        "ends": ends,
-        "conditions": conditions,
-    }
 
 
 def _get_indices_fastpath_range_joins_dual(

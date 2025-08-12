@@ -1,4 +1,6 @@
 # helper functions for conditional_join.py
+from __future__ import annotations
+
 from enum import Enum
 from typing import Hashable, Sequence
 
@@ -23,6 +25,8 @@ class _JoinOperator(Enum):
     STRICTLY_EQUAL = "=="
     NOT_EQUAL = "!="
 
+
+operator_mapping = {">": 0, ">=": 1, "<": 2, "<=": 3, "==": 4, "!=": 5}
 
 less_than_join_types = {
     _JoinOperator.LESS_THAN.value,
@@ -90,7 +94,8 @@ def _equal_indices(
     right_index = right.index._values
     right = right.array
     positions, left = pd.factorize(left, sort=False)
-    starts = right.searchsorted(left.array, side="left")
+    left = left.array
+    starts = right.searchsorted(left, side="left")
     starts = starts[positions]
     ends = right.searchsorted(left, side="right")
     ends = ends[positions]
@@ -696,10 +701,6 @@ def _get_positive_matches(
     Iterate through conditions
     and get positive matches
     """
-    # abstract and reuse
-    mapping = {">": 0, ">=": 1, "<": 2, "<=": 3, "==": 4, "!=": 5}
-    left_index = indices["left_index"]
-    right_index = indices["right_index"]
     starts = indices["starts"]
     ends = indices["ends"]
     sizes = indices["sizes"]
@@ -707,10 +708,10 @@ def _get_positive_matches(
     matches = np.ones(sizes.sum(), dtype=np.int8)
     counts_array = np.zeros(sizes.size, dtype=np.intp)
     for left_on, right_on, op in conditions:
-        left_arr = df.loc[left_index, left_on]
+        left_arr = df[left_on]
         is_extension_array = pd.api.types.is_extension_array_dtype(left_arr)
         left_arr = left_arr._values
-        right_arr = right.loc[right_index, right_on]._values
+        right_arr = right[right_on]._values
         check = True
         if op == "!=":
             check = _can_pass_ne_to_cython(left=left_arr, right=right_arr)
@@ -729,12 +730,13 @@ def _get_positive_matches(
                     ends=ends,
                     left_array=left_arr,
                     right_array=right_arr,
-                    op=mapping[op],
+                    op=operator_mapping[op],
                     matches=matches,
                     booleans=booleans,
                     counts_array=counts_array,
                 )
             )
+        # respect pandas' rules when dealing with NA
         elif not check and is_extension_array:
             matches, booleans, counts_array, any_match = (
                 cond_join.get_positive_matches_ne_pandas_array(
@@ -743,7 +745,7 @@ def _get_positive_matches(
                     ends=ends,
                     left_array=left_arr,
                     right_array=right_arr,
-                    op=mapping[op],
+                    op=operator_mapping[op],
                     matches=matches,
                     booleans=booleans,
                     counts_array=counts_array,
@@ -759,7 +761,7 @@ def _get_positive_matches(
                     ends=ends,
                     left_array=left_arr,
                     right_array=right_arr,
-                    op=mapping[op],
+                    op=operator_mapping[op],
                     matches=matches,
                     booleans=booleans,
                     counts_array=counts_array,
@@ -868,10 +870,11 @@ def _get_positive_matches_no_ranges(
     Applied to indices obtained from pd.merge
     or != only conditions
     """
-    # abstract and reuse
-    mapping = {">": 0, ">=": 1, "<": 2, "<=": 3, "==": 4, "!=": 5}
     booleans = np.ones(left_index.size, dtype=np.int8)
     for left_on, right_on, op in conditions:
+        # rethink this
+        # let's not index here
+        # but within cython
         left_arr = df.loc[left_index, left_on]
         is_extension_array = pd.api.types.is_extension_array_dtype(left_arr)
         left_arr = left_arr._values
@@ -891,7 +894,7 @@ def _get_positive_matches_no_ranges(
                 cond_join.get_positive_matches_no_ranges(
                     left_array=left_arr,
                     right_array=right_arr,
-                    op=mapping[op],
+                    op=operator_mapping[op],
                     booleans=booleans,
                 )
             )
@@ -900,7 +903,7 @@ def _get_positive_matches_no_ranges(
                 cond_join.get_positive_matches_no_ranges_ne_pandas_array(
                     left_array=left_arr,
                     right_array=right_arr,
-                    op=mapping[op],
+                    op=operator_mapping[op],
                     booleans=booleans,
                     left_booleans=left_booleans,
                     right_booleans=right_booleans,
@@ -911,7 +914,7 @@ def _get_positive_matches_no_ranges(
                 cond_join.get_positive_matches_no_ranges_ne(
                     left_array=left_arr,
                     right_array=right_arr,
-                    op=mapping[op],
+                    op=operator_mapping[op],
                     booleans=booleans,
                     left_booleans=left_booleans,
                     right_booleans=right_booleans,
@@ -947,10 +950,8 @@ def _update_search_indices(
     left_array, right_array = _convert_to_numpy(
         left=left_array, right=right_array
     )
-    new_ends = None
-    new_starts = None
     if op == ">":
-        new_ends, booleans, sizes, total, matches = (
+        starts, ends, booleans, sizes, total, matches = (
             cond_join.update_search_indices_greater_than_strict(
                 left_array=left_array,
                 right_array=right_array,
@@ -961,7 +962,7 @@ def _update_search_indices(
             )
         )
     elif op == ">=":
-        new_ends, booleans, sizes, total, matches = (
+        starts, ends, booleans, sizes, total, matches = (
             cond_join.update_search_indices_greater_than(
                 left_array=left_array,
                 right_array=right_array,
@@ -972,7 +973,7 @@ def _update_search_indices(
             )
         )
     elif op == "<":
-        new_starts, booleans, sizes, total, matches = (
+        starts, ends, booleans, sizes, total, matches = (
             cond_join.update_search_indices_less_than_strict(
                 left_array=left_array,
                 right_array=right_array,
@@ -983,7 +984,7 @@ def _update_search_indices(
             )
         )
     elif op == "<=":
-        new_starts, booleans, sizes, total, matches = (
+        starts, ends, booleans, sizes, total, matches = (
             cond_join.update_search_indices_less_than(
                 left_array=left_array,
                 right_array=right_array,
@@ -995,10 +996,8 @@ def _update_search_indices(
         )
     if matches == 0:
         return None
-    if new_ends is not None:
-        indices["ends"] = new_ends
-    if new_starts is not None:
-        indices["starts"] = new_starts
+    indices["ends"] = ends
+    indices["starts"] = starts
     indices["booleans"] = booleans
     indices["total"] = total
     indices["matches"] = matches
@@ -1022,7 +1021,7 @@ def _update_search_indices_equi(
     left_array, right_array = _convert_to_numpy(
         left=left_array, right=right_array
     )
-    starts, booleans, sizes, total, matches = (
+    starts, ends, booleans, sizes, total, matches = (
         cond_join.update_search_indices_strictly_equal_min(
             left_array=left_array,
             right_array=right_array,
@@ -1034,7 +1033,7 @@ def _update_search_indices_equi(
     )
     if matches == 0:
         return None
-    ends, booleans, sizes, total, matches = (
+    starts, ends, booleans, sizes, total, matches = (
         cond_join.update_search_indices_strictly_equal_max(
             left_array=left_array,
             right_array=right_array,

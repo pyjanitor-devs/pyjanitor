@@ -621,6 +621,7 @@ def _conditional_join_compute(
         if result is None:
             return df
         _, result = df[row_count].align(result, join="left", fill_value=0)
+        result = pd.to_numeric(result, downcast="integer")
         df[row_count] = result
         return df
 

@@ -1,23 +1,25 @@
-from typing import Union
+from __future__ import annotations
+
+from typing import Hashable
 
 import numpy as np
 import pandas as pd
 
-from .helpers import _convert_to_numpy
+from . import helpers
 
 
 def _numba_equi_join(
     df: pd.DataFrame,
     right: pd.DataFrame,
-    eqs: tuple,
-    ge_gt: tuple,
-    le_lt: tuple,
-    rest: tuple,
-    row_count: str,
-) -> Union[tuple[np.ndarray, np.ndarray], None]:
+    is_fastpath_range_join: bool,
+    conditions: dict,
+    row_count: Hashable | None,
+    keep: str,
+) -> tuple[np.ndarray, np.ndarray] | None:
     """
     Compute indices when an equi join is present.
     """
+    # this applies if there is a >/>=/</<= join present
     # the logic is to delay searching for actual matches
     # while reducing the search space
     # to get the smallest possible search area
@@ -125,185 +127,287 @@ def _numba_equi_join(
     #
     from janitor.functions.conditional_join import _numba
 
-    mapping = {">": 0, ">=": 1, "<": 2, "<=": 3, "!=": 4}
-    left_column, right_column, _ = eqs
+    equals = conditions["equals"]
+    left_c, right_c, _ = equals[0]
+    left_c = df[left_c]
+    right_c = right[right_c]
     # steal some perf here within the binary search
     # search for uniques
     # and later index them with left_positions
-    left_positions, left_arr = df[left_column].factorize(sort=False)
-    right_arr = right[right_column]._values
-    left_index = df.index._values
-    right_index = right.index._values
-    slice_starts = right_arr.searchsorted(left_arr, side="left")
-    slice_starts = slice_starts[left_positions]
-    slice_ends = right_arr.searchsorted(left_arr, side="right")
-    slice_ends = slice_ends[left_positions]
-    # check if there is a search space
-    # this also lets us know if there are equi matches
-    keep_rows = slice_starts < slice_ends
-    if not keep_rows.any():
+    # it is assumed that users will only reach for this
+    # if the data is reasonably duplicated; if not
+    # pd.merge is superb especially if it's a one-to-one
+    # or one-to-many
+    left_index = left_c.index._values
+    right_index = right_c.index._values
+    right_c = right_c.array
+    positions, left_c = pd.factorize(left_c, sort=False)
+    left_c = left_c.array
+    starts = right_c.searchsorted(left_c, side="left")
+    starts = starts[positions]
+    ends = right_c.searchsorted(left_c, side="right")
+    ends = ends[positions]
+    booleans = starts < ends
+    if not booleans.any():
         return None
-    if not keep_rows.all():
-        left_index = left_index[keep_rows]
-        slice_starts = slice_starts[keep_rows]
-        slice_ends = slice_ends[keep_rows]
-    rest = tuple(
-        (
-            left.loc[left_index].to_numpy(),
-            right.to_numpy(),
-            mapping[op],
+    equals = equals[1:]
+    rest = conditions["conditions"]
+    if equals or not conditions.get("less_than_or_greater_than"):
+        sizes = ends - starts
+        if not booleans.all():
+            sizes = np.where(booleans, sizes, 0)
+        start_indices = np.empty(sizes.size, dtype=np.intp)
+        start_indices[0] = 0
+        start_indices[1:] = sizes.cumsum()[:-1]
+        rest = equals + rest
+        counts_array = np.zeros(left_index.size, dtype=np.intp)
+        matches = np.ones(sizes.sum(), dtype=np.bool_)
+        tuples = _generate_tuples(df=df, right=right, conditions=rest)
+        if row_count:
+            data = _numba._get_rowcount_all_equi(
+                tuples=tuples,
+                starts=starts,
+                ends=ends,
+                start_indices=start_indices,
+                matches=matches,
+                booleans=booleans,
+                counts_array=counts_array,
+            )
+            if data is None:
+                return None
+            return pd.Series(
+                index=left_index,
+                data=data,
+                name=row_count,
+            )
+        if keep == "all":
+            left_index, right_index = _numba._get_indices_all_equi_keep_all(
+                left_index=left_index,
+                right_index=right_index,
+                tuples=tuples,
+                starts=starts,
+                start_indices=start_indices,
+                ends=ends,
+                matches=matches,
+                booleans=booleans,
+                counts_array=counts_array,
+                sizes=sizes,
+            )
+            if left_index is None:
+                return None
+            return left_index, right_index
+        if keep == "first":
+            left_index, right_index = _numba._get_indices_all_equi_keep_first(
+                left_index=left_index,
+                right_index=right_index,
+                tuples=tuples,
+                starts=starts,
+                start_indices=start_indices,
+                ends=ends,
+                matches=matches,
+                booleans=booleans,
+                counts_array=counts_array,
+                sizes=sizes,
+            )
+            if left_index is None:
+                return None
+            return left_index, right_index
+        left_index, right_index = _numba._get_indices_all_equi_keep_last(
+            left_index=left_index,
+            right_index=right_index,
+            tuples=tuples,
+            starts=starts,
+            start_indices=start_indices,
+            ends=ends,
+            matches=matches,
+            booleans=booleans,
+            counts_array=counts_array,
+            sizes=sizes,
         )
-        for left, right, op in rest
+        if left_index is None:
+            return None
+        return left_index, right_index
+    if is_fastpath_range_join:
+        ge_gt, le_lt, *rest = conditions["conditions"]
+        left_on, right_on, op1 = ge_gt
+        left_c = df[left_on]._values
+        right_c = right[right_on]._values
+        left_c, right_c = helpers._convert_to_numpy(left=left_c, right=right_c)
+        ge_gt = (left_c, right_c)
+        left_on, right_on, op2 = le_lt
+        left_c = df[left_on]._values
+        right_c = right[right_on]._values
+        left_c, right_c = helpers._convert_to_numpy(left=left_c, right=right_c)
+        le_lt = (left_c, right_c)
+        tuples = _generate_tuples(df=df, right=right, conditions=rest)
+        if row_count:
+            data = _numba._get_row_count_equi_join_range_join(
+                starts=starts,
+                ends=ends,
+                booleans=booleans,
+                tuples=tuples,
+                ge_gt=ge_gt,
+                le_lt=le_lt,
+                op1=op1,
+                op2=op2,
+            )
+            if data is None:
+                return None
+            return pd.Series(
+                index=left_index,
+                data=data,
+                name=row_count,
+            )
+        if keep == "all":
+            left_index, right_index = (
+                _numba._build_indices_equi_join_range_join_keep_all(
+                    left_index=left_index,
+                    right_index=right_index,
+                    starts=starts,
+                    ends=ends,
+                    booleans=booleans,
+                    tuples=tuples,
+                    ge_gt=ge_gt,
+                    le_lt=le_lt,
+                    op1=op1,
+                    op2=op2,
+                )
+            )
+            if left_index is None:
+                return None
+            return left_index, right_index
+        if keep == "first":
+            left_index, right_index = (
+                _numba._build_indices_equi_join_range_join_keep_first(
+                    left_index=left_index,
+                    right_index=right_index,
+                    starts=starts,
+                    ends=ends,
+                    booleans=booleans,
+                    tuples=tuples,
+                    ge_gt=ge_gt,
+                    le_lt=le_lt,
+                    op1=op1,
+                    op2=op2,
+                )
+            )
+            if left_index is None:
+                return None
+            return left_index, right_index
+        left_index, right_index = (
+            _numba._build_indices_equi_join_range_join_keep_last(
+                left_index=left_index,
+                right_index=right_index,
+                starts=starts,
+                ends=ends,
+                booleans=booleans,
+                tuples=tuples,
+                ge_gt=ge_gt,
+                le_lt=le_lt,
+                op1=op1,
+                op2=op2,
+            )
+        )
+        if left_index is None:
+            return None
+        return left_index, right_index
+    (left_on, right_on, op), *rest = conditions["conditions"]
+    left_array = df[left_on]._values
+    right_array = right[right_on]._values
+    left_array, right_array = helpers._convert_to_numpy(
+        left=left_array, right=right_array
     )
-    ge_arr1 = None
-    ge_arr2 = None
-    ge_strict = None
-    if ge_gt:
-        left_column, right_column, op = ge_gt
-        ge_arr1 = df.loc[left_index, left_column]._values
-        ge_arr2 = right[right_column]._values
-        ge_arr1, ge_arr2 = _convert_to_numpy(left=ge_arr1, right=ge_arr2)
-        ge_strict = True if op == ">" else False
-
-    le_arr1 = None
-    le_arr2 = None
-    le_strict = None
-    if le_lt:
-        left_column, right_column, op = le_lt
-        le_arr1 = df.loc[left_index, left_column]._values
-        le_arr2 = right[right_column]._values
-        le_arr1, le_arr2 = _convert_to_numpy(left=le_arr1, right=le_arr2)
-        le_strict = True if op == "<" else False
-        op = mapping[op]
-    all_monotonic_increasing = False
-    if le_lt and ge_gt:
-        group = right.groupby(eqs[1])[le_lt[1]]
-        # is the last column (le_lt) monotonic increasing?
-        # fast path if it is
-        all_monotonic_increasing = all(
-            arr.is_monotonic_increasing for _, arr in group
-        )
-
-    if le_lt and ge_gt and all_monotonic_increasing and not rest:
-        left_index, right_index = _numba._numba_equi_join_range_join_monotonic(
-            left_index=left_index,
-            right_index=right_index,
-            slice_starts=slice_starts,
-            slice_ends=slice_ends,
-            ge_arr1=ge_arr1,
-            ge_arr2=ge_arr2,
-            ge_strict=ge_strict,
-            le_arr1=le_arr1,
-            le_arr2=le_arr2,
-            le_strict=le_strict,
-            row_count=True if row_count else False,
-        )
-
-    elif le_lt and ge_gt and all_monotonic_increasing:
-        left_index, right_index = (
-            _numba._numba_equi_join_range_join_multiple_monotonic(
-                left_index=left_index,
-                right_index=right_index,
-                slice_starts=slice_starts,
-                slice_ends=slice_ends,
-                ge_arr1=ge_arr1,
-                ge_arr2=ge_arr2,
-                ge_strict=ge_strict,
-                le_arr1=le_arr1,
-                le_arr2=le_arr2,
-                le_strict=le_strict,
-                row_count=True if row_count else False,
-                tupled=rest,
-            )
-        )
-
-    elif le_lt and ge_gt:
-        conditions = [(le_arr1, le_arr2, op)]
-        conditions.extend(rest)
-        left_index, right_index = (
-            _numba._numba_equi_join_range_join_non_monotonic(
-                left_index=left_index,
-                right_index=right_index,
-                slice_starts=slice_starts,
-                slice_ends=slice_ends,
-                ge_arr1=ge_arr1,
-                ge_arr2=ge_arr2,
-                ge_strict=ge_strict,
-                row_count=True if row_count else False,
-                tupled=conditions,
-            )
-        )
-
-    elif le_lt and not rest:
-        (
-            left_index,
-            right_index,
-        ) = _numba._numba_equi_single_le_ge_join(
-            left_index=left_index,
-            right_index=right_index,
-            slice_starts=slice_starts,
-            slice_ends=slice_ends,
-            arr1=le_arr1,
-            arr2=le_arr2,
-            strict=le_strict,
-            less_than=True,
-            row_count=True if row_count else False,
-        )
-
-    elif le_lt:
-        (
-            left_index,
-            right_index,
-        ) = _numba._numba_equi_single_le_ge_tupled_join(
-            left_index=left_index,
-            right_index=right_index,
-            slice_starts=slice_starts,
-            slice_ends=slice_ends,
-            arr1=le_arr1,
-            arr2=le_arr2,
-            strict=le_strict,
-            less_than=True,
-            row_count=True if row_count else False,
-            tupled=rest if rest else None,
-        )
-
-    elif ge_gt and not rest:
-        (
-            left_index,
-            right_index,
-        ) = _numba._numba_equi_single_le_ge_join(
-            left_index=left_index,
-            right_index=right_index,
-            slice_starts=slice_starts,
-            slice_ends=slice_ends,
-            arr1=ge_arr1,
-            arr2=ge_arr2,
-            strict=ge_strict,
-            less_than=False,
-            row_count=True if row_count else False,
-        )
-
-    elif ge_gt:
-        (
-            left_index,
-            right_index,
-        ) = _numba._numba_equi_single_le_ge_tupled_join(
-            left_index=left_index,
-            right_index=right_index,
-            slice_starts=slice_starts,
-            slice_ends=slice_ends,
-            arr1=ge_arr1,
-            arr2=ge_arr2,
-            strict=ge_strict,
-            less_than=False,
-            row_count=True if row_count else False,
-            tupled=rest if rest else None,
-        )
-    if row_count and (left_index is None):
-        return pd.Series(index=df.index, data=0, name=row_count)
+    tuples = _generate_tuples(df=df, right=right, conditions=rest)
     if row_count:
-        return pd.Series(index=left_index, data=right_index, name=row_count)
+        data = _numba._get_row_count_equi_join(
+            starts=starts,
+            ends=ends,
+            booleans=booleans,
+            tuples=tuples,
+            left_array=left_array,
+            right_array=right_array,
+            op=op,
+        )
+        if data is None:
+            return None
+        return pd.Series(
+            index=left_index,
+            data=data,
+            name=row_count,
+        )
+    if keep == "all":
+        left_index, right_index = _numba._build_indices_equi_join_keep_all(
+            left_index=left_index,
+            right_index=right_index,
+            starts=starts,
+            ends=ends,
+            booleans=booleans,
+            tuples=tuples,
+            left_array=left_array,
+            right_array=right_array,
+            op=op,
+        )
+        if left_index is None:
+            return None
+        return left_index, right_index
+    if keep == "first":
+        left_index, right_index = _numba._build_indices_equi_join_keep_first(
+            left_index=left_index,
+            right_index=right_index,
+            starts=starts,
+            ends=ends,
+            booleans=booleans,
+            tuples=tuples,
+            left_array=left_array,
+            right_array=right_array,
+            op=op,
+        )
+        if left_index is None:
+            return None
+        return left_index, right_index
+    left_index, right_index = _numba._build_indices_equi_join_keep_last(
+        left_index=left_index,
+        right_index=right_index,
+        starts=starts,
+        ends=ends,
+        booleans=booleans,
+        tuples=tuples,
+        left_array=left_array,
+        right_array=right_array,
+        op=op,
+    )
     if left_index is None:
         return None
-
     return left_index, right_index
+
+
+def _generate_tuples(df: pd.DataFrame, right: pd.DataFrame, conditions: list):
+    """
+    Build tuple of arrays to pass to numba
+    """
+    if not conditions:
+        return None
+    tuples = []
+    left_booleans = np.empty(1, dtype=np.bool_)
+    right_booleans = np.empty(1, dtype=np.bool_)
+    for left_on, right_on, op in conditions:
+        left_arr = df[left_on]
+        is_extension_array = pd.api.types.is_extension_array_dtype(left_arr)
+        left_arr = left_arr._values
+        right_arr = right[right_on]._values
+        if op == "!=":
+            left_booleans = pd.isna(left_arr)
+            right_booleans = pd.isna(right_arr)
+        left_arr, right_arr = helpers._convert_to_numpy(
+            left=left_arr, right=right_arr
+        )
+        condition = (
+            left_arr,
+            right_arr,
+            helpers.operator_mapping[op],
+            is_extension_array,
+            left_booleans,
+            right_booleans,
+        )
+        tuples.append(condition)
+    return tuple(tuples)

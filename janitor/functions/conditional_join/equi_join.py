@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Hashable
 
 import numpy as np
@@ -37,117 +39,64 @@ def _multiple_conditional_join_eq(
             return_ranges=False,
             row_count=row_count,
         )
-
-    if use_numba:
-        eqs = None
-        for left_on, right_on, op in conditions:
-            if op == helpers._JoinOperator.STRICTLY_EQUAL.value:
-                eqs = (left_on, right_on, op)
-                break
-
-        le_lt = None
-        ge_gt = None
-
-        for condition in conditions:
-            *_, op = condition
-            if op in helpers.less_than_join_types:
-                if le_lt:
-                    continue
-                le_lt = condition
-            elif op in helpers.greater_than_join_types:
-                if ge_gt:
-                    continue
-                ge_gt = condition
-            if le_lt and ge_gt:
-                break
-        if not le_lt and not ge_gt:
-            raise ValueError(
-                "At least one less than or greater than "
-                "join condition should be present when an equi-join "
-                "is present, and use_numba is set to True."
-            )
-        rest = [
-            condition
-            for condition in conditions
-            if condition not in {eqs, le_lt, ge_gt}
-        ]
-
-        right_columns = [eqs[1]]
-        df_columns = [eqs[0]]
-        # ensure the sort columns are unique
-        if ge_gt:
-            if ge_gt[1] not in right_columns:
-                right_columns.append(ge_gt[1])
-            if ge_gt[0] not in df_columns:
-                df_columns.append(ge_gt[0])
-        if le_lt:
-            if le_lt[1] not in right_columns:
-                right_columns.append(le_lt[1])
-            if le_lt[0] not in df_columns:
-                df_columns.append(le_lt[0])
-
-        right_df = right.loc(axis=1)[right_columns]
-        left_df = df.loc(axis=1)[df_columns]
-        any_nulls = left_df.isna().any(axis=1)
-        if any_nulls.all(axis=None):
-            return None
-        if any_nulls.any():
-            left_df = left_df.loc[~any_nulls]
-        any_nulls = right_df.isna().any(axis=1)
-        if any_nulls.all(axis=None):
-            return None
-        if any_nulls.any():
-            right_df = right.loc[~any_nulls]
-        equi_col = right_columns[0]
-        # check if the first column is sorted
-        # if sorted, check if the second column is sorted
-        # per group in the first column
-        right_is_sorted = right_df[equi_col].is_monotonic_increasing
-        if right_is_sorted:
-            grp = right_df.groupby(equi_col, sort=False, observed=True)
-            non_equi_col = right_columns[1]
-            # groupby.is_monotonic_increasing uses apply under the hood
-            # the approach used below circumvents the Series creation
-            # (which isn't required here)
-            # and just gets a sequence of booleans, before calling `all`
-            # to get a single True or False.
-            right_is_sorted = all(
-                arr.is_monotonic_increasing for _, arr in grp[non_equi_col]
-            )
-        if not right_is_sorted:
-            right_df = right_df.sort_values(right_columns)
-        rest = [
-            (
-                df.loc[left_df.index, left_on],
-                right.loc[right_df.index, right_on],
-                op,
-            )
-            for left_on, right_on, op in rest
-        ]
-        return _numba_equi_join(
-            df=left_df,
-            right=right_df,
-            eqs=eqs,
-            ge_gt=ge_gt,
-            le_lt=le_lt,
-            rest=rest,
-            row_count=row_count if row_count else None,
-        )
     outcome = helpers._separate_conditions_based_on_op(
         conditions=conditions, keep_equals_separate=True
     )
     # get rid of nulls, if any
     df = helpers._remove_nulls_multiple_conditions(
-        df=df, columns=outcome["l_cols"]
+        df=df, columns=outcome.pop("l_cols")
     )
     if df is None:
         return None
     right = helpers._remove_nulls_multiple_conditions(
-        df=right, columns=outcome["r_cols"]
+        df=right, columns=outcome.pop("r_cols")
     )
     if right is None:
         return None
-
+    if use_numba:
+        equals = outcome["equals"]
+        is_fastpath_range_join = False
+        if outcome.get("is_range_join") and (len(equals) == 1):
+            _, col, _ = equals[0]
+            sorter = {col: 1}
+            ge_gt, le_lt, *conditions = outcome["conditions"]
+            _, col, _ = ge_gt
+            sorter[col] = 1
+            _, col, _ = le_lt
+            sorter[col] = 1
+            sorter = [*sorter]
+            right = right.sort_values(
+                by=sorter, ignore_index=False, kind="stable"
+            )
+            grouper = outcome["equals"]
+            grouper = grouper[0][1]
+            grouped = right.groupby([grouper], sort=False, observed=True)
+            le_lt = outcome["conditions"][1][1]
+            grouped = grouped[le_lt]
+            is_fastpath_range_join = grouped.is_monotonic_increasing.all()
+        # is there any >/>=/</<=?
+        elif outcome.get("less_than_or_greater_than") and (len(equals) == 1):
+            _, col, _ = equals[0]
+            sorter = {col: 1}
+            (_, col, _), *conditions = outcome["conditions"]
+            sorter[col] = 1
+            right = right.sort_values(
+                by=[*sorter], ignore_index=False, kind="stable"
+            )
+        elif not outcome.get("less_than_or_greater_than") or (len(equals) > 1):
+            sorter = equals[0][1]
+            if not right[sorter].is_monotonic_increasing:
+                right = right.sort_values(
+                    sorter, ignore_index=False, kind="stable"
+                )
+        return _numba_equi_join(
+            df=df,
+            right=right,
+            is_fastpath_range_join=is_fastpath_range_join,
+            conditions=outcome,
+            row_count=row_count,
+            keep=keep,
+        )
     equals = outcome["equals"]
     if use_pandas_merge_for_equi_join:
         use_binary_search = False
@@ -215,10 +164,8 @@ def _multiple_conditional_join_eq(
                 by=sorter, ignore_index=False, kind="stable"
             )
     left_on, right_on, _ = equals[0]
-    left_c = df[left_on]
-    right_c = right[right_on]
     indices = helpers._update_search_indices_equi(
-        left_array=left_c._values, right_array=right_c._values
+        left_array=df[left_on]._values, right_array=right[right_on]._values
     )
     if indices is None:
         return None
@@ -240,13 +187,12 @@ def _multiple_conditional_join_eq(
     # != only
     if not outcome.get("less_than_or_greater_than"):
         indices = helpers._build_start_indices(indices=indices)
-        booleans = np.ones(indices["sizes"].size, dtype=np.int8)
         indices = helpers._get_positive_matches(
             df=df,
             right=right,
             indices=indices,
             conditions=outcome["conditions"],
-            booleans=booleans,
+            booleans=indices["booleans"],
         )
         if indices is None:
             return None

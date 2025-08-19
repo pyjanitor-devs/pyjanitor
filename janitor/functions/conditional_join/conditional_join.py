@@ -26,6 +26,7 @@ from .helpers import (
     less_than_join_types,
 )
 from .multiple_conditional_join_le_lt import _multiple_conditional_join_le_lt
+from .numba_non_equi_join_single import _numba_single_non_equi_join
 
 
 @pf.register_dataframe_method
@@ -418,6 +419,15 @@ def _conditional_join_preliminary_checks(
         raise ValueError("'keep' should be one of 'all', 'first', 'last'.")
 
     check("use_numba", use_numba, [bool])
+
+    if (
+        all((op == _JoinOperator.NOT_EQUAL.value for *_, op in conditions))
+    ) and use_numba:
+        raise ValueError(
+            "numba is not supported for "
+            "conditions where the != "
+            "is the only join operator."
+        )
 
     check("indicator", indicator, [bool, str])
 
@@ -1069,64 +1079,4 @@ def get_join_indices(
         return_ranges=return_ranges,
         row_count=None,
         use_pandas_merge_for_equi_join=use_pandas_merge_for_equi_join,
-    )
-
-
-def _numba_single_non_equi_join(
-    left: pd.Series,
-    right: pd.Series,
-    op: str,
-    keep: str,
-    row_count: str | None,
-) -> tuple[np.ndarray, np.ndarray]:
-    """Return matching indices for single non-equi join."""
-    if row_count:
-        return _generic_func_cond_join(
-            left=left,
-            right=right,
-            op=op,
-            keep=keep,
-            row_count=row_count,
-        )
-    if op == "!=":
-        return _generic_func_cond_join(
-            left=left, right=right, op=op, keep=keep
-        )
-    from janitor.functions.conditional_join import _numba
-
-    outcome = _generic_func_cond_join(
-        left=left, right=right, op=op, keep="all"
-    )
-    if outcome is None:
-        return None
-    left_index, right_index, starts = outcome
-    if op in greater_than_join_types:
-        right_index = right_index[::-1]
-        starts = right_index.size - starts
-    if keep in {"first", "last"}:
-        left_indices = np.empty(left_index.size, dtype=np.intp)
-        right_indices = np.empty(left_index.size, dtype=np.intp)
-        return _numba._numba_non_equi_join_monotonic_increasing_keep_first_or_last_dual(
-            left_index=left_index,
-            right_index=right_index,
-            starts=starts,
-            left_indices=left_indices,
-            right_indices=right_indices,
-            position=keep == "first",
-        )
-
-    start_indices = np.empty(left_index.size, dtype=np.intp)
-    start_indices[0] = 0
-    indices = (right_index.size - starts).cumsum()
-    start_indices[1:] = indices[:-1]
-    indices = indices[-1]
-    left_indices = np.empty(indices, dtype=np.intp)
-    right_indices = np.empty(indices, dtype=np.intp)
-    return _numba._numba_non_equi_join_monotonic_increasing_keep_all_dual(
-        left_index=left_index,
-        right_index=right_index,
-        starts=starts,
-        left_indices=left_indices,
-        right_indices=right_indices,
-        start_indices=start_indices,
     )

@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 
+from janitor.functions.conditional_join import _numba
+
 from . import helpers
 
 
@@ -12,53 +14,32 @@ def _numba_single_non_equi_join(
     row_count: str | None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Return matching indices for single non-equi join."""
-    if row_count:
-        return helpers._generic_func_cond_join(
-            left=left,
-            right=right,
-            op=op,
-            keep=keep,
-            row_count=row_count,
-        )
-    if op == "!=":
-        return helpers._generic_func_cond_join(
-            left=left, right=right, op=op, keep=keep
-        )
-    from janitor.functions.conditional_join import _numba
-
-    outcome = helpers._generic_func_cond_join(
-        left=left, right=right, op=op, keep="all"
-    )
-    if outcome is None:
+    outcome = helpers._null_checks_cond_join(series=left)
+    if not outcome:
         return None
-    left_index, right_index, starts = outcome
-    if op in helpers.greater_than_join_types:
-        right_index = right_index[::-1]
-        starts = right_index.size - starts
-    if keep in {"first", "last"}:
-        left_indices = np.empty(left_index.size, dtype=np.intp)
-        right_indices = np.empty(left_index.size, dtype=np.intp)
-        return _numba._numba_non_equi_join_monotonic_increasing_keep_first_or_last_dual(
-            left_index=left_index,
-            right_index=right_index,
-            starts=starts,
-            left_indices=left_indices,
-            right_indices=right_indices,
-            position=keep == "first",
-        )
-
-    start_indices = np.empty(left_index.size, dtype=np.intp)
-    start_indices[0] = 0
-    indices = (right_index.size - starts).cumsum()
-    start_indices[1:] = indices[:-1]
-    indices = indices[-1]
-    left_indices = np.empty(indices, dtype=np.intp)
-    right_indices = np.empty(indices, dtype=np.intp)
-    return _numba._numba_non_equi_join_monotonic_increasing_keep_all_dual(
+    left, _ = outcome
+    left_index = left.index._values
+    outcome = helpers._null_checks_cond_join(series=right)
+    if not outcome:
+        return None
+    right, _ = outcome
+    right, _ = helpers._sort_if_not_monotonic(series=right)
+    right_index = right.index._values
+    left, right = helpers._convert_to_numpy(
+        left=left._values, right=right._values
+    )
+    keep_mapping = {"all": 0, "first": 1, "last": 2}
+    result = _numba._get_indices_or_row_count_single_join(
+        left=left,
+        right=right,
         left_index=left_index,
         right_index=right_index,
-        starts=starts,
-        left_indices=left_indices,
-        right_indices=right_indices,
-        start_indices=start_indices,
+        op=helpers.operator_mapping[op],
+        keep=keep_mapping[keep],
+        row_count=row_count,
     )
+    if result[0] is None:
+        return None
+    if row_count:
+        return pd.Series(data=result[0], index=left_index, name=row_count)
+    return result

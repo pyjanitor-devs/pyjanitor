@@ -5,6 +5,8 @@ from typing import Hashable
 import numpy as np
 import pandas as pd
 
+from janitor.functions.conditional_join import _numba
+
 from . import helpers
 
 
@@ -125,8 +127,6 @@ def _numba_equi_join(
     # 	id	value_1	id	value_2A	value_2B
     # 	2	  3	    2	   2	       4
     #
-    from janitor.functions.conditional_join import _numba
-
     equals = conditions["equals"]
     left_c, right_c, _ = equals[0]
     left_c = df[left_c]
@@ -156,21 +156,18 @@ def _numba_equi_join(
         sizes = ends - starts
         if not booleans.all():
             sizes = np.where(booleans, sizes, 0)
-        start_indices = np.empty(sizes.size, dtype=np.intp)
-        start_indices[0] = 0
-        start_indices[1:] = sizes.cumsum()[:-1]
         rest = equals + rest
         counts_array = np.zeros(left_index.size, dtype=np.intp)
         matches = np.ones(sizes.sum(), dtype=np.bool_)
-        tuples = _generate_tuples(df=df, right=right, conditions=rest)
+        tuples = helpers._generate_tuples(df=df, right=right, conditions=rest)
         if row_count:
-            data = _numba._get_rowcount_all_equi(
+            data = _numba._get_row_count_ranges(
                 tuples=tuples,
                 starts=starts,
                 ends=ends,
-                start_indices=start_indices,
                 matches=matches,
                 booleans=booleans,
+                sizes=sizes,
                 counts_array=counts_array,
             )
             if data is None:
@@ -181,12 +178,11 @@ def _numba_equi_join(
                 name=row_count,
             )
         if keep == "all":
-            left_index, right_index = _numba._get_indices_all_equi_keep_all(
+            left_index, right_index = _numba._get_indices_ranges_keep_all(
                 left_index=left_index,
                 right_index=right_index,
                 tuples=tuples,
                 starts=starts,
-                start_indices=start_indices,
                 ends=ends,
                 matches=matches,
                 booleans=booleans,
@@ -197,12 +193,11 @@ def _numba_equi_join(
                 return None
             return left_index, right_index
         if keep == "first":
-            left_index, right_index = _numba._get_indices_all_equi_keep_first(
+            left_index, right_index = _numba._get_indices_ranges_keep_first(
                 left_index=left_index,
                 right_index=right_index,
                 tuples=tuples,
                 starts=starts,
-                start_indices=start_indices,
                 ends=ends,
                 matches=matches,
                 booleans=booleans,
@@ -212,12 +207,11 @@ def _numba_equi_join(
             if left_index is None:
                 return None
             return left_index, right_index
-        left_index, right_index = _numba._get_indices_all_equi_keep_last(
+        left_index, right_index = _numba._get_indices_ranges_keep_last(
             left_index=left_index,
             right_index=right_index,
             tuples=tuples,
             starts=starts,
-            start_indices=start_indices,
             ends=ends,
             matches=matches,
             booleans=booleans,
@@ -227,106 +221,41 @@ def _numba_equi_join(
         if left_index is None:
             return None
         return left_index, right_index
-    if is_fastpath_range_join:
+    ge_gt = None
+    le_lt = None
+    if not is_fastpath_range_join:
+        condition, *rest = conditions["conditions"]
+        if condition[-1] in helpers.greater_than_join_types:
+            ge_gt = condition
+        else:
+            le_lt = condition
+    else:
         ge_gt, le_lt, *rest = conditions["conditions"]
-        left_on, right_on, op1 = ge_gt
+    if ge_gt:
+        left_on, right_on, op = ge_gt
         left_c = df[left_on]._values
         right_c = right[right_on]._values
         left_c, right_c = helpers._convert_to_numpy(left=left_c, right=right_c)
-        ge_gt = (left_c, right_c)
-        left_on, right_on, op2 = le_lt
+        op = helpers.operator_mapping[op]
+        op = np.array([op], dtype=np.intp)
+        ge_gt = (left_c, right_c, op)
+    if le_lt:
+        left_on, right_on, op = le_lt
         left_c = df[left_on]._values
         right_c = right[right_on]._values
         left_c, right_c = helpers._convert_to_numpy(left=left_c, right=right_c)
-        le_lt = (left_c, right_c)
-        tuples = _generate_tuples(df=df, right=right, conditions=rest)
-        if row_count:
-            data = _numba._get_row_count_equi_join_range_join(
-                starts=starts,
-                ends=ends,
-                booleans=booleans,
-                tuples=tuples,
-                ge_gt=ge_gt,
-                le_lt=le_lt,
-                op1=op1,
-                op2=op2,
-            )
-            if data is None:
-                return None
-            return pd.Series(
-                index=left_index,
-                data=data,
-                name=row_count,
-            )
-        if keep == "all":
-            left_index, right_index = (
-                _numba._build_indices_equi_join_range_join_keep_all(
-                    left_index=left_index,
-                    right_index=right_index,
-                    starts=starts,
-                    ends=ends,
-                    booleans=booleans,
-                    tuples=tuples,
-                    ge_gt=ge_gt,
-                    le_lt=le_lt,
-                    op1=op1,
-                    op2=op2,
-                )
-            )
-            if left_index is None:
-                return None
-            return left_index, right_index
-        if keep == "first":
-            left_index, right_index = (
-                _numba._build_indices_equi_join_range_join_keep_first(
-                    left_index=left_index,
-                    right_index=right_index,
-                    starts=starts,
-                    ends=ends,
-                    booleans=booleans,
-                    tuples=tuples,
-                    ge_gt=ge_gt,
-                    le_lt=le_lt,
-                    op1=op1,
-                    op2=op2,
-                )
-            )
-            if left_index is None:
-                return None
-            return left_index, right_index
-        left_index, right_index = (
-            _numba._build_indices_equi_join_range_join_keep_last(
-                left_index=left_index,
-                right_index=right_index,
-                starts=starts,
-                ends=ends,
-                booleans=booleans,
-                tuples=tuples,
-                ge_gt=ge_gt,
-                le_lt=le_lt,
-                op1=op1,
-                op2=op2,
-            )
-        )
-        if left_index is None:
-            return None
-        return left_index, right_index
-    (left_on, right_on, op), *rest = conditions["conditions"]
-    left_array = df[left_on]._values
-    right_array = right[right_on]._values
-    left_array, right_array = helpers._convert_to_numpy(
-        left=left_array, right=right_array
-    )
-    tuples = _generate_tuples(df=df, right=right, conditions=rest)
+        op = helpers.operator_mapping[op]
+        op = np.array([op], dtype=np.intp)
+        le_lt = (left_c, right_c, op)
+    tuples = helpers._generate_tuples(df=df, right=right, conditions=rest)
     if row_count:
-        data = _numba._get_row_count_equi_join(
+        data = _numba._get_row_count_equi_le_lt_or_ge_gt(
             starts=starts,
             ends=ends,
             booleans=booleans,
             tuples=tuples,
-            left_array=left_array,
-            right_array=right_array,
-            op=op,
+            ge_gt=ge_gt,
+            le_lt=le_lt,
         )
         if data is None:
             return None
@@ -336,78 +265,49 @@ def _numba_equi_join(
             name=row_count,
         )
     if keep == "all":
-        left_index, right_index = _numba._build_indices_equi_join_keep_all(
-            left_index=left_index,
-            right_index=right_index,
-            starts=starts,
-            ends=ends,
-            booleans=booleans,
-            tuples=tuples,
-            left_array=left_array,
-            right_array=right_array,
-            op=op,
+        left_index, right_index = (
+            _numba._get_indices_equi_ge_gt_or_le_lt_join_keep_all(
+                left_index=left_index,
+                right_index=right_index,
+                starts=starts,
+                ends=ends,
+                booleans=booleans,
+                tuples=tuples,
+                ge_gt=ge_gt,
+                le_lt=le_lt,
+            )
         )
         if left_index is None:
             return None
         return left_index, right_index
     if keep == "first":
-        left_index, right_index = _numba._build_indices_equi_join_keep_first(
+        left_index, right_index = (
+            _numba._get_indices_equi_ge_gt_or_le_lt_join_keep_first(
+                left_index=left_index,
+                right_index=right_index,
+                starts=starts,
+                ends=ends,
+                booleans=booleans,
+                tuples=tuples,
+                ge_gt=ge_gt,
+                le_lt=le_lt,
+            )
+        )
+        if left_index is None:
+            return None
+        return left_index, right_index
+    left_index, right_index = (
+        _numba._get_indices_equi_ge_gt_or_le_lt_join_keep_last(
             left_index=left_index,
             right_index=right_index,
             starts=starts,
             ends=ends,
             booleans=booleans,
             tuples=tuples,
-            left_array=left_array,
-            right_array=right_array,
-            op=op,
+            ge_gt=ge_gt,
+            le_lt=le_lt,
         )
-        if left_index is None:
-            return None
-        return left_index, right_index
-    left_index, right_index = _numba._build_indices_equi_join_keep_last(
-        left_index=left_index,
-        right_index=right_index,
-        starts=starts,
-        ends=ends,
-        booleans=booleans,
-        tuples=tuples,
-        left_array=left_array,
-        right_array=right_array,
-        op=op,
     )
     if left_index is None:
         return None
     return left_index, right_index
-
-
-def _generate_tuples(df: pd.DataFrame, right: pd.DataFrame, conditions: list):
-    """
-    Build tuple of arrays to pass to numba
-    """
-    if not conditions:
-        return None
-    tuples = []
-    left_booleans = np.empty(1, dtype=np.bool_)
-    right_booleans = np.empty(1, dtype=np.bool_)
-    for left_on, right_on, op in conditions:
-        left_arr = df[left_on]
-        is_extension_array = pd.api.types.is_extension_array_dtype(left_arr)
-        left_arr = left_arr._values
-        right_arr = right[right_on]._values
-        if op == "!=":
-            left_booleans = pd.isna(left_arr)
-            right_booleans = pd.isna(right_arr)
-        left_arr, right_arr = helpers._convert_to_numpy(
-            left=left_arr, right=right_arr
-        )
-        condition = (
-            left_arr,
-            right_arr,
-            helpers.operator_mapping[op],
-            is_extension_array,
-            left_booleans,
-            right_booleans,
-        )
-        tuples.append(condition)
-    return tuple(tuples)

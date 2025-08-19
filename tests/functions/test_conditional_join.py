@@ -1999,9 +1999,6 @@ def test_dual_conditions_gt_and_lt_dates_row_count(df, right):
     assert_frame_equal(expected, actual)
 
 
-@pytest.mark.skip(
-    reason="will restore; pausing for now to focus on non-numba changes"
-)
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
@@ -2042,9 +2039,6 @@ def test_dual_conditions_numba_gt_and_lt_dates_row_count(df, right):
     assert_frame_equal(expected, actual)
 
 
-@pytest.mark.skip(
-    reason="will restore; pausing for now to focus on non-numba changes"
-)
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
@@ -2144,9 +2138,6 @@ def test_dual_conditions_ge_and_le_dates_row_count(df, right):
     assert_frame_equal(expected, actual)
 
 
-@pytest.mark.skip(
-    reason="will restore; pausing for now to focus on non-numba changes"
-)
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
@@ -2185,9 +2176,6 @@ def test_dual_conditions_ge_and_le_dates_numba_row_count(df, right):
     assert_frame_equal(expected, actual)
 
 
-@pytest.mark.skip(
-    reason="will restore; pausing for now to focus on non-numba changes"
-)
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
@@ -2239,38 +2227,6 @@ def test_dual_conditions_le_and_ge_dates(df, right):
             ("E", "Dates_Right", "<="),
             ("E", "Dates", ">="),
             how="inner",
-        )
-        .sort_values(["E", "Dates", "Dates_Right"], ignore_index=True)
-    )
-
-    assert_frame_equal(expected, actual)
-
-
-@pytest.mark.skip(
-    reason="will restore; pausing for now to focus on non-numba changes"
-)
-@settings(deadline=None, max_examples=10)
-@given(df=conditional_df(), right=conditional_right())
-@pytest.mark.turtle
-def test_dual_conditions_le_and_ge_dates_numba(df, right):
-    """Test output for interval conditions, if "<" comes before ">"."""
-
-    expected = (
-        df[["E"]]
-        .merge(right[["Dates", "Dates_Right"]], how="cross")
-        .loc[
-            lambda df: df.E.between(df.Dates, df.Dates_Right, inclusive="both")
-        ]
-        .sort_values(["E", "Dates", "Dates_Right"], ignore_index=True)
-    )
-    actual = (
-        df[["E"]]
-        .conditional_join(
-            right[["Dates", "Dates_Right"]],
-            ("E", "Dates_Right", "<="),
-            ("E", "Dates", ">="),
-            how="inner",
-            use_numba=True,
         )
         .sort_values(["E", "Dates", "Dates_Right"], ignore_index=True)
     )
@@ -2348,9 +2304,6 @@ def test_dual_conditions_gt_and_le_dates_row_count(df, right):
     assert_frame_equal(expected, actual)
 
 
-@pytest.mark.skip(
-    reason="will restore; pausing for now to focus on non-numba changes"
-)
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
@@ -2391,9 +2344,6 @@ def test_dual_conditions_gt_and_le_dates_numba_row_count(df, right):
     assert_frame_equal(expected, actual)
 
 
-@pytest.mark.skip(
-    reason="will restore; pausing for now to focus on non-numba changes"
-)
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
@@ -2453,9 +2403,6 @@ def test_dual_conditions_ge_and_le_numbers(df, right):
     assert_frame_equal(expected, actual)
 
 
-@pytest.mark.skip(
-    reason="will restore; pausing for now to focus on non-numba changes"
-)
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
@@ -2515,9 +2462,6 @@ def test_dual_conditions_le_and_ge_numbers(df, right):
     assert_frame_equal(expected, actual)
 
 
-@pytest.mark.skip(
-    reason="will restore; pausing for now to focus on non-numba changes"
-)
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
@@ -2643,9 +2587,6 @@ def test_dual_conditions_ge_and_lt_dates_row_count(df, right):
     assert_frame_equal(expected, actual)
 
 
-@pytest.mark.skip(
-    reason="will restore; pausing for now to focus on non-numba changes"
-)
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
@@ -2715,9 +2656,6 @@ def test_dual_conditions_gt_and_lt_numbers_(df, right):
     assert_frame_equal(expected, actual)
 
 
-@pytest.mark.skip(
-    reason="will restore; pausing for now to focus on non-numba changes"
-)
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
@@ -3626,9 +3564,6 @@ def test_gt_lt_ne_row_count(df, right):
     assert_frame_equal(expected, actual)
 
 
-@pytest.mark.skip(
-    reason="will restore; pausing for now to focus on non-numba changes"
-)
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
@@ -3670,9 +3605,6 @@ def test_gt_lt_ne_numba_row_count(df, right):
     assert_frame_equal(expected, actual)
 
 
-@pytest.mark.skip(
-    reason="will restore; pausing for now to focus on non-numba changes"
-)
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
@@ -3739,9 +3671,6 @@ def test_gt_ne_conditions(df, right):
     assert_frame_equal(expected, actual)
 
 
-@pytest.mark.skip(
-    reason="will restore; pausing for now to focus on non-numba changes"
-)
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
@@ -3838,9 +3767,6 @@ def test_le_ne_row_count(df, right):
     assert_frame_equal(expected, actual)
 
 
-@pytest.mark.skip(
-    reason="will restore; pausing for now to focus on non-numba changes"
-)
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
@@ -3912,9 +3838,6 @@ def test_gt_ne_row_count(df, right):
     assert_frame_equal(expected, actual)
 
 
-@pytest.mark.skip(
-    reason="will restore; pausing for now to focus on non-numba changes"
-)
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
@@ -3951,9 +3874,6 @@ def test_numba_gt_ne_row_count(df, right):
     assert_frame_equal(expected, actual)
 
 
-@pytest.mark.skip(
-    reason="will restore; pausing for now to focus on non-numba changes"
-)
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
@@ -4096,9 +4016,6 @@ def test_ge_lt_ne_row_count(df, right):
     assert_frame_equal(expected, actual)
 
 
-@pytest.mark.skip(
-    reason="will restore; pausing for now to focus on non-numba changes"
-)
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
@@ -4140,9 +4057,6 @@ def test_ge_lt_ne_numba_row_count(df, right):
     assert_frame_equal(expected, actual)
 
 
-@pytest.mark.skip(
-    reason="will restore; pausing for now to focus on non-numba changes"
-)
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
@@ -4218,9 +4132,6 @@ def test_ge_lt_ne_extension(df, right):
     assert_frame_equal(expected, actual)
 
 
-@pytest.mark.skip(
-    reason="will restore; pausing for now to focus on non-numba changes"
-)
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
@@ -4290,9 +4201,6 @@ def test_eq_ge_and_le_numbers(df, right):
     assert_frame_equal(expected, actual)
 
 
-@pytest.mark.skip(
-    reason="will restore; pausing for now to focus on non-numba changes"
-)
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
@@ -4390,9 +4298,6 @@ def test_ge_lt_ne_extension_variant(df, right):
     assert_frame_equal(expected, actual)
 
 
-@pytest.mark.skip(
-    reason="will restore; pausing for now to focus on non-numba changes"
-)
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
@@ -4689,9 +4594,6 @@ def test_dual_ge_and_le_range_numbers(df, right):
     assert_frame_equal(expected, actual)
 
 
-@pytest.mark.skip(
-    reason="will restore; pausing for now to focus on non-numba changes"
-)
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
@@ -5774,9 +5676,6 @@ def test_multiple_non_equii_row_count(df, right):
     assert_frame_equal(expected, actual)
 
 
-@pytest.mark.skip(
-    reason="will restore; pausing for now to focus on non-numba changes"
-)
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
@@ -5818,9 +5717,6 @@ def test_multiple_non_equii_numba_row_count(df, right):
     assert_frame_equal(expected, actual)
 
 
-@pytest.mark.skip(
-    reason="will restore; pausing for now to focus on non-numba changes"
-)
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
@@ -5939,9 +5835,6 @@ def test_multiple_non_equiii_row_count(df, right):
     assert_frame_equal(expected, actual)
 
 
-@pytest.mark.skip(
-    reason="will restore; pausing for now to focus on non-numba changes"
-)
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
@@ -5985,9 +5878,6 @@ def test_multiple_non_equiii_numba_row_count(df, right):
     assert_frame_equal(expected, actual)
 
 
-@pytest.mark.skip(
-    reason="will restore; pausing for now to focus on non-numba changes"
-)
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
@@ -6107,9 +5997,6 @@ def test_multiple_non_equiii_non_range_row_count(df, right):
     assert_frame_equal(expected, actual)
 
 
-@pytest.mark.skip(
-    reason="will restore; pausing for now to focus on non-numba changes"
-)
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
@@ -6197,9 +6084,6 @@ def test_multiple_non_eqi(df, right):
     assert_frame_equal(expected, actual)
 
 
-@pytest.mark.skip(
-    reason="will restore; pausing for now to focus on non-numba changes"
-)
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
@@ -6287,9 +6171,6 @@ def test_multiple_non_equiii_non_range_le_row_count(df, right):
     assert_frame_equal(expected, actual)
 
 
-@pytest.mark.skip(
-    reason="will restore; pausing for now to focus on non-numba changes"
-)
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
@@ -6371,9 +6252,6 @@ def test_multiple_non_eq(df, right):
     assert_frame_equal(expected, actual)
 
 
-@pytest.mark.skip(
-    reason="will restore; pausing for now to focus on non-numba changes"
-)
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
@@ -6460,9 +6338,6 @@ def test_multiple_non_eq_first(df, right):
     assert_frame_equal(expected, actual)
 
 
-@pytest.mark.skip(
-    reason="will restore; pausing for now to focus on non-numba changes"
-)
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
@@ -6544,9 +6419,6 @@ def test_multiple_non_eq_last(df, right):
     assert_frame_equal(expected, actual)
 
 
-@pytest.mark.skip(
-    reason="will restore; pausing for now to focus on non-numba changes"
-)
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
@@ -6623,9 +6495,6 @@ def test_dual_non_eq_last(df, right):
     assert_frame_equal(expected, actual)
 
 
-@pytest.mark.skip(
-    reason="will restore; pausing for now to focus on non-numba changes"
-)
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())

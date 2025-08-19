@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import itertools
 from typing import Hashable
 
 import numpy as np
@@ -8,7 +7,6 @@ import pandas as pd
 
 from . import helpers
 from .numba_non_equi_join_multiple import _numba_multiple_non_equi_join
-from .numba_non_equi_join_single import _numba_single_non_equi_join
 
 
 def _multiple_conditional_join_le_lt(
@@ -27,50 +25,26 @@ def _multiple_conditional_join_le_lt(
 
     Returns a tuple of (df_index, right_index)
     """
+    outcome = helpers._separate_conditions_based_on_op(conditions=conditions)
+    # get rid of nulls, if any
+    df = helpers._remove_nulls_multiple_conditions(
+        df=df, columns=outcome["l_cols"]
+    )
+    if df is None:
+        return None
+    right = helpers._remove_nulls_multiple_conditions(
+        df=right, columns=outcome["r_cols"]
+    )
+    if right is None:
+        return None
     if use_numba:
-        gt_lt = [
-            condition
-            for condition in conditions
-            if condition[-1]
-            in helpers.less_than_join_types.union(
-                helpers.greater_than_join_types
-            )
-        ]
-        conditions = [
-            condition for condition in conditions if condition not in gt_lt
-        ]
-        if len(gt_lt) > 1:
-            first_two = [op for *_, op in gt_lt[:2]]
-            range_join_ops = itertools.product(
-                helpers.less_than_join_types, helpers.greater_than_join_types
-            )
-            range_join_ops = map(set, range_join_ops)
-            is_range_join = set(first_two) in range_join_ops
-            if is_range_join and (
-                first_two[0] in helpers.less_than_join_types
-            ):
-                gt_lt = [gt_lt[1], gt_lt[0], *gt_lt[2:]]
-            gt_lt.extend(conditions)
-            indices = _numba_multiple_non_equi_join(
-                df,
-                right,
-                gt_lt,
-                keep=keep,
-                is_range_join=is_range_join,
-                row_count=(row_count if row_count else None),
-            )
-            return indices
-        else:
-            left_on, right_on, op = gt_lt[0]
-            indices = _numba_single_non_equi_join(
-                left=df[left_on],
-                right=right[right_on],
-                op=op,
-                keep="all",
-                row_count=None,
-            )
-        if indices is None:
-            return None
+        return _numba_multiple_non_equi_join(
+            df=df,
+            right=right,
+            conditions=outcome,
+            keep=keep,
+            row_count=row_count,
+        )
     # there is an opportunity for optimization for range joins
     # which is usually `lower_value < value < upper_value`
     # or `lower_value < a` and `b < upper_value`
@@ -100,18 +74,6 @@ def _multiple_conditional_join_le_lt(
     # the aim of this for loop is to see if there is
     # the possibility of a range join, and if there is,
     # then use the optimised path
-    outcome = helpers._separate_conditions_based_on_op(conditions=conditions)
-    # get rid of nulls, if any
-    df = helpers._remove_nulls_multiple_conditions(
-        df=df, columns=outcome["l_cols"]
-    )
-    if df is None:
-        return None
-    right = helpers._remove_nulls_multiple_conditions(
-        df=right, columns=outcome["r_cols"]
-    )
-    if right is None:
-        return None
     if not outcome.get("is_range_join"):
         right_on = outcome["conditions"][0][1]
         if not right[right_on].is_monotonic_increasing:

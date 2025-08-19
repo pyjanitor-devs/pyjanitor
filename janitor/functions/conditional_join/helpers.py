@@ -656,6 +656,7 @@ def _separate_conditions_based_on_op(
             continue
         elif op in greater_than_join_types:
             ge_gt = (left_on, right_on, op)
+    non_equi_count = len(others)
     if not keep_equals_separate:
         others.extend(equals)
     others.extend(not_equals)
@@ -674,6 +675,7 @@ def _separate_conditions_based_on_op(
         "less_than_or_greater_than": any((le_lt, ge_gt)),
         "conditions": others,
         "equals": equals,
+        "non_equi_count": non_equi_count,
     }
 
 
@@ -1054,3 +1056,33 @@ def _update_search_indices_equi(
         "sizes": sizes,
     }
     return indices
+
+
+def _generate_tuples(df: pd.DataFrame, right: pd.DataFrame, conditions: list):
+    """
+    Build tuple of arrays to pass to numba
+    """
+    if not conditions:
+        return None
+    tuples = []
+    left_booleans = np.empty(1, dtype=np.bool_)
+    right_booleans = np.empty(1, dtype=np.bool_)
+    for left_on, right_on, op in conditions:
+        left_arr = df[left_on]
+        is_extension_array = pd.api.types.is_extension_array_dtype(left_arr)
+        left_arr = left_arr._values
+        right_arr = right[right_on]._values
+        if op == "!=":
+            left_booleans = pd.isna(left_arr)
+            right_booleans = pd.isna(right_arr)
+        left_arr, right_arr = _convert_to_numpy(left=left_arr, right=right_arr)
+        condition = (
+            left_arr,
+            right_arr,
+            operator_mapping[op],
+            is_extension_array,
+            left_booleans,
+            right_booleans,
+        )
+        tuples.append(condition)
+    return tuple(tuples)

@@ -144,3 +144,4 @@ tags
 /scratch.py
 midpoint.csv
 examples/notebooks/conditional_join.ipynb
+janitor/cython_functions/cond_join.html

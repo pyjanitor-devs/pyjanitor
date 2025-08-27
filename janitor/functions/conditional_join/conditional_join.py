@@ -288,7 +288,7 @@ def conditional_join(
             from `right` for each row in `df`.
         force: If `True`, force the non-equi join conditions to execute before the equi join.
         use_pandas_merge_for_equi_join: If True, uses Pandas' merge
-            function when an equi-join is present, else uses a binary search approach.
+            function when an equi-join is present, else uses a binary search approach (if appropriate).
 
 
     Returns:
@@ -622,7 +622,6 @@ def _conditional_join_compute(
             return_ranges=return_ranges,
             row_count=row_count,
         )
-    # return result
     if row_count:
         if (df_columns is not None) and (df_columns != slice(None)):
             df = df.select(columns=df_columns)

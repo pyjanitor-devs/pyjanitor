@@ -553,57 +553,103 @@ def _multiple_conditions_get_indices(
     left_index: np.ndarray,
     right_index: np.ndarray,
     starts: np.ndarray,
-    start_indices: np.ndarray,
+    ends: np.ndarray,
     booleans: np.ndarray,
     sizes: np.ndarray,
     counts_array: np.ndarray,
     keep: str,
     matches: np.ndarray,
+    total: int,
 ):
     """
     get indices for multiple conditions
     """
     if keep == "all":
-        total = counts_array.sum()
-        return cond_join.build_indices_keep_all(
+        return cond_join.build_indices_from_ranges_keep_all(
             starts=starts,
+            ends=ends,
             sizes=sizes,
             matches=matches,
-            starts_indices=start_indices,
             left_index=left_index,
             right_index=right_index,
-            left_array=np.empty(total, dtype=np.intp),
-            right_array=np.empty(total, dtype=np.intp),
+            left_indices=np.empty(total, dtype=np.intp),
+            right_indices=np.empty(total, dtype=np.intp),
             counts_array=counts_array,
             booleans=booleans,
         )
-    total = booleans.sum()
     if keep == "first":
-        return cond_join.build_indices_keep_first(
+        return cond_join.build_indices_from_ranges_keep_first(
             starts=starts,
+            ends=ends,
             sizes=sizes,
             matches=matches,
-            starts_indices=start_indices,
             left_index=left_index,
             right_index=right_index,
-            left_array=np.empty(total, dtype=np.intp),
-            right_array=np.empty(total, dtype=np.intp),
-            counts_array=counts_array,
+            left_indices=np.empty(total, dtype=np.intp),
+            right_indices=np.empty(total, dtype=np.intp),
             booleans=booleans,
         )
 
-    return cond_join.build_indices_keep_last(
+    return cond_join.build_indices_from_ranges_keep_last(
         starts=starts,
+        ends=ends,
         sizes=sizes,
         matches=matches,
-        starts_indices=start_indices,
         left_index=left_index,
         right_index=right_index,
-        left_array=np.empty(total, dtype=np.intp),
-        right_array=np.empty(total, dtype=np.intp),
-        counts_array=counts_array,
+        left_indices=np.empty(total, dtype=np.intp),
+        right_indices=np.empty(total, dtype=np.intp),
         booleans=booleans,
     )
+
+
+def _multiple_conditions_get_indices_no_ranges(
+    left_index: np.ndarray,
+    right_index: np.ndarray,
+    left_indices: np.ndarray,
+    right_indices: np.ndarray,
+    matches: np.ndarray,
+    keep: str,
+):
+    """
+    get indices for multiple conditions
+    """
+    if keep == "all":
+        return cond_join.build_indices_no_ranges_keep_all(
+            left_index=left_index,
+            right_index=right_index,
+            left_indices=left_indices,
+            right_indices=right_indices,
+            matches=matches,
+        )
+    if keep == "first":
+        return cond_join.build_indices_no_ranges_keep_first(
+            left_index=left_index,
+            right_index=right_index,
+            left_indices=left_indices,
+            right_indices=right_indices,
+            matches=matches,
+        )
+    return cond_join.build_indices_no_ranges_keep_last(
+        left_index=left_index,
+        right_index=right_index,
+        left_indices=left_indices,
+        right_indices=right_indices,
+        matches=matches,
+    )
+
+
+def _get_row_counts_multiple_conditions_no_ranges(
+    index: pd.Index, row_count: str, indices: np.ndarray, matches: np.ndarray
+):
+    """Compute row count for multiple conditions"""
+    counts_array = np.zeros(index.size, dtype=np.intp)
+    counts_array = cond_join.get_row_count_no_ranges(
+        counts_array=counts_array,
+        left_indices=indices,
+        matches=matches,
+    )
+    return pd.Series(data=counts_array, index=index, name=row_count)
 
 
 def _remove_nulls_multiple_conditions(df: pd.DataFrame, columns: Sequence):
@@ -693,11 +739,8 @@ def _can_pass_ne_to_cython(left: np.ndarray, right=np.ndarray) -> bool:
 
 
 def _get_positive_matches(
-    df: pd.DataFrame,
-    right: pd.DataFrame,
     indices: dict,
-    conditions: list[tuple],
-    booleans: np.ndarray,
+    conditions: tuple[tuple],
 ) -> dict | None:
     """
     Iterate through conditions
@@ -706,76 +749,40 @@ def _get_positive_matches(
     starts = indices["starts"]
     ends = indices["ends"]
     sizes = indices["sizes"]
-    start_indices = indices["start_indices"]
+    booleans = indices["booleans"]
     matches = np.ones(sizes.sum(), dtype=np.int8)
     counts_array = np.zeros(sizes.size, dtype=np.intp)
-    for left_on, right_on, op in conditions:
-        left_arr = df[left_on]
-        is_extension_array = pd.api.types.is_extension_array_dtype(left_arr)
-        left_arr = left_arr._values
-        right_arr = right[right_on]._values
-        check = True
-        if op == "!=":
-            check = _can_pass_ne_to_cython(left=left_arr, right=right_arr)
-            if not check:
-                left_booleans = pd.isna(left_arr).astype(np.int8, copy=False)
-                right_booleans = pd.isna(right_arr).astype(np.int8, copy=False)
-            else:
-                left_booleans = None
-                right_booleans = None
-        left_arr, right_arr = _convert_to_numpy(left=left_arr, right=right_arr)
-        if check:
-            matches, booleans, counts_array, any_match = (
-                cond_join.get_positive_matches(
-                    start_indices=start_indices,
-                    starts=starts,
-                    ends=ends,
-                    left_array=left_arr,
-                    right_array=right_arr,
-                    op=operator_mapping[op],
-                    matches=matches,
-                    booleans=booleans,
-                    counts_array=counts_array,
-                )
+    for (
+        left,
+        right,
+        op,
+        is_extension_array,
+        left_booleans,
+        right_booleans,
+    ) in conditions:
+        matches, booleans, counts_array, total, l_counts = (
+            cond_join.get_positive_matches_ranges(
+                starts=starts,
+                ends=ends,
+                sizes=sizes,
+                op=op,
+                matches=matches,
+                left=left,
+                right=right,
+                counts_array=counts_array,
+                booleans=booleans,
+                left_booleans=left_booleans.astype(np.int8, copy=False),
+                right_booleans=right_booleans.astype(np.int8, copy=False),
+                is_extension_array=np.int8(is_extension_array),
             )
-        # respect pandas' rules when dealing with NA
-        elif not check and is_extension_array:
-            matches, booleans, counts_array, any_match = (
-                cond_join.get_positive_matches_ne_pandas_array(
-                    start_indices=start_indices,
-                    starts=starts,
-                    ends=ends,
-                    left_array=left_arr,
-                    right_array=right_arr,
-                    op=operator_mapping[op],
-                    matches=matches,
-                    booleans=booleans,
-                    counts_array=counts_array,
-                    left_booleans=left_booleans,
-                    right_booleans=right_booleans,
-                )
-            )
-        else:
-            matches, booleans, counts_array, any_match = (
-                cond_join.get_positive_matches_ne(
-                    start_indices=start_indices,
-                    starts=starts,
-                    ends=ends,
-                    left_array=left_arr,
-                    right_array=right_arr,
-                    op=operator_mapping[op],
-                    matches=matches,
-                    booleans=booleans,
-                    counts_array=counts_array,
-                    left_booleans=left_booleans,
-                    right_booleans=right_booleans,
-                )
-            )
-        if not any_match:
+        )
+        if total == 0:
             return None
     indices["matches"] = matches
     indices["counts_array"] = counts_array
     indices["booleans"] = booleans
+    indices["total"] = total
+    indices["l_counts"] = l_counts
     return indices
 
 
@@ -860,71 +867,39 @@ def _build_indices_fast_path_range_join_only(
 
 
 def _get_positive_matches_no_ranges(
-    df: pd.DataFrame,
-    right: pd.DataFrame,
-    left_index: np.ndarray,
-    right_index: np.ndarray,
-    conditions: list,
-):
+    left_indices: np.ndarray,
+    right_indices: np.ndarray,
+    conditions: tuple[tuple],
+) -> dict | None:
     """
     Iterate through conditions
     and get positive matches.
     Applied to indices obtained from pd.merge
     or != only conditions
     """
-    booleans = np.ones(left_index.size, dtype=np.int8)
-    for left_on, right_on, op in conditions:
-        # rethink this
-        # let's not index here
-        # but within cython
-        left_arr = df.loc[left_index, left_on]
-        is_extension_array = pd.api.types.is_extension_array_dtype(left_arr)
-        left_arr = left_arr._values
-        right_arr = right.loc[right_index, right_on]._values
-        check = True
-        if op == "!=":
-            check = _can_pass_ne_to_cython(left=left_arr, right=right_arr)
-            if not check:
-                left_booleans = pd.isna(left_arr).astype(np.int8, copy=False)
-                right_booleans = pd.isna(right_arr).astype(np.int8, copy=False)
-            else:
-                left_booleans = None
-                right_booleans = None
-        left_arr, right_arr = _convert_to_numpy(left=left_arr, right=right_arr)
-        if check:
-            booleans, count_exact_matches = (
-                cond_join.get_positive_matches_no_ranges(
-                    left_array=left_arr,
-                    right_array=right_arr,
-                    op=operator_mapping[op],
-                    booleans=booleans,
-                )
-            )
-        elif not check and is_extension_array:
-            booleans, count_exact_matches = (
-                cond_join.get_positive_matches_no_ranges_ne_pandas_array(
-                    left_array=left_arr,
-                    right_array=right_arr,
-                    op=operator_mapping[op],
-                    booleans=booleans,
-                    left_booleans=left_booleans,
-                    right_booleans=right_booleans,
-                )
-            )
-        else:
-            booleans, count_exact_matches = (
-                cond_join.get_positive_matches_no_ranges_ne(
-                    left_array=left_arr,
-                    right_array=right_arr,
-                    op=operator_mapping[op],
-                    booleans=booleans,
-                    left_booleans=left_booleans,
-                    right_booleans=right_booleans,
-                )
-            )
-        if not count_exact_matches:
+    matches = np.ones(left_indices.size, dtype=np.int8)
+    for (
+        left,
+        right,
+        op,
+        is_extension_array,
+        left_booleans,
+        right_booleans,
+    ) in conditions:
+        matches, total = cond_join.get_positive_matches_no_ranges(
+            left_index=left_indices,
+            right_index=right_indices,
+            op=op,
+            matches=matches,
+            left=left,
+            right=right,
+            left_booleans=left_booleans.astype(np.int8, copy=False),
+            right_booleans=right_booleans.astype(np.int8, copy=False),
+            is_extension_array=np.int8(is_extension_array),
+        )
+        if total == 0:
             return None
-    return left_index, right_index, booleans, count_exact_matches
+    return matches
 
 
 # copied from pandas/core/dtypes/missing.py
@@ -945,6 +920,7 @@ def _update_search_indices(
     right_array: np.ndarray,
     indices: dict,
     op: str,
+    first_run: bool = False,
 ):
     """
     Update `starts` or `ends` for non-equi
@@ -952,9 +928,31 @@ def _update_search_indices(
     left_array, right_array = _convert_to_numpy(
         left=left_array, right=right_array
     )
-    if op == ">":
+    if (op == ">") and first_run:
+        starts, ends, booleans, sizes, total, matches = (
+            cond_join.get_search_indices_greater_than_strict_first_run(
+                left_array=left_array,
+                right_array=right_array,
+                starts=indices["starts"],
+                ends=indices["ends"],
+                booleans=indices["booleans"],
+                sizes=indices["sizes"],
+            )
+        )
+    elif op == ">":
         starts, ends, booleans, sizes, total, matches = (
             cond_join.update_search_indices_greater_than_strict(
+                left_array=left_array,
+                right_array=right_array,
+                starts=indices["starts"],
+                ends=indices["ends"],
+                booleans=indices["booleans"],
+                sizes=indices["sizes"],
+            )
+        )
+    elif (op == ">=") and first_run:
+        starts, ends, booleans, sizes, total, matches = (
+            cond_join.get_search_indices_greater_than_first_run(
                 left_array=left_array,
                 right_array=right_array,
                 starts=indices["starts"],
@@ -974,6 +972,17 @@ def _update_search_indices(
                 sizes=indices["sizes"],
             )
         )
+    elif (op == "<") and first_run:
+        starts, ends, booleans, sizes, total, matches = (
+            cond_join.get_search_indices_less_than_strict_first_run(
+                left_array=left_array,
+                right_array=right_array,
+                starts=indices["starts"],
+                ends=indices["ends"],
+                booleans=indices["booleans"],
+                sizes=indices["sizes"],
+            )
+        )
     elif op == "<":
         starts, ends, booleans, sizes, total, matches = (
             cond_join.update_search_indices_less_than_strict(
@@ -985,9 +994,31 @@ def _update_search_indices(
                 sizes=indices["sizes"],
             )
         )
+    elif (op == "<=") and first_run:
+        starts, ends, booleans, sizes, total, matches = (
+            cond_join.get_search_indices_less_than_first_run(
+                left_array=left_array,
+                right_array=right_array,
+                starts=indices["starts"],
+                ends=indices["ends"],
+                booleans=indices["booleans"],
+                sizes=indices["sizes"],
+            )
+        )
     elif op == "<=":
         starts, ends, booleans, sizes, total, matches = (
             cond_join.update_search_indices_less_than(
+                left_array=left_array,
+                right_array=right_array,
+                starts=indices["starts"],
+                ends=indices["ends"],
+                booleans=indices["booleans"],
+                sizes=indices["sizes"],
+            )
+        )
+    elif op == "==":
+        starts, ends, booleans, sizes, total, matches = (
+            cond_join.get_search_indices_strictly_equal_first_run(
                 left_array=left_array,
                 right_array=right_array,
                 starts=indices["starts"],
@@ -1060,7 +1091,7 @@ def _update_search_indices_equi(
 
 def _generate_tuples(df: pd.DataFrame, right: pd.DataFrame, conditions: list):
     """
-    Build tuple of arrays to pass to numba
+    Build tuple of arrays to pass to numba/cython
     """
     if not conditions:
         return None

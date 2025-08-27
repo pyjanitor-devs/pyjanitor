@@ -596,226 +596,7 @@ def _get_indices_for_regions_keep_last(
     return left_indices, right_indices
 
 
-@njit(nogil=True)
-def _get_start_indices_less_than_strict(
-    left: np.ndarray,
-    right: np.ndarray,
-):
-    """
-    get earliest start positions for '<'
-    """
-    match = 0
-    total = 0
-    length = left.size
-    len_right = right.size
-    sizes = np.empty(length, dtype=np.intp)
-    starts = np.empty(length, dtype=np.intp)
-    ends = np.empty(length, dtype=np.intp)
-    booleans = np.empty(length, dtype=np.bool_)
-    for n in range(length):
-        _n = np.uintp(n)
-        l_value = left[_n]
-        # adapted from numba/np/array_math.py
-        min_idx = 0
-        max_idx = len_right
-        while min_idx < max_idx:
-            # to avoid overflow
-            mid_idx = min_idx + ((max_idx - min_idx) >> 1)
-            idx = np.uintp(mid_idx)
-            current_value = right[idx]
-            if current_value <= l_value:
-                min_idx = mid_idx + 1
-            else:
-                max_idx = mid_idx
-        if min_idx == len_right:
-            booleans[_n] = False
-            sizes[_n] = 0
-            continue
-        idx = np.uintp(min_idx)
-        current_value = right[idx]
-        if current_value == l_value:
-            booleans[_n] = False
-            sizes[_n] = 0
-            continue
-        booleans[_n] = True
-        starts[_n] = min_idx
-        ends[_n] = len_right
-        size = len_right - min_idx
-        sizes[_n] = size
-        total += size
-        match += 1
-    return (
-        starts,
-        ends,
-        booleans,
-        sizes,
-        np.asarray([total]),
-        np.asarray([match]),
-    )
-
-
-@njit(nogil=True)
-def _get_start_indices_less_than(
-    left: np.ndarray,
-    right: np.ndarray,
-):
-    """
-    get earliest start positions for '<='
-    """
-    match = 0
-    total = 0
-    length = left.size
-    len_right = right.size
-    sizes = np.empty(length, dtype=np.intp)
-    starts = np.empty(length, dtype=np.intp)
-    ends = np.empty(length, dtype=np.intp)
-    booleans = np.empty(length, dtype=np.bool_)
-    for n in range(length):
-        _n = np.uintp(n)
-        l_value = left[_n]
-        # adapted from numba/np/array_math.py
-        min_idx = 0
-        max_idx = len_right
-        while min_idx < max_idx:
-            # to avoid overflow
-            mid_idx = min_idx + ((max_idx - min_idx) >> 1)
-            idx = np.uintp(mid_idx)
-            current_value = right[idx]
-            if current_value < l_value:
-                min_idx = mid_idx + 1
-            else:
-                max_idx = mid_idx
-        if min_idx == len_right:
-            booleans[_n] = False
-            sizes[_n] = 0
-            continue
-        idx = np.uintp(min_idx)
-        booleans[_n] = True
-        starts[_n] = min_idx
-        ends[_n] = len_right
-        size = len_right - min_idx
-        sizes[_n] = size
-        total += size
-        match += 1
-    return (
-        starts,
-        ends,
-        booleans,
-        sizes,
-        np.asarray([total]),
-        np.asarray([match]),
-    )
-
-
-@njit(nogil=True)
-def _get_end_indices_greater_than_strict(
-    left: np.ndarray,
-    right: np.ndarray,
-):
-    """
-    get latest end positions for '>'
-    """
-    match = 0
-    total = 0
-    length = left.size
-    len_right = right.size
-    sizes = np.empty(length, dtype=np.intp)
-    starts = np.empty(length, dtype=np.intp)
-    ends = np.empty(length, dtype=np.intp)
-    booleans = np.empty(length, dtype=np.bool_)
-    for n in range(length):
-        _n = np.uintp(n)
-        l_value = left[_n]
-        # adapted from numba/np/array_math.py
-        min_idx = 0
-        max_idx = len_right
-        while min_idx < max_idx:
-            # to avoid overflow
-            mid_idx = min_idx + ((max_idx - min_idx) >> 1)
-            idx = np.uintp(mid_idx)
-            current_value = right[idx]
-            if current_value >= l_value:
-                max_idx = mid_idx
-            else:
-                min_idx = mid_idx + 1
-        if min_idx == 0:
-            booleans[_n] = False
-            sizes[_n] = 0
-            continue
-        idx = np.uintp(min_idx - 1)
-        current_value = right[idx]
-        if current_value == l_value:
-            booleans[_n] = False
-            sizes[_n] = 0
-            continue
-        booleans[_n] = True
-        starts[_n] = 0
-        ends[_n] = min_idx
-        sizes[_n] = min_idx
-        total += min_idx
-        match += 1
-    return (
-        starts,
-        ends,
-        booleans,
-        sizes,
-        np.asarray([total]),
-        np.asarray([match]),
-    )
-
-
-@njit(nogil=True)
-def _get_end_indices_greater_than(
-    left: np.ndarray,
-    right: np.ndarray,
-):
-    """
-    get latest end positions for '>='
-    """
-    match = 0
-    total = 0
-    length = left.size
-    len_right = right.size
-    sizes = np.empty(length, dtype=np.intp)
-    starts = np.empty(length, dtype=np.intp)
-    ends = np.empty(length, dtype=np.intp)
-    booleans = np.empty(length, dtype=np.bool_)
-    for n in range(length):
-        _n = np.uintp(n)
-        l_value = left[_n]
-        # adapted from numba/np/array_math.py
-        min_idx = 0
-        max_idx = len_right
-        while min_idx < max_idx:
-            # to avoid overflow
-            mid_idx = min_idx + ((max_idx - min_idx) >> 1)
-            idx = np.uintp(mid_idx)
-            current_value = right[idx]
-            if current_value > l_value:
-                max_idx = mid_idx
-            else:
-                min_idx = mid_idx + 1
-        if min_idx == 0:
-            booleans[_n] = False
-            sizes[_n] = 0
-            continue
-        booleans[_n] = True
-        starts[_n] = 0
-        ends[_n] = min_idx
-        sizes[_n] = min_idx
-        total += min_idx
-        match += 1
-    return (
-        starts,
-        ends,
-        booleans,
-        sizes,
-        np.asarray([total]),
-        np.asarray([match]),
-    )
-
-
-@njit(nogil=True)
+@njit(nogil=True, parallel=True)
 def _get_indices_or_row_count_single_join(
     left_index: np.ndarray,
     right_index: np.ndarray,
@@ -828,28 +609,138 @@ def _get_indices_or_row_count_single_join(
     """
     Get indices for equi join and at least one >/>=/</<= join
     """
+    match = 0
+    total = 0
+    length = left.size
+    len_right = right.size
+    sizes = np.empty(length, dtype=np.intp)
+    starts = np.empty(length, dtype=np.intp)
+    ends = np.empty(length, dtype=np.intp)
+    booleans = np.empty(length, dtype=np.bool_)
     if op == 0:
-        starts, ends, booleans, sizes, total, match = (
-            _get_end_indices_greater_than_strict(left=left, right=right)
-        )
+        for n in prange(length):
+            _n = np.uintp(n)
+            l_value = left[_n]
+            # adapted from numba/np/array_math.py
+            min_idx = 0
+            max_idx = len_right
+            while min_idx < max_idx:
+                # to avoid overflow
+                mid_idx = min_idx + ((max_idx - min_idx) >> 1)
+                idx = np.uintp(mid_idx)
+                current_value = right[idx]
+                if current_value >= l_value:
+                    max_idx = mid_idx
+                else:
+                    min_idx = mid_idx + 1
+            if min_idx == 0:
+                booleans[_n] = False
+                sizes[_n] = 0
+                continue
+            idx = np.uintp(min_idx - 1)
+            current_value = right[idx]
+            if current_value == l_value:
+                booleans[_n] = False
+                sizes[_n] = 0
+                continue
+            booleans[_n] = True
+            starts[_n] = 0
+            ends[_n] = min_idx
+            sizes[_n] = min_idx
+            total += min_idx
+            match += 1
     elif op == 1:
-        starts, ends, booleans, sizes, total, match = (
-            _get_end_indices_greater_than(left=left, right=right)
-        )
+        for n in range(length):
+            _n = np.uintp(n)
+            l_value = left[_n]
+            # adapted from numba/np/array_math.py
+            min_idx = 0
+            max_idx = len_right
+            while min_idx < max_idx:
+                # to avoid overflow
+                mid_idx = min_idx + ((max_idx - min_idx) >> 1)
+                idx = np.uintp(mid_idx)
+                current_value = right[idx]
+                if current_value > l_value:
+                    max_idx = mid_idx
+                else:
+                    min_idx = mid_idx + 1
+            if min_idx == 0:
+                booleans[_n] = False
+                sizes[_n] = 0
+                continue
+            booleans[_n] = True
+            starts[_n] = 0
+            ends[_n] = min_idx
+            sizes[_n] = min_idx
+            total += min_idx
+            match += 1
     elif op == 2:
-        starts, ends, booleans, sizes, total, match = (
-            _get_start_indices_less_than_strict(left=left, right=right)
-        )
+        for n in prange(length):
+            _n = np.uintp(n)
+            l_value = left[_n]
+            # adapted from numba/np/array_math.py
+            min_idx = 0
+            max_idx = len_right
+            while min_idx < max_idx:
+                # to avoid overflow
+                mid_idx = min_idx + ((max_idx - min_idx) >> 1)
+                idx = np.uintp(mid_idx)
+                current_value = right[idx]
+                if current_value <= l_value:
+                    min_idx = mid_idx + 1
+                else:
+                    max_idx = mid_idx
+            if min_idx == len_right:
+                booleans[_n] = False
+                sizes[_n] = 0
+                continue
+            idx = np.uintp(min_idx)
+            current_value = right[idx]
+            if current_value == l_value:
+                booleans[_n] = False
+                sizes[_n] = 0
+                continue
+            booleans[_n] = True
+            starts[_n] = min_idx
+            ends[_n] = len_right
+            size = len_right - min_idx
+            sizes[_n] = size
+            total += size
+            match += 1
     elif op == 3:
-        starts, ends, booleans, sizes, total, match = (
-            _get_start_indices_less_than(left=left, right=right)
-        )
-    if match[np.uintp(0)] == 0:
+        for n in prange(length):
+            _n = np.uintp(n)
+            l_value = left[_n]
+            # adapted from numba/np/array_math.py
+            min_idx = 0
+            max_idx = len_right
+            while min_idx < max_idx:
+                # to avoid overflow
+                mid_idx = min_idx + ((max_idx - min_idx) >> 1)
+                idx = np.uintp(mid_idx)
+                current_value = right[idx]
+                if current_value < l_value:
+                    min_idx = mid_idx + 1
+                else:
+                    max_idx = mid_idx
+            if min_idx == len_right:
+                booleans[_n] = False
+                sizes[_n] = 0
+                continue
+            idx = np.uintp(min_idx)
+            booleans[_n] = True
+            starts[_n] = min_idx
+            ends[_n] = len_right
+            size = len_right - min_idx
+            sizes[_n] = size
+            total += size
+            match += 1
+    if match == 0:
         return None, None
     if row_count is not None:
         return sizes, sizes
     if keep == 0:
-        total = total[np.uintp(0)]
         left_indices = np.empty(total, dtype=np.intp)
         right_indices = np.empty(total, dtype=np.intp)
         begin = 0
@@ -869,7 +760,6 @@ def _get_indices_or_row_count_single_join(
                 begin += 1
         return left_indices, right_indices
     if keep == 1:
-        match = match[np.uintp(0)]
         left_indices = np.empty(match, dtype=np.intp)
         right_indices = np.empty(match, dtype=np.intp)
         begin = 0
@@ -891,7 +781,6 @@ def _get_indices_or_row_count_single_join(
             right_indices[begin_] = base
             begin += 1
         return left_indices, right_indices
-    match = match[np.uintp(0)]
     left_indices = np.empty(match, dtype=np.intp)
     right_indices = np.empty(match, dtype=np.intp)
     begin = 0
@@ -915,7 +804,7 @@ def _get_indices_or_row_count_single_join(
     return left_indices, right_indices
 
 
-@njit(nogil=True)
+@njit(nogil=True, parallel=True)
 def _update_search_indices_less_than(
     length: int,
     booleans: np.ndarray,
@@ -969,7 +858,7 @@ def _update_search_indices_less_than(
     )
 
 
-@njit(nogil=True)
+@njit(nogil=True, parallel=True)
 def _update_search_indices_less_than_strict(
     length: int,
     booleans: np.ndarray,
@@ -1029,7 +918,7 @@ def _update_search_indices_less_than_strict(
     )
 
 
-@njit(nogil=True)
+@njit(nogil=True, parallel=True)
 def _update_search_indices_greater_than(
     length: int,
     booleans: np.ndarray,
@@ -1083,7 +972,7 @@ def _update_search_indices_greater_than(
     )
 
 
-@njit(nogil=True)
+@njit(nogil=True, parallel=True)
 def _update_search_indices_greater_than_strict(
     length: int,
     booleans: np.ndarray,
@@ -1144,7 +1033,7 @@ def _update_search_indices_greater_than_strict(
     )
 
 
-@njit(nogil=True, parallel=True)
+@njit(nogil=True, parallel=False)
 def _get_indices_equi_ge_gt_or_le_lt_join_keep_all(
     left_index: np.ndarray,
     right_index: np.ndarray,
@@ -1255,7 +1144,7 @@ def _get_indices_equi_ge_gt_or_le_lt_join_keep_all(
     )
 
 
-@njit(nogil=True, parallel=True)
+@njit(nogil=True, parallel=False)
 def _get_indices_equi_ge_gt_or_le_lt_join_keep_first(
     left_index: np.ndarray,
     right_index: np.ndarray,
@@ -1369,7 +1258,7 @@ def _get_indices_equi_ge_gt_or_le_lt_join_keep_first(
     )
 
 
-@njit(nogil=True, parallel=True)
+@njit(nogil=True, parallel=False)
 def _get_indices_equi_ge_gt_or_le_lt_join_keep_last(
     left_index: np.ndarray,
     right_index: np.ndarray,

@@ -85,11 +85,10 @@ def _multiple_conditional_join_le_lt(
             left=df[left_on]._values, right=right[right_on]._values
         )
         length = len(df)
-        starts = np.zeros(length, dtype=np.intp)
+        starts = np.empty(length, dtype=np.intp)
         ends = np.empty(length, dtype=np.intp)
-        ends[:] = len(right)
-        booleans = np.ones(length, dtype=np.int8)
-        sizes = np.zeros(length, dtype=np.intp)
+        booleans = np.empty(length, dtype=np.int8)
+        sizes = np.empty(length, dtype=np.intp)
         indices = {
             "left_index": df.index._values,
             "right_index": right.index._values,
@@ -99,21 +98,22 @@ def _multiple_conditional_join_le_lt(
             "sizes": sizes,
             "conditions": conditions,
         }
+
         indices = helpers._update_search_indices(
             left_array=left_array,
             right_array=right_array,
             indices=indices,
             op=op,
+            first_run=True,
         )
         if indices is None:
             return None
-        indices = helpers._build_start_indices(indices=indices)
+        conditions = helpers._generate_tuples(
+            df=df, right=right, conditions=indices["conditions"]
+        )
         indices = helpers._get_positive_matches(
-            df=df,
-            right=right,
             indices=indices,
-            conditions=indices["conditions"],
-            booleans=booleans,
+            conditions=conditions,
         )
         if indices is None:
             return None
@@ -123,26 +123,33 @@ def _multiple_conditional_join_le_lt(
                 data=indices["counts_array"],
                 name=row_count,
             )
+        if keep == "all":
+            total = indices["total"]
+        else:
+            total = indices["l_counts"]
         return helpers._multiple_conditions_get_indices(
             left_index=indices["left_index"],
             right_index=indices["right_index"],
             starts=indices["starts"],
-            start_indices=indices["start_indices"],
+            ends=indices["ends"],
             booleans=indices["booleans"],
             sizes=indices["sizes"],
             counts_array=indices["counts_array"],
             matches=indices["matches"],
             keep=keep,
+            total=total,
         )
     # range join
     ge_gt, le_lt, *conditions = outcome["conditions"]
-    check1 = right[ge_gt[1]].is_monotonic_increasing
-    check2 = right[le_lt[1]].is_monotonic_increasing
+    col1 = ge_gt[1]
+    col2 = le_lt[1]
+    check1 = right[col1].is_monotonic_increasing
+    check2 = right[col2].is_monotonic_increasing
     right_is_sorted = all((check1, check2))
     if not right_is_sorted:
         sorter = {}
-        sorter[ge_gt[1]] = 1
-        sorter[le_lt[1]] = 1
+        sorter[col1] = 1
+        sorter[col2] = 1
         sorter = [*sorter]
         right = right.sort_values(by=sorter, ignore_index=False, kind="stable")
     indices = _range_indices(
@@ -171,14 +178,12 @@ def _multiple_conditional_join_le_lt(
             matches=indices["matches"],
             keep=keep,
         )
-    indices = helpers._build_start_indices(indices=indices)
-    booleans = indices["booleans"].astype(np.int8, copy=False)
+    conditions = helpers._generate_tuples(
+        df=df, right=right, conditions=conditions
+    )
     indices = helpers._get_positive_matches(
-        df=df,
-        right=right,
         indices=indices,
         conditions=conditions,
-        booleans=booleans,
     )
     if indices is None:
         return None
@@ -188,16 +193,21 @@ def _multiple_conditional_join_le_lt(
             data=indices["counts_array"],
             name=row_count,
         )
+    if keep == "all":
+        total = indices["total"]
+    else:
+        total = indices["l_counts"]
     return helpers._multiple_conditions_get_indices(
         left_index=indices["left_index"],
         right_index=indices["right_index"],
         starts=indices["starts"],
-        start_indices=indices["start_indices"],
+        ends=indices["ends"],
         booleans=indices["booleans"],
         sizes=indices["sizes"],
         counts_array=indices["counts_array"],
         matches=indices["matches"],
         keep=keep,
+        total=total,
     )
 
 
@@ -284,11 +294,10 @@ def _range_indices(
     left_c = df[left_on]
     right_c = right[right_on]
     length = len(df)
-    starts = np.zeros(length, dtype=np.intp)
+    starts = np.empty(length, dtype=np.intp)
     ends = np.empty(length, dtype=np.intp)
-    ends[:] = len(right)
     booleans = np.ones(length, dtype=np.int8)
-    sizes = np.zeros(length, dtype=np.intp)
+    sizes = np.empty(length, dtype=np.intp)
     indices = dict(
         left_index=df.index._values,
         right_index=right.index._values,
@@ -302,6 +311,7 @@ def _range_indices(
         right_array=right[right_on]._values,
         indices=indices,
         op=op,
+        first_run=True,
     )
     if indices is None:
         return None

@@ -740,19 +740,6 @@ def _separate_conditions_based_on_op(
     }
 
 
-def _can_pass_ne_to_cython(left: np.ndarray, right=np.ndarray) -> bool:
-    """
-    Check if != condition can be passed to cython
-    without extra work
-    for possibly faster computation
-    """
-    check1 = pd.isna(left).any()
-    check2 = pd.isna(right).any()
-    check = any((check1, check2))
-    check = not check
-    return check
-
-
 def _get_positive_matches(
     indices: dict,
     conditions: tuple[tuple],
@@ -829,18 +816,6 @@ def _get_positive_matches(
     indices["booleans"] = booleans
     indices["total"] = total
     indices["l_counts"] = l_counts
-    return indices
-
-
-def _build_start_indices(indices: dict) -> dict:
-    """
-    Update indices with start_indices and sizes
-    """
-    sizes = indices["sizes"]
-    start_indices = np.empty(sizes.size, dtype=np.intp)
-    start_indices[0] = 0
-    start_indices[1:] = sizes.cumsum()[:-1]
-    indices["start_indices"] = start_indices
     return indices
 
 
@@ -1050,57 +1025,6 @@ def _update_search_indices(
     indices["total"] = total
     indices["matches"] = matches
     indices["sizes"] = sizes
-    return indices
-
-
-def _update_search_indices_equi(
-    left_array: np.ndarray,
-    right_array: np.ndarray,
-):
-    """
-    Update `starts` or `ends` for equi
-    """
-    length = left_array.size
-    booleans = np.ones(length, dtype=np.int8)
-    sizes = np.zeros(length, dtype=np.intp)
-    starts = np.zeros(length, dtype=np.intp)
-    ends = np.empty(length, dtype=np.intp)
-    ends[:] = right_array.size
-    left_array, right_array = _convert_to_numpy(
-        left=left_array, right=right_array
-    )
-    starts, ends, booleans, sizes, total, matches = (
-        cond_join.update_search_indices_strictly_equal_min(
-            left_array=left_array,
-            right_array=right_array,
-            starts=starts,
-            ends=ends,
-            booleans=booleans,
-            sizes=sizes,
-        )
-    )
-    if matches == 0:
-        return None
-    starts, ends, booleans, sizes, total, matches = (
-        cond_join.update_search_indices_strictly_equal_max(
-            left_array=left_array,
-            right_array=right_array,
-            starts=starts,
-            ends=ends,
-            booleans=booleans,
-            sizes=sizes,
-        )
-    )
-    if matches == 0:
-        return None
-    indices = {
-        "starts": starts,
-        "ends": ends,
-        "booleans": booleans,
-        "total": total,
-        "matches": matches,
-        "sizes": sizes,
-    }
     return indices
 
 

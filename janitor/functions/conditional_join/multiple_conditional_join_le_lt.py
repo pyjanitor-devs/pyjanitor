@@ -81,27 +81,13 @@ def _multiple_conditional_join_le_lt(
                 right_on, kind="stable", ignore_index=False
             )
         (left_on, right_on, op), *conditions = outcome["conditions"]
-        left_array, right_array = helpers._convert_to_numpy(
-            left=df[left_on]._values, right=right[right_on]._values
-        )
-        if op in helpers.greater_than_join_types:
-            func = helpers._greater_than_indices
-        else:
-            func = helpers._less_than_indices
-        indices = func(
-            left=left_array, right=right_array, strict=op in {">", "<"}
-        )
-        if indices is None:
-            return None
-        if op in helpers.greater_than_join_types:
-            ends, booleans = indices
-            starts = np.zeros(len(df), dtype=np.intp)
-        else:
-            starts, booleans = indices
-            ends = np.empty(len(df), dtype=np.intp)
-            ends[:] = len(right)
-        sizes = ends - starts
-        booleans = booleans.astype(np.int8, copy=False)
+        len_df = len(df)
+        len_right = len(right)
+        starts = np.zeros(len_df, dtype=np.intp)
+        ends = np.empty(len_df, dtype=np.intp)
+        ends[:] = len_right
+        sizes = np.zeros(len_df, dtype=np.intp)
+        booleans = np.ones(len_df, dtype=np.int8)
         indices = {
             "left_index": df.index._values,
             "right_index": right.index._values,
@@ -111,10 +97,9 @@ def _multiple_conditional_join_le_lt(
             "sizes": sizes,
             "conditions": conditions,
         }
-
         indices = helpers._update_search_indices(
-            left=left_array,
-            right=right_array,
+            left=df[left_on]._values,
+            right=right[right_on]._values,
             indices=indices,
             op=op,
         )
@@ -300,29 +285,22 @@ def _range_indices(
     # then within the positions,
     # get the positions where end_left is </<= end_right
     # this should reduce the search space
+    len_df = len(df)
+    len_right = len(right)
+    starts = np.zeros(len_df, dtype=np.intp)
+    ends = np.empty(len_df, dtype=np.intp)
+    ends[:] = len_right
+    sizes = np.zeros(len_df, dtype=np.intp)
+    booleans = np.ones(len_df, dtype=np.int8)
+    indices = {
+        "left_index": df.index._values,
+        "right_index": right.index._values,
+        "starts": starts,
+        "ends": ends,
+        "booleans": booleans,
+        "sizes": sizes,
+    }
     left_on, right_on, op = first
-    left_c = df[left_on]
-    right_c = right[right_on]
-    left_c, right_c = helpers._convert_to_numpy(
-        left=left_c._values, right=right_c._values
-    )
-    indices = helpers._greater_than_indices(
-        left=left_c, right=right_c, strict=op == ">"
-    )
-    if indices is None:
-        return None
-    ends, booleans = indices
-    booleans = booleans.astype(np.int8, copy=False)
-    starts = np.zeros(len(df), dtype=np.intp)
-    sizes = ends - starts
-    indices = dict(
-        left_index=df.index._values,
-        right_index=right.index._values,
-        starts=starts,
-        ends=ends,
-        sizes=sizes,
-        booleans=booleans,
-    )
     indices = helpers._update_search_indices(
         left=df[left_on]._values,
         right=right[right_on]._values,

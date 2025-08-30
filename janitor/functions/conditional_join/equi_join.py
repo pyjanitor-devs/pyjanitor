@@ -157,7 +157,7 @@ def _multiple_conditional_join_eq(
             return None
         if row_count:
             return helpers._get_row_counts_multiple_conditions_no_ranges(
-                index=df.index,
+                left_index=df.index._values,
                 row_count=row_count,
                 indices=left_indices,
                 matches=matches,
@@ -195,28 +195,10 @@ def _multiple_conditional_join_eq(
                 by=sorter, ignore_index=False, kind="stable"
             )
     left_on, right_on, op = equals[0]
-    length = len(df)
-    starts = np.empty(length, dtype=np.intp)
-    ends = np.empty(length, dtype=np.intp)
-    booleans = np.empty(length, dtype=np.int8)
-    sizes = np.empty(length, dtype=np.intp)
-    indices = {
-        "left_index": df.index._values,
-        "right_index": right.index._values,
-        "starts": starts,
-        "ends": ends,
-        "booleans": booleans,
-        "sizes": sizes,
-    }
-    indices = helpers._update_search_indices(
-        left_array=df[left_on]._values,
-        right_array=right[right_on]._values,
-        indices=indices,
-        op=op,
-        first_run=True,
-    )
+    indices = helpers._equal_indices(left=df[left_on], right=right[right_on])
     if indices is None:
         return None
+    indices["sizes"] = indices["ends"] - indices["starts"]
     if return_ranges and not outcome.get("conditions"):
         starts = indices["starts"]
         ends = indices["ends"]
@@ -224,7 +206,6 @@ def _multiple_conditional_join_eq(
         right_index = indices["right_index"]
         booleans = indices["booleans"]
         if not booleans.all():
-            booleans = booleans.astype(np.bool_, copy=False)
             starts = starts[booleans]
             ends = ends[booleans]
             left_index = left_index[booleans]
@@ -234,6 +215,7 @@ def _multiple_conditional_join_eq(
             "starts": starts,
             "ends": ends,
         }
+    indices["booleans"] = indices["booleans"].astype(np.int8, copy=False)
     if not outcome.get("conditions"):
         return helpers._build_indices_fast_path_range_join_only(
             left_index=indices["left_index"],
@@ -274,7 +256,6 @@ def _multiple_conditional_join_eq(
             ends=indices["ends"],
             booleans=indices["booleans"],
             sizes=indices["sizes"],
-            counts_array=indices["counts_array"],
             matches=indices["matches"],
             keep=keep,
             total=total,
@@ -304,8 +285,8 @@ def _multiple_conditional_join_eq(
         left_array = df[left_on]._values
         right_array = right[right_on]._values
         indices = helpers._update_search_indices(
-            left_array=df[left_on]._values,
-            right_array=right[right_on]._values,
+            left=df[left_on]._values,
+            right=right[right_on]._values,
             indices=indices,
             op=op,
         )
@@ -313,8 +294,8 @@ def _multiple_conditional_join_eq(
             return None
         left_on, right_on, op = le_lt
         indices = helpers._update_search_indices(
-            left_array=df[left_on]._values,
-            right_array=right[right_on]._values,
+            left=df[left_on]._values,
+            right=right[right_on]._values,
             indices=indices,
             op=op,
         )
@@ -381,7 +362,6 @@ def _multiple_conditional_join_eq(
             ends=indices["ends"],
             booleans=indices["booleans"],
             sizes=indices["sizes"],
-            counts_array=indices["counts_array"],
             matches=indices["matches"],
             keep=keep,
             total=total,
@@ -391,7 +371,7 @@ def _multiple_conditional_join_eq(
     left_array = df[left_on]._values
     right_array = right[right_on]._values
     indices = helpers._update_search_indices(
-        left_array=left_array, right_array=right_array, indices=indices, op=op
+        left=left_array, right=right_array, indices=indices, op=op
     )
     if indices is None:
         return None
@@ -442,7 +422,6 @@ def _multiple_conditional_join_eq(
         ends=indices["ends"],
         booleans=indices["booleans"],
         sizes=indices["sizes"],
-        counts_array=indices["counts_array"],
         matches=indices["matches"],
         keep=keep,
         total=total,

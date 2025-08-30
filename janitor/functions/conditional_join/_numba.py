@@ -355,7 +355,7 @@ def _get_indices_for_regions_keep_all(
             begin_ = np.uintp(begin)
             left_indices[begin_] = val
             begin += 1
-    right_indices = np.empty(total, dtype=np.intp)
+    right_indices = np.empty(total[np.uintp(0)], dtype=np.intp)
     begin = 0
     for n in range(matches.size):
         n_ = np.uintp(n)

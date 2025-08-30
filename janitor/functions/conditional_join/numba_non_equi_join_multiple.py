@@ -462,8 +462,8 @@ def _build_region(
     )
 
     indices = helpers._update_search_indices(
-        left_array=left,
-        right_array=right,
+        left=left,
+        right=right,
         indices=indices,
         op=op,
     )

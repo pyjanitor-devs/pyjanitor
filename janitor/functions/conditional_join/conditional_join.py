@@ -626,12 +626,12 @@ def _conditional_join_compute(
         if (df_columns is not None) and (df_columns != slice(None)):
             df = df.select(columns=df_columns)
         df = df[:]
-        df[row_count] = 0
+        df.loc[:, row_count] = 0
         if result is None:
             return df
         _, result = df[row_count].align(result, join="left", fill_value=0)
         result = pd.to_numeric(result, downcast="integer")
-        df[row_count] = result
+        df.loc[:, row_count] = result
         return df
 
     if result is None:

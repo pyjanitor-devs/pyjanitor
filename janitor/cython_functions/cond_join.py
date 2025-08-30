@@ -13,6 +13,7 @@ scalar_types = cython.fused_type(
 )
 
 
+@cython.exceptval(check=False)
 @cython.cfunc
 def compare_values(
     left: scalar_types, right: scalar_types, op: cython.int

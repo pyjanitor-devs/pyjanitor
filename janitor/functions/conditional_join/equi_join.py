@@ -107,9 +107,7 @@ def _multiple_conditional_join_eq(
     if use_pandas_merge_for_equi_join:
         use_binary_search = False
     else:
-        use_binary_search = _is_binary_search_appropriate(
-            df=df, right=right, equals=equals
-        )
+        use_binary_search = _is_binary_search_appropriate(df=df, equals=equals)
     if not use_binary_search:
         left_on = []
         right_on = []
@@ -215,8 +213,14 @@ def _multiple_conditional_join_eq(
             "starts": starts,
             "ends": ends,
         }
-    indices["booleans"] = indices["booleans"].astype(np.int8, copy=False)
     if not outcome.get("conditions"):
+        booleans = indices["booleans"]
+        sizes = indices["sizes"]
+        if not booleans.all():
+            sizes = np.where(booleans, sizes, 0)
+        indices["total"] = sizes.sum()
+        indices["matches"] = np.count_nonzero(booleans)
+        indices["booleans"] = indices["booleans"].astype(np.int8, copy=False)
         return helpers._build_indices_fast_path_range_join_only(
             left_index=indices["left_index"],
             right_index=indices["right_index"],
@@ -228,6 +232,7 @@ def _multiple_conditional_join_eq(
             matches=indices["matches"],
         )
     # != only
+    indices["booleans"] = indices["booleans"].astype(np.int8, copy=False)
     if not outcome.get("less_than_or_greater_than"):
         conditions = outcome["conditions"]
         conditions = helpers._generate_tuples(
@@ -428,9 +433,7 @@ def _multiple_conditional_join_eq(
     )
 
 
-def _is_binary_search_appropriate(
-    df: pd.DataFrame, right: pd.DataFrame, equals: list
-) -> bool:
+def _is_binary_search_appropriate(df: pd.DataFrame, equals: list) -> bool:
     """
     Check if it is appropriate
     to use a binary search approach
@@ -438,17 +441,13 @@ def _is_binary_search_appropriate(
     """
     if len(equals) > 1:
         return False
-    for left_on, right_on, _ in equals:
+    for left_on, _, _ in equals:
         series = df[left_on]
         if (
             not pd.api.types.is_numeric_dtype(series)
             and not pd.api.types.is_datetime64_dtype(series)
             and not pd.api.types.is_timedelta64_dtype(series)
         ):
-            return False
-        if series.is_unique:
-            return False
-        if right[right_on].is_unique:
             return False
     return True
 

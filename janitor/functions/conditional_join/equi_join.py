@@ -45,12 +45,12 @@ def _multiple_conditional_join_eq(
         conditions=conditions, keep_equals_separate=True
     )
     # get rid of nulls, if any
-    df = helpers._remove_nulls_multiple_conditions(
+    df = helpers._maybe_remove_nulls_from_dataframe(
         df=df, columns=outcome.pop("l_cols")
     )
     if df is None:
         return None
-    right = helpers._remove_nulls_multiple_conditions(
+    right = helpers._maybe_remove_nulls_from_dataframe(
         df=right, columns=outcome.pop("r_cols")
     )
     if right is None:

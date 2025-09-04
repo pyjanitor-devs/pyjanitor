@@ -27,12 +27,12 @@ def _multiple_conditional_join_le_lt(
     """
     outcome = helpers._separate_conditions_based_on_op(conditions=conditions)
     # get rid of nulls, if any
-    df = helpers._remove_nulls_multiple_conditions(
+    df = helpers._maybe_remove_nulls_from_dataframe(
         df=df, columns=outcome["l_cols"]
     )
     if df is None:
         return None
-    right = helpers._remove_nulls_multiple_conditions(
+    right = helpers._maybe_remove_nulls_from_dataframe(
         df=right, columns=outcome["r_cols"]
     )
     if right is None:

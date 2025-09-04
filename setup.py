@@ -14,8 +14,6 @@ try:
     USE_CYTHON = True
 except ImportError:
     USE_CYTHON = False
-# avoid issues with cython 3 vs 0.29
-USE_CYTHON = False
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 

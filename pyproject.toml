@@ -49,7 +49,7 @@ markers = [
 addopts = [
     "--import-mode=importlib",
     "--numprocesses=auto"
-]
+    ]
 
 
 [tool.ruff]

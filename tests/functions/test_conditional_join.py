@@ -3,7 +3,11 @@ import pandas as pd
 import pytest
 from hypothesis import given, settings
 from pandas import Timedelta
-from pandas.testing import assert_frame_equal, assert_index_equal
+from pandas.testing import (
+    assert_frame_equal,
+    assert_index_equal,
+    assert_series_equal,
+)
 
 from janitor import get_join_indices
 from janitor.testing_utils.strategies import (
@@ -11,10 +15,10 @@ from janitor.testing_utils.strategies import (
     conditional_right,
 )
 
-# # turn on to view dataframes from failed tests
-# pd.set_option("display.max_columns", None)
-# pd.set_option("display.expand_frame_repr", False)
-# pd.set_option("max_colwidth", None)
+# turn on to view dataframes from failed tests
+pd.set_option("display.max_columns", None)
+pd.set_option("display.expand_frame_repr", False)
+pd.set_option("max_colwidth", None)
 
 
 @pytest.fixture
@@ -148,11 +152,8 @@ def test_indicator_type(dummy, series):
 
 
 def test_indicator_exists(dummy, series):
-    """Raise ValueError if indicator is a dup of an existing column name."""
-    with pytest.raises(
-        ValueError,
-        match="Cannot use name of an " "existing column for indicator column",
-    ):
+    """Raise ValueError if indicator is a dupe of an existing column name."""
+    with pytest.raises(ValueError, match="Cannot use name.+"):
         dummy.conditional_join(series, ("id", "B", ">"), indicator="id")
 
 
@@ -233,7 +234,8 @@ def test_equi_only(dummy):
     Raise ValueError if only an equi-join is present.
     """
     with pytest.raises(
-        ValueError, match="Equality only joins are not supported"
+        ValueError,
+        match="Equality only joins are supported only if aggfunc is provided.+",
     ):
         dummy.conditional_join(
             dummy.rename(columns={"S": "Strings"}), ("S", "Strings", "==")
@@ -246,6 +248,109 @@ def test_check_how_type(dummy, series):
     """
     with pytest.raises(TypeError, match="how should be one of.+"):
         dummy.conditional_join(series, ("id", "B", "<"), how=1)
+
+
+def test_check_aggfunc_type(dummy, series):
+    """
+    Raise TypeError if `aggfunc` is not a list.
+    """
+    with pytest.raises(TypeError, match="aggfunc should be one of.+"):
+        dummy.conditional_join(series, ("id", "B", "<"), aggfunc=1)
+
+
+def test_check_aggfunc_sub(dummy, series):
+    """
+    Raise TypeError if entry in `aggfunc` is not a tuple.
+    """
+    with pytest.raises(TypeError, match="entry in aggfunc should be one of.+"):
+        dummy.conditional_join(series, ("id", "B", "<"), aggfunc=[1])
+
+
+def test_check_aggfunc_sub_size(dummy, series):
+    """
+    Raise TypeError if entry in `aggfunc` is a tuple of len != 2.
+    """
+    with pytest.raises(
+        ValueError, match="The tuple in an aggfunc should be 2 elements.+"
+    ):
+        dummy.conditional_join(series, ("id", "B", "<"), aggfunc=[("B",)])
+
+
+def test_check_aggfunc_how(dummy, series):
+    """
+    Raise ValueError if `how` is not inner.
+    """
+    with pytest.raises(
+        ValueError, match="aggregation applies only when `how=left`"
+    ):
+        dummy.conditional_join(
+            series, ("id", "B", "<"), aggfunc=[("B", "sum")], how="inner"
+        )
+
+
+def test_check_aggfunc_keep(dummy, series):
+    """
+    Raise ValueError if `keep` is not `all`.
+    """
+    with pytest.raises(
+        ValueError, match="aggregation applies only when `keep=all`"
+    ):
+        dummy.conditional_join(
+            series,
+            ("id", "B", "<"),
+            aggfunc=[("B", "sum")],
+            keep="last",
+            how="left",
+        )
+
+
+def test_check_aggfunc_column(dummy, series):
+    """
+    Raise Error if `column` is not in right_dataframe.
+    """
+    with pytest.raises(
+        KeyError, match="BB in aggfunc does not exist in the right dataframe"
+    ):
+        dummy.conditional_join(
+            series,
+            ("id", "B", "<"),
+            aggfunc=[("BB", "sum")],
+            keep="all",
+            how="left",
+        )
+
+
+def test_check_aggfunc_unsupported(dummy, series):
+    """
+    Raise Error if `aggfunc` is not in default aggs.
+    """
+    with pytest.raises(
+        ValueError, match="The aggregation function for B should be one of.+"
+    ):
+        dummy.conditional_join(
+            series,
+            ("id", "B", "<"),
+            aggfunc=[("B", "summ")],
+            keep="all",
+            how="left",
+        )
+
+
+def test_check_aggfunc_numeric(dummy):
+    """
+    Raise Error if `aggfunc` column is not numeric.
+    """
+    ser = pd.DatetimeIndex(["1970-01-01"], name="B").to_series()
+    with pytest.raises(
+        ValueError, match="sum is supported only for numeric columns"
+    ):
+        dummy.conditional_join(
+            ser,
+            ("id", "B", "<"),
+            aggfunc=[("B", "sum")],
+            keep="all",
+            how="left",
+        )
 
 
 def test_check_force_type(dummy, series):
@@ -6846,3 +6951,233 @@ def test_numba_equi_extension_array():
     )
 
     assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_greater_than_floats_max(df, right):
+    """Test output for a single condition. ">"."""
+
+    expected = (
+        df.reset_index(names="l")
+        .merge(right, how="cross")
+        .query("B > Numeric")
+        .groupby("l")
+        .agg(numeric=("Numeric", "max"))
+        .loc[:, "numeric"]
+    )
+
+    actual = df.conditional_join(
+        right,
+        ("B", "Numeric", ">"),
+        how="left",
+        aggfunc=[("Numeric", "max")],
+    )
+    if expected.empty:
+        assert (expected.empty, actual.empty)  # noqa: F631
+    else:
+        indices, _ = get_join_indices(df, right, [("B", "Numeric", ">")])
+        actual = actual.rename(columns={"Numeric_max": "numeric"}).loc[
+            pd.unique(indices), "numeric"
+        ]
+        actual.index.names = [None]
+        expected.index.names = [None]
+        assert_series_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_less_than_floats_max(df, right):
+    """Test output for a single condition. "<"."""
+
+    expected = (
+        df.reset_index(names="l")
+        .merge(right, how="cross")
+        .query("B < Numeric")
+        .groupby("l")
+        .agg(numeric=("Numeric", "max"))
+        .loc[:, "numeric"]
+    )
+
+    actual = df.conditional_join(
+        right,
+        ("B", "Numeric", "<"),
+        how="left",
+        aggfunc=[("Numeric", "max")],
+    )
+    if expected.empty:
+        assert (expected.empty, actual.empty)  # noqa: F631
+    else:
+        indices, _ = get_join_indices(df, right, [("B", "Numeric", "<")])
+        actual = actual.rename(columns={"Numeric_max": "numeric"}).loc[
+            pd.unique(indices), "numeric"
+        ]
+        actual.index.names = [None]
+        expected.index.names = [None]
+        assert_series_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_greater_than_dates_min(df, right):
+    """Test output for a single condition. ">"."""
+
+    expected = (
+        df.reset_index(names="l")
+        .merge(right, how="cross")
+        .query("E > Dates")
+        .groupby("l")
+        .agg(numeric=("Numeric", "max"))
+        .loc[:, "numeric"]
+    )
+
+    actual = df.conditional_join(
+        right,
+        ("E", "Dates", ">"),
+        how="left",
+        aggfunc=[("Numeric", "max")],
+    )
+    if expected.empty:
+        assert (expected.empty, actual.empty)  # noqa: F631
+    else:
+        indices, _ = get_join_indices(df, right, [("E", "Dates", ">")])
+        actual = actual.rename(columns={"Numeric_max": "numeric"}).loc[
+            pd.unique(indices), "numeric"
+        ]
+        actual.index.names = [None]
+        expected.index.names = [None]
+        assert_series_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_less_than_dates_min(df, right):
+    """Test output for a single condition. "<"."""
+
+    expected = (
+        df.reset_index(names="l")
+        .merge(right, how="cross")
+        .query("E < Dates")
+        .groupby("l")
+        .agg(numeric=("Numeric", "max"))
+        .loc[:, "numeric"]
+    )
+
+    actual = df.conditional_join(
+        right,
+        ("E", "Dates", "<"),
+        how="left",
+        aggfunc=[("Numeric", "max")],
+    )
+    if expected.empty:
+        assert (expected.empty, actual.empty)  # noqa: F631
+    else:
+        indices, _ = get_join_indices(df, right, [("E", "Dates", "<")])
+        actual = actual.rename(columns={"Numeric_max": "numeric"}).loc[
+            pd.unique(indices), "numeric"
+        ]
+        actual.index.names = [None]
+        expected.index.names = [None]
+        assert_series_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_less_than_ints_sum(df, right):
+    """Test output for a single condition. "<"."""
+
+    expected = (
+        df.reset_index(names="l")
+        .merge(right, how="cross")
+        .query("B < Numeric")
+        .groupby("l")
+        .agg(numeric=("Integers", "sum"))
+        .loc[:, "numeric"]
+    )
+    actual = df.conditional_join(
+        right,
+        ("B", "Numeric", "<"),
+        how="left",
+        aggfunc=[("Integers", "sum")],
+    )
+    if expected.empty:
+        assert (expected.empty, actual.empty)  # noqa: F631
+    else:
+        indices, _ = get_join_indices(df, right, [("B", "Numeric", "<")])
+        actual = actual.rename(columns={"Integers_sum": "numeric"}).loc[
+            pd.unique(indices), "numeric"
+        ]
+        actual.index.names = [None]
+        expected.index.names = [None]
+        assert_series_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_greater_than_dates_size(df, right):
+    """Test output for a single condition. ">"."""
+
+    expected = (
+        df.reset_index(names="l")
+        .merge(right, how="cross")
+        .query("E > Dates")
+        .groupby("l")
+        .agg(numeric=("Numeric", "size"))
+        .loc[:, "numeric"]
+    )
+
+    actual = df.conditional_join(
+        right,
+        ("E", "Dates", ">"),
+        how="left",
+        aggfunc=[("Numeric", "size")],
+    )
+    if expected.empty:
+        assert (expected.empty, actual.empty)  # noqa: F631
+    else:
+        indices, _ = get_join_indices(df, right, [("E", "Dates", ">")])
+        actual = actual.rename(columns={"Numeric_size": "numeric"}).loc[
+            pd.unique(indices), "numeric"
+        ]
+        actual.index.names = [None]
+        expected.index.names = [None]
+        assert_series_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_greater_than_dates_counts(df, right):
+    """Test output for a single condition. ">"."""
+
+    expected = (
+        df.reset_index(names="l")
+        .merge(right, how="cross")
+        .query("E > Dates")
+        .groupby("l")
+        .agg(numeric=("Numeric", "count"))
+        .loc[:, "numeric"]
+    )
+
+    actual = df.conditional_join(
+        right,
+        ("E", "Dates", ">"),
+        how="left",
+        aggfunc=[("Numeric", "count")],
+    )
+    if expected.empty:
+        assert (expected.empty, actual.empty)  # noqa: F631
+    else:
+        indices, _ = get_join_indices(df, right, [("E", "Dates", ">")])
+        actual = actual.rename(columns={"Numeric_count": "numeric"}).loc[
+            pd.unique(indices), "numeric"
+        ]
+        actual.index.names = [None]
+        expected.index.names = [None]
+        assert_series_equal(expected, actual)

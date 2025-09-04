@@ -1181,3 +1181,517 @@ def check_monotonicity_per_range(
             current = val
         matches[num] = tracker
     return all_true
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def get_not_null_count_from_ranges_le_lt(
+    booleans: cython.schar[:],
+    bool_nulls: cython.schar[:],
+    counts_array: cython.long[:],
+    starts: cython.long[:],
+    ends: cython.long[:],
+    matches: cython.schar[:],
+    seen: cython.long[:],
+):
+    """
+    compute row count for non nulls
+    """
+    ###### types declaration  #################
+    length: cython.Py_ssize_t = booleans.shape[0]
+    num: cython.Py_ssize_t = 0
+    number: cython.Py_ssize_t = 0
+    val: cython.schar
+    start: cython.Py_ssize_t
+    end: cython.Py_ssize_t
+    count: cython.long
+    ##########################################
+    for num in range(length):
+        if booleans[num] == 0:
+            counts_array[num] = 0
+            continue
+        start = starts[num]
+        end = ends[num]
+        if matches[start] == 1:
+            counts_array[num] = seen[start]
+            continue
+        count = 0
+        for number in range(start, end):
+            val = bool_nulls[number]
+            count += val
+        counts_array[num] = count
+        seen[start] = count
+        matches[start] = 1
+    return np.asarray(counts_array)
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def get_not_null_count_from_ranges_ge_gt(
+    booleans: cython.schar[:],
+    bool_nulls: cython.schar[:],
+    counts_array: cython.long[:],
+    starts: cython.long[:],
+    ends: cython.long[:],
+    matches: cython.schar[:],
+    seen: cython.long[:],
+):
+    """
+    compute row count for non nulls
+    """
+    ###### types declaration  #################
+    length: cython.Py_ssize_t = booleans.shape[0]
+    num: cython.Py_ssize_t = 0
+    number: cython.Py_ssize_t = 0
+    val: cython.schar
+    start: cython.Py_ssize_t
+    end: cython.Py_ssize_t
+    indexer: cython.Py_ssize_t
+    count: cython.long
+    ##########################################
+    for num in range(length):
+        if booleans[num] == 0:
+            counts_array[num] = 0
+            continue
+        start = starts[num]
+        end = ends[num]
+        indexer = end - 1
+        if matches[indexer] == 1:
+            counts_array[num] = seen[indexer]
+            continue
+        count = 0
+        for number in range(start, end):
+            val = bool_nulls[number]
+            count += val
+        counts_array[num] = count
+        seen[indexer] = count
+        matches[indexer] = 1
+    return np.asarray(counts_array)
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def get_min_from_ranges_ge_gt(
+    booleans: cython.schar[:],
+    bool_nulls: cython.schar[:],
+    right: scalar_types[:],
+    starts: cython.long[:],
+    ends: cython.long[:],
+    matches: cython.schar[:],
+    seen: cython.long[:],
+    indexes: cython.long[:],
+):
+    """
+    compute index positions for min value
+    """
+    ###### types declaration  #################
+    length: cython.Py_ssize_t = booleans.shape[0]
+    num: cython.Py_ssize_t = 0
+    number: cython.Py_ssize_t = 0
+    val: cython.schar
+    current: scalar_types
+    previous: scalar_types
+    start: cython.Py_ssize_t
+    end: cython.Py_ssize_t
+    indexer: cython.Py_ssize_t
+    index: cython.Py_ssize_t = -1
+    ##########################################
+    for num in range(length):
+        if booleans[num] == 0:
+            indexes[num] = -1
+            continue
+        start = starts[num]
+        end = ends[num]
+        indexer = end - 1
+        if matches[indexer] == 1:
+            indexes[num] = seen[indexer]
+            continue
+        index = -1
+        for number in range(start, end):
+            val = bool_nulls[number]
+            if val == 1:
+                continue
+            current = right[number]
+            if index == -1:
+                previous = current
+                index = number
+                continue
+            if current < previous:
+                previous = current
+                index = number
+                continue
+        indexes[num] = index
+        seen[indexer] = index
+        matches[indexer] = 1
+    return np.asarray(indexes)
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def get_min_from_ranges_le_lt(
+    booleans: cython.schar[:],
+    bool_nulls: cython.schar[:],
+    right: scalar_types[:],
+    starts: cython.long[:],
+    ends: cython.long[:],
+    matches: cython.schar[:],
+    seen: cython.long[:],
+    indexes: cython.long[:],
+):
+    """
+    compute index positions for min value
+    """
+    ###### types declaration  #################
+    length: cython.Py_ssize_t = booleans.shape[0]
+    num: cython.Py_ssize_t = 0
+    number: cython.Py_ssize_t = 0
+    val: cython.schar
+    current: scalar_types
+    previous: scalar_types
+    start: cython.Py_ssize_t
+    end: cython.Py_ssize_t
+    index: cython.Py_ssize_t = -1
+    ##########################################
+    for num in range(length):
+        if booleans[num] == 0:
+            indexes[num] = -1
+            continue
+        start = starts[num]
+        end = ends[num]
+        if matches[start] == 1:
+            indexes[num] = seen[start]
+            continue
+        index = -1
+        for number in range(start, end):
+            val = bool_nulls[number]
+            if val == 1:
+                continue
+            current = right[number]
+            if index == -1:
+                previous = current
+                index = number
+                continue
+            if current < previous:
+                previous = current
+                index = number
+                continue
+        indexes[num] = index
+        seen[start] = index
+        matches[start] = 1
+    return np.asarray(indexes)
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def get_min_no_nulls_from_ranges_le_lt(
+    booleans: cython.schar[:],
+    right: scalar_types[:],
+    starts: cython.long[:],
+    ends: cython.long[:],
+    matches: cython.schar[:],
+    seen: cython.long[:],
+    indexes: cython.long[:],
+):
+    """
+    compute index positions for min value
+    """
+    ###### types declaration  #################
+    length: cython.Py_ssize_t = booleans.shape[0]
+    num: cython.Py_ssize_t = 0
+    number: cython.Py_ssize_t = 0
+    current: scalar_types
+    previous: scalar_types
+    start: cython.Py_ssize_t
+    end: cython.Py_ssize_t
+    index: cython.Py_ssize_t = -1
+    ##########################################
+    for num in range(length):
+        if booleans[num] == 0:
+            indexes[num] = -1
+            continue
+        start = starts[num]
+        end = ends[num]
+        if matches[start] == 1:
+            indexes[num] = seen[start]
+            continue
+        index = -1
+        for number in range(start, end):
+            current = right[number]
+            if index == -1:
+                previous = current
+                index = number
+                continue
+            if current < previous:
+                previous = current
+                index = number
+                continue
+        indexes[num] = index
+        seen[start] = index
+        matches[start] = 1
+    return np.asarray(indexes)
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def get_min_no_nulls_from_ranges_ge_gt(
+    booleans: cython.schar[:],
+    right: scalar_types[:],
+    starts: cython.long[:],
+    ends: cython.long[:],
+    matches: cython.schar[:],
+    seen: cython.long[:],
+    indexes: cython.long[:],
+):
+    """
+    compute index positions for min value
+    """
+    ###### types declaration  #################
+    length: cython.Py_ssize_t = booleans.shape[0]
+    num: cython.Py_ssize_t = 0
+    number: cython.Py_ssize_t = 0
+    current: scalar_types
+    previous: scalar_types
+    start: cython.Py_ssize_t
+    end: cython.Py_ssize_t
+    indexer: cython.Py_ssize_t
+    index: cython.Py_ssize_t = -1
+    ##########################################
+    for num in range(length):
+        if booleans[num] == 0:
+            indexes[num] = -1
+            continue
+        start = starts[num]
+        end = ends[num]
+        indexer = end - 1
+        if matches[indexer] == 1:
+            indexes[num] = seen[indexer]
+            continue
+        index = -1
+        for number in range(start, end):
+            current = right[number]
+            if index == -1:
+                previous = current
+                index = number
+                continue
+            if current < previous:
+                previous = current
+                index = number
+                continue
+        indexes[num] = index
+        seen[indexer] = index
+        matches[indexer] = 1
+    return np.asarray(indexes)
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def get_max_from_ranges_ge_gt(
+    booleans: cython.schar[:],
+    bool_nulls: cython.schar[:],
+    right: scalar_types[:],
+    starts: cython.long[:],
+    ends: cython.long[:],
+    matches: cython.schar[:],
+    seen: cython.long[:],
+    indexes: cython.long[:],
+):
+    """
+    compute index positions for max value
+    """
+    ###### types declaration  #################
+    length: cython.Py_ssize_t = booleans.shape[0]
+    num: cython.Py_ssize_t = 0
+    number: cython.Py_ssize_t = 0
+    val: cython.schar
+    current: scalar_types
+    previous: scalar_types
+    start: cython.Py_ssize_t
+    end: cython.Py_ssize_t
+    indexer: cython.Py_ssize_t
+    index: cython.Py_ssize_t = -1
+    ##########################################
+    for num in range(length):
+        if booleans[num] == 0:
+            indexes[num] = -1
+            continue
+        start = starts[num]
+        end = ends[num]
+        indexer = end - 1
+        if matches[indexer] == 1:
+            indexes[num] = seen[indexer]
+            continue
+        index = -1
+        for number in range(start, end):
+            val = bool_nulls[number]
+            if val == 1:
+                continue
+            current = right[number]
+            if index == -1:
+                previous = current
+                index = number
+                continue
+            if current > previous:
+                previous = current
+                index = number
+                continue
+        indexes[num] = index
+        seen[indexer] = index
+        matches[indexer] = 1
+    return np.asarray(indexes)
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def get_max_from_ranges_le_lt(
+    booleans: cython.schar[:],
+    bool_nulls: cython.schar[:],
+    right: scalar_types[:],
+    starts: cython.long[:],
+    ends: cython.long[:],
+    matches: cython.schar[:],
+    seen: cython.long[:],
+    indexes: cython.long[:],
+):
+    """
+    compute index positions for max value
+    """
+    ###### types declaration  #################
+    length: cython.Py_ssize_t = booleans.shape[0]
+    num: cython.Py_ssize_t = 0
+    number: cython.Py_ssize_t = 0
+    val: cython.schar
+    current: scalar_types
+    previous: scalar_types
+    start: cython.Py_ssize_t
+    end: cython.Py_ssize_t
+    index: cython.Py_ssize_t = -1
+    ##########################################
+    for num in range(length):
+        if booleans[num] == 0:
+            indexes[num] = -1
+            continue
+        start = starts[num]
+        end = ends[num]
+        if matches[start] == 1:
+            indexes[num] = seen[start]
+            continue
+        index = -1
+        for number in range(start, end):
+            val = bool_nulls[number]
+            if val == 1:
+                continue
+            current = right[number]
+            if index == -1:
+                previous = current
+                index = number
+                continue
+            if current > previous:
+                previous = current
+                index = number
+                continue
+        indexes[num] = index
+        seen[start] = index
+        matches[start] = 1
+    return np.asarray(indexes)
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def get_max_no_nulls_from_ranges_le_lt(
+    booleans: cython.schar[:],
+    right: scalar_types[:],
+    starts: cython.long[:],
+    ends: cython.long[:],
+    matches: cython.schar[:],
+    seen: cython.long[:],
+    indexes: cython.long[:],
+):
+    """
+    compute index positions for max value
+    """
+    ###### types declaration  #################
+    length: cython.Py_ssize_t = booleans.shape[0]
+    num: cython.Py_ssize_t = 0
+    number: cython.Py_ssize_t = 0
+    current: scalar_types
+    previous: scalar_types
+    start: cython.Py_ssize_t
+    end: cython.Py_ssize_t
+    index: cython.Py_ssize_t = -1
+    ##########################################
+    for num in range(length):
+        if booleans[num] == 0:
+            indexes[num] = -1
+            continue
+        start = starts[num]
+        end = ends[num]
+        if matches[start] == 1:
+            indexes[num] = seen[start]
+            continue
+        index = -1
+        for number in range(start, end):
+            current = right[number]
+            if index == -1:
+                previous = current
+                index = number
+                continue
+            if current > previous:
+                previous = current
+                index = number
+                continue
+        indexes[num] = index
+        seen[start] = index
+        matches[start] = 1
+    return np.asarray(indexes)
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def get_max_no_nulls_from_ranges_ge_gt(
+    booleans: cython.schar[:],
+    right: scalar_types[:],
+    starts: cython.long[:],
+    ends: cython.long[:],
+    matches: cython.schar[:],
+    seen: cython.long[:],
+    indexes: cython.long[:],
+):
+    """
+    compute index positions for max value
+    """
+    ###### types declaration  #################
+    length: cython.Py_ssize_t = booleans.shape[0]
+    num: cython.Py_ssize_t = 0
+    number: cython.Py_ssize_t = 0
+    current: scalar_types
+    previous: scalar_types
+    start: cython.Py_ssize_t
+    end: cython.Py_ssize_t
+    indexer: cython.Py_ssize_t
+    index: cython.Py_ssize_t = -1
+    ##########################################
+    for num in range(length):
+        if booleans[num] == 0:
+            indexes[num] = -1
+            continue
+        start = starts[num]
+        end = ends[num]
+        indexer = end - 1
+        if matches[indexer] == 1:
+            indexes[num] = seen[indexer]
+            continue
+        index = -1
+        for number in range(start, end):
+            current = right[number]
+            if index == -1:
+                previous = current
+                index = number
+                continue
+            if current > previous:
+                previous = current
+                index = number
+                continue
+        indexes[num] = index
+        seen[indexer] = index
+        matches[indexer] = 1
+    return np.asarray(indexes)

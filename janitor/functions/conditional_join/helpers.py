@@ -94,42 +94,6 @@ def _equal_indices(
     }
 
 
-def _equal_indices_join(
-    left: pd.Series,
-    right: pd.Series,
-) -> tuple:
-    """
-    Use binary search to get indices where left
-    is equal to right.
-
-    A tuple of integer indexes
-    for left and right is returned.
-    """
-
-    outcome = _null_checks_cond_join(series=left)
-    if outcome is None:
-        return None
-    left, _ = outcome
-    outcome = _null_checks_cond_join(series=right)
-    if outcome is None:
-        return None
-    right, _ = outcome
-    right, _ = _sort_if_not_monotonic(series=right)
-    indices = _equal_indices(left=left, right=right)
-    if indices is None:
-        return None
-    booleans = indices["booleans"]
-    starts = indices["starts"]
-    ends = indices["ends"]
-    left_index = indices["left_index"]
-    right_index = indices["right_index"]
-    if not booleans.all():
-        left_index = left_index[booleans]
-        starts = starts[booleans]
-        ends = ends[booleans]
-    return left_index, right_index, starts, ends
-
-
 def _less_than_indices(
     left: pd.array,
     right: pd.array,
@@ -183,6 +147,257 @@ def _less_than_indices(
     if not booleans.any():
         return None
     return search_indices, booleans
+
+
+def _single_le_ge_join_agg(
+    df: pd.DataFrame,
+    right: pd.DataFrame,
+    condition: tuple,
+    aggfunc: list[tuple],
+) -> tuple:
+    """
+    Compute aggregate on '</<=/>/>='
+    """
+    left_on, right_on, op = condition
+    le_lt = op in less_than_join_types
+    booleans = _maybe_remove_nulls_from_dataframe(
+        df=df, columns=[left_on], return_bools=True
+    )
+    if booleans is None:
+        return None
+    right = _maybe_remove_nulls_from_dataframe(df=right, columns=[right_on])
+    if right is None:
+        return None
+    if not right[right_on].is_monotonic_increasing:
+        right = right.sort_values(right_on, ignore_index=False, kind="stable")
+    len_df = len(df)
+    len_right = len(right)
+    starts = np.zeros(len_df, dtype=np.intp)
+    ends = np.empty(len_df, dtype=np.intp)
+    ends[:] = len_right
+    sizes = np.zeros(len_df, dtype=np.intp)
+    booleans = booleans.astype(np.int8, copy=False)
+    indices = {
+        "starts": starts,
+        "ends": ends,
+        "booleans": booleans,
+        "sizes": sizes,
+    }
+    indices = _update_search_indices(
+        left=df[left_on]._values,
+        right=right[right_on]._values,
+        indices=indices,
+        op=op,
+    )
+    if indices is None:
+        return None
+    results = []
+    column_names = []
+    agg_names = []
+    for column_name, agg in aggfunc:
+        if agg != "size":
+            series = right[column_name]
+            null_bools, has_nans = _get_null_mask(series=series)
+            null_bools = _convert_array_to_numpy(array=null_bools._values)
+            array = _convert_array_to_numpy(array=series._values)
+        else:
+            series, array, null_bools = None, None, None
+        if agg == "size":
+            result = indices["sizes"]
+        elif (agg == "count") and not has_nans:
+            result = indices["sizes"]
+        elif (agg == "count") and le_lt:
+            result = cond_join.get_not_null_count_from_ranges_le_lt(
+                booleans=indices["booleans"],
+                bool_nulls=np.logical_not(null_bools).astype(
+                    np.int8, copy=False
+                ),
+                counts_array=np.empty(len_df, dtype=np.intp),
+                starts=indices["starts"],
+                ends=indices["ends"],
+                matches=np.zeros(len_right, dtype=np.int8),
+                seen=np.empty(len_right, dtype=np.intp),
+            )
+        elif agg == "count":
+            result = cond_join.get_not_null_count_from_ranges_ge_gt(
+                booleans=indices["booleans"],
+                bool_nulls=np.logical_not(null_bools).astype(
+                    np.int8, copy=False
+                ),
+                counts_array=np.empty(len_df, dtype=np.intp),
+                starts=indices["starts"],
+                ends=indices["ends"],
+                matches=np.zeros(len_right, dtype=np.int8),
+                seen=np.empty(len_right, dtype=np.intp),
+            )
+        elif (agg == "min") and has_nans and le_lt:
+            indexer = cond_join.get_min_from_ranges_le_lt(
+                booleans=indices["booleans"],
+                bool_nulls=null_bools.astype(np.int8, copy=False),
+                right=array,
+                indexes=np.empty(len_df, dtype=np.intp),
+                starts=indices["starts"],
+                ends=indices["ends"],
+                matches=np.zeros(len_right, dtype=np.int8),
+                seen=np.empty(len_right, dtype=np.intp),
+            )
+            null = series[null_bools].iloc[0].item()
+            result = series.iloc[indexer]
+            result = result.mask(indexer == -1, null)
+            result = result.array
+        elif (agg == "min") and has_nans:
+            indexer = cond_join.get_min_from_ranges_ge_gt(
+                booleans=indices["booleans"],
+                bool_nulls=null_bools.astype(np.int8, copy=False),
+                right=array,
+                indexes=np.empty(len_df, dtype=np.intp),
+                starts=indices["starts"],
+                ends=indices["ends"],
+                matches=np.zeros(len_right, dtype=np.int8),
+                seen=np.empty(len_right, dtype=np.intp),
+            )
+            null = series[null_bools].iloc[0].item()
+            result = series.iloc[indexer]
+            result = result.mask(indexer == -1, null)
+            result = result.array
+        elif (agg == "min") and le_lt:
+            indexer = cond_join.get_min_no_nulls_from_ranges_le_lt(
+                booleans=indices["booleans"],
+                right=array,
+                indexes=np.empty(len_df, dtype=np.intp),
+                starts=indices["starts"],
+                ends=indices["ends"],
+                matches=np.zeros(len_right, dtype=np.int8),
+                seen=np.empty(len_right, dtype=np.intp),
+            )
+            if pd.api.types.is_extension_array_dtype(series):
+                null = pd.NA
+            else:
+                null = np.nan
+            result = series.iloc[indexer]
+            result = result.mask(indexer == -1, null)
+            result = result.array
+        elif agg == "min":
+            indexer = cond_join.get_min_no_nulls_from_ranges_ge_gt(
+                booleans=indices["booleans"],
+                right=array,
+                indexes=np.empty(len_df, dtype=np.intp),
+                starts=indices["starts"],
+                ends=indices["ends"],
+                matches=np.zeros(len_right, dtype=np.int8),
+                seen=np.empty(len_right, dtype=np.intp),
+            )
+            if pd.api.types.is_extension_array_dtype(series):
+                null = pd.NA
+            else:
+                null = np.nan
+            result = series.iloc[indexer]
+            result = result.mask(indexer == -1, null)
+            result = result.array
+        elif (agg == "max") and has_nans and le_lt:
+            indexer = cond_join.get_max_from_ranges_le_lt(
+                booleans=indices["booleans"],
+                bool_nulls=null_bools.astype(np.int8, copy=False),
+                right=array,
+                indexes=np.empty(len_df, dtype=np.intp),
+                starts=indices["starts"],
+                ends=indices["ends"],
+                matches=np.zeros(len_right, dtype=np.int8),
+                seen=np.empty(len_right, dtype=np.intp),
+            )
+            null = series[null_bools].iloc[0].item()
+            result = series.iloc[indexer]
+            result = result.mask(indexer == -1, null)
+            result = result.array
+        elif (agg == "max") and le_lt:
+            indexer = cond_join.get_max_no_nulls_from_ranges_le_lt(
+                booleans=indices["booleans"],
+                right=array,
+                indexes=np.empty(len_df, dtype=np.intp),
+                starts=indices["starts"],
+                ends=indices["ends"],
+                matches=np.zeros(len_right, dtype=np.int8),
+                seen=np.empty(len_right, dtype=np.intp),
+            )
+            if pd.api.types.is_extension_array_dtype(series):
+                null = pd.NA
+            else:
+                null = np.nan
+            result = series.iloc[indexer]
+            result = result.mask(indexer == -1, null)
+            result = result.array
+        elif (agg == "max") and has_nans:
+            indexer = cond_join.get_max_from_ranges_ge_gt(
+                booleans=indices["booleans"],
+                bool_nulls=null_bools.astype(np.int8, copy=False),
+                right=array,
+                indexes=np.empty(len_df, dtype=np.intp),
+                starts=indices["starts"],
+                ends=indices["ends"],
+                matches=np.zeros(len_right, dtype=np.int8),
+                seen=np.empty(len_right, dtype=np.intp),
+            )
+            null = series[null_bools].iloc[0].item()
+            result = series.iloc[indexer]
+            result = result.mask(indexer == -1, null)
+            result = result.array
+        elif agg == "max":
+            indexer = cond_join.get_max_no_nulls_from_ranges_ge_gt(
+                booleans=indices["booleans"],
+                right=array,
+                indexes=np.empty(len_df, dtype=np.intp),
+                starts=indices["starts"],
+                ends=indices["ends"],
+                matches=np.zeros(len_right, dtype=np.int8),
+                seen=np.empty(len_right, dtype=np.intp),
+            )
+            if pd.api.types.is_extension_array_dtype(series):
+                null = pd.NA
+            else:
+                null = np.nan
+            result = series.iloc[indexer]
+            result = result.mask(indexer == -1, null)
+            result = result.array
+        elif agg == "sum":
+            booleans = indices["booleans"].astype(np.bool_, copy=False)
+            starts = indices["starts"]
+            ends = indices["ends"]
+            if not booleans.all():
+                min_idx = starts[booleans].min()
+            else:
+                min_idx = starts.min()
+            if min_idx > 0:
+                if not booleans.all():
+                    max_idx = ends[booleans].max()
+                else:
+                    max_idx = ends.max()
+                slicer = slice(min_idx, max_idx)
+                repl = pd.Series(0, dtype=series.dtype, index=series.index)
+                repl.iloc[slicer] = series.iloc[slicer]
+                series = repl[:]
+            # return series, indices
+            if series.hasnans:
+                series = series.fillna(0)
+            result = series.cumsum()
+            # return result, indices
+            top = result.iloc[ends - 1]
+            bottom = result.iloc[starts - 1]
+            bools = starts == 0
+            if bools.any():
+                bottom = bottom.mask(bools, 0)
+            result = top.array - bottom.array
+            if not booleans.all():
+                result = pd.Series(result)
+                result = result.where(booleans, 0)
+                result = result.array
+        results.append(result)
+        column_names.append(column_name)
+        agg_names.append(agg)
+    return {
+        "results": results,
+        "column_names": column_names,
+        "agg_names": agg_names,
+    }
 
 
 def _less_than_single_join(
@@ -495,47 +710,43 @@ def _not_equal_indices(left: pd.Series, right: pd.Series, keep: str) -> tuple:
 
 
 def _generic_func_cond_join(
-    left: pd.Series,
-    right: pd.Series,
-    op: str,
+    df: pd.DataFrame,
+    right: pd.DataFrame,
+    condition: tuple,
     keep: str,
     row_count: Hashable = None,
     return_ranges: bool = False,
+    aggfunc: dict = None,
 ) -> tuple:
     """
     Generic function to call any of the individual functions
     (_less_than_indices, _greater_than_indices,
     or _not_equal_indices).
     """
-    strict = False
+    left_on, right_on, op = condition
 
-    if op in {
-        _JoinOperator.GREATER_THAN.value,
-        _JoinOperator.LESS_THAN.value,
-        _JoinOperator.NOT_EQUAL.value,
-    }:
-        strict = True
-
-    if op in less_than_join_types:
+    if (op in less_than_join_types) and (aggfunc is None):
         return _less_than_single_join(
-            left=left,
-            right=right,
-            strict=strict,
+            left=df[left_on],
+            right=right[right_on],
+            strict=op == _JoinOperator.LESS_THAN.value,
             keep=keep,
             row_count=row_count,
             return_ranges=return_ranges,
         )
-    if op in greater_than_join_types:
+    if (op in greater_than_join_types) and (aggfunc is None):
         return _greater_than_single_join(
-            left=left,
-            right=right,
-            strict=strict,
+            left=df[left_on],
+            right=right[right_on],
+            strict=op == _JoinOperator.GREATER_THAN.value,
             keep=keep,
             row_count=row_count,
             return_ranges=return_ranges,
         )
     if op == _JoinOperator.NOT_EQUAL.value:
-        outcome = _not_equal_indices(left=left, right=right, keep=keep)
+        outcome = _not_equal_indices(
+            left=df[left_on], right=right[right_on], keep=keep
+        )
         if outcome is None:
             return None
         left_index, right_index = outcome
@@ -544,10 +755,10 @@ def _generic_func_cond_join(
                 pd.Index(left_index).value_counts(sort=False).rename(row_count)
             )
         return left_index, right_index
-    return _equal_indices_join(
-        left=left,
-        right=right,
-    )
+    if aggfunc:
+        return _single_le_ge_join_agg(
+            df=df, right=right, condition=condition, aggfunc=aggfunc
+        )
 
 
 def _keep_output(keep: str, left: np.ndarray, right: np.ndarray):
@@ -667,14 +878,21 @@ def _get_row_counts_multiple_conditions_no_ranges(
     return pd.Series(data=counts_array, name=row_count)
 
 
-def _remove_nulls_multiple_conditions(df: pd.DataFrame, columns: Sequence):
+def _maybe_remove_nulls_from_dataframe(
+    df: pd.DataFrame, columns: Sequence, return_bools: bool = False
+):
     """
     Remove nulls if op is not !=;
-    applies to multiple join conditions
     """
     any_nulls = df.loc[:, [*columns]].isna().any(axis=1)
     if any_nulls.all():
         return None
+    if return_bools and pd.api.types.is_extension_array_dtype(any_nulls):
+        any_nulls = ~any_nulls
+        return any_nulls.to_numpy(na_value=False, copy=False)
+    if return_bools:
+        any_nulls = ~any_nulls
+        return any_nulls._values
     if any_nulls.any():
         df = df.loc[~any_nulls]
     return df
@@ -838,6 +1056,33 @@ def _convert_to_numpy(
         left = left.view(np.int64)
         right = right.view(np.int64)
     return left, right
+
+
+def _convert_array_to_numpy(array: np.ndarray) -> np.ndarray:
+    """
+    Ensure array is a numpy array.
+    """
+    if pd.api.types.is_extension_array_dtype(array):
+        array_dtype = array.dtype.numpy_dtype
+        array = array.to_numpy(dtype=array_dtype, na_value=-1, copy=False)
+    if pd.api.types.is_timedelta64_dtype(array):
+        array = array.to_numpy(copy=False)
+    if pd.api.types.is_datetime64_dtype(
+        array
+    ) or pd.api.types.is_timedelta64_dtype(array):
+        array = array.view(np.int64)
+    return array
+
+
+def _get_null_mask(series: pd.Series) -> np.ndarray:
+    """
+    Get boolean of null rows
+    """
+    any_nulls = series.isna()
+    has_nans = any_nulls.any()
+    if pd.api.types.is_extension_array_dtype(series):
+        return any_nulls.to_numpy(na_value=False, copy=False), has_nans
+    return any_nulls, has_nans
 
 
 def _build_indices_fast_path_range_join_only(

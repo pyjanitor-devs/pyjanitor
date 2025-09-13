@@ -6975,7 +6975,7 @@ def test_single_condition_greater_than_floats_max(df, right):
         aggfunc=[("Numeric", "max")],
     )
     if expected.empty:
-        assert (expected.empty, actual.empty)  # noqa: F631
+        assert expected.empty is actual.empty, "expected does not match actual"
     else:
         indices, _ = get_join_indices(df, right, [("B", "Numeric", ">")])
         actual = actual.rename(columns={"Numeric_max": "numeric"}).loc[
@@ -7008,7 +7008,7 @@ def test_single_condition_less_than_floats_max(df, right):
         aggfunc=[("Numeric", "max")],
     )
     if expected.empty:
-        assert (expected.empty, actual.empty)  # noqa: F631
+        assert expected.empty is actual.empty, "expected does not match actual"
     else:
         indices, _ = get_join_indices(df, right, [("B", "Numeric", "<")])
         actual = actual.rename(columns={"Numeric_max": "numeric"}).loc[
@@ -7041,7 +7041,7 @@ def test_single_condition_greater_than_dates_min(df, right):
         aggfunc=[("Numeric", "max")],
     )
     if expected.empty:
-        assert (expected.empty, actual.empty)  # noqa: F631
+        assert expected.empty is actual.empty, "expected does not match actual"
     else:
         indices, _ = get_join_indices(df, right, [("E", "Dates", ">")])
         actual = actual.rename(columns={"Numeric_max": "numeric"}).loc[
@@ -7074,7 +7074,7 @@ def test_single_condition_less_than_dates_min(df, right):
         aggfunc=[("Numeric", "max")],
     )
     if expected.empty:
-        assert (expected.empty, actual.empty)  # noqa: F631
+        assert expected.empty is actual.empty, "expected does not match actual"
     else:
         indices, _ = get_join_indices(df, right, [("E", "Dates", "<")])
         actual = actual.rename(columns={"Numeric_max": "numeric"}).loc[
@@ -7106,7 +7106,7 @@ def test_single_condition_less_than_ints_sum(df, right):
         aggfunc=[("Integers", "sum")],
     )
     if expected.empty:
-        assert (expected.empty, actual.empty)  # noqa: F631
+        assert expected.empty is actual.empty, "expected does not match actual"
     else:
         indices, _ = get_join_indices(df, right, [("B", "Numeric", "<")])
         actual = actual.rename(columns={"Integers_sum": "numeric"}).loc[
@@ -7115,6 +7115,38 @@ def test_single_condition_less_than_ints_sum(df, right):
         actual.index.names = [None]
         expected.index.names = [None]
         assert_series_equal(expected, actual)
+
+
+# @pytest.mark.turtle
+# @settings(deadline=None, max_examples=10)
+# @given(df=conditional_df(), right=conditional_right())
+# def test_single_condition_less_than_floats_sum(df, right):
+#     """Test output for a single condition. "<"."""
+
+#     expected = (
+#         df.reset_index(names="l")
+#         .merge(right, how="cross")
+#         .query("B < Numeric")
+#         .groupby("l")
+#         .agg(numeric=("Numeric", "sum"))
+#         .loc[:, "numeric"]
+#     )
+#     actual = df.conditional_join(
+#         right,
+#         ("B", "Numeric", "<"),
+#         how="left",
+#         aggfunc=[("Numeric", "sum")],
+#     )
+#     if expected.empty:
+#         assert expected.empty is actual.empty, "expected does not match actual"
+#     else:
+#         indices, _ = get_join_indices(df, right, [("B", "Numeric", "<")])
+#         actual = actual.rename(columns={"Numeric_sum": "numeric"}).loc[
+#             pd.unique(indices), "numeric"
+#         ]
+#         actual.index.names = [None]
+#         expected.index.names = [None]
+#         assert_series_equal(expected, actual)
 
 
 @pytest.mark.turtle
@@ -7139,7 +7171,7 @@ def test_single_condition_greater_than_dates_size(df, right):
         aggfunc=[("Numeric", "size")],
     )
     if expected.empty:
-        assert (expected.empty, actual.empty)  # noqa: F631
+        assert expected.empty is actual.empty, "expected does not match actual"
     else:
         indices, _ = get_join_indices(df, right, [("E", "Dates", ">")])
         actual = actual.rename(columns={"Numeric_size": "numeric"}).loc[
@@ -7172,10 +7204,366 @@ def test_single_condition_greater_than_dates_counts(df, right):
         aggfunc=[("Numeric", "count")],
     )
     if expected.empty:
-        assert (expected.empty, actual.empty)  # noqa: F631
+        assert expected.empty is actual.empty, "expected does not match actual"
     else:
         indices, _ = get_join_indices(df, right, [("E", "Dates", ">")])
         actual = actual.rename(columns={"Numeric_count": "numeric"}).loc[
+            pd.unique(indices), "numeric"
+        ]
+        actual.index.names = [None]
+        expected.index.names = [None]
+        assert_series_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_ge_and_le_range_numbers_agg_count(df, right):
+    """Test output for multiple conditions."""
+
+    expected = (
+        df.reset_index(names="l")
+        .merge(
+            right,
+            how="cross",
+        )
+        .query("A>=Integers and E<Dates_Right")
+        .groupby("l")
+        .agg(numeric=("Numeric", "count"))
+        .loc[:, "numeric"]
+    )
+
+    actual = df.conditional_join(
+        right,
+        ("E", "Dates_Right", "<"),
+        ("A", "Integers", ">="),
+        how="left",
+        aggfunc=[("Numeric", "count")],
+    )
+    if expected.empty:
+        assert expected.empty is actual.empty, "expected does not match actual"
+    else:
+        indices, _ = get_join_indices(
+            df,
+            right,
+            [
+                ("E", "Dates_Right", "<"),
+                ("A", "Integers", ">="),
+            ],
+        )
+        actual = actual.rename(columns={"Numeric_count": "numeric"}).loc[
+            pd.unique(indices), "numeric"
+        ]
+        actual.index.names = [None]
+        expected.index.names = [None]
+        assert_series_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_ge_and_le_range_numberss_agg_size(df, right):
+    """Test output for multiple conditions."""
+
+    expected = (
+        df.reset_index(names="l")
+        .merge(
+            right,
+            how="cross",
+        )
+        .query("A>=Integers and E<Dates_Right")
+        .groupby("l")
+        .agg(numeric=("Numeric", "size"))
+        .loc[:, "numeric"]
+    )
+
+    actual = df.conditional_join(
+        right,
+        ("E", "Dates_Right", "<"),
+        ("A", "Integers", ">="),
+        how="left",
+        aggfunc=[("Numeric", "size")],
+    )
+    if expected.empty:
+        assert expected.empty is actual.empty, "expected does not match actual"
+    else:
+        indices, _ = get_join_indices(
+            df,
+            right,
+            [
+                ("E", "Dates_Right", "<"),
+                ("A", "Integers", ">="),
+            ],
+        )
+        actual = actual.rename(columns={"Numeric_size": "numeric"}).loc[
+            pd.unique(indices), "numeric"
+        ]
+        actual.index.names = [None]
+        expected.index.names = [None]
+        assert_series_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_gt_and_lt_range_dates_agg_max(df, right):
+    """Test output for multiple conditions."""
+
+    expected = (
+        df.reset_index(names="l")
+        .merge(
+            right,
+            how="cross",
+        )
+        .query("A>Integers and B<Numeric")
+        .groupby("l")
+        .agg(dates=("Dates", "max"))
+        .loc[:, "dates"]
+    )
+
+    actual = df.conditional_join(
+        right,
+        ("B", "Numeric", "<"),
+        ("A", "Integers", ">"),
+        how="left",
+        aggfunc=[("Dates", "max")],
+    )
+    if expected.empty:
+        assert expected.empty is actual.empty, "expected does not match actual"
+    else:
+        indices, _ = get_join_indices(
+            df,
+            right,
+            [
+                ("B", "Numeric", "<"),
+                ("A", "Integers", ">"),
+            ],
+        )
+        actual = actual.rename(columns={"Dates_max": "dates"}).loc[
+            pd.unique(indices), "dates"
+        ]
+        actual.index.names = [None]
+        expected.index.names = [None]
+        assert_series_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_gt_and_lt_range_datess_agg_min(df, right):
+    """Test output for multiple conditions."""
+
+    expected = (
+        df.reset_index(names="l")
+        .merge(
+            right,
+            how="cross",
+        )
+        .query("A>Integers and B<Numeric")
+        .groupby("l")
+        .agg(dates=("Dates", "min"))
+        .loc[:, "dates"]
+    )
+
+    actual = df.conditional_join(
+        right,
+        ("B", "Numeric", "<"),
+        ("A", "Integers", ">"),
+        how="left",
+        aggfunc=[("Dates", "min")],
+    )
+    if expected.empty:
+        assert expected.empty is actual.empty, "expected does not match actual"
+    else:
+        indices, _ = get_join_indices(
+            df,
+            right,
+            [
+                ("B", "Numeric", "<"),
+                ("A", "Integers", ">"),
+            ],
+        )
+        actual = actual.rename(columns={"Dates_min": "dates"}).loc[
+            pd.unique(indices), "dates"
+        ]
+        actual.index.names = [None]
+        expected.index.names = [None]
+        assert_series_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_ge_and_le_range_numberss_agg_sum_int(df, right):
+    """Test output for multiple conditions."""
+
+    expected = (
+        df.reset_index(names="l")
+        .merge(
+            right,
+            how="cross",
+        )
+        .query("B>=Numeric and E<Dates_Right")
+        .groupby("l")
+        .agg(numeric=("Integers", "sum"))
+        .loc[:, "numeric"]
+    )
+
+    actual = df.conditional_join(
+        right,
+        ("E", "Dates_Right", "<"),
+        ("B", "Numeric", ">="),
+        how="left",
+        aggfunc=[("Integers", "sum")],
+    )
+    if expected.empty:
+        assert expected.empty is actual.empty, "expected does not match actual"
+    else:
+        indices, _ = get_join_indices(
+            df,
+            right,
+            [
+                ("E", "Dates_Right", "<"),
+                ("B", "Numeric", ">="),
+            ],
+        )
+        actual = actual.rename(columns={"Integers_sum": "numeric"}).loc[
+            pd.unique(indices), "numeric"
+        ]
+        actual.index.names = [None]
+        expected.index.names = [None]
+        assert_series_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_ge_and_le_range_numberss_agg_sum_float(df, right):
+    """Test output for multiple conditions."""
+
+    expected = (
+        df.reset_index(names="l")
+        .merge(
+            right,
+            how="cross",
+        )
+        .query("B>=Numeric and E<Dates_Right")
+        .groupby("l")
+        .agg(numeric=("Numeric", "sum"))
+        .loc[:, "numeric"]
+    )
+
+    actual = df.conditional_join(
+        right,
+        ("E", "Dates_Right", "<"),
+        ("B", "Numeric", ">="),
+        how="left",
+        aggfunc=[("Numeric", "sum")],
+    )
+    if expected.empty:
+        assert expected.empty is actual.empty, "expected does not match actual"
+    else:
+        indices, _ = get_join_indices(
+            df,
+            right,
+            [
+                ("E", "Dates_Right", "<"),
+                ("B", "Numeric", ">="),
+            ],
+        )
+        actual = actual.rename(columns={"Numeric_sum": "numeric"}).loc[
+            pd.unique(indices), "numeric"
+        ]
+        actual.index.names = [None]
+        expected.index.names = [None]
+        assert_series_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_mult_join_numberss_agg_sum_float(df, right):
+    """Test output for multiple conditions."""
+
+    expected = (
+        df.reset_index(names="l")
+        .merge(
+            right,
+            how="cross",
+        )
+        .query("B<Numeric and E<Dates_Right and Integers != A")
+        .groupby("l")
+        .agg(numeric=("Numeric", "sum"))
+        .loc[:, "numeric"]
+    )
+
+    actual = df.conditional_join(
+        right,
+        ("E", "Dates_Right", "<"),
+        ("B", "Numeric", "<"),
+        ("A", "Integers", "!="),
+        how="left",
+        aggfunc=[("Numeric", "sum")],
+    )
+    if expected.empty:
+        assert expected.empty is actual.empty, "expected does not match actual"
+    else:
+        indices, _ = get_join_indices(
+            df,
+            right,
+            [
+                ("E", "Dates_Right", "<"),
+                ("B", "Numeric", "<"),
+                ("A", "Integers", "!="),
+            ],
+        )
+        actual = actual.rename(columns={"Numeric_sum": "numeric"}).loc[
+            pd.unique(indices), "numeric"
+        ]
+        actual.index.names = [None]
+        expected.index.names = [None]
+        assert_series_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_multi_join_numberss_agg_sum_float(df, right):
+    """Test output for multiple conditions."""
+
+    expected = (
+        df.reset_index(names="l")
+        .merge(
+            right,
+            how="cross",
+        )
+        .query("B!=Numeric and E<Dates_Right and Integers != A")
+        .groupby("l")
+        .agg(numeric=("Numeric", "sum"))
+        .loc[:, "numeric"]
+    )
+
+    actual = df.conditional_join(
+        right,
+        ("E", "Dates_Right", "<"),
+        ("B", "Numeric", "!="),
+        ("A", "Integers", "!="),
+        how="left",
+        aggfunc=[("Numeric", "sum")],
+    )
+    if expected.empty:
+        assert expected.empty is actual.empty, "expected does not match actual"
+    else:
+        indices, _ = get_join_indices(
+            df,
+            right,
+            [
+                ("E", "Dates_Right", "<"),
+                ("B", "Numeric", "!="),
+                ("A", "Integers", "!="),
+            ],
+        )
+        actual = actual.rename(columns={"Numeric_sum": "numeric"}).loc[
             pd.unique(indices), "numeric"
         ]
         actual.index.names = [None]

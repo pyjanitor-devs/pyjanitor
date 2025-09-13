@@ -96,7 +96,7 @@ def conditional_join(
     the aggregaton is computed on the right dataframe
     for each row of the left DataFrame based on the join keys.
     Supported aggregation functions are
-    `sum`, `diff`, `count`, `size`, `min`, `max`,`prod`.
+    `sum`, `count`, `size`, `min`, `max`.
     Missing values are not included in the computation.
 
     The operator can be any of `==`, `!=`, `<=`, `<`, `>=`, `>`.
@@ -289,6 +289,10 @@ def conditional_join(
         force: If `True`, force the non-equi join conditions to execute before the equi join.
         use_pandas_merge_for_equi_join: If True, uses Pandas' merge
             function when an equi-join is present, else uses a binary search approach.
+        aggfunc: Compute aggregates on the right dataframe
+            for each row of the left DataFrame based on the join keys.
+            Supported aggregation functions are
+            `sum`, `count`, `size`, `min`, `max`.
 
 
     Returns:
@@ -466,6 +470,7 @@ def _conditional_join_preliminary_checks(
             raise ValueError("row_count applies only when `keep=all`")
         if how != "left":
             raise ValueError("row_count applies only when `how=left`")
+    if aggfunc is not None:
         if all(
             (
                 op == helpers._JoinOperator.NOT_EQUAL.value
@@ -477,7 +482,6 @@ def _conditional_join_preliminary_checks(
                 "conditions where != "
                 "is the only join operator."
             )
-    if aggfunc is not None:
         check("aggfunc", aggfunc, [list])
         for entry in aggfunc:
             check("entry in aggfunc", entry, [tuple])
@@ -649,6 +653,7 @@ def _conditional_join_compute(
             return_ranges=return_ranges,
             row_count=row_count,
             use_pandas_merge_for_equi_join=use_pandas_merge_for_equi_join,
+            aggfunc=aggfunc,
         )
     elif (len(conditions) > 1) & le_lt_check:
         result = _multiple_conditional_join_le_lt(
@@ -659,6 +664,7 @@ def _conditional_join_compute(
             use_numba=use_numba,
             return_ranges=return_ranges,
             row_count=row_count,
+            aggfunc=aggfunc,
         )
     elif len(conditions) > 1:
         result = _multiple_conditional_join_ne(
@@ -686,6 +692,7 @@ def _conditional_join_compute(
             return_ranges=return_ranges,
             aggfunc=aggfunc,
         )
+    return result
     if aggfunc:
         return _create_frame_agg(
             df=df, df_columns=df_columns, agg_result=result
@@ -737,7 +744,7 @@ def _multiple_conditional_join_ne(
     # not equal typically combines less than
     # and greater than, so a lot more rows are returned
     # than just less than or greater than
-    (left_on, right_on, op), *conditions = conditions
+    (left_on, right_on, _), *conditions = conditions
     indices = helpers._not_equal_indices(
         left=df[left_on], right=right[right_on], keep="all"
     )

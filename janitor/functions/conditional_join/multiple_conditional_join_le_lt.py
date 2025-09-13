@@ -16,6 +16,7 @@ def _multiple_conditional_join_le_lt(
     keep: str,
     use_numba: bool,
     return_ranges: bool,
+    aggfunc: list[tuple] = None,
     row_count: Hashable = None,
 ) -> tuple:
     """
@@ -26,24 +27,26 @@ def _multiple_conditional_join_le_lt(
     Returns a tuple of (df_index, right_index)
     """
     outcome = helpers._separate_conditions_based_on_op(conditions=conditions)
-    # get rid of nulls, if any
-    df = helpers._maybe_remove_nulls_from_dataframe(
-        df=df, columns=outcome["l_cols"]
+    booleans = helpers._maybe_remove_nulls_from_dataframe(
+        df=df, columns=outcome["l_cols"], return_bools=True
     )
-    if df is None:
+    if booleans is None:
         return None
+    # get rid of nulls, if any
     right = helpers._maybe_remove_nulls_from_dataframe(
         df=right, columns=outcome["r_cols"]
     )
     if right is None:
         return None
     if use_numba:
+        # TODO: pass booleans
         return _numba_multiple_non_equi_join(
             df=df,
             right=right,
             conditions=outcome,
             keep=keep,
             row_count=row_count,
+            booleans=booleans,
         )
     # there is an opportunity for optimization for range joins
     # which is usually `lower_value < value < upper_value`
@@ -74,6 +77,19 @@ def _multiple_conditional_join_le_lt(
     # the aim of this for loop is to see if there is
     # the possibility of a range join, and if there is,
     # then use the optimised path
+    len_df = len(df)
+    len_right = len(right)
+    starts = np.zeros(len_df, dtype=np.intp)
+    ends = np.empty(len_df, dtype=np.intp)
+    ends[:] = len_right
+    sizes = np.zeros(len_df, dtype=np.intp)
+    indices = {
+        "left_index": df.index._values,
+        "starts": starts,
+        "ends": ends,
+        "booleans": booleans,
+        "sizes": sizes,
+    }
     if not outcome.get("is_range_join"):
         right_on = outcome["conditions"][0][1]
         if not right[right_on].is_monotonic_increasing:
@@ -81,22 +97,8 @@ def _multiple_conditional_join_le_lt(
                 right_on, kind="stable", ignore_index=False
             )
         (left_on, right_on, op), *conditions = outcome["conditions"]
-        len_df = len(df)
-        len_right = len(right)
-        starts = np.zeros(len_df, dtype=np.intp)
-        ends = np.empty(len_df, dtype=np.intp)
-        ends[:] = len_right
-        sizes = np.zeros(len_df, dtype=np.intp)
-        booleans = np.ones(len_df, dtype=np.int8)
-        indices = {
-            "left_index": df.index._values,
-            "right_index": right.index._values,
-            "starts": starts,
-            "ends": ends,
-            "booleans": booleans,
-            "sizes": sizes,
-            "conditions": conditions,
-        }
+        indices["conditions"] = conditions
+        indices["right_index"] = right.index._values
         indices = helpers._update_search_indices(
             left=df[left_on]._values,
             right=right[right_on]._values,
@@ -114,6 +116,13 @@ def _multiple_conditional_join_le_lt(
         )
         if indices is None:
             return None
+        if aggfunc:
+            return helpers.compute_aggfunc_result(
+                aggfunc=aggfunc,
+                agg_frame=right,
+                indices=indices,
+                df_index=df.index,
+            )
         if row_count:
             return pd.Series(
                 index=indices["left_index"],
@@ -148,17 +157,23 @@ def _multiple_conditional_join_le_lt(
         sorter[col2] = 1
         sorter = [*sorter]
         right = right.sort_values(by=sorter, ignore_index=False, kind="stable")
+    indices["right_index"] = right.index._values
     indices = _range_indices(
-        df=df,
-        right=right,
-        first=ge_gt,
-        second=le_lt,
+        df=df, right=right, first=ge_gt, second=le_lt, indices=indices
     )
     if indices is None:
         return None
     indices["right_is_sorted"] = right_is_sorted
     if condition := indices.get("condition"):
         conditions = [condition] + conditions
+    if indices.get("fastpath") and not conditions and aggfunc:
+        indices["counts_array"] = indices["sizes"]
+        return helpers.compute_aggfunc_result(
+            aggfunc=aggfunc,
+            agg_frame=right,
+            indices=indices,
+            df_index=df.index,
+        )
     if indices.get("fastpath") and not conditions:
         return _get_indices_fastpath_range_joins_dual(
             left_index=indices["left_index"],
@@ -183,6 +198,13 @@ def _multiple_conditional_join_le_lt(
     )
     if indices is None:
         return None
+    if aggfunc:
+        return helpers.compute_aggfunc_result(
+            aggfunc=aggfunc,
+            agg_frame=right,
+            indices=indices,
+            df_index=df.index,
+        )
     if row_count:
         return pd.Series(
             index=indices["left_index"],
@@ -271,6 +293,7 @@ def _range_indices(
     right: pd.DataFrame,
     first: tuple,
     second: tuple,
+    indices: dict,
 ) -> dict | None:
     """
     Retrieve index positions for range/interval joins.
@@ -285,21 +308,6 @@ def _range_indices(
     # then within the positions,
     # get the positions where end_left is </<= end_right
     # this should reduce the search space
-    len_df = len(df)
-    len_right = len(right)
-    starts = np.zeros(len_df, dtype=np.intp)
-    ends = np.empty(len_df, dtype=np.intp)
-    ends[:] = len_right
-    sizes = np.zeros(len_df, dtype=np.intp)
-    booleans = np.ones(len_df, dtype=np.int8)
-    indices = {
-        "left_index": df.index._values,
-        "right_index": right.index._values,
-        "starts": starts,
-        "ends": ends,
-        "booleans": booleans,
-        "sizes": sizes,
-    }
     left_on, right_on, op = first
     indices = helpers._update_search_indices(
         left=df[left_on]._values,

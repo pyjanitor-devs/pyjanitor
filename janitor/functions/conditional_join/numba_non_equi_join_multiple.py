@@ -16,6 +16,7 @@ def _numba_multiple_non_equi_join(
     conditions: list,
     keep: str,
     row_count: str,
+    booleans: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray] | None:
     """
     Build indices for joins where there is at least one >/>=/</<=
@@ -172,11 +173,9 @@ def _numba_multiple_non_equi_join(
         ends = np.empty(len_df, dtype=np.intp)
         ends[:] = len_right
         sizes = np.zeros(len_df, dtype=np.intp)
-        booleans = np.ones(len_df, dtype=np.int8)
         indices = {
             "starts": starts,
             "ends": ends,
-            "booleans": booleans,
             "sizes": sizes,
         }
         first, second, *rest = conditions["conditions"]
@@ -185,8 +184,11 @@ def _numba_multiple_non_equi_join(
         # by starting from the highest region
         if not df[lcol].is_monotonic_increasing:
             df = df.sort_values(lcol, ignore_index=False, kind="stable")
+            if not booleans.all():
+                booleans = booleans[df.index._values]
         if not right[rcol].is_monotonic_increasing:
             right = right.sort_values(rcol, ignore_index=False, kind="stable")
+        indices["booleans"] = booleans
         outcome = _build_region(
             indices=indices, left=df[lcol], right=right[rcol], op=op
         )
@@ -259,6 +261,7 @@ def _numba_multiple_non_equi_join(
         # keep track of the length of actual data for each column
         lengths = np.empty(length, dtype=np.intp)
         tuples = helpers._generate_tuples(df=df, right=right, conditions=rest)
+
         if row_count:
             result = _numba._get_row_count_for_regions(
                 booleans=booleans,

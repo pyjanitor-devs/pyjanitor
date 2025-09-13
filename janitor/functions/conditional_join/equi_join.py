@@ -23,6 +23,7 @@ def _multiple_conditional_join_eq(
     return_ranges: bool,
     row_count: Hashable | None,
     use_pandas_merge_for_equi_join: bool,
+    aggfunc: list[tuple],
 ) -> tuple:
     """
     Get indices for multiple conditions,
@@ -44,11 +45,10 @@ def _multiple_conditional_join_eq(
     outcome = helpers._separate_conditions_based_on_op(
         conditions=conditions, keep_equals_separate=True
     )
-    # get rid of nulls, if any
-    df = helpers._maybe_remove_nulls_from_dataframe(
-        df=df, columns=outcome.pop("l_cols")
+    booleans = helpers._maybe_remove_nulls_from_dataframe(
+        df=df, columns=outcome.pop("l_cols"), return_bools=True
     )
-    if df is None:
+    if booleans is None:
         return None
     right = helpers._maybe_remove_nulls_from_dataframe(
         df=right, columns=outcome.pop("r_cols")
@@ -61,8 +61,12 @@ def _multiple_conditional_join_eq(
         )
     if use_numba:
         equals = outcome["equals"]
+        equals, *rest = equals
+        rest.extend(outcome["conditions"])
+        outcome["conditions"] = rest
+        outcome["equals"] = equals
         is_fastpath_range_join = False
-        if outcome.get("is_range_join") and (len(equals) == 1):
+        if outcome.get("is_range_join"):
             _, col, _ = equals[0]
             sorter = {col: 1}
             ge_gt, le_lt, *conditions = outcome["conditions"]
@@ -76,12 +80,12 @@ def _multiple_conditional_join_eq(
             )
             grouper = outcome["equals"]
             grouper = grouper[0][1]
+            # TODO: move the check into numba section
             grouped = right.groupby([grouper], sort=False, observed=True)
             le_lt = outcome["conditions"][1][1]
             grouped = grouped[le_lt]
             is_fastpath_range_join = grouped.is_monotonic_increasing.all()
-        # is there any >/>=/</<=?
-        elif outcome.get("less_than_or_greater_than") and (len(equals) == 1):
+        else:
             _, col, _ = equals[0]
             sorter = {col: 1}
             (_, col, _), *conditions = outcome["conditions"]
@@ -89,12 +93,6 @@ def _multiple_conditional_join_eq(
             right = right.sort_values(
                 by=[*sorter], ignore_index=False, kind="stable"
             )
-        elif not outcome.get("less_than_or_greater_than") or (len(equals) > 1):
-            sorter = equals[0][1]
-            if not right[sorter].is_monotonic_increasing:
-                right = right.sort_values(
-                    sorter, ignore_index=False, kind="stable"
-                )
         return _numba_equi_join(
             df=df,
             right=right,
@@ -112,62 +110,188 @@ def _multiple_conditional_join_eq(
         left_on = []
         right_on = []
         for l_col, r_col, _ in equals:
-            left_on.append(l_col)
-            right_on.append(r_col)
-        indices = _get_indices_from_pandas_merge(
-            df=df, right=right, left_on=left_on, right_on=right_on
-        )
-        if indices is None:
-            return None
+            l_val = df[l_col].array
+            r_val = right[r_col].array
+            left_on.append(l_val)
+            right_on.append(r_val)
+        if len(left_on) > 1:
+            left_on = pd.MultiIndex.from_arrays(left_on)
+            right_on = pd.MultiIndex.from_arrays(right_on)
+        else:
+            left_on = pd.Index(left_on[0])
+            right_on = pd.Index(right_on[0])
+        try:
+            indexers = right_on.get_indexer(left_on)
+            bools = indexers == -1
+            if bools.all():
+                return None
+            if (not booleans.all()) or bools.any():
+                bools = ~bools
+                booleans = booleans.astype(np.bool_, copy=False)
+                booleans = booleans & bools
+            if not outcome["conditions"] and aggfunc:
+                booleans = booleans.astype(np.bool_, copy=False)
+                return helpers.compute_aggfunc_result_no_ranges(
+                    aggfunc=aggfunc,
+                    agg_frame=right,
+                    right_index=indexers,
+                    booleans=booleans,
+                    df_index=df.index,
+                )
+            if not outcome["conditions"] and not booleans.all():
+                left_index = df.index._values[booleans]
+                indexers = indexers[booleans]
+                right_index = right.index._values[indexers]
+                return left_index, right_index
+            if not outcome["conditions"]:
+                left_index = df.index._values
+                right_index = right.index._values[indexers]
+                return left_index, right_index
 
-        left_indices, right_indices = indices
-        if not outcome["conditions"]:
-            # patch based on updates in internal code
-            # pandas/core/reshape/merge.py#L1692
-            # for pandas 2.2
-            if left_indices is None:
-                left_indices = df.index._values
-            else:
-                left_indices = df.index._values[left_indices]
-            if right_indices is None:
-                right_indices = right.index._values
-            else:
-                right_indices = right.index._values[right_indices]
-            return helpers._keep_output(
-                keep=keep, left=left_indices, right=right_indices
+            booleans = booleans.astype(np.int8, copy=False)
+            conditions = helpers._generate_tuples(
+                df=df, right=right, conditions=outcome["conditions"]
             )
-        # patch based on updates in internal code
-        # pandas/core/reshape/merge.py#L1692
-        # for pandas 2.2
-        if left_indices is None:
-            left_indices = np.arange(df.index.size, dtype=np.intp)
-        if right_indices is None:
-            right_indices = np.arange(right.index.size, dtype=np.intp)
-        conditions = helpers._generate_tuples(
-            df=df, right=right, conditions=outcome["conditions"]
-        )
-        matches = helpers._get_positive_matches_no_ranges(
-            left_indices=left_indices,
-            right_indices=right_indices,
-            conditions=conditions,
-        )
-        if matches is None:
-            return None
-        if row_count:
-            return helpers._get_row_counts_multiple_conditions_no_ranges(
+            booleans = helpers._get_positive_matches_no_ranges(
+                right_index=indexers, conditions=conditions, booleans=booleans
+            )
+            if booleans is None:
+                return None
+            if aggfunc:
+                booleans = booleans.astype(np.bool_, copy=False)
+                return helpers.compute_aggfunc_result_no_ranges(
+                    aggfunc=aggfunc,
+                    agg_frame=right,
+                    right_index=indexers,
+                    booleans=booleans,
+                    df_index=df.index,
+                )
+            if (keep == "all") and not booleans.all():
+                booleans = booleans.astype(np.bool_, copy=False)
+                left_index = df.index._values[booleans]
+                indexers = indexers[booleans]
+                right_index = right.index._values[indexers]
+                return left_index, right_index
+            if keep == "all":
+                left_index = df.index._values
+                right_index = right.index._values[indexers]
+                return left_index, right_index
+            if keep == "first":
+                return cond_join.build_indices_no_ranges_keep_first(
+                    left_index=df.index._values,
+                    right_index=right.index._values,
+                    indexers=indexers,
+                    matches=booleans,
+                )
+            return cond_join.build_indices_no_ranges_keep_last(
                 left_index=df.index._values,
-                row_count=row_count,
-                indices=left_indices,
-                matches=matches,
+                right_index=right.index._values,
+                indexers=indexers,
+                matches=booleans,
             )
-        return helpers._multiple_conditions_get_indices_no_ranges(
-            left_index=df.index._values,
-            right_index=right.index._values,
-            left_indices=left_indices,
-            right_indices=right_indices,
-            matches=matches,
-            keep=keep,
-        )
+        except pd.errors.InvalidIndexError:
+            positions, right_on = right_on.factorize()
+            indexers = right_on.get_indexer(left_on)
+            bools = indexers == -1
+            if bools.all():
+                return None
+            bools = None
+            starts, ends, r_sizes, positions = cond_join.reorder_positions(
+                len_uniques=right_on.size, positions=positions
+            )
+            sizes, booleans = cond_join.get_row_counts_from_ranges_positions(
+                booleans=booleans, indexers=indexers, sizes=r_sizes
+            )
+
+            if not outcome["conditions"] and aggfunc:
+                indices = {
+                    "starts": starts,
+                    "ends": ends,
+                    "sizes": sizes,
+                    "positions": positions,
+                    "booleans": booleans,
+                    "indexers": indexers,
+                    "counts_array": sizes,
+                }
+                return helpers.compute_aggfunc_result_positions(
+                    aggfunc=aggfunc,
+                    agg_frame=right,
+                    indices=indices,
+                    df_index=df.index,
+                )
+            if not outcome["conditions"]:
+                total = sizes.sum()
+                return cond_join.build_indices_from_ranges_positions(
+                    booleans=booleans,
+                    indexers=indexers,
+                    starts=starts,
+                    ends=ends,
+                    positions=positions,
+                    left_index=np.empty(total, dtype=np.intp),
+                    right_index=np.empty(total, dtype=np.intp),
+                )
+            conditions = helpers._generate_tuples(
+                df=df, right=right, conditions=outcome["conditions"]
+            )
+            indices = {
+                "starts": starts,
+                "ends": ends,
+                "sizes": sizes,
+                "positions": positions,
+                "booleans": booleans,
+                "indexers": indexers,
+            }
+            indices = helpers._get_positive_matches_ranges_positions(
+                indices=indices, conditions=conditions
+            )
+            if indices is None:
+                return None
+            if aggfunc:
+                return helpers.compute_aggfunc_result_positions(
+                    aggfunc=aggfunc,
+                    agg_frame=right,
+                    indices=indices,
+                    df_index=df.index,
+                )
+            if keep == "all":
+                return cond_join.build_indices_from_ranges_matches_positions_keep_all(
+                    booleans=indices["booleans"],
+                    matches=indices["matches"],
+                    indexers=indices["indexers"],
+                    sizes=indices["sizes"],
+                    positions=indices["positions"],
+                    starts=indices["starts"],
+                    ends=indices["ends"],
+                    left_index=np.empty(indices["total"], dtype=np.intp),
+                    right_index=np.empty(indices["total"], dtype=np.intp),
+                )
+            if keep == "first":
+                return cond_join.build_indices_from_ranges_matches_positions_keep_first(
+                    booleans=indices["booleans"],
+                    matches=indices["matches"],
+                    indexers=indices["indexers"],
+                    sizes=indices["sizes"],
+                    positions=indices["positions"],
+                    starts=indices["starts"],
+                    ends=indices["ends"],
+                    left_index=np.empty(indices["l_counts"], dtype=np.intp),
+                    right_index=np.empty(indices["l_counts"], dtype=np.intp),
+                )
+            return cond_join.build_indices_from_ranges_matches_positions_keep_last(
+                booleans=indices["booleans"],
+                matches=indices["matches"],
+                indexers=indices["indexers"],
+                sizes=indices["sizes"],
+                positions=indices["positions"],
+                starts=indices["starts"],
+                ends=indices["ends"],
+                left_index=np.empty(indices["l_counts"], dtype=np.intp),
+                right_index=np.empty(indices["l_counts"], dtype=np.intp),
+            )
+    equals, *rest = equals
+    rest.extend(outcome["conditions"])
+    outcome["conditions"] = rest
+    outcome["equals"] = equals
     _, col, _ = equals[0]
     sorter = {col: 1}
     if outcome.get("is_range_join"):
@@ -439,8 +563,6 @@ def _is_binary_search_appropriate(df: pd.DataFrame, equals: list) -> bool:
     to use a binary search approach
     on the equality condition
     """
-    if len(equals) > 1:
-        return False
     for left_on, _, _ in equals:
         series = df[left_on]
         if (
@@ -448,7 +570,10 @@ def _is_binary_search_appropriate(df: pd.DataFrame, equals: list) -> bool:
             and not pd.api.types.is_datetime64_dtype(series)
             and not pd.api.types.is_timedelta64_dtype(series)
         ):
-            return False
+            raise ValueError(
+                "binary search is supported only "
+                "for numeric, datetime and timedelta dtypes."
+            )
     return True
 
 

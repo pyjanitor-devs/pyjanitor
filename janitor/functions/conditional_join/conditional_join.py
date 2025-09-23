@@ -1074,8 +1074,9 @@ def get_join_indices(
             If none of the above conditions are met, ranges are not returned;
             instead a tuple of indices for the rows in the dataframes that
             match is returned.
-        use_binary_search_for_equi_join: If True, uses Pandas' merge
-            function when an equi-join is present, else uses a binary search approach.
+        use_binary_search_for_equi_join: If True and an equi-join is present,
+            uses a binary search approach; else uses Pandas' get_indexer.
+            Default is False.
 
     Returns:
         A tuple of indices for the rows in the dataframes that match.

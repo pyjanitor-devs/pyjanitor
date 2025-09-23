@@ -97,11 +97,8 @@ def conditional_join(
     based on the join keys.
     Supported aggregation functions are
     `sum`, `count`, `size`, `min`, `max`.
-    Missing values are not included in the computation.
 
     The operator can be any of `==`, `!=`, `<=`, `<`, `>=`, `>`.
-
-    There is no optimisation for the `!=` operator.
 
     The join is done only on the columns.
 
@@ -1037,7 +1034,7 @@ def get_join_indices(
     use_numba: bool = False,
     force: bool = False,
     return_ranges: bool = False,
-    use_binary_search_for_equi_join=True,
+    use_binary_search_for_equi_join=False,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Convenience function to return the matching indices from an inner join.
 
@@ -1058,7 +1055,7 @@ def get_join_indices(
             `(left_on, right_on, op)`, where `left_on` is the column
             label from `df`, `right_on` is the column label from `right`,
             while `op` is the operator.
-            The `col` class is also supported. The operator can be any of
+            The operator can be any of
             `==`, `!=`, `<=`, `<`, `>=`, `>`. For multiple conditions,
             the and(`&`) operator is used to combine the results
             of the individual conditions.

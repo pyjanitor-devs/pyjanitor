@@ -529,12 +529,13 @@ def _pivot_longer_create_spec(
     This is where the spec DataFrame is created,
     before the transformation to long form.
     """
+    len_names_to = len(names_to)
     spec = pl.DataFrame({".name": column_names})
     if names_sep is not None:
         expression = (
             pl.col(".name")
             .str.split(by=names_sep)
-            .list.to_struct(n_field_strategy="max_width")
+            .list.to_struct(upper_bound=len_names_to)
             .alias(variable_name)
         )
     else:
@@ -545,7 +546,6 @@ def _pivot_longer_create_spec(
         )
     spec = spec.with_columns(expression)
     len_fields = len(spec.get_column(variable_name).struct.fields)
-    len_names_to = len(names_to)
 
     if len_names_to != len_fields:
         raise ValueError(

@@ -425,20 +425,6 @@ def _conditional_join_preliminary_checks(
     if (len(conditions) == 1) and use_numba:
         raise ValueError("numba is not supported for single joins")
 
-    if (
-        all(
-            (
-                op == helpers._JoinOperator.NOT_EQUAL.value
-                for *_, op in conditions
-            )
-        )
-    ) and use_numba:
-        raise ValueError(
-            "numba is not supported for "
-            "conditions where != "
-            "is the only join operator."
-        )
-
     check("indicator", indicator, [bool, str])
 
     check("force", force, [bool])

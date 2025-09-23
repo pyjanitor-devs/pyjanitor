@@ -204,7 +204,7 @@ def _numba_multiple_non_equi_join(
         )
         lcol, rcol, op_ = second
         right_c = right[rcol]
-        right_c, _ = helpers._sort_if_not_monotonic(series=right_c)
+        right_c, _ = _sort_if_not_monotonic(series=right_c)
         outcome = _build_region(
             indices=indices, left=df[lcol], right=right_c, op=op_
         )
@@ -497,3 +497,15 @@ def _build_region(
         "r_index": r_index,
         "booleans": booleans,
     }
+
+
+def _sort_if_not_monotonic(series: pd.Series) -> pd.Series | None:
+    """
+    Sort the pandas `series` if it is not monotonic increasing
+    """
+
+    is_sorted = series.is_monotonic_increasing
+    if not is_sorted:
+        series = series.sort_values(kind="stable")
+
+    return series, is_sorted

@@ -5,7 +5,7 @@ from typing import Hashable
 import numpy as np
 import pandas as pd
 
-from . import helpers
+from . import aggs, helpers
 from .numba_non_equi_join_multiple import _numba_multiple_non_equi_join
 
 
@@ -39,7 +39,6 @@ def _multiple_conditional_join_le_lt(
     if right is None:
         return None
     if use_numba:
-        # TODO: pass booleans
         return _numba_multiple_non_equi_join(
             df=df,
             right=right,
@@ -92,7 +91,9 @@ def _multiple_conditional_join_le_lt(
     }
     if not outcome.get("is_range_join"):
         right_on = outcome["conditions"][0][1]
-        if not right[right_on].is_monotonic_increasing:
+        right_is_sorted = right[right_on].is_monotonic_increasing
+        indices["right_is_sorted"] = right_is_sorted
+        if not right_is_sorted:
             right = right.sort_values(
                 right_on, kind="stable", ignore_index=False
             )
@@ -117,18 +118,19 @@ def _multiple_conditional_join_le_lt(
         if indices is None:
             return None
         if aggfunc:
-            return helpers.compute_aggfunc_result(
+            if not indices["booleans"].all():
+                booleans = indices["booleans"].astype(np.bool_, copy=False)
+                indices["counts_array"] = indices["counts_array"][booleans]
+                df_index = indices["left_index"][booleans]
+            else:
+                df_index = indices["left_index"]
+            results = aggs.compute_aggfunc_result(
                 aggfunc=aggfunc,
                 agg_frame=right,
                 indices=indices,
-                df_index=df.index,
+                total=indices["l_counts"],
             )
-        if row_count:
-            return pd.Series(
-                index=indices["left_index"],
-                data=indices["counts_array"],
-                name=row_count,
-            )
+            return {"aggregates": results, "df_index": df_index}
         if keep == "all":
             total = indices["total"]
         else:
@@ -167,27 +169,35 @@ def _multiple_conditional_join_le_lt(
     if condition := indices.get("condition"):
         conditions = [condition] + conditions
     if indices.get("fastpath") and not conditions and aggfunc:
-        indices["counts_array"] = indices["sizes"]
-        return helpers.compute_aggfunc_result(
+        if not indices["booleans"].all():
+            booleans = indices["booleans"].astype(np.bool_, copy=False)
+            indices["counts_array"] = indices["sizes"][booleans]
+            df_index = indices["left_index"][booleans]
+        else:
+            indices["counts_array"] = indices["sizes"]
+            df_index = indices["left_index"]
+        results = aggs.compute_aggfunc_result(
             aggfunc=aggfunc,
             agg_frame=right,
             indices=indices,
-            df_index=df.index,
+            total=indices["matches"],
         )
+        return {"aggregates": results, "df_index": df_index}
     if indices.get("fastpath") and not conditions:
-        return _get_indices_fastpath_range_joins_dual(
+        if keep == "all":
+            total = indices["total"]
+        else:
+            total = indices["matches"]
+        return helpers._build_indices_single_equi_or_true_range_join(
             left_index=indices["left_index"],
             right_index=indices["right_index"],
             starts=indices["starts"],
             ends=indices["ends"],
-            sizes=indices["sizes"],
-            booleans=indices["booleans"],
             right_is_sorted=indices.get("right_is_sorted"),
-            row_count=row_count,
             return_ranges=return_ranges,
-            total=indices["total"],
-            matches=indices["matches"],
+            total=total,
             keep=keep,
+            booleans=indices["booleans"],
         )
     conditions = helpers._generate_tuples(
         df=df, right=right, conditions=conditions
@@ -199,18 +209,19 @@ def _multiple_conditional_join_le_lt(
     if indices is None:
         return None
     if aggfunc:
-        return helpers.compute_aggfunc_result(
+        if not indices["booleans"].all():
+            booleans = indices["booleans"].astype(np.bool_, copy=False)
+            indices["counts_array"] = indices["counts_array"][booleans]
+            df_index = indices["left_index"][booleans]
+        else:
+            df_index = indices["left_index"]
+        results = aggs.compute_aggfunc_result(
             aggfunc=aggfunc,
             agg_frame=right,
             indices=indices,
-            df_index=df.index,
+            total=indices["l_counts"],
         )
-    if row_count:
-        return pd.Series(
-            index=indices["left_index"],
-            data=indices["counts_array"],
-            name=row_count,
-        )
+        return {"aggregates": results, "df_index": df_index}
     if keep == "all":
         total = indices["total"]
     else:
@@ -225,66 +236,6 @@ def _multiple_conditional_join_le_lt(
         matches=indices["matches"],
         keep=keep,
         total=total,
-    )
-
-
-def _get_indices_fastpath_range_joins_dual(
-    left_index: np.ndarray,
-    right_index: np.ndarray,
-    starts: np.ndarray,
-    ends: np.ndarray,
-    sizes: np.ndarray,
-    booleans: np.ndarray,
-    right_is_sorted: bool,
-    row_count: Hashable,
-    return_ranges: bool,
-    total: int,
-    matches: int,
-    keep: str,
-) -> tuple[np.ndarray, np.ndarray] | pd.Series | dict:
-    """
-    Get indices if both right columns are sorted,
-    and the number of join conditions is 2
-    """
-    if row_count:
-        return pd.Series(
-            index=left_index,
-            data=sizes,
-            name=row_count,
-        )
-    if return_ranges:
-        if not booleans.all():
-            booleans = booleans.astype(np.bool_, copy=False)
-            starts = starts[booleans]
-            ends = ends[booleans]
-            left_index = left_index[booleans]
-        return dict(
-            left_index=left_index,
-            right_index=right_index,
-            starts=starts,
-            ends=ends,
-        )
-    if (keep == "first") and right_is_sorted:
-        if not booleans.all():
-            booleans = booleans.astype(np.bool_, copy=False)
-            starts = starts[booleans]
-            left_index = left_index[booleans]
-        return left_index, right_index[starts]
-    if (keep == "last") and right_is_sorted:
-        if not booleans.all():
-            booleans = booleans.astype(np.bool_, copy=False)
-            ends = ends[booleans]
-            left_index = left_index[booleans]
-        return left_index, right_index[ends - 1]
-    return helpers._build_indices_fast_path_range_join_only(
-        left_index=left_index,
-        right_index=right_index,
-        starts=starts,
-        ends=ends,
-        booleans=booleans,
-        keep=keep,
-        total=total,
-        matches=matches,
     )
 
 

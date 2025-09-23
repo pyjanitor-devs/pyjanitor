@@ -5,6 +5,7 @@ from typing import Hashable
 import numpy as np
 import pandas as pd
 
+from janitor.cython_functions import cond_join
 from janitor.functions.conditional_join import _numba
 
 from . import helpers
@@ -13,8 +14,7 @@ from . import helpers
 def _numba_equi_join(
     df: pd.DataFrame,
     right: pd.DataFrame,
-    is_fastpath_range_join: bool,
-    conditions: dict,
+    conditions: list[tuple],
     row_count: Hashable | None,
     keep: str,
 ) -> tuple[np.ndarray, np.ndarray] | None:
@@ -127,29 +127,67 @@ def _numba_equi_join(
     # 	id	value_1	id	value_2A	value_2B
     # 	2	  3	    2	   2	       4
     #
-    equals = conditions["equals"]
-    left_c, right_c, _ = equals[0]
+    outcome = helpers._separate_conditions_based_on_op(
+        conditions=conditions, keep_equals_separate=True
+    )
+    if not outcome.get("conditions"):
+        raise ValueError(
+            "At least one non-equi join should be present if `use_numba=True`"
+        )
+    booleans = helpers._maybe_remove_nulls_from_dataframe(
+        df=df, columns=outcome.get("l_cols"), return_bools=True
+    )
+    if booleans is None:
+        return None
+    right = helpers._maybe_remove_nulls_from_dataframe(
+        df=right, columns=outcome.get("r_cols")
+    )
+    if right is None:
+        return None
+    equals = outcome["equals"]
+    equals, *rest = equals
+    rest.extend(outcome["conditions"])
+    outcome["conditions"] = rest
+    outcome["equals"] = equals
+    if outcome.get("is_range_join"):
+        _, col, _ = equals
+        sorter = {col: 1}
+        ge_gt, le_lt, *conditions = outcome["conditions"]
+        _, col, _ = ge_gt
+        sorter[col] = 1
+        _, col, _ = le_lt
+        sorter[col] = 1
+        sorter = [*sorter]
+        right = right.sort_values(by=sorter, ignore_index=False, kind="stable")
+    else:
+        _, col, _ = equals
+        sorter = {col: 1}
+        (_, col, _), *conditions = outcome["conditions"]
+        sorter[col] = 1
+        right = right.sort_values(
+            by=[*sorter], ignore_index=False, kind="stable"
+        )
+    left_c, right_c, _ = equals
     left_c = df[left_c]
     right_c = right[right_c]
     indices = helpers._equal_indices(left=left_c, right=right_c)
     if indices is None:
         return None
-    booleans = indices["booleans"]
+    booleans = indices["booleans"] & booleans.astype(np.bool_, copy=False)
     starts = indices["starts"]
     ends = indices["ends"]
     left_index = indices["left_index"]
     right_index = indices["right_index"]
     indices = None
-    equals = equals[1:]
-    rest = conditions["conditions"]
-    if equals or not conditions.get("less_than_or_greater_than"):
+    if (outcome.get("equi_count") > 1) or (not outcome.get("non_equi_count")):
         sizes = ends - starts
         if not booleans.all():
             sizes = np.where(booleans, sizes, 0)
-        rest = equals + rest
         counts_array = np.zeros(left_index.size, dtype=np.intp)
         matches = np.ones(sizes.sum(), dtype=np.bool_)
-        tuples = helpers._generate_tuples(df=df, right=right, conditions=rest)
+        tuples = helpers._generate_tuples(
+            df=df, right=right, conditions=outcome["conditions"]
+        )
         if row_count:
             data = _numba._get_row_count_ranges(
                 tuples=tuples,
@@ -213,14 +251,29 @@ def _numba_equi_join(
         return left_index, right_index
     ge_gt = None
     le_lt = None
+    if outcome.get("equi_count") > 1:
+        is_fastpath_range_join = False
+    elif not outcome.get("is_range_join"):
+        is_fastpath_range_join = False
+    else:
+        left_on, right_on, _ = outcome["conditions"][1]
+        _, arr = helpers._convert_to_numpy(
+            left=df[left_on]._values, right=right[right_on]._values
+        )
+        is_fastpath_range_join = cond_join.check_monotonicity_per_range(
+            starts=starts,
+            ends=ends,
+            arr=arr,
+            booleans=booleans.astype(np.int8, copy=False),
+        )
     if not is_fastpath_range_join:
-        condition, *rest = conditions["conditions"]
+        condition, *rest = outcome["conditions"]
         if condition[-1] in helpers.greater_than_join_types:
             ge_gt = condition
         else:
             le_lt = condition
     else:
-        ge_gt, le_lt, *rest = conditions["conditions"]
+        ge_gt, le_lt, *rest = outcome["conditions"]
     if ge_gt:
         left_on, right_on, op = ge_gt
         left_c = df[left_on]._values

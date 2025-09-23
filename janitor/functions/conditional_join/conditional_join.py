@@ -15,10 +15,9 @@ from pandas.core.dtypes.concat import concat_compat
 
 from janitor.utils import check, check_column, deprecated_alias
 
-from . import helpers
+from . import helpers, non_equi_join_single
 from .equi_join import _multiple_conditional_join_eq
 from .multiple_conditional_join_le_lt import _multiple_conditional_join_le_lt
-from .numba_non_equi_join_single import _numba_single_non_equi_join
 
 
 @pf.register_dataframe_method
@@ -94,7 +93,8 @@ def conditional_join(
 
     Aggregations can be computed after the successful execution of a join;
     the aggregaton is computed on the right dataframe
-    for each row of the left DataFrame based on the join keys.
+    for each row of the left DataFrame (that has a match)
+    based on the join keys.
     Supported aggregation functions are
     `sum`, `count`, `size`, `min`, `max`.
     Missing values are not included in the computation.
@@ -253,7 +253,7 @@ def conditional_join(
         - 0.28.0
             - `col` class deprecated.
         - 0.32.0
-            - Added `row_count` parameter.
+            - Added `aggfunc` parameter.
 
     Args:
         df: A pandas DataFrame.
@@ -290,7 +290,8 @@ def conditional_join(
         use_pandas_merge_for_equi_join: If True, uses Pandas' merge
             function when an equi-join is present, else uses a binary search approach.
         aggfunc: Compute aggregates on the right dataframe
-            for each row of the left DataFrame based on the join keys.
+            for each row of the left DataFrame (that has a match)
+            based on the join keys.
             Supported aggregation functions are
             `sum`, `count`, `size`, `min`, `max`.
 
@@ -408,19 +409,16 @@ def _conditional_join_preliminary_checks(
             "or only indices are to be returned."
         )
 
+    if all(
+        (op == helpers._JoinOperator.NOT_EQUAL.value for *_, op in conditions)
+    ):
+        raise ValueError("!= only joins are not supported")
+
     check("how", how, [str])
 
     if how not in {"inner", "left", "right", "outer"}:
         raise ValueError(
             "'how' should be one of 'inner', 'left', 'right' or 'outer'."
-        )
-
-    if (df.columns.nlevels > 1) and (
-        isinstance(df_columns, dict) or isinstance(right_columns, dict)
-    ):
-        raise ValueError(
-            "Column renaming with a dictionary is not supported "
-            "for MultiIndex columns."
         )
 
     check("keep", keep, [str])
@@ -429,6 +427,9 @@ def _conditional_join_preliminary_checks(
         raise ValueError("'keep' should be one of 'all', 'first', 'last'.")
 
     check("use_numba", use_numba, [bool])
+
+    if (len(conditions) == 1) and use_numba:
+        raise ValueError("numba is not supported for single joins")
 
     if (
         all(
@@ -458,31 +459,12 @@ def _conditional_join_preliminary_checks(
 
     if return_ranges and use_numba:
         raise ValueError("return_ranges applies only when use_numba is False.")
-    # TODO: get rid of this
-    # point users to aggfunc
-    if row_count is not None:
-        check("row_count", row_count, [Hashable])
-        if row_count in df.columns:
-            raise pd.errors.DuplicateLabelError(
-                f"{row_count} already exists as a column label in df."
-            )
-        if keep != "all":
-            raise ValueError("row_count applies only when `keep=all`")
-        if how != "left":
-            raise ValueError("row_count applies only when `how=left`")
     if aggfunc is not None:
-        if all(
-            (
-                op == helpers._JoinOperator.NOT_EQUAL.value
-                for *_, op in conditions
-            )
-        ):
-            raise ValueError(
-                "Aggregation is not supported for "
-                "conditions where != "
-                "is the only join operator."
-            )
         check("aggfunc", aggfunc, [list])
+        if use_numba:
+            raise NotImplementedError(
+                "aggfunc does not apply when use_numba is True"
+            )
         for entry in aggfunc:
             check("entry in aggfunc", entry, [tuple])
             if len(entry) != 2:
@@ -492,8 +474,8 @@ def _conditional_join_preliminary_checks(
                     "in the right dataframe, while the second element "
                     "in the tuple should be an aggregation function"
                 )
-        if how != "left":
-            raise ValueError("aggregation applies only when `how=left`")
+        if how != "inner":
+            raise ValueError("aggregation applies only when `how=inner`")
         if keep != "all":
             raise ValueError("aggregation applies only when `keep=all`")
         r_cols = right.columns
@@ -515,7 +497,6 @@ def _conditional_join_preliminary_checks(
                 raise ValueError(
                     f"{agg} is supported only for numeric columns"
                 )
-
     return (
         df,
         right,
@@ -558,9 +539,7 @@ def _conditional_join_type_check(
             f"has a dtype {left_column.dtype}."
         )
 
-    if (
-        (op != helpers._JoinOperator.STRICTLY_EQUAL.value) or use_numba
-    ) and not is_dtype_equal(left_column, right_column):
+    if not is_dtype_equal(left_column, right_column):
         raise TypeError(
             f"Both columns should have the same type - "
             f"'{left_column.name}' has {left_column.dtype} type;"
@@ -625,7 +604,6 @@ def _conditional_join_compute(
         aggfunc=aggfunc,
     )
     eq_check = False
-    le_lt_check = False
     for condition in conditions:
         left_on, right_on, op = condition
         _conditional_join_type_check(
@@ -636,10 +614,6 @@ def _conditional_join_compute(
         )
         if op == helpers._JoinOperator.STRICTLY_EQUAL.value:
             eq_check = True
-        elif op in helpers.less_than_join_types.union(
-            helpers.greater_than_join_types
-        ):
-            le_lt_check = True
     df.index = range(len(df))
     right.index = range(len(right))
     if eq_check:
@@ -655,7 +629,7 @@ def _conditional_join_compute(
             use_pandas_merge_for_equi_join=use_pandas_merge_for_equi_join,
             aggfunc=aggfunc,
         )
-    elif (len(conditions) > 1) & le_lt_check:
+    elif len(conditions) > 1:
         result = _multiple_conditional_join_le_lt(
             df=df,
             right=right,
@@ -666,48 +640,23 @@ def _conditional_join_compute(
             row_count=row_count,
             aggfunc=aggfunc,
         )
-    elif len(conditions) > 1:
-        result = _multiple_conditional_join_ne(
-            df=df,
-            right=right,
-            conditions=conditions,
-            keep=keep,
-            row_count=row_count,
-        )
-    elif use_numba:
-        result = _numba_single_non_equi_join(
-            left=df[left_on],
-            right=right[right_on],
-            op=op,
-            keep=keep,
-            row_count=row_count,
-        )
     else:
-        result = helpers._generic_func_cond_join(
+        result = non_equi_join_single._single_le_ge_join(
             df=df,
             right=right,
             condition=conditions[0],
-            keep=keep,
-            row_count=row_count,
-            return_ranges=return_ranges,
             aggfunc=aggfunc,
+            return_ranges=return_ranges,
+            keep=keep,
         )
-    return result
     if aggfunc:
         return _create_frame_agg(
-            df=df, df_columns=df_columns, agg_result=result
+            df=df,
+            df_columns=df_columns,
+            agg_result=result,
+            aggfunc=aggfunc,
+            right=right,
         )
-    if row_count:
-        if (df_columns is not None) and (df_columns != slice(None)):
-            df = df.select(columns=df_columns)
-        df = df[:]
-        df.loc[:, row_count] = 0
-        if result is None:
-            return df
-        _, result = df[row_count].align(result, join="left", fill_value=0)
-        result = pd.to_numeric(result, downcast="integer")
-        df.loc[:, row_count] = result
-        return df
 
     if result is None:
         result = np.array([], dtype=np.intp), np.array([], dtype=np.intp)
@@ -725,49 +674,6 @@ def _conditional_join_compute(
         right_columns=right_columns,
         indicator=indicator,
     )
-
-
-def _multiple_conditional_join_ne(
-    df: pd.DataFrame,
-    right: pd.DataFrame,
-    conditions: list[tuple[pd.Series, pd.Series, str]],
-    keep: str,
-    row_count: Hashable = None,
-) -> tuple:
-    """
-    Get indices for multiple conditions,
-    where all the operators are `!=`.
-
-    Returns a tuple of (left_index, right_index)
-    """
-    # currently, there is no optimization option here
-    # not equal typically combines less than
-    # and greater than, so a lot more rows are returned
-    # than just less than or greater than
-    (left_on, right_on, _), *conditions = conditions
-    indices = helpers._not_equal_indices(
-        left=df[left_on], right=right[right_on], keep="all"
-    )
-    if indices is None:
-        return None
-    left_index, right_index = indices
-    conditions = helpers._generate_tuples(
-        df=df, right=right, conditions=conditions
-    )
-    booleans = helpers._get_positive_matches_no_ranges(
-        left_indices=left_index,
-        right_indices=right_index,
-        conditions=conditions,
-    )
-    if not booleans:
-        return None
-    if not booleans.all():
-        booleans = booleans.astype(np.bool_, copy=False)
-        left_index = left_index[booleans]
-        right_index = right_index[booleans]
-    if row_count:
-        return pd.Index(left_index).value_counts(sort=False).rename(row_count)
-    return helpers._keep_output(keep, left=left_index, right=right_index)
 
 
 def _create_multiindex_column(df: pd.DataFrame, right: pd.DataFrame) -> tuple:
@@ -794,20 +700,44 @@ def _create_multiindex_column(df: pd.DataFrame, right: pd.DataFrame) -> tuple:
 
 
 def _create_frame_agg(
-    df: pd.DataFrame, df_columns: Any, agg_result: dict
+    df: pd.DataFrame,
+    right: pd.DataFrame,
+    df_columns: Any,
+    agg_result: tuple,
+    aggfunc: list[tuple],
 ) -> pd.DataFrame:
     """
     Create final dataframe for an aggregation
     """
     if (df_columns is not None) and (df_columns != slice(None)):
         df = df.select(columns=df_columns)
-    if agg_result is None:
-        return df.iloc[np.array([], dtype=np.intp)]
+    if (agg_result is None) and (df.columns.nlevels == 1):
+        dictionary = {}
+        dtypes = df.dtypes
+        for column_name in df:
+            dtype = dtypes.loc[column_name]
+            arr = pd.array([], dtype=dtype, copy=False)
+            dictionary[("left", column_name)] = arr
+        dtypes = right.dtypes
+        for column_name, agg in aggfunc:
+            if agg in {"size", "count"}:
+                dtype = "int64"
+            else:
+                dtype = dtypes.loc[column_name]
+            arr = pd.array([], dtype=dtype, copy=False)
+            dictionary[(column_name, agg)] = arr
+        return pd.DataFrame(dictionary, copy=False)
+    df_index = agg_result["df_index"]
+    agg_result = agg_result["aggregates"]
     if df.columns.nlevels == 1:
-        zipped = zip(agg_result["column_names"], agg_result["agg_names"])
-        column_names = [f"{column_name}_{agg}" for column_name, agg in zipped]
-        results = dict(zip(column_names, agg_result["results"]))
-        return df.assign(**results)
+        dictionary = {}
+        for key, value in df.items():
+            series = value._values[df_index]
+            dictionary[("left", key)] = series
+        for (column_name, agg_name), agg_array in zip(aggfunc, agg_result):
+            dictionary[(column_name, agg_name)] = agg_array
+        return pd.DataFrame(dictionary, copy=False)
+
     base = np.empty(df.columns.size, dtype="U1")
     base[:] = ""
     base = [base]
@@ -1126,6 +1056,9 @@ def get_join_indices(
 
         - 0.29.0
             - Add support for ragged array indices.
+        - 0.32.0
+            - ragged array indices deprecated.
+            - return_ranges parameter added.
 
     Args:
         df: A pandas DataFrame.

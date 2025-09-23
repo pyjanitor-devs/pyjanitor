@@ -129,7 +129,19 @@ if USE_CYTHON:
             sources=[
                 "./janitor/cython_functions/cond_join.py",
             ],
-        )
+        ),
+        Extension(
+            name="janitor.cython_functions.cond_join_aggs",
+            sources=[
+                "./janitor/cython_functions/cond_join_aggs.py",
+            ],
+        ),
+        Extension(
+            name="janitor.cython_functions.cond_join_indices",
+            sources=[
+                "./janitor/cython_functions/cond_join_indices.py",
+            ],
+        ),
     ]
     ext_modules = cythonize(ext_modules)
 else:

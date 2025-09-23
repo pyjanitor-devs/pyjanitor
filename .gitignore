@@ -145,3 +145,5 @@ tags
 midpoint.csv
 examples/notebooks/conditional_join.ipynb
 janitor/cython_functions/cond_join.html
+janitor/cython_functions/cond_join_indices.html
+janitor/cython_functions/cond_join_aggs.html

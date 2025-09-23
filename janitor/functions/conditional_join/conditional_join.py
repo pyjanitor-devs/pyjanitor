@@ -31,9 +31,8 @@ def conditional_join(
     keep: Literal["first", "last", "all"] = "all",
     use_numba: bool = False,
     indicator: Optional[bool | str] = False,
-    row_count: Hashable = None,
     force: bool = False,
-    use_pandas_merge_for_equi_join: bool = True,
+    use_binary_search_for_equi_join: bool = False,
     aggfunc: list[tuple] = None,
 ) -> pd.DataFrame:
     """
@@ -88,8 +87,9 @@ def conditional_join(
     may not be performant - if you have a range join combined
     with a single equi-join, and the columns involved in the equi-join
     have a lot of duplicate values;
-    pass `use_pandas_merge_for_equi_join=False` for an alternative
-    approach that may offer reduced computation time.
+    pass `use_binary_search_for_equi_join=True` for an alternative
+    approach that may offer reduced computation time. This parameter
+    is ignored if `use_numba=True`.
 
     Aggregations can be computed after the successful execution of a join;
     the aggregaton is computed on the right dataframe
@@ -284,11 +284,10 @@ def conditional_join(
             `right_only` for observations whose merge key
             only appears in the right DataFrame, and `both` if the observation’s
             merge key is found in both DataFrames.
-        row_count: If not None, adds a new column that captures the number of matching rows
-            from `right` for each row in `df`.
         force: If `True`, force the non-equi join conditions to execute before the equi join.
-        use_pandas_merge_for_equi_join: If True, uses Pandas' merge
-            function when an equi-join is present, else uses a binary search approach.
+        use_binary_search_for_equi_join: If True and an equi-join is present,
+            uses a binary search approach; else uses Pandas' get_indexer.
+            Default is False.
         aggfunc: Compute aggregates on the right dataframe
             for each row of the left DataFrame (that has a match)
             based on the join keys.
@@ -311,8 +310,7 @@ def conditional_join(
         use_numba=use_numba,
         indicator=indicator,
         force=force,
-        row_count=row_count,
-        use_pandas_merge_for_equi_join=use_pandas_merge_for_equi_join,
+        use_binary_search_for_equi_join=use_binary_search_for_equi_join,
         aggfunc=aggfunc,
     )
 
@@ -345,8 +343,7 @@ def _conditional_join_preliminary_checks(
     force: bool,
     return_matching_indices: bool,
     return_ranges: bool,
-    row_count: str | None,
-    use_pandas_merge_for_equi_join: bool,
+    use_binary_search_for_equi_join: bool,
     aggfunc: list[tuple] | None,
 ) -> tuple:
     """
@@ -452,8 +449,8 @@ def _conditional_join_preliminary_checks(
     check("return_ranges", return_ranges, [bool])
 
     check(
-        "use_pandas_merge_for_equi_join",
-        use_pandas_merge_for_equi_join,
+        "use_binary_search_for_equi_join",
+        use_binary_search_for_equi_join,
         [bool],
     )
 
@@ -509,8 +506,7 @@ def _conditional_join_preliminary_checks(
         indicator,
         force,
         return_ranges,
-        row_count,
-        use_pandas_merge_for_equi_join,
+        use_binary_search_for_equi_join,
         aggfunc,
     )
 
@@ -560,8 +556,7 @@ def _conditional_join_compute(
     use_numba: bool,
     indicator: bool | str,
     force: bool,
-    row_count: str,
-    use_pandas_merge_for_equi_join: bool,
+    use_binary_search_for_equi_join: bool,
     return_matching_indices: bool = False,
     return_ranges: bool = False,
     aggfunc: tuple = None,
@@ -583,8 +578,7 @@ def _conditional_join_compute(
         indicator,
         force,
         return_ranges,
-        row_count,
-        use_pandas_merge_for_equi_join,
+        use_binary_search_for_equi_join,
         aggfunc,
     ) = _conditional_join_preliminary_checks(
         df=df,
@@ -599,8 +593,7 @@ def _conditional_join_compute(
         force=force,
         return_matching_indices=return_matching_indices,
         return_ranges=return_ranges,
-        row_count=row_count,
-        use_pandas_merge_for_equi_join=use_pandas_merge_for_equi_join,
+        use_binary_search_for_equi_join=use_binary_search_for_equi_join,
         aggfunc=aggfunc,
     )
     eq_check = False
@@ -625,8 +618,7 @@ def _conditional_join_compute(
             use_numba=use_numba,
             force=force,
             return_ranges=return_ranges,
-            row_count=row_count,
-            use_pandas_merge_for_equi_join=use_pandas_merge_for_equi_join,
+            use_binary_search_for_equi_join=use_binary_search_for_equi_join,
             aggfunc=aggfunc,
         )
     elif len(conditions) > 1:
@@ -637,7 +629,6 @@ def _conditional_join_compute(
             keep=keep,
             use_numba=use_numba,
             return_ranges=return_ranges,
-            row_count=row_count,
             aggfunc=aggfunc,
         )
     else:
@@ -1046,7 +1037,7 @@ def get_join_indices(
     use_numba: bool = False,
     force: bool = False,
     return_ranges: bool = False,
-    use_pandas_merge_for_equi_join=True,
+    use_binary_search_for_equi_join=True,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Convenience function to return the matching indices from an inner join.
 
@@ -1083,7 +1074,7 @@ def get_join_indices(
             If none of the above conditions are met, ranges are not returned;
             instead a tuple of indices for the rows in the dataframes that
             match is returned.
-        use_pandas_merge_for_equi_join: If True, uses Pandas' merge
+        use_binary_search_for_equi_join: If True, uses Pandas' merge
             function when an equi-join is present, else uses a binary search approach.
 
     Returns:
@@ -1102,7 +1093,6 @@ def get_join_indices(
         force=force,
         return_matching_indices=True,
         return_ranges=return_ranges,
-        row_count=None,
-        use_pandas_merge_for_equi_join=use_pandas_merge_for_equi_join,
+        use_binary_search_for_equi_join=use_binary_search_for_equi_join,
         aggfunc=None,
     )

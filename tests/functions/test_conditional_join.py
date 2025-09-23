@@ -118,16 +118,16 @@ def test_indicator_exists(dummy, series):
         dummy.conditional_join(series, ("id", "B", ">"), indicator="id")
 
 
-def test_use_pandas_merge_for_equi_join_type(dummy, series):
-    """Raise TypeError if use_pandas_merge_for_equi_join is not a boolean."""
+def test_use_binary_search_for_equi_join_type(dummy, series):
+    """Raise TypeError if use_binary_search_for_equi_join is not a boolean."""
     with pytest.raises(
-        TypeError, match="use_pandas_merge_for_equi_join should be one of.+"
+        TypeError, match="use_binary_search_for_equi_join should be one of.+"
     ):
         dummy.conditional_join(
             series,
             ("id", "B", "=="),
             ("id", "B", ">"),
-            use_pandas_merge_for_equi_join=1,
+            use_binary_search_for_equi_join=1,
         )
 
 
@@ -1569,7 +1569,7 @@ def test_dual_conditions_eq_and_ne_binary_search(df, right):
             ("B", "Numeric", "=="),
             ("E", "Dates", "!="),
             how="inner",
-            use_pandas_merge_for_equi_join=False,
+            use_binary_search_for_equi_join=True,
         )
         .sort_values(columns, ignore_index=True)
         .loc[:, columns]
@@ -2609,7 +2609,7 @@ def test_ge_eq_and_le_numbers_binary_search(df, right):
             ("E", "Dates", "<="),
             ("B", "Floats", "=="),
             how="inner",
-            use_pandas_merge_for_equi_join=False,
+            use_binary_search_for_equi_join=True,
         )
         .sort_values(columns, ignore_index=True)
     )
@@ -3081,7 +3081,7 @@ def test_eq_indices_binary_search(df, right):
         [
             ("E", "Dates", "=="),
         ],
-        use_pandas_merge_for_equi_join=False,
+        use_binary_search_for_equi_join=True,
     )
     if isinstance(actual, tuple):
         actual, _ = actual
@@ -3099,20 +3099,13 @@ def test_eq_indices_ragged_arrays(df, right):
 
     expected = (
         df.assign(lindex=range(len(df)))
-        .dropna(subset=["E"])
-        .merge(
-            right.assign(rindex=range(len(right))).dropna(subset=["Dates"]),
-            left_on="E",
-            right_on="Dates",
-            how="inner",
-            sort=False,
-        )
-        .loc[:, ["lindex", "rindex"]]
+        .merge(right.assign(rindex=range(len(right))), how="cross")
+        .loc[lambda df: df.E.eq(df.Dates), ["lindex", "rindex"]]
         .sort_values(["lindex", "rindex"])
     )
     lindex = pd.Index(expected["lindex"]).unique()
 
-    actual, _ = get_join_indices(
+    actual = get_join_indices(
         df,
         right,
         [
@@ -3120,6 +3113,10 @@ def test_eq_indices_ragged_arrays(df, right):
         ],
         return_ranges=True,
     )
+    if isinstance(actual, tuple):
+        actual, _ = actual
+    else:
+        actual = actual["left_index"]
     actual = pd.Index(actual).unique()
     assert_index_equal(lindex, actual, check_names=False)
 
@@ -3455,7 +3452,7 @@ def test_ge_eq_and_le_datess_indices_binary_search(df, right):
             ("B", "Floats", ">"),
             ("B", "Numeric", "!="),
         ],
-        use_pandas_merge_for_equi_join=False,
+        use_binary_search_for_equi_join=True,
     )
     if isinstance(actual, tuple):
         actual, _ = actual
@@ -4371,7 +4368,7 @@ def test_extension_array_eq_range_binary_search():
         ("id", "id", "=="),
         ("value_1", "value_2A", ">"),
         ("value_1", "value_2B", "<"),
-        use_pandas_merge_for_equi_join=False,
+        use_binary_search_for_equi_join=True,
     )
     expected = expected.drop(columns=("right", "id")).droplevel(
         axis=1, level=0
@@ -4497,7 +4494,7 @@ def test_no_match_binary_search():
         df2,
         ("A", "A", "=="),
         ("B", "B", ">"),
-        use_pandas_merge_for_equi_join=False,
+        use_binary_search_for_equi_join=True,
     ).drop(columns=("right", "A"))
     expected.columns = list("ABC")
 
@@ -4825,7 +4822,7 @@ def test_dual_condition_eq_range_ne_agg(df, right):
             ("Numeric", "max"),
             ("Numeric", "sum"),
         ],
-        use_pandas_merge_for_equi_join=False,
+        use_binary_search_for_equi_join=True,
     ).loc[:, ["Numeric"]]
     assert_frame_equal(expected, actual)
 
@@ -4891,7 +4888,7 @@ def test_agg_eq_range_agg(df, right):
             ("Numeric", "max"),
             ("Numeric", "sum"),
         ],
-        use_pandas_merge_for_equi_join=False,
+        use_binary_search_for_equi_join=True,
     ).loc[:, ["Numeric"]]
     assert_frame_equal(expected, actual)
 
@@ -4956,7 +4953,7 @@ def test_agg_dual_eq__agg(df, right):
             ("Numeric", "max"),
             ("Numeric", "sum"),
         ],
-        use_pandas_merge_for_equi_join=False,
+        use_binary_search_for_equi_join=True,
     ).loc[:, ["Numeric"]]
     assert_frame_equal(expected, actual)
 
@@ -5021,7 +5018,7 @@ def test_agg_dual_eq_ne_agg(df, right):
             ("Numeric", "max"),
             ("Numeric", "sum"),
         ],
-        use_pandas_merge_for_equi_join=False,
+        use_binary_search_for_equi_join=True,
     ).loc[:, ["Numeric"]]
     assert_frame_equal(expected, actual)
 
@@ -5083,7 +5080,7 @@ def test_agg_eq_only_agg(df, right):
             ("Numeric", "max"),
             ("Numeric", "sum"),
         ],
-        use_pandas_merge_for_equi_join=False,
+        use_binary_search_for_equi_join=True,
     ).loc[:, ["Numeric"]]
     assert_frame_equal(expected, actual)
 

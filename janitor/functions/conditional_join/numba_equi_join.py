@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Hashable
-
 import numpy as np
 import pandas as pd
 
@@ -15,7 +13,6 @@ def _numba_equi_join(
     df: pd.DataFrame,
     right: pd.DataFrame,
     conditions: list[tuple],
-    row_count: Hashable | None,
     keep: str,
 ) -> tuple[np.ndarray, np.ndarray] | None:
     """
@@ -188,23 +185,6 @@ def _numba_equi_join(
         tuples = helpers._generate_tuples(
             df=df, right=right, conditions=outcome["conditions"]
         )
-        if row_count:
-            data = _numba._get_row_count_ranges(
-                tuples=tuples,
-                starts=starts,
-                ends=ends,
-                matches=matches,
-                booleans=booleans,
-                sizes=sizes,
-                counts_array=counts_array,
-            )
-            if data is None:
-                return None
-            return pd.Series(
-                index=left_index,
-                data=data,
-                name=row_count,
-            )
         if keep == "all":
             left_index, right_index = _numba._get_indices_ranges_keep_all(
                 left_index=left_index,
@@ -291,22 +271,6 @@ def _numba_equi_join(
         op = np.array([op], dtype=np.intp)
         le_lt = (left_c, right_c, op)
     tuples = helpers._generate_tuples(df=df, right=right, conditions=rest)
-    if row_count:
-        data = _numba._get_row_count_equi_le_lt_or_ge_gt(
-            starts=starts,
-            ends=ends,
-            booleans=booleans,
-            tuples=tuples,
-            ge_gt=ge_gt,
-            le_lt=le_lt,
-        )
-        if data is None:
-            return None
-        return pd.Series(
-            index=left_index,
-            data=data,
-            name=row_count,
-        )
     if keep == "all":
         left_index, right_index = (
             _numba._get_indices_equi_ge_gt_or_le_lt_join_keep_all(

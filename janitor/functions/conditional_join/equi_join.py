@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Hashable
-
 import numpy as np
 import pandas as pd
 
@@ -24,8 +22,7 @@ def _multiple_conditional_join_eq(
     use_numba: bool,
     force: bool,
     return_ranges: bool,
-    row_count: Hashable | None,
-    use_pandas_merge_for_equi_join: bool,
+    use_binary_search_for_equi_join: bool,
     aggfunc: list[tuple],
 ) -> tuple:
     """
@@ -43,7 +40,6 @@ def _multiple_conditional_join_eq(
             keep=keep,
             use_numba=use_numba,
             return_ranges=False,
-            row_count=row_count,
         )
 
     if use_numba:
@@ -51,7 +47,6 @@ def _multiple_conditional_join_eq(
             df=df,
             right=right,
             conditions=conditions,
-            row_count=row_count,
             keep=keep,
         )
     outcome = helpers._separate_conditions_based_on_op(
@@ -68,7 +63,7 @@ def _multiple_conditional_join_eq(
     if right is None:
         return None
     equals = outcome["equals"]
-    if use_pandas_merge_for_equi_join:
+    if not use_binary_search_for_equi_join:
         left_on = []
         right_on = []
         for l_col, r_col, _ in equals:

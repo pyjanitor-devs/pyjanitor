@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Hashable
-
 import numpy as np
 import pandas as pd
 
@@ -17,7 +15,6 @@ def _multiple_conditional_join_le_lt(
     use_numba: bool,
     return_ranges: bool,
     aggfunc: list[tuple] = None,
-    row_count: Hashable = None,
 ) -> tuple:
     """
     Get indices for multiple conditions,
@@ -44,7 +41,6 @@ def _multiple_conditional_join_le_lt(
             right=right,
             conditions=outcome,
             keep=keep,
-            row_count=row_count,
             booleans=booleans,
         )
     # there is an opportunity for optimization for range joins

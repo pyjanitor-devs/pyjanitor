@@ -15,7 +15,6 @@ def _numba_multiple_non_equi_join(
     right: pd.DataFrame,
     conditions: list,
     keep: str,
-    row_count: str,
     booleans: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray] | None:
     """
@@ -261,23 +260,6 @@ def _numba_multiple_non_equi_join(
         # keep track of the length of actual data for each column
         lengths = np.empty(length, dtype=np.intp)
         tuples = helpers._generate_tuples(df=df, right=right, conditions=rest)
-
-        if row_count:
-            result = _numba._get_row_count_for_regions(
-                booleans=booleans,
-                starts=positions,
-                left_region=left_regions,
-                right_region=right_regions,
-                sorted_array=sorted_array,
-                positions_array=positions_array,
-                maxxes=maxxes,
-                lengths=lengths,
-                load_factor=load_factor,
-                tuples=tuples,
-            )
-            if result is None:
-                return None
-            return pd.Series(data=result, index=left_index, name=row_count)
         if keep == "all":
             left_index, right_index = _numba._get_indices_for_regions_keep_all(
                 booleans=booleans,
@@ -365,19 +347,6 @@ def _numba_multiple_non_equi_join(
     ends[:] = len(right)
     booleans = np.ones(length, dtype=np.int8)
     tuples = helpers._generate_tuples(df=df, right=right, conditions=rest)
-    if row_count:
-        result = _numba._get_row_count_equi_le_lt_or_ge_gt(
-            tuples=tuples,
-            starts=starts,
-            ends=ends,
-            le_lt=le_lt,
-            ge_gt=ge_gt,
-            booleans=booleans,
-        )
-        if result is None:
-            return None
-        return pd.Series(data=result, index=left_index, name=row_count)
-
     if keep == "all":
         left_index, right_index = (
             _numba._get_indices_equi_ge_gt_or_le_lt_join_keep_all(

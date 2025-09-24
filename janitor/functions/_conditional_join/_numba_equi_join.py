@@ -4,9 +4,9 @@ import numpy as np
 import pandas as pd
 
 from janitor.cython_functions import cond_join
-from janitor.functions.conditional_join import _numba
+from janitor.functions._conditional_join import _numba
 
-from . import helpers
+from . import _helpers
 
 
 def _numba_equi_join(
@@ -124,16 +124,16 @@ def _numba_equi_join(
     # 	id	value_1	id	value_2A	value_2B
     # 	2	  3	    2	   2	       4
     #
-    outcome = helpers._separate_conditions_based_on_op(
+    outcome = _helpers._separate_conditions_based_on_op(
         conditions=conditions, keep_equals_separate=True
     )
 
-    booleans = helpers._maybe_remove_nulls_from_dataframe(
+    booleans = _helpers._maybe_remove_nulls_from_dataframe(
         df=df, columns=outcome.get("l_cols"), return_bools=True
     )
     if booleans is None:
         return None
-    right = helpers._maybe_remove_nulls_from_dataframe(
+    right = _helpers._maybe_remove_nulls_from_dataframe(
         df=right, columns=outcome.get("r_cols")
     )
     if right is None:
@@ -164,7 +164,7 @@ def _numba_equi_join(
     left_c, right_c, _ = equals
     left_c = df[left_c]
     right_c = right[right_c]
-    indices = helpers._equal_indices(left=left_c, right=right_c)
+    indices = _helpers._equal_indices(left=left_c, right=right_c)
     if indices is None:
         return None
     booleans = indices["booleans"] & booleans.astype(np.bool_, copy=False)
@@ -179,7 +179,7 @@ def _numba_equi_join(
             sizes = np.where(booleans, sizes, 0)
         counts_array = np.zeros(left_index.size, dtype=np.intp)
         matches = np.ones(sizes.sum(), dtype=np.bool_)
-        tuples = helpers._generate_tuples(
+        tuples = _helpers._generate_tuples(
             df=df, right=right, conditions=outcome["conditions"]
         )
         if keep == "all":
@@ -232,7 +232,7 @@ def _numba_equi_join(
         is_fastpath_range_join = False
     else:
         left_on, right_on, _ = outcome["conditions"][1]
-        _, arr = helpers._convert_to_numpy(
+        _, arr = _helpers._convert_to_numpy(
             left=df[left_on]._values, right=right[right_on]._values
         )
         is_fastpath_range_join = cond_join.check_monotonicity_per_range(
@@ -244,7 +244,7 @@ def _numba_equi_join(
         is_fastpath_range_join = bool(is_fastpath_range_join)
     if not is_fastpath_range_join:
         condition, *rest = outcome["conditions"]
-        if condition[-1] in helpers.greater_than_join_types:
+        if condition[-1] in _helpers.greater_than_join_types:
             ge_gt = condition
         else:
             le_lt = condition
@@ -254,19 +254,23 @@ def _numba_equi_join(
         left_on, right_on, op = ge_gt
         left_c = df[left_on]._values
         right_c = right[right_on]._values
-        left_c, right_c = helpers._convert_to_numpy(left=left_c, right=right_c)
-        op = helpers.operator_mapping[op]
+        left_c, right_c = _helpers._convert_to_numpy(
+            left=left_c, right=right_c
+        )
+        op = _helpers.operator_mapping[op]
         op = np.array([op], dtype=np.intp)
         ge_gt = (left_c, right_c, op)
     if le_lt:
         left_on, right_on, op = le_lt
         left_c = df[left_on]._values
         right_c = right[right_on]._values
-        left_c, right_c = helpers._convert_to_numpy(left=left_c, right=right_c)
-        op = helpers.operator_mapping[op]
+        left_c, right_c = _helpers._convert_to_numpy(
+            left=left_c, right=right_c
+        )
+        op = _helpers.operator_mapping[op]
         op = np.array([op], dtype=np.intp)
         le_lt = (left_c, right_c, op)
-    tuples = helpers._generate_tuples(df=df, right=right, conditions=rest)
+    tuples = _helpers._generate_tuples(df=df, right=right, conditions=rest)
     if keep == "all":
         left_index, right_index = (
             _numba._get_indices_equi_ge_gt_or_le_lt_join_keep_all(

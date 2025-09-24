@@ -27,7 +27,7 @@ from .coalesce import coalesce
 from .collapse_levels import collapse_levels
 from .complete import complete
 from .concatenate_columns import concatenate_columns
-from .conditional_join.conditional_join import (
+from .conditional_join import (
     conditional_join,
     get_join_indices,
 )

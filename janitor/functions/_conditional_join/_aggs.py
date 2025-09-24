@@ -8,7 +8,7 @@ from pandas.core.dtypes.common import ensure_float64
 
 from janitor.cython_functions import cond_join_aggs
 
-from . import helpers
+from . import _helpers
 
 
 def compute_aggfunc_result(
@@ -61,7 +61,7 @@ def _compute_agg_sum(indices: dict, series: pd.Series, total: int) -> pd.array:
     """
     matches = indices.get("matches")
     positions = indices.get("positions")
-    arr = helpers._convert_array_to_numpy(array=series._values, na_value=0)
+    arr = _helpers._convert_array_to_numpy(array=series._values, na_value=0)
     is_float_array = pd.api.types.is_float_dtype(series)
     is_int_array = pd.api.types.is_integer_dtype(series)
     if (not series.index.is_monotonic_increasing) and is_float_array:
@@ -180,7 +180,7 @@ def _compute_agg_min_max(
     arr = series._values
     if pd.api.types.is_extension_array_dtype(series) and series.hasnans:
         arr = ensure_float64(arr)
-    arr = helpers._convert_array_to_numpy(array=arr)
+    arr = _helpers._convert_array_to_numpy(array=arr)
     if (
         isinstance(matches, np.ndarray)
         and isinstance(positions, np.ndarray)

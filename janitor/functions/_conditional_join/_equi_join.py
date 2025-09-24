@@ -9,9 +9,9 @@ from janitor.cython_functions import (
     cond_join_indices,
 )
 
-from . import aggs, helpers
-from .multiple_conditional_join_le_lt import _multiple_conditional_join_le_lt
-from .numba_equi_join import _numba_equi_join
+from . import _aggs, _helpers
+from ._multiple_conditional_join_le_lt import _multiple_conditional_join_le_lt
+from ._numba_equi_join import _numba_equi_join
 
 
 def _multiple_conditional_join_eq(
@@ -47,18 +47,18 @@ def _multiple_conditional_join_eq(
             conditions=conditions,
             keep=keep,
         )
-    outcome = helpers._separate_conditions_based_on_op(
+    outcome = _helpers._separate_conditions_based_on_op(
         conditions=conditions, keep_equals_separate=True
     )
 
-    booleans = helpers._maybe_remove_nulls_from_dataframe(
+    booleans = _helpers._maybe_remove_nulls_from_dataframe(
         df=df, columns=outcome.get("l_cols"), return_bools=True
     )
 
     if booleans is None:
         return None
 
-    right = helpers._maybe_remove_nulls_from_dataframe(
+    right = _helpers._maybe_remove_nulls_from_dataframe(
         df=right, columns=outcome.get("r_cols")
     )
     if right is None:
@@ -85,10 +85,10 @@ def _multiple_conditional_join_eq(
                 return None
             if outcome["conditions"]:
                 booleans = booleans.astype(np.int8, copy=False)
-                conditions = helpers._generate_tuples(
+                conditions = _helpers._generate_tuples(
                     df=df, right=right, conditions=outcome["conditions"]
                 )
-                booleans = helpers._get_positive_matches_no_ranges(
+                booleans = _helpers._get_positive_matches_no_ranges(
                     right_index=indexers,
                     conditions=conditions,
                     booleans=booleans,
@@ -101,7 +101,7 @@ def _multiple_conditional_join_eq(
                     booleans = booleans.astype(np.bool_, copy=False)
                     df_index = df_index[booleans]
                     indexers = indexers[booleans]
-                results = aggs.compute_aggfunc_result_no_ranges(
+                results = _aggs.compute_aggfunc_result_no_ranges(
                     aggfunc=aggfunc,
                     agg_frame=right,
                     indexers=indexers,
@@ -143,10 +143,10 @@ def _multiple_conditional_join_eq(
                 "l_counts": booleans.sum(),
             }
             if outcome["conditions"]:
-                conditions = helpers._generate_tuples(
+                conditions = _helpers._generate_tuples(
                     df=df, right=right, conditions=outcome["conditions"]
                 )
-                indices = helpers._get_positive_matches_ranges_positions(
+                indices = _helpers._get_positive_matches_ranges_positions(
                     indices=indices, conditions=conditions
                 )
                 if indices is None:
@@ -157,7 +157,7 @@ def _multiple_conditional_join_eq(
                     booleans = indices["booleans"].astype(np.bool_, copy=False)
                     indices["counts_array"] = indices["counts_array"][booleans]
                     df_index = df_index[booleans]
-                results = aggs.compute_aggfunc_result(
+                results = _aggs.compute_aggfunc_result(
                     aggfunc=aggfunc,
                     agg_frame=right,
                     indices=indices,
@@ -309,7 +309,7 @@ def _multiple_conditional_join_eq(
             booleans = indices["booleans"].astype(np.bool_, copy=False)
             indices["counts_array"] = indices["counts_array"][booleans]
             df_index = df_index[booleans]
-        results = aggs.compute_aggfunc_result(
+        results = _aggs.compute_aggfunc_result(
             aggfunc=aggfunc,
             agg_frame=right,
             indices=indices,
@@ -333,7 +333,7 @@ def _multiple_conditional_join_eq(
             "ends": ends,
         }
     if not outcome.get("conditions"):
-        return helpers._build_indices_fast_path_range_join_only(
+        return _helpers._build_indices_fast_path_range_join_only(
             left_index=df.index._values,
             right_index=right.index._values,
             starts=indices["starts"],
@@ -346,10 +346,10 @@ def _multiple_conditional_join_eq(
 
     # != only
     if not outcome.get("non_equi_count"):
-        conditions = helpers._generate_tuples(
+        conditions = _helpers._generate_tuples(
             df=df, right=right, conditions=outcome["conditions"]
         )
-        indices = helpers._get_positive_matches(
+        indices = _helpers._get_positive_matches(
             indices=indices,
             conditions=conditions,
         )
@@ -361,7 +361,7 @@ def _multiple_conditional_join_eq(
                 booleans = indices["booleans"].astype(np.bool_, copy=False)
                 indices["counts_array"] = indices["counts_array"][booleans]
                 df_index = df_index[booleans]
-            results = aggs.compute_aggfunc_result(
+            results = _aggs.compute_aggfunc_result(
                 aggfunc=aggfunc,
                 agg_frame=right,
                 indices=indices,
@@ -372,7 +372,7 @@ def _multiple_conditional_join_eq(
             total = indices["total"]
         else:
             total = indices["l_counts"]
-        return helpers._multiple_conditions_get_indices(
+        return _helpers._multiple_conditions_get_indices(
             left_index=df.index._values,
             right_index=right.index._values,
             starts=indices["starts"],
@@ -393,7 +393,7 @@ def _multiple_conditional_join_eq(
         # if it is, then we can use a binary search
         # to skip non matched entries
         left_on, right_on, _ = outcome["conditions"][1]
-        _, arr = helpers._convert_to_numpy(
+        _, arr = _helpers._convert_to_numpy(
             left=df[left_on]._values, right=right[right_on]._values
         )
         is_fastpath_range_join = cond_join.check_monotonicity_per_range(
@@ -405,7 +405,7 @@ def _multiple_conditional_join_eq(
         is_fastpath_range_join = bool(is_fastpath_range_join)
 
     (left_on, right_on, op), *conditions = outcome["conditions"]
-    indices = helpers._update_search_indices(
+    indices = _helpers._update_search_indices(
         left=df[left_on]._values,
         right=right[right_on]._values,
         indices=indices,
@@ -415,7 +415,7 @@ def _multiple_conditional_join_eq(
         return None
     if is_fastpath_range_join:
         (left_on, right_on, op), *conditions = conditions
-        indices = helpers._update_search_indices(
+        indices = _helpers._update_search_indices(
             left=df[left_on]._values,
             right=right[right_on]._values,
             indices=indices,
@@ -430,7 +430,7 @@ def _multiple_conditional_join_eq(
             booleans = indices["booleans"].astype(np.bool_, copy=False)
             indices["counts_array"] = indices["counts_array"][booleans]
             df_index = df_index[booleans]
-        results = aggs.compute_aggfunc_result(
+        results = _aggs.compute_aggfunc_result(
             aggfunc=aggfunc,
             agg_frame=right,
             indices=indices,
@@ -455,7 +455,7 @@ def _multiple_conditional_join_eq(
             "ends": ends,
         }
     if not conditions:
-        return helpers._build_indices_fast_path_range_join_only(
+        return _helpers._build_indices_fast_path_range_join_only(
             left_index=df.index._values,
             right_index=right.index._values,
             starts=indices["starts"],
@@ -466,10 +466,10 @@ def _multiple_conditional_join_eq(
             matches=indices["matches"],
         )
 
-    conditions = helpers._generate_tuples(
+    conditions = _helpers._generate_tuples(
         df=df, right=right, conditions=conditions
     )
-    indices = helpers._get_positive_matches(
+    indices = _helpers._get_positive_matches(
         indices=indices,
         conditions=conditions,
     )
@@ -481,7 +481,7 @@ def _multiple_conditional_join_eq(
             booleans = indices["booleans"].astype(np.bool_, copy=False)
             indices["counts_array"] = indices["counts_array"][booleans]
             df_index = df_index[booleans]
-        results = aggs.compute_aggfunc_result(
+        results = _aggs.compute_aggfunc_result(
             aggfunc=aggfunc,
             agg_frame=right,
             indices=indices,
@@ -492,7 +492,7 @@ def _multiple_conditional_join_eq(
         total = indices["total"]
     else:
         total = indices["l_counts"]
-    return helpers._multiple_conditions_get_indices(
+    return _helpers._multiple_conditions_get_indices(
         left_index=df.index._values,
         right_index=right.index._values,
         starts=indices["starts"],

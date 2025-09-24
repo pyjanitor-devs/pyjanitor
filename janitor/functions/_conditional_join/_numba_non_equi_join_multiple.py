@@ -5,9 +5,9 @@ import math
 import numpy as np
 import pandas as pd
 
-from janitor.functions.conditional_join import _numba
+from janitor.functions._conditional_join import _numba
 
-from . import helpers
+from . import _helpers
 
 
 def _numba_multiple_non_equi_join(
@@ -161,16 +161,16 @@ def _numba_multiple_non_equi_join(
     # 3        4         3         5
     # 4        4         3         6
     ################################
-    conditions = helpers._separate_conditions_based_on_op(
+    conditions = _helpers._separate_conditions_based_on_op(
         conditions=conditions
     )
-    booleans = helpers._maybe_remove_nulls_from_dataframe(
+    booleans = _helpers._maybe_remove_nulls_from_dataframe(
         df=df, columns=conditions["l_cols"], return_bools=True
     )
     if booleans is None:
         return None
     # get rid of nulls, if any
-    right = helpers._maybe_remove_nulls_from_dataframe(
+    right = _helpers._maybe_remove_nulls_from_dataframe(
         df=right, columns=conditions["r_cols"]
     )
     if right is None:
@@ -231,7 +231,7 @@ def _numba_multiple_non_equi_join(
         left_index = df.index._values
         # ensure highest values are at the top
         # monotonic decreasing
-        if op in helpers.less_than_join_types:
+        if op in _helpers.less_than_join_types:
             # this is necessary,
             # as the number of join conditions
             # may be > 2
@@ -239,7 +239,7 @@ def _numba_multiple_non_equi_join(
             left_regions = left_regions[::-1]
             left_index = left_index[::-1]
             booleans = booleans[::-1]
-        elif op in helpers.greater_than_join_types:
+        elif op in _helpers.greater_than_join_types:
             # ensure right is aligned
             # since within build_region
             # we have flipped in monotonic decreasing order
@@ -272,7 +272,7 @@ def _numba_multiple_non_equi_join(
         maxxes = np.empty(length, dtype=np.intp)
         # keep track of the length of actual data for each column
         lengths = np.empty(length, dtype=np.intp)
-        tuples = helpers._generate_tuples(df=df, right=right, conditions=rest)
+        tuples = _helpers._generate_tuples(df=df, right=right, conditions=rest)
         if keep == "all":
             left_index, right_index = _numba._get_indices_for_regions_keep_all(
                 booleans=booleans,
@@ -336,13 +336,15 @@ def _numba_multiple_non_equi_join(
     condition, *rest = conditions["conditions"]
     left_index = df.index._values
     right_index = right.index._values
-    if condition[-1] in helpers.greater_than_join_types:
+    if condition[-1] in _helpers.greater_than_join_types:
         ge_gt = condition
         left_on, right_on, op = ge_gt
         left_c = df[left_on]._values
         right_c = right[right_on]._values
-        left_c, right_c = helpers._convert_to_numpy(left=left_c, right=right_c)
-        op = helpers.operator_mapping[op]
+        left_c, right_c = _helpers._convert_to_numpy(
+            left=left_c, right=right_c
+        )
+        op = _helpers.operator_mapping[op]
         op = np.array([op], dtype=np.intp)
         ge_gt = (left_c, right_c, op)
     else:
@@ -350,15 +352,17 @@ def _numba_multiple_non_equi_join(
         left_on, right_on, op = le_lt
         left_c = df[left_on]._values
         right_c = right[right_on]._values
-        left_c, right_c = helpers._convert_to_numpy(left=left_c, right=right_c)
-        op = helpers.operator_mapping[op]
+        left_c, right_c = _helpers._convert_to_numpy(
+            left=left_c, right=right_c
+        )
+        op = _helpers.operator_mapping[op]
         op = np.array([op], dtype=np.intp)
         le_lt = (left_c, right_c, op)
     length = len(df)
     starts = np.zeros(length, dtype=np.intp)
     ends = np.empty(length, dtype=np.intp)
     ends[:] = len(right)
-    tuples = helpers._generate_tuples(df=df, right=right, conditions=rest)
+    tuples = _helpers._generate_tuples(df=df, right=right, conditions=rest)
 
     if keep == "all":
         left_index, right_index = (
@@ -439,11 +443,11 @@ def _build_region(
     Build ordered regions
     """
     r_index = right.index
-    left, right = helpers._convert_to_numpy(
+    left, right = _helpers._convert_to_numpy(
         left=left._values, right=right._values
     )
 
-    indices = helpers._update_search_indices(
+    indices = _helpers._update_search_indices(
         left=left,
         right=right,
         indices=indices,
@@ -452,7 +456,7 @@ def _build_region(
     if indices is None:
         return None
     len_right = len(right)
-    if op in helpers.greater_than_join_types:
+    if op in _helpers.greater_than_join_types:
         positions = len_right - indices["ends"]
         r_index = r_index[::-1]
     else:

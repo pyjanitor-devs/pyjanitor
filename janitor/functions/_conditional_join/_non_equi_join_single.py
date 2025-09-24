@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from . import aggs, helpers
+from . import _aggs, _helpers
 
 
 def _single_le_ge_join(
@@ -18,12 +18,12 @@ def _single_le_ge_join(
     Compute single join on '</<=/>/>='
     """
     left_on, right_on, op = condition
-    booleans = helpers._maybe_remove_nulls_from_dataframe(
+    booleans = _helpers._maybe_remove_nulls_from_dataframe(
         df=df, columns=[left_on], return_bools=True
     )
     if booleans is None:
         return None
-    right = helpers._maybe_remove_nulls_from_dataframe(
+    right = _helpers._maybe_remove_nulls_from_dataframe(
         df=right, columns=[right_on]
     )
     if right is None:
@@ -45,7 +45,7 @@ def _single_le_ge_join(
         "sizes": sizes,
         "right_is_sorted": right_is_sorted,
     }
-    indices = helpers._update_search_indices(
+    indices = _helpers._update_search_indices(
         left=df[left_on]._values,
         right=right[right_on]._values,
         indices=indices,
@@ -61,7 +61,7 @@ def _single_le_ge_join(
             booleans = booleans.astype(np.bool_, copy=False)
             df_index = df.index._values[booleans]
             indices["counts_array"] = indices["counts_array"][booleans]
-        results = aggs.compute_aggfunc_result(
+        results = _aggs.compute_aggfunc_result(
             aggfunc=aggfunc,
             agg_frame=right,
             indices=indices,
@@ -72,7 +72,7 @@ def _single_le_ge_join(
         total = indices["total"]
     else:
         total = indices["matches"]
-    return helpers._build_indices_single_equi_or_true_range_join(
+    return _helpers._build_indices_single_equi_or_true_range_join(
         left_index=df.index._values,
         right_index=right.index._values,
         starts=indices["starts"],

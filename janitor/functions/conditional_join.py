@@ -15,9 +15,11 @@ from pandas.core.dtypes.concat import concat_compat
 
 from janitor.utils import check, check_column, deprecated_alias
 
-from . import helpers, non_equi_join_single
-from .equi_join import _multiple_conditional_join_eq
-from .multiple_conditional_join_le_lt import _multiple_conditional_join_le_lt
+from ._conditional_join import _helpers, _non_equi_join_single
+from ._conditional_join._equi_join import _multiple_conditional_join_eq
+from ._conditional_join._multiple_conditional_join_le_lt import (
+    _multiple_conditional_join_le_lt,
+)
 
 
 @pf.register_dataframe_method
@@ -332,7 +334,7 @@ def _check_operator(op: str):
 
     Used in `conditional_join`.
     """
-    sequence_of_operators = {op.value for op in helpers._JoinOperator}
+    sequence_of_operators = {op.value for op in _helpers._JoinOperator}
     if op not in sequence_of_operators:
         raise ValueError(
             "The conditional join operator "
@@ -405,7 +407,7 @@ def _conditional_join_preliminary_checks(
         _check_operator(op)
 
     if all(
-        (op == helpers._JoinOperator.NOT_EQUAL.value for *_, op in conditions)
+        (op == _helpers._JoinOperator.NOT_EQUAL.value for *_, op in conditions)
     ):
         raise ValueError("!= only joins are not supported")
 
@@ -480,7 +482,7 @@ def _conditional_join_preliminary_checks(
                 )
     if all(
         (
-            op == helpers._JoinOperator.STRICTLY_EQUAL.value
+            op == _helpers._JoinOperator.STRICTLY_EQUAL.value
             for *_, op in conditions
         )
     ):
@@ -535,7 +537,7 @@ def _conditional_join_type_check(
             "for numeric, datetime and timedelta dtypes."
         )
     if (
-        ((op != helpers._JoinOperator.STRICTLY_EQUAL.value) or use_numba)
+        ((op != _helpers._JoinOperator.STRICTLY_EQUAL.value) or use_numba)
         and not is_numeric_dtype(left_column)
         and not is_datetime64_dtype(left_column)
         and not is_timedelta64_dtype(left_column)
@@ -620,7 +622,7 @@ def _conditional_join_compute(
             use_numba=use_numba,
             sort_equi_join=sort_equi_join,
         )
-        if op == helpers._JoinOperator.STRICTLY_EQUAL.value:
+        if op == _helpers._JoinOperator.STRICTLY_EQUAL.value:
             eq_check = True
     df.index = range(len(df))
     right.index = range(len(right))
@@ -647,7 +649,7 @@ def _conditional_join_compute(
             aggfunc=aggfunc,
         )
     else:
-        result = non_equi_join_single._single_le_ge_join(
+        result = _non_equi_join_single._single_le_ge_join(
             df=df,
             right=right,
             condition=conditions[0],
@@ -904,7 +906,7 @@ def _create_frame(
         for key, value in right.items():
             array = value._values
             value = array[right_index]
-            other = helpers.construct_1d_array_from_inferred_fill_value(
+            other = _helpers.construct_1d_array_from_inferred_fill_value(
                 value=array[:1], length=length
             )
             value = concat_compat([value, other])
@@ -944,7 +946,7 @@ def _create_frame(
         for key, value in df.items():
             array = value._values
             value = array[left_index]
-            other = helpers.construct_1d_array_from_inferred_fill_value(
+            other = _helpers.construct_1d_array_from_inferred_fill_value(
                 value=array[:1], length=length
             )
             value = concat_compat([value, other])
@@ -991,7 +993,7 @@ def _create_frame(
             middle = array[left_indexer]
             top.append(middle)
         if right_nulls_length:
-            bottom = helpers.construct_1d_array_from_inferred_fill_value(
+            bottom = _helpers.construct_1d_array_from_inferred_fill_value(
                 value=array[:1], length=right_nulls_length
             )
             top.append(bottom)
@@ -1002,7 +1004,7 @@ def _create_frame(
         top = array[right_index]
         top = [top]
         if df_nulls_length:
-            middle = helpers.construct_1d_array_from_inferred_fill_value(
+            middle = _helpers.construct_1d_array_from_inferred_fill_value(
                 value=array[:1], length=df_nulls_length
             )
             top.append(middle)
@@ -1051,7 +1053,7 @@ def get_join_indices(
     use_numba: bool = False,
     force: bool = False,
     return_ranges: bool = False,
-    sort_equi_join=False,
+    sort_equi_join: bool = False,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Convenience function to return the matching indices from an inner join.
 

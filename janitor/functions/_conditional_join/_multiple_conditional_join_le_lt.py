@@ -3,8 +3,8 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from . import aggs, helpers
-from .numba_non_equi_join_multiple import _numba_multiple_non_equi_join
+from . import _aggs, _helpers
+from ._numba_non_equi_join_multiple import _numba_multiple_non_equi_join
 
 
 def _multiple_conditional_join_le_lt(
@@ -27,14 +27,14 @@ def _multiple_conditional_join_le_lt(
             conditions=conditions,
             keep=keep,
         )
-    outcome = helpers._separate_conditions_based_on_op(conditions=conditions)
-    booleans = helpers._maybe_remove_nulls_from_dataframe(
+    outcome = _helpers._separate_conditions_based_on_op(conditions=conditions)
+    booleans = _helpers._maybe_remove_nulls_from_dataframe(
         df=df, columns=outcome["l_cols"], return_bools=True
     )
     if booleans is None:
         return None
     # get rid of nulls, if any
-    right = helpers._maybe_remove_nulls_from_dataframe(
+    right = _helpers._maybe_remove_nulls_from_dataframe(
         df=right, columns=outcome["r_cols"]
     )
     if right is None:
@@ -92,7 +92,7 @@ def _multiple_conditional_join_le_lt(
         (left_on, right_on, op), *conditions = outcome["conditions"]
         indices["conditions"] = conditions
         indices["right_index"] = right.index._values
-        indices = helpers._update_search_indices(
+        indices = _helpers._update_search_indices(
             left=df[left_on]._values,
             right=right[right_on]._values,
             indices=indices,
@@ -100,10 +100,10 @@ def _multiple_conditional_join_le_lt(
         )
         if indices is None:
             return None
-        conditions = helpers._generate_tuples(
+        conditions = _helpers._generate_tuples(
             df=df, right=right, conditions=indices["conditions"]
         )
-        indices = helpers._get_positive_matches(
+        indices = _helpers._get_positive_matches(
             indices=indices,
             conditions=conditions,
         )
@@ -115,7 +115,7 @@ def _multiple_conditional_join_le_lt(
                 booleans = indices["booleans"].astype(np.bool_, copy=False)
                 indices["counts_array"] = indices["counts_array"][booleans]
                 df_index = df_index[booleans]
-            results = aggs.compute_aggfunc_result(
+            results = _aggs.compute_aggfunc_result(
                 aggfunc=aggfunc,
                 agg_frame=right,
                 indices=indices,
@@ -126,7 +126,7 @@ def _multiple_conditional_join_le_lt(
             total = indices["total"]
         else:
             total = indices["l_counts"]
-        return helpers._multiple_conditions_get_indices(
+        return _helpers._multiple_conditions_get_indices(
             left_index=indices["left_index"],
             right_index=indices["right_index"],
             starts=indices["starts"],
@@ -166,7 +166,7 @@ def _multiple_conditional_join_le_lt(
             booleans = indices["booleans"].astype(np.bool_, copy=False)
             indices["counts_array"] = indices["counts_array"][booleans]
             df_index = df_index[booleans]
-        results = aggs.compute_aggfunc_result(
+        results = _aggs.compute_aggfunc_result(
             aggfunc=aggfunc,
             agg_frame=right,
             indices=indices,
@@ -178,7 +178,7 @@ def _multiple_conditional_join_le_lt(
             total = indices["total"]
         else:
             total = indices["matches"]
-        return helpers._build_indices_single_equi_or_true_range_join(
+        return _helpers._build_indices_single_equi_or_true_range_join(
             left_index=indices["left_index"],
             right_index=indices["right_index"],
             starts=indices["starts"],
@@ -189,10 +189,10 @@ def _multiple_conditional_join_le_lt(
             keep=keep,
             booleans=indices["booleans"],
         )
-    conditions = helpers._generate_tuples(
+    conditions = _helpers._generate_tuples(
         df=df, right=right, conditions=conditions
     )
-    indices = helpers._get_positive_matches(
+    indices = _helpers._get_positive_matches(
         indices=indices,
         conditions=conditions,
     )
@@ -204,7 +204,7 @@ def _multiple_conditional_join_le_lt(
             booleans = indices["booleans"].astype(np.bool_, copy=False)
             indices["counts_array"] = indices["counts_array"][booleans]
             df_index = df_index[booleans]
-        results = aggs.compute_aggfunc_result(
+        results = _aggs.compute_aggfunc_result(
             aggfunc=aggfunc,
             agg_frame=right,
             indices=indices,
@@ -215,7 +215,7 @@ def _multiple_conditional_join_le_lt(
         total = indices["total"]
     else:
         total = indices["l_counts"]
-    return helpers._multiple_conditions_get_indices(
+    return _helpers._multiple_conditions_get_indices(
         left_index=indices["left_index"],
         right_index=indices["right_index"],
         starts=indices["starts"],
@@ -249,7 +249,7 @@ def _range_indices(
     # get the positions where end_left is </<= end_right
     # this should reduce the search space
     left_on, right_on, op = first
-    indices = helpers._update_search_indices(
+    indices = _helpers._update_search_indices(
         left=df[left_on]._values,
         right=right[right_on]._values,
         indices=indices,
@@ -265,7 +265,7 @@ def _range_indices(
     fastpath = right_c.is_monotonic_increasing
     if not fastpath:
         right_c = right_c.cummax()
-    indices = helpers._update_search_indices(
+    indices = _helpers._update_search_indices(
         left=left_c._values,
         right=right_c._values,
         indices=indices,

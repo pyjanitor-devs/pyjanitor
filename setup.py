@@ -151,7 +151,19 @@ else:
             sources=[
                 "./janitor/cython_functions/cond_join.c",
             ],
-        )
+        ),
+        Extension(
+            name="janitor.cython_functions.cond_join_aggs",
+            sources=[
+                "./janitor/cython_functions/cond_join_aggs.c",
+            ],
+        ),
+        Extension(
+            name="janitor.cython_functions.cond_join_indices",
+            sources=[
+                "./janitor/cython_functions/cond_join_indices.c",
+            ],
+        ),
     ]
 
 setup(

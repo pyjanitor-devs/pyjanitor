@@ -3,7 +3,7 @@
 ## [Unreleased]
 -   [ENH] Reverse deprecation of `pivot_wider()` -- Issue #1464
 -   [ENH] Add accessor and method for pandas DataFrameGroupBy objects. - Issue #587 @samukweku
--   [ENH] Optimise conditional_join with cython. - Issue #1490 @samukweku
+-   [ENH] Optimise conditional_join with cython. Support for aggregations - Issue #1490 @samukweku
 
 ## [v0.31.0] - 2025-03-07
 

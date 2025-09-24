@@ -119,16 +119,14 @@ def test_indicator_exists(dummy, series):
         dummy.conditional_join(series, ("id", "B", ">"), indicator="id")
 
 
-def test_use_binary_search_for_equi_join_type(dummy, series):
-    """Raise TypeError if use_binary_search_for_equi_join is not a boolean."""
-    with pytest.raises(
-        TypeError, match="use_binary_search_for_equi_join should be one of.+"
-    ):
+def test_sort_equi_join_type(dummy, series):
+    """Raise TypeError if sort_equi_join is not a boolean."""
+    with pytest.raises(TypeError, match="sort_equi_join should be one of.+"):
         dummy.conditional_join(
             series,
             ("id", "B", "=="),
             ("id", "B", ">"),
-            use_binary_search_for_equi_join=1,
+            sort_equi_join=1,
         )
 
 
@@ -233,7 +231,7 @@ def test_equi_binary_search(dummy):
             dummy.rename(columns={"S": "Strings"}),
             ("S", "Strings", "=="),
             aggfunc=[("id", "sum")],
-            use_binary_search_for_equi_join=True,
+            sort_equi_join=True,
         )
 
 
@@ -1618,7 +1616,7 @@ def test_dual_conditions_eq_and_ne_binary_search(df, right):
             ("B", "Numeric", "=="),
             ("E", "Dates", "!="),
             how="inner",
-            use_binary_search_for_equi_join=True,
+            sort_equi_join=True,
         )
         .sort_values(columns, ignore_index=True)
         .loc[:, columns]
@@ -2721,7 +2719,7 @@ def test_ge_eq_and_le_numbers_binary_search(df, right):
             ("E", "Dates", "<="),
             ("B", "Floats", "=="),
             how="inner",
-            use_binary_search_for_equi_join=True,
+            sort_equi_join=True,
         )
         .sort_values(columns, ignore_index=True)
     )
@@ -3455,7 +3453,7 @@ def test_eq_indices_binary_search(df, right):
         [
             ("E", "Dates", "=="),
         ],
-        use_binary_search_for_equi_join=True,
+        sort_equi_join=True,
     )
     if isinstance(actual, tuple):
         actual, _ = actual
@@ -3516,7 +3514,7 @@ def test_eq_indices_ragged_arrays_bin_search(df, right):
             ("E", "Dates", "=="),
         ],
         return_ranges=True,
-        use_binary_search_for_equi_join=True,
+        sort_equi_join=True,
     )
     if isinstance(actual, tuple):
         actual = pd.Index(actual[1], name="lindex")
@@ -3547,7 +3545,7 @@ def test_eq_le_indices_ragged_arrays_bin_search(df, right):
             ("A", "Integers", "<="),
         ],
         return_ranges=True,
-        use_binary_search_for_equi_join=True,
+        sort_equi_join=True,
     )
     if isinstance(actual, tuple):
         actual = pd.Index(actual[0], name="lindex")
@@ -3581,7 +3579,7 @@ def test_eq_ne_indices_ragged_arrays_first_bin_search(df, right):
             ("A", "Integers", "!="),
         ],
         keep="first",
-        use_binary_search_for_equi_join=True,
+        sort_equi_join=True,
     )
     lindex = pd.Index(lindex, name="lindex")
     actual = pd.Series(rindex, name="rindex", index=lindex).sort_index(
@@ -3613,7 +3611,7 @@ def test_eq_ne_indices_ragged_arrays_last_bin_search(df, right):
             ("A", "Integers", "!="),
         ],
         keep="last",
-        use_binary_search_for_equi_join=True,
+        sort_equi_join=True,
     )
     lindex = pd.Index(lindex, name="lindex")
     actual = pd.Series(rindex, name="rindex", index=lindex).sort_index(
@@ -3645,7 +3643,7 @@ def test_eq_ne_indices_ragged_arrays_first_not_bin_search(df, right):
             ("A", "Integers", "!="),
         ],
         keep="first",
-        use_binary_search_for_equi_join=False,
+        sort_equi_join=False,
     )
     lindex = pd.Index(lindex, name="lindex")
     actual = pd.Series(rindex, name="rindex", index=lindex).sort_index(
@@ -3677,7 +3675,7 @@ def test_eq_ne_indices_ragged_arrays_last_not_bin_search(df, right):
             ("A", "Integers", "!="),
         ],
         keep="last",
-        use_binary_search_for_equi_join=False,
+        sort_equi_join=False,
     )
     lindex = pd.Index(lindex, name="lindex")
     actual = pd.Series(rindex, name="rindex", index=lindex).sort_index(
@@ -4331,7 +4329,7 @@ def test_ge_eq_and_le_datess_indices_binary_search(df, right):
             ("B", "Floats", ">"),
             ("B", "Numeric", "!="),
         ],
-        use_binary_search_for_equi_join=True,
+        sort_equi_join=True,
     )
     if isinstance(actual, tuple):
         actual, _ = actual
@@ -5004,7 +5002,7 @@ def test_multiple__eqqs(df, right):
             ("B", "Floats", ">="),
             ("A", "Integers", "=="),
             how="inner",
-            use_binary_search_for_equi_join=True,
+            sort_equi_join=True,
         )
         .sort_values(columns, ignore_index=True)
     )
@@ -5284,7 +5282,7 @@ def test_extension_array_eq_range_binary_search():
         ("id", "id", "=="),
         ("value_1", "value_2A", ">"),
         ("value_1", "value_2B", "<"),
-        use_binary_search_for_equi_join=True,
+        sort_equi_join=True,
     )
     expected = expected.drop(columns=("right", "id")).droplevel(
         axis=1, level=0
@@ -5410,7 +5408,7 @@ def test_no_match_binary_search():
         df2,
         ("A", "A", "=="),
         ("B", "B", ">"),
-        use_binary_search_for_equi_join=True,
+        sort_equi_join=True,
     ).drop(columns=("right", "A"))
     expected.columns = list("ABC")
 
@@ -5547,6 +5545,7 @@ def test_single_condition_greater_than_dates_agg(df, right):
             ("Numeric", "sum"),
         ],
     ).loc[:, ["Numeric"]]
+    actual.index = range(len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -5577,6 +5576,7 @@ def test_single_condition_less_than_dates_agg(df, right):
             ("Numeric", "sum"),
         ],
     ).loc[:, ["Numeric"]]
+    actual.index = range(len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -5609,6 +5609,7 @@ def test_dual_condition__agg(df, right):
             # ("Numeric", "sum"),
         ],
     ).loc[:, ["Numeric"]]
+    actual.index = range(len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -5640,6 +5641,7 @@ def test_dual_condition_ne_agg(df, right):
             ("Numeric", "sum"),
         ],
     ).loc[:, ["Numeric"]]
+    actual.index = range(len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -5674,6 +5676,7 @@ def test_dual_condition_range_ne_agg(df, right):
             ("Numeric", "sum"),
         ],
     ).loc[:, ["Numeric"]]
+    actual.index = range(len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -5708,8 +5711,9 @@ def test_dual_condition_eq_range_ne_agg(df, right):
             ("Numeric", "max"),
             ("Numeric", "sum"),
         ],
-        use_binary_search_for_equi_join=True,
+        sort_equi_join=True,
     ).loc[:, ["Numeric"]]
+    actual.index = range(len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -5741,6 +5745,7 @@ def test_dual_condition_eq_range_ne_agg_pd(df, right):
             ("Numeric", "sum"),
         ],
     ).loc[:, ["Numeric"]]
+    actual.index = range(len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -5774,8 +5779,9 @@ def test_agg_eq_range_agg(df, right):
             ("Numeric", "max"),
             ("Numeric", "sum"),
         ],
-        use_binary_search_for_equi_join=True,
+        sort_equi_join=True,
     ).loc[:, ["Numeric"]]
+    actual.index = range(len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -5806,6 +5812,7 @@ def test_agg_eq_range_agg_pd(df, right):
             ("Numeric", "sum"),
         ],
     ).loc[:, ["Numeric"]]
+    actual.index = range(len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -5839,8 +5846,9 @@ def test_agg_dual_eq__agg(df, right):
             ("Numeric", "max"),
             ("Numeric", "sum"),
         ],
-        use_binary_search_for_equi_join=True,
+        sort_equi_join=True,
     ).loc[:, ["Numeric"]]
+    actual.index = range(len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -5871,6 +5879,7 @@ def test_agg_dual_eq__agg_pd(df, right):
             ("Numeric", "sum"),
         ],
     ).loc[:, ["Numeric"]]
+    actual.index = range(len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -5904,8 +5913,9 @@ def test_agg_dual_eq_ne_agg(df, right):
             ("Numeric", "max"),
             ("Numeric", "sum"),
         ],
-        use_binary_search_for_equi_join=True,
+        sort_equi_join=True,
     ).loc[:, ["Numeric"]]
+    actual.index = range(len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -5936,6 +5946,7 @@ def test_agg_dual_eq_ne_agg_pd(df, right):
             ("Numeric", "sum"),
         ],
     ).loc[:, ["Numeric"]]
+    actual.index = range(len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -5966,8 +5977,9 @@ def test_agg_eq_only_agg(df, right):
             ("Numeric", "max"),
             ("Numeric", "sum"),
         ],
-        use_binary_search_for_equi_join=True,
+        sort_equi_join=True,
     ).loc[:, ["Numeric"]]
+    actual.index = range(len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -5998,8 +6010,9 @@ def test_agg_eq_nee_only_agg(df, right):
             ("Numeric", "max"),
             ("Numeric", "sum"),
         ],
-        use_binary_search_for_equi_join=True,
+        sort_equi_join=True,
     ).loc[:, ["Numeric"]]
+    actual.index = range(len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6029,6 +6042,7 @@ def test_agg_eq_only_agg_pd(df, right):
             ("Numeric", "sum"),
         ],
     ).loc[:, ["Numeric"]]
+    actual.index = range(len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6084,7 +6098,7 @@ def test_agg_multi(dfmi):
         .alias("sum")
         .reset_index(drop=True)
     )
-
+    actual.index = range(len(actual))
     assert_series_equal(expected, actual)
 
 
@@ -6110,7 +6124,7 @@ def test_agg_multi_empty(dfmi):
         .droplevel([0, 1], axis="columns")
         .loc[:, ["sum", "size"]]
     )
-
+    actual.index = range(len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6133,7 +6147,7 @@ def test_extension_eq_agg():
             df2,
             ("id", "id", "=="),
             ("value_1", "value_2A", ">"),
-            use_binary_search_for_equi_join=True,
+            sort_equi_join=True,
             aggfunc=[("value_2B", "sum")],
         )
         .loc[:, ["value_2B"]]
@@ -6147,6 +6161,7 @@ def test_extension_eq_agg():
         .value_2B.agg(["sum"])
         .loc[:, ["sum"]]
     )
+    actual.index = range(len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6170,12 +6185,13 @@ def test_extension_eqq_agg():
             ("id", "id", "=="),
             ("value_1", "value_2A", ">"),
             ("value_1", "value_2B", ">"),
-            use_binary_search_for_equi_join=True,
+            sort_equi_join=True,
             aggfunc=[("value_2B", "sum")],
         )
         .loc[:, ["value_2B"]]
         .droplevel(0, axis="columns")
     )
+    actual.index = range(len(actual))
     expected = (
         df1.reset_index(names="l")
         .merge(df2, on="id")
@@ -6206,12 +6222,13 @@ def test_extension_eqq_mix_agg():
             df2,
             ("id", "id", "=="),
             ("value_1", "value_2A", ">"),
-            use_binary_search_for_equi_join=True,
+            sort_equi_join=True,
             aggfunc=[("value_2B", "sum")],
         )
         .loc[:, ["value_2B"]]
         .droplevel(0, axis="columns")
     )
+    actual.index = range(len(actual))
     expected = (
         df1.reset_index(names="l")
         .merge(df2, on="id")
@@ -6241,7 +6258,7 @@ def test_extension_eq_inner():
         df2,
         ("id", "id", "=="),
         ("value_1", "value_2A", ">"),
-        use_binary_search_for_equi_join=True,
+        sort_equi_join=True,
         df_columns="id",
         right_columns="value_2A",
     ).sort_values(["id", "value_2A"], ignore_index=True, kind="stable")
@@ -6274,7 +6291,7 @@ def test_extension_eqq_inner():
         ("id", "id", "=="),
         ("value_1", "value_2A", ">"),
         ("value_1", "value_2B", ">"),
-        use_binary_search_for_equi_join=True,
+        sort_equi_join=True,
         df_columns="id",
         right_columns="value*",
     ).sort_values(
@@ -6314,7 +6331,7 @@ def test_extension_eqq_inner_first():
             ("value_1", "value_2A", ">"),
             ("value_1", "value_2B", ">"),
         ],
-        use_binary_search_for_equi_join=True,
+        sort_equi_join=True,
         keep="first",
     )
     left_index = pd.Index(left_index, name="l")
@@ -6354,7 +6371,7 @@ def test_extension_eqq_inner_last():
             ("value_1", "value_2A", ">"),
             ("value_1", "value_2B", ">"),
         ],
-        use_binary_search_for_equi_join=True,
+        sort_equi_join=True,
         keep="last",
     )
     left_index = pd.Index(left_index, name="l")
@@ -6393,7 +6410,7 @@ def test_extension_eqq_no_match():
         ("value_1", "value_2A", ">"),
         ("value_1", "value_2B", ">"),
         ("value_1", "absurd", ">"),
-        use_binary_search_for_equi_join=True,
+        sort_equi_join=True,
         df_columns="id",
         right_columns="value*",
     ).sort_values(
@@ -6438,6 +6455,7 @@ def test_agg_eq_range_pd_agg(df, right):
             ("Numeric", "sum"),
         ],
     ).loc[:, ["Numeric"]]
+    actual.index = range(len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6467,6 +6485,7 @@ def test_agg_eq_range_join_pd__agg(df, right):
             ("Numeric", "sum"),
         ],
     ).loc[:, ["Numeric"]]
+    actual.index = range(len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6495,6 +6514,7 @@ def test_agg_eq_sing_range_join_pd_ints_agg(df, right):
             ("Integers", "sum"),
         ],
     ).loc[:, ["Integers"]]
+    actual.index = range(len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6524,6 +6544,7 @@ def test_agg_eq_range_join_pd_ints_agg(df, right):
             ("Integers", "sum"),
         ],
     ).loc[:, ["Integers"]]
+    actual.index = range(len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6629,6 +6650,7 @@ def test_agg_eq_range_join_pd_full_agg(df, right):
             ("Numeric", "sum"),
         ],
     ).loc[:, ["Numeric"]]
+    actual.index = range(len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6725,7 +6747,7 @@ def test_agg_floats_sum_warning():
             df1.conditional_join(
                 df2.iloc[::-1],
                 ("id", "id", "=="),
-                use_binary_search_for_equi_join=True,
+                sort_equi_join=True,
                 aggfunc=[("value_2A", "sum")],
             )
         )
@@ -6755,10 +6777,11 @@ def test_agg_floats_extension_array():
         df1.conditional_join(
             df2,
             ("id", "id", "=="),
-            use_binary_search_for_equi_join=True,
+            sort_equi_join=True,
             aggfunc=[("value_2A", "sum")],
         )
     ).loc[:, "value_2A"]
+    actual.index = range(len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6786,8 +6809,9 @@ def test_agg_floats_nulls():
         df1.conditional_join(
             df2,
             ("id", "id", "=="),
-            use_binary_search_for_equi_join=True,
+            sort_equi_join=True,
             aggfunc=[("value_2A", "max")],
         )
     ).loc[:, "value_2A"]
+    actual.index = range(len(actual))
     assert_frame_equal(expected, actual)

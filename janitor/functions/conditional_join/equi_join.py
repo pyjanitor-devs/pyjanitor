@@ -22,7 +22,7 @@ def _multiple_conditional_join_eq(
     use_numba: bool,
     force: bool,
     return_ranges: bool,
-    use_binary_search_for_equi_join: bool,
+    sort_equi_join: bool,
     aggfunc: list[tuple],
 ) -> tuple:
     """
@@ -66,7 +66,7 @@ def _multiple_conditional_join_eq(
     if right is None:
         return None
     equals = outcome["equals"]
-    if not use_binary_search_for_equi_join:
+    if not sort_equi_join:
         left_on = []
         right_on = []
         for l_col, r_col, _ in equals:

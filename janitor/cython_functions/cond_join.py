@@ -68,8 +68,8 @@ def get_positive_matches(
     total: cython.long = 0
     #######################
     for num in range(lengths):
-        size = sizes[num]
         if booleans[num] == 0:
+            size = sizes[num]
             begin += size
             counts_array[num] = 0
             continue
@@ -138,8 +138,8 @@ def get_positive_matches_ne(
     total: cython.long = 0
     #######################
     for num in range(lengths):
-        size = sizes[num]
         if booleans[num] == 0:
+            size = sizes[num]
             begin += size
             counts_array[num] = 0
             continue
@@ -213,8 +213,8 @@ def get_positive_matches_ne_pandas_array(
     total: cython.long = 0
     #######################
     for num in range(lengths):
-        size = sizes[num]
         if booleans[num] == 0:
+            size = sizes[num]
             begin += size
             counts_array[num] = 0
             continue

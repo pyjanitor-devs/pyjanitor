@@ -3228,7 +3228,7 @@ static const char __pyx_k_fAQ_Q_q_Q_6_6_r_q_b_Q_uAQ_81E_A[] = "\200\001\360\006\
 static const char __pyx_k_get_positive_matches_ne_int_int[] = "get_positive_matches_ne[int[:],int[:]]";
 static const char __pyx_k_q_Q_1_uAQ_81E_A_Qa_aq_q_G3c_G3a[] = "\200\001\360\006\000\t\n\330\n\013\330\013\014\330\021\022\330\016\017\330\023\024\330\024\025\360\016\000\005\"\240\030\250\026\250q\260\001\330\004\035\230Q\330\004\033\2301\330\004!\240\021\360\n\000\005\032\230\021\340\004\010\210\007\210u\220A\220Q\330\010\013\2108\2201\220E\230\023\230A\330\014\r\330\010\022\220+\230Q\230a\330\010\021\220\035\230a\230q\330\010\021\220\036\230q\240\001\330\010\014\210G\2203\220c\230\023\230G\2403\240a\330\014\026\220a\340\014\024\220D\230\001\230\021\330\014\024\220E\230\021\230!\330\014\026\220n\240F\250-\260z\300\021\330\010\020\220\001\220\027\230\001\330\010\021\220\021\340\004\005\330\010\n\210(\220!\2201\330\010\t";
 static const char __pyx_k_update_search_indices_less_than[] = "update_search_indices_less_than_strict[signed char[:],signed char[:]]";
-static const char __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_uAQ_81E_A_Q[] = "\200\001\360\006\000\014\r\330\014\r\330\n\013\330\010\t\330\r\016\330\n\013\330\013\014\330\022\023\330\016\017\360\014\000\005\"\240\026\240v\250Q\250a\330\004\035\230Q\330\004 \240\001\330\004\037\230q\340\004\034\230A\330\004\033\2301\330\004\037\230q\330\004\035\230Q\360\006\000\005\031\230\001\330\004\031\230\021\340\004\031\230\021\340\004\010\210\007\210u\220A\220Q\330\010\017\210u\220A\220Q\330\010\013\2108\2201\220E\230\023\230A\330\014\025\220Q\330\014\030\230\001\230\027\240\001\330\014\r\330\010\020\220\004\220A\220Q\330\010\020\220\006\220a\220q\330\010\016\210d\220!\2201\330\010\020\220\001\330\010\014\210J\220e\2301\230G\2401\330\014\017\210w\220a\220w\230c\240\021\330\020\031\230\021\330\020\021\330\014\024\220E\230\021\230!\330\014\026\220n\240F\250-\260z\300\021\330\014\023\2201\220I\230Q\330\014\025\220Q\330\014\025\220Q\330\014\025\220Q\330\010\024\220A\220W\230A\330\010\022\220&\230\002\230!\330\010\020\220\001\220\027\230\001\330\010\024\220A\340\004\005\330\010\n\210(\220!\2201\330\010\n\210(\220!\2201\330\010\n\210(\220!\2201\330\010\t\330\010\t";
+static const char __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_81E_A_5_Q_A[] = "\200\001\360\006\000\014\r\330\014\r\330\n\013\330\010\t\330\r\016\330\n\013\330\013\014\330\022\023\330\016\017\360\014\000\005\"\240\026\240v\250Q\250a\330\004\035\230Q\330\004 \240\001\330\004\037\230q\340\004\034\230A\330\004\033\2301\330\004\037\230q\330\004\035\230Q\360\006\000\005\031\230\001\330\004\031\230\021\340\004\031\230\021\340\004\010\210\007\210u\220A\220Q\330\010\013\2108\2201\220E\230\023\230A\330\014\023\2205\230\001\230\021\330\014\025\220Q\330\014\030\230\001\230\027\240\001\330\014\r\330\010\020\220\004\220A\220Q\330\010\020\220\006\220a\220q\330\010\016\210d\220!\2201\330\010\020\220\001\330\010\014\210J\220e\2301\230G\2401\330\014\017\210w\220a\220w\230c\240\021\330\020\031\230\021\330\020\021\330\014\024\220E\230\021\230!\330\014\026\220n\240F\250-\260z\300\021\330\014\023\2201\220I\230Q\330\014\025\220Q\330\014\025\220Q\330\014\025\220Q\330\010\024\220A\220W\230A\330\010\022\220&\230\002\230!\330\010\020\220\001\220\027\230\001\330\010\024\220A\340\004\005\330\010\n\210(\220!\2201\330\010\n\210(\220!\2201\330\010\n\210(\220!\2201\330\010\t\330\010\t";
 static const char __pyx_k_All_dimensions_preceding_dimensi[] = "All dimensions preceding dimension %d must be indexed and not sliced";
 static const char __pyx_k_Buffer_view_does_not_expose_stri[] = "Buffer view does not expose strides";
 static const char __pyx_k_Can_only_create_a_buffer_that_is[] = "Can only create a buffer that is contiguous in memory.";
@@ -3284,8 +3284,8 @@ static const char __pyx_k_update_search_indices_less_than_6[] = "update_search_i
 static const char __pyx_k_update_search_indices_less_than_7[] = "update_search_indices_less_than_strict";
 static const char __pyx_k_update_search_indices_less_than_8[] = "update_search_indices_less_than[signed char[:],signed char[:]]";
 static const char __pyx_k_update_search_indices_less_than_9[] = "update_search_indices_less_than[short[:],short[:]]";
-static const char __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_uAQ_81E_A_Q_2[] = "\200\001\360\006\000\014\r\330\014\r\330\n\013\330\010\t\330\r\016\330\n\013\330\013\014\330\022\023\330\016\017\330\023\024\330\024\025\360\016\000\005\"\240\026\240v\250Q\250a\330\004\035\230Q\330\004 \240\001\330\004\037\230q\330\004\034\230A\330\004\033\2301\330\004\037\230q\330\004\035\230Q\360\n\000\005\031\230\001\330\004\031\230\021\330\004\031\230\021\340\004\010\210\007\210u\220A\220Q\330\010\017\210u\220A\220Q\330\010\013\2108\2201\220E\230\023\230A\330\014\025\220Q\330\014\030\230\001\230\027\240\001\330\014\r\330\010\020\220\004\220A\220Q\330\010\020\220\006\220a\220q\330\010\016\210d\220!\2201\330\010\020\220\001\330\010\021\220\035\230a\230q\330\010\014\210J\220e\2301\230G\2401\330\014\017\210w\220a\220w\230c\240\021\330\020\031\230\021\330\020\021\330\014\025\220^\2401\240A\330\014\020\220\007\220s\230#\230S\240\007\240s\250!\330\020\032\230!\340\020\030\230\005\230Q\230a\330\020\032\230.\250\006\250m\270:\300Q\330\014\023\2201\220I\230Q\330\014\025\220Q\330\014\025\220Q\330\014\025\220Q\330\010\024\220A\220W\230A\330\010\022\220&\230\002\230!\330\010\020\220\001\220\027\230\001\330\010\024\220A\340\004\005\330\010\n\210(\220!\2201\330\010\n\210(\220!\2201\330\010\n\210(\220!\2201\330\010\t\330\010\t";
-static const char __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_uAQ_81E_A_Q_3[] = "\200\001\360\006\000\014\r\330\014\r\330\n\013\330\010\t\330\r\016\330\n\013\330\013\014\330\022\023\330\016\017\330\023\024\330\024\025\360\016\000\005\"\240\026\240v\250Q\250a\330\004\035\230Q\330\004 \240\001\330\004\037\230q\330\004\034\230A\330\004\033\2301\330\004\037\230q\330\004\035\230Q\360\n\000\005\031\230\001\330\004\031\230\021\330\004\031\230\021\340\004\010\210\007\210u\220A\220Q\330\010\017\210u\220A\220Q\330\010\013\2108\2201\220E\230\023\230A\330\014\025\220Q\330\014\030\230\001\230\027\240\001\330\014\r\330\010\020\220\004\220A\220Q\330\010\020\220\006\220a\220q\330\010\016\210d\220!\2201\330\010\020\220\001\330\010\021\220\035\230a\230q\330\010\014\210J\220e\2301\230G\2401\330\014\017\210w\220a\220w\230c\240\021\330\020\031\230\021\330\020\021\330\014\025\220^\2401\240A\340\014\020\220\007\220s\230#\230S\240\007\240s\250!\330\020\032\230!\340\020\030\230\005\230Q\230a\330\020\032\230.\250\006\250m\270:\300Q\330\014\023\2201\220I\230Q\330\014\025\220Q\330\014\025\220Q\330\014\025\220Q\330\010\024\220A\220W\230A\330\010\022\220&\230\002\230!\330\010\020\220\001\220\027\230\001\330\010\024\220A\340\004\005\330\010\n\210(\220!\2201\330\010\n\210(\220!\2201\330\010\n\210(\220!\2201\330\010\t\330\010\t";
+static const char __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_81E_A_5_Q_A_2[] = "\200\001\360\006\000\014\r\330\014\r\330\n\013\330\010\t\330\r\016\330\n\013\330\013\014\330\022\023\330\016\017\330\023\024\330\024\025\360\016\000\005\"\240\026\240v\250Q\250a\330\004\035\230Q\330\004 \240\001\330\004\037\230q\330\004\034\230A\330\004\033\2301\330\004\037\230q\330\004\035\230Q\360\n\000\005\031\230\001\330\004\031\230\021\330\004\031\230\021\340\004\010\210\007\210u\220A\220Q\330\010\013\2108\2201\220E\230\023\230A\330\014\023\2205\230\001\230\021\330\014\025\220Q\330\014\030\230\001\230\027\240\001\330\014\r\330\010\020\220\004\220A\220Q\330\010\020\220\006\220a\220q\330\010\016\210d\220!\2201\330\010\020\220\001\330\010\021\220\035\230a\230q\330\010\014\210J\220e\2301\230G\2401\330\014\017\210w\220a\220w\230c\240\021\330\020\031\230\021\330\020\021\330\014\025\220^\2401\240A\330\014\020\220\007\220s\230#\230S\240\007\240s\250!\330\020\032\230!\340\020\030\230\005\230Q\230a\330\020\032\230.\250\006\250m\270:\300Q\330\014\023\2201\220I\230Q\330\014\025\220Q\330\014\025\220Q\330\014\025\220Q\330\010\024\220A\220W\230A\330\010\022\220&\230\002\230!\330\010\020\220\001\220\027\230\001\330\010\024\220A\340\004\005\330\010\n\210(\220!\2201\330\010\n\210(\220!\2201\330\010\n\210(\220!\2201\330\010\t\330\010\t";
+static const char __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_81E_A_5_Q_A_3[] = "\200\001\360\006\000\014\r\330\014\r\330\n\013\330\010\t\330\r\016\330\n\013\330\013\014\330\022\023\330\016\017\330\023\024\330\024\025\360\016\000\005\"\240\026\240v\250Q\250a\330\004\035\230Q\330\004 \240\001\330\004\037\230q\330\004\034\230A\330\004\033\2301\330\004\037\230q\330\004\035\230Q\360\n\000\005\031\230\001\330\004\031\230\021\330\004\031\230\021\340\004\010\210\007\210u\220A\220Q\330\010\013\2108\2201\220E\230\023\230A\330\014\023\2205\230\001\230\021\330\014\025\220Q\330\014\030\230\001\230\027\240\001\330\014\r\330\010\020\220\004\220A\220Q\330\010\020\220\006\220a\220q\330\010\016\210d\220!\2201\330\010\020\220\001\330\010\021\220\035\230a\230q\330\010\014\210J\220e\2301\230G\2401\330\014\017\210w\220a\220w\230c\240\021\330\020\031\230\021\330\020\021\330\014\025\220^\2401\240A\340\014\020\220\007\220s\230#\230S\240\007\240s\250!\330\020\032\230!\340\020\030\230\005\230Q\230a\330\020\032\230.\250\006\250m\270:\300Q\330\014\023\2201\220I\230Q\330\014\025\220Q\330\014\025\220Q\330\014\025\220Q\330\010\024\220A\220W\230A\330\010\022\220&\230\002\230!\330\010\020\220\001\220\027\230\001\330\010\024\220A\340\004\005\330\010\n\210(\220!\2201\330\010\n\210(\220!\2201\330\010\n\210(\220!\2201\330\010\t\330\010\t";
 static const char __pyx_k_get_positive_matches_ne_pandas_a_2[] = "get_positive_matches_ne_pandas_array[short[:],short[:]]";
 static const char __pyx_k_get_positive_matches_ne_pandas_a_3[] = "get_positive_matches_ne_pandas_array[int[:],int[:]]";
 static const char __pyx_k_get_positive_matches_ne_pandas_a_4[] = "get_positive_matches_ne_pandas_array[long[:],long[:]]";
@@ -19744,8 +19744,8 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_30get_positive_
  *     total: cython.long = 0
  *     #######################
  *     for num in range(lengths):             # <<<<<<<<<<<<<<
- *         size = sizes[num]
  *         if booleans[num] == 0:
+ *             size = sizes[num]
 */
   __pyx_t_1 = __pyx_v_lengths;
   __pyx_t_2 = __pyx_t_1;
@@ -19755,27 +19755,27 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_30get_positive_
     /* "janitor/cython_functions/cond_join.py":71
  *     #######################
  *     for num in range(lengths):
- *         size = sizes[num]             # <<<<<<<<<<<<<<
- *         if booleans[num] == 0:
- *             begin += size
-*/
-    __pyx_t_4 = __pyx_v_num;
-    __pyx_v_size = (*((long *) ( /* dim=0 */ (__pyx_v_sizes.data + __pyx_t_4 * __pyx_v_sizes.strides[0]) )));
-
-    /* "janitor/cython_functions/cond_join.py":72
- *     for num in range(lengths):
- *         size = sizes[num]
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
+ *             size = sizes[num]
  *             begin += size
- *             counts_array[num] = 0
 */
     __pyx_t_4 = __pyx_v_num;
     __pyx_t_5 = ((*((signed char *) ( /* dim=0 */ (__pyx_v_booleans.data + __pyx_t_4 * __pyx_v_booleans.strides[0]) ))) == 0);
     if (__pyx_t_5) {
 
-      /* "janitor/cython_functions/cond_join.py":73
- *         size = sizes[num]
+      /* "janitor/cython_functions/cond_join.py":72
+ *     for num in range(lengths):
  *         if booleans[num] == 0:
+ *             size = sizes[num]             # <<<<<<<<<<<<<<
+ *             begin += size
+ *             counts_array[num] = 0
+*/
+      __pyx_t_4 = __pyx_v_num;
+      __pyx_v_size = (*((long *) ( /* dim=0 */ (__pyx_v_sizes.data + __pyx_t_4 * __pyx_v_sizes.strides[0]) )));
+
+      /* "janitor/cython_functions/cond_join.py":73
+ *         if booleans[num] == 0:
+ *             size = sizes[num]
  *             begin += size             # <<<<<<<<<<<<<<
  *             counts_array[num] = 0
  *             continue
@@ -19783,7 +19783,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_30get_positive_
       __pyx_v_begin = (__pyx_v_begin + __pyx_v_size);
 
       /* "janitor/cython_functions/cond_join.py":74
- *         if booleans[num] == 0:
+ *             size = sizes[num]
  *             begin += size
  *             counts_array[num] = 0             # <<<<<<<<<<<<<<
  *             continue
@@ -19801,12 +19801,12 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_30get_positive_
 */
       goto __pyx_L3_continue;
 
-      /* "janitor/cython_functions/cond_join.py":72
+      /* "janitor/cython_functions/cond_join.py":71
+ *     #######################
  *     for num in range(lengths):
- *         size = sizes[num]
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
+ *             size = sizes[num]
  *             begin += size
- *             counts_array[num] = 0
 */
     }
 
@@ -20510,8 +20510,8 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_32get_positive_
  *     total: cython.long = 0
  *     #######################
  *     for num in range(lengths):             # <<<<<<<<<<<<<<
- *         size = sizes[num]
  *         if booleans[num] == 0:
+ *             size = sizes[num]
 */
   __pyx_t_1 = __pyx_v_lengths;
   __pyx_t_2 = __pyx_t_1;
@@ -20521,27 +20521,27 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_32get_positive_
     /* "janitor/cython_functions/cond_join.py":71
  *     #######################
  *     for num in range(lengths):
- *         size = sizes[num]             # <<<<<<<<<<<<<<
- *         if booleans[num] == 0:
- *             begin += size
-*/
-    __pyx_t_4 = __pyx_v_num;
-    __pyx_v_size = (*((long *) ( /* dim=0 */ (__pyx_v_sizes.data + __pyx_t_4 * __pyx_v_sizes.strides[0]) )));
-
-    /* "janitor/cython_functions/cond_join.py":72
- *     for num in range(lengths):
- *         size = sizes[num]
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
+ *             size = sizes[num]
  *             begin += size
- *             counts_array[num] = 0
 */
     __pyx_t_4 = __pyx_v_num;
     __pyx_t_5 = ((*((signed char *) ( /* dim=0 */ (__pyx_v_booleans.data + __pyx_t_4 * __pyx_v_booleans.strides[0]) ))) == 0);
     if (__pyx_t_5) {
 
-      /* "janitor/cython_functions/cond_join.py":73
- *         size = sizes[num]
+      /* "janitor/cython_functions/cond_join.py":72
+ *     for num in range(lengths):
  *         if booleans[num] == 0:
+ *             size = sizes[num]             # <<<<<<<<<<<<<<
+ *             begin += size
+ *             counts_array[num] = 0
+*/
+      __pyx_t_4 = __pyx_v_num;
+      __pyx_v_size = (*((long *) ( /* dim=0 */ (__pyx_v_sizes.data + __pyx_t_4 * __pyx_v_sizes.strides[0]) )));
+
+      /* "janitor/cython_functions/cond_join.py":73
+ *         if booleans[num] == 0:
+ *             size = sizes[num]
  *             begin += size             # <<<<<<<<<<<<<<
  *             counts_array[num] = 0
  *             continue
@@ -20549,7 +20549,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_32get_positive_
       __pyx_v_begin = (__pyx_v_begin + __pyx_v_size);
 
       /* "janitor/cython_functions/cond_join.py":74
- *         if booleans[num] == 0:
+ *             size = sizes[num]
  *             begin += size
  *             counts_array[num] = 0             # <<<<<<<<<<<<<<
  *             continue
@@ -20567,12 +20567,12 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_32get_positive_
 */
       goto __pyx_L3_continue;
 
-      /* "janitor/cython_functions/cond_join.py":72
+      /* "janitor/cython_functions/cond_join.py":71
+ *     #######################
  *     for num in range(lengths):
- *         size = sizes[num]
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
+ *             size = sizes[num]
  *             begin += size
- *             counts_array[num] = 0
 */
     }
 
@@ -21276,8 +21276,8 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_34get_positive_
  *     total: cython.long = 0
  *     #######################
  *     for num in range(lengths):             # <<<<<<<<<<<<<<
- *         size = sizes[num]
  *         if booleans[num] == 0:
+ *             size = sizes[num]
 */
   __pyx_t_1 = __pyx_v_lengths;
   __pyx_t_2 = __pyx_t_1;
@@ -21287,27 +21287,27 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_34get_positive_
     /* "janitor/cython_functions/cond_join.py":71
  *     #######################
  *     for num in range(lengths):
- *         size = sizes[num]             # <<<<<<<<<<<<<<
- *         if booleans[num] == 0:
- *             begin += size
-*/
-    __pyx_t_4 = __pyx_v_num;
-    __pyx_v_size = (*((long *) ( /* dim=0 */ (__pyx_v_sizes.data + __pyx_t_4 * __pyx_v_sizes.strides[0]) )));
-
-    /* "janitor/cython_functions/cond_join.py":72
- *     for num in range(lengths):
- *         size = sizes[num]
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
+ *             size = sizes[num]
  *             begin += size
- *             counts_array[num] = 0
 */
     __pyx_t_4 = __pyx_v_num;
     __pyx_t_5 = ((*((signed char *) ( /* dim=0 */ (__pyx_v_booleans.data + __pyx_t_4 * __pyx_v_booleans.strides[0]) ))) == 0);
     if (__pyx_t_5) {
 
-      /* "janitor/cython_functions/cond_join.py":73
- *         size = sizes[num]
+      /* "janitor/cython_functions/cond_join.py":72
+ *     for num in range(lengths):
  *         if booleans[num] == 0:
+ *             size = sizes[num]             # <<<<<<<<<<<<<<
+ *             begin += size
+ *             counts_array[num] = 0
+*/
+      __pyx_t_4 = __pyx_v_num;
+      __pyx_v_size = (*((long *) ( /* dim=0 */ (__pyx_v_sizes.data + __pyx_t_4 * __pyx_v_sizes.strides[0]) )));
+
+      /* "janitor/cython_functions/cond_join.py":73
+ *         if booleans[num] == 0:
+ *             size = sizes[num]
  *             begin += size             # <<<<<<<<<<<<<<
  *             counts_array[num] = 0
  *             continue
@@ -21315,7 +21315,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_34get_positive_
       __pyx_v_begin = (__pyx_v_begin + __pyx_v_size);
 
       /* "janitor/cython_functions/cond_join.py":74
- *         if booleans[num] == 0:
+ *             size = sizes[num]
  *             begin += size
  *             counts_array[num] = 0             # <<<<<<<<<<<<<<
  *             continue
@@ -21333,12 +21333,12 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_34get_positive_
 */
       goto __pyx_L3_continue;
 
-      /* "janitor/cython_functions/cond_join.py":72
+      /* "janitor/cython_functions/cond_join.py":71
+ *     #######################
  *     for num in range(lengths):
- *         size = sizes[num]
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
+ *             size = sizes[num]
  *             begin += size
- *             counts_array[num] = 0
 */
     }
 
@@ -22042,8 +22042,8 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_36get_positive_
  *     total: cython.long = 0
  *     #######################
  *     for num in range(lengths):             # <<<<<<<<<<<<<<
- *         size = sizes[num]
  *         if booleans[num] == 0:
+ *             size = sizes[num]
 */
   __pyx_t_1 = __pyx_v_lengths;
   __pyx_t_2 = __pyx_t_1;
@@ -22053,27 +22053,27 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_36get_positive_
     /* "janitor/cython_functions/cond_join.py":71
  *     #######################
  *     for num in range(lengths):
- *         size = sizes[num]             # <<<<<<<<<<<<<<
- *         if booleans[num] == 0:
- *             begin += size
-*/
-    __pyx_t_4 = __pyx_v_num;
-    __pyx_v_size = (*((long *) ( /* dim=0 */ (__pyx_v_sizes.data + __pyx_t_4 * __pyx_v_sizes.strides[0]) )));
-
-    /* "janitor/cython_functions/cond_join.py":72
- *     for num in range(lengths):
- *         size = sizes[num]
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
+ *             size = sizes[num]
  *             begin += size
- *             counts_array[num] = 0
 */
     __pyx_t_4 = __pyx_v_num;
     __pyx_t_5 = ((*((signed char *) ( /* dim=0 */ (__pyx_v_booleans.data + __pyx_t_4 * __pyx_v_booleans.strides[0]) ))) == 0);
     if (__pyx_t_5) {
 
-      /* "janitor/cython_functions/cond_join.py":73
- *         size = sizes[num]
+      /* "janitor/cython_functions/cond_join.py":72
+ *     for num in range(lengths):
  *         if booleans[num] == 0:
+ *             size = sizes[num]             # <<<<<<<<<<<<<<
+ *             begin += size
+ *             counts_array[num] = 0
+*/
+      __pyx_t_4 = __pyx_v_num;
+      __pyx_v_size = (*((long *) ( /* dim=0 */ (__pyx_v_sizes.data + __pyx_t_4 * __pyx_v_sizes.strides[0]) )));
+
+      /* "janitor/cython_functions/cond_join.py":73
+ *         if booleans[num] == 0:
+ *             size = sizes[num]
  *             begin += size             # <<<<<<<<<<<<<<
  *             counts_array[num] = 0
  *             continue
@@ -22081,7 +22081,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_36get_positive_
       __pyx_v_begin = (__pyx_v_begin + __pyx_v_size);
 
       /* "janitor/cython_functions/cond_join.py":74
- *         if booleans[num] == 0:
+ *             size = sizes[num]
  *             begin += size
  *             counts_array[num] = 0             # <<<<<<<<<<<<<<
  *             continue
@@ -22099,12 +22099,12 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_36get_positive_
 */
       goto __pyx_L3_continue;
 
-      /* "janitor/cython_functions/cond_join.py":72
+      /* "janitor/cython_functions/cond_join.py":71
+ *     #######################
  *     for num in range(lengths):
- *         size = sizes[num]
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
+ *             size = sizes[num]
  *             begin += size
- *             counts_array[num] = 0
 */
     }
 
@@ -22808,8 +22808,8 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_38get_positive_
  *     total: cython.long = 0
  *     #######################
  *     for num in range(lengths):             # <<<<<<<<<<<<<<
- *         size = sizes[num]
  *         if booleans[num] == 0:
+ *             size = sizes[num]
 */
   __pyx_t_1 = __pyx_v_lengths;
   __pyx_t_2 = __pyx_t_1;
@@ -22819,27 +22819,27 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_38get_positive_
     /* "janitor/cython_functions/cond_join.py":71
  *     #######################
  *     for num in range(lengths):
- *         size = sizes[num]             # <<<<<<<<<<<<<<
- *         if booleans[num] == 0:
- *             begin += size
-*/
-    __pyx_t_4 = __pyx_v_num;
-    __pyx_v_size = (*((long *) ( /* dim=0 */ (__pyx_v_sizes.data + __pyx_t_4 * __pyx_v_sizes.strides[0]) )));
-
-    /* "janitor/cython_functions/cond_join.py":72
- *     for num in range(lengths):
- *         size = sizes[num]
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
+ *             size = sizes[num]
  *             begin += size
- *             counts_array[num] = 0
 */
     __pyx_t_4 = __pyx_v_num;
     __pyx_t_5 = ((*((signed char *) ( /* dim=0 */ (__pyx_v_booleans.data + __pyx_t_4 * __pyx_v_booleans.strides[0]) ))) == 0);
     if (__pyx_t_5) {
 
-      /* "janitor/cython_functions/cond_join.py":73
- *         size = sizes[num]
+      /* "janitor/cython_functions/cond_join.py":72
+ *     for num in range(lengths):
  *         if booleans[num] == 0:
+ *             size = sizes[num]             # <<<<<<<<<<<<<<
+ *             begin += size
+ *             counts_array[num] = 0
+*/
+      __pyx_t_4 = __pyx_v_num;
+      __pyx_v_size = (*((long *) ( /* dim=0 */ (__pyx_v_sizes.data + __pyx_t_4 * __pyx_v_sizes.strides[0]) )));
+
+      /* "janitor/cython_functions/cond_join.py":73
+ *         if booleans[num] == 0:
+ *             size = sizes[num]
  *             begin += size             # <<<<<<<<<<<<<<
  *             counts_array[num] = 0
  *             continue
@@ -22847,7 +22847,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_38get_positive_
       __pyx_v_begin = (__pyx_v_begin + __pyx_v_size);
 
       /* "janitor/cython_functions/cond_join.py":74
- *         if booleans[num] == 0:
+ *             size = sizes[num]
  *             begin += size
  *             counts_array[num] = 0             # <<<<<<<<<<<<<<
  *             continue
@@ -22865,12 +22865,12 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_38get_positive_
 */
       goto __pyx_L3_continue;
 
-      /* "janitor/cython_functions/cond_join.py":72
+      /* "janitor/cython_functions/cond_join.py":71
+ *     #######################
  *     for num in range(lengths):
- *         size = sizes[num]
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
+ *             size = sizes[num]
  *             begin += size
- *             counts_array[num] = 0
 */
     }
 
@@ -23574,8 +23574,8 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_40get_positive_
  *     total: cython.long = 0
  *     #######################
  *     for num in range(lengths):             # <<<<<<<<<<<<<<
- *         size = sizes[num]
  *         if booleans[num] == 0:
+ *             size = sizes[num]
 */
   __pyx_t_1 = __pyx_v_lengths;
   __pyx_t_2 = __pyx_t_1;
@@ -23585,27 +23585,27 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_40get_positive_
     /* "janitor/cython_functions/cond_join.py":71
  *     #######################
  *     for num in range(lengths):
- *         size = sizes[num]             # <<<<<<<<<<<<<<
- *         if booleans[num] == 0:
- *             begin += size
-*/
-    __pyx_t_4 = __pyx_v_num;
-    __pyx_v_size = (*((long *) ( /* dim=0 */ (__pyx_v_sizes.data + __pyx_t_4 * __pyx_v_sizes.strides[0]) )));
-
-    /* "janitor/cython_functions/cond_join.py":72
- *     for num in range(lengths):
- *         size = sizes[num]
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
+ *             size = sizes[num]
  *             begin += size
- *             counts_array[num] = 0
 */
     __pyx_t_4 = __pyx_v_num;
     __pyx_t_5 = ((*((signed char *) ( /* dim=0 */ (__pyx_v_booleans.data + __pyx_t_4 * __pyx_v_booleans.strides[0]) ))) == 0);
     if (__pyx_t_5) {
 
-      /* "janitor/cython_functions/cond_join.py":73
- *         size = sizes[num]
+      /* "janitor/cython_functions/cond_join.py":72
+ *     for num in range(lengths):
  *         if booleans[num] == 0:
+ *             size = sizes[num]             # <<<<<<<<<<<<<<
+ *             begin += size
+ *             counts_array[num] = 0
+*/
+      __pyx_t_4 = __pyx_v_num;
+      __pyx_v_size = (*((long *) ( /* dim=0 */ (__pyx_v_sizes.data + __pyx_t_4 * __pyx_v_sizes.strides[0]) )));
+
+      /* "janitor/cython_functions/cond_join.py":73
+ *         if booleans[num] == 0:
+ *             size = sizes[num]
  *             begin += size             # <<<<<<<<<<<<<<
  *             counts_array[num] = 0
  *             continue
@@ -23613,7 +23613,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_40get_positive_
       __pyx_v_begin = (__pyx_v_begin + __pyx_v_size);
 
       /* "janitor/cython_functions/cond_join.py":74
- *         if booleans[num] == 0:
+ *             size = sizes[num]
  *             begin += size
  *             counts_array[num] = 0             # <<<<<<<<<<<<<<
  *             continue
@@ -23631,12 +23631,12 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_40get_positive_
 */
       goto __pyx_L3_continue;
 
-      /* "janitor/cython_functions/cond_join.py":72
+      /* "janitor/cython_functions/cond_join.py":71
+ *     #######################
  *     for num in range(lengths):
- *         size = sizes[num]
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
+ *             size = sizes[num]
  *             begin += size
- *             counts_array[num] = 0
 */
     }
 
@@ -25522,8 +25522,8 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_44get_positive_
  *     total: cython.long = 0
  *     #######################
  *     for num in range(lengths):             # <<<<<<<<<<<<<<
- *         size = sizes[num]
  *         if booleans[num] == 0:
+ *             size = sizes[num]
 */
   __pyx_t_1 = __pyx_v_lengths;
   __pyx_t_2 = __pyx_t_1;
@@ -25533,27 +25533,27 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_44get_positive_
     /* "janitor/cython_functions/cond_join.py":141
  *     #######################
  *     for num in range(lengths):
- *         size = sizes[num]             # <<<<<<<<<<<<<<
- *         if booleans[num] == 0:
- *             begin += size
-*/
-    __pyx_t_4 = __pyx_v_num;
-    __pyx_v_size = (*((long *) ( /* dim=0 */ (__pyx_v_sizes.data + __pyx_t_4 * __pyx_v_sizes.strides[0]) )));
-
-    /* "janitor/cython_functions/cond_join.py":142
- *     for num in range(lengths):
- *         size = sizes[num]
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
+ *             size = sizes[num]
  *             begin += size
- *             counts_array[num] = 0
 */
     __pyx_t_4 = __pyx_v_num;
     __pyx_t_5 = ((*((signed char *) ( /* dim=0 */ (__pyx_v_booleans.data + __pyx_t_4 * __pyx_v_booleans.strides[0]) ))) == 0);
     if (__pyx_t_5) {
 
-      /* "janitor/cython_functions/cond_join.py":143
- *         size = sizes[num]
+      /* "janitor/cython_functions/cond_join.py":142
+ *     for num in range(lengths):
  *         if booleans[num] == 0:
+ *             size = sizes[num]             # <<<<<<<<<<<<<<
+ *             begin += size
+ *             counts_array[num] = 0
+*/
+      __pyx_t_4 = __pyx_v_num;
+      __pyx_v_size = (*((long *) ( /* dim=0 */ (__pyx_v_sizes.data + __pyx_t_4 * __pyx_v_sizes.strides[0]) )));
+
+      /* "janitor/cython_functions/cond_join.py":143
+ *         if booleans[num] == 0:
+ *             size = sizes[num]
  *             begin += size             # <<<<<<<<<<<<<<
  *             counts_array[num] = 0
  *             continue
@@ -25561,7 +25561,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_44get_positive_
       __pyx_v_begin = (__pyx_v_begin + __pyx_v_size);
 
       /* "janitor/cython_functions/cond_join.py":144
- *         if booleans[num] == 0:
+ *             size = sizes[num]
  *             begin += size
  *             counts_array[num] = 0             # <<<<<<<<<<<<<<
  *             continue
@@ -25579,12 +25579,12 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_44get_positive_
 */
       goto __pyx_L3_continue;
 
-      /* "janitor/cython_functions/cond_join.py":142
+      /* "janitor/cython_functions/cond_join.py":141
+ *     #######################
  *     for num in range(lengths):
- *         size = sizes[num]
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
+ *             size = sizes[num]
  *             begin += size
- *             counts_array[num] = 0
 */
     }
 
@@ -26368,8 +26368,8 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_46get_positive_
  *     total: cython.long = 0
  *     #######################
  *     for num in range(lengths):             # <<<<<<<<<<<<<<
- *         size = sizes[num]
  *         if booleans[num] == 0:
+ *             size = sizes[num]
 */
   __pyx_t_1 = __pyx_v_lengths;
   __pyx_t_2 = __pyx_t_1;
@@ -26379,27 +26379,27 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_46get_positive_
     /* "janitor/cython_functions/cond_join.py":141
  *     #######################
  *     for num in range(lengths):
- *         size = sizes[num]             # <<<<<<<<<<<<<<
- *         if booleans[num] == 0:
- *             begin += size
-*/
-    __pyx_t_4 = __pyx_v_num;
-    __pyx_v_size = (*((long *) ( /* dim=0 */ (__pyx_v_sizes.data + __pyx_t_4 * __pyx_v_sizes.strides[0]) )));
-
-    /* "janitor/cython_functions/cond_join.py":142
- *     for num in range(lengths):
- *         size = sizes[num]
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
+ *             size = sizes[num]
  *             begin += size
- *             counts_array[num] = 0
 */
     __pyx_t_4 = __pyx_v_num;
     __pyx_t_5 = ((*((signed char *) ( /* dim=0 */ (__pyx_v_booleans.data + __pyx_t_4 * __pyx_v_booleans.strides[0]) ))) == 0);
     if (__pyx_t_5) {
 
-      /* "janitor/cython_functions/cond_join.py":143
- *         size = sizes[num]
+      /* "janitor/cython_functions/cond_join.py":142
+ *     for num in range(lengths):
  *         if booleans[num] == 0:
+ *             size = sizes[num]             # <<<<<<<<<<<<<<
+ *             begin += size
+ *             counts_array[num] = 0
+*/
+      __pyx_t_4 = __pyx_v_num;
+      __pyx_v_size = (*((long *) ( /* dim=0 */ (__pyx_v_sizes.data + __pyx_t_4 * __pyx_v_sizes.strides[0]) )));
+
+      /* "janitor/cython_functions/cond_join.py":143
+ *         if booleans[num] == 0:
+ *             size = sizes[num]
  *             begin += size             # <<<<<<<<<<<<<<
  *             counts_array[num] = 0
  *             continue
@@ -26407,7 +26407,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_46get_positive_
       __pyx_v_begin = (__pyx_v_begin + __pyx_v_size);
 
       /* "janitor/cython_functions/cond_join.py":144
- *         if booleans[num] == 0:
+ *             size = sizes[num]
  *             begin += size
  *             counts_array[num] = 0             # <<<<<<<<<<<<<<
  *             continue
@@ -26425,12 +26425,12 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_46get_positive_
 */
       goto __pyx_L3_continue;
 
-      /* "janitor/cython_functions/cond_join.py":142
+      /* "janitor/cython_functions/cond_join.py":141
+ *     #######################
  *     for num in range(lengths):
- *         size = sizes[num]
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
+ *             size = sizes[num]
  *             begin += size
- *             counts_array[num] = 0
 */
     }
 
@@ -27214,8 +27214,8 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_48get_positive_
  *     total: cython.long = 0
  *     #######################
  *     for num in range(lengths):             # <<<<<<<<<<<<<<
- *         size = sizes[num]
  *         if booleans[num] == 0:
+ *             size = sizes[num]
 */
   __pyx_t_1 = __pyx_v_lengths;
   __pyx_t_2 = __pyx_t_1;
@@ -27225,27 +27225,27 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_48get_positive_
     /* "janitor/cython_functions/cond_join.py":141
  *     #######################
  *     for num in range(lengths):
- *         size = sizes[num]             # <<<<<<<<<<<<<<
- *         if booleans[num] == 0:
- *             begin += size
-*/
-    __pyx_t_4 = __pyx_v_num;
-    __pyx_v_size = (*((long *) ( /* dim=0 */ (__pyx_v_sizes.data + __pyx_t_4 * __pyx_v_sizes.strides[0]) )));
-
-    /* "janitor/cython_functions/cond_join.py":142
- *     for num in range(lengths):
- *         size = sizes[num]
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
+ *             size = sizes[num]
  *             begin += size
- *             counts_array[num] = 0
 */
     __pyx_t_4 = __pyx_v_num;
     __pyx_t_5 = ((*((signed char *) ( /* dim=0 */ (__pyx_v_booleans.data + __pyx_t_4 * __pyx_v_booleans.strides[0]) ))) == 0);
     if (__pyx_t_5) {
 
-      /* "janitor/cython_functions/cond_join.py":143
- *         size = sizes[num]
+      /* "janitor/cython_functions/cond_join.py":142
+ *     for num in range(lengths):
  *         if booleans[num] == 0:
+ *             size = sizes[num]             # <<<<<<<<<<<<<<
+ *             begin += size
+ *             counts_array[num] = 0
+*/
+      __pyx_t_4 = __pyx_v_num;
+      __pyx_v_size = (*((long *) ( /* dim=0 */ (__pyx_v_sizes.data + __pyx_t_4 * __pyx_v_sizes.strides[0]) )));
+
+      /* "janitor/cython_functions/cond_join.py":143
+ *         if booleans[num] == 0:
+ *             size = sizes[num]
  *             begin += size             # <<<<<<<<<<<<<<
  *             counts_array[num] = 0
  *             continue
@@ -27253,7 +27253,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_48get_positive_
       __pyx_v_begin = (__pyx_v_begin + __pyx_v_size);
 
       /* "janitor/cython_functions/cond_join.py":144
- *         if booleans[num] == 0:
+ *             size = sizes[num]
  *             begin += size
  *             counts_array[num] = 0             # <<<<<<<<<<<<<<
  *             continue
@@ -27271,12 +27271,12 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_48get_positive_
 */
       goto __pyx_L3_continue;
 
-      /* "janitor/cython_functions/cond_join.py":142
+      /* "janitor/cython_functions/cond_join.py":141
+ *     #######################
  *     for num in range(lengths):
- *         size = sizes[num]
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
+ *             size = sizes[num]
  *             begin += size
- *             counts_array[num] = 0
 */
     }
 
@@ -28060,8 +28060,8 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_50get_positive_
  *     total: cython.long = 0
  *     #######################
  *     for num in range(lengths):             # <<<<<<<<<<<<<<
- *         size = sizes[num]
  *         if booleans[num] == 0:
+ *             size = sizes[num]
 */
   __pyx_t_1 = __pyx_v_lengths;
   __pyx_t_2 = __pyx_t_1;
@@ -28071,27 +28071,27 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_50get_positive_
     /* "janitor/cython_functions/cond_join.py":141
  *     #######################
  *     for num in range(lengths):
- *         size = sizes[num]             # <<<<<<<<<<<<<<
- *         if booleans[num] == 0:
- *             begin += size
-*/
-    __pyx_t_4 = __pyx_v_num;
-    __pyx_v_size = (*((long *) ( /* dim=0 */ (__pyx_v_sizes.data + __pyx_t_4 * __pyx_v_sizes.strides[0]) )));
-
-    /* "janitor/cython_functions/cond_join.py":142
- *     for num in range(lengths):
- *         size = sizes[num]
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
+ *             size = sizes[num]
  *             begin += size
- *             counts_array[num] = 0
 */
     __pyx_t_4 = __pyx_v_num;
     __pyx_t_5 = ((*((signed char *) ( /* dim=0 */ (__pyx_v_booleans.data + __pyx_t_4 * __pyx_v_booleans.strides[0]) ))) == 0);
     if (__pyx_t_5) {
 
-      /* "janitor/cython_functions/cond_join.py":143
- *         size = sizes[num]
+      /* "janitor/cython_functions/cond_join.py":142
+ *     for num in range(lengths):
  *         if booleans[num] == 0:
+ *             size = sizes[num]             # <<<<<<<<<<<<<<
+ *             begin += size
+ *             counts_array[num] = 0
+*/
+      __pyx_t_4 = __pyx_v_num;
+      __pyx_v_size = (*((long *) ( /* dim=0 */ (__pyx_v_sizes.data + __pyx_t_4 * __pyx_v_sizes.strides[0]) )));
+
+      /* "janitor/cython_functions/cond_join.py":143
+ *         if booleans[num] == 0:
+ *             size = sizes[num]
  *             begin += size             # <<<<<<<<<<<<<<
  *             counts_array[num] = 0
  *             continue
@@ -28099,7 +28099,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_50get_positive_
       __pyx_v_begin = (__pyx_v_begin + __pyx_v_size);
 
       /* "janitor/cython_functions/cond_join.py":144
- *         if booleans[num] == 0:
+ *             size = sizes[num]
  *             begin += size
  *             counts_array[num] = 0             # <<<<<<<<<<<<<<
  *             continue
@@ -28117,12 +28117,12 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_50get_positive_
 */
       goto __pyx_L3_continue;
 
-      /* "janitor/cython_functions/cond_join.py":142
+      /* "janitor/cython_functions/cond_join.py":141
+ *     #######################
  *     for num in range(lengths):
- *         size = sizes[num]
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
+ *             size = sizes[num]
  *             begin += size
- *             counts_array[num] = 0
 */
     }
 
@@ -28906,8 +28906,8 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_52get_positive_
  *     total: cython.long = 0
  *     #######################
  *     for num in range(lengths):             # <<<<<<<<<<<<<<
- *         size = sizes[num]
  *         if booleans[num] == 0:
+ *             size = sizes[num]
 */
   __pyx_t_1 = __pyx_v_lengths;
   __pyx_t_2 = __pyx_t_1;
@@ -28917,27 +28917,27 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_52get_positive_
     /* "janitor/cython_functions/cond_join.py":141
  *     #######################
  *     for num in range(lengths):
- *         size = sizes[num]             # <<<<<<<<<<<<<<
- *         if booleans[num] == 0:
- *             begin += size
-*/
-    __pyx_t_4 = __pyx_v_num;
-    __pyx_v_size = (*((long *) ( /* dim=0 */ (__pyx_v_sizes.data + __pyx_t_4 * __pyx_v_sizes.strides[0]) )));
-
-    /* "janitor/cython_functions/cond_join.py":142
- *     for num in range(lengths):
- *         size = sizes[num]
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
+ *             size = sizes[num]
  *             begin += size
- *             counts_array[num] = 0
 */
     __pyx_t_4 = __pyx_v_num;
     __pyx_t_5 = ((*((signed char *) ( /* dim=0 */ (__pyx_v_booleans.data + __pyx_t_4 * __pyx_v_booleans.strides[0]) ))) == 0);
     if (__pyx_t_5) {
 
-      /* "janitor/cython_functions/cond_join.py":143
- *         size = sizes[num]
+      /* "janitor/cython_functions/cond_join.py":142
+ *     for num in range(lengths):
  *         if booleans[num] == 0:
+ *             size = sizes[num]             # <<<<<<<<<<<<<<
+ *             begin += size
+ *             counts_array[num] = 0
+*/
+      __pyx_t_4 = __pyx_v_num;
+      __pyx_v_size = (*((long *) ( /* dim=0 */ (__pyx_v_sizes.data + __pyx_t_4 * __pyx_v_sizes.strides[0]) )));
+
+      /* "janitor/cython_functions/cond_join.py":143
+ *         if booleans[num] == 0:
+ *             size = sizes[num]
  *             begin += size             # <<<<<<<<<<<<<<
  *             counts_array[num] = 0
  *             continue
@@ -28945,7 +28945,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_52get_positive_
       __pyx_v_begin = (__pyx_v_begin + __pyx_v_size);
 
       /* "janitor/cython_functions/cond_join.py":144
- *         if booleans[num] == 0:
+ *             size = sizes[num]
  *             begin += size
  *             counts_array[num] = 0             # <<<<<<<<<<<<<<
  *             continue
@@ -28963,12 +28963,12 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_52get_positive_
 */
       goto __pyx_L3_continue;
 
-      /* "janitor/cython_functions/cond_join.py":142
+      /* "janitor/cython_functions/cond_join.py":141
+ *     #######################
  *     for num in range(lengths):
- *         size = sizes[num]
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
+ *             size = sizes[num]
  *             begin += size
- *             counts_array[num] = 0
 */
     }
 
@@ -29752,8 +29752,8 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_54get_positive_
  *     total: cython.long = 0
  *     #######################
  *     for num in range(lengths):             # <<<<<<<<<<<<<<
- *         size = sizes[num]
  *         if booleans[num] == 0:
+ *             size = sizes[num]
 */
   __pyx_t_1 = __pyx_v_lengths;
   __pyx_t_2 = __pyx_t_1;
@@ -29763,27 +29763,27 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_54get_positive_
     /* "janitor/cython_functions/cond_join.py":141
  *     #######################
  *     for num in range(lengths):
- *         size = sizes[num]             # <<<<<<<<<<<<<<
- *         if booleans[num] == 0:
- *             begin += size
-*/
-    __pyx_t_4 = __pyx_v_num;
-    __pyx_v_size = (*((long *) ( /* dim=0 */ (__pyx_v_sizes.data + __pyx_t_4 * __pyx_v_sizes.strides[0]) )));
-
-    /* "janitor/cython_functions/cond_join.py":142
- *     for num in range(lengths):
- *         size = sizes[num]
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
+ *             size = sizes[num]
  *             begin += size
- *             counts_array[num] = 0
 */
     __pyx_t_4 = __pyx_v_num;
     __pyx_t_5 = ((*((signed char *) ( /* dim=0 */ (__pyx_v_booleans.data + __pyx_t_4 * __pyx_v_booleans.strides[0]) ))) == 0);
     if (__pyx_t_5) {
 
-      /* "janitor/cython_functions/cond_join.py":143
- *         size = sizes[num]
+      /* "janitor/cython_functions/cond_join.py":142
+ *     for num in range(lengths):
  *         if booleans[num] == 0:
+ *             size = sizes[num]             # <<<<<<<<<<<<<<
+ *             begin += size
+ *             counts_array[num] = 0
+*/
+      __pyx_t_4 = __pyx_v_num;
+      __pyx_v_size = (*((long *) ( /* dim=0 */ (__pyx_v_sizes.data + __pyx_t_4 * __pyx_v_sizes.strides[0]) )));
+
+      /* "janitor/cython_functions/cond_join.py":143
+ *         if booleans[num] == 0:
+ *             size = sizes[num]
  *             begin += size             # <<<<<<<<<<<<<<
  *             counts_array[num] = 0
  *             continue
@@ -29791,7 +29791,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_54get_positive_
       __pyx_v_begin = (__pyx_v_begin + __pyx_v_size);
 
       /* "janitor/cython_functions/cond_join.py":144
- *         if booleans[num] == 0:
+ *             size = sizes[num]
  *             begin += size
  *             counts_array[num] = 0             # <<<<<<<<<<<<<<
  *             continue
@@ -29809,12 +29809,12 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_54get_positive_
 */
       goto __pyx_L3_continue;
 
-      /* "janitor/cython_functions/cond_join.py":142
+      /* "janitor/cython_functions/cond_join.py":141
+ *     #######################
  *     for num in range(lengths):
- *         size = sizes[num]
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
+ *             size = sizes[num]
  *             begin += size
- *             counts_array[num] = 0
 */
     }
 
@@ -31752,8 +31752,8 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_58get_positive_
  *     total: cython.long = 0
  *     #######################
  *     for num in range(lengths):             # <<<<<<<<<<<<<<
- *         size = sizes[num]
  *         if booleans[num] == 0:
+ *             size = sizes[num]
 */
   __pyx_t_1 = __pyx_v_lengths;
   __pyx_t_2 = __pyx_t_1;
@@ -31763,27 +31763,27 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_58get_positive_
     /* "janitor/cython_functions/cond_join.py":216
  *     #######################
  *     for num in range(lengths):
- *         size = sizes[num]             # <<<<<<<<<<<<<<
- *         if booleans[num] == 0:
- *             begin += size
-*/
-    __pyx_t_4 = __pyx_v_num;
-    __pyx_v_size = (*((long *) ( /* dim=0 */ (__pyx_v_sizes.data + __pyx_t_4 * __pyx_v_sizes.strides[0]) )));
-
-    /* "janitor/cython_functions/cond_join.py":217
- *     for num in range(lengths):
- *         size = sizes[num]
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
+ *             size = sizes[num]
  *             begin += size
- *             counts_array[num] = 0
 */
     __pyx_t_4 = __pyx_v_num;
     __pyx_t_5 = ((*((signed char *) ( /* dim=0 */ (__pyx_v_booleans.data + __pyx_t_4 * __pyx_v_booleans.strides[0]) ))) == 0);
     if (__pyx_t_5) {
 
-      /* "janitor/cython_functions/cond_join.py":218
- *         size = sizes[num]
+      /* "janitor/cython_functions/cond_join.py":217
+ *     for num in range(lengths):
  *         if booleans[num] == 0:
+ *             size = sizes[num]             # <<<<<<<<<<<<<<
+ *             begin += size
+ *             counts_array[num] = 0
+*/
+      __pyx_t_4 = __pyx_v_num;
+      __pyx_v_size = (*((long *) ( /* dim=0 */ (__pyx_v_sizes.data + __pyx_t_4 * __pyx_v_sizes.strides[0]) )));
+
+      /* "janitor/cython_functions/cond_join.py":218
+ *         if booleans[num] == 0:
+ *             size = sizes[num]
  *             begin += size             # <<<<<<<<<<<<<<
  *             counts_array[num] = 0
  *             continue
@@ -31791,7 +31791,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_58get_positive_
       __pyx_v_begin = (__pyx_v_begin + __pyx_v_size);
 
       /* "janitor/cython_functions/cond_join.py":219
- *         if booleans[num] == 0:
+ *             size = sizes[num]
  *             begin += size
  *             counts_array[num] = 0             # <<<<<<<<<<<<<<
  *             continue
@@ -31809,12 +31809,12 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_58get_positive_
 */
       goto __pyx_L3_continue;
 
-      /* "janitor/cython_functions/cond_join.py":217
+      /* "janitor/cython_functions/cond_join.py":216
+ *     #######################
  *     for num in range(lengths):
- *         size = sizes[num]
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
+ *             size = sizes[num]
  *             begin += size
- *             counts_array[num] = 0
 */
     }
 
@@ -32598,8 +32598,8 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_60get_positive_
  *     total: cython.long = 0
  *     #######################
  *     for num in range(lengths):             # <<<<<<<<<<<<<<
- *         size = sizes[num]
  *         if booleans[num] == 0:
+ *             size = sizes[num]
 */
   __pyx_t_1 = __pyx_v_lengths;
   __pyx_t_2 = __pyx_t_1;
@@ -32609,27 +32609,27 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_60get_positive_
     /* "janitor/cython_functions/cond_join.py":216
  *     #######################
  *     for num in range(lengths):
- *         size = sizes[num]             # <<<<<<<<<<<<<<
- *         if booleans[num] == 0:
- *             begin += size
-*/
-    __pyx_t_4 = __pyx_v_num;
-    __pyx_v_size = (*((long *) ( /* dim=0 */ (__pyx_v_sizes.data + __pyx_t_4 * __pyx_v_sizes.strides[0]) )));
-
-    /* "janitor/cython_functions/cond_join.py":217
- *     for num in range(lengths):
- *         size = sizes[num]
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
+ *             size = sizes[num]
  *             begin += size
- *             counts_array[num] = 0
 */
     __pyx_t_4 = __pyx_v_num;
     __pyx_t_5 = ((*((signed char *) ( /* dim=0 */ (__pyx_v_booleans.data + __pyx_t_4 * __pyx_v_booleans.strides[0]) ))) == 0);
     if (__pyx_t_5) {
 
-      /* "janitor/cython_functions/cond_join.py":218
- *         size = sizes[num]
+      /* "janitor/cython_functions/cond_join.py":217
+ *     for num in range(lengths):
  *         if booleans[num] == 0:
+ *             size = sizes[num]             # <<<<<<<<<<<<<<
+ *             begin += size
+ *             counts_array[num] = 0
+*/
+      __pyx_t_4 = __pyx_v_num;
+      __pyx_v_size = (*((long *) ( /* dim=0 */ (__pyx_v_sizes.data + __pyx_t_4 * __pyx_v_sizes.strides[0]) )));
+
+      /* "janitor/cython_functions/cond_join.py":218
+ *         if booleans[num] == 0:
+ *             size = sizes[num]
  *             begin += size             # <<<<<<<<<<<<<<
  *             counts_array[num] = 0
  *             continue
@@ -32637,7 +32637,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_60get_positive_
       __pyx_v_begin = (__pyx_v_begin + __pyx_v_size);
 
       /* "janitor/cython_functions/cond_join.py":219
- *         if booleans[num] == 0:
+ *             size = sizes[num]
  *             begin += size
  *             counts_array[num] = 0             # <<<<<<<<<<<<<<
  *             continue
@@ -32655,12 +32655,12 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_60get_positive_
 */
       goto __pyx_L3_continue;
 
-      /* "janitor/cython_functions/cond_join.py":217
+      /* "janitor/cython_functions/cond_join.py":216
+ *     #######################
  *     for num in range(lengths):
- *         size = sizes[num]
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
+ *             size = sizes[num]
  *             begin += size
- *             counts_array[num] = 0
 */
     }
 
@@ -33444,8 +33444,8 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_62get_positive_
  *     total: cython.long = 0
  *     #######################
  *     for num in range(lengths):             # <<<<<<<<<<<<<<
- *         size = sizes[num]
  *         if booleans[num] == 0:
+ *             size = sizes[num]
 */
   __pyx_t_1 = __pyx_v_lengths;
   __pyx_t_2 = __pyx_t_1;
@@ -33455,27 +33455,27 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_62get_positive_
     /* "janitor/cython_functions/cond_join.py":216
  *     #######################
  *     for num in range(lengths):
- *         size = sizes[num]             # <<<<<<<<<<<<<<
- *         if booleans[num] == 0:
- *             begin += size
-*/
-    __pyx_t_4 = __pyx_v_num;
-    __pyx_v_size = (*((long *) ( /* dim=0 */ (__pyx_v_sizes.data + __pyx_t_4 * __pyx_v_sizes.strides[0]) )));
-
-    /* "janitor/cython_functions/cond_join.py":217
- *     for num in range(lengths):
- *         size = sizes[num]
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
+ *             size = sizes[num]
  *             begin += size
- *             counts_array[num] = 0
 */
     __pyx_t_4 = __pyx_v_num;
     __pyx_t_5 = ((*((signed char *) ( /* dim=0 */ (__pyx_v_booleans.data + __pyx_t_4 * __pyx_v_booleans.strides[0]) ))) == 0);
     if (__pyx_t_5) {
 
-      /* "janitor/cython_functions/cond_join.py":218
- *         size = sizes[num]
+      /* "janitor/cython_functions/cond_join.py":217
+ *     for num in range(lengths):
  *         if booleans[num] == 0:
+ *             size = sizes[num]             # <<<<<<<<<<<<<<
+ *             begin += size
+ *             counts_array[num] = 0
+*/
+      __pyx_t_4 = __pyx_v_num;
+      __pyx_v_size = (*((long *) ( /* dim=0 */ (__pyx_v_sizes.data + __pyx_t_4 * __pyx_v_sizes.strides[0]) )));
+
+      /* "janitor/cython_functions/cond_join.py":218
+ *         if booleans[num] == 0:
+ *             size = sizes[num]
  *             begin += size             # <<<<<<<<<<<<<<
  *             counts_array[num] = 0
  *             continue
@@ -33483,7 +33483,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_62get_positive_
       __pyx_v_begin = (__pyx_v_begin + __pyx_v_size);
 
       /* "janitor/cython_functions/cond_join.py":219
- *         if booleans[num] == 0:
+ *             size = sizes[num]
  *             begin += size
  *             counts_array[num] = 0             # <<<<<<<<<<<<<<
  *             continue
@@ -33501,12 +33501,12 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_62get_positive_
 */
       goto __pyx_L3_continue;
 
-      /* "janitor/cython_functions/cond_join.py":217
+      /* "janitor/cython_functions/cond_join.py":216
+ *     #######################
  *     for num in range(lengths):
- *         size = sizes[num]
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
+ *             size = sizes[num]
  *             begin += size
- *             counts_array[num] = 0
 */
     }
 
@@ -34290,8 +34290,8 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_64get_positive_
  *     total: cython.long = 0
  *     #######################
  *     for num in range(lengths):             # <<<<<<<<<<<<<<
- *         size = sizes[num]
  *         if booleans[num] == 0:
+ *             size = sizes[num]
 */
   __pyx_t_1 = __pyx_v_lengths;
   __pyx_t_2 = __pyx_t_1;
@@ -34301,27 +34301,27 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_64get_positive_
     /* "janitor/cython_functions/cond_join.py":216
  *     #######################
  *     for num in range(lengths):
- *         size = sizes[num]             # <<<<<<<<<<<<<<
- *         if booleans[num] == 0:
- *             begin += size
-*/
-    __pyx_t_4 = __pyx_v_num;
-    __pyx_v_size = (*((long *) ( /* dim=0 */ (__pyx_v_sizes.data + __pyx_t_4 * __pyx_v_sizes.strides[0]) )));
-
-    /* "janitor/cython_functions/cond_join.py":217
- *     for num in range(lengths):
- *         size = sizes[num]
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
+ *             size = sizes[num]
  *             begin += size
- *             counts_array[num] = 0
 */
     __pyx_t_4 = __pyx_v_num;
     __pyx_t_5 = ((*((signed char *) ( /* dim=0 */ (__pyx_v_booleans.data + __pyx_t_4 * __pyx_v_booleans.strides[0]) ))) == 0);
     if (__pyx_t_5) {
 
-      /* "janitor/cython_functions/cond_join.py":218
- *         size = sizes[num]
+      /* "janitor/cython_functions/cond_join.py":217
+ *     for num in range(lengths):
  *         if booleans[num] == 0:
+ *             size = sizes[num]             # <<<<<<<<<<<<<<
+ *             begin += size
+ *             counts_array[num] = 0
+*/
+      __pyx_t_4 = __pyx_v_num;
+      __pyx_v_size = (*((long *) ( /* dim=0 */ (__pyx_v_sizes.data + __pyx_t_4 * __pyx_v_sizes.strides[0]) )));
+
+      /* "janitor/cython_functions/cond_join.py":218
+ *         if booleans[num] == 0:
+ *             size = sizes[num]
  *             begin += size             # <<<<<<<<<<<<<<
  *             counts_array[num] = 0
  *             continue
@@ -34329,7 +34329,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_64get_positive_
       __pyx_v_begin = (__pyx_v_begin + __pyx_v_size);
 
       /* "janitor/cython_functions/cond_join.py":219
- *         if booleans[num] == 0:
+ *             size = sizes[num]
  *             begin += size
  *             counts_array[num] = 0             # <<<<<<<<<<<<<<
  *             continue
@@ -34347,12 +34347,12 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_64get_positive_
 */
       goto __pyx_L3_continue;
 
-      /* "janitor/cython_functions/cond_join.py":217
+      /* "janitor/cython_functions/cond_join.py":216
+ *     #######################
  *     for num in range(lengths):
- *         size = sizes[num]
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
+ *             size = sizes[num]
  *             begin += size
- *             counts_array[num] = 0
 */
     }
 
@@ -35136,8 +35136,8 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_66get_positive_
  *     total: cython.long = 0
  *     #######################
  *     for num in range(lengths):             # <<<<<<<<<<<<<<
- *         size = sizes[num]
  *         if booleans[num] == 0:
+ *             size = sizes[num]
 */
   __pyx_t_1 = __pyx_v_lengths;
   __pyx_t_2 = __pyx_t_1;
@@ -35147,27 +35147,27 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_66get_positive_
     /* "janitor/cython_functions/cond_join.py":216
  *     #######################
  *     for num in range(lengths):
- *         size = sizes[num]             # <<<<<<<<<<<<<<
- *         if booleans[num] == 0:
- *             begin += size
-*/
-    __pyx_t_4 = __pyx_v_num;
-    __pyx_v_size = (*((long *) ( /* dim=0 */ (__pyx_v_sizes.data + __pyx_t_4 * __pyx_v_sizes.strides[0]) )));
-
-    /* "janitor/cython_functions/cond_join.py":217
- *     for num in range(lengths):
- *         size = sizes[num]
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
+ *             size = sizes[num]
  *             begin += size
- *             counts_array[num] = 0
 */
     __pyx_t_4 = __pyx_v_num;
     __pyx_t_5 = ((*((signed char *) ( /* dim=0 */ (__pyx_v_booleans.data + __pyx_t_4 * __pyx_v_booleans.strides[0]) ))) == 0);
     if (__pyx_t_5) {
 
-      /* "janitor/cython_functions/cond_join.py":218
- *         size = sizes[num]
+      /* "janitor/cython_functions/cond_join.py":217
+ *     for num in range(lengths):
  *         if booleans[num] == 0:
+ *             size = sizes[num]             # <<<<<<<<<<<<<<
+ *             begin += size
+ *             counts_array[num] = 0
+*/
+      __pyx_t_4 = __pyx_v_num;
+      __pyx_v_size = (*((long *) ( /* dim=0 */ (__pyx_v_sizes.data + __pyx_t_4 * __pyx_v_sizes.strides[0]) )));
+
+      /* "janitor/cython_functions/cond_join.py":218
+ *         if booleans[num] == 0:
+ *             size = sizes[num]
  *             begin += size             # <<<<<<<<<<<<<<
  *             counts_array[num] = 0
  *             continue
@@ -35175,7 +35175,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_66get_positive_
       __pyx_v_begin = (__pyx_v_begin + __pyx_v_size);
 
       /* "janitor/cython_functions/cond_join.py":219
- *         if booleans[num] == 0:
+ *             size = sizes[num]
  *             begin += size
  *             counts_array[num] = 0             # <<<<<<<<<<<<<<
  *             continue
@@ -35193,12 +35193,12 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_66get_positive_
 */
       goto __pyx_L3_continue;
 
-      /* "janitor/cython_functions/cond_join.py":217
+      /* "janitor/cython_functions/cond_join.py":216
+ *     #######################
  *     for num in range(lengths):
- *         size = sizes[num]
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
+ *             size = sizes[num]
  *             begin += size
- *             counts_array[num] = 0
 */
     }
 
@@ -35982,8 +35982,8 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_68get_positive_
  *     total: cython.long = 0
  *     #######################
  *     for num in range(lengths):             # <<<<<<<<<<<<<<
- *         size = sizes[num]
  *         if booleans[num] == 0:
+ *             size = sizes[num]
 */
   __pyx_t_1 = __pyx_v_lengths;
   __pyx_t_2 = __pyx_t_1;
@@ -35993,27 +35993,27 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_68get_positive_
     /* "janitor/cython_functions/cond_join.py":216
  *     #######################
  *     for num in range(lengths):
- *         size = sizes[num]             # <<<<<<<<<<<<<<
- *         if booleans[num] == 0:
- *             begin += size
-*/
-    __pyx_t_4 = __pyx_v_num;
-    __pyx_v_size = (*((long *) ( /* dim=0 */ (__pyx_v_sizes.data + __pyx_t_4 * __pyx_v_sizes.strides[0]) )));
-
-    /* "janitor/cython_functions/cond_join.py":217
- *     for num in range(lengths):
- *         size = sizes[num]
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
+ *             size = sizes[num]
  *             begin += size
- *             counts_array[num] = 0
 */
     __pyx_t_4 = __pyx_v_num;
     __pyx_t_5 = ((*((signed char *) ( /* dim=0 */ (__pyx_v_booleans.data + __pyx_t_4 * __pyx_v_booleans.strides[0]) ))) == 0);
     if (__pyx_t_5) {
 
-      /* "janitor/cython_functions/cond_join.py":218
- *         size = sizes[num]
+      /* "janitor/cython_functions/cond_join.py":217
+ *     for num in range(lengths):
  *         if booleans[num] == 0:
+ *             size = sizes[num]             # <<<<<<<<<<<<<<
+ *             begin += size
+ *             counts_array[num] = 0
+*/
+      __pyx_t_4 = __pyx_v_num;
+      __pyx_v_size = (*((long *) ( /* dim=0 */ (__pyx_v_sizes.data + __pyx_t_4 * __pyx_v_sizes.strides[0]) )));
+
+      /* "janitor/cython_functions/cond_join.py":218
+ *         if booleans[num] == 0:
+ *             size = sizes[num]
  *             begin += size             # <<<<<<<<<<<<<<
  *             counts_array[num] = 0
  *             continue
@@ -36021,7 +36021,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_68get_positive_
       __pyx_v_begin = (__pyx_v_begin + __pyx_v_size);
 
       /* "janitor/cython_functions/cond_join.py":219
- *         if booleans[num] == 0:
+ *             size = sizes[num]
  *             begin += size
  *             counts_array[num] = 0             # <<<<<<<<<<<<<<
  *             continue
@@ -36039,12 +36039,12 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_9cond_join_68get_positive_
 */
       goto __pyx_L3_continue;
 
-      /* "janitor/cython_functions/cond_join.py":217
+      /* "janitor/cython_functions/cond_join.py":216
+ *     #######################
  *     for num in range(lengths):
- *         size = sizes[num]
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
+ *             size = sizes[num]
  *             begin += size
- *             counts_array[num] = 0
 */
     }
 
@@ -100342,107 +100342,107 @@ static int __Pyx_CreateCodeObjects(__pyx_mstatetype *__pyx_mstate) {
   {
     const __Pyx_PyCode_New_function_description descr = {9, 0, 0, 9, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 37, 326};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_sizes, __pyx_mstate->__pyx_n_u_starts, __pyx_mstate->__pyx_n_u_ends, __pyx_mstate->__pyx_n_u_op, __pyx_mstate->__pyx_n_u_matches, __pyx_mstate->__pyx_n_u_left, __pyx_mstate->__pyx_n_u_right, __pyx_mstate->__pyx_n_u_counts_array, __pyx_mstate->__pyx_n_u_booleans};
-    __pyx_mstate_global->__pyx_codeobj_tab[0] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_signed_char, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_uAQ_81E_A_Q, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[0])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[0] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_signed_char, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_81E_A_5_Q_A, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[0])) goto bad;
   }
   {
     const __Pyx_PyCode_New_function_description descr = {9, 0, 0, 9, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 37, 326};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_sizes, __pyx_mstate->__pyx_n_u_starts, __pyx_mstate->__pyx_n_u_ends, __pyx_mstate->__pyx_n_u_op, __pyx_mstate->__pyx_n_u_matches, __pyx_mstate->__pyx_n_u_left, __pyx_mstate->__pyx_n_u_right, __pyx_mstate->__pyx_n_u_counts_array, __pyx_mstate->__pyx_n_u_booleans};
-    __pyx_mstate_global->__pyx_codeobj_tab[1] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_short_short, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_uAQ_81E_A_Q, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[1])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[1] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_short_short, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_81E_A_5_Q_A, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[1])) goto bad;
   }
   {
     const __Pyx_PyCode_New_function_description descr = {9, 0, 0, 9, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 37, 326};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_sizes, __pyx_mstate->__pyx_n_u_starts, __pyx_mstate->__pyx_n_u_ends, __pyx_mstate->__pyx_n_u_op, __pyx_mstate->__pyx_n_u_matches, __pyx_mstate->__pyx_n_u_left, __pyx_mstate->__pyx_n_u_right, __pyx_mstate->__pyx_n_u_counts_array, __pyx_mstate->__pyx_n_u_booleans};
-    __pyx_mstate_global->__pyx_codeobj_tab[2] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_int_int, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_uAQ_81E_A_Q, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[2])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[2] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_int_int, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_81E_A_5_Q_A, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[2])) goto bad;
   }
   {
     const __Pyx_PyCode_New_function_description descr = {9, 0, 0, 9, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 37, 326};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_sizes, __pyx_mstate->__pyx_n_u_starts, __pyx_mstate->__pyx_n_u_ends, __pyx_mstate->__pyx_n_u_op, __pyx_mstate->__pyx_n_u_matches, __pyx_mstate->__pyx_n_u_left, __pyx_mstate->__pyx_n_u_right, __pyx_mstate->__pyx_n_u_counts_array, __pyx_mstate->__pyx_n_u_booleans};
-    __pyx_mstate_global->__pyx_codeobj_tab[3] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_long_long, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_uAQ_81E_A_Q, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[3])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[3] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_long_long, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_81E_A_5_Q_A, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[3])) goto bad;
   }
   {
     const __Pyx_PyCode_New_function_description descr = {9, 0, 0, 9, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 37, 326};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_sizes, __pyx_mstate->__pyx_n_u_starts, __pyx_mstate->__pyx_n_u_ends, __pyx_mstate->__pyx_n_u_op, __pyx_mstate->__pyx_n_u_matches, __pyx_mstate->__pyx_n_u_left, __pyx_mstate->__pyx_n_u_right, __pyx_mstate->__pyx_n_u_counts_array, __pyx_mstate->__pyx_n_u_booleans};
-    __pyx_mstate_global->__pyx_codeobj_tab[4] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_float_float, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_uAQ_81E_A_Q, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[4])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[4] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_float_float, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_81E_A_5_Q_A, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[4])) goto bad;
   }
   {
     const __Pyx_PyCode_New_function_description descr = {9, 0, 0, 9, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 37, 326};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_sizes, __pyx_mstate->__pyx_n_u_starts, __pyx_mstate->__pyx_n_u_ends, __pyx_mstate->__pyx_n_u_op, __pyx_mstate->__pyx_n_u_matches, __pyx_mstate->__pyx_n_u_left, __pyx_mstate->__pyx_n_u_right, __pyx_mstate->__pyx_n_u_counts_array, __pyx_mstate->__pyx_n_u_booleans};
-    __pyx_mstate_global->__pyx_codeobj_tab[5] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_double_doub, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_uAQ_81E_A_Q, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[5])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[5] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_double_doub, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_81E_A_5_Q_A, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[5])) goto bad;
   }
   {
     const __Pyx_PyCode_New_function_description descr = {9, 0, 0, 22, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 37, 326};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_sizes, __pyx_mstate->__pyx_n_u_starts, __pyx_mstate->__pyx_n_u_ends, __pyx_mstate->__pyx_n_u_op, __pyx_mstate->__pyx_n_u_matches, __pyx_mstate->__pyx_n_u_left, __pyx_mstate->__pyx_n_u_right, __pyx_mstate->__pyx_n_u_counts_array, __pyx_mstate->__pyx_n_u_booleans, __pyx_mstate->__pyx_n_u_lengths, __pyx_mstate->__pyx_n_u_num, __pyx_mstate->__pyx_n_u_number, __pyx_mstate->__pyx_n_u_begin, __pyx_mstate->__pyx_n_u_l_counts, __pyx_mstate->__pyx_n_u_boolean, __pyx_mstate->__pyx_n_u_start, __pyx_mstate->__pyx_n_u_end, __pyx_mstate->__pyx_n_u_l_val, __pyx_mstate->__pyx_n_u_r_val, __pyx_mstate->__pyx_n_u_size, __pyx_mstate->__pyx_n_u_count, __pyx_mstate->__pyx_n_u_total};
-    __pyx_mstate_global->__pyx_codeobj_tab[6] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_signed_char, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_uAQ_81E_A_Q, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[6])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[6] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_signed_char, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_81E_A_5_Q_A, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[6])) goto bad;
   }
   {
     const __Pyx_PyCode_New_function_description descr = {11, 0, 0, 11, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 104, 372};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_sizes, __pyx_mstate->__pyx_n_u_starts, __pyx_mstate->__pyx_n_u_ends, __pyx_mstate->__pyx_n_u_op, __pyx_mstate->__pyx_n_u_matches, __pyx_mstate->__pyx_n_u_left, __pyx_mstate->__pyx_n_u_right, __pyx_mstate->__pyx_n_u_counts_array, __pyx_mstate->__pyx_n_u_booleans, __pyx_mstate->__pyx_n_u_left_booleans, __pyx_mstate->__pyx_n_u_right_booleans};
-    __pyx_mstate_global->__pyx_codeobj_tab[7] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_ne_signed_c, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_uAQ_81E_A_Q_2, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[7])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[7] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_ne_signed_c, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_81E_A_5_Q_A_2, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[7])) goto bad;
   }
   {
     const __Pyx_PyCode_New_function_description descr = {11, 0, 0, 11, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 104, 372};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_sizes, __pyx_mstate->__pyx_n_u_starts, __pyx_mstate->__pyx_n_u_ends, __pyx_mstate->__pyx_n_u_op, __pyx_mstate->__pyx_n_u_matches, __pyx_mstate->__pyx_n_u_left, __pyx_mstate->__pyx_n_u_right, __pyx_mstate->__pyx_n_u_counts_array, __pyx_mstate->__pyx_n_u_booleans, __pyx_mstate->__pyx_n_u_left_booleans, __pyx_mstate->__pyx_n_u_right_booleans};
-    __pyx_mstate_global->__pyx_codeobj_tab[8] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_ne_short_sh, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_uAQ_81E_A_Q_2, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[8])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[8] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_ne_short_sh, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_81E_A_5_Q_A_2, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[8])) goto bad;
   }
   {
     const __Pyx_PyCode_New_function_description descr = {11, 0, 0, 11, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 104, 372};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_sizes, __pyx_mstate->__pyx_n_u_starts, __pyx_mstate->__pyx_n_u_ends, __pyx_mstate->__pyx_n_u_op, __pyx_mstate->__pyx_n_u_matches, __pyx_mstate->__pyx_n_u_left, __pyx_mstate->__pyx_n_u_right, __pyx_mstate->__pyx_n_u_counts_array, __pyx_mstate->__pyx_n_u_booleans, __pyx_mstate->__pyx_n_u_left_booleans, __pyx_mstate->__pyx_n_u_right_booleans};
-    __pyx_mstate_global->__pyx_codeobj_tab[9] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_ne_int_int, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_uAQ_81E_A_Q_2, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[9])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[9] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_ne_int_int, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_81E_A_5_Q_A_2, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[9])) goto bad;
   }
   {
     const __Pyx_PyCode_New_function_description descr = {11, 0, 0, 11, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 104, 372};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_sizes, __pyx_mstate->__pyx_n_u_starts, __pyx_mstate->__pyx_n_u_ends, __pyx_mstate->__pyx_n_u_op, __pyx_mstate->__pyx_n_u_matches, __pyx_mstate->__pyx_n_u_left, __pyx_mstate->__pyx_n_u_right, __pyx_mstate->__pyx_n_u_counts_array, __pyx_mstate->__pyx_n_u_booleans, __pyx_mstate->__pyx_n_u_left_booleans, __pyx_mstate->__pyx_n_u_right_booleans};
-    __pyx_mstate_global->__pyx_codeobj_tab[10] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_ne_long_lon, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_uAQ_81E_A_Q_2, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[10])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[10] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_ne_long_lon, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_81E_A_5_Q_A_2, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[10])) goto bad;
   }
   {
     const __Pyx_PyCode_New_function_description descr = {11, 0, 0, 11, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 104, 372};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_sizes, __pyx_mstate->__pyx_n_u_starts, __pyx_mstate->__pyx_n_u_ends, __pyx_mstate->__pyx_n_u_op, __pyx_mstate->__pyx_n_u_matches, __pyx_mstate->__pyx_n_u_left, __pyx_mstate->__pyx_n_u_right, __pyx_mstate->__pyx_n_u_counts_array, __pyx_mstate->__pyx_n_u_booleans, __pyx_mstate->__pyx_n_u_left_booleans, __pyx_mstate->__pyx_n_u_right_booleans};
-    __pyx_mstate_global->__pyx_codeobj_tab[11] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_ne_float_fl, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_uAQ_81E_A_Q_2, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[11])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[11] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_ne_float_fl, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_81E_A_5_Q_A_2, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[11])) goto bad;
   }
   {
     const __Pyx_PyCode_New_function_description descr = {11, 0, 0, 11, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 104, 372};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_sizes, __pyx_mstate->__pyx_n_u_starts, __pyx_mstate->__pyx_n_u_ends, __pyx_mstate->__pyx_n_u_op, __pyx_mstate->__pyx_n_u_matches, __pyx_mstate->__pyx_n_u_left, __pyx_mstate->__pyx_n_u_right, __pyx_mstate->__pyx_n_u_counts_array, __pyx_mstate->__pyx_n_u_booleans, __pyx_mstate->__pyx_n_u_left_booleans, __pyx_mstate->__pyx_n_u_right_booleans};
-    __pyx_mstate_global->__pyx_codeobj_tab[12] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_ne_double_d, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_uAQ_81E_A_Q_2, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[12])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[12] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_ne_double_d, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_81E_A_5_Q_A_2, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[12])) goto bad;
   }
   {
     const __Pyx_PyCode_New_function_description descr = {11, 0, 0, 26, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 104, 372};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_sizes, __pyx_mstate->__pyx_n_u_starts, __pyx_mstate->__pyx_n_u_ends, __pyx_mstate->__pyx_n_u_op, __pyx_mstate->__pyx_n_u_matches, __pyx_mstate->__pyx_n_u_left, __pyx_mstate->__pyx_n_u_right, __pyx_mstate->__pyx_n_u_counts_array, __pyx_mstate->__pyx_n_u_booleans, __pyx_mstate->__pyx_n_u_left_booleans, __pyx_mstate->__pyx_n_u_right_booleans, __pyx_mstate->__pyx_n_u_lengths, __pyx_mstate->__pyx_n_u_num, __pyx_mstate->__pyx_n_u_number, __pyx_mstate->__pyx_n_u_begin, __pyx_mstate->__pyx_n_u_l_counts, __pyx_mstate->__pyx_n_u_boolean, __pyx_mstate->__pyx_n_u_start, __pyx_mstate->__pyx_n_u_end, __pyx_mstate->__pyx_n_u_l_val, __pyx_mstate->__pyx_n_u_r_val, __pyx_mstate->__pyx_n_u_l_bool, __pyx_mstate->__pyx_n_u_r_bool, __pyx_mstate->__pyx_n_u_size, __pyx_mstate->__pyx_n_u_count, __pyx_mstate->__pyx_n_u_total};
-    __pyx_mstate_global->__pyx_codeobj_tab[13] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_ne_signed_c, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_uAQ_81E_A_Q_2, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[13])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[13] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_ne_signed_c, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_81E_A_5_Q_A_2, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[13])) goto bad;
   }
   {
     const __Pyx_PyCode_New_function_description descr = {11, 0, 0, 11, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 179, 372};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_sizes, __pyx_mstate->__pyx_n_u_starts, __pyx_mstate->__pyx_n_u_ends, __pyx_mstate->__pyx_n_u_op, __pyx_mstate->__pyx_n_u_matches, __pyx_mstate->__pyx_n_u_left, __pyx_mstate->__pyx_n_u_right, __pyx_mstate->__pyx_n_u_counts_array, __pyx_mstate->__pyx_n_u_booleans, __pyx_mstate->__pyx_n_u_left_booleans, __pyx_mstate->__pyx_n_u_right_booleans};
-    __pyx_mstate_global->__pyx_codeobj_tab[14] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_ne_pandas_a, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_uAQ_81E_A_Q_3, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[14])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[14] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_ne_pandas_a, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_81E_A_5_Q_A_3, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[14])) goto bad;
   }
   {
     const __Pyx_PyCode_New_function_description descr = {11, 0, 0, 11, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 179, 372};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_sizes, __pyx_mstate->__pyx_n_u_starts, __pyx_mstate->__pyx_n_u_ends, __pyx_mstate->__pyx_n_u_op, __pyx_mstate->__pyx_n_u_matches, __pyx_mstate->__pyx_n_u_left, __pyx_mstate->__pyx_n_u_right, __pyx_mstate->__pyx_n_u_counts_array, __pyx_mstate->__pyx_n_u_booleans, __pyx_mstate->__pyx_n_u_left_booleans, __pyx_mstate->__pyx_n_u_right_booleans};
-    __pyx_mstate_global->__pyx_codeobj_tab[15] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_ne_pandas_a_2, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_uAQ_81E_A_Q_3, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[15])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[15] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_ne_pandas_a_2, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_81E_A_5_Q_A_3, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[15])) goto bad;
   }
   {
     const __Pyx_PyCode_New_function_description descr = {11, 0, 0, 11, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 179, 372};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_sizes, __pyx_mstate->__pyx_n_u_starts, __pyx_mstate->__pyx_n_u_ends, __pyx_mstate->__pyx_n_u_op, __pyx_mstate->__pyx_n_u_matches, __pyx_mstate->__pyx_n_u_left, __pyx_mstate->__pyx_n_u_right, __pyx_mstate->__pyx_n_u_counts_array, __pyx_mstate->__pyx_n_u_booleans, __pyx_mstate->__pyx_n_u_left_booleans, __pyx_mstate->__pyx_n_u_right_booleans};
-    __pyx_mstate_global->__pyx_codeobj_tab[16] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_ne_pandas_a_3, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_uAQ_81E_A_Q_3, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[16])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[16] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_ne_pandas_a_3, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_81E_A_5_Q_A_3, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[16])) goto bad;
   }
   {
     const __Pyx_PyCode_New_function_description descr = {11, 0, 0, 11, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 179, 372};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_sizes, __pyx_mstate->__pyx_n_u_starts, __pyx_mstate->__pyx_n_u_ends, __pyx_mstate->__pyx_n_u_op, __pyx_mstate->__pyx_n_u_matches, __pyx_mstate->__pyx_n_u_left, __pyx_mstate->__pyx_n_u_right, __pyx_mstate->__pyx_n_u_counts_array, __pyx_mstate->__pyx_n_u_booleans, __pyx_mstate->__pyx_n_u_left_booleans, __pyx_mstate->__pyx_n_u_right_booleans};
-    __pyx_mstate_global->__pyx_codeobj_tab[17] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_ne_pandas_a_4, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_uAQ_81E_A_Q_3, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[17])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[17] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_ne_pandas_a_4, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_81E_A_5_Q_A_3, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[17])) goto bad;
   }
   {
     const __Pyx_PyCode_New_function_description descr = {11, 0, 0, 11, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 179, 372};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_sizes, __pyx_mstate->__pyx_n_u_starts, __pyx_mstate->__pyx_n_u_ends, __pyx_mstate->__pyx_n_u_op, __pyx_mstate->__pyx_n_u_matches, __pyx_mstate->__pyx_n_u_left, __pyx_mstate->__pyx_n_u_right, __pyx_mstate->__pyx_n_u_counts_array, __pyx_mstate->__pyx_n_u_booleans, __pyx_mstate->__pyx_n_u_left_booleans, __pyx_mstate->__pyx_n_u_right_booleans};
-    __pyx_mstate_global->__pyx_codeobj_tab[18] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_ne_pandas_a_5, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_uAQ_81E_A_Q_3, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[18])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[18] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_ne_pandas_a_5, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_81E_A_5_Q_A_3, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[18])) goto bad;
   }
   {
     const __Pyx_PyCode_New_function_description descr = {11, 0, 0, 11, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 179, 372};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_sizes, __pyx_mstate->__pyx_n_u_starts, __pyx_mstate->__pyx_n_u_ends, __pyx_mstate->__pyx_n_u_op, __pyx_mstate->__pyx_n_u_matches, __pyx_mstate->__pyx_n_u_left, __pyx_mstate->__pyx_n_u_right, __pyx_mstate->__pyx_n_u_counts_array, __pyx_mstate->__pyx_n_u_booleans, __pyx_mstate->__pyx_n_u_left_booleans, __pyx_mstate->__pyx_n_u_right_booleans};
-    __pyx_mstate_global->__pyx_codeobj_tab[19] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_ne_pandas_a_6, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_uAQ_81E_A_Q_3, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[19])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[19] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_ne_pandas_a_6, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_81E_A_5_Q_A_3, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[19])) goto bad;
   }
   {
     const __Pyx_PyCode_New_function_description descr = {11, 0, 0, 26, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 179, 372};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_sizes, __pyx_mstate->__pyx_n_u_starts, __pyx_mstate->__pyx_n_u_ends, __pyx_mstate->__pyx_n_u_op, __pyx_mstate->__pyx_n_u_matches, __pyx_mstate->__pyx_n_u_left, __pyx_mstate->__pyx_n_u_right, __pyx_mstate->__pyx_n_u_counts_array, __pyx_mstate->__pyx_n_u_booleans, __pyx_mstate->__pyx_n_u_left_booleans, __pyx_mstate->__pyx_n_u_right_booleans, __pyx_mstate->__pyx_n_u_lengths, __pyx_mstate->__pyx_n_u_num, __pyx_mstate->__pyx_n_u_number, __pyx_mstate->__pyx_n_u_begin, __pyx_mstate->__pyx_n_u_l_counts, __pyx_mstate->__pyx_n_u_boolean, __pyx_mstate->__pyx_n_u_start, __pyx_mstate->__pyx_n_u_end, __pyx_mstate->__pyx_n_u_l_val, __pyx_mstate->__pyx_n_u_r_val, __pyx_mstate->__pyx_n_u_l_bool, __pyx_mstate->__pyx_n_u_r_bool, __pyx_mstate->__pyx_n_u_size, __pyx_mstate->__pyx_n_u_count, __pyx_mstate->__pyx_n_u_total};
-    __pyx_mstate_global->__pyx_codeobj_tab[20] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_ne_pandas_a, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_uAQ_81E_A_Q_3, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[20])) goto bad;
+    __pyx_mstate_global->__pyx_codeobj_tab[20] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_get_positive_matches_ne_pandas_a, __pyx_k_vQa_Q_q_A_1_q_Q_uAQ_81E_A_5_Q_A_3, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[20])) goto bad;
   }
   {
     const __Pyx_PyCode_New_function_description descr = {5, 0, 0, 5, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 255, 150};

@@ -322,7 +322,6 @@ def _get_positive_matches_ranges_positions(
                     indexers=indexers,
                 )
             )
-            # return matches, booleans, counts_array, total, l_counts
         elif is_extension_array:
             matches, booleans, counts_array, total, l_counts = (
                 cond_join.get_positive_matches_ranges_positions_ne_pandas_array(

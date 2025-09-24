@@ -272,7 +272,6 @@ def _compute_agg_min_max(
 def compute_aggfunc_result_no_ranges(
     aggfunc: list[tuple],
     agg_frame: pd.DataFrame,
-    booleans: np.ndarray,
     indexers: np.ndarray,
 ) -> list:
     """
@@ -281,7 +280,7 @@ def compute_aggfunc_result_no_ranges(
     results = []
     for column_name, agg in aggfunc:
         if agg == "size":
-            result = booleans.astype(np.int64, copy=False)
+            result = np.ones(indexers.size, dtype=np.int64)
         elif agg == "count":
             result = agg_frame[column_name].array[indexers]
             result = pd.notna(result).astype(np.int64, copy=False)

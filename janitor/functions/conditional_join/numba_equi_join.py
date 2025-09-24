@@ -127,10 +127,7 @@ def _numba_equi_join(
     outcome = helpers._separate_conditions_based_on_op(
         conditions=conditions, keep_equals_separate=True
     )
-    if not outcome.get("conditions"):
-        raise ValueError(
-            "At least one non-equi join should be present if `use_numba=True`"
-        )
+
     booleans = helpers._maybe_remove_nulls_from_dataframe(
         df=df, columns=outcome.get("l_cols"), return_bools=True
     )
@@ -231,9 +228,7 @@ def _numba_equi_join(
         return left_index, right_index
     ge_gt = None
     le_lt = None
-    if outcome.get("equi_count") > 1:
-        is_fastpath_range_join = False
-    elif not outcome.get("is_range_join"):
+    if not outcome.get("is_range_join"):
         is_fastpath_range_join = False
     else:
         left_on, right_on, _ = outcome["conditions"][1]
@@ -246,6 +241,7 @@ def _numba_equi_join(
             arr=arr,
             booleans=booleans.astype(np.int8, copy=False),
         )
+        is_fastpath_range_join = bool(is_fastpath_range_join)
     if not is_fastpath_range_join:
         condition, *rest = outcome["conditions"]
         if condition[-1] in helpers.greater_than_join_types:

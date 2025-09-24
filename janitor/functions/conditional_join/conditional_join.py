@@ -392,18 +392,6 @@ def _conditional_join_preliminary_checks(
         _check_operator(op)
 
     if all(
-        (
-            op == helpers._JoinOperator.STRICTLY_EQUAL.value
-            for *_, op in conditions
-        )
-    ) and not (return_matching_indices or (aggfunc is not None)):
-        raise ValueError(
-            "Equality only joins are supported only "
-            "if aggfunc is provided, "
-            "or only indices are to be returned."
-        )
-
-    if all(
         (op == helpers._JoinOperator.NOT_EQUAL.value for *_, op in conditions)
     ):
         raise ValueError("!= only joins are not supported")
@@ -477,6 +465,25 @@ def _conditional_join_preliminary_checks(
                 raise ValueError(
                     f"{agg} is supported only for numeric columns"
                 )
+    if all(
+        (
+            op == helpers._JoinOperator.STRICTLY_EQUAL.value
+            for *_, op in conditions
+        )
+    ):
+        if not (return_matching_indices or (aggfunc is not None)):
+            raise ValueError(
+                "Equality only joins are supported only "
+                "if aggfunc is provided, "
+                "or only indices are to be returned."
+            )
+        if return_matching_indices and use_numba:
+            raise ValueError(
+                "Equality only joins are supported only "
+                "if indices are to be returned, "
+                "and use_numba is False."
+            )
+
     return (
         df,
         right,
@@ -495,14 +502,25 @@ def _conditional_join_preliminary_checks(
 
 
 def _conditional_join_type_check(
-    left_column: pd.Series, right_column: pd.Series, op: str, use_numba: bool
+    left_column: pd.Series,
+    right_column: pd.Series,
+    op: str,
+    use_numba: bool,
+    use_binary_search_for_equi_join: bool,
 ) -> None:
     """
     Dtype check for columns in the join.
-    Checks are not conducted for the equi-join columns,
-    except when use_numba is set to True.
     """
-
+    if (
+        use_binary_search_for_equi_join
+        and not pd.api.types.is_numeric_dtype(left_column)
+        and not pd.api.types.is_datetime64_dtype(left_column)
+        and not pd.api.types.is_timedelta64_dtype(left_column)
+    ):
+        raise ValueError(
+            "binary search is supported only "
+            "for numeric, datetime and timedelta dtypes."
+        )
     if (
         ((op != helpers._JoinOperator.STRICTLY_EQUAL.value) or use_numba)
         and not is_numeric_dtype(left_column)
@@ -587,6 +605,7 @@ def _conditional_join_compute(
             right_column=right[right_on],
             op=op,
             use_numba=use_numba,
+            use_binary_search_for_equi_join=use_binary_search_for_equi_join,
         )
         if op == helpers._JoinOperator.STRICTLY_EQUAL.value:
             eq_check = True
@@ -701,6 +720,22 @@ def _create_frame_agg(
             arr = pd.array([], dtype=dtype, copy=False)
             dictionary[(column_name, agg)] = arr
         return pd.DataFrame(dictionary, copy=False)
+    if agg_result is None:
+        dictionary = {}
+        dtypes = df.dtypes
+        for column_name in df:
+            dtype = dtypes.loc[column_name]
+            arr = pd.array([], dtype=dtype, copy=False)
+            dictionary[("left", *column_name)] = arr
+        dtypes = right.dtypes
+        for column_name, agg in aggfunc:
+            if agg in {"size", "count"}:
+                dtype = "int64"
+            else:
+                dtype = dtypes.loc[column_name]
+            arr = pd.array([], dtype=dtype, copy=False)
+            dictionary[(*column_name, agg)] = arr
+        return pd.DataFrame(dictionary, copy=False)
     df_index = agg_result["df_index"]
     agg_result = agg_result["aggregates"]
     if df.columns.nlevels == 1:
@@ -711,21 +746,13 @@ def _create_frame_agg(
         for (column_name, agg_name), agg_array in zip(aggfunc, agg_result):
             dictionary[(column_name, agg_name)] = agg_array
         return pd.DataFrame(dictionary, copy=False)
-
-    base = np.empty(df.columns.size, dtype="U1")
-    base[:] = ""
-    base = [base]
-    columns = [
-        df.columns.get_level_values(n) for n in range(df.columns.nlevels)
-    ]
-    columns.extend(base)
-    df.columns = pd.MultiIndex.from_arrays(columns)
-    zipped = zip(agg_result["column_names"], agg_result["agg_names"])
-    column_names = [(*column_name, agg) for column_name, agg in zipped]
-    results = dict(zip(column_names, agg_result["results"]))
-    results = pd.DataFrame(results)
-    results = pd.concat([df, results], axis=1, copy=False, sort=False)
-    return results
+    dictionary = {}
+    for key, value in df.items():
+        series = value._values[df_index]
+        dictionary[("left", *key)] = series
+    for (column_name, agg_name), agg_array in zip(aggfunc, agg_result):
+        dictionary[(*column_name, agg_name)] = agg_array
+    return pd.DataFrame(dictionary, copy=False)
 
 
 def _create_frame(
@@ -955,10 +982,7 @@ def _create_frame(
                 value=array[:1], length=right_nulls_length
             )
             top.append(bottom)
-        if len(top) == 1:
-            top = top[0]
-        else:
-            top = concat_compat(top)
+        top = concat_compat(top)
         dictionary[key] = top
     for key, value in right.items():
         array = value._values
@@ -972,10 +996,7 @@ def _create_frame(
         if right_nulls_length:
             bottom = array[right_indexer]
             top.append(bottom)
-        if len(top) == 1:
-            top = top[0]
-        else:
-            top = concat_compat(top)
+        top = concat_compat(top)
         dictionary[key] = top
     if indicator:
         columns = df.columns.union(right.columns)
@@ -1002,10 +1023,7 @@ def _create_frame(
                 columns=columns,
             )
             arr1.append(arr3)
-        if len(arr1) == 1:
-            arr1 = arr1[0]
-        else:
-            arr1 = concat_compat(arr1)
+        arr1 = concat_compat(arr1)
         dictionary[name] = arr1
 
     return pd.DataFrame(dictionary, copy=False)

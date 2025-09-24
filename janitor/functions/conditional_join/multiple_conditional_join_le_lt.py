@@ -114,12 +114,11 @@ def _multiple_conditional_join_le_lt(
         if indices is None:
             return None
         if aggfunc:
+            df_index = indices["left_index"]
             if not indices["booleans"].all():
                 booleans = indices["booleans"].astype(np.bool_, copy=False)
                 indices["counts_array"] = indices["counts_array"][booleans]
-                df_index = indices["left_index"][booleans]
-            else:
-                df_index = indices["left_index"]
+                df_index = df_index[booleans]
             results = aggs.compute_aggfunc_result(
                 aggfunc=aggfunc,
                 agg_frame=right,
@@ -165,13 +164,12 @@ def _multiple_conditional_join_le_lt(
     if condition := indices.get("condition"):
         conditions = [condition] + conditions
     if indices.get("fastpath") and not conditions and aggfunc:
+        indices["counts_array"] = indices["sizes"]
+        df_index = indices["left_index"]
         if not indices["booleans"].all():
             booleans = indices["booleans"].astype(np.bool_, copy=False)
-            indices["counts_array"] = indices["sizes"][booleans]
-            df_index = indices["left_index"][booleans]
-        else:
-            indices["counts_array"] = indices["sizes"]
-            df_index = indices["left_index"]
+            indices["counts_array"] = indices["counts_array"][booleans]
+            df_index = df_index[booleans]
         results = aggs.compute_aggfunc_result(
             aggfunc=aggfunc,
             agg_frame=right,
@@ -205,12 +203,11 @@ def _multiple_conditional_join_le_lt(
     if indices is None:
         return None
     if aggfunc:
+        df_index = indices["left_index"]
         if not indices["booleans"].all():
             booleans = indices["booleans"].astype(np.bool_, copy=False)
             indices["counts_array"] = indices["counts_array"][booleans]
-            df_index = indices["left_index"][booleans]
-        else:
-            df_index = indices["left_index"]
+            df_index = df_index[booleans]
         results = aggs.compute_aggfunc_result(
             aggfunc=aggfunc,
             agg_frame=right,

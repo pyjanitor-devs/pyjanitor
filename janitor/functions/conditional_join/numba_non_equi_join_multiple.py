@@ -345,8 +345,8 @@ def _numba_multiple_non_equi_join(
     starts = np.zeros(length, dtype=np.intp)
     ends = np.empty(length, dtype=np.intp)
     ends[:] = len(right)
-    booleans = np.ones(length, dtype=np.int8)
     tuples = helpers._generate_tuples(df=df, right=right, conditions=rest)
+
     if keep == "all":
         left_index, right_index = (
             _numba._get_indices_equi_ge_gt_or_le_lt_join_keep_all(
@@ -363,6 +363,7 @@ def _numba_multiple_non_equi_join(
         if left_index is None:
             return None
         return left_index, right_index
+
     if keep == "first":
         left_index, right_index = (
             _numba._get_indices_equi_ge_gt_or_le_lt_join_keep_first(
@@ -400,7 +401,6 @@ def _update_indices(
     indices: dict,
     booleans: np.ndarray,
     len_right: int,
-    reset_sizes: bool = False,
 ):
     """
     update indices
@@ -410,9 +410,6 @@ def _update_indices(
     starts = np.zeros(indices["starts"].size, dtype=np.intp)
     ends = indices["ends"]
     ends[:] = len_right
-    if reset_sizes:
-        sizes = np.zeros(starts.size, dtype=np.intp)
-        indices["sizes"] = sizes
     indices["starts"] = starts
     indices["ends"] = ends
     indices["booleans"] = booleans

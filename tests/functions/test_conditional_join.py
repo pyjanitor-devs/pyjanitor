@@ -6,6 +6,7 @@ from pandas import Timedelta
 from pandas.testing import (
     assert_frame_equal,
     assert_index_equal,
+    assert_series_equal,
 )
 
 from janitor import get_join_indices
@@ -203,6 +204,39 @@ def test_equi_only(dummy):
         )
 
 
+def test_equi_numba_only(dummy, series):
+    """
+    Raise ValueError if only an equi-join is present.
+    """
+    with pytest.raises(
+        ValueError,
+        match="Equality only joins are supported only if indices are to be returned.+",
+    ):
+        get_join_indices(
+            dummy,
+            series,
+            [("value_1", "B", "=="), ("id", "B", "==")],
+            use_numba=True,
+        )
+
+
+def test_equi_binary_search(dummy):
+    """
+    Raise ValueError if equi-join and binary search.
+    """
+    with pytest.raises(
+        ValueError,
+        match="binary search is supported only "
+        "for numeric, datetime and timedelta dtypes.",
+    ):
+        dummy.conditional_join(
+            dummy.rename(columns={"S": "Strings"}),
+            ("S", "Strings", "=="),
+            aggfunc=[("id", "sum")],
+            use_binary_search_for_equi_join=True,
+        )
+
+
 def test_check_single_join(dummy, series):
     """
     Raise Error if it is a single != join.
@@ -219,6 +253,22 @@ def test_check_numba_single_join(dummy, series):
         ValueError, match="numba is not supported for single joins"
     ):
         dummy.conditional_join(series, ("id", "B", "<"), use_numba=True)
+
+
+def test_check_numba_return_ranges(dummy, series):
+    """
+    Raise Error if return_ranges=True and use_numba=True.
+    """
+    with pytest.raises(
+        ValueError, match="return_ranges applies only when use_numba is False."
+    ):
+        get_join_indices(
+            dummy,
+            series,
+            [("id", "B", "<"), ("value_1", "B", ">")],
+            return_ranges=True,
+            use_numba=True,
+        )
 
 
 def test_check_how_type(dummy, series):
@@ -486,7 +536,7 @@ def test_dtype_different_non_equi():
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_less_than_floats_keep_first(df, right):
     """Test output for a single condition. "<"."""
@@ -516,7 +566,7 @@ def test_single_condition_less_than_floats_keep_first(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_greater_than_floats_keep_last(df, right):
     """Test output for a single condition. "<"."""
@@ -546,7 +596,7 @@ def test_single_condition_greater_than_floats_keep_last(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_less_than_floats_keep_last(df, right):
     """
@@ -579,7 +629,7 @@ def test_single_condition_less_than_floats_keep_last(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_less_than_floats(df, right):
     """Test output for a single condition. "<"."""
@@ -604,7 +654,7 @@ def test_single_condition_less_than_floats(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_less_than_ints(df, right):
     """Test output for a single condition. "<"."""
@@ -630,7 +680,7 @@ def test_single_condition_less_than_ints(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_less_than_equal(df, right):
     """Test output for a single condition. "<=". DateTimes"""
@@ -657,7 +707,7 @@ def test_single_condition_less_than_equal(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_less_than_date(df, right):
     """Test output for a single condition. "<". Dates"""
@@ -682,7 +732,7 @@ def test_single_condition_less_than_date(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_greater_than_datetime(df, right):
     """Test output for a single condition. ">". Datetimes"""
@@ -707,7 +757,7 @@ def test_single_condition_greater_than_datetime(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_greater_than_floats_floats(df, right):
     """Test output for a single condition. ">"."""
@@ -738,7 +788,7 @@ def test_single_condition_greater_than_floats_floats(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_greater_than_ints_extension_array(df, right):
     """Test output for a single condition. ">"."""
@@ -766,7 +816,7 @@ def test_single_condition_greater_than_ints_extension_array(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_how_left(df, right):
     """Test output when `how==left`. "<="."""
@@ -807,7 +857,7 @@ def test_how_left(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_how_left_multiindex(df, right):
     """Test output when `how==left`. "<="."""
@@ -851,7 +901,7 @@ def test_how_left_multiindex(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_how_left_sort(df, right):
     """Test output when `how==left`. "<="."""
@@ -891,7 +941,7 @@ def test_how_left_sort(df, right):
     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_how_right(df, right):
@@ -928,7 +978,7 @@ def test_how_right(df, right):
     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_how_right_sort(df, right):
@@ -969,7 +1019,7 @@ def test_how_right_sort(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_gt_and_lt_dates(df, right):
     """Test output for interval conditions."""
@@ -1001,7 +1051,7 @@ def test_dual_conditions_gt_and_lt_dates(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_gt_and_lt_dates_numba(df, right):
     """Test output for interval conditions."""
@@ -1033,7 +1083,7 @@ def test_dual_conditions_gt_and_lt_dates_numba(df, right):
     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_dual_conditions_ge_and_le_dates(df, right):
@@ -1062,7 +1112,7 @@ def test_dual_conditions_ge_and_le_dates(df, right):
     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_dual_conditions_ge_and_le_dates_numba(df, right):
@@ -1092,7 +1142,7 @@ def test_dual_conditions_ge_and_le_dates_numba(df, right):
     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_dual_conditions_le_and_ge_dates(df, right):
@@ -1121,7 +1171,7 @@ def test_dual_conditions_le_and_ge_dates(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_ge_and_le_dates_right_open(df, right):
     """Test output for interval conditions."""
@@ -1152,7 +1202,7 @@ def test_dual_conditions_ge_and_le_dates_right_open(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_ge_and_le_dates_right_open_numba(df, right):
     """Test output for interval conditions."""
@@ -1184,7 +1234,7 @@ def test_dual_conditions_ge_and_le_dates_right_open_numba(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_ge_and_le_numbers(df, right):
     """Test output for interval conditions, for numeric dtypes."""
@@ -1211,7 +1261,7 @@ def test_dual_conditions_ge_and_le_numbers(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_ge_and_le_numbers_numba(df, right):
     """Test output for interval conditions, for numeric dtypes."""
@@ -1238,7 +1288,7 @@ def test_dual_conditions_ge_and_le_numbers_numba(df, right):
     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_dual_conditions_le_and_ge_numbers(df, right):
@@ -1269,7 +1319,7 @@ def test_dual_conditions_le_and_ge_numbers(df, right):
     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_dual_conditions_le_and_ge_numbers_numba(df, right):
@@ -1302,7 +1352,7 @@ def test_dual_conditions_le_and_ge_numbers_numba(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_gt_and_lt_numbers(df, right):
     """Test output for interval conditions."""
@@ -1330,7 +1380,7 @@ def test_dual_conditions_gt_and_lt_numbers(df, right):
     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_dual_conditions_gt_and_lt_numbers_left_open(df, right):
@@ -1358,7 +1408,7 @@ def test_dual_conditions_gt_and_lt_numbers_left_open(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_gt_and_lt_numbers_(df, right):
     """
@@ -1389,7 +1439,7 @@ def test_dual_conditions_gt_and_lt_numbers_(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_gt_and_lt_numbers_numba_(df, right):
     """
@@ -1420,7 +1470,7 @@ def test_dual_conditions_gt_and_lt_numbers_numba_(df, right):
     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_dual_conditions_gt_and_lt_numbers_left_join(df, right):
@@ -1466,7 +1516,7 @@ def test_dual_conditions_gt_and_lt_numbers_left_join(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_gt_and_lt_numbers_right_join(df, right):
     """
@@ -1516,7 +1566,7 @@ def test_dual_conditions_gt_and_lt_numbers_right_join(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_eq_and_ne(df, right):
     """Test output for equal and not equal conditions."""
@@ -1547,7 +1597,7 @@ def test_dual_conditions_eq_and_ne(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_eq_and_ne_binary_search(df, right):
     """Test output for equal and not equal conditions."""
@@ -1563,9 +1613,8 @@ def test_dual_conditions_eq_and_ne_binary_search(df, right):
     )
 
     actual = (
-        df.dropna(subset=["B"])
-        .conditional_join(
-            right.dropna(subset=["Numeric"]),
+        df.conditional_join(
+            right,
             ("B", "Numeric", "=="),
             ("E", "Dates", "!="),
             how="inner",
@@ -1579,7 +1628,7 @@ def test_dual_conditions_eq_and_ne_binary_search(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_conditions_eq_and_lt_ne(df, right):
     """Test output for equal and not equal conditions."""
@@ -1612,7 +1661,7 @@ def test_conditions_eq_and_lt_ne(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_conditions_eq_and_lt_ne_numba(df, right):
     """Test output for equal and not equal conditions."""
@@ -1646,7 +1695,7 @@ def test_conditions_eq_and_lt_ne_numba(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_conditions_eq_and_gt_ne(df, right):
     """Test output for equal and not equal conditions."""
@@ -1679,7 +1728,7 @@ def test_conditions_eq_and_gt_ne(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_conditions_eq_and_gt_ne_numba(df, right):
     """Test output for equal and not equal conditions."""
@@ -1713,7 +1762,7 @@ def test_conditions_eq_and_gt_ne_numba(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_ne_and_eq(df, right):
     """Test output for equal and not equal conditions."""
@@ -1745,7 +1794,7 @@ def test_dual_conditions_ne_and_eq(df, right):
     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_gt_lt_ne_conditions(df, right):
@@ -1780,7 +1829,7 @@ def test_gt_lt_ne_conditions(df, right):
     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_gt_lt_ne_numba_conditions(df, right):
@@ -1817,7 +1866,7 @@ def test_gt_lt_ne_numba_conditions(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_gt_ne_conditions(df, right):
     """
@@ -1847,7 +1896,7 @@ def test_gt_ne_conditions(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_gt_ne_numba_conditions(df, right):
     """
@@ -1878,7 +1927,7 @@ def test_gt_ne_numba_conditions(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_le_ne_conditions(df, right):
     """
@@ -1908,7 +1957,7 @@ def test_le_ne_conditions(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_le_ne_numba_conditions(df, right):
     """
@@ -1938,7 +1987,7 @@ def test_le_ne_numba_conditions(df, right):
     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_gt_lt_ne_start(df, right):
@@ -1973,7 +2022,7 @@ def test_gt_lt_ne_start(df, right):
     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_ge_le_ne_extension_array(df, right):
@@ -2009,7 +2058,7 @@ def test_ge_le_ne_extension_array(df, right):
     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_ge_le_ne_extension_array_numba(df, right):
@@ -2047,7 +2096,7 @@ def test_ge_le_ne_extension_array_numba(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_ge_lt_ne_extension(df, right):
     """
@@ -2085,7 +2134,7 @@ def test_ge_lt_ne_extension(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_ge_lt_ne_numba_extension(df, right):
     """
@@ -2124,7 +2173,7 @@ def test_ge_lt_ne_numba_extension(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_eq_ge_and_le_numbers(df, right):
     """Test output for multiple conditions."""
@@ -2154,7 +2203,38 @@ def test_eq_ge_and_le_numbers(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
+@given(df=conditional_df(), right=conditional_right())
+def test_eq_ge_and_le_numba_numberrss(df, right):
+    """Test output for multiple conditions."""
+
+    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+    expected = (
+        df.merge(
+            right, left_on="B", right_on="Floats", how="inner", sort=False
+        )
+        .loc[lambda df: df.A.ge(df.Integers) & df.E.le(df.Dates), columns]
+        .sort_values(columns, ignore_index=True)
+    )
+
+    actual = (
+        df[["B", "A", "E"]]
+        .conditional_join(
+            right[["Floats", "Integers", "Dates"]],
+            ("B", "Floats", "=="),
+            ("A", "Integers", ">="),
+            ("E", "Dates", "<="),
+            how="inner",
+            use_numba=True,
+        )
+        .sort_values(columns, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_ge_and_le_diff_numbers_numba(df, right):
     """Test output for multiple conditions."""
@@ -2185,7 +2265,7 @@ def test_dual_ge_and_le_diff_numbers_numba(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_ge_and_le_diff_numbers(df, right):
     """Test output for multiple conditions."""
@@ -2215,7 +2295,7 @@ def test_dual_ge_and_le_diff_numbers(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_ge_lt_ne_extension_variant(df, right):
     """
@@ -2251,7 +2331,7 @@ def test_ge_lt_ne_extension_variant(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_ge_lt_ne_extension_variant_numba(df, right):
     """
@@ -2288,7 +2368,7 @@ def test_ge_lt_ne_extension_variant_numba(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_ge_eq_and_le_numbers_variant(df, right):
     """Test output for multiple conditions."""
@@ -2307,23 +2387,21 @@ def test_ge_eq_and_le_numbers_variant(df, right):
         .sort_values(columns, ignore_index=True)
     )
     expected = expected.filter(columns)
-    actual = (
-        df[["B", "A", "E"]]
-        .conditional_join(
-            right[["Floats", "Integers", "Dates"]],
-            ("A", "Integers", ">="),
-            ("E", "Dates", "<="),
-            ("B", "Floats", "=="),
-            how="inner",
-        )
-        .sort_values(columns, ignore_index=True)
-    )
+    actual = df.conditional_join(
+        right,
+        ("A", "Integers", ">="),
+        ("E", "Dates", "<="),
+        ("B", "Floats", "=="),
+        how="inner",
+        df_columns=["B", "A", "E"],
+        right_columns=["Floats", "Integers", "Dates"],
+    ).sort_values(columns, ignore_index=True)
 
     assert_frame_equal(expected, actual)
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_multiple_ge_eq_and_le_numbers(df, right):
     """Test output for multiple conditions."""
@@ -2359,7 +2437,7 @@ def test_multiple_ge_eq_and_le_numbers(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_ge_eq_and_multiple_le_numbers(df, right):
     """Test output for multiple conditions."""
@@ -2394,7 +2472,44 @@ def test_ge_eq_and_multiple_le_numbers(df, right):
     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None, max_examples=10)
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=50)
+@given(df=conditional_df(), right=conditional_right())
+def test_ge_eq_and_multiple_le_numbers_extension(df, right):
+    """Test output for multiple conditions."""
+    df = df.astype({"A": "Int64"})
+    right = right.astype({"Integers": "Int64"})
+    columns = ["B", "A", "E", "Floats", "Integers", "Dates", "Numeric"]
+    expected = (
+        df.merge(
+            right, left_on="B", right_on="Floats", how="inner", sort=False
+        )
+        .loc[
+            lambda df: df.A.le(df.Integers)
+            & df.E.ge(df.Dates)
+            & df.B.lt(df.Numeric),
+            columns,
+        ]
+        .sort_values(columns, ignore_index=True)
+    )
+    expected = expected.filter(columns)
+    actual = (
+        df[["B", "A", "E"]]
+        .conditional_join(
+            right[["Floats", "Integers", "Dates", "Numeric"]],
+            ("A", "Integers", "<="),
+            ("E", "Dates", ">="),
+            ("B", "Floats", "=="),
+            ("B", "Numeric", "<"),
+            how="inner",
+        )
+        .sort_values(columns, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_multiple_eqs_variant(df, right):
@@ -2429,7 +2544,7 @@ def test_multiple_eqs_variant(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_ge_and_le_range_numbers(df, right):
     """Test output for multiple conditions."""
@@ -2461,7 +2576,7 @@ def test_dual_ge_and_le_range_numbers(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_ge_and_le_range_numbers_numba(df, right):
     """Test output for multiple conditions."""
@@ -2494,7 +2609,7 @@ def test_dual_ge_and_le_range_numbers_numba(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_ge_and_le_range_numbers_df_columns_only(df, right):
     """Test output for multiple conditions and select df only."""
@@ -2526,7 +2641,7 @@ def test_dual_ge_and_le_range_numbers_df_columns_only(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_ge_and_le_range_numbers_right_only(df, right):
     """Test output for multiple conditions and select right only."""
@@ -2556,7 +2671,7 @@ def test_dual_ge_and_le_range_numbers_right_only(df, right):
     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_ge_eq_and_le_numbers(df, right):
@@ -2571,22 +2686,19 @@ def test_ge_eq_and_le_numbers(df, right):
         .sort_values(columns, ignore_index=True)
     )
 
-    actual = (
-        df[["B", "A", "E"]]
-        .conditional_join(
-            right[["Floats", "Integers", "Dates"]],
-            ("A", "Integers", ">="),
-            ("E", "Dates", "<="),
-            ("B", "Floats", "=="),
-            how="inner",
-        )
-        .sort_values(columns, ignore_index=True)
-    )
-    actual = actual.filter(columns)
+    actual = df.conditional_join(
+        right,
+        ("A", "Integers", ">="),
+        ("E", "Dates", "<="),
+        ("B", "Floats", "=="),
+        how="inner",
+        df_columns=["B", "A", "E"],
+        right_columns=["Floats", "Integers", "Dates"],
+    ).sort_values(columns, ignore_index=True)
     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_ge_eq_and_le_numbers_binary_search(df, right):
@@ -2617,7 +2729,7 @@ def test_ge_eq_and_le_numbers_binary_search(df, right):
     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_ge_eq_and_le_numbers_force(df, right):
@@ -2632,23 +2744,21 @@ def test_ge_eq_and_le_numbers_force(df, right):
         .sort_values(columns, ignore_index=True)
     )
 
-    actual = (
-        df[["B", "A", "E"]]
-        .conditional_join(
-            right[["Floats", "Integers", "Dates"]],
-            ("A", "Integers", ">="),
-            ("E", "Dates", "<="),
-            ("B", "Floats", "=="),
-            how="inner",
-            force=True,
-        )
-        .sort_values(columns, ignore_index=True)
-    )
+    actual = df.conditional_join(
+        right,
+        ("A", "Integers", ">="),
+        ("E", "Dates", "<="),
+        ("B", "Floats", "=="),
+        how="inner",
+        force=True,
+        df_columns=["B", "A", "E"],
+        right_columns=["Floats", "Integers", "Dates"],
+    ).sort_values(columns, ignore_index=True)
     actual = actual.filter(columns)
     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_ge_eq_and_le_numbers_variant_numba(df, right):
@@ -2676,6 +2786,7 @@ def test_ge_eq_and_le_numbers_variant_numba(df, right):
             ("E", "Dates", ">"),
             ("B", "Floats", "=="),
             how="inner",
+            use_numba=True,
         )
         .sort_values(columns, ignore_index=True)
     )
@@ -2683,7 +2794,7 @@ def test_ge_eq_and_le_numbers_variant_numba(df, right):
     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_ge_eq_and_le_numbers_numba(df, right):
@@ -2714,7 +2825,7 @@ def test_ge_eq_and_le_numbers_numba(df, right):
     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_ge_eq_and_le_integers_numba(df, right):
@@ -2745,7 +2856,7 @@ def test_ge_eq_and_le_integers_numba(df, right):
     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_ge_eq_and_lt_integers_numba(df, right):
@@ -2776,7 +2887,7 @@ def test_ge_eq_and_lt_integers_numba(df, right):
     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_gt_eq_integers_numba(df, right):
@@ -2806,7 +2917,7 @@ def test_gt_eq_integers_numba(df, right):
     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_gt_eq_dates_numba(df, right):
@@ -2841,7 +2952,7 @@ def test_gt_eq_dates_numba(df, right):
     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_lt_eq_integers_numba(df, right):
@@ -2871,7 +2982,7 @@ def test_lt_eq_integers_numba(df, right):
     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_lt_eq_dates_numba(df, right):
@@ -2906,7 +3017,7 @@ def test_lt_eq_dates_numba(df, right):
     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_ge_eq_and_le_dates_numba(df, right):
@@ -2942,7 +3053,7 @@ def test_ge_eq_and_le_dates_numba(df, right):
     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_ge_eq_and_le_datess_numba(df, right):
@@ -2984,7 +3095,7 @@ def test_ge_eq_and_le_datess_numba(df, right):
     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_ge_eq_and_le_datess_numba_indices(df, right):
@@ -3024,7 +3135,208 @@ def test_ge_eq_and_le_datess_numba_indices(df, right):
     assert_index_equal(expected, actual, check_names=False)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
+def test_ne_eqq_datess_numba_indices(df, right):
+    """compare join indices for multiple conditions."""
+
+    expected = (
+        df.reset_index()
+        .dropna(subset=["E"])
+        .merge(
+            right.dropna(subset=["Dates"]),
+            left_on="E",
+            right_on="Dates",
+            how="inner",
+            sort=False,
+        )
+        .loc[
+            lambda df: df.B.ne(df.Numeric),
+            "index",
+        ]
+    )
+    expected = pd.Index(expected)
+
+    actual, _ = get_join_indices(
+        df,
+        right,
+        [
+            ("E", "Dates", "=="),
+            ("B", "Numeric", "!="),
+        ],
+        use_numba=True,
+    )
+    actual = df.index[actual]
+    assert_index_equal(expected, actual, check_names=False)
+
+
+@settings(deadline=None, max_examples=50)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
+def test_eq_le_indices_ragged_arrays_numba_bin_search(df, right):
+    """compare join indices."""
+
+    expected = (
+        df.assign(lindex=range(len(df)))
+        .merge(right.assign(rindex=range(len(right))), how="cross")
+        .loc[lambda df: df.E.eq(df.Dates) & df.A.le(df.Integers)]
+        .set_index("lindex")
+        .index.sort_values()
+    )
+
+    actual = get_join_indices(
+        df,
+        right,
+        [
+            ("E", "Dates", "=="),
+            ("A", "Integers", "<="),
+        ],
+        use_numba=True,
+    )
+    actual = pd.Index(actual[0], name="lindex").sort_values()
+    assert_index_equal(expected, actual)
+
+
+@settings(deadline=None, max_examples=50)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
+def test_eq_ne_indices_ragged_arrays_first_numba_bin_search(df, right):
+    """compare join indices."""
+
+    expected = (
+        df.assign(lindex=range(len(df)))
+        .merge(right.assign(rindex=range(len(right))), how="cross")
+        .loc[lambda df: df.E.eq(df.Dates) & df.A.ne(df.Integers)]
+        .groupby("lindex")
+        .rindex.min()
+        .sort_index(kind="stable")
+    )
+
+    lindex, rindex = get_join_indices(
+        df,
+        right,
+        [
+            ("E", "Dates", "=="),
+            ("A", "Integers", "!="),
+        ],
+        keep="first",
+        use_numba=True,
+    )
+    lindex = pd.Index(lindex, name="lindex")
+    actual = pd.Series(rindex, name="rindex", index=lindex).sort_index(
+        kind="stable"
+    )
+    assert_series_equal(expected, actual)
+
+
+@settings(deadline=None, max_examples=50)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
+def test_eq_ne_indices_ragged_arrays_last_numba_bin_search(df, right):
+    """compare join indices."""
+
+    expected = (
+        df.assign(lindex=range(len(df)))
+        .merge(right.assign(rindex=range(len(right))), how="cross")
+        .loc[lambda df: df.E.eq(df.Dates) & df.A.ne(df.Integers)]
+        .groupby("lindex")
+        .rindex.max()
+        .sort_index(kind="stable")
+    )
+
+    lindex, rindex = get_join_indices(
+        df,
+        right,
+        [
+            ("E", "Dates", "=="),
+            ("A", "Integers", "!="),
+        ],
+        keep="last",
+        use_numba=True,
+    )
+    lindex = pd.Index(lindex, name="lindex")
+    actual = pd.Series(rindex, name="rindex", index=lindex).sort_index(
+        kind="stable"
+    )
+    assert_series_equal(expected, actual)
+
+
+@settings(deadline=None, max_examples=50)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
+def test_eq_ge_ne_indices_ragged_arrays_first_numba_bin_search(df, right):
+    """compare join indices."""
+
+    expected = (
+        df.assign(lindex=range(len(df)))
+        .merge(right.assign(rindex=range(len(right))), how="cross")
+        .loc[
+            lambda df: df.E.eq(df.Dates)
+            & df.A.ne(df.Integers)
+            & df.B.ge(df.Numeric)
+        ]
+        .groupby("lindex")
+        .rindex.min()
+        .sort_index(kind="stable")
+    )
+
+    lindex, rindex = get_join_indices(
+        df,
+        right,
+        [
+            ("E", "Dates", "=="),
+            ("A", "Integers", "!="),
+            ("B", "Numeric", ">="),
+        ],
+        keep="first",
+        use_numba=True,
+    )
+    lindex = pd.Index(lindex, name="lindex")
+    actual = pd.Series(rindex, name="rindex", index=lindex).sort_index(
+        kind="stable"
+    )
+    assert_series_equal(expected, actual)
+
+
+@settings(deadline=None, max_examples=50)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
+def test_eq_ge_ne_indices_ragged_arrays_last_numba_bin_search(df, right):
+    """compare join indices."""
+
+    expected = (
+        df.assign(lindex=range(len(df)))
+        .merge(right.assign(rindex=range(len(right))), how="cross")
+        .loc[
+            lambda df: df.E.eq(df.Dates)
+            & df.A.ne(df.Integers)
+            & df.B.ge(df.Numeric)
+        ]
+        .groupby("lindex")
+        .rindex.max()
+        .sort_index(kind="stable")
+    )
+
+    lindex, rindex = get_join_indices(
+        df,
+        right,
+        [
+            ("E", "Dates", "=="),
+            ("A", "Integers", "!="),
+            ("B", "Numeric", ">="),
+        ],
+        keep="last",
+        use_numba=True,
+    )
+    lindex = pd.Index(lindex, name="lindex")
+    actual = pd.Series(rindex, name="rindex", index=lindex).sort_index(
+        kind="stable"
+    )
+    assert_series_equal(expected, actual)
+
+
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_eq_indices(df, right):
@@ -3055,7 +3367,69 @@ def test_eq_indices(df, right):
     assert_index_equal(expected, actual, check_names=False)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
+def test_eq_first_indices(df, right):
+    """compare join indices for single condition."""
+
+    expected = (
+        df.reset_index(names="l")
+        .merge(
+            right.reset_index(names="r"),
+            how="cross",
+        )
+        .query("E==Dates")
+        .groupby("l")
+        .r.min()
+        .sort_index()
+    )
+
+    left_index, right_index = get_join_indices(
+        df,
+        right,
+        [
+            ("E", "Dates", "=="),
+        ],
+        keep="first",
+    )
+    left_index = pd.Index(left_index, name="l")
+    actual = pd.Series(right_index, name="r", index=left_index).sort_index()
+    assert_series_equal(expected, actual)
+
+
+@settings(deadline=None, max_examples=50)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
+def test_eq_last_indices(df, right):
+    """compare join indices for single condition."""
+
+    expected = (
+        df.reset_index(names="l")
+        .merge(
+            right.reset_index(names="r"),
+            how="cross",
+        )
+        .query("E==Dates")
+        .groupby("l")
+        .r.max()
+        .sort_index()
+    )
+
+    left_index, right_index = get_join_indices(
+        df,
+        right,
+        [
+            ("E", "Dates", "=="),
+        ],
+        keep="last",
+    )
+    left_index = pd.Index(left_index, name="l")
+    actual = pd.Series(right_index, name="r", index=left_index).sort_index()
+    assert_series_equal(expected, actual)
+
+
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_eq_indices_binary_search(df, right):
@@ -3091,7 +3465,7 @@ def test_eq_indices_binary_search(df, right):
     assert_index_equal(expected, actual, check_names=False)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_eq_indices_ragged_arrays(df, right):
@@ -3121,7 +3495,198 @@ def test_eq_indices_ragged_arrays(df, right):
     assert_index_equal(lindex, actual, check_names=False)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=100)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
+def test_eq_indices_ragged_arrays_bin_search(df, right):
+    """compare join indices for single condition."""
+
+    expected = (
+        df.assign(lindex=range(len(df)))
+        .merge(right.assign(rindex=range(len(right))), how="cross")
+        .loc[lambda df: df.E.eq(df.Dates)]
+        .set_index("lindex")
+        .index.unique()
+    )
+
+    actual = get_join_indices(
+        df,
+        right,
+        [
+            ("E", "Dates", "=="),
+        ],
+        return_ranges=True,
+        use_binary_search_for_equi_join=True,
+    )
+    if isinstance(actual, tuple):
+        actual = pd.Index(actual[1], name="lindex")
+    else:
+        actual = pd.Index(actual["left_index"], name="lindex")
+        assert_index_equal(expected, actual)
+
+
+@settings(deadline=None, max_examples=50)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
+def test_eq_le_indices_ragged_arrays_bin_search(df, right):
+    """compare join indices."""
+
+    expected = (
+        df.assign(lindex=range(len(df)))
+        .merge(right.assign(rindex=range(len(right))), how="cross")
+        .loc[lambda df: df.E.eq(df.Dates) & df.A.le(df.Integers)]
+        .set_index("lindex")
+        .index.sort_values()
+    )
+
+    actual = get_join_indices(
+        df,
+        right,
+        [
+            ("E", "Dates", "=="),
+            ("A", "Integers", "<="),
+        ],
+        return_ranges=True,
+        use_binary_search_for_equi_join=True,
+    )
+    if isinstance(actual, tuple):
+        actual = pd.Index(actual[0], name="lindex")
+    else:
+        actual = pd.Index(actual["left_index"], name="lindex").repeat(
+            actual["ends"] - actual["starts"]
+        )
+        assert_index_equal(expected, actual.sort_values())
+
+
+@settings(deadline=None, max_examples=50)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
+def test_eq_ne_indices_ragged_arrays_first_bin_search(df, right):
+    """compare join indices."""
+
+    expected = (
+        df.assign(lindex=range(len(df)))
+        .merge(right.assign(rindex=range(len(right))), how="cross")
+        .loc[lambda df: df.E.eq(df.Dates) & df.A.ne(df.Integers)]
+        .groupby("lindex")
+        .rindex.min()
+        .sort_index(kind="stable")
+    )
+
+    lindex, rindex = get_join_indices(
+        df,
+        right,
+        [
+            ("E", "Dates", "=="),
+            ("A", "Integers", "!="),
+        ],
+        keep="first",
+        use_binary_search_for_equi_join=True,
+    )
+    lindex = pd.Index(lindex, name="lindex")
+    actual = pd.Series(rindex, name="rindex", index=lindex).sort_index(
+        kind="stable"
+    )
+    assert_series_equal(expected, actual)
+
+
+@settings(deadline=None, max_examples=50)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
+def test_eq_ne_indices_ragged_arrays_last_bin_search(df, right):
+    """compare join indices."""
+
+    expected = (
+        df.assign(lindex=range(len(df)))
+        .merge(right.assign(rindex=range(len(right))), how="cross")
+        .loc[lambda df: df.E.eq(df.Dates) & df.A.ne(df.Integers)]
+        .groupby("lindex")
+        .rindex.max()
+        .sort_index(kind="stable")
+    )
+
+    lindex, rindex = get_join_indices(
+        df,
+        right,
+        [
+            ("E", "Dates", "=="),
+            ("A", "Integers", "!="),
+        ],
+        keep="last",
+        use_binary_search_for_equi_join=True,
+    )
+    lindex = pd.Index(lindex, name="lindex")
+    actual = pd.Series(rindex, name="rindex", index=lindex).sort_index(
+        kind="stable"
+    )
+    assert_series_equal(expected, actual)
+
+
+@settings(deadline=None, max_examples=50)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
+def test_eq_ne_indices_ragged_arrays_first_not_bin_search(df, right):
+    """compare join indices."""
+
+    expected = (
+        df.assign(lindex=range(len(df)))
+        .merge(right.assign(rindex=range(len(right))), how="cross")
+        .loc[lambda df: df.E.eq(df.Dates) & df.A.ne(df.Integers)]
+        .groupby("lindex")
+        .rindex.min()
+        .sort_index(kind="stable")
+    )
+
+    lindex, rindex = get_join_indices(
+        df,
+        right,
+        [
+            ("E", "Dates", "=="),
+            ("A", "Integers", "!="),
+        ],
+        keep="first",
+        use_binary_search_for_equi_join=False,
+    )
+    lindex = pd.Index(lindex, name="lindex")
+    actual = pd.Series(rindex, name="rindex", index=lindex).sort_index(
+        kind="stable"
+    )
+    assert_series_equal(expected, actual)
+
+
+@settings(deadline=None, max_examples=50)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
+def test_eq_ne_indices_ragged_arrays_last_not_bin_search(df, right):
+    """compare join indices."""
+
+    expected = (
+        df.assign(lindex=range(len(df)))
+        .merge(right.assign(rindex=range(len(right))), how="cross")
+        .loc[lambda df: df.E.eq(df.Dates) & df.A.ne(df.Integers)]
+        .groupby("lindex")
+        .rindex.max()
+        .sort_index(kind="stable")
+    )
+
+    lindex, rindex = get_join_indices(
+        df,
+        right,
+        [
+            ("E", "Dates", "=="),
+            ("A", "Integers", "!="),
+        ],
+        keep="last",
+        use_binary_search_for_equi_join=False,
+    )
+    lindex = pd.Index(lindex, name="lindex")
+    actual = pd.Series(rindex, name="rindex", index=lindex).sort_index(
+        kind="stable"
+    )
+    assert_series_equal(expected, actual)
+
+
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_le_indices_ragged_arrays(df, right):
@@ -3152,7 +3717,7 @@ def test_le_indices_ragged_arrays(df, right):
     assert_index_equal(lindex, actual, check_names=False)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_lt_indices_ragged_arrays(df, right):
@@ -3184,7 +3749,7 @@ def test_lt_indices_ragged_arrays(df, right):
     assert_index_equal(lindex, actual, check_names=False)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_gt_indices_ragged_arrays(df, right):
@@ -3216,7 +3781,7 @@ def test_gt_indices_ragged_arrays(df, right):
     assert_index_equal(lindex, actual, check_names=False)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_ge_indices_ragged_arrays(df, right):
@@ -3249,7 +3814,7 @@ def test_ge_indices_ragged_arrays(df, right):
     assert_index_equal(lindex, actual, check_names=False)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_le_gt_indices_ragged_arrays(df, right):
@@ -3282,7 +3847,71 @@ def test_le_gt_indices_ragged_arrays(df, right):
     assert_index_equal(lindex, actual, check_names=False)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
+def test_le_ne_indices_ragged_arrays_first_numba(df, right):
+    """compare join indices for range join."""
+
+    expected = (
+        df.assign(lindex=range(len(df)))
+        .merge(
+            right.assign(rindex=range(len(right))),
+            how="cross",
+        )
+        .loc[lambda df: df.E.le(df.Dates) & df.B.ne(df.Numeric),]
+        .groupby("lindex")
+        .rindex.min()
+        .sort_index(kind="stable")
+    )
+
+    lindex, rindex = get_join_indices(
+        df,
+        right,
+        [("E", "Dates", "<="), ("B", "Numeric", "!=")],
+        use_numba=True,
+        keep="first",
+    )
+    lindex = pd.Index(lindex, name="lindex")
+    actual = pd.Series(rindex, name="rindex", index=lindex).sort_index(
+        kind="stable"
+    )
+    assert_series_equal(expected, actual)
+
+
+@settings(deadline=None, max_examples=50)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
+def test_le_ne_indices_ragged_arrays_last_numba(df, right):
+    """compare join indices for range join."""
+
+    expected = (
+        df.assign(lindex=range(len(df)))
+        .merge(
+            right.assign(rindex=range(len(right))),
+            how="cross",
+        )
+        .loc[lambda df: df.E.le(df.Dates) & df.B.ne(df.Numeric),]
+        .groupby("lindex")
+        .rindex.max()
+        .sort_index(kind="stable")
+    )
+
+    lindex, rindex = get_join_indices(
+        df,
+        right,
+        [("E", "Dates", "<="), ("B", "Numeric", "!=")],
+        use_numba=True,
+        keep="last",
+    )
+    lindex = pd.Index(lindex, name="lindex")
+    actual = pd.Series(rindex, name="rindex", index=lindex).sort_index(
+        kind="stable"
+    )
+    assert_series_equal(expected, actual)
+
+
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_le_ge_indices_ragged_arrays(df, right):
@@ -3315,7 +3944,7 @@ def test_le_ge_indices_ragged_arrays(df, right):
     assert_index_equal(lindex, actual, check_names=False)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_ge_le_indices_ragged_arrays(df, right):
@@ -3348,7 +3977,257 @@ def test_ge_le_indices_ragged_arrays(df, right):
     assert_index_equal(lindex, actual, check_names=False)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
+def test_ge_le_indices_ragged_arrays_numbaa(df, right):
+    """compare join indices for range join."""
+
+    expected = (
+        df.assign(lindex=range(len(df)))
+        .merge(
+            right.assign(rindex=range(len(right))),
+            how="cross",
+        )
+        .loc[
+            lambda df: df.E.ge(df.Dates) & df.B.le(df.Numeric),
+            ["lindex", "rindex"],
+        ]
+    )
+    lindex = pd.Index(expected["lindex"]).unique().sort_values()
+
+    actual, _ = get_join_indices(
+        df,
+        right,
+        [("E", "Dates", ">="), ("B", "Numeric", "<=")],
+        use_numba=True,
+    )
+    actual = pd.Index(actual).unique().sort_values()
+    assert_index_equal(lindex, actual, check_names=False)
+
+
+@settings(deadline=None, max_examples=50)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
+def test_ge_le_indices_ragged_arrays_first_numbaa(df, right):
+    """compare join indices for range join."""
+
+    expected = (
+        df.assign(lindex=range(len(df)))
+        .merge(
+            right.assign(rindex=range(len(right))),
+            how="cross",
+        )
+        .loc[lambda df: df.E.ge(df.Dates) & df.B.le(df.Numeric),]
+        .groupby("lindex")
+        .rindex.min()
+        .sort_index(kind="stable")
+    )
+
+    left_index, right_index = get_join_indices(
+        df,
+        right,
+        [("E", "Dates", ">="), ("B", "Numeric", "<=")],
+        use_numba=True,
+        keep="first",
+    )
+    left_index = pd.Index(left_index, name="lindex")
+    actual = pd.Series(
+        right_index, name="rindex", index=left_index
+    ).sort_index(kind="stable")
+    assert_series_equal(expected, actual)
+
+
+@settings(deadline=None, max_examples=50)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
+def test_ge_le_indices_ragged_arrays_last_numbaa(df, right):
+    """compare join indices for range join."""
+
+    expected = (
+        df.assign(lindex=range(len(df)))
+        .merge(
+            right.assign(rindex=range(len(right))),
+            how="cross",
+        )
+        .loc[lambda df: df.E.ge(df.Dates) & df.B.le(df.Numeric),]
+        .groupby("lindex")
+        .rindex.max()
+        .sort_index(kind="stable")
+    )
+
+    left_index, right_index = get_join_indices(
+        df,
+        right,
+        [("E", "Dates", ">="), ("B", "Numeric", "<=")],
+        use_numba=True,
+        keep="last",
+    )
+    left_index = pd.Index(left_index, name="lindex")
+    actual = pd.Series(
+        right_index, name="rindex", index=left_index
+    ).sort_index(kind="stable")
+    assert_series_equal(expected, actual)
+
+
+@settings(deadline=None, max_examples=50)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
+def test_gt_lt_indices_ragged_arrays_numbaa(df, right):
+    """compare join indices for range join."""
+
+    expected = (
+        df.assign(lindex=range(len(df)))
+        .merge(
+            right.assign(rindex=range(len(right))),
+            how="cross",
+        )
+        .loc[
+            lambda df: df.E.gt(df.Dates) & df.B.lt(df.Numeric),
+            ["lindex", "rindex"],
+        ]
+    )
+    lindex = pd.Index(expected["lindex"]).unique().sort_values()
+
+    actual, _ = get_join_indices(
+        df,
+        right,
+        [("E", "Dates", ">"), ("B", "Numeric", "<")],
+        use_numba=True,
+    )
+    actual = pd.Index(actual).unique().sort_values()
+    assert_index_equal(lindex, actual, check_names=False)
+
+
+@settings(deadline=None, max_examples=50)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
+def test_gt_lt_indices_ragged_arrays_first_numbaa(df, right):
+    """compare join indices for range join."""
+
+    expected = (
+        df.assign(lindex=range(len(df)))
+        .merge(
+            right.assign(rindex=range(len(right))),
+            how="cross",
+        )
+        .loc[lambda df: df.E.gt(df.Dates) & df.B.lt(df.Numeric),]
+        .groupby("lindex")
+        .rindex.min()
+        .sort_index(kind="stable")
+    )
+
+    left_index, right_index = get_join_indices(
+        df,
+        right,
+        [("E", "Dates", ">"), ("B", "Numeric", "<")],
+        use_numba=True,
+        keep="first",
+    )
+    left_index = pd.Index(left_index, name="lindex")
+    actual = pd.Series(
+        right_index, name="rindex", index=left_index
+    ).sort_index(kind="stable")
+    assert_series_equal(expected, actual)
+
+
+@settings(deadline=None, max_examples=50)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
+def test_gt_lt_indices_ragged_arrays_last_numbaa(df, right):
+    """compare join indices for range join."""
+
+    expected = (
+        df.assign(lindex=range(len(df)))
+        .merge(
+            right.assign(rindex=range(len(right))),
+            how="cross",
+        )
+        .loc[lambda df: df.E.gt(df.Dates) & df.B.lt(df.Numeric),]
+        .groupby("lindex")
+        .rindex.max()
+        .sort_index(kind="stable")
+    )
+
+    left_index, right_index = get_join_indices(
+        df,
+        right,
+        [("E", "Dates", ">"), ("B", "Numeric", "<")],
+        use_numba=True,
+        keep="last",
+    )
+    left_index = pd.Index(left_index, name="lindex")
+    actual = pd.Series(
+        right_index, name="rindex", index=left_index
+    ).sort_index(kind="stable")
+    assert_series_equal(expected, actual)
+
+
+@settings(deadline=None, max_examples=50)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
+def test_eq_lt_indices_ragged_arrays_first_numbaa(df, right):
+    """compare join indices for range join."""
+
+    expected = (
+        df.assign(lindex=range(len(df)))
+        .merge(
+            right.assign(rindex=range(len(right))),
+            how="cross",
+        )
+        .loc[lambda df: df.E.eq(df.Dates) & df.B.lt(df.Numeric),]
+        .groupby("lindex")
+        .rindex.min()
+        .sort_index(kind="stable")
+    )
+
+    left_index, right_index = get_join_indices(
+        df,
+        right,
+        [("E", "Dates", "=="), ("B", "Numeric", "<")],
+        use_numba=True,
+        keep="first",
+    )
+    left_index = pd.Index(left_index, name="lindex")
+    actual = pd.Series(
+        right_index, name="rindex", index=left_index
+    ).sort_index(kind="stable")
+    assert_series_equal(expected, actual)
+
+
+@settings(deadline=None, max_examples=50)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
+def test_eq_lt_indices_ragged_arrays_last_numbaa(df, right):
+    """compare join indices for range join."""
+
+    expected = (
+        df.assign(lindex=range(len(df)))
+        .merge(
+            right.assign(rindex=range(len(right))),
+            how="cross",
+        )
+        .loc[lambda df: df.E.eq(df.Dates) & df.B.lt(df.Numeric),]
+        .groupby("lindex")
+        .rindex.max()
+        .sort_index(kind="stable")
+    )
+
+    left_index, right_index = get_join_indices(
+        df,
+        right,
+        [("E", "Dates", "=="), ("B", "Numeric", "<")],
+        use_numba=True,
+        keep="last",
+    )
+    left_index = pd.Index(left_index, name="lindex")
+    actual = pd.Series(
+        right_index, name="rindex", index=left_index
+    ).sort_index(kind="stable")
+    assert_series_equal(expected, actual)
+
+
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_range_indices_ragged_arrays(df, right):
@@ -3381,7 +4260,7 @@ def test_range_indices_ragged_arrays(df, right):
     assert_index_equal(l_index, actual, check_names=False)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_ge_eq_and_le_datess_indices(df, right):
@@ -3419,7 +4298,7 @@ def test_ge_eq_and_le_datess_indices(df, right):
     assert_index_equal(expected, actual, check_names=False)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_ge_eq_and_le_datess_indices_binary_search(df, right):
@@ -3463,7 +4342,7 @@ def test_ge_eq_and_le_datess_indices_binary_search(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_multiple_non_equi(df, right):
     """Test output for multiple conditions."""
@@ -3499,7 +4378,7 @@ def test_multiple_non_equi(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_multiple_non_equi_numba_(df, right):
     """Test output for multiple conditions."""
@@ -3534,7 +4413,7 @@ def test_multiple_non_equi_numba_(df, right):
     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_multiple_non_equii(df, right):
@@ -3573,7 +4452,7 @@ def test_multiple_non_equii(df, right):
     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_multiple_non_equii_numba_(df, right):
@@ -3612,7 +4491,7 @@ def test_multiple_non_equii_numba_(df, right):
     assert_frame_equal(expected, actual)
 
 
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 @pytest.mark.turtle
 def test_multiple_non_equii_col_syntax(df, right):
@@ -3652,7 +4531,7 @@ def test_multiple_non_equii_col_syntax(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_multiple_non_eqi(df, right):
     """Test output for multiple conditions."""
@@ -3698,7 +4577,7 @@ def test_multiple_non_eqi(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_multiple_non_eqi_numba(df, right):
     """Test output for multiple conditions."""
@@ -3744,7 +4623,7 @@ def test_multiple_non_eqi_numba(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_multiple_non_eq(df, right):
     """Test output for multiple conditions."""
@@ -3784,7 +4663,7 @@ def test_multiple_non_eq(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_multiple_non_eq_numba(df, right):
     """Test output for multiple conditions."""
@@ -3830,7 +4709,7 @@ def test_multiple_non_eq_numba(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_multiple_non_eq_first(df, right):
     """Test output for multiple conditions - grab only the first match."""
@@ -3870,7 +4749,7 @@ def test_multiple_non_eq_first(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_multiple_non_eq_first_numba(df, right):
     """Test output for multiple conditions - grab only the first match."""
@@ -3911,7 +4790,7 @@ def test_multiple_non_eq_first_numba(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_multiple_non_eq_last(df, right):
     """Test output for multiple conditions - grab only the last match."""
@@ -3951,7 +4830,7 @@ def test_multiple_non_eq_last(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_multiple_non_eq_last_numba(df, right):
     """Test output for multiple conditions - grab only the last match."""
@@ -3992,7 +4871,7 @@ def test_multiple_non_eq_last_numba(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_non_eq_last(df, right):
     """Test output for dual conditions - grab only the last match."""
@@ -4027,7 +4906,7 @@ def test_dual_non_eq_last(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_non_eq_last_numba(df, right):
     """Test output for dual conditions - grab only the last match."""
@@ -4063,7 +4942,7 @@ def test_dual_non_eq_last_numba(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_multiple_eqs(df, right):
     """Test output for multiple conditions."""
@@ -4097,7 +4976,44 @@ def test_multiple_eqs(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
+@given(df=conditional_df(), right=conditional_right())
+def test_multiple__eqqs(df, right):
+    """Test output for multiple conditions."""
+
+    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+    expected = (
+        df.merge(
+            right,
+            how="cross",
+        )
+        .loc[
+            lambda df: df.E.gt(df.Dates)
+            & df.B.ge(df.Floats)
+            & df.A.eq(df.Integers),
+            columns,
+        ]
+        .sort_values(columns, ignore_index=True)
+    )
+    expected = expected.filter(columns)
+    actual = (
+        df[["B", "A", "E"]]
+        .conditional_join(
+            right[["Floats", "Integers", "Dates"]],
+            ("E", "Dates", ">"),
+            ("B", "Floats", ">="),
+            ("A", "Integers", "=="),
+            how="inner",
+            use_binary_search_for_equi_join=True,
+        )
+        .sort_values(columns, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_multiple_eqs_outer(df, right):
     """Test output for multiple conditions."""
@@ -4151,7 +5067,7 @@ def test_multiple_eqs_outer(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_multiple_eqs_col_syntax(df, right):
     """Test output for multiple conditions."""
@@ -4185,7 +5101,7 @@ def test_multiple_eqs_col_syntax(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_eq_strings(df, right):
     """Test output for joins on strings."""
@@ -4605,7 +5521,7 @@ def test_numba_equi_extension_array():
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_greater_than_dates_agg(df, right):
     """Test output for a single condition. ">"."""
@@ -4635,7 +5551,7 @@ def test_single_condition_greater_than_dates_agg(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_less_than_dates_agg(df, right):
     """Test output for a single condition. ">"."""
@@ -4665,7 +5581,7 @@ def test_single_condition_less_than_dates_agg(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_condition__agg(df, right):
     """Test output for a dual conditions."""
@@ -4676,58 +5592,28 @@ def test_dual_condition__agg(df, right):
         .merge(right, how="cross")
         .query("E <= Dates and A > Integers")
         .groupby("l", as_index=False)
-        .agg({"Numeric": ["size", "count", "min", "max", "sum"]})
-        .loc[:, ["Numeric"]]
-    )
-
-    actual = df.conditional_join(
-        right,
-        ("E", "Dates", "<="),
-        ("A", "Integers", ">"),
-        aggfunc=[
-            ("Numeric", "size"),
-            ("Numeric", "count"),
-            ("Numeric", "min"),
-            ("Numeric", "max"),
-            ("Numeric", "sum"),
-        ],
-    ).loc[:, ["Numeric"]]
-    assert_frame_equal(expected, actual)
-
-
-@pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
-@given(df=conditional_df(), right=conditional_right())
-def test_dual_condition__agg_extension(df, right):
-    """Test output for a dual conditions."""
-    expected = (
-        df.reset_index(names="l")
-        .merge(right, how="cross")
-        .query("E <= Dates and A > Integers")
-        .groupby("l", as_index=False)
         .agg({"Numeric": ["size", "count", "min", "max"]})
         .loc[:, ["Numeric"]]
-        .astype(
-            {("Numeric", "size"): np.int64, ("Numeric", "count"): np.int64}
-        )
     )
 
     actual = df.conditional_join(
         right,
         ("E", "Dates", "<="),
         ("A", "Integers", ">"),
+        df_columns=["E", "A"],
         aggfunc=[
             ("Numeric", "size"),
             ("Numeric", "count"),
             ("Numeric", "min"),
             ("Numeric", "max"),
+            # ("Numeric", "sum"),
         ],
     ).loc[:, ["Numeric"]]
     assert_frame_equal(expected, actual)
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_condition_ne_agg(df, right):
     """Test output for a dual conditions."""
@@ -4758,7 +5644,7 @@ def test_dual_condition_ne_agg(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_condition_range_ne_agg(df, right):
     """Test output for a dual conditions."""
@@ -4792,7 +5678,7 @@ def test_dual_condition_range_ne_agg(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_condition_eq_range_ne_agg(df, right):
     """Test aggregation for an equi join."""
@@ -4828,7 +5714,7 @@ def test_dual_condition_eq_range_ne_agg(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_dual_condition_eq_range_ne_agg_pd(df, right):
     """Test aggregation for an equi join."""
@@ -4859,7 +5745,7 @@ def test_dual_condition_eq_range_ne_agg_pd(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_agg_eq_range_agg(df, right):
     """Test aggregation for an equi join."""
@@ -4894,7 +5780,7 @@ def test_agg_eq_range_agg(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_agg_eq_range_agg_pd(df, right):
     """Test aggregation for an equi join."""
@@ -4924,7 +5810,7 @@ def test_agg_eq_range_agg_pd(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_agg_dual_eq__agg(df, right):
     """Test aggregation for an equi join."""
@@ -4959,7 +5845,7 @@ def test_agg_dual_eq__agg(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_agg_dual_eq__agg_pd(df, right):
     """Test aggregation for an equi join."""
@@ -4989,7 +5875,7 @@ def test_agg_dual_eq__agg_pd(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_agg_dual_eq_ne_agg(df, right):
     """Test aggregation for an equi join."""
@@ -5024,7 +5910,7 @@ def test_agg_dual_eq_ne_agg(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_agg_dual_eq_ne_agg_pd(df, right):
     """Test aggregation for an equi join."""
@@ -5054,7 +5940,7 @@ def test_agg_dual_eq_ne_agg_pd(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_agg_eq_only_agg(df, right):
     """Test aggregation for an equi join."""
@@ -5086,7 +5972,39 @@ def test_agg_eq_only_agg(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=50)
+@given(df=conditional_df(), right=conditional_right())
+def test_agg_eq_nee_only_agg(df, right):
+    """Test aggregation for an equi join."""
+    # sorting is done to ensure correctness for sum on floats
+    right = right.sort_values(["Dates", "Integers"], ignore_index=True)
+    expected = (
+        df.reset_index(names="l")
+        .merge(right, how="cross")
+        .query("E == Dates and A != Integers")
+        .groupby("l", as_index=False)
+        .agg({"Numeric": ["size", "count", "min", "max", "sum"]})
+        .loc[:, ["Numeric"]]
+    )
+
+    actual = df.conditional_join(
+        right,
+        ("E", "Dates", "=="),
+        ("A", "Integers", "!="),
+        aggfunc=[
+            ("Numeric", "size"),
+            ("Numeric", "count"),
+            ("Numeric", "min"),
+            ("Numeric", "max"),
+            ("Numeric", "sum"),
+        ],
+        use_binary_search_for_equi_join=True,
+    ).loc[:, ["Numeric"]]
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=50)
 @given(df=conditional_df(), right=conditional_right())
 def test_agg_eq_only_agg_pd(df, right):
     """Test aggregation for an equi join."""
@@ -5111,4 +6029,765 @@ def test_agg_eq_only_agg_pd(df, right):
             ("Numeric", "sum"),
         ],
     ).loc[:, ["Numeric"]]
+    assert_frame_equal(expected, actual)
+
+
+@pytest.fixture
+def dfmi():
+    def mklbl(prefix, n):
+        return ["%s%s" % (prefix, i) for i in range(n)]
+
+    miindex = pd.MultiIndex.from_product(
+        [mklbl("A", 4), mklbl("B", 2), mklbl("C", 4), mklbl("D", 2)]
+    )
+
+    micolumns = pd.MultiIndex.from_tuples(
+        [("a", "foo"), ("a", "bar"), ("b", "foo"), ("b", "bah")],
+        names=["lvl0", "lvl1"],
+    )
+
+    dfmi = (
+        pd.DataFrame(
+            np.arange(len(miindex) * len(micolumns)).reshape(
+                (len(miindex), len(micolumns))
+            ),
+            index=miindex,
+            columns=micolumns,
+        )
+        .sort_index()
+        .sort_index(axis=1)
+    )
+    return dfmi
+
+
+def test_agg_multi(dfmi):
+    """Test agg on a MultiIndex"""
+
+    expected = (
+        dfmi.assign(l=range(len(dfmi)))
+        .merge(dfmi, how="cross")
+        .loc[lambda df: df[("a_x", "bar")] > df[("b_y", "bah")]]
+        .groupby("l")[[("b_y", "foo")]]
+        .sum()
+        .squeeze()
+        .reset_index(drop=True)
+    )
+    expected.name = "sum"
+    actual = (
+        dfmi.conditional_join(
+            dfmi,
+            (("a", "bar"), ("b", "bah"), ">"),
+            aggfunc=[(("b", "foo"), "sum")],
+        )
+        .select(columns={-1: "sum"})
+        .squeeze()
+        .alias("sum")
+        .reset_index(drop=True)
+    )
+
+    assert_series_equal(expected, actual)
+
+
+def test_agg_multi_empty(dfmi):
+    """Test agg on a MultiIndex"""
+
+    expected = (
+        dfmi.assign(l=range(len(dfmi)))
+        .merge(dfmi.assign(rar=2000), how="cross")
+        .loc[lambda df: df[("a_x", "bar")] > df[("rar", "")]]
+        .groupby("l", as_index=False)[[("b_y", "foo")]]
+        .agg(["sum", "size"])
+        .droplevel([0, 1], axis="columns")
+        .loc[:, ["sum", "size"]]
+    )
+    expected.name = "sum"
+    actual = (
+        dfmi.conditional_join(
+            dfmi.assign(rar=2000),
+            (("a", "bar"), ("rar", ""), ">"),
+            aggfunc=[(("b", "foo"), "sum"), (("b", "foo"), "size")],
+        )
+        .droplevel([0, 1], axis="columns")
+        .loc[:, ["sum", "size"]]
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+def test_extension_eq_agg():
+    """Test aggregation."""
+    df1 = pd.DataFrame(
+        {"id": [1, 1, 1, 2, 2, 3], "value_1": [2, 5, 7, 1, 3, 4]}
+    )
+    df1 = df1.astype({"value_1": "Int64"})
+    df2 = pd.DataFrame(
+        {
+            "id": [1, 1, 1, 1, 2, 2, 2, 3],
+            "value_2A": [0, 3, 7, 12, 0, 2, 3, 1],
+            "value_2B": [1, 5, 9, 15, 1, 4, 6, 3],
+        }
+    )
+    df2 = df2.astype({"value_2A": "Int64", "value_2B": "Int64"})
+    actual = (
+        df1.conditional_join(
+            df2,
+            ("id", "id", "=="),
+            ("value_1", "value_2A", ">"),
+            use_binary_search_for_equi_join=True,
+            aggfunc=[("value_2B", "sum")],
+        )
+        .loc[:, ["value_2B"]]
+        .droplevel(0, axis="columns")
+    )
+    expected = (
+        df1.reset_index(names="l")
+        .merge(df2, on="id")
+        .query("value_1>value_2A")
+        .groupby("l", as_index=False)
+        .value_2B.agg(["sum"])
+        .loc[:, ["sum"]]
+    )
+    assert_frame_equal(expected, actual)
+
+
+def test_extension_eqq_agg():
+    """Test aggregation."""
+    df1 = pd.DataFrame(
+        {"id": [1, 1, 1, 2, 2, 3], "value_1": [2, 5, 7, 1, 3, 4]}
+    )
+    df1 = df1.astype({"value_1": "Int64"})
+    df2 = pd.DataFrame(
+        {
+            "id": [1, 1, 1, 1, 34, 2, 2, 3],
+            "value_2A": [0, 3, 7, 12, 0, 2, 3, 1],
+            "value_2B": [1, 5, 9, 15, 1, 4, 6, 3],
+        }
+    )
+    df2 = df2.astype({"value_2A": "Int64", "value_2B": "Int64"})
+    actual = (
+        df1.conditional_join(
+            df2,
+            ("id", "id", "=="),
+            ("value_1", "value_2A", ">"),
+            ("value_1", "value_2B", ">"),
+            use_binary_search_for_equi_join=True,
+            aggfunc=[("value_2B", "sum")],
+        )
+        .loc[:, ["value_2B"]]
+        .droplevel(0, axis="columns")
+    )
+    expected = (
+        df1.reset_index(names="l")
+        .merge(df2, on="id")
+        .query("value_2A<value_1 and value_1>value_2B")
+        .groupby("l", as_index=False)
+        .value_2B.agg(["sum"])
+        .loc[:, ["sum"]]
+    )
+    assert_frame_equal(expected, actual)
+
+
+def test_extension_eqq_mix_agg():
+    """Test aggregation."""
+    df1 = pd.DataFrame(
+        {"id": [1, 1, 11, 2, 2, 3], "value_1": [2, 5, 7, 1, 3, 4]}
+    )
+    df1 = df1.astype({"value_1": "Int64"})
+    df2 = pd.DataFrame(
+        {
+            "id": [1, 1, 1, 1, 34, 2, 2, 3],
+            "value_2A": [0, 3, 7, 12, 0, 2, 3, 1],
+            "value_2B": [1, 5, 9, 15, 1, 4, 6, 3],
+        }
+    )
+    df2 = df2.astype({"value_2A": "Int64", "value_2B": "Int64"})
+    actual = (
+        df1.conditional_join(
+            df2,
+            ("id", "id", "=="),
+            ("value_1", "value_2A", ">"),
+            use_binary_search_for_equi_join=True,
+            aggfunc=[("value_2B", "sum")],
+        )
+        .loc[:, ["value_2B"]]
+        .droplevel(0, axis="columns")
+    )
+    expected = (
+        df1.reset_index(names="l")
+        .merge(df2, on="id")
+        .query("value_2A<value_1")
+        .groupby("l", as_index=False)
+        .value_2B.agg(["sum"])
+        .loc[:, ["sum"]]
+    )
+    assert_frame_equal(expected, actual)
+
+
+def test_extension_eq_inner():
+    """Test equi join."""
+    df1 = pd.DataFrame(
+        {"id": [1, 1, 1, 2, 2, 3], "value_1": [2, 5, 7, 1, 3, 4]}
+    )
+    df1 = df1.astype({"value_1": "Int64"})
+    df2 = pd.DataFrame(
+        {
+            "id": [1, 1, 1, 1, 2, 2, 2, 3],
+            "value_2A": [0, 3, 7, 12, 0, 2, 3, 1],
+            "value_2B": [1, 5, 9, 15, 1, 4, 6, 3],
+        }
+    )
+    df2 = df2.astype({"value_2A": "Int64", "value_2B": "Int64"})
+    actual = df1.conditional_join(
+        df2,
+        ("id", "id", "=="),
+        ("value_1", "value_2A", ">"),
+        use_binary_search_for_equi_join=True,
+        df_columns="id",
+        right_columns="value_2A",
+    ).sort_values(["id", "value_2A"], ignore_index=True, kind="stable")
+    expected = (
+        df1.reset_index(names="l")
+        .merge(df2, on="id")
+        .query("value_1>value_2A")
+        .loc[:, ["id", "value_2A"]]
+        .sort_values(["id", "value_2A"], ignore_index=True, kind="stable")
+    )
+    assert_frame_equal(expected, actual)
+
+
+def test_extension_eqq_inner():
+    """Test equi join."""
+    df1 = pd.DataFrame(
+        {"id": [1, 1, 1, 2, 2, 3], "value_1": [2, 5, 7, 1, 3, 4]}
+    )
+    df1 = df1.astype({"value_1": "Int64"})
+    df2 = pd.DataFrame(
+        {
+            "id": [1, 1, 1, 1, 2, 2, 2, 3],
+            "value_2A": [0, 3, 7, 12, 0, 2, 3, 1],
+            "value_2B": [1, 5, 9, 15, 1, 4, 6, 3],
+        }
+    )
+    df2 = df2.astype({"value_2A": "Int64", "value_2B": "Int64"})
+    actual = df1.conditional_join(
+        df2,
+        ("id", "id", "=="),
+        ("value_1", "value_2A", ">"),
+        ("value_1", "value_2B", ">"),
+        use_binary_search_for_equi_join=True,
+        df_columns="id",
+        right_columns="value*",
+    ).sort_values(
+        ["id", "value_2A", "value_2B"], ignore_index=True, kind="stable"
+    )
+    expected = (
+        df1.reset_index(names="l")
+        .merge(df2, on="id")
+        .query("value_2A<value_1 and value_1>value_2B")
+        .loc[:, ["id", "value_2A", "value_2B"]]
+        .sort_values(
+            ["id", "value_2A", "value_2B"], ignore_index=True, kind="stable"
+        )
+    )
+    assert_frame_equal(expected, actual)
+
+
+def test_extension_eqq_inner_first():
+    """Test equi join."""
+    df1 = pd.DataFrame(
+        {"id": [1, 1, 1, 2, 2, 3], "value_1": [2, 5, 7, 1, 3, 4]}
+    )
+    df1 = df1.astype({"value_1": "Int64"})
+    df2 = pd.DataFrame(
+        {
+            "id": [1, 1, 1, 1, 2, 2, 2, 3],
+            "value_2A": [0, 3, 7, 12, 0, 2, 3, 1],
+            "value_2B": [1, 5, 9, 15, 1, 4, 6, 3],
+        }
+    )
+    df2 = df2.astype({"value_2A": "Int64", "value_2B": "Int64"})
+    left_index, right_index = get_join_indices(
+        df1,
+        df2,
+        [
+            ("id", "id", "=="),
+            ("value_1", "value_2A", ">"),
+            ("value_1", "value_2B", ">"),
+        ],
+        use_binary_search_for_equi_join=True,
+        keep="first",
+    )
+    left_index = pd.Index(left_index, name="l")
+    actual = pd.Series(right_index, index=left_index, name="r").sort_index(
+        kind="stable"
+    )
+    expected = (
+        df1.reset_index(names="l")
+        .merge(df2.reset_index(names="r"), on="id")
+        .query("value_2A<value_1 and value_1>value_2B")
+        .groupby("l")
+        .r.min()
+        .sort_index(kind="stable")
+    )
+    assert_series_equal(expected, actual)
+
+
+def test_extension_eqq_inner_last():
+    """Test equi join."""
+    df1 = pd.DataFrame(
+        {"id": [1, 1, 1, 2, 2, 3], "value_1": [2, 5, 7, 1, 3, 4]}
+    )
+    df1 = df1.astype({"value_1": "Int64"})
+    df2 = pd.DataFrame(
+        {
+            "id": [1, 1, 1, 1, 2, 2, 2, 3],
+            "value_2A": [0, 3, 7, 12, 0, 2, 3, 1],
+            "value_2B": [1, 5, 9, 15, 1, 4, 6, 3],
+        }
+    )
+    df2 = df2.astype({"value_2A": "Int64", "value_2B": "Int64"})
+    left_index, right_index = get_join_indices(
+        df1,
+        df2,
+        [
+            ("id", "id", "=="),
+            ("value_1", "value_2A", ">"),
+            ("value_1", "value_2B", ">"),
+        ],
+        use_binary_search_for_equi_join=True,
+        keep="last",
+    )
+    left_index = pd.Index(left_index, name="l")
+    actual = pd.Series(right_index, index=left_index, name="r").sort_index(
+        kind="stable"
+    )
+    expected = (
+        df1.reset_index(names="l")
+        .merge(df2.reset_index(names="r"), on="id")
+        .query("value_2A<value_1 and value_1>value_2B")
+        .groupby("l")
+        .r.max()
+        .sort_index(kind="stable")
+    )
+    assert_series_equal(expected, actual)
+
+
+def test_extension_eqq_no_match():
+    """Test equi join."""
+    df1 = pd.DataFrame(
+        {"id": [1, 1, 1, 2, 2, 3], "value_1": [2, 5, 7, 1, 3, 4]}
+    )
+    df1 = df1.astype({"value_1": "Int64"})
+    df2 = pd.DataFrame(
+        {
+            "id": [1, 1, 1, 1, 2, 2, 2, 3],
+            "value_2A": [0, 3, 7, 12, 0, 2, 3, 1],
+            "value_2B": [1, 5, 9, 15, 1, 4, 6, 3],
+            "absurd": pd.Series(100, dtype="Int64").repeat(8),
+        }
+    )
+    df2 = df2.astype({"value_2A": "Int64", "value_2B": "Int64"})
+    actual = df1.conditional_join(
+        df2,
+        ("id", "id", "=="),
+        ("value_1", "value_2A", ">"),
+        ("value_1", "value_2B", ">"),
+        ("value_1", "absurd", ">"),
+        use_binary_search_for_equi_join=True,
+        df_columns="id",
+        right_columns="value*",
+    ).sort_values(
+        ["id", "value_2A", "value_2B"], ignore_index=True, kind="stable"
+    )
+    expected = (
+        df1.reset_index(names="l")
+        .merge(df2, on="id")
+        .query("value_2A<value_1 and value_1>value_2B and value_1>absurd")
+        .loc[:, ["id", "value_2A", "value_2B"]]
+        .sort_values(
+            ["id", "value_2A", "value_2B"], ignore_index=True, kind="stable"
+        )
+    )
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=50)
+@given(df=conditional_df(), right=conditional_right())
+def test_agg_eq_range_pd_agg(df, right):
+    """Test aggregation for an equi join."""
+    expected = (
+        df.reset_index(names="l")
+        .merge(right, how="cross")
+        .query("E > Dates and A == Integers and B < Floats")
+        .groupby("l", as_index=False)
+        .agg({"Numeric": ["size", "count", "min", "max", "sum"]})
+        .loc[:, ["Numeric"]]
+    )
+
+    actual = df.conditional_join(
+        right,
+        ("E", "Dates", ">"),
+        ("A", "Integers", "=="),
+        ("B", "Floats", "<"),
+        aggfunc=[
+            ("Numeric", "size"),
+            ("Numeric", "count"),
+            ("Numeric", "min"),
+            ("Numeric", "max"),
+            ("Numeric", "sum"),
+        ],
+    ).loc[:, ["Numeric"]]
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=50)
+@given(df=conditional_df(), right=conditional_right())
+def test_agg_eq_range_join_pd__agg(df, right):
+    """Test aggregation for an equi join."""
+    right = right.drop_duplicates("Integers")
+    expected = (
+        df.reset_index(names="l")
+        .merge(right, how="cross")
+        .query("A == Integers")
+        .groupby("l", as_index=False)
+        .agg({"Numeric": ["size", "count", "min", "max", "sum"]})
+        .loc[:, ["Numeric"]]
+    )
+
+    actual = df.conditional_join(
+        right,
+        ("A", "Integers", "=="),
+        aggfunc=[
+            ("Numeric", "size"),
+            ("Numeric", "count"),
+            ("Numeric", "min"),
+            ("Numeric", "max"),
+            ("Numeric", "sum"),
+        ],
+    ).loc[:, ["Numeric"]]
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=50)
+@given(df=conditional_df(), right=conditional_right())
+def test_agg_eq_sing_range_join_pd_ints_agg(df, right):
+    """Test aggregation for an equi join."""
+    expected = (
+        df.reset_index(names="l")
+        .merge(right, how="cross")
+        .query("E == Dates")
+        .groupby("l", as_index=False)
+        .agg({"Integers": ["size", "count", "min", "max", "sum"]})
+        .loc[:, ["Integers"]]
+    )
+
+    actual = df.conditional_join(
+        right,
+        ("E", "Dates", "=="),
+        aggfunc=[
+            ("Integers", "size"),
+            ("Integers", "count"),
+            ("Integers", "min"),
+            ("Integers", "max"),
+            ("Integers", "sum"),
+        ],
+    ).loc[:, ["Integers"]]
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=50)
+@given(df=conditional_df(), right=conditional_right())
+def test_agg_eq_range_join_pd_ints_agg(df, right):
+    """Test aggregation for an equi join."""
+    expected = (
+        df.reset_index(names="l")
+        .merge(right, how="cross")
+        .query("E == Dates and B > Numeric")
+        .groupby("l", as_index=False)
+        .agg({"Integers": ["size", "count", "min", "max", "sum"]})
+        .loc[:, ["Integers"]]
+    )
+
+    actual = df.conditional_join(
+        right,
+        ("E", "Dates", "=="),
+        ("B", "Numeric", ">"),
+        aggfunc=[
+            ("Integers", "size"),
+            ("Integers", "count"),
+            ("Integers", "min"),
+            ("Integers", "max"),
+            ("Integers", "sum"),
+        ],
+    ).loc[:, ["Integers"]]
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=50)
+@given(df=conditional_df(), right=conditional_right())
+def test__eq_range_join_pd__(df, right):
+    """Test output for an equi join."""
+    right = right.drop_duplicates(["Integers", "Numeric"])
+    expected = (
+        df.reset_index(names="l")
+        .merge(right, how="cross")
+        .query("A == Integers and B==Numeric and E > Dates")
+        .loc[:, ["A", "Integers"]]
+        .sort_values(["A", "Integers"], ignore_index=True)
+    )
+
+    actual = (
+        df.conditional_join(
+            right,
+            ("A", "Integers", "=="),
+            ("B", "Numeric", "=="),
+            ("E", "Dates", ">"),
+        )
+        .loc[:, ["A", "Integers"]]
+        .sort_values(["A", "Integers"], ignore_index=True)
+    )
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=50)
+@given(df=conditional_df(), right=conditional_right())
+def test__eq_range_join_pd__first(df, right):
+    """Test output for an equi join."""
+    right = right.drop_duplicates(["Integers", "Numeric"], ignore_index=True)
+    expected = (
+        df.reset_index(names="l")
+        .merge(right.reset_index(names="r"), how="cross")
+        .query("A == Integers and B==Numeric and E > Dates")
+        .groupby("l")
+        .r.min()
+        .sort_index()
+    )
+    left_index, right_index = get_join_indices(
+        df,
+        right,
+        [("A", "Integers", "=="), ("B", "Numeric", "=="), ("E", "Dates", ">")],
+        keep="first",
+    )
+    left_index = pd.Index(left_index, name="l")
+    actual = pd.Series(right_index, index=left_index, name="r").sort_index()
+    assert_series_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=50)
+@given(df=conditional_df(), right=conditional_right())
+def test__eq_range_join_pd__last(df, right):
+    """Test output for an equi join."""
+    right = right.drop_duplicates(["Integers"], ignore_index=True)
+    expected = (
+        df.reset_index(names="l")
+        .merge(right.reset_index(names="r"), how="cross")
+        .query("A == Integers and E > Dates")
+        .groupby("l")
+        .r.max()
+        .sort_index()
+    )
+    left_index, right_index = get_join_indices(
+        df,
+        right,
+        [("A", "Integers", "=="), ("E", "Dates", ">")],
+        keep="last",
+    )
+    left_index = pd.Index(left_index, name="l")
+    actual = pd.Series(right_index, index=left_index, name="r").sort_index()
+    assert_series_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=50)
+@given(df=conditional_df(), right=conditional_right())
+def test_agg_eq_range_join_pd_full_agg(df, right):
+    """Test aggregation for an equi join."""
+    expected = (
+        df.reset_index(names="l")
+        .merge(right, how="cross")
+        .query("E == Dates")
+        .groupby("l", as_index=False)
+        .agg({"Numeric": ["size", "count", "min", "max", "sum"]})
+        .loc[:, ["Numeric"]]
+    )
+
+    actual = df.conditional_join(
+        right,
+        ("E", "Dates", "=="),
+        aggfunc=[
+            ("Numeric", "size"),
+            ("Numeric", "count"),
+            ("Numeric", "min"),
+            ("Numeric", "max"),
+            ("Numeric", "sum"),
+        ],
+    ).loc[:, ["Numeric"]]
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=50)
+@given(df=conditional_df(), right=conditional_right())
+def test__eq_range_join_pd_full_(df, right):
+    """Test output for an equi join."""
+    expected = (
+        df.reset_index(names="l")
+        .merge(right, how="cross")
+        .query("E == Dates and A != Integers")
+        .loc[:, ["A", "Integers"]]
+        .sort_values(["A", "Integers"], ignore_index=True)
+    )
+
+    actual = (
+        df.conditional_join(
+            right,
+            ("A", "Integers", "!="),
+            ("E", "Dates", "=="),
+        )
+        .loc[:, ["A", "Integers"]]
+        .sort_values(["A", "Integers"], ignore_index=True)
+    )
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=50)
+@given(df=conditional_df(), right=conditional_right())
+def test__eq_range_join_pd_full_first(df, right):
+    """Test output for an equi join."""
+    expected = (
+        df.reset_index(names="l")
+        .merge(right.reset_index(names="r"), how="cross")
+        .query("A != Integers and E == Dates")
+        .groupby("l")
+        .r.min()
+        .sort_index()
+    )
+    left_index, right_index = get_join_indices(
+        df,
+        right,
+        [("A", "Integers", "!="), ("E", "Dates", "==")],
+        keep="first",
+    )
+    left_index = pd.Index(left_index, name="l")
+    actual = pd.Series(right_index, index=left_index, name="r").sort_index()
+    assert_series_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=50)
+@given(df=conditional_df(), right=conditional_right())
+def test__eq_range_join_pd_full_last(df, right):
+    """Test output for an equi join."""
+    expected = (
+        df.reset_index(names="l")
+        .merge(right.reset_index(names="r"), how="cross")
+        .query("A == Integers and E > Dates")
+        .groupby("l")
+        .r.max()
+        .sort_index()
+    )
+    left_index, right_index = get_join_indices(
+        df,
+        right,
+        [("A", "Integers", "=="), ("E", "Dates", ">")],
+        keep="last",
+    )
+    left_index = pd.Index(left_index, name="l")
+    actual = pd.Series(right_index, index=left_index, name="r").sort_index()
+    assert_series_equal(expected, actual)
+
+
+def test_agg_floats_sum_warning():
+    """Test aggregation."""
+    df1 = pd.DataFrame(
+        {"id": [1, 1, 11, 2, 2, 3], "value_1": [2, 5, 7, 1, 3, 4]}
+    )
+    df2 = pd.DataFrame(
+        {
+            "id": [1, 1, 1, 1, 34, 2, 2, 3],
+            "value_2A": [0.0, 3, 7, 12, 0, 2, 3, 1],
+            "value_2B": [1, 5, 9, 15, 1, 4, 6, 3],
+        }
+    )
+    with pytest.warns(
+        UserWarning,
+        match="Summation on a float column may produce incorrect results.+",
+    ):
+        (
+            df1.conditional_join(
+                df2.iloc[::-1],
+                ("id", "id", "=="),
+                use_binary_search_for_equi_join=True,
+                aggfunc=[("value_2A", "sum")],
+            )
+        )
+
+
+def test_agg_floats_extension_array():
+    """Test aggregation."""
+    df1 = pd.DataFrame(
+        {"id": [1, 1, 11, 2, 2, 3], "value_1": [2, 5, 7, 1, 3, 4]}
+    )
+    df2 = pd.DataFrame(
+        {
+            "id": [1, 1, 1, 1, 34, 2, 2, 3],
+            "value_2A": pd.Series(
+                [0.0, 3, 7, 12, 0, 2, 3, 1], dtype="Float64"
+            ),
+            "value_2B": [1, 5, 9, 15, 1, 4, 6, 3],
+        }
+    )
+    expected = (
+        df1.reset_index(names="l")
+        .merge(df2, on="id")
+        .groupby("l", as_index=False)
+        .agg({"value_2A": ["sum"]})
+    ).loc[:, "value_2A"]
+    actual = (
+        df1.conditional_join(
+            df2,
+            ("id", "id", "=="),
+            use_binary_search_for_equi_join=True,
+            aggfunc=[("value_2A", "sum")],
+        )
+    ).loc[:, "value_2A"]
+    assert_frame_equal(expected, actual)
+
+
+def test_agg_floats_nulls():
+    """Test aggregation."""
+    df1 = pd.DataFrame(
+        {"id": [1, 1, 11, 2, 2, 3], "value_1": [2, 5, 7, 1, 3, 4]}
+    )
+    df2 = pd.DataFrame(
+        {
+            "id": [1, 1, 1, 1, 34, 2, 2, 3],
+            "value_2A": pd.Series(
+                [0.0, 3, 7, pd.NA, pd.NA, pd.NA, 3, 1], dtype="Float64"
+            ),
+            "value_2B": [1, 5, 9, 15, 1, 4, 6, 3],
+        }
+    )
+    expected = (
+        df1.reset_index(names="l")
+        .merge(df2, on="id")
+        .groupby("l", as_index=False)
+        .agg({"value_2A": ["max"]})
+    ).loc[:, "value_2A"]
+    actual = (
+        df1.conditional_join(
+            df2,
+            ("id", "id", "=="),
+            use_binary_search_for_equi_join=True,
+            aggfunc=[("value_2A", "max")],
+        )
+    ).loc[:, "value_2A"]
     assert_frame_equal(expected, actual)

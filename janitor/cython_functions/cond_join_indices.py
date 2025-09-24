@@ -436,7 +436,7 @@ def build_indices_matches_positions_last(
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def build_indices_from_ranges_positions(
+def build_indices_ranges_positions_all(
     booleans: cython.schar[:],
     indexers: cython.long[:],
     positions: cython.long[:],
@@ -471,6 +471,95 @@ def build_indices_from_ranges_positions(
             left_index[begin] = num
             right_index[begin] = r_index
             begin += 1
+    return np.asarray(left_index), np.asarray(right_index)
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def build_indices_ranges_positions_first(
+    booleans: cython.schar[:],
+    indexers: cython.long[:],
+    positions: cython.long[:],
+    starts: cython.long[:],
+    ends: cython.long[:],
+    index_right: cython.long[:],
+    left_index: cython.long[::1],
+    right_index: cython.long[::1],
+):
+    """
+    Build indices
+    """
+    ###### types declaration  #################
+    length: cython.Py_ssize_t = booleans.shape[0]
+    num: cython.Py_ssize_t = 0
+    indexer: cython.Py_ssize_t = 0
+    position: cython.Py_ssize_t = 0
+    r_index: cython.Py_ssize_t = 0
+    begin: cython.Py_ssize_t = 0
+    start: cython.Py_ssize_t
+    end: cython.Py_ssize_t
+    base: cython.long = -1
+    ##########################################
+    for num in range(length):
+        if booleans[num] == 0:
+            continue
+        indexer = indexers[num]
+        start = starts[indexer]
+        end = ends[indexer]
+        base = -1
+        for number in range(start, end):
+            position = positions[number]
+            if (base < 0) | (base > position):
+                base = position
+        left_index[begin] = num
+        r_index = index_right[base]
+        right_index[begin] = r_index
+        begin += 1
+    return np.asarray(left_index), np.asarray(right_index)
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def build_indices_ranges_positions_last(
+    booleans: cython.schar[:],
+    indexers: cython.long[:],
+    positions: cython.long[:],
+    starts: cython.long[:],
+    ends: cython.long[:],
+    index_right: cython.long[:],
+    left_index: cython.long[::1],
+    right_index: cython.long[::1],
+):
+    """
+    Build indices
+    """
+    ###### types declaration  #################
+    length: cython.Py_ssize_t = booleans.shape[0]
+    num: cython.Py_ssize_t = 0
+    indexer: cython.Py_ssize_t = 0
+    position: cython.Py_ssize_t = 0
+    r_index: cython.Py_ssize_t = 0
+    begin: cython.Py_ssize_t = 0
+    start: cython.Py_ssize_t
+    end: cython.Py_ssize_t
+    base: cython.long = -1
+    ##########################################
+    for num in range(length):
+        if booleans[num] == 0:
+            continue
+        indexer = indexers[num]
+        start = starts[indexer]
+        end = ends[indexer]
+        base = -1
+        for number in range(start, end):
+            position = positions[number]
+            if (base < 0) | (base < position):
+                base = position
+        left_index[begin] = num
+        r_index = index_right[base]
+        right_index[begin] = r_index
+        begin += 1
+
     return np.asarray(left_index), np.asarray(right_index)
 
 

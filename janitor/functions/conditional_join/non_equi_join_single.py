@@ -11,11 +11,11 @@ def _single_le_ge_join(
     right: pd.DataFrame,
     condition: tuple,
     return_ranges: bool,
-    aggfunc: list[tuple],
+    aggfunc: list[tuple] | None,
     keep: str,
-) -> tuple:
+) -> tuple | dict | None:
     """
-    Compute aggregate on '</<=/>/>='
+    Compute single join on '</<=/>/>='
     """
     left_on, right_on, op = condition
     booleans = helpers._maybe_remove_nulls_from_dataframe(
@@ -28,10 +28,9 @@ def _single_le_ge_join(
     )
     if right is None:
         return None
-    right_is_sorted = True
-    if not right[right_on].is_monotonic_increasing:
+    right_is_sorted = right[right_on].is_monotonic_increasing
+    if not right_is_sorted:
         right = right.sort_values(right_on, ignore_index=False, kind="stable")
-        right_is_sorted = False
     len_df = len(df)
     len_right = len(right)
     starts = np.zeros(len_df, dtype=np.intp)
@@ -56,13 +55,12 @@ def _single_le_ge_join(
         return None
     if aggfunc is not None:
         booleans = indices["booleans"]
+        df_index = df.index._values
+        indices["counts_array"] = indices["sizes"]
         if not booleans.all():
             booleans = booleans.astype(np.bool_, copy=False)
             df_index = df.index._values[booleans]
-            indices["counts_array"] = indices["sizes"][booleans]
-        else:
-            indices["counts_array"] = indices["sizes"]
-            df_index = df.index._values
+            indices["counts_array"] = indices["counts_array"][booleans]
         results = aggs.compute_aggfunc_result(
             aggfunc=aggfunc,
             agg_frame=right,

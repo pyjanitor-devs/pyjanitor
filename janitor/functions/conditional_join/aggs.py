@@ -42,8 +42,8 @@ def compute_aggfunc_result(
         else:
             series = agg_frame[column_name]
             # TODO ??:
-            # if i have already computed for
-            # start,end pair can i cache/reuse?
+            # if min/max has already been computed for
+            # start,end pair can we cache/reuse?
             result = _compute_agg_min_max(
                 indices=indices,
                 series=series,

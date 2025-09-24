@@ -17,12 +17,16 @@ def _multiple_conditional_join_le_lt(
     aggfunc: list[tuple] = None,
 ) -> tuple:
     """
-    Get indices for multiple conditions,
-    where `>/>=` or `</<=` is present,
-    and there is no `==` operator.
-
-    Returns a tuple of (df_index, right_index)
+    Get indices, or aggregates, for multiple conditions,
+    where `>/>=` or `</<=` is present
     """
+    if use_numba:
+        return _numba_multiple_non_equi_join(
+            df=df,
+            right=right,
+            conditions=conditions,
+            keep=keep,
+        )
     outcome = helpers._separate_conditions_based_on_op(conditions=conditions)
     booleans = helpers._maybe_remove_nulls_from_dataframe(
         df=df, columns=outcome["l_cols"], return_bools=True
@@ -35,14 +39,6 @@ def _multiple_conditional_join_le_lt(
     )
     if right is None:
         return None
-    if use_numba:
-        return _numba_multiple_non_equi_join(
-            df=df,
-            right=right,
-            conditions=outcome,
-            keep=keep,
-            booleans=booleans,
-        )
     # there is an opportunity for optimization for range joins
     # which is usually `lower_value < value < upper_value`
     # or `lower_value < a` and `b < upper_value`

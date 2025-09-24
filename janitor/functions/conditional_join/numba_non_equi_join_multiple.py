@@ -15,7 +15,6 @@ def _numba_multiple_non_equi_join(
     right: pd.DataFrame,
     conditions: list,
     keep: str,
-    booleans: np.ndarray,
 ) -> tuple[np.ndarray, np.ndarray] | None:
     """
     Build indices for joins where there is at least one >/>=/</<=
@@ -162,6 +161,20 @@ def _numba_multiple_non_equi_join(
     # 3        4         3         5
     # 4        4         3         6
     ################################
+    conditions = helpers._separate_conditions_based_on_op(
+        conditions=conditions
+    )
+    booleans = helpers._maybe_remove_nulls_from_dataframe(
+        df=df, columns=conditions["l_cols"], return_bools=True
+    )
+    if booleans is None:
+        return None
+    # get rid of nulls, if any
+    right = helpers._maybe_remove_nulls_from_dataframe(
+        df=right, columns=conditions["r_cols"]
+    )
+    if right is None:
+        return None
     if conditions["non_equi_count"] > 1:
         len_df = len(df)
         len_right = len(right)

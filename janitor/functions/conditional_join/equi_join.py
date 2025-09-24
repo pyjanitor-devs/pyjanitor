@@ -24,12 +24,10 @@ def _multiple_conditional_join_eq(
     return_ranges: bool,
     sort_equi_join: bool,
     aggfunc: list[tuple],
-) -> tuple:
+) -> tuple | dict | None:
     """
-    Get indices for multiple conditions,
+    Get indices, or aggregates, for multiple conditions,
     if any of the conditions has an `==` operator.
-
-    Returns a tuple of (left_index, right_index)
     """
 
     if force:
@@ -265,6 +263,8 @@ def _multiple_conditional_join_eq(
         indexer = right_on.argsort(kind="stable")
         right = right.iloc[indexer]
         right_on = right_on[indexer]
+    # extract only the equi columns
+    # to get the starts and ends
     if (len_equals := outcome.get("equi_count")) > 1:
         levels = right_on.levels[:len_equals]
         codes = right_on.codes[:len_equals]

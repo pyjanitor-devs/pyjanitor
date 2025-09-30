@@ -32,17 +32,11 @@ def _single_le_ge_join(
     if not right_is_sorted:
         right = right.sort_values(right_on, ignore_index=False, kind="stable")
     len_df = len(df)
-    len_right = len(right)
-    starts = np.zeros(len_df, dtype=np.intp)
-    ends = np.empty(len_df, dtype=np.intp)
-    ends[:] = len_right
-    sizes = np.zeros(len_df, dtype=np.intp)
-    booleans = booleans.astype(np.int8, copy=False)
     indices = {
-        "starts": starts,
-        "ends": ends,
-        "booleans": booleans,
-        "sizes": sizes,
+        "starts": np.empty(len_df, dtype=np.intp),
+        "ends": np.empty(len_df, dtype=np.intp),
+        "booleans": booleans.to_numpy(np.int8, copy=False),
+        "sizes": np.empty(len_df, dtype=np.intp),
         "right_is_sorted": right_is_sorted,
     }
     indices = _helpers._update_search_indices(
@@ -50,6 +44,7 @@ def _single_le_ge_join(
         right=right[right_on]._values,
         indices=indices,
         op=op,
+        first_time=True,
     )
     if indices is None:
         return None

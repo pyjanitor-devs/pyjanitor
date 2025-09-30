@@ -38,38 +38,6 @@ greater_than_join_types = {
 }
 
 
-def _equal_indices(
-    left: pd.Series,
-    right: pd.Series,
-) -> tuple:
-    # steal some perf here within the binary search
-    # search for uniques
-    # and later index them with left_positions
-    # it is assumed that users will only reach for this
-    # if the data is reasonably duplicated; if not
-    # pd.merge is superb especially if it's a one-to-one
-    # or one-to-many
-    left_index = left.index._values
-    right_index = right.index._values
-    right = right._values
-    positions, left = pd.factorize(left, sort=False)
-    left = left._values
-    starts = right.searchsorted(left, side="left")
-    starts = starts[positions]
-    ends = right.searchsorted(left, side="right")
-    ends = ends[positions]
-    booleans = starts < ends
-    if not booleans.any():
-        return None
-    return {
-        "starts": starts,
-        "ends": ends,
-        "booleans": booleans,
-        "left_index": left_index,
-        "right_index": right_index,
-    }
-
-
 def _multiple_conditions_get_indices(
     left_index: np.ndarray,
     right_index: np.ndarray,
@@ -133,7 +101,7 @@ def _maybe_remove_nulls_from_dataframe(
         return None
     if return_bools:
         any_nulls = ~any_nulls
-        return any_nulls.to_numpy(dtype=np.int8, copy=False)
+        return any_nulls
     if any_nulls.any():
         df = df.loc[~any_nulls]
     return df
@@ -534,14 +502,37 @@ def _update_search_indices(
     right: np.ndarray,
     indices: dict,
     op: str,
+    first_time: bool = False,
 ):
     """
     Update `starts` or `ends` for non-equi
     """
     left, right = _convert_to_numpy(left=left, right=right)
-    if op == ">":
+    if (op == ">") and first_time:
+        starts, ends, booleans, sizes, total, matches = (
+            cond_join.update_search_indices_greater_than_strict_init(
+                left=left,
+                right=right,
+                starts=indices["starts"],
+                ends=indices["ends"],
+                booleans=indices["booleans"],
+                sizes=indices["sizes"],
+            )
+        )
+    elif op == ">":
         starts, ends, booleans, sizes, total, matches = (
             cond_join.update_search_indices_greater_than_strict(
+                left=left,
+                right=right,
+                starts=indices["starts"],
+                ends=indices["ends"],
+                booleans=indices["booleans"],
+                sizes=indices["sizes"],
+            )
+        )
+    elif (op == ">=") and first_time:
+        starts, ends, booleans, sizes, total, matches = (
+            cond_join.update_search_indices_greater_than_init(
                 left=left,
                 right=right,
                 starts=indices["starts"],
@@ -561,9 +552,31 @@ def _update_search_indices(
                 sizes=indices["sizes"],
             )
         )
+    elif (op == "<") and first_time:
+        starts, ends, booleans, sizes, total, matches = (
+            cond_join.update_search_indices_less_than_strict_init(
+                left=left,
+                right=right,
+                starts=indices["starts"],
+                ends=indices["ends"],
+                booleans=indices["booleans"],
+                sizes=indices["sizes"],
+            )
+        )
     elif op == "<":
         starts, ends, booleans, sizes, total, matches = (
             cond_join.update_search_indices_less_than_strict(
+                left=left,
+                right=right,
+                starts=indices["starts"],
+                ends=indices["ends"],
+                booleans=indices["booleans"],
+                sizes=indices["sizes"],
+            )
+        )
+    elif (op == "<=") and first_time:
+        starts, ends, booleans, sizes, total, matches = (
+            cond_join.update_search_indices_less_than_init(
                 left=left,
                 right=right,
                 starts=indices["starts"],

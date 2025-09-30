@@ -454,6 +454,75 @@ def update_search_indices_less_than_strict(
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
+def update_search_indices_less_than_strict_init(
+    left: scalar_types[:],
+    right: scalar_types[:],
+    starts: cython.long[:],
+    ends: cython.long[:],
+    booleans: cython.schar[:],
+    sizes: cython.long[:],
+):
+    """
+    Update search indices for a `<` condition
+    """
+    ######## type declarations #######
+    num: cython.Py_ssize_t
+    mid_idx: cython.Py_ssize_t
+    length: cython.Py_ssize_t = left.shape[0]
+    r_len: cython.Py_ssize_t = right.shape[0]
+    size: cython.long = 0
+    min_idx: cython.Py_ssize_t
+    max_idx: cython.Py_ssize_t
+    l_value: scalar_types
+    current_value: scalar_types
+    match: cython.long = 0
+    total: cython.long = 0
+    ####################################
+
+    for num in range(length):
+        if booleans[num] == 0:
+            sizes[num] = 0
+            continue
+        l_value = left[num]
+        # adapted from numba/np/array_math.py
+        min_idx = 0
+        max_idx = r_len
+        while min_idx < max_idx:
+            # to avoid overflow
+            mid_idx = min_idx + ((max_idx - min_idx) >> 1)
+            current_value = right[mid_idx]
+            if current_value <= l_value:
+                min_idx = mid_idx + 1
+            else:
+                max_idx = mid_idx
+        if min_idx == r_len:
+            booleans[num] = 0
+            sizes[num] = 0
+            continue
+        current_value = right[min_idx]
+        if current_value == l_value:
+            booleans[num] = 0
+            sizes[num] = 0
+            continue
+        booleans[num] = 1
+        starts[num] = min_idx
+        ends[num] = r_len
+        size = r_len - min_idx
+        sizes[num] = size
+        total += size
+        match += 1
+    return (
+        np.asarray(starts),
+        np.asarray(ends),
+        np.asarray(booleans),
+        np.asarray(sizes),
+        total,
+        match,
+    )
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
 def update_search_indices_less_than(
     left: scalar_types[:],
     right: scalar_types[:],
@@ -518,6 +587,70 @@ def update_search_indices_less_than(
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
+def update_search_indices_less_than_init(
+    left: scalar_types[:],
+    right: scalar_types[:],
+    starts: cython.long[:],
+    ends: cython.long[:],
+    booleans: cython.schar[:],
+    sizes: cython.long[:],
+):
+    """
+    Update search indices for a `<=` condition
+    """
+    ######## type declarations #######
+    num: cython.Py_ssize_t
+    mid_idx: cython.Py_ssize_t
+    length: cython.Py_ssize_t = left.shape[0]
+    r_len: cython.Py_ssize_t = right.shape[0]
+    size: cython.long = 0
+    min_idx: cython.Py_ssize_t
+    max_idx: cython.Py_ssize_t
+    l_value: scalar_types
+    current_value: scalar_types
+    match: cython.long = 0
+    total: cython.long = 0
+    ####################################
+
+    for num in range(length):
+        if booleans[num] == 0:
+            sizes[num] = 0
+            continue
+        l_value = left[num]
+        # adapted from numba/np/array_math.py
+        min_idx = 0
+        max_idx = r_len
+        while min_idx < max_idx:
+            # to avoid overflow
+            mid_idx = min_idx + ((max_idx - min_idx) >> 1)
+            current_value = right[mid_idx]
+            if current_value < l_value:
+                min_idx = mid_idx + 1
+            else:
+                max_idx = mid_idx
+        if min_idx == r_len:
+            booleans[num] = 0
+            sizes[num] = 0
+            continue
+        booleans[num] = 1
+        ends[num] = r_len
+        starts[num] = min_idx
+        size = r_len - min_idx
+        sizes[num] = size
+        total += size
+        match += 1
+    return (
+        np.asarray(starts),
+        np.asarray(ends),
+        np.asarray(booleans),
+        np.asarray(sizes),
+        total,
+        match,
+    )
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
 def update_search_indices_greater_than_strict(
     left: scalar_types[:],
     right: scalar_types[:],
@@ -527,7 +660,7 @@ def update_search_indices_greater_than_strict(
     sizes: cython.long[:],
 ):
     """
-    Update search indices for a `>=` condition
+    Update search indices for a `>` condition
     """
     ######## type declarations #######
     num: cython.Py_ssize_t
@@ -575,6 +708,74 @@ def update_search_indices_greater_than_strict(
         size = min_idx - start
         sizes[num] = size
         total += size
+        match += 1
+    return (
+        np.asarray(starts),
+        np.asarray(ends),
+        np.asarray(booleans),
+        np.asarray(sizes),
+        total,
+        match,
+    )
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def update_search_indices_greater_than_strict_init(
+    left: scalar_types[:],
+    right: scalar_types[:],
+    starts: cython.long[:],
+    ends: cython.long[:],
+    booleans: cython.schar[:],
+    sizes: cython.long[:],
+):
+    """
+    Update search indices for a `>` condition
+    """
+    ######## type declarations #######
+    num: cython.Py_ssize_t
+    mid_idx: cython.Py_ssize_t
+    length: cython.Py_ssize_t = left.shape[0]
+    r_len: cython.Py_ssize_t = right.shape[0]
+    min_idx: cython.Py_ssize_t
+    max_idx: cython.Py_ssize_t
+    l_value: scalar_types
+    current_value: scalar_types
+    match: cython.long = 0
+    total: cython.long = 0
+    ####################################
+
+    for num in range(length):
+        if booleans[num] == 0:
+            sizes[num] = 0
+            continue
+        l_value = left[num]
+        # adapted from numba/np/array_math.py
+        min_idx = 0
+        max_idx = r_len
+        while min_idx < max_idx:
+            # to avoid overflow
+            mid_idx = min_idx + ((max_idx - min_idx) >> 1)
+            current_value = right[mid_idx]
+            if current_value >= l_value:
+                max_idx = mid_idx
+            else:
+                min_idx = mid_idx + 1
+        if min_idx == 0:
+            booleans[num] = 0
+            sizes[num] = 0
+            continue
+        mid_idx = min_idx - 1
+        current_value = right[mid_idx]
+        if current_value == l_value:
+            booleans[num] = 0
+            sizes[num] = 0
+            continue
+        starts[num] = 0
+        booleans[num] = 1
+        ends[num] = min_idx
+        sizes[num] = min_idx
+        total += min_idx
         match += 1
     return (
         np.asarray(starts),
@@ -639,6 +840,68 @@ def update_search_indices_greater_than(
         size = min_idx - start
         sizes[num] = size
         total += size
+        match += 1
+    return (
+        np.asarray(starts),
+        np.asarray(ends),
+        np.asarray(booleans),
+        np.asarray(sizes),
+        total,
+        match,
+    )
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def update_search_indices_greater_than_init(
+    left: scalar_types[:],
+    right: scalar_types[:],
+    starts: cython.long[:],
+    ends: cython.long[:],
+    booleans: cython.schar[:],
+    sizes: cython.long[:],
+):
+    """
+    Update search indices for a `>=` condition
+    """
+    ######## type declarations #######
+    num: cython.Py_ssize_t
+    mid_idx: cython.Py_ssize_t
+    length: cython.Py_ssize_t = left.shape[0]
+    r_len: cython.Py_ssize_t = right.shape[0]
+    min_idx: cython.Py_ssize_t
+    max_idx: cython.Py_ssize_t
+    l_value: scalar_types
+    current_value: scalar_types
+    match: cython.long = 0
+    total: cython.long = 0
+    ####################################
+
+    for num in range(length):
+        if booleans[num] == 0:
+            sizes[num] = 0
+            continue
+        l_value = left[num]
+        # adapted from numba/np/array_math.py
+        min_idx = 0
+        max_idx = r_len
+        while min_idx < max_idx:
+            # to avoid overflow
+            mid_idx = min_idx + ((max_idx - min_idx) >> 1)
+            current_value = right[mid_idx]
+            if current_value > l_value:
+                max_idx = mid_idx
+            else:
+                min_idx = mid_idx + 1
+        if min_idx == 0:
+            booleans[num] = 0
+            sizes[num] = 0
+            continue
+        booleans[num] = 1
+        starts[num] = 0
+        ends[num] = min_idx
+        sizes[num] = min_idx
+        total += min_idx
         match += 1
     return (
         np.asarray(starts),

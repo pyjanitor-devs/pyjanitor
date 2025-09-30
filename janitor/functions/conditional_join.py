@@ -665,7 +665,6 @@ def _conditional_join_compute(
             aggfunc=aggfunc,
             right=right,
         )
-
     if result is None:
         result = np.array([], dtype=np.intp), np.array([], dtype=np.intp)
     if return_matching_indices:

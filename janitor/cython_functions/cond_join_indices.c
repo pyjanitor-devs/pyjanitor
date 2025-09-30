@@ -22868,7 +22868,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_16buil
   return __pyx_r;
 }
 
-/* "janitor/cython_functions/cond_join_indices.py":482
+/* "janitor/cython_functions/cond_join_indices.py":477
  *
  *
  * @cython.boundscheck(False)             # <<<<<<<<<<<<<<
@@ -22923,81 +22923,81 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_booleans,&__pyx_mstate_global->__pyx_n_u_indexers,&__pyx_mstate_global->__pyx_n_u_positions,&__pyx_mstate_global->__pyx_n_u_starts,&__pyx_mstate_global->__pyx_n_u_ends,&__pyx_mstate_global->__pyx_n_u_index_right,&__pyx_mstate_global->__pyx_n_u_left_index,&__pyx_mstate_global->__pyx_n_u_right_index,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 482, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 477, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  8:
         values[7] = __Pyx_ArgRef_FASTCALL(__pyx_args, 7);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[7])) __PYX_ERR(0, 482, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[7])) __PYX_ERR(0, 477, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  7:
         values[6] = __Pyx_ArgRef_FASTCALL(__pyx_args, 6);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 482, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 477, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  6:
         values[5] = __Pyx_ArgRef_FASTCALL(__pyx_args, 5);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 482, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 477, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  5:
         values[4] = __Pyx_ArgRef_FASTCALL(__pyx_args, 4);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 482, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 477, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  4:
         values[3] = __Pyx_ArgRef_FASTCALL(__pyx_args, 3);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 482, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 477, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  3:
         values[2] = __Pyx_ArgRef_FASTCALL(__pyx_args, 2);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 482, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 477, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  2:
         values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 482, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 477, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 482, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 477, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "build_indices_ranges_positions_first", 0) < 0) __PYX_ERR(0, 482, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "build_indices_ranges_positions_first", 0) < 0) __PYX_ERR(0, 477, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 8; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("build_indices_ranges_positions_first", 1, 8, 8, i); __PYX_ERR(0, 482, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("build_indices_ranges_positions_first", 1, 8, 8, i); __PYX_ERR(0, 477, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 8)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 482, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 477, __pyx_L3_error)
       values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 482, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 477, __pyx_L3_error)
       values[2] = __Pyx_ArgRef_FASTCALL(__pyx_args, 2);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 482, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 477, __pyx_L3_error)
       values[3] = __Pyx_ArgRef_FASTCALL(__pyx_args, 3);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 482, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 477, __pyx_L3_error)
       values[4] = __Pyx_ArgRef_FASTCALL(__pyx_args, 4);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 482, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 477, __pyx_L3_error)
       values[5] = __Pyx_ArgRef_FASTCALL(__pyx_args, 5);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 482, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 477, __pyx_L3_error)
       values[6] = __Pyx_ArgRef_FASTCALL(__pyx_args, 6);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 482, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 477, __pyx_L3_error)
       values[7] = __Pyx_ArgRef_FASTCALL(__pyx_args, 7);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[7])) __PYX_ERR(0, 482, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[7])) __PYX_ERR(0, 477, __pyx_L3_error)
     }
-    __pyx_v_booleans = __Pyx_PyObject_to_MemoryviewSlice_ds_signed_char(values[0], PyBUF_WRITABLE); if (unlikely(!__pyx_v_booleans.memview)) __PYX_ERR(0, 485, __pyx_L3_error)
-    __pyx_v_indexers = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[1], PyBUF_WRITABLE); if (unlikely(!__pyx_v_indexers.memview)) __PYX_ERR(0, 486, __pyx_L3_error)
-    __pyx_v_positions = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[2], PyBUF_WRITABLE); if (unlikely(!__pyx_v_positions.memview)) __PYX_ERR(0, 487, __pyx_L3_error)
-    __pyx_v_starts = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[3], PyBUF_WRITABLE); if (unlikely(!__pyx_v_starts.memview)) __PYX_ERR(0, 488, __pyx_L3_error)
-    __pyx_v_ends = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[4], PyBUF_WRITABLE); if (unlikely(!__pyx_v_ends.memview)) __PYX_ERR(0, 489, __pyx_L3_error)
-    __pyx_v_index_right = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[5], PyBUF_WRITABLE); if (unlikely(!__pyx_v_index_right.memview)) __PYX_ERR(0, 490, __pyx_L3_error)
-    __pyx_v_left_index = __Pyx_PyObject_to_MemoryviewSlice_dc_long(values[6], PyBUF_WRITABLE); if (unlikely(!__pyx_v_left_index.memview)) __PYX_ERR(0, 491, __pyx_L3_error)
-    __pyx_v_right_index = __Pyx_PyObject_to_MemoryviewSlice_dc_long(values[7], PyBUF_WRITABLE); if (unlikely(!__pyx_v_right_index.memview)) __PYX_ERR(0, 492, __pyx_L3_error)
+    __pyx_v_booleans = __Pyx_PyObject_to_MemoryviewSlice_ds_signed_char(values[0], PyBUF_WRITABLE); if (unlikely(!__pyx_v_booleans.memview)) __PYX_ERR(0, 480, __pyx_L3_error)
+    __pyx_v_indexers = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[1], PyBUF_WRITABLE); if (unlikely(!__pyx_v_indexers.memview)) __PYX_ERR(0, 481, __pyx_L3_error)
+    __pyx_v_positions = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[2], PyBUF_WRITABLE); if (unlikely(!__pyx_v_positions.memview)) __PYX_ERR(0, 482, __pyx_L3_error)
+    __pyx_v_starts = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[3], PyBUF_WRITABLE); if (unlikely(!__pyx_v_starts.memview)) __PYX_ERR(0, 483, __pyx_L3_error)
+    __pyx_v_ends = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[4], PyBUF_WRITABLE); if (unlikely(!__pyx_v_ends.memview)) __PYX_ERR(0, 484, __pyx_L3_error)
+    __pyx_v_index_right = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[5], PyBUF_WRITABLE); if (unlikely(!__pyx_v_index_right.memview)) __PYX_ERR(0, 485, __pyx_L3_error)
+    __pyx_v_left_index = __Pyx_PyObject_to_MemoryviewSlice_dc_long(values[6], PyBUF_WRITABLE); if (unlikely(!__pyx_v_left_index.memview)) __PYX_ERR(0, 486, __pyx_L3_error)
+    __pyx_v_right_index = __Pyx_PyObject_to_MemoryviewSlice_dc_long(values[7], PyBUF_WRITABLE); if (unlikely(!__pyx_v_right_index.memview)) __PYX_ERR(0, 487, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("build_indices_ranges_positions_first", 1, 8, 8, __pyx_nargs); __PYX_ERR(0, 482, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("build_indices_ranges_positions_first", 1, 8, 8, __pyx_nargs); __PYX_ERR(0, 477, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -23017,28 +23017,28 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return NULL;
   __pyx_L4_argument_unpacking_done:;
   if (unlikely(((PyObject *)__pyx_v_booleans.memview) == Py_None)) {
-    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "booleans"); __PYX_ERR(0, 485, __pyx_L1_error)
+    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "booleans"); __PYX_ERR(0, 480, __pyx_L1_error)
   }
   if (unlikely(((PyObject *)__pyx_v_indexers.memview) == Py_None)) {
-    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "indexers"); __PYX_ERR(0, 486, __pyx_L1_error)
+    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "indexers"); __PYX_ERR(0, 481, __pyx_L1_error)
   }
   if (unlikely(((PyObject *)__pyx_v_positions.memview) == Py_None)) {
-    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "positions"); __PYX_ERR(0, 487, __pyx_L1_error)
+    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "positions"); __PYX_ERR(0, 482, __pyx_L1_error)
   }
   if (unlikely(((PyObject *)__pyx_v_starts.memview) == Py_None)) {
-    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "starts"); __PYX_ERR(0, 488, __pyx_L1_error)
+    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "starts"); __PYX_ERR(0, 483, __pyx_L1_error)
   }
   if (unlikely(((PyObject *)__pyx_v_ends.memview) == Py_None)) {
-    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "ends"); __PYX_ERR(0, 489, __pyx_L1_error)
+    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "ends"); __PYX_ERR(0, 484, __pyx_L1_error)
   }
   if (unlikely(((PyObject *)__pyx_v_index_right.memview) == Py_None)) {
-    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "index_right"); __PYX_ERR(0, 490, __pyx_L1_error)
+    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "index_right"); __PYX_ERR(0, 485, __pyx_L1_error)
   }
   if (unlikely(((PyObject *)__pyx_v_left_index.memview) == Py_None)) {
-    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "left_index"); __PYX_ERR(0, 491, __pyx_L1_error)
+    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "left_index"); __PYX_ERR(0, 486, __pyx_L1_error)
   }
   if (unlikely(((PyObject *)__pyx_v_right_index.memview) == Py_None)) {
-    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "right_index"); __PYX_ERR(0, 492, __pyx_L1_error)
+    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "right_index"); __PYX_ERR(0, 487, __pyx_L1_error)
   }
   __pyx_r = __pyx_pf_7janitor_16cython_functions_17cond_join_indices_18build_indices_ranges_positions_first(__pyx_self, __pyx_v_booleans, __pyx_v_indexers, __pyx_v_positions, __pyx_v_starts, __pyx_v_ends, __pyx_v_index_right, __pyx_v_left_index, __pyx_v_right_index);
 
@@ -23099,7 +23099,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_18buil
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("build_indices_ranges_positions_first", 0);
 
-  /* "janitor/cython_functions/cond_join_indices.py":498
+  /* "janitor/cython_functions/cond_join_indices.py":493
  *     """
  *     ###### types declaration  #################
  *     length: cython.Py_ssize_t = booleans.shape[0]             # <<<<<<<<<<<<<<
@@ -23108,7 +23108,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_18buil
 */
   __pyx_v_length = (__pyx_v_booleans.shape[0]);
 
-  /* "janitor/cython_functions/cond_join_indices.py":499
+  /* "janitor/cython_functions/cond_join_indices.py":494
  *     ###### types declaration  #################
  *     length: cython.Py_ssize_t = booleans.shape[0]
  *     num: cython.Py_ssize_t = 0             # <<<<<<<<<<<<<<
@@ -23117,7 +23117,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_18buil
 */
   __pyx_v_num = 0;
 
-  /* "janitor/cython_functions/cond_join_indices.py":500
+  /* "janitor/cython_functions/cond_join_indices.py":495
  *     length: cython.Py_ssize_t = booleans.shape[0]
  *     num: cython.Py_ssize_t = 0
  *     indexer: cython.Py_ssize_t = 0             # <<<<<<<<<<<<<<
@@ -23126,7 +23126,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_18buil
 */
   __pyx_v_indexer = 0;
 
-  /* "janitor/cython_functions/cond_join_indices.py":501
+  /* "janitor/cython_functions/cond_join_indices.py":496
  *     num: cython.Py_ssize_t = 0
  *     indexer: cython.Py_ssize_t = 0
  *     position: cython.Py_ssize_t = 0             # <<<<<<<<<<<<<<
@@ -23135,7 +23135,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_18buil
 */
   __pyx_v_position = 0;
 
-  /* "janitor/cython_functions/cond_join_indices.py":502
+  /* "janitor/cython_functions/cond_join_indices.py":497
  *     indexer: cython.Py_ssize_t = 0
  *     position: cython.Py_ssize_t = 0
  *     r_index: cython.Py_ssize_t = 0             # <<<<<<<<<<<<<<
@@ -23144,7 +23144,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_18buil
 */
   __pyx_v_r_index = 0;
 
-  /* "janitor/cython_functions/cond_join_indices.py":503
+  /* "janitor/cython_functions/cond_join_indices.py":498
  *     position: cython.Py_ssize_t = 0
  *     r_index: cython.Py_ssize_t = 0
  *     begin: cython.Py_ssize_t = 0             # <<<<<<<<<<<<<<
@@ -23153,7 +23153,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_18buil
 */
   __pyx_v_begin = 0;
 
-  /* "janitor/cython_functions/cond_join_indices.py":506
+  /* "janitor/cython_functions/cond_join_indices.py":501
  *     start: cython.Py_ssize_t
  *     end: cython.Py_ssize_t
  *     base: cython.long = -1             # <<<<<<<<<<<<<<
@@ -23162,7 +23162,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_18buil
 */
   __pyx_v_base = -1L;
 
-  /* "janitor/cython_functions/cond_join_indices.py":508
+  /* "janitor/cython_functions/cond_join_indices.py":503
  *     base: cython.long = -1
  *     ##########################################
  *     for num in range(length):             # <<<<<<<<<<<<<<
@@ -23174,7 +23174,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_18buil
   for (__pyx_t_3 = 0; __pyx_t_3 < __pyx_t_2; __pyx_t_3+=1) {
     __pyx_v_num = __pyx_t_3;
 
-    /* "janitor/cython_functions/cond_join_indices.py":509
+    /* "janitor/cython_functions/cond_join_indices.py":504
  *     ##########################################
  *     for num in range(length):
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
@@ -23185,7 +23185,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_18buil
     __pyx_t_5 = ((*((signed char *) ( /* dim=0 */ (__pyx_v_booleans.data + __pyx_t_4 * __pyx_v_booleans.strides[0]) ))) == 0);
     if (__pyx_t_5) {
 
-      /* "janitor/cython_functions/cond_join_indices.py":510
+      /* "janitor/cython_functions/cond_join_indices.py":505
  *     for num in range(length):
  *         if booleans[num] == 0:
  *             continue             # <<<<<<<<<<<<<<
@@ -23194,7 +23194,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_18buil
 */
       goto __pyx_L3_continue;
 
-      /* "janitor/cython_functions/cond_join_indices.py":509
+      /* "janitor/cython_functions/cond_join_indices.py":504
  *     ##########################################
  *     for num in range(length):
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
@@ -23203,7 +23203,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_18buil
 */
     }
 
-    /* "janitor/cython_functions/cond_join_indices.py":511
+    /* "janitor/cython_functions/cond_join_indices.py":506
  *         if booleans[num] == 0:
  *             continue
  *         indexer = indexers[num]             # <<<<<<<<<<<<<<
@@ -23213,7 +23213,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_18buil
     __pyx_t_4 = __pyx_v_num;
     __pyx_v_indexer = (*((long *) ( /* dim=0 */ (__pyx_v_indexers.data + __pyx_t_4 * __pyx_v_indexers.strides[0]) )));
 
-    /* "janitor/cython_functions/cond_join_indices.py":512
+    /* "janitor/cython_functions/cond_join_indices.py":507
  *             continue
  *         indexer = indexers[num]
  *         start = starts[indexer]             # <<<<<<<<<<<<<<
@@ -23223,7 +23223,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_18buil
     __pyx_t_4 = __pyx_v_indexer;
     __pyx_v_start = (*((long *) ( /* dim=0 */ (__pyx_v_starts.data + __pyx_t_4 * __pyx_v_starts.strides[0]) )));
 
-    /* "janitor/cython_functions/cond_join_indices.py":513
+    /* "janitor/cython_functions/cond_join_indices.py":508
  *         indexer = indexers[num]
  *         start = starts[indexer]
  *         end = ends[indexer]             # <<<<<<<<<<<<<<
@@ -23233,7 +23233,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_18buil
     __pyx_t_4 = __pyx_v_indexer;
     __pyx_v_end = (*((long *) ( /* dim=0 */ (__pyx_v_ends.data + __pyx_t_4 * __pyx_v_ends.strides[0]) )));
 
-    /* "janitor/cython_functions/cond_join_indices.py":514
+    /* "janitor/cython_functions/cond_join_indices.py":509
  *         start = starts[indexer]
  *         end = ends[indexer]
  *         base = -1             # <<<<<<<<<<<<<<
@@ -23242,7 +23242,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_18buil
 */
     __pyx_v_base = -1L;
 
-    /* "janitor/cython_functions/cond_join_indices.py":515
+    /* "janitor/cython_functions/cond_join_indices.py":510
  *         end = ends[indexer]
  *         base = -1
  *         for number in range(start, end):             # <<<<<<<<<<<<<<
@@ -23254,7 +23254,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_18buil
     for (__pyx_t_8 = __pyx_v_start; __pyx_t_8 < __pyx_t_7; __pyx_t_8+=1) {
       __pyx_v_number = __pyx_t_8;
 
-      /* "janitor/cython_functions/cond_join_indices.py":516
+      /* "janitor/cython_functions/cond_join_indices.py":511
  *         base = -1
  *         for number in range(start, end):
  *             position = positions[number]             # <<<<<<<<<<<<<<
@@ -23264,7 +23264,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_18buil
       __pyx_t_4 = __pyx_v_number;
       __pyx_v_position = (*((long *) ( /* dim=0 */ (__pyx_v_positions.data + __pyx_t_4 * __pyx_v_positions.strides[0]) )));
 
-      /* "janitor/cython_functions/cond_join_indices.py":517
+      /* "janitor/cython_functions/cond_join_indices.py":512
  *         for number in range(start, end):
  *             position = positions[number]
  *             if (base < 0) | (base > position):             # <<<<<<<<<<<<<<
@@ -23274,7 +23274,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_18buil
       __pyx_t_5 = ((__pyx_v_base < 0) | (__pyx_v_base > __pyx_v_position));
       if (__pyx_t_5) {
 
-        /* "janitor/cython_functions/cond_join_indices.py":518
+        /* "janitor/cython_functions/cond_join_indices.py":513
  *             position = positions[number]
  *             if (base < 0) | (base > position):
  *                 base = position             # <<<<<<<<<<<<<<
@@ -23283,7 +23283,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_18buil
 */
         __pyx_v_base = __pyx_v_position;
 
-        /* "janitor/cython_functions/cond_join_indices.py":517
+        /* "janitor/cython_functions/cond_join_indices.py":512
  *         for number in range(start, end):
  *             position = positions[number]
  *             if (base < 0) | (base > position):             # <<<<<<<<<<<<<<
@@ -23293,7 +23293,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_18buil
       }
     }
 
-    /* "janitor/cython_functions/cond_join_indices.py":519
+    /* "janitor/cython_functions/cond_join_indices.py":514
  *             if (base < 0) | (base > position):
  *                 base = position
  *         left_index[begin] = num             # <<<<<<<<<<<<<<
@@ -23303,7 +23303,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_18buil
     __pyx_t_4 = __pyx_v_begin;
     *((long *) ( /* dim=0 */ ((char *) (((long *) __pyx_v_left_index.data) + __pyx_t_4)) )) = __pyx_v_num;
 
-    /* "janitor/cython_functions/cond_join_indices.py":520
+    /* "janitor/cython_functions/cond_join_indices.py":515
  *                 base = position
  *         left_index[begin] = num
  *         r_index = index_right[base]             # <<<<<<<<<<<<<<
@@ -23313,7 +23313,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_18buil
     __pyx_t_4 = __pyx_v_base;
     __pyx_v_r_index = (*((long *) ( /* dim=0 */ (__pyx_v_index_right.data + __pyx_t_4 * __pyx_v_index_right.strides[0]) )));
 
-    /* "janitor/cython_functions/cond_join_indices.py":521
+    /* "janitor/cython_functions/cond_join_indices.py":516
  *         left_index[begin] = num
  *         r_index = index_right[base]
  *         right_index[begin] = r_index             # <<<<<<<<<<<<<<
@@ -23323,7 +23323,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_18buil
     __pyx_t_4 = __pyx_v_begin;
     *((long *) ( /* dim=0 */ ((char *) (((long *) __pyx_v_right_index.data) + __pyx_t_4)) )) = __pyx_v_r_index;
 
-    /* "janitor/cython_functions/cond_join_indices.py":522
+    /* "janitor/cython_functions/cond_join_indices.py":517
  *         r_index = index_right[base]
  *         right_index[begin] = r_index
  *         begin += 1             # <<<<<<<<<<<<<<
@@ -23334,7 +23334,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_18buil
     __pyx_L3_continue:;
   }
 
-  /* "janitor/cython_functions/cond_join_indices.py":523
+  /* "janitor/cython_functions/cond_join_indices.py":518
  *         right_index[begin] = r_index
  *         begin += 1
  *     return np.asarray(left_index), np.asarray(right_index)             # <<<<<<<<<<<<<<
@@ -23343,12 +23343,12 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_18buil
 */
   __Pyx_XDECREF(__pyx_r);
   __pyx_t_10 = NULL;
-  __Pyx_GetModuleGlobalName(__pyx_t_11, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 523, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_11, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 518, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_11);
-  __pyx_t_12 = __Pyx_PyObject_GetAttrStr(__pyx_t_11, __pyx_mstate_global->__pyx_n_u_asarray); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 523, __pyx_L1_error)
+  __pyx_t_12 = __Pyx_PyObject_GetAttrStr(__pyx_t_11, __pyx_mstate_global->__pyx_n_u_asarray); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 518, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_12);
   __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
-  __pyx_t_11 = __pyx_memoryview_fromslice(__pyx_v_left_index, 1, (PyObject *(*)(char *)) __pyx_memview_get_long, (int (*)(char *, PyObject *)) __pyx_memview_set_long, 0);; if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 523, __pyx_L1_error)
+  __pyx_t_11 = __pyx_memoryview_fromslice(__pyx_v_left_index, 1, (PyObject *(*)(char *)) __pyx_memview_get_long, (int (*)(char *, PyObject *)) __pyx_memview_set_long, 0);; if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 518, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_11);
   __pyx_t_13 = 1;
   #if CYTHON_UNPACK_METHODS
@@ -23368,16 +23368,16 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_18buil
     __Pyx_XDECREF(__pyx_t_10); __pyx_t_10 = 0;
     __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
     __Pyx_DECREF(__pyx_t_12); __pyx_t_12 = 0;
-    if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 523, __pyx_L1_error)
+    if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 518, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_9);
   }
   __pyx_t_11 = NULL;
-  __Pyx_GetModuleGlobalName(__pyx_t_10, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 523, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_10, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 518, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_10);
-  __pyx_t_14 = __Pyx_PyObject_GetAttrStr(__pyx_t_10, __pyx_mstate_global->__pyx_n_u_asarray); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 523, __pyx_L1_error)
+  __pyx_t_14 = __Pyx_PyObject_GetAttrStr(__pyx_t_10, __pyx_mstate_global->__pyx_n_u_asarray); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 518, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_14);
   __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
-  __pyx_t_10 = __pyx_memoryview_fromslice(__pyx_v_right_index, 1, (PyObject *(*)(char *)) __pyx_memview_get_long, (int (*)(char *, PyObject *)) __pyx_memview_set_long, 0);; if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 523, __pyx_L1_error)
+  __pyx_t_10 = __pyx_memoryview_fromslice(__pyx_v_right_index, 1, (PyObject *(*)(char *)) __pyx_memview_get_long, (int (*)(char *, PyObject *)) __pyx_memview_set_long, 0);; if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 518, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_10);
   __pyx_t_13 = 1;
   #if CYTHON_UNPACK_METHODS
@@ -23397,22 +23397,22 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_18buil
     __Pyx_XDECREF(__pyx_t_11); __pyx_t_11 = 0;
     __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
     __Pyx_DECREF(__pyx_t_14); __pyx_t_14 = 0;
-    if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 523, __pyx_L1_error)
+    if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 518, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_12);
   }
-  __pyx_t_14 = PyTuple_New(2); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 523, __pyx_L1_error)
+  __pyx_t_14 = PyTuple_New(2); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 518, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_14);
   __Pyx_GIVEREF(__pyx_t_9);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_14, 0, __pyx_t_9) != (0)) __PYX_ERR(0, 523, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_14, 0, __pyx_t_9) != (0)) __PYX_ERR(0, 518, __pyx_L1_error);
   __Pyx_GIVEREF(__pyx_t_12);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_14, 1, __pyx_t_12) != (0)) __PYX_ERR(0, 523, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_14, 1, __pyx_t_12) != (0)) __PYX_ERR(0, 518, __pyx_L1_error);
   __pyx_t_9 = 0;
   __pyx_t_12 = 0;
   __pyx_r = __pyx_t_14;
   __pyx_t_14 = 0;
   goto __pyx_L0;
 
-  /* "janitor/cython_functions/cond_join_indices.py":482
+  /* "janitor/cython_functions/cond_join_indices.py":477
  *
  *
  * @cython.boundscheck(False)             # <<<<<<<<<<<<<<
@@ -23435,7 +23435,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_18buil
   return __pyx_r;
 }
 
-/* "janitor/cython_functions/cond_join_indices.py":526
+/* "janitor/cython_functions/cond_join_indices.py":521
  *
  *
  * @cython.boundscheck(False)             # <<<<<<<<<<<<<<
@@ -23490,81 +23490,81 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_booleans,&__pyx_mstate_global->__pyx_n_u_indexers,&__pyx_mstate_global->__pyx_n_u_positions,&__pyx_mstate_global->__pyx_n_u_starts,&__pyx_mstate_global->__pyx_n_u_ends,&__pyx_mstate_global->__pyx_n_u_index_right,&__pyx_mstate_global->__pyx_n_u_left_index,&__pyx_mstate_global->__pyx_n_u_right_index,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 526, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 521, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  8:
         values[7] = __Pyx_ArgRef_FASTCALL(__pyx_args, 7);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[7])) __PYX_ERR(0, 526, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[7])) __PYX_ERR(0, 521, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  7:
         values[6] = __Pyx_ArgRef_FASTCALL(__pyx_args, 6);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 526, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 521, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  6:
         values[5] = __Pyx_ArgRef_FASTCALL(__pyx_args, 5);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 526, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 521, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  5:
         values[4] = __Pyx_ArgRef_FASTCALL(__pyx_args, 4);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 526, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 521, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  4:
         values[3] = __Pyx_ArgRef_FASTCALL(__pyx_args, 3);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 526, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 521, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  3:
         values[2] = __Pyx_ArgRef_FASTCALL(__pyx_args, 2);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 526, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 521, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  2:
         values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 526, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 521, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 526, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 521, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "build_indices_ranges_positions_last", 0) < 0) __PYX_ERR(0, 526, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "build_indices_ranges_positions_last", 0) < 0) __PYX_ERR(0, 521, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 8; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("build_indices_ranges_positions_last", 1, 8, 8, i); __PYX_ERR(0, 526, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("build_indices_ranges_positions_last", 1, 8, 8, i); __PYX_ERR(0, 521, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 8)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 526, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 521, __pyx_L3_error)
       values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 526, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 521, __pyx_L3_error)
       values[2] = __Pyx_ArgRef_FASTCALL(__pyx_args, 2);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 526, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 521, __pyx_L3_error)
       values[3] = __Pyx_ArgRef_FASTCALL(__pyx_args, 3);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 526, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 521, __pyx_L3_error)
       values[4] = __Pyx_ArgRef_FASTCALL(__pyx_args, 4);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 526, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 521, __pyx_L3_error)
       values[5] = __Pyx_ArgRef_FASTCALL(__pyx_args, 5);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 526, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 521, __pyx_L3_error)
       values[6] = __Pyx_ArgRef_FASTCALL(__pyx_args, 6);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 526, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 521, __pyx_L3_error)
       values[7] = __Pyx_ArgRef_FASTCALL(__pyx_args, 7);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[7])) __PYX_ERR(0, 526, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[7])) __PYX_ERR(0, 521, __pyx_L3_error)
     }
-    __pyx_v_booleans = __Pyx_PyObject_to_MemoryviewSlice_ds_signed_char(values[0], PyBUF_WRITABLE); if (unlikely(!__pyx_v_booleans.memview)) __PYX_ERR(0, 529, __pyx_L3_error)
-    __pyx_v_indexers = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[1], PyBUF_WRITABLE); if (unlikely(!__pyx_v_indexers.memview)) __PYX_ERR(0, 530, __pyx_L3_error)
-    __pyx_v_positions = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[2], PyBUF_WRITABLE); if (unlikely(!__pyx_v_positions.memview)) __PYX_ERR(0, 531, __pyx_L3_error)
-    __pyx_v_starts = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[3], PyBUF_WRITABLE); if (unlikely(!__pyx_v_starts.memview)) __PYX_ERR(0, 532, __pyx_L3_error)
-    __pyx_v_ends = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[4], PyBUF_WRITABLE); if (unlikely(!__pyx_v_ends.memview)) __PYX_ERR(0, 533, __pyx_L3_error)
-    __pyx_v_index_right = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[5], PyBUF_WRITABLE); if (unlikely(!__pyx_v_index_right.memview)) __PYX_ERR(0, 534, __pyx_L3_error)
-    __pyx_v_left_index = __Pyx_PyObject_to_MemoryviewSlice_dc_long(values[6], PyBUF_WRITABLE); if (unlikely(!__pyx_v_left_index.memview)) __PYX_ERR(0, 535, __pyx_L3_error)
-    __pyx_v_right_index = __Pyx_PyObject_to_MemoryviewSlice_dc_long(values[7], PyBUF_WRITABLE); if (unlikely(!__pyx_v_right_index.memview)) __PYX_ERR(0, 536, __pyx_L3_error)
+    __pyx_v_booleans = __Pyx_PyObject_to_MemoryviewSlice_ds_signed_char(values[0], PyBUF_WRITABLE); if (unlikely(!__pyx_v_booleans.memview)) __PYX_ERR(0, 524, __pyx_L3_error)
+    __pyx_v_indexers = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[1], PyBUF_WRITABLE); if (unlikely(!__pyx_v_indexers.memview)) __PYX_ERR(0, 525, __pyx_L3_error)
+    __pyx_v_positions = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[2], PyBUF_WRITABLE); if (unlikely(!__pyx_v_positions.memview)) __PYX_ERR(0, 526, __pyx_L3_error)
+    __pyx_v_starts = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[3], PyBUF_WRITABLE); if (unlikely(!__pyx_v_starts.memview)) __PYX_ERR(0, 527, __pyx_L3_error)
+    __pyx_v_ends = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[4], PyBUF_WRITABLE); if (unlikely(!__pyx_v_ends.memview)) __PYX_ERR(0, 528, __pyx_L3_error)
+    __pyx_v_index_right = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[5], PyBUF_WRITABLE); if (unlikely(!__pyx_v_index_right.memview)) __PYX_ERR(0, 529, __pyx_L3_error)
+    __pyx_v_left_index = __Pyx_PyObject_to_MemoryviewSlice_dc_long(values[6], PyBUF_WRITABLE); if (unlikely(!__pyx_v_left_index.memview)) __PYX_ERR(0, 530, __pyx_L3_error)
+    __pyx_v_right_index = __Pyx_PyObject_to_MemoryviewSlice_dc_long(values[7], PyBUF_WRITABLE); if (unlikely(!__pyx_v_right_index.memview)) __PYX_ERR(0, 531, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("build_indices_ranges_positions_last", 1, 8, 8, __pyx_nargs); __PYX_ERR(0, 526, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("build_indices_ranges_positions_last", 1, 8, 8, __pyx_nargs); __PYX_ERR(0, 521, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -23584,28 +23584,28 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return NULL;
   __pyx_L4_argument_unpacking_done:;
   if (unlikely(((PyObject *)__pyx_v_booleans.memview) == Py_None)) {
-    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "booleans"); __PYX_ERR(0, 529, __pyx_L1_error)
+    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "booleans"); __PYX_ERR(0, 524, __pyx_L1_error)
   }
   if (unlikely(((PyObject *)__pyx_v_indexers.memview) == Py_None)) {
-    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "indexers"); __PYX_ERR(0, 530, __pyx_L1_error)
+    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "indexers"); __PYX_ERR(0, 525, __pyx_L1_error)
   }
   if (unlikely(((PyObject *)__pyx_v_positions.memview) == Py_None)) {
-    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "positions"); __PYX_ERR(0, 531, __pyx_L1_error)
+    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "positions"); __PYX_ERR(0, 526, __pyx_L1_error)
   }
   if (unlikely(((PyObject *)__pyx_v_starts.memview) == Py_None)) {
-    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "starts"); __PYX_ERR(0, 532, __pyx_L1_error)
+    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "starts"); __PYX_ERR(0, 527, __pyx_L1_error)
   }
   if (unlikely(((PyObject *)__pyx_v_ends.memview) == Py_None)) {
-    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "ends"); __PYX_ERR(0, 533, __pyx_L1_error)
+    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "ends"); __PYX_ERR(0, 528, __pyx_L1_error)
   }
   if (unlikely(((PyObject *)__pyx_v_index_right.memview) == Py_None)) {
-    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "index_right"); __PYX_ERR(0, 534, __pyx_L1_error)
+    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "index_right"); __PYX_ERR(0, 529, __pyx_L1_error)
   }
   if (unlikely(((PyObject *)__pyx_v_left_index.memview) == Py_None)) {
-    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "left_index"); __PYX_ERR(0, 535, __pyx_L1_error)
+    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "left_index"); __PYX_ERR(0, 530, __pyx_L1_error)
   }
   if (unlikely(((PyObject *)__pyx_v_right_index.memview) == Py_None)) {
-    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "right_index"); __PYX_ERR(0, 536, __pyx_L1_error)
+    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "right_index"); __PYX_ERR(0, 531, __pyx_L1_error)
   }
   __pyx_r = __pyx_pf_7janitor_16cython_functions_17cond_join_indices_20build_indices_ranges_positions_last(__pyx_self, __pyx_v_booleans, __pyx_v_indexers, __pyx_v_positions, __pyx_v_starts, __pyx_v_ends, __pyx_v_index_right, __pyx_v_left_index, __pyx_v_right_index);
 
@@ -23666,7 +23666,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_20buil
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("build_indices_ranges_positions_last", 0);
 
-  /* "janitor/cython_functions/cond_join_indices.py":542
+  /* "janitor/cython_functions/cond_join_indices.py":537
  *     """
  *     ###### types declaration  #################
  *     length: cython.Py_ssize_t = booleans.shape[0]             # <<<<<<<<<<<<<<
@@ -23675,7 +23675,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_20buil
 */
   __pyx_v_length = (__pyx_v_booleans.shape[0]);
 
-  /* "janitor/cython_functions/cond_join_indices.py":543
+  /* "janitor/cython_functions/cond_join_indices.py":538
  *     ###### types declaration  #################
  *     length: cython.Py_ssize_t = booleans.shape[0]
  *     num: cython.Py_ssize_t = 0             # <<<<<<<<<<<<<<
@@ -23684,7 +23684,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_20buil
 */
   __pyx_v_num = 0;
 
-  /* "janitor/cython_functions/cond_join_indices.py":544
+  /* "janitor/cython_functions/cond_join_indices.py":539
  *     length: cython.Py_ssize_t = booleans.shape[0]
  *     num: cython.Py_ssize_t = 0
  *     indexer: cython.Py_ssize_t = 0             # <<<<<<<<<<<<<<
@@ -23693,7 +23693,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_20buil
 */
   __pyx_v_indexer = 0;
 
-  /* "janitor/cython_functions/cond_join_indices.py":545
+  /* "janitor/cython_functions/cond_join_indices.py":540
  *     num: cython.Py_ssize_t = 0
  *     indexer: cython.Py_ssize_t = 0
  *     position: cython.Py_ssize_t = 0             # <<<<<<<<<<<<<<
@@ -23702,7 +23702,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_20buil
 */
   __pyx_v_position = 0;
 
-  /* "janitor/cython_functions/cond_join_indices.py":546
+  /* "janitor/cython_functions/cond_join_indices.py":541
  *     indexer: cython.Py_ssize_t = 0
  *     position: cython.Py_ssize_t = 0
  *     r_index: cython.Py_ssize_t = 0             # <<<<<<<<<<<<<<
@@ -23711,7 +23711,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_20buil
 */
   __pyx_v_r_index = 0;
 
-  /* "janitor/cython_functions/cond_join_indices.py":547
+  /* "janitor/cython_functions/cond_join_indices.py":542
  *     position: cython.Py_ssize_t = 0
  *     r_index: cython.Py_ssize_t = 0
  *     begin: cython.Py_ssize_t = 0             # <<<<<<<<<<<<<<
@@ -23720,7 +23720,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_20buil
 */
   __pyx_v_begin = 0;
 
-  /* "janitor/cython_functions/cond_join_indices.py":550
+  /* "janitor/cython_functions/cond_join_indices.py":545
  *     start: cython.Py_ssize_t
  *     end: cython.Py_ssize_t
  *     base: cython.long = -1             # <<<<<<<<<<<<<<
@@ -23729,7 +23729,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_20buil
 */
   __pyx_v_base = -1L;
 
-  /* "janitor/cython_functions/cond_join_indices.py":552
+  /* "janitor/cython_functions/cond_join_indices.py":547
  *     base: cython.long = -1
  *     ##########################################
  *     for num in range(length):             # <<<<<<<<<<<<<<
@@ -23741,7 +23741,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_20buil
   for (__pyx_t_3 = 0; __pyx_t_3 < __pyx_t_2; __pyx_t_3+=1) {
     __pyx_v_num = __pyx_t_3;
 
-    /* "janitor/cython_functions/cond_join_indices.py":553
+    /* "janitor/cython_functions/cond_join_indices.py":548
  *     ##########################################
  *     for num in range(length):
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
@@ -23752,7 +23752,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_20buil
     __pyx_t_5 = ((*((signed char *) ( /* dim=0 */ (__pyx_v_booleans.data + __pyx_t_4 * __pyx_v_booleans.strides[0]) ))) == 0);
     if (__pyx_t_5) {
 
-      /* "janitor/cython_functions/cond_join_indices.py":554
+      /* "janitor/cython_functions/cond_join_indices.py":549
  *     for num in range(length):
  *         if booleans[num] == 0:
  *             continue             # <<<<<<<<<<<<<<
@@ -23761,7 +23761,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_20buil
 */
       goto __pyx_L3_continue;
 
-      /* "janitor/cython_functions/cond_join_indices.py":553
+      /* "janitor/cython_functions/cond_join_indices.py":548
  *     ##########################################
  *     for num in range(length):
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
@@ -23770,7 +23770,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_20buil
 */
     }
 
-    /* "janitor/cython_functions/cond_join_indices.py":555
+    /* "janitor/cython_functions/cond_join_indices.py":550
  *         if booleans[num] == 0:
  *             continue
  *         indexer = indexers[num]             # <<<<<<<<<<<<<<
@@ -23780,7 +23780,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_20buil
     __pyx_t_4 = __pyx_v_num;
     __pyx_v_indexer = (*((long *) ( /* dim=0 */ (__pyx_v_indexers.data + __pyx_t_4 * __pyx_v_indexers.strides[0]) )));
 
-    /* "janitor/cython_functions/cond_join_indices.py":556
+    /* "janitor/cython_functions/cond_join_indices.py":551
  *             continue
  *         indexer = indexers[num]
  *         start = starts[indexer]             # <<<<<<<<<<<<<<
@@ -23790,7 +23790,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_20buil
     __pyx_t_4 = __pyx_v_indexer;
     __pyx_v_start = (*((long *) ( /* dim=0 */ (__pyx_v_starts.data + __pyx_t_4 * __pyx_v_starts.strides[0]) )));
 
-    /* "janitor/cython_functions/cond_join_indices.py":557
+    /* "janitor/cython_functions/cond_join_indices.py":552
  *         indexer = indexers[num]
  *         start = starts[indexer]
  *         end = ends[indexer]             # <<<<<<<<<<<<<<
@@ -23800,7 +23800,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_20buil
     __pyx_t_4 = __pyx_v_indexer;
     __pyx_v_end = (*((long *) ( /* dim=0 */ (__pyx_v_ends.data + __pyx_t_4 * __pyx_v_ends.strides[0]) )));
 
-    /* "janitor/cython_functions/cond_join_indices.py":558
+    /* "janitor/cython_functions/cond_join_indices.py":553
  *         start = starts[indexer]
  *         end = ends[indexer]
  *         base = -1             # <<<<<<<<<<<<<<
@@ -23809,7 +23809,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_20buil
 */
     __pyx_v_base = -1L;
 
-    /* "janitor/cython_functions/cond_join_indices.py":559
+    /* "janitor/cython_functions/cond_join_indices.py":554
  *         end = ends[indexer]
  *         base = -1
  *         for number in range(start, end):             # <<<<<<<<<<<<<<
@@ -23821,7 +23821,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_20buil
     for (__pyx_t_8 = __pyx_v_start; __pyx_t_8 < __pyx_t_7; __pyx_t_8+=1) {
       __pyx_v_number = __pyx_t_8;
 
-      /* "janitor/cython_functions/cond_join_indices.py":560
+      /* "janitor/cython_functions/cond_join_indices.py":555
  *         base = -1
  *         for number in range(start, end):
  *             position = positions[number]             # <<<<<<<<<<<<<<
@@ -23831,7 +23831,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_20buil
       __pyx_t_4 = __pyx_v_number;
       __pyx_v_position = (*((long *) ( /* dim=0 */ (__pyx_v_positions.data + __pyx_t_4 * __pyx_v_positions.strides[0]) )));
 
-      /* "janitor/cython_functions/cond_join_indices.py":561
+      /* "janitor/cython_functions/cond_join_indices.py":556
  *         for number in range(start, end):
  *             position = positions[number]
  *             if (base < 0) | (base < position):             # <<<<<<<<<<<<<<
@@ -23841,7 +23841,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_20buil
       __pyx_t_5 = ((__pyx_v_base < 0) | (__pyx_v_base < __pyx_v_position));
       if (__pyx_t_5) {
 
-        /* "janitor/cython_functions/cond_join_indices.py":562
+        /* "janitor/cython_functions/cond_join_indices.py":557
  *             position = positions[number]
  *             if (base < 0) | (base < position):
  *                 base = position             # <<<<<<<<<<<<<<
@@ -23850,7 +23850,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_20buil
 */
         __pyx_v_base = __pyx_v_position;
 
-        /* "janitor/cython_functions/cond_join_indices.py":561
+        /* "janitor/cython_functions/cond_join_indices.py":556
  *         for number in range(start, end):
  *             position = positions[number]
  *             if (base < 0) | (base < position):             # <<<<<<<<<<<<<<
@@ -23860,7 +23860,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_20buil
       }
     }
 
-    /* "janitor/cython_functions/cond_join_indices.py":563
+    /* "janitor/cython_functions/cond_join_indices.py":558
  *             if (base < 0) | (base < position):
  *                 base = position
  *         left_index[begin] = num             # <<<<<<<<<<<<<<
@@ -23870,7 +23870,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_20buil
     __pyx_t_4 = __pyx_v_begin;
     *((long *) ( /* dim=0 */ ((char *) (((long *) __pyx_v_left_index.data) + __pyx_t_4)) )) = __pyx_v_num;
 
-    /* "janitor/cython_functions/cond_join_indices.py":564
+    /* "janitor/cython_functions/cond_join_indices.py":559
  *                 base = position
  *         left_index[begin] = num
  *         r_index = index_right[base]             # <<<<<<<<<<<<<<
@@ -23880,7 +23880,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_20buil
     __pyx_t_4 = __pyx_v_base;
     __pyx_v_r_index = (*((long *) ( /* dim=0 */ (__pyx_v_index_right.data + __pyx_t_4 * __pyx_v_index_right.strides[0]) )));
 
-    /* "janitor/cython_functions/cond_join_indices.py":565
+    /* "janitor/cython_functions/cond_join_indices.py":560
  *         left_index[begin] = num
  *         r_index = index_right[base]
  *         right_index[begin] = r_index             # <<<<<<<<<<<<<<
@@ -23890,7 +23890,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_20buil
     __pyx_t_4 = __pyx_v_begin;
     *((long *) ( /* dim=0 */ ((char *) (((long *) __pyx_v_right_index.data) + __pyx_t_4)) )) = __pyx_v_r_index;
 
-    /* "janitor/cython_functions/cond_join_indices.py":566
+    /* "janitor/cython_functions/cond_join_indices.py":561
  *         r_index = index_right[base]
  *         right_index[begin] = r_index
  *         begin += 1             # <<<<<<<<<<<<<<
@@ -23901,7 +23901,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_20buil
     __pyx_L3_continue:;
   }
 
-  /* "janitor/cython_functions/cond_join_indices.py":568
+  /* "janitor/cython_functions/cond_join_indices.py":563
  *         begin += 1
  *
  *     return np.asarray(left_index), np.asarray(right_index)             # <<<<<<<<<<<<<<
@@ -23910,12 +23910,12 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_20buil
 */
   __Pyx_XDECREF(__pyx_r);
   __pyx_t_10 = NULL;
-  __Pyx_GetModuleGlobalName(__pyx_t_11, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 568, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_11, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 563, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_11);
-  __pyx_t_12 = __Pyx_PyObject_GetAttrStr(__pyx_t_11, __pyx_mstate_global->__pyx_n_u_asarray); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 568, __pyx_L1_error)
+  __pyx_t_12 = __Pyx_PyObject_GetAttrStr(__pyx_t_11, __pyx_mstate_global->__pyx_n_u_asarray); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 563, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_12);
   __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
-  __pyx_t_11 = __pyx_memoryview_fromslice(__pyx_v_left_index, 1, (PyObject *(*)(char *)) __pyx_memview_get_long, (int (*)(char *, PyObject *)) __pyx_memview_set_long, 0);; if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 568, __pyx_L1_error)
+  __pyx_t_11 = __pyx_memoryview_fromslice(__pyx_v_left_index, 1, (PyObject *(*)(char *)) __pyx_memview_get_long, (int (*)(char *, PyObject *)) __pyx_memview_set_long, 0);; if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 563, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_11);
   __pyx_t_13 = 1;
   #if CYTHON_UNPACK_METHODS
@@ -23935,16 +23935,16 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_20buil
     __Pyx_XDECREF(__pyx_t_10); __pyx_t_10 = 0;
     __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
     __Pyx_DECREF(__pyx_t_12); __pyx_t_12 = 0;
-    if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 568, __pyx_L1_error)
+    if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 563, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_9);
   }
   __pyx_t_11 = NULL;
-  __Pyx_GetModuleGlobalName(__pyx_t_10, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 568, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_10, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 563, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_10);
-  __pyx_t_14 = __Pyx_PyObject_GetAttrStr(__pyx_t_10, __pyx_mstate_global->__pyx_n_u_asarray); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 568, __pyx_L1_error)
+  __pyx_t_14 = __Pyx_PyObject_GetAttrStr(__pyx_t_10, __pyx_mstate_global->__pyx_n_u_asarray); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 563, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_14);
   __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
-  __pyx_t_10 = __pyx_memoryview_fromslice(__pyx_v_right_index, 1, (PyObject *(*)(char *)) __pyx_memview_get_long, (int (*)(char *, PyObject *)) __pyx_memview_set_long, 0);; if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 568, __pyx_L1_error)
+  __pyx_t_10 = __pyx_memoryview_fromslice(__pyx_v_right_index, 1, (PyObject *(*)(char *)) __pyx_memview_get_long, (int (*)(char *, PyObject *)) __pyx_memview_set_long, 0);; if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 563, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_10);
   __pyx_t_13 = 1;
   #if CYTHON_UNPACK_METHODS
@@ -23964,22 +23964,22 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_20buil
     __Pyx_XDECREF(__pyx_t_11); __pyx_t_11 = 0;
     __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
     __Pyx_DECREF(__pyx_t_14); __pyx_t_14 = 0;
-    if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 568, __pyx_L1_error)
+    if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 563, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_12);
   }
-  __pyx_t_14 = PyTuple_New(2); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 568, __pyx_L1_error)
+  __pyx_t_14 = PyTuple_New(2); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 563, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_14);
   __Pyx_GIVEREF(__pyx_t_9);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_14, 0, __pyx_t_9) != (0)) __PYX_ERR(0, 568, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_14, 0, __pyx_t_9) != (0)) __PYX_ERR(0, 563, __pyx_L1_error);
   __Pyx_GIVEREF(__pyx_t_12);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_14, 1, __pyx_t_12) != (0)) __PYX_ERR(0, 568, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_14, 1, __pyx_t_12) != (0)) __PYX_ERR(0, 563, __pyx_L1_error);
   __pyx_t_9 = 0;
   __pyx_t_12 = 0;
   __pyx_r = __pyx_t_14;
   __pyx_t_14 = 0;
   goto __pyx_L0;
 
-  /* "janitor/cython_functions/cond_join_indices.py":526
+  /* "janitor/cython_functions/cond_join_indices.py":521
  *
  *
  * @cython.boundscheck(False)             # <<<<<<<<<<<<<<
@@ -24002,7 +24002,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_20buil
   return __pyx_r;
 }
 
-/* "janitor/cython_functions/cond_join_indices.py":585
+/* "janitor/cython_functions/cond_join_indices.py":566
  *
  *
  * @cython.boundscheck(False)             # <<<<<<<<<<<<<<
@@ -24056,74 +24056,74 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_left_index,&__pyx_mstate_global->__pyx_n_u_right_index,&__pyx_mstate_global->__pyx_n_u_left_indices,&__pyx_mstate_global->__pyx_n_u_right_indices,&__pyx_mstate_global->__pyx_n_u_starts,&__pyx_mstate_global->__pyx_n_u_ends,&__pyx_mstate_global->__pyx_n_u_booleans,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 585, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 566, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  7:
         values[6] = __Pyx_ArgRef_FASTCALL(__pyx_args, 6);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 585, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 566, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  6:
         values[5] = __Pyx_ArgRef_FASTCALL(__pyx_args, 5);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 585, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 566, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  5:
         values[4] = __Pyx_ArgRef_FASTCALL(__pyx_args, 4);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 585, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 566, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  4:
         values[3] = __Pyx_ArgRef_FASTCALL(__pyx_args, 3);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 585, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 566, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  3:
         values[2] = __Pyx_ArgRef_FASTCALL(__pyx_args, 2);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 585, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 566, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  2:
         values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 585, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 566, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 585, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 566, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "build_indices_fast_path_keep_all", 0) < 0) __PYX_ERR(0, 585, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "build_indices_fast_path_keep_all", 0) < 0) __PYX_ERR(0, 566, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 7; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("build_indices_fast_path_keep_all", 1, 7, 7, i); __PYX_ERR(0, 585, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("build_indices_fast_path_keep_all", 1, 7, 7, i); __PYX_ERR(0, 566, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 7)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 585, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 566, __pyx_L3_error)
       values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 585, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 566, __pyx_L3_error)
       values[2] = __Pyx_ArgRef_FASTCALL(__pyx_args, 2);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 585, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 566, __pyx_L3_error)
       values[3] = __Pyx_ArgRef_FASTCALL(__pyx_args, 3);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 585, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 566, __pyx_L3_error)
       values[4] = __Pyx_ArgRef_FASTCALL(__pyx_args, 4);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 585, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 566, __pyx_L3_error)
       values[5] = __Pyx_ArgRef_FASTCALL(__pyx_args, 5);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 585, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 566, __pyx_L3_error)
       values[6] = __Pyx_ArgRef_FASTCALL(__pyx_args, 6);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 585, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 566, __pyx_L3_error)
     }
-    __pyx_v_left_index = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[0], PyBUF_WRITABLE); if (unlikely(!__pyx_v_left_index.memview)) __PYX_ERR(0, 588, __pyx_L3_error)
-    __pyx_v_right_index = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[1], PyBUF_WRITABLE); if (unlikely(!__pyx_v_right_index.memview)) __PYX_ERR(0, 589, __pyx_L3_error)
-    __pyx_v_left_indices = __Pyx_PyObject_to_MemoryviewSlice_dc_long(values[2], PyBUF_WRITABLE); if (unlikely(!__pyx_v_left_indices.memview)) __PYX_ERR(0, 590, __pyx_L3_error)
-    __pyx_v_right_indices = __Pyx_PyObject_to_MemoryviewSlice_dc_long(values[3], PyBUF_WRITABLE); if (unlikely(!__pyx_v_right_indices.memview)) __PYX_ERR(0, 591, __pyx_L3_error)
-    __pyx_v_starts = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[4], PyBUF_WRITABLE); if (unlikely(!__pyx_v_starts.memview)) __PYX_ERR(0, 592, __pyx_L3_error)
-    __pyx_v_ends = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[5], PyBUF_WRITABLE); if (unlikely(!__pyx_v_ends.memview)) __PYX_ERR(0, 593, __pyx_L3_error)
-    __pyx_v_booleans = __Pyx_PyObject_to_MemoryviewSlice_ds_signed_char(values[6], PyBUF_WRITABLE); if (unlikely(!__pyx_v_booleans.memview)) __PYX_ERR(0, 594, __pyx_L3_error)
+    __pyx_v_left_index = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[0], PyBUF_WRITABLE); if (unlikely(!__pyx_v_left_index.memview)) __PYX_ERR(0, 569, __pyx_L3_error)
+    __pyx_v_right_index = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[1], PyBUF_WRITABLE); if (unlikely(!__pyx_v_right_index.memview)) __PYX_ERR(0, 570, __pyx_L3_error)
+    __pyx_v_left_indices = __Pyx_PyObject_to_MemoryviewSlice_dc_long(values[2], PyBUF_WRITABLE); if (unlikely(!__pyx_v_left_indices.memview)) __PYX_ERR(0, 571, __pyx_L3_error)
+    __pyx_v_right_indices = __Pyx_PyObject_to_MemoryviewSlice_dc_long(values[3], PyBUF_WRITABLE); if (unlikely(!__pyx_v_right_indices.memview)) __PYX_ERR(0, 572, __pyx_L3_error)
+    __pyx_v_starts = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[4], PyBUF_WRITABLE); if (unlikely(!__pyx_v_starts.memview)) __PYX_ERR(0, 573, __pyx_L3_error)
+    __pyx_v_ends = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[5], PyBUF_WRITABLE); if (unlikely(!__pyx_v_ends.memview)) __PYX_ERR(0, 574, __pyx_L3_error)
+    __pyx_v_booleans = __Pyx_PyObject_to_MemoryviewSlice_ds_signed_char(values[6], PyBUF_WRITABLE); if (unlikely(!__pyx_v_booleans.memview)) __PYX_ERR(0, 575, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("build_indices_fast_path_keep_all", 1, 7, 7, __pyx_nargs); __PYX_ERR(0, 585, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("build_indices_fast_path_keep_all", 1, 7, 7, __pyx_nargs); __PYX_ERR(0, 566, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -24142,25 +24142,25 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return NULL;
   __pyx_L4_argument_unpacking_done:;
   if (unlikely(((PyObject *)__pyx_v_left_index.memview) == Py_None)) {
-    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "left_index"); __PYX_ERR(0, 588, __pyx_L1_error)
+    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "left_index"); __PYX_ERR(0, 569, __pyx_L1_error)
   }
   if (unlikely(((PyObject *)__pyx_v_right_index.memview) == Py_None)) {
-    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "right_index"); __PYX_ERR(0, 589, __pyx_L1_error)
+    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "right_index"); __PYX_ERR(0, 570, __pyx_L1_error)
   }
   if (unlikely(((PyObject *)__pyx_v_left_indices.memview) == Py_None)) {
-    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "left_indices"); __PYX_ERR(0, 590, __pyx_L1_error)
+    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "left_indices"); __PYX_ERR(0, 571, __pyx_L1_error)
   }
   if (unlikely(((PyObject *)__pyx_v_right_indices.memview) == Py_None)) {
-    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "right_indices"); __PYX_ERR(0, 591, __pyx_L1_error)
+    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "right_indices"); __PYX_ERR(0, 572, __pyx_L1_error)
   }
   if (unlikely(((PyObject *)__pyx_v_starts.memview) == Py_None)) {
-    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "starts"); __PYX_ERR(0, 592, __pyx_L1_error)
+    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "starts"); __PYX_ERR(0, 573, __pyx_L1_error)
   }
   if (unlikely(((PyObject *)__pyx_v_ends.memview) == Py_None)) {
-    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "ends"); __PYX_ERR(0, 593, __pyx_L1_error)
+    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "ends"); __PYX_ERR(0, 574, __pyx_L1_error)
   }
   if (unlikely(((PyObject *)__pyx_v_booleans.memview) == Py_None)) {
-    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "booleans"); __PYX_ERR(0, 594, __pyx_L1_error)
+    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "booleans"); __PYX_ERR(0, 575, __pyx_L1_error)
   }
   __pyx_r = __pyx_pf_7janitor_16cython_functions_17cond_join_indices_22build_indices_fast_path_keep_all(__pyx_self, __pyx_v_left_index, __pyx_v_right_index, __pyx_v_left_indices, __pyx_v_right_indices, __pyx_v_starts, __pyx_v_ends, __pyx_v_booleans);
 
@@ -24218,7 +24218,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_22buil
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("build_indices_fast_path_keep_all", 0);
 
-  /* "janitor/cython_functions/cond_join_indices.py":604
+  /* "janitor/cython_functions/cond_join_indices.py":585
  *     num: cython.Py_ssize_t
  *     number: cython.Py_ssize_t
  *     length: cython.Py_ssize_t = left_index.shape[0]             # <<<<<<<<<<<<<<
@@ -24227,7 +24227,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_22buil
 */
   __pyx_v_length = (__pyx_v_left_index.shape[0]);
 
-  /* "janitor/cython_functions/cond_join_indices.py":605
+  /* "janitor/cython_functions/cond_join_indices.py":586
  *     number: cython.Py_ssize_t
  *     length: cython.Py_ssize_t = left_index.shape[0]
  *     begin: cython.Py_ssize_t = 0             # <<<<<<<<<<<<<<
@@ -24236,7 +24236,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_22buil
 */
   __pyx_v_begin = 0;
 
-  /* "janitor/cython_functions/cond_join_indices.py":606
+  /* "janitor/cython_functions/cond_join_indices.py":587
  *     length: cython.Py_ssize_t = left_index.shape[0]
  *     begin: cython.Py_ssize_t = 0
  *     start: cython.Py_ssize_t = 0             # <<<<<<<<<<<<<<
@@ -24245,7 +24245,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_22buil
 */
   __pyx_v_start = 0;
 
-  /* "janitor/cython_functions/cond_join_indices.py":607
+  /* "janitor/cython_functions/cond_join_indices.py":588
  *     begin: cython.Py_ssize_t = 0
  *     start: cython.Py_ssize_t = 0
  *     end: cython.Py_ssize_t = 0             # <<<<<<<<<<<<<<
@@ -24254,7 +24254,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_22buil
 */
   __pyx_v_end = 0;
 
-  /* "janitor/cython_functions/cond_join_indices.py":612
+  /* "janitor/cython_functions/cond_join_indices.py":593
  *     ####################################
  *
  *     for num in range(length):             # <<<<<<<<<<<<<<
@@ -24266,7 +24266,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_22buil
   for (__pyx_t_3 = 0; __pyx_t_3 < __pyx_t_2; __pyx_t_3+=1) {
     __pyx_v_num = __pyx_t_3;
 
-    /* "janitor/cython_functions/cond_join_indices.py":613
+    /* "janitor/cython_functions/cond_join_indices.py":594
  *
  *     for num in range(length):
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
@@ -24277,7 +24277,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_22buil
     __pyx_t_5 = ((*((signed char *) ( /* dim=0 */ (__pyx_v_booleans.data + __pyx_t_4 * __pyx_v_booleans.strides[0]) ))) == 0);
     if (__pyx_t_5) {
 
-      /* "janitor/cython_functions/cond_join_indices.py":614
+      /* "janitor/cython_functions/cond_join_indices.py":595
  *     for num in range(length):
  *         if booleans[num] == 0:
  *             continue             # <<<<<<<<<<<<<<
@@ -24286,7 +24286,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_22buil
 */
       goto __pyx_L3_continue;
 
-      /* "janitor/cython_functions/cond_join_indices.py":613
+      /* "janitor/cython_functions/cond_join_indices.py":594
  *
  *     for num in range(length):
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
@@ -24295,7 +24295,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_22buil
 */
     }
 
-    /* "janitor/cython_functions/cond_join_indices.py":615
+    /* "janitor/cython_functions/cond_join_indices.py":596
  *         if booleans[num] == 0:
  *             continue
  *         start = starts[num]             # <<<<<<<<<<<<<<
@@ -24305,7 +24305,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_22buil
     __pyx_t_4 = __pyx_v_num;
     __pyx_v_start = (*((long *) ( /* dim=0 */ (__pyx_v_starts.data + __pyx_t_4 * __pyx_v_starts.strides[0]) )));
 
-    /* "janitor/cython_functions/cond_join_indices.py":616
+    /* "janitor/cython_functions/cond_join_indices.py":597
  *             continue
  *         start = starts[num]
  *         end = ends[num]             # <<<<<<<<<<<<<<
@@ -24315,7 +24315,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_22buil
     __pyx_t_4 = __pyx_v_num;
     __pyx_v_end = (*((long *) ( /* dim=0 */ (__pyx_v_ends.data + __pyx_t_4 * __pyx_v_ends.strides[0]) )));
 
-    /* "janitor/cython_functions/cond_join_indices.py":617
+    /* "janitor/cython_functions/cond_join_indices.py":598
  *         start = starts[num]
  *         end = ends[num]
  *         l_value = left_index[num]             # <<<<<<<<<<<<<<
@@ -24325,7 +24325,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_22buil
     __pyx_t_4 = __pyx_v_num;
     __pyx_v_l_value = (*((long *) ( /* dim=0 */ (__pyx_v_left_index.data + __pyx_t_4 * __pyx_v_left_index.strides[0]) )));
 
-    /* "janitor/cython_functions/cond_join_indices.py":618
+    /* "janitor/cython_functions/cond_join_indices.py":599
  *         end = ends[num]
  *         l_value = left_index[num]
  *         for number in range(start, end):             # <<<<<<<<<<<<<<
@@ -24337,7 +24337,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_22buil
     for (__pyx_t_8 = __pyx_v_start; __pyx_t_8 < __pyx_t_7; __pyx_t_8+=1) {
       __pyx_v_number = __pyx_t_8;
 
-      /* "janitor/cython_functions/cond_join_indices.py":619
+      /* "janitor/cython_functions/cond_join_indices.py":600
  *         l_value = left_index[num]
  *         for number in range(start, end):
  *             left_indices[begin] = l_value             # <<<<<<<<<<<<<<
@@ -24347,7 +24347,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_22buil
       __pyx_t_4 = __pyx_v_begin;
       *((long *) ( /* dim=0 */ ((char *) (((long *) __pyx_v_left_indices.data) + __pyx_t_4)) )) = __pyx_v_l_value;
 
-      /* "janitor/cython_functions/cond_join_indices.py":620
+      /* "janitor/cython_functions/cond_join_indices.py":601
  *         for number in range(start, end):
  *             left_indices[begin] = l_value
  *             r_value = right_index[number]             # <<<<<<<<<<<<<<
@@ -24357,7 +24357,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_22buil
       __pyx_t_4 = __pyx_v_number;
       __pyx_v_r_value = (*((long *) ( /* dim=0 */ (__pyx_v_right_index.data + __pyx_t_4 * __pyx_v_right_index.strides[0]) )));
 
-      /* "janitor/cython_functions/cond_join_indices.py":621
+      /* "janitor/cython_functions/cond_join_indices.py":602
  *             left_indices[begin] = l_value
  *             r_value = right_index[number]
  *             right_indices[begin] = r_value             # <<<<<<<<<<<<<<
@@ -24367,7 +24367,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_22buil
       __pyx_t_4 = __pyx_v_begin;
       *((long *) ( /* dim=0 */ ((char *) (((long *) __pyx_v_right_indices.data) + __pyx_t_4)) )) = __pyx_v_r_value;
 
-      /* "janitor/cython_functions/cond_join_indices.py":622
+      /* "janitor/cython_functions/cond_join_indices.py":603
  *             r_value = right_index[number]
  *             right_indices[begin] = r_value
  *             begin += 1             # <<<<<<<<<<<<<<
@@ -24379,7 +24379,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_22buil
     __pyx_L3_continue:;
   }
 
-  /* "janitor/cython_functions/cond_join_indices.py":623
+  /* "janitor/cython_functions/cond_join_indices.py":604
  *             right_indices[begin] = r_value
  *             begin += 1
  *     return np.asarray(left_indices), np.asarray(right_indices)             # <<<<<<<<<<<<<<
@@ -24388,12 +24388,12 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_22buil
 */
   __Pyx_XDECREF(__pyx_r);
   __pyx_t_10 = NULL;
-  __Pyx_GetModuleGlobalName(__pyx_t_11, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 623, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_11, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 604, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_11);
-  __pyx_t_12 = __Pyx_PyObject_GetAttrStr(__pyx_t_11, __pyx_mstate_global->__pyx_n_u_asarray); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 623, __pyx_L1_error)
+  __pyx_t_12 = __Pyx_PyObject_GetAttrStr(__pyx_t_11, __pyx_mstate_global->__pyx_n_u_asarray); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 604, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_12);
   __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
-  __pyx_t_11 = __pyx_memoryview_fromslice(__pyx_v_left_indices, 1, (PyObject *(*)(char *)) __pyx_memview_get_long, (int (*)(char *, PyObject *)) __pyx_memview_set_long, 0);; if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 623, __pyx_L1_error)
+  __pyx_t_11 = __pyx_memoryview_fromslice(__pyx_v_left_indices, 1, (PyObject *(*)(char *)) __pyx_memview_get_long, (int (*)(char *, PyObject *)) __pyx_memview_set_long, 0);; if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 604, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_11);
   __pyx_t_13 = 1;
   #if CYTHON_UNPACK_METHODS
@@ -24413,16 +24413,16 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_22buil
     __Pyx_XDECREF(__pyx_t_10); __pyx_t_10 = 0;
     __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
     __Pyx_DECREF(__pyx_t_12); __pyx_t_12 = 0;
-    if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 623, __pyx_L1_error)
+    if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 604, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_9);
   }
   __pyx_t_11 = NULL;
-  __Pyx_GetModuleGlobalName(__pyx_t_10, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 623, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_10, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 604, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_10);
-  __pyx_t_14 = __Pyx_PyObject_GetAttrStr(__pyx_t_10, __pyx_mstate_global->__pyx_n_u_asarray); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 623, __pyx_L1_error)
+  __pyx_t_14 = __Pyx_PyObject_GetAttrStr(__pyx_t_10, __pyx_mstate_global->__pyx_n_u_asarray); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 604, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_14);
   __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
-  __pyx_t_10 = __pyx_memoryview_fromslice(__pyx_v_right_indices, 1, (PyObject *(*)(char *)) __pyx_memview_get_long, (int (*)(char *, PyObject *)) __pyx_memview_set_long, 0);; if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 623, __pyx_L1_error)
+  __pyx_t_10 = __pyx_memoryview_fromslice(__pyx_v_right_indices, 1, (PyObject *(*)(char *)) __pyx_memview_get_long, (int (*)(char *, PyObject *)) __pyx_memview_set_long, 0);; if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 604, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_10);
   __pyx_t_13 = 1;
   #if CYTHON_UNPACK_METHODS
@@ -24442,22 +24442,22 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_22buil
     __Pyx_XDECREF(__pyx_t_11); __pyx_t_11 = 0;
     __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
     __Pyx_DECREF(__pyx_t_14); __pyx_t_14 = 0;
-    if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 623, __pyx_L1_error)
+    if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 604, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_12);
   }
-  __pyx_t_14 = PyTuple_New(2); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 623, __pyx_L1_error)
+  __pyx_t_14 = PyTuple_New(2); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 604, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_14);
   __Pyx_GIVEREF(__pyx_t_9);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_14, 0, __pyx_t_9) != (0)) __PYX_ERR(0, 623, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_14, 0, __pyx_t_9) != (0)) __PYX_ERR(0, 604, __pyx_L1_error);
   __Pyx_GIVEREF(__pyx_t_12);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_14, 1, __pyx_t_12) != (0)) __PYX_ERR(0, 623, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_14, 1, __pyx_t_12) != (0)) __PYX_ERR(0, 604, __pyx_L1_error);
   __pyx_t_9 = 0;
   __pyx_t_12 = 0;
   __pyx_r = __pyx_t_14;
   __pyx_t_14 = 0;
   goto __pyx_L0;
 
-  /* "janitor/cython_functions/cond_join_indices.py":585
+  /* "janitor/cython_functions/cond_join_indices.py":566
  *
  *
  * @cython.boundscheck(False)             # <<<<<<<<<<<<<<
@@ -24480,7 +24480,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_22buil
   return __pyx_r;
 }
 
-/* "janitor/cython_functions/cond_join_indices.py":626
+/* "janitor/cython_functions/cond_join_indices.py":607
  *
  *
  * @cython.boundscheck(False)             # <<<<<<<<<<<<<<
@@ -24534,74 +24534,74 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_left_index,&__pyx_mstate_global->__pyx_n_u_right_index,&__pyx_mstate_global->__pyx_n_u_left_indices,&__pyx_mstate_global->__pyx_n_u_right_indices,&__pyx_mstate_global->__pyx_n_u_starts,&__pyx_mstate_global->__pyx_n_u_ends,&__pyx_mstate_global->__pyx_n_u_booleans,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 626, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 607, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  7:
         values[6] = __Pyx_ArgRef_FASTCALL(__pyx_args, 6);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 626, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 607, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  6:
         values[5] = __Pyx_ArgRef_FASTCALL(__pyx_args, 5);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 626, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 607, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  5:
         values[4] = __Pyx_ArgRef_FASTCALL(__pyx_args, 4);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 626, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 607, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  4:
         values[3] = __Pyx_ArgRef_FASTCALL(__pyx_args, 3);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 626, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 607, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  3:
         values[2] = __Pyx_ArgRef_FASTCALL(__pyx_args, 2);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 626, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 607, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  2:
         values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 626, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 607, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 626, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 607, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "build_indices_fast_path_keep_first", 0) < 0) __PYX_ERR(0, 626, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "build_indices_fast_path_keep_first", 0) < 0) __PYX_ERR(0, 607, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 7; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("build_indices_fast_path_keep_first", 1, 7, 7, i); __PYX_ERR(0, 626, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("build_indices_fast_path_keep_first", 1, 7, 7, i); __PYX_ERR(0, 607, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 7)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 626, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 607, __pyx_L3_error)
       values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 626, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 607, __pyx_L3_error)
       values[2] = __Pyx_ArgRef_FASTCALL(__pyx_args, 2);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 626, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 607, __pyx_L3_error)
       values[3] = __Pyx_ArgRef_FASTCALL(__pyx_args, 3);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 626, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 607, __pyx_L3_error)
       values[4] = __Pyx_ArgRef_FASTCALL(__pyx_args, 4);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 626, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 607, __pyx_L3_error)
       values[5] = __Pyx_ArgRef_FASTCALL(__pyx_args, 5);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 626, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 607, __pyx_L3_error)
       values[6] = __Pyx_ArgRef_FASTCALL(__pyx_args, 6);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 626, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 607, __pyx_L3_error)
     }
-    __pyx_v_left_index = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[0], PyBUF_WRITABLE); if (unlikely(!__pyx_v_left_index.memview)) __PYX_ERR(0, 629, __pyx_L3_error)
-    __pyx_v_right_index = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[1], PyBUF_WRITABLE); if (unlikely(!__pyx_v_right_index.memview)) __PYX_ERR(0, 630, __pyx_L3_error)
-    __pyx_v_left_indices = __Pyx_PyObject_to_MemoryviewSlice_dc_long(values[2], PyBUF_WRITABLE); if (unlikely(!__pyx_v_left_indices.memview)) __PYX_ERR(0, 631, __pyx_L3_error)
-    __pyx_v_right_indices = __Pyx_PyObject_to_MemoryviewSlice_dc_long(values[3], PyBUF_WRITABLE); if (unlikely(!__pyx_v_right_indices.memview)) __PYX_ERR(0, 632, __pyx_L3_error)
-    __pyx_v_starts = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[4], PyBUF_WRITABLE); if (unlikely(!__pyx_v_starts.memview)) __PYX_ERR(0, 633, __pyx_L3_error)
-    __pyx_v_ends = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[5], PyBUF_WRITABLE); if (unlikely(!__pyx_v_ends.memview)) __PYX_ERR(0, 634, __pyx_L3_error)
-    __pyx_v_booleans = __Pyx_PyObject_to_MemoryviewSlice_ds_signed_char(values[6], PyBUF_WRITABLE); if (unlikely(!__pyx_v_booleans.memview)) __PYX_ERR(0, 635, __pyx_L3_error)
+    __pyx_v_left_index = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[0], PyBUF_WRITABLE); if (unlikely(!__pyx_v_left_index.memview)) __PYX_ERR(0, 610, __pyx_L3_error)
+    __pyx_v_right_index = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[1], PyBUF_WRITABLE); if (unlikely(!__pyx_v_right_index.memview)) __PYX_ERR(0, 611, __pyx_L3_error)
+    __pyx_v_left_indices = __Pyx_PyObject_to_MemoryviewSlice_dc_long(values[2], PyBUF_WRITABLE); if (unlikely(!__pyx_v_left_indices.memview)) __PYX_ERR(0, 612, __pyx_L3_error)
+    __pyx_v_right_indices = __Pyx_PyObject_to_MemoryviewSlice_dc_long(values[3], PyBUF_WRITABLE); if (unlikely(!__pyx_v_right_indices.memview)) __PYX_ERR(0, 613, __pyx_L3_error)
+    __pyx_v_starts = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[4], PyBUF_WRITABLE); if (unlikely(!__pyx_v_starts.memview)) __PYX_ERR(0, 614, __pyx_L3_error)
+    __pyx_v_ends = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[5], PyBUF_WRITABLE); if (unlikely(!__pyx_v_ends.memview)) __PYX_ERR(0, 615, __pyx_L3_error)
+    __pyx_v_booleans = __Pyx_PyObject_to_MemoryviewSlice_ds_signed_char(values[6], PyBUF_WRITABLE); if (unlikely(!__pyx_v_booleans.memview)) __PYX_ERR(0, 616, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("build_indices_fast_path_keep_first", 1, 7, 7, __pyx_nargs); __PYX_ERR(0, 626, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("build_indices_fast_path_keep_first", 1, 7, 7, __pyx_nargs); __PYX_ERR(0, 607, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -24620,25 +24620,25 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return NULL;
   __pyx_L4_argument_unpacking_done:;
   if (unlikely(((PyObject *)__pyx_v_left_index.memview) == Py_None)) {
-    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "left_index"); __PYX_ERR(0, 629, __pyx_L1_error)
+    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "left_index"); __PYX_ERR(0, 610, __pyx_L1_error)
   }
   if (unlikely(((PyObject *)__pyx_v_right_index.memview) == Py_None)) {
-    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "right_index"); __PYX_ERR(0, 630, __pyx_L1_error)
+    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "right_index"); __PYX_ERR(0, 611, __pyx_L1_error)
   }
   if (unlikely(((PyObject *)__pyx_v_left_indices.memview) == Py_None)) {
-    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "left_indices"); __PYX_ERR(0, 631, __pyx_L1_error)
+    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "left_indices"); __PYX_ERR(0, 612, __pyx_L1_error)
   }
   if (unlikely(((PyObject *)__pyx_v_right_indices.memview) == Py_None)) {
-    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "right_indices"); __PYX_ERR(0, 632, __pyx_L1_error)
+    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "right_indices"); __PYX_ERR(0, 613, __pyx_L1_error)
   }
   if (unlikely(((PyObject *)__pyx_v_starts.memview) == Py_None)) {
-    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "starts"); __PYX_ERR(0, 633, __pyx_L1_error)
+    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "starts"); __PYX_ERR(0, 614, __pyx_L1_error)
   }
   if (unlikely(((PyObject *)__pyx_v_ends.memview) == Py_None)) {
-    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "ends"); __PYX_ERR(0, 634, __pyx_L1_error)
+    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "ends"); __PYX_ERR(0, 615, __pyx_L1_error)
   }
   if (unlikely(((PyObject *)__pyx_v_booleans.memview) == Py_None)) {
-    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "booleans"); __PYX_ERR(0, 635, __pyx_L1_error)
+    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "booleans"); __PYX_ERR(0, 616, __pyx_L1_error)
   }
   __pyx_r = __pyx_pf_7janitor_16cython_functions_17cond_join_indices_24build_indices_fast_path_keep_first(__pyx_self, __pyx_v_left_index, __pyx_v_right_index, __pyx_v_left_indices, __pyx_v_right_indices, __pyx_v_starts, __pyx_v_ends, __pyx_v_booleans);
 
@@ -24697,7 +24697,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_24buil
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("build_indices_fast_path_keep_first", 0);
 
-  /* "janitor/cython_functions/cond_join_indices.py":645
+  /* "janitor/cython_functions/cond_join_indices.py":626
  *     num: cython.Py_ssize_t
  *     number: cython.Py_ssize_t
  *     length: cython.Py_ssize_t = left_index.shape[0]             # <<<<<<<<<<<<<<
@@ -24706,7 +24706,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_24buil
 */
   __pyx_v_length = (__pyx_v_left_index.shape[0]);
 
-  /* "janitor/cython_functions/cond_join_indices.py":646
+  /* "janitor/cython_functions/cond_join_indices.py":627
  *     number: cython.Py_ssize_t
  *     length: cython.Py_ssize_t = left_index.shape[0]
  *     begin: cython.Py_ssize_t = 0             # <<<<<<<<<<<<<<
@@ -24715,7 +24715,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_24buil
 */
   __pyx_v_begin = 0;
 
-  /* "janitor/cython_functions/cond_join_indices.py":647
+  /* "janitor/cython_functions/cond_join_indices.py":628
  *     length: cython.Py_ssize_t = left_index.shape[0]
  *     begin: cython.Py_ssize_t = 0
  *     start: cython.Py_ssize_t = 0             # <<<<<<<<<<<<<<
@@ -24724,7 +24724,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_24buil
 */
   __pyx_v_start = 0;
 
-  /* "janitor/cython_functions/cond_join_indices.py":648
+  /* "janitor/cython_functions/cond_join_indices.py":629
  *     begin: cython.Py_ssize_t = 0
  *     start: cython.Py_ssize_t = 0
  *     end: cython.Py_ssize_t = 0             # <<<<<<<<<<<<<<
@@ -24733,7 +24733,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_24buil
 */
   __pyx_v_end = 0;
 
-  /* "janitor/cython_functions/cond_join_indices.py":649
+  /* "janitor/cython_functions/cond_join_indices.py":630
  *     start: cython.Py_ssize_t = 0
  *     end: cython.Py_ssize_t = 0
  *     base: cython.long = -1             # <<<<<<<<<<<<<<
@@ -24742,7 +24742,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_24buil
 */
   __pyx_v_base = -1L;
 
-  /* "janitor/cython_functions/cond_join_indices.py":654
+  /* "janitor/cython_functions/cond_join_indices.py":635
  *     ####################################
  *
  *     for num in range(length):             # <<<<<<<<<<<<<<
@@ -24754,7 +24754,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_24buil
   for (__pyx_t_3 = 0; __pyx_t_3 < __pyx_t_2; __pyx_t_3+=1) {
     __pyx_v_num = __pyx_t_3;
 
-    /* "janitor/cython_functions/cond_join_indices.py":655
+    /* "janitor/cython_functions/cond_join_indices.py":636
  *
  *     for num in range(length):
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
@@ -24765,7 +24765,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_24buil
     __pyx_t_5 = ((*((signed char *) ( /* dim=0 */ (__pyx_v_booleans.data + __pyx_t_4 * __pyx_v_booleans.strides[0]) ))) == 0);
     if (__pyx_t_5) {
 
-      /* "janitor/cython_functions/cond_join_indices.py":656
+      /* "janitor/cython_functions/cond_join_indices.py":637
  *     for num in range(length):
  *         if booleans[num] == 0:
  *             continue             # <<<<<<<<<<<<<<
@@ -24774,7 +24774,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_24buil
 */
       goto __pyx_L3_continue;
 
-      /* "janitor/cython_functions/cond_join_indices.py":655
+      /* "janitor/cython_functions/cond_join_indices.py":636
  *
  *     for num in range(length):
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
@@ -24783,7 +24783,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_24buil
 */
     }
 
-    /* "janitor/cython_functions/cond_join_indices.py":657
+    /* "janitor/cython_functions/cond_join_indices.py":638
  *         if booleans[num] == 0:
  *             continue
  *         start = starts[num]             # <<<<<<<<<<<<<<
@@ -24793,7 +24793,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_24buil
     __pyx_t_4 = __pyx_v_num;
     __pyx_v_start = (*((long *) ( /* dim=0 */ (__pyx_v_starts.data + __pyx_t_4 * __pyx_v_starts.strides[0]) )));
 
-    /* "janitor/cython_functions/cond_join_indices.py":658
+    /* "janitor/cython_functions/cond_join_indices.py":639
  *             continue
  *         start = starts[num]
  *         end = ends[num]             # <<<<<<<<<<<<<<
@@ -24803,7 +24803,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_24buil
     __pyx_t_4 = __pyx_v_num;
     __pyx_v_end = (*((long *) ( /* dim=0 */ (__pyx_v_ends.data + __pyx_t_4 * __pyx_v_ends.strides[0]) )));
 
-    /* "janitor/cython_functions/cond_join_indices.py":659
+    /* "janitor/cython_functions/cond_join_indices.py":640
  *         start = starts[num]
  *         end = ends[num]
  *         base = -1             # <<<<<<<<<<<<<<
@@ -24812,7 +24812,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_24buil
 */
     __pyx_v_base = -1L;
 
-    /* "janitor/cython_functions/cond_join_indices.py":660
+    /* "janitor/cython_functions/cond_join_indices.py":641
  *         end = ends[num]
  *         base = -1
  *         for number in range(start, end):             # <<<<<<<<<<<<<<
@@ -24824,7 +24824,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_24buil
     for (__pyx_t_8 = __pyx_v_start; __pyx_t_8 < __pyx_t_7; __pyx_t_8+=1) {
       __pyx_v_number = __pyx_t_8;
 
-      /* "janitor/cython_functions/cond_join_indices.py":661
+      /* "janitor/cython_functions/cond_join_indices.py":642
  *         base = -1
  *         for number in range(start, end):
  *             r_value = right_index[number]             # <<<<<<<<<<<<<<
@@ -24834,7 +24834,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_24buil
       __pyx_t_4 = __pyx_v_number;
       __pyx_v_r_value = (*((long *) ( /* dim=0 */ (__pyx_v_right_index.data + __pyx_t_4 * __pyx_v_right_index.strides[0]) )));
 
-      /* "janitor/cython_functions/cond_join_indices.py":662
+      /* "janitor/cython_functions/cond_join_indices.py":643
  *         for number in range(start, end):
  *             r_value = right_index[number]
  *             if (base < 0) | (base > r_value):             # <<<<<<<<<<<<<<
@@ -24844,7 +24844,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_24buil
       __pyx_t_5 = ((__pyx_v_base < 0) | (__pyx_v_base > __pyx_v_r_value));
       if (__pyx_t_5) {
 
-        /* "janitor/cython_functions/cond_join_indices.py":663
+        /* "janitor/cython_functions/cond_join_indices.py":644
  *             r_value = right_index[number]
  *             if (base < 0) | (base > r_value):
  *                 base = r_value             # <<<<<<<<<<<<<<
@@ -24853,7 +24853,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_24buil
 */
         __pyx_v_base = __pyx_v_r_value;
 
-        /* "janitor/cython_functions/cond_join_indices.py":662
+        /* "janitor/cython_functions/cond_join_indices.py":643
  *         for number in range(start, end):
  *             r_value = right_index[number]
  *             if (base < 0) | (base > r_value):             # <<<<<<<<<<<<<<
@@ -24863,7 +24863,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_24buil
       }
     }
 
-    /* "janitor/cython_functions/cond_join_indices.py":664
+    /* "janitor/cython_functions/cond_join_indices.py":645
  *             if (base < 0) | (base > r_value):
  *                 base = r_value
  *         l_value = left_index[num]             # <<<<<<<<<<<<<<
@@ -24873,7 +24873,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_24buil
     __pyx_t_4 = __pyx_v_num;
     __pyx_v_l_value = (*((long *) ( /* dim=0 */ (__pyx_v_left_index.data + __pyx_t_4 * __pyx_v_left_index.strides[0]) )));
 
-    /* "janitor/cython_functions/cond_join_indices.py":665
+    /* "janitor/cython_functions/cond_join_indices.py":646
  *                 base = r_value
  *         l_value = left_index[num]
  *         left_indices[begin] = l_value             # <<<<<<<<<<<<<<
@@ -24883,7 +24883,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_24buil
     __pyx_t_4 = __pyx_v_begin;
     *((long *) ( /* dim=0 */ ((char *) (((long *) __pyx_v_left_indices.data) + __pyx_t_4)) )) = __pyx_v_l_value;
 
-    /* "janitor/cython_functions/cond_join_indices.py":666
+    /* "janitor/cython_functions/cond_join_indices.py":647
  *         l_value = left_index[num]
  *         left_indices[begin] = l_value
  *         right_indices[begin] = base             # <<<<<<<<<<<<<<
@@ -24893,7 +24893,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_24buil
     __pyx_t_4 = __pyx_v_begin;
     *((long *) ( /* dim=0 */ ((char *) (((long *) __pyx_v_right_indices.data) + __pyx_t_4)) )) = __pyx_v_base;
 
-    /* "janitor/cython_functions/cond_join_indices.py":667
+    /* "janitor/cython_functions/cond_join_indices.py":648
  *         left_indices[begin] = l_value
  *         right_indices[begin] = base
  *         begin += 1             # <<<<<<<<<<<<<<
@@ -24904,7 +24904,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_24buil
     __pyx_L3_continue:;
   }
 
-  /* "janitor/cython_functions/cond_join_indices.py":668
+  /* "janitor/cython_functions/cond_join_indices.py":649
  *         right_indices[begin] = base
  *         begin += 1
  *     return np.asarray(left_indices), np.asarray(right_indices)             # <<<<<<<<<<<<<<
@@ -24913,12 +24913,12 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_24buil
 */
   __Pyx_XDECREF(__pyx_r);
   __pyx_t_10 = NULL;
-  __Pyx_GetModuleGlobalName(__pyx_t_11, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 668, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_11, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 649, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_11);
-  __pyx_t_12 = __Pyx_PyObject_GetAttrStr(__pyx_t_11, __pyx_mstate_global->__pyx_n_u_asarray); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 668, __pyx_L1_error)
+  __pyx_t_12 = __Pyx_PyObject_GetAttrStr(__pyx_t_11, __pyx_mstate_global->__pyx_n_u_asarray); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 649, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_12);
   __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
-  __pyx_t_11 = __pyx_memoryview_fromslice(__pyx_v_left_indices, 1, (PyObject *(*)(char *)) __pyx_memview_get_long, (int (*)(char *, PyObject *)) __pyx_memview_set_long, 0);; if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 668, __pyx_L1_error)
+  __pyx_t_11 = __pyx_memoryview_fromslice(__pyx_v_left_indices, 1, (PyObject *(*)(char *)) __pyx_memview_get_long, (int (*)(char *, PyObject *)) __pyx_memview_set_long, 0);; if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 649, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_11);
   __pyx_t_13 = 1;
   #if CYTHON_UNPACK_METHODS
@@ -24938,16 +24938,16 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_24buil
     __Pyx_XDECREF(__pyx_t_10); __pyx_t_10 = 0;
     __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
     __Pyx_DECREF(__pyx_t_12); __pyx_t_12 = 0;
-    if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 668, __pyx_L1_error)
+    if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 649, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_9);
   }
   __pyx_t_11 = NULL;
-  __Pyx_GetModuleGlobalName(__pyx_t_10, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 668, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_10, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 649, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_10);
-  __pyx_t_14 = __Pyx_PyObject_GetAttrStr(__pyx_t_10, __pyx_mstate_global->__pyx_n_u_asarray); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 668, __pyx_L1_error)
+  __pyx_t_14 = __Pyx_PyObject_GetAttrStr(__pyx_t_10, __pyx_mstate_global->__pyx_n_u_asarray); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 649, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_14);
   __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
-  __pyx_t_10 = __pyx_memoryview_fromslice(__pyx_v_right_indices, 1, (PyObject *(*)(char *)) __pyx_memview_get_long, (int (*)(char *, PyObject *)) __pyx_memview_set_long, 0);; if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 668, __pyx_L1_error)
+  __pyx_t_10 = __pyx_memoryview_fromslice(__pyx_v_right_indices, 1, (PyObject *(*)(char *)) __pyx_memview_get_long, (int (*)(char *, PyObject *)) __pyx_memview_set_long, 0);; if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 649, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_10);
   __pyx_t_13 = 1;
   #if CYTHON_UNPACK_METHODS
@@ -24967,22 +24967,22 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_24buil
     __Pyx_XDECREF(__pyx_t_11); __pyx_t_11 = 0;
     __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
     __Pyx_DECREF(__pyx_t_14); __pyx_t_14 = 0;
-    if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 668, __pyx_L1_error)
+    if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 649, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_12);
   }
-  __pyx_t_14 = PyTuple_New(2); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 668, __pyx_L1_error)
+  __pyx_t_14 = PyTuple_New(2); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 649, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_14);
   __Pyx_GIVEREF(__pyx_t_9);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_14, 0, __pyx_t_9) != (0)) __PYX_ERR(0, 668, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_14, 0, __pyx_t_9) != (0)) __PYX_ERR(0, 649, __pyx_L1_error);
   __Pyx_GIVEREF(__pyx_t_12);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_14, 1, __pyx_t_12) != (0)) __PYX_ERR(0, 668, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_14, 1, __pyx_t_12) != (0)) __PYX_ERR(0, 649, __pyx_L1_error);
   __pyx_t_9 = 0;
   __pyx_t_12 = 0;
   __pyx_r = __pyx_t_14;
   __pyx_t_14 = 0;
   goto __pyx_L0;
 
-  /* "janitor/cython_functions/cond_join_indices.py":626
+  /* "janitor/cython_functions/cond_join_indices.py":607
  *
  *
  * @cython.boundscheck(False)             # <<<<<<<<<<<<<<
@@ -25005,7 +25005,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_24buil
   return __pyx_r;
 }
 
-/* "janitor/cython_functions/cond_join_indices.py":671
+/* "janitor/cython_functions/cond_join_indices.py":652
  *
  *
  * @cython.boundscheck(False)             # <<<<<<<<<<<<<<
@@ -25059,74 +25059,74 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   {
     PyObject ** const __pyx_pyargnames[] = {&__pyx_mstate_global->__pyx_n_u_left_index,&__pyx_mstate_global->__pyx_n_u_right_index,&__pyx_mstate_global->__pyx_n_u_left_indices,&__pyx_mstate_global->__pyx_n_u_right_indices,&__pyx_mstate_global->__pyx_n_u_starts,&__pyx_mstate_global->__pyx_n_u_ends,&__pyx_mstate_global->__pyx_n_u_booleans,0};
     const Py_ssize_t __pyx_kwds_len = (__pyx_kwds) ? __Pyx_NumKwargs_FASTCALL(__pyx_kwds) : 0;
-    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 671, __pyx_L3_error)
+    if (unlikely(__pyx_kwds_len) < 0) __PYX_ERR(0, 652, __pyx_L3_error)
     if (__pyx_kwds_len > 0) {
       switch (__pyx_nargs) {
         case  7:
         values[6] = __Pyx_ArgRef_FASTCALL(__pyx_args, 6);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 671, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 652, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  6:
         values[5] = __Pyx_ArgRef_FASTCALL(__pyx_args, 5);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 671, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 652, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  5:
         values[4] = __Pyx_ArgRef_FASTCALL(__pyx_args, 4);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 671, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 652, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  4:
         values[3] = __Pyx_ArgRef_FASTCALL(__pyx_args, 3);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 671, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 652, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  3:
         values[2] = __Pyx_ArgRef_FASTCALL(__pyx_args, 2);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 671, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 652, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  2:
         values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 671, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 652, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  1:
         values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 671, __pyx_L3_error)
+        if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 652, __pyx_L3_error)
         CYTHON_FALLTHROUGH;
         case  0: break;
         default: goto __pyx_L5_argtuple_error;
       }
       const Py_ssize_t kwd_pos_args = __pyx_nargs;
-      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "build_indices_fast_path_keep_last", 0) < 0) __PYX_ERR(0, 671, __pyx_L3_error)
+      if (__Pyx_ParseKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values, kwd_pos_args, __pyx_kwds_len, "build_indices_fast_path_keep_last", 0) < 0) __PYX_ERR(0, 652, __pyx_L3_error)
       for (Py_ssize_t i = __pyx_nargs; i < 7; i++) {
-        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("build_indices_fast_path_keep_last", 1, 7, 7, i); __PYX_ERR(0, 671, __pyx_L3_error) }
+        if (unlikely(!values[i])) { __Pyx_RaiseArgtupleInvalid("build_indices_fast_path_keep_last", 1, 7, 7, i); __PYX_ERR(0, 652, __pyx_L3_error) }
       }
     } else if (unlikely(__pyx_nargs != 7)) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = __Pyx_ArgRef_FASTCALL(__pyx_args, 0);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 671, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[0])) __PYX_ERR(0, 652, __pyx_L3_error)
       values[1] = __Pyx_ArgRef_FASTCALL(__pyx_args, 1);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 671, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[1])) __PYX_ERR(0, 652, __pyx_L3_error)
       values[2] = __Pyx_ArgRef_FASTCALL(__pyx_args, 2);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 671, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[2])) __PYX_ERR(0, 652, __pyx_L3_error)
       values[3] = __Pyx_ArgRef_FASTCALL(__pyx_args, 3);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 671, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[3])) __PYX_ERR(0, 652, __pyx_L3_error)
       values[4] = __Pyx_ArgRef_FASTCALL(__pyx_args, 4);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 671, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[4])) __PYX_ERR(0, 652, __pyx_L3_error)
       values[5] = __Pyx_ArgRef_FASTCALL(__pyx_args, 5);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 671, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[5])) __PYX_ERR(0, 652, __pyx_L3_error)
       values[6] = __Pyx_ArgRef_FASTCALL(__pyx_args, 6);
-      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 671, __pyx_L3_error)
+      if (!CYTHON_ASSUME_SAFE_MACROS && unlikely(!values[6])) __PYX_ERR(0, 652, __pyx_L3_error)
     }
-    __pyx_v_left_index = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[0], PyBUF_WRITABLE); if (unlikely(!__pyx_v_left_index.memview)) __PYX_ERR(0, 674, __pyx_L3_error)
-    __pyx_v_right_index = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[1], PyBUF_WRITABLE); if (unlikely(!__pyx_v_right_index.memview)) __PYX_ERR(0, 675, __pyx_L3_error)
-    __pyx_v_left_indices = __Pyx_PyObject_to_MemoryviewSlice_dc_long(values[2], PyBUF_WRITABLE); if (unlikely(!__pyx_v_left_indices.memview)) __PYX_ERR(0, 676, __pyx_L3_error)
-    __pyx_v_right_indices = __Pyx_PyObject_to_MemoryviewSlice_dc_long(values[3], PyBUF_WRITABLE); if (unlikely(!__pyx_v_right_indices.memview)) __PYX_ERR(0, 677, __pyx_L3_error)
-    __pyx_v_starts = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[4], PyBUF_WRITABLE); if (unlikely(!__pyx_v_starts.memview)) __PYX_ERR(0, 678, __pyx_L3_error)
-    __pyx_v_ends = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[5], PyBUF_WRITABLE); if (unlikely(!__pyx_v_ends.memview)) __PYX_ERR(0, 679, __pyx_L3_error)
-    __pyx_v_booleans = __Pyx_PyObject_to_MemoryviewSlice_ds_signed_char(values[6], PyBUF_WRITABLE); if (unlikely(!__pyx_v_booleans.memview)) __PYX_ERR(0, 680, __pyx_L3_error)
+    __pyx_v_left_index = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[0], PyBUF_WRITABLE); if (unlikely(!__pyx_v_left_index.memview)) __PYX_ERR(0, 655, __pyx_L3_error)
+    __pyx_v_right_index = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[1], PyBUF_WRITABLE); if (unlikely(!__pyx_v_right_index.memview)) __PYX_ERR(0, 656, __pyx_L3_error)
+    __pyx_v_left_indices = __Pyx_PyObject_to_MemoryviewSlice_dc_long(values[2], PyBUF_WRITABLE); if (unlikely(!__pyx_v_left_indices.memview)) __PYX_ERR(0, 657, __pyx_L3_error)
+    __pyx_v_right_indices = __Pyx_PyObject_to_MemoryviewSlice_dc_long(values[3], PyBUF_WRITABLE); if (unlikely(!__pyx_v_right_indices.memview)) __PYX_ERR(0, 658, __pyx_L3_error)
+    __pyx_v_starts = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[4], PyBUF_WRITABLE); if (unlikely(!__pyx_v_starts.memview)) __PYX_ERR(0, 659, __pyx_L3_error)
+    __pyx_v_ends = __Pyx_PyObject_to_MemoryviewSlice_ds_long(values[5], PyBUF_WRITABLE); if (unlikely(!__pyx_v_ends.memview)) __PYX_ERR(0, 660, __pyx_L3_error)
+    __pyx_v_booleans = __Pyx_PyObject_to_MemoryviewSlice_ds_signed_char(values[6], PyBUF_WRITABLE); if (unlikely(!__pyx_v_booleans.memview)) __PYX_ERR(0, 661, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("build_indices_fast_path_keep_last", 1, 7, 7, __pyx_nargs); __PYX_ERR(0, 671, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("build_indices_fast_path_keep_last", 1, 7, 7, __pyx_nargs); __PYX_ERR(0, 652, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -25145,25 +25145,25 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return NULL;
   __pyx_L4_argument_unpacking_done:;
   if (unlikely(((PyObject *)__pyx_v_left_index.memview) == Py_None)) {
-    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "left_index"); __PYX_ERR(0, 674, __pyx_L1_error)
+    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "left_index"); __PYX_ERR(0, 655, __pyx_L1_error)
   }
   if (unlikely(((PyObject *)__pyx_v_right_index.memview) == Py_None)) {
-    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "right_index"); __PYX_ERR(0, 675, __pyx_L1_error)
+    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "right_index"); __PYX_ERR(0, 656, __pyx_L1_error)
   }
   if (unlikely(((PyObject *)__pyx_v_left_indices.memview) == Py_None)) {
-    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "left_indices"); __PYX_ERR(0, 676, __pyx_L1_error)
+    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "left_indices"); __PYX_ERR(0, 657, __pyx_L1_error)
   }
   if (unlikely(((PyObject *)__pyx_v_right_indices.memview) == Py_None)) {
-    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "right_indices"); __PYX_ERR(0, 677, __pyx_L1_error)
+    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "right_indices"); __PYX_ERR(0, 658, __pyx_L1_error)
   }
   if (unlikely(((PyObject *)__pyx_v_starts.memview) == Py_None)) {
-    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "starts"); __PYX_ERR(0, 678, __pyx_L1_error)
+    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "starts"); __PYX_ERR(0, 659, __pyx_L1_error)
   }
   if (unlikely(((PyObject *)__pyx_v_ends.memview) == Py_None)) {
-    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "ends"); __PYX_ERR(0, 679, __pyx_L1_error)
+    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "ends"); __PYX_ERR(0, 660, __pyx_L1_error)
   }
   if (unlikely(((PyObject *)__pyx_v_booleans.memview) == Py_None)) {
-    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "booleans"); __PYX_ERR(0, 680, __pyx_L1_error)
+    PyErr_Format(PyExc_TypeError, "Argument '%.200s' must not be None", "booleans"); __PYX_ERR(0, 661, __pyx_L1_error)
   }
   __pyx_r = __pyx_pf_7janitor_16cython_functions_17cond_join_indices_26build_indices_fast_path_keep_last(__pyx_self, __pyx_v_left_index, __pyx_v_right_index, __pyx_v_left_indices, __pyx_v_right_indices, __pyx_v_starts, __pyx_v_ends, __pyx_v_booleans);
 
@@ -25222,7 +25222,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_26buil
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("build_indices_fast_path_keep_last", 0);
 
-  /* "janitor/cython_functions/cond_join_indices.py":690
+  /* "janitor/cython_functions/cond_join_indices.py":671
  *     num: cython.Py_ssize_t
  *     number: cython.Py_ssize_t
  *     length: cython.Py_ssize_t = left_index.shape[0]             # <<<<<<<<<<<<<<
@@ -25231,7 +25231,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_26buil
 */
   __pyx_v_length = (__pyx_v_left_index.shape[0]);
 
-  /* "janitor/cython_functions/cond_join_indices.py":691
+  /* "janitor/cython_functions/cond_join_indices.py":672
  *     number: cython.Py_ssize_t
  *     length: cython.Py_ssize_t = left_index.shape[0]
  *     begin: cython.Py_ssize_t = 0             # <<<<<<<<<<<<<<
@@ -25240,7 +25240,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_26buil
 */
   __pyx_v_begin = 0;
 
-  /* "janitor/cython_functions/cond_join_indices.py":692
+  /* "janitor/cython_functions/cond_join_indices.py":673
  *     length: cython.Py_ssize_t = left_index.shape[0]
  *     begin: cython.Py_ssize_t = 0
  *     start: cython.Py_ssize_t = 0             # <<<<<<<<<<<<<<
@@ -25249,7 +25249,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_26buil
 */
   __pyx_v_start = 0;
 
-  /* "janitor/cython_functions/cond_join_indices.py":693
+  /* "janitor/cython_functions/cond_join_indices.py":674
  *     begin: cython.Py_ssize_t = 0
  *     start: cython.Py_ssize_t = 0
  *     end: cython.Py_ssize_t = 0             # <<<<<<<<<<<<<<
@@ -25258,7 +25258,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_26buil
 */
   __pyx_v_end = 0;
 
-  /* "janitor/cython_functions/cond_join_indices.py":694
+  /* "janitor/cython_functions/cond_join_indices.py":675
  *     start: cython.Py_ssize_t = 0
  *     end: cython.Py_ssize_t = 0
  *     base: cython.long = -1             # <<<<<<<<<<<<<<
@@ -25267,7 +25267,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_26buil
 */
   __pyx_v_base = -1L;
 
-  /* "janitor/cython_functions/cond_join_indices.py":699
+  /* "janitor/cython_functions/cond_join_indices.py":680
  *     ####################################
  *
  *     for num in range(length):             # <<<<<<<<<<<<<<
@@ -25279,7 +25279,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_26buil
   for (__pyx_t_3 = 0; __pyx_t_3 < __pyx_t_2; __pyx_t_3+=1) {
     __pyx_v_num = __pyx_t_3;
 
-    /* "janitor/cython_functions/cond_join_indices.py":700
+    /* "janitor/cython_functions/cond_join_indices.py":681
  *
  *     for num in range(length):
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
@@ -25290,7 +25290,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_26buil
     __pyx_t_5 = ((*((signed char *) ( /* dim=0 */ (__pyx_v_booleans.data + __pyx_t_4 * __pyx_v_booleans.strides[0]) ))) == 0);
     if (__pyx_t_5) {
 
-      /* "janitor/cython_functions/cond_join_indices.py":701
+      /* "janitor/cython_functions/cond_join_indices.py":682
  *     for num in range(length):
  *         if booleans[num] == 0:
  *             continue             # <<<<<<<<<<<<<<
@@ -25299,7 +25299,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_26buil
 */
       goto __pyx_L3_continue;
 
-      /* "janitor/cython_functions/cond_join_indices.py":700
+      /* "janitor/cython_functions/cond_join_indices.py":681
  *
  *     for num in range(length):
  *         if booleans[num] == 0:             # <<<<<<<<<<<<<<
@@ -25308,7 +25308,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_26buil
 */
     }
 
-    /* "janitor/cython_functions/cond_join_indices.py":702
+    /* "janitor/cython_functions/cond_join_indices.py":683
  *         if booleans[num] == 0:
  *             continue
  *         start = starts[num]             # <<<<<<<<<<<<<<
@@ -25318,7 +25318,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_26buil
     __pyx_t_4 = __pyx_v_num;
     __pyx_v_start = (*((long *) ( /* dim=0 */ (__pyx_v_starts.data + __pyx_t_4 * __pyx_v_starts.strides[0]) )));
 
-    /* "janitor/cython_functions/cond_join_indices.py":703
+    /* "janitor/cython_functions/cond_join_indices.py":684
  *             continue
  *         start = starts[num]
  *         end = ends[num]             # <<<<<<<<<<<<<<
@@ -25328,7 +25328,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_26buil
     __pyx_t_4 = __pyx_v_num;
     __pyx_v_end = (*((long *) ( /* dim=0 */ (__pyx_v_ends.data + __pyx_t_4 * __pyx_v_ends.strides[0]) )));
 
-    /* "janitor/cython_functions/cond_join_indices.py":704
+    /* "janitor/cython_functions/cond_join_indices.py":685
  *         start = starts[num]
  *         end = ends[num]
  *         base = -1             # <<<<<<<<<<<<<<
@@ -25337,7 +25337,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_26buil
 */
     __pyx_v_base = -1L;
 
-    /* "janitor/cython_functions/cond_join_indices.py":705
+    /* "janitor/cython_functions/cond_join_indices.py":686
  *         end = ends[num]
  *         base = -1
  *         for number in range(start, end):             # <<<<<<<<<<<<<<
@@ -25349,7 +25349,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_26buil
     for (__pyx_t_8 = __pyx_v_start; __pyx_t_8 < __pyx_t_7; __pyx_t_8+=1) {
       __pyx_v_number = __pyx_t_8;
 
-      /* "janitor/cython_functions/cond_join_indices.py":706
+      /* "janitor/cython_functions/cond_join_indices.py":687
  *         base = -1
  *         for number in range(start, end):
  *             r_value = right_index[number]             # <<<<<<<<<<<<<<
@@ -25359,7 +25359,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_26buil
       __pyx_t_4 = __pyx_v_number;
       __pyx_v_r_value = (*((long *) ( /* dim=0 */ (__pyx_v_right_index.data + __pyx_t_4 * __pyx_v_right_index.strides[0]) )));
 
-      /* "janitor/cython_functions/cond_join_indices.py":707
+      /* "janitor/cython_functions/cond_join_indices.py":688
  *         for number in range(start, end):
  *             r_value = right_index[number]
  *             if base < r_value:             # <<<<<<<<<<<<<<
@@ -25369,7 +25369,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_26buil
       __pyx_t_5 = (__pyx_v_base < __pyx_v_r_value);
       if (__pyx_t_5) {
 
-        /* "janitor/cython_functions/cond_join_indices.py":708
+        /* "janitor/cython_functions/cond_join_indices.py":689
  *             r_value = right_index[number]
  *             if base < r_value:
  *                 base = r_value             # <<<<<<<<<<<<<<
@@ -25378,7 +25378,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_26buil
 */
         __pyx_v_base = __pyx_v_r_value;
 
-        /* "janitor/cython_functions/cond_join_indices.py":707
+        /* "janitor/cython_functions/cond_join_indices.py":688
  *         for number in range(start, end):
  *             r_value = right_index[number]
  *             if base < r_value:             # <<<<<<<<<<<<<<
@@ -25388,7 +25388,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_26buil
       }
     }
 
-    /* "janitor/cython_functions/cond_join_indices.py":709
+    /* "janitor/cython_functions/cond_join_indices.py":690
  *             if base < r_value:
  *                 base = r_value
  *         l_value = left_index[num]             # <<<<<<<<<<<<<<
@@ -25398,7 +25398,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_26buil
     __pyx_t_4 = __pyx_v_num;
     __pyx_v_l_value = (*((long *) ( /* dim=0 */ (__pyx_v_left_index.data + __pyx_t_4 * __pyx_v_left_index.strides[0]) )));
 
-    /* "janitor/cython_functions/cond_join_indices.py":710
+    /* "janitor/cython_functions/cond_join_indices.py":691
  *                 base = r_value
  *         l_value = left_index[num]
  *         left_indices[begin] = l_value             # <<<<<<<<<<<<<<
@@ -25408,7 +25408,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_26buil
     __pyx_t_4 = __pyx_v_begin;
     *((long *) ( /* dim=0 */ ((char *) (((long *) __pyx_v_left_indices.data) + __pyx_t_4)) )) = __pyx_v_l_value;
 
-    /* "janitor/cython_functions/cond_join_indices.py":711
+    /* "janitor/cython_functions/cond_join_indices.py":692
  *         l_value = left_index[num]
  *         left_indices[begin] = l_value
  *         right_indices[begin] = base             # <<<<<<<<<<<<<<
@@ -25418,7 +25418,7 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_26buil
     __pyx_t_4 = __pyx_v_begin;
     *((long *) ( /* dim=0 */ ((char *) (((long *) __pyx_v_right_indices.data) + __pyx_t_4)) )) = __pyx_v_base;
 
-    /* "janitor/cython_functions/cond_join_indices.py":712
+    /* "janitor/cython_functions/cond_join_indices.py":693
  *         left_indices[begin] = l_value
  *         right_indices[begin] = base
  *         begin += 1             # <<<<<<<<<<<<<<
@@ -25428,19 +25428,19 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_26buil
     __pyx_L3_continue:;
   }
 
-  /* "janitor/cython_functions/cond_join_indices.py":713
+  /* "janitor/cython_functions/cond_join_indices.py":694
  *         right_indices[begin] = base
  *         begin += 1
  *     return np.asarray(left_indices), np.asarray(right_indices)             # <<<<<<<<<<<<<<
 */
   __Pyx_XDECREF(__pyx_r);
   __pyx_t_10 = NULL;
-  __Pyx_GetModuleGlobalName(__pyx_t_11, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 713, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_11, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 694, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_11);
-  __pyx_t_12 = __Pyx_PyObject_GetAttrStr(__pyx_t_11, __pyx_mstate_global->__pyx_n_u_asarray); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 713, __pyx_L1_error)
+  __pyx_t_12 = __Pyx_PyObject_GetAttrStr(__pyx_t_11, __pyx_mstate_global->__pyx_n_u_asarray); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 694, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_12);
   __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
-  __pyx_t_11 = __pyx_memoryview_fromslice(__pyx_v_left_indices, 1, (PyObject *(*)(char *)) __pyx_memview_get_long, (int (*)(char *, PyObject *)) __pyx_memview_set_long, 0);; if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 713, __pyx_L1_error)
+  __pyx_t_11 = __pyx_memoryview_fromslice(__pyx_v_left_indices, 1, (PyObject *(*)(char *)) __pyx_memview_get_long, (int (*)(char *, PyObject *)) __pyx_memview_set_long, 0);; if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 694, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_11);
   __pyx_t_13 = 1;
   #if CYTHON_UNPACK_METHODS
@@ -25460,16 +25460,16 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_26buil
     __Pyx_XDECREF(__pyx_t_10); __pyx_t_10 = 0;
     __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
     __Pyx_DECREF(__pyx_t_12); __pyx_t_12 = 0;
-    if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 713, __pyx_L1_error)
+    if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 694, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_9);
   }
   __pyx_t_11 = NULL;
-  __Pyx_GetModuleGlobalName(__pyx_t_10, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 713, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_10, __pyx_mstate_global->__pyx_n_u_np); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 694, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_10);
-  __pyx_t_14 = __Pyx_PyObject_GetAttrStr(__pyx_t_10, __pyx_mstate_global->__pyx_n_u_asarray); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 713, __pyx_L1_error)
+  __pyx_t_14 = __Pyx_PyObject_GetAttrStr(__pyx_t_10, __pyx_mstate_global->__pyx_n_u_asarray); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 694, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_14);
   __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
-  __pyx_t_10 = __pyx_memoryview_fromslice(__pyx_v_right_indices, 1, (PyObject *(*)(char *)) __pyx_memview_get_long, (int (*)(char *, PyObject *)) __pyx_memview_set_long, 0);; if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 713, __pyx_L1_error)
+  __pyx_t_10 = __pyx_memoryview_fromslice(__pyx_v_right_indices, 1, (PyObject *(*)(char *)) __pyx_memview_get_long, (int (*)(char *, PyObject *)) __pyx_memview_set_long, 0);; if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 694, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_10);
   __pyx_t_13 = 1;
   #if CYTHON_UNPACK_METHODS
@@ -25489,22 +25489,22 @@ static PyObject *__pyx_pf_7janitor_16cython_functions_17cond_join_indices_26buil
     __Pyx_XDECREF(__pyx_t_11); __pyx_t_11 = 0;
     __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
     __Pyx_DECREF(__pyx_t_14); __pyx_t_14 = 0;
-    if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 713, __pyx_L1_error)
+    if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 694, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_12);
   }
-  __pyx_t_14 = PyTuple_New(2); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 713, __pyx_L1_error)
+  __pyx_t_14 = PyTuple_New(2); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 694, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_14);
   __Pyx_GIVEREF(__pyx_t_9);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_14, 0, __pyx_t_9) != (0)) __PYX_ERR(0, 713, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_14, 0, __pyx_t_9) != (0)) __PYX_ERR(0, 694, __pyx_L1_error);
   __Pyx_GIVEREF(__pyx_t_12);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_14, 1, __pyx_t_12) != (0)) __PYX_ERR(0, 713, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_14, 1, __pyx_t_12) != (0)) __PYX_ERR(0, 694, __pyx_L1_error);
   __pyx_t_9 = 0;
   __pyx_t_12 = 0;
   __pyx_r = __pyx_t_14;
   __pyx_t_14 = 0;
   goto __pyx_L0;
 
-  /* "janitor/cython_functions/cond_join_indices.py":671
+  /* "janitor/cython_functions/cond_join_indices.py":652
  *
  *
  * @cython.boundscheck(False)             # <<<<<<<<<<<<<<
@@ -27677,121 +27677,121 @@ __Pyx_RefNannySetupContext("PyInit_cond_join_indices", 0);
   if (PyDict_SetItem(__pyx_mstate_global->__pyx_d, __pyx_mstate_global->__pyx_n_u_build_indices_ranges_positions_a, __pyx_t_4) < 0) __PYX_ERR(0, 437, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "janitor/cython_functions/cond_join_indices.py":482
+  /* "janitor/cython_functions/cond_join_indices.py":477
  *
  *
  * @cython.boundscheck(False)             # <<<<<<<<<<<<<<
  * @cython.wraparound(False)
  * def build_indices_ranges_positions_first(
 */
-  __pyx_t_4 = __Pyx_PyDict_NewPresized(8); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 482, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyDict_NewPresized(8); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 477, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_booleans, __pyx_mstate_global->__pyx_kp_u_cython_schar) < 0) __PYX_ERR(0, 482, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_indexers, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 482, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_positions, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 482, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_starts, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 482, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_ends, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 482, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_index_right, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 482, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_left_index, __pyx_mstate_global->__pyx_kp_u_cython_long_1) < 0) __PYX_ERR(0, 482, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_right_index, __pyx_mstate_global->__pyx_kp_u_cython_long_1) < 0) __PYX_ERR(0, 482, __pyx_L1_error)
-  __pyx_t_5 = __Pyx_CyFunction_New(&__pyx_mdef_7janitor_16cython_functions_17cond_join_indices_19build_indices_ranges_positions_first, 0, __pyx_mstate_global->__pyx_n_u_build_indices_ranges_positions_f, NULL, __pyx_mstate_global->__pyx_n_u_janitor_cython_functions_cond_jo, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[9])); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 482, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_booleans, __pyx_mstate_global->__pyx_kp_u_cython_schar) < 0) __PYX_ERR(0, 477, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_indexers, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 477, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_positions, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 477, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_starts, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 477, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_ends, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 477, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_index_right, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 477, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_left_index, __pyx_mstate_global->__pyx_kp_u_cython_long_1) < 0) __PYX_ERR(0, 477, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_right_index, __pyx_mstate_global->__pyx_kp_u_cython_long_1) < 0) __PYX_ERR(0, 477, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_CyFunction_New(&__pyx_mdef_7janitor_16cython_functions_17cond_join_indices_19build_indices_ranges_positions_first, 0, __pyx_mstate_global->__pyx_n_u_build_indices_ranges_positions_f, NULL, __pyx_mstate_global->__pyx_n_u_janitor_cython_functions_cond_jo, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[9])); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 477, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_CyFunction_SetAnnotationsDict(__pyx_t_5, __pyx_t_4);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  if (PyDict_SetItem(__pyx_mstate_global->__pyx_d, __pyx_mstate_global->__pyx_n_u_build_indices_ranges_positions_f, __pyx_t_5) < 0) __PYX_ERR(0, 482, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_mstate_global->__pyx_d, __pyx_mstate_global->__pyx_n_u_build_indices_ranges_positions_f, __pyx_t_5) < 0) __PYX_ERR(0, 477, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
 
-  /* "janitor/cython_functions/cond_join_indices.py":526
+  /* "janitor/cython_functions/cond_join_indices.py":521
  *
  *
  * @cython.boundscheck(False)             # <<<<<<<<<<<<<<
  * @cython.wraparound(False)
  * def build_indices_ranges_positions_last(
 */
-  __pyx_t_5 = __Pyx_PyDict_NewPresized(8); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 526, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyDict_NewPresized(8); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 521, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
-  if (PyDict_SetItem(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_booleans, __pyx_mstate_global->__pyx_kp_u_cython_schar) < 0) __PYX_ERR(0, 526, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_indexers, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 526, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_positions, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 526, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_starts, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 526, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_ends, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 526, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_index_right, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 526, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_left_index, __pyx_mstate_global->__pyx_kp_u_cython_long_1) < 0) __PYX_ERR(0, 526, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_right_index, __pyx_mstate_global->__pyx_kp_u_cython_long_1) < 0) __PYX_ERR(0, 526, __pyx_L1_error)
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_7janitor_16cython_functions_17cond_join_indices_21build_indices_ranges_positions_last, 0, __pyx_mstate_global->__pyx_n_u_build_indices_ranges_positions_l, NULL, __pyx_mstate_global->__pyx_n_u_janitor_cython_functions_cond_jo, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[10])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 526, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_booleans, __pyx_mstate_global->__pyx_kp_u_cython_schar) < 0) __PYX_ERR(0, 521, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_indexers, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 521, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_positions, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 521, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_starts, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 521, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_ends, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 521, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_index_right, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 521, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_left_index, __pyx_mstate_global->__pyx_kp_u_cython_long_1) < 0) __PYX_ERR(0, 521, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_right_index, __pyx_mstate_global->__pyx_kp_u_cython_long_1) < 0) __PYX_ERR(0, 521, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_7janitor_16cython_functions_17cond_join_indices_21build_indices_ranges_positions_last, 0, __pyx_mstate_global->__pyx_n_u_build_indices_ranges_positions_l, NULL, __pyx_mstate_global->__pyx_n_u_janitor_cython_functions_cond_jo, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[10])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 521, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_CyFunction_SetAnnotationsDict(__pyx_t_4, __pyx_t_5);
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-  if (PyDict_SetItem(__pyx_mstate_global->__pyx_d, __pyx_mstate_global->__pyx_n_u_build_indices_ranges_positions_l, __pyx_t_4) < 0) __PYX_ERR(0, 526, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_mstate_global->__pyx_d, __pyx_mstate_global->__pyx_n_u_build_indices_ranges_positions_l, __pyx_t_4) < 0) __PYX_ERR(0, 521, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "janitor/cython_functions/cond_join_indices.py":585
+  /* "janitor/cython_functions/cond_join_indices.py":566
  *
  *
  * @cython.boundscheck(False)             # <<<<<<<<<<<<<<
  * @cython.wraparound(False)
  * def build_indices_fast_path_keep_all(
 */
-  __pyx_t_4 = __Pyx_PyDict_NewPresized(7); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 585, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyDict_NewPresized(7); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 566, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_left_index, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 585, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_right_index, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 585, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_left_indices, __pyx_mstate_global->__pyx_kp_u_cython_long_1) < 0) __PYX_ERR(0, 585, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_right_indices, __pyx_mstate_global->__pyx_kp_u_cython_long_1) < 0) __PYX_ERR(0, 585, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_starts, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 585, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_ends, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 585, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_booleans, __pyx_mstate_global->__pyx_kp_u_cython_schar) < 0) __PYX_ERR(0, 585, __pyx_L1_error)
-  __pyx_t_5 = __Pyx_CyFunction_New(&__pyx_mdef_7janitor_16cython_functions_17cond_join_indices_23build_indices_fast_path_keep_all, 0, __pyx_mstate_global->__pyx_n_u_build_indices_fast_path_keep_all, NULL, __pyx_mstate_global->__pyx_n_u_janitor_cython_functions_cond_jo, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[11])); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 585, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_left_index, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 566, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_right_index, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 566, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_left_indices, __pyx_mstate_global->__pyx_kp_u_cython_long_1) < 0) __PYX_ERR(0, 566, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_right_indices, __pyx_mstate_global->__pyx_kp_u_cython_long_1) < 0) __PYX_ERR(0, 566, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_starts, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 566, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_ends, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 566, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_booleans, __pyx_mstate_global->__pyx_kp_u_cython_schar) < 0) __PYX_ERR(0, 566, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_CyFunction_New(&__pyx_mdef_7janitor_16cython_functions_17cond_join_indices_23build_indices_fast_path_keep_all, 0, __pyx_mstate_global->__pyx_n_u_build_indices_fast_path_keep_all, NULL, __pyx_mstate_global->__pyx_n_u_janitor_cython_functions_cond_jo, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[11])); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 566, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_CyFunction_SetAnnotationsDict(__pyx_t_5, __pyx_t_4);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  if (PyDict_SetItem(__pyx_mstate_global->__pyx_d, __pyx_mstate_global->__pyx_n_u_build_indices_fast_path_keep_all, __pyx_t_5) < 0) __PYX_ERR(0, 585, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_mstate_global->__pyx_d, __pyx_mstate_global->__pyx_n_u_build_indices_fast_path_keep_all, __pyx_t_5) < 0) __PYX_ERR(0, 566, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
 
-  /* "janitor/cython_functions/cond_join_indices.py":626
+  /* "janitor/cython_functions/cond_join_indices.py":607
  *
  *
  * @cython.boundscheck(False)             # <<<<<<<<<<<<<<
  * @cython.wraparound(False)
  * def build_indices_fast_path_keep_first(
 */
-  __pyx_t_5 = __Pyx_PyDict_NewPresized(7); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 626, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyDict_NewPresized(7); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 607, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
-  if (PyDict_SetItem(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_left_index, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 626, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_right_index, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 626, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_left_indices, __pyx_mstate_global->__pyx_kp_u_cython_long_1) < 0) __PYX_ERR(0, 626, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_right_indices, __pyx_mstate_global->__pyx_kp_u_cython_long_1) < 0) __PYX_ERR(0, 626, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_starts, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 626, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_ends, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 626, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_booleans, __pyx_mstate_global->__pyx_kp_u_cython_schar) < 0) __PYX_ERR(0, 626, __pyx_L1_error)
-  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_7janitor_16cython_functions_17cond_join_indices_25build_indices_fast_path_keep_first, 0, __pyx_mstate_global->__pyx_n_u_build_indices_fast_path_keep_fir, NULL, __pyx_mstate_global->__pyx_n_u_janitor_cython_functions_cond_jo, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[12])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 626, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_left_index, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 607, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_right_index, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 607, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_left_indices, __pyx_mstate_global->__pyx_kp_u_cython_long_1) < 0) __PYX_ERR(0, 607, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_right_indices, __pyx_mstate_global->__pyx_kp_u_cython_long_1) < 0) __PYX_ERR(0, 607, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_starts, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 607, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_ends, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 607, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_5, __pyx_mstate_global->__pyx_n_u_booleans, __pyx_mstate_global->__pyx_kp_u_cython_schar) < 0) __PYX_ERR(0, 607, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_CyFunction_New(&__pyx_mdef_7janitor_16cython_functions_17cond_join_indices_25build_indices_fast_path_keep_first, 0, __pyx_mstate_global->__pyx_n_u_build_indices_fast_path_keep_fir, NULL, __pyx_mstate_global->__pyx_n_u_janitor_cython_functions_cond_jo, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[12])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 607, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_CyFunction_SetAnnotationsDict(__pyx_t_4, __pyx_t_5);
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-  if (PyDict_SetItem(__pyx_mstate_global->__pyx_d, __pyx_mstate_global->__pyx_n_u_build_indices_fast_path_keep_fir, __pyx_t_4) < 0) __PYX_ERR(0, 626, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_mstate_global->__pyx_d, __pyx_mstate_global->__pyx_n_u_build_indices_fast_path_keep_fir, __pyx_t_4) < 0) __PYX_ERR(0, 607, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "janitor/cython_functions/cond_join_indices.py":671
+  /* "janitor/cython_functions/cond_join_indices.py":652
  *
  *
  * @cython.boundscheck(False)             # <<<<<<<<<<<<<<
  * @cython.wraparound(False)
  * def build_indices_fast_path_keep_last(
 */
-  __pyx_t_4 = __Pyx_PyDict_NewPresized(7); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 671, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyDict_NewPresized(7); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 652, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_left_index, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 671, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_right_index, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 671, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_left_indices, __pyx_mstate_global->__pyx_kp_u_cython_long_1) < 0) __PYX_ERR(0, 671, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_right_indices, __pyx_mstate_global->__pyx_kp_u_cython_long_1) < 0) __PYX_ERR(0, 671, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_starts, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 671, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_ends, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 671, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_booleans, __pyx_mstate_global->__pyx_kp_u_cython_schar) < 0) __PYX_ERR(0, 671, __pyx_L1_error)
-  __pyx_t_5 = __Pyx_CyFunction_New(&__pyx_mdef_7janitor_16cython_functions_17cond_join_indices_27build_indices_fast_path_keep_last, 0, __pyx_mstate_global->__pyx_n_u_build_indices_fast_path_keep_las, NULL, __pyx_mstate_global->__pyx_n_u_janitor_cython_functions_cond_jo, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[13])); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 671, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_left_index, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 652, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_right_index, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 652, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_left_indices, __pyx_mstate_global->__pyx_kp_u_cython_long_1) < 0) __PYX_ERR(0, 652, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_right_indices, __pyx_mstate_global->__pyx_kp_u_cython_long_1) < 0) __PYX_ERR(0, 652, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_starts, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 652, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_ends, __pyx_mstate_global->__pyx_kp_u_cython_long) < 0) __PYX_ERR(0, 652, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_4, __pyx_mstate_global->__pyx_n_u_booleans, __pyx_mstate_global->__pyx_kp_u_cython_schar) < 0) __PYX_ERR(0, 652, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_CyFunction_New(&__pyx_mdef_7janitor_16cython_functions_17cond_join_indices_27build_indices_fast_path_keep_last, 0, __pyx_mstate_global->__pyx_n_u_build_indices_fast_path_keep_las, NULL, __pyx_mstate_global->__pyx_n_u_janitor_cython_functions_cond_jo, __pyx_mstate_global->__pyx_d, ((PyObject *)__pyx_mstate_global->__pyx_codeobj_tab[13])); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 652, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_CyFunction_SetAnnotationsDict(__pyx_t_5, __pyx_t_4);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  if (PyDict_SetItem(__pyx_mstate_global->__pyx_d, __pyx_mstate_global->__pyx_n_u_build_indices_fast_path_keep_las, __pyx_t_5) < 0) __PYX_ERR(0, 671, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_mstate_global->__pyx_d, __pyx_mstate_global->__pyx_n_u_build_indices_fast_path_keep_las, __pyx_t_5) < 0) __PYX_ERR(0, 652, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
 
   /* "janitor/cython_functions/cond_join_indices.py":1
@@ -28199,27 +28199,27 @@ static int __Pyx_CreateCodeObjects(__pyx_mstatetype *__pyx_mstate) {
     __pyx_mstate_global->__pyx_codeobj_tab[8] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_build_indices_ranges_positions_a, __pyx_k_aq_Q_q_uAQ_81E_A_1_aq_d_1_Je1G1, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[8])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {8, 0, 0, 18, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 482, 227};
+    const __Pyx_PyCode_New_function_description descr = {8, 0, 0, 18, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 477, 227};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_booleans, __pyx_mstate->__pyx_n_u_indexers, __pyx_mstate->__pyx_n_u_positions, __pyx_mstate->__pyx_n_u_starts, __pyx_mstate->__pyx_n_u_ends, __pyx_mstate->__pyx_n_u_index_right, __pyx_mstate->__pyx_n_u_left_index, __pyx_mstate->__pyx_n_u_right_index, __pyx_mstate->__pyx_n_u_length, __pyx_mstate->__pyx_n_u_num, __pyx_mstate->__pyx_n_u_indexer, __pyx_mstate->__pyx_n_u_position, __pyx_mstate->__pyx_n_u_r_index, __pyx_mstate->__pyx_n_u_begin, __pyx_mstate->__pyx_n_u_start, __pyx_mstate->__pyx_n_u_end, __pyx_mstate->__pyx_n_u_base, __pyx_mstate->__pyx_n_u_number};
     __pyx_mstate_global->__pyx_codeobj_tab[9] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_build_indices_ranges_positions_f, __pyx_k_aq_Q_q_uAQ_81E_A_1_aq_d_1_Je1G1_2, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[9])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {8, 0, 0, 18, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 526, 227};
+    const __Pyx_PyCode_New_function_description descr = {8, 0, 0, 18, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 521, 227};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_booleans, __pyx_mstate->__pyx_n_u_indexers, __pyx_mstate->__pyx_n_u_positions, __pyx_mstate->__pyx_n_u_starts, __pyx_mstate->__pyx_n_u_ends, __pyx_mstate->__pyx_n_u_index_right, __pyx_mstate->__pyx_n_u_left_index, __pyx_mstate->__pyx_n_u_right_index, __pyx_mstate->__pyx_n_u_length, __pyx_mstate->__pyx_n_u_num, __pyx_mstate->__pyx_n_u_indexer, __pyx_mstate->__pyx_n_u_position, __pyx_mstate->__pyx_n_u_r_index, __pyx_mstate->__pyx_n_u_begin, __pyx_mstate->__pyx_n_u_start, __pyx_mstate->__pyx_n_u_end, __pyx_mstate->__pyx_n_u_base, __pyx_mstate->__pyx_n_u_number};
     __pyx_mstate_global->__pyx_codeobj_tab[10] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_build_indices_ranges_positions_l, __pyx_k_aq_Q_q_uAQ_81E_A_1_aq_d_1_Je1G1_3, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[10])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {7, 0, 0, 15, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 585, 173};
+    const __Pyx_PyCode_New_function_description descr = {7, 0, 0, 15, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 566, 173};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_left_index, __pyx_mstate->__pyx_n_u_right_index, __pyx_mstate->__pyx_n_u_left_indices, __pyx_mstate->__pyx_n_u_right_indices, __pyx_mstate->__pyx_n_u_starts, __pyx_mstate->__pyx_n_u_ends, __pyx_mstate->__pyx_n_u_booleans, __pyx_mstate->__pyx_n_u_num, __pyx_mstate->__pyx_n_u_number, __pyx_mstate->__pyx_n_u_length, __pyx_mstate->__pyx_n_u_begin, __pyx_mstate->__pyx_n_u_start, __pyx_mstate->__pyx_n_u_end, __pyx_mstate->__pyx_n_u_l_value, __pyx_mstate->__pyx_n_u_r_value};
     __pyx_mstate_global->__pyx_codeobj_tab[11] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_build_indices_fast_path_keep_all, __pyx_k_q_q_Q_uAQ_81E_A_aq_d_1_AQ_Je1G1, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[11])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {7, 0, 0, 16, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 626, 205};
+    const __Pyx_PyCode_New_function_description descr = {7, 0, 0, 16, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 607, 205};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_left_index, __pyx_mstate->__pyx_n_u_right_index, __pyx_mstate->__pyx_n_u_left_indices, __pyx_mstate->__pyx_n_u_right_indices, __pyx_mstate->__pyx_n_u_starts, __pyx_mstate->__pyx_n_u_ends, __pyx_mstate->__pyx_n_u_booleans, __pyx_mstate->__pyx_n_u_num, __pyx_mstate->__pyx_n_u_number, __pyx_mstate->__pyx_n_u_length, __pyx_mstate->__pyx_n_u_begin, __pyx_mstate->__pyx_n_u_start, __pyx_mstate->__pyx_n_u_end, __pyx_mstate->__pyx_n_u_base, __pyx_mstate->__pyx_n_u_l_value, __pyx_mstate->__pyx_n_u_r_value};
     __pyx_mstate_global->__pyx_codeobj_tab[12] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_build_indices_fast_path_keep_fir, __pyx_k_q_q_Q_uAQ_81E_A_aq_d_1_Je1G1_k, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[12])) goto bad;
   }
   {
-    const __Pyx_PyCode_New_function_description descr = {7, 0, 0, 16, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 671, 197};
+    const __Pyx_PyCode_New_function_description descr = {7, 0, 0, 16, (unsigned int)(CO_OPTIMIZED|CO_NEWLOCALS), 652, 197};
     PyObject* const varnames[] = {__pyx_mstate->__pyx_n_u_left_index, __pyx_mstate->__pyx_n_u_right_index, __pyx_mstate->__pyx_n_u_left_indices, __pyx_mstate->__pyx_n_u_right_indices, __pyx_mstate->__pyx_n_u_starts, __pyx_mstate->__pyx_n_u_ends, __pyx_mstate->__pyx_n_u_booleans, __pyx_mstate->__pyx_n_u_num, __pyx_mstate->__pyx_n_u_number, __pyx_mstate->__pyx_n_u_length, __pyx_mstate->__pyx_n_u_begin, __pyx_mstate->__pyx_n_u_start, __pyx_mstate->__pyx_n_u_end, __pyx_mstate->__pyx_n_u_base, __pyx_mstate->__pyx_n_u_l_value, __pyx_mstate->__pyx_n_u_r_value};
     __pyx_mstate_global->__pyx_codeobj_tab[13] = __Pyx_PyCode_New(descr, varnames, __pyx_mstate->__pyx_kp_u_janitor_cython_functions_cond_jo_2, __pyx_mstate->__pyx_n_u_build_indices_fast_path_keep_las, __pyx_k_q_q_Q_uAQ_81E_A_aq_d_1_Je1G1_k_2, tuple_dedup_map); if (unlikely(!__pyx_mstate_global->__pyx_codeobj_tab[13])) goto bad;
   }

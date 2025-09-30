@@ -84,7 +84,7 @@ def _multiple_conditional_join_eq(
             if not booleans.any():
                 return None
             if outcome["conditions"]:
-                booleans = booleans.astype(np.int8, copy=False)
+                booleans = booleans.to_numpy(np.int8, copy=False)
                 conditions = _helpers._generate_tuples(
                     df=df, right=right, conditions=outcome["conditions"]
                 )
@@ -125,7 +125,7 @@ def _multiple_conditional_join_eq(
             starts, ends, r_sizes, positions = cond_join.reorder_positions(
                 len_uniques=right_on.size, positions=positions
             )
-            booleans = booleans.astype(np.int8, copy=False)
+            booleans = booleans.to_numpy(np.int8, copy=False)
             sizes, booleans = (
                 cond_join_aggs.get_row_counts_from_ranges_positions(
                     booleans=booleans, indexers=indexers, sizes=r_sizes
@@ -153,7 +153,7 @@ def _multiple_conditional_join_eq(
                     return None
             if aggfunc:
                 df_index = df.index._values
-                if not booleans.all():
+                if not indices["booleans"].all():
                     booleans = indices["booleans"].astype(np.bool_, copy=False)
                     indices["counts_array"] = indices["counts_array"][booleans]
                     df_index = df_index[booleans]
@@ -294,12 +294,13 @@ def _multiple_conditional_join_eq(
     starts = starts[indexers]
     ends = ends[indexers]
     sizes = ends - starts
+    booleans = booleans.to_numpy(np.int8, copy=False)
     if not booleans.all():
         sizes = np.where(booleans, sizes, 0)
     indices = {
         "starts": starts,
         "ends": ends,
-        "booleans": booleans.astype(np.int8, copy=False),
+        "booleans": booleans,
         "sizes": sizes,
     }
     if aggfunc and not outcome.get("conditions"):

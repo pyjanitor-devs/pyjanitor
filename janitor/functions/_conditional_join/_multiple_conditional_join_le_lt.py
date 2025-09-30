@@ -69,16 +69,14 @@ def _multiple_conditional_join_le_lt(
     # the possibility of a range join, and if there is,
     # then use the optimised path
     len_df = len(df)
-    len_right = len(right)
-    starts = np.zeros(len_df, dtype=np.intp)
+    starts = np.empty(len_df, dtype=np.intp)
     ends = np.empty(len_df, dtype=np.intp)
-    ends[:] = len_right
-    sizes = np.zeros(len_df, dtype=np.intp)
+    sizes = np.empty(len_df, dtype=np.intp)
     indices = {
         "left_index": df.index._values,
         "starts": starts,
         "ends": ends,
-        "booleans": booleans,
+        "booleans": booleans.to_numpy(dtype=np.int8, copy=False),
         "sizes": sizes,
     }
     if not outcome.get("is_range_join"):
@@ -97,6 +95,7 @@ def _multiple_conditional_join_le_lt(
             right=right[right_on]._values,
             indices=indices,
             op=op,
+            first_time=True,
         )
         if indices is None:
             return None
@@ -111,6 +110,8 @@ def _multiple_conditional_join_le_lt(
             return None
         if aggfunc:
             df_index = indices["left_index"]
+            # TODO: compute this only if `size` or `count` is in aggfunc
+            # possibly limit if nulls?
             if not indices["booleans"].all():
                 booleans = indices["booleans"].astype(np.bool_, copy=False)
                 indices["counts_array"] = indices["counts_array"][booleans]
@@ -254,6 +255,7 @@ def _range_indices(
         right=right[right_on]._values,
         indices=indices,
         op=op,
+        first_time=True,
     )
     if indices is None:
         return None

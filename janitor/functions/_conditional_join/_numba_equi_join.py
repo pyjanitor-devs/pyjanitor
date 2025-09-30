@@ -164,10 +164,12 @@ def _numba_equi_join(
     left_c, right_c, _ = equals
     left_c = df[left_c]
     right_c = right[right_c]
-    indices = _helpers._equal_indices(left=left_c, right=right_c)
+    # TODO: maybe steal some more perf by moving this to cython?
+    indices = _equal_indices(left=left_c, right=right_c)
     if indices is None:
         return None
-    booleans = indices["booleans"] & booleans.astype(np.bool_, copy=False)
+    booleans = indices["booleans"] & booleans
+    booleans = booleans.to_numpy(np.bool_, copy=False)
     starts = indices["starts"]
     ends = indices["ends"]
     left_index = indices["left_index"]
@@ -318,3 +320,35 @@ def _numba_equi_join(
     if left_index is None:
         return None
     return left_index, right_index
+
+
+def _equal_indices(
+    left: pd.Series,
+    right: pd.Series,
+) -> tuple:
+    # steal some perf here within the binary search
+    # search for uniques
+    # and later index them with left_positions
+    # it is assumed that users will only reach for this
+    # if the data is reasonably duplicated; if not
+    # pd.merge is superb especially if it's a one-to-one
+    # or one-to-many
+    left_index = left.index._values
+    right_index = right.index._values
+    right = right._values
+    positions, left = pd.factorize(left, sort=False)
+    left = left._values
+    starts = right.searchsorted(left, side="left")
+    starts = starts[positions]
+    ends = right.searchsorted(left, side="right")
+    ends = ends[positions]
+    booleans = starts < ends
+    if not booleans.any():
+        return None
+    return {
+        "starts": starts,
+        "ends": ends,
+        "booleans": booleans,
+        "left_index": left_index,
+        "right_index": right_index,
+    }

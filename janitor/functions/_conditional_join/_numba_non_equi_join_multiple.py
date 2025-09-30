@@ -175,20 +175,18 @@ def _numba_multiple_non_equi_join(
     )
     if right is None:
         return None
+    booleans = booleans.to_numpy(dtype=np.int8, copy=False)
     if conditions["non_equi_count"] > 1:
         len_df = len(df)
         len_right = len(right)
         left_regions = np.empty((len_df, 2), dtype=np.intp)
         positions = np.empty((len_df, 2), dtype=np.intp)
         right_regions = np.empty((len_right, 2), dtype=np.intp)
-        starts = np.zeros(len_df, dtype=np.intp)
-        ends = np.empty(len_df, dtype=np.intp)
-        ends[:] = len_right
-        sizes = np.zeros(len_df, dtype=np.intp)
         indices = {
-            "starts": starts,
-            "ends": ends,
-            "sizes": sizes,
+            "starts": np.empty(len_df, dtype=np.intp),
+            "ends": np.empty(len_df, dtype=np.intp),
+            "sizes": np.empty(len_df, dtype=np.intp),
+            "booleans": booleans,
         }
         first, second, *rest = conditions["conditions"]
         lcol, rcol, op = first
@@ -196,11 +194,11 @@ def _numba_multiple_non_equi_join(
         # by starting from the highest region
         if not df[lcol].is_monotonic_increasing:
             df = df.sort_values(lcol, ignore_index=False, kind="stable")
-            if not booleans.all():
-                booleans = booleans[df.index._values]
+            # ensure booleans is aligned with the sorted DataFrame
+            if not indices["booleans"].all():
+                indices["booleans"] = indices["booleans"][df.index._values]
         if not right[rcol].is_monotonic_increasing:
             right = right.sort_values(rcol, ignore_index=False, kind="stable")
-        indices["booleans"] = booleans
         outcome = _build_region(
             indices=indices, left=df[lcol], right=right[rcol], op=op
         )
@@ -209,11 +207,12 @@ def _numba_multiple_non_equi_join(
         left_regions[:, 0] = outcome["l_region"]
         right_regions[:, 0] = outcome["r_region"]
         right_index = outcome["r_index"]
-        indices = _update_indices(
-            indices=indices,
-            booleans=outcome["booleans"],
-            len_right=len_right,
-        )
+        indices = {
+            "starts": np.empty(len_df, dtype=np.intp),
+            "ends": np.empty(len_df, dtype=np.intp),
+            "sizes": np.empty(len_df, dtype=np.intp),
+            "booleans": outcome["booleans"],
+        }
         lcol, rcol, op_ = second
         right_c = right[rcol]
         right_c, _ = _sort_if_not_monotonic(series=right_c)
@@ -245,11 +244,9 @@ def _numba_multiple_non_equi_join(
             # we have flipped in monotonic decreasing order
             right = right.iloc[::-1]
         positions = right_regions[:, 0].searchsorted(left_regions[:, 0])
-        bools = positions < len_right
-        bools = bools & booleans
         # when searching, exclude regions that definitely
         # do not have a match
-        booleans = np.where(bools, booleans, False)
+        booleans = booleans & (positions < len_right)
         left_regions = left_regions[:, 1]
         right_regions = right_regions[:, 1]
         # logic here is based on grantjenks' sortedcontainers
@@ -414,25 +411,6 @@ def _numba_multiple_non_equi_join(
     return left_index, right_index
 
 
-def _update_indices(
-    indices: dict,
-    booleans: np.ndarray,
-    len_right: int,
-):
-    """
-    update indices
-    """
-    # build new starts to avoid mutation
-    # which feeds into all start variables
-    starts = np.zeros(indices["starts"].size, dtype=np.intp)
-    ends = indices["ends"]
-    ends[:] = len_right
-    indices["starts"] = starts
-    indices["ends"] = ends
-    indices["booleans"] = booleans
-    return indices
-
-
 def _build_region(
     left: pd.Series,
     right: pd.series,
@@ -448,10 +426,7 @@ def _build_region(
     )
 
     indices = _helpers._update_search_indices(
-        left=left,
-        right=right,
-        indices=indices,
-        op=op,
+        left=left, right=right, indices=indices, op=op, first_time=True
     )
     if indices is None:
         return None

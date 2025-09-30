@@ -657,7 +657,6 @@ def _conditional_join_compute(
             return_ranges=return_ranges,
             keep=keep,
         )
-    # return result
     if aggfunc:
         return _create_frame_agg(
             df=df,

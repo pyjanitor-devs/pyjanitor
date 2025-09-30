@@ -108,6 +108,7 @@ def get_positive_matches_ne(
     starts: cython.long[:],
     ends: cython.long[:],
     op: cython.int,
+    is_extension_array: cython.bint,
     matches: cython.schar[:],
     left: scalar_types[:],
     right: scalar_types[:],
@@ -153,85 +154,10 @@ def get_positive_matches_ne(
                 begin += 1
                 continue
             r_bool = right_booleans[number]
-            if (l_bool == 1) | (r_bool == 1):
-                boolean = 1
-            else:
-                r_val = right[number]
-                boolean = compare_values(left=l_val, right=r_val, op=op)
-            matches[begin] = boolean
-            begin += 1
-            total += boolean
-            count += boolean
-        counts_array[num] = count
-        boolean = count > 0
-        booleans[num] = boolean
-        l_counts += boolean
-
-    return (
-        np.asarray(matches),
-        np.asarray(booleans),
-        np.asarray(counts_array),
-        total,
-        l_counts,
-    )
-
-
-@cython.boundscheck(False)
-@cython.wraparound(False)
-def get_positive_matches_ne_pandas_array(
-    sizes: cython.long[:],
-    starts: cython.long[:],
-    ends: cython.long[:],
-    op: cython.int,
-    matches: cython.schar[:],
-    left: scalar_types[:],
-    right: scalar_types[:],
-    counts_array: cython.long[:],
-    booleans: cython.schar[:],
-    left_booleans: cython.schar[:],
-    right_booleans: cython.schar[:],
-):
-    """
-    Special situation to get positive matches from comparison,
-    where `op==!=` - specifically for pandas extension arrays (pd.NA)
-    """
-    #### type declarations #####
-    lengths: cython.Py_ssize_t = starts.shape[0]
-    num: cython.Py_ssize_t = 0
-    number: cython.Py_ssize_t = 0
-    begin: cython.Py_ssize_t = 0
-    l_counts: cython.long = 0
-    boolean: cython.bint = 0
-    start: cython.Py_ssize_t = 0
-    end: cython.Py_ssize_t = 0
-    l_val: scalar_types
-    r_val: scalar_types
-    l_bool: cython.schar
-    r_bool: cython.schar
-    size: cython.long = 0
-    count: cython.long = 0
-    total: cython.long = 0
-    #######################
-    for num in range(lengths):
-        if booleans[num] == 0:
-            size = sizes[num]
-            begin += size
-            counts_array[num] = 0
-            continue
-        l_val = left[num]
-        start = starts[num]
-        end = ends[num]
-        count = 0
-        l_bool = left_booleans[num]
-        for number in range(start, end):
-            if matches[begin] == 0:
-                begin += 1
-                continue
-            r_bool = right_booleans[number]
-            # https://pandas.pydata.org/docs/user_guide/boolean.html#kleene-logical-operations
-            if (l_bool == 1) | (r_bool == 1):
-                boolean = 0
-            else:
+            boolean = l_bool | r_bool
+            if (boolean == 1) & is_extension_array:
+                boolean == 0
+            elif boolean == 0:
                 r_val = right[number]
                 boolean = compare_values(left=l_val, right=r_val, op=op)
             matches[begin] = boolean
@@ -292,6 +218,7 @@ def get_positive_matches_no_ranges(
 @cython.wraparound(False)
 def get_positive_matches_no_ranges_ne(
     op: cython.int,
+    is_extension_array: cython.bint,
     left: scalar_types[:],
     right: scalar_types[:],
     right_index: cython.long[:],
@@ -320,57 +247,10 @@ def get_positive_matches_no_ranges_ne(
         r_index = right_index[num]
         l_bool = left_booleans[num]
         r_bool = right_booleans[r_index]
-        if (l_bool == 1) | (r_bool == 1):
-            boolean = 1
-        else:
-            l_val = left[num]
-            r_val = right[r_index]
-            boolean = compare_values(left=l_val, right=r_val, op=op)
-        booleans[num] = boolean
-        total += boolean
-
-    return (
-        np.asarray(booleans),
-        total,
-    )
-
-
-@cython.boundscheck(False)
-@cython.wraparound(False)
-def get_positive_matches_no_ranges_ne_pandas_array(
-    op: cython.int,
-    left: scalar_types[:],
-    right: scalar_types[:],
-    right_index: cython.long[:],
-    booleans: cython.schar[:],
-    left_booleans: cython.schar[:],
-    right_booleans: cython.schar[:],
-):
-    """
-    Get positive matches from comparison;
-    Applies if op == '!=' and pandas array(pd.NA)
-    """
-    #### type declarations #####
-    lengths: cython.Py_ssize_t = booleans.shape[0]
-    num: cython.Py_ssize_t = 0
-    boolean: cython.bint = 0
-    r_index: cython.Py_ssize_t = 0
-    l_val: scalar_types
-    r_val: scalar_types
-    l_bool: cython.schar
-    r_bool: cython.schar
-    total: cython.long = 0
-    #######################
-    for num in range(lengths):
-        if booleans[num] == 0:
-            continue
-        r_index = right_index[num]
-        l_bool = left_booleans[num]
-        r_bool = right_booleans[r_index]
-        # https://pandas.pydata.org/docs/user_guide/boolean.html#kleene-logical-operations
-        if (l_bool == 1) | (r_bool == 1):
-            boolean = 0
-        else:
+        boolean = l_bool | r_bool
+        if (boolean == 1) & is_extension_array:
+            boolean == 0
+        elif boolean == 0:
             l_val = left[num]
             r_val = right[r_index]
             boolean = compare_values(left=l_val, right=r_val, op=op)
@@ -1101,6 +981,7 @@ def get_positive_matches_ranges_positions_ne(
     starts: cython.long[:],
     ends: cython.long[:],
     op: cython.int,
+    is_extension_array: cython.bint,
     matches: cython.schar[:],
     left: scalar_types[:],
     right: scalar_types[:],
@@ -1152,91 +1033,10 @@ def get_positive_matches_ranges_positions_ne(
                 continue
             position = positions[number]
             r_bool = right_booleans[position]
-            if (l_bool == 1) | (r_bool == 1):
-                boolean = 1
-            else:
-                r_val = right[position]
-                boolean = compare_values(left=l_val, right=r_val, op=op)
-            matches[begin] = boolean
-            begin += 1
-            total += boolean
-            count += boolean
-        counts_array[num] = count
-        boolean = count > 0
-        booleans[num] = boolean
-        l_counts += boolean
-
-    return (
-        np.asarray(matches),
-        np.asarray(booleans),
-        np.asarray(counts_array),
-        total,
-        l_counts,
-    )
-
-
-@cython.boundscheck(False)
-@cython.wraparound(False)
-def get_positive_matches_ranges_positions_ne_pandas_array(
-    sizes: cython.long[:],
-    starts: cython.long[:],
-    ends: cython.long[:],
-    op: cython.int,
-    matches: cython.schar[:],
-    left: scalar_types[:],
-    right: scalar_types[:],
-    counts_array: cython.long[:],
-    booleans: cython.schar[:],
-    left_booleans: cython.schar[:],
-    right_booleans: cython.schar[:],
-    positions: cython.long[:],
-    indexers: cython.long[:],
-):
-    """
-    Special situation to get positive matches from comparison,
-    where `op==!=` - specifically for pandas extension arrays (pd.NA)
-    """
-    #### type declarations #####
-    lengths: cython.Py_ssize_t = booleans.shape[0]
-    num: cython.Py_ssize_t = 0
-    number: cython.Py_ssize_t = 0
-    position: cython.Py_ssize_t = 0
-    indexer: cython.Py_ssize_t = 0
-    begin: cython.Py_ssize_t = 0
-    l_counts: cython.long = 0
-    boolean: cython.bint = 0
-    start: cython.Py_ssize_t = 0
-    end: cython.Py_ssize_t = 0
-    l_val: scalar_types
-    r_val: scalar_types
-    l_bool: cython.schar
-    r_bool: cython.schar
-    size: cython.long = 0
-    count: cython.long = 0
-    total: cython.long = 0
-    #######################
-    for num in range(lengths):
-        if booleans[num] == 0:
-            size = sizes[num]
-            begin += size
-            counts_array[num] = 0
-            continue
-        l_val = left[num]
-        indexer = indexers[num]
-        start = starts[indexer]
-        end = ends[indexer]
-        l_bool = left_booleans[num]
-        count = 0
-        for number in range(start, end):
-            if matches[begin] == 0:
-                begin += 1
-                continue
-            position = positions[number]
-            r_bool = right_booleans[position]
-            # https://pandas.pydata.org/docs/user_guide/boolean.html#kleene-logical-operations
-            if (l_bool == 1) | (r_bool == 1):
+            boolean = l_bool | r_bool
+            if (boolean == 1) & is_extension_array:
                 boolean = 0
-            else:
+            elif boolean == 0:
                 r_val = right[position]
                 boolean = compare_values(left=l_val, right=r_val, op=op)
             matches[begin] = boolean

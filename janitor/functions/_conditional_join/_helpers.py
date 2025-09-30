@@ -207,22 +207,6 @@ def _get_positive_matches(
                     booleans=booleans,
                 )
             )
-        elif is_extension_array:
-            matches, booleans, counts_array, total, l_counts = (
-                cond_join.get_positive_matches_ne_pandas_array(
-                    starts=starts,
-                    ends=ends,
-                    sizes=sizes,
-                    op=op,
-                    matches=matches,
-                    left=left,
-                    right=right,
-                    counts_array=counts_array,
-                    booleans=booleans,
-                    left_booleans=left_booleans.astype(np.int8, copy=False),
-                    right_booleans=right_booleans.astype(np.int8, copy=False),
-                )
-            )
         else:
             matches, booleans, counts_array, total, l_counts = (
                 cond_join.get_positive_matches_ne(
@@ -235,6 +219,7 @@ def _get_positive_matches(
                     right=right,
                     counts_array=counts_array,
                     booleans=booleans,
+                    is_extension_array=is_extension_array,
                     left_booleans=left_booleans.astype(np.int8, copy=False),
                     right_booleans=right_booleans.astype(np.int8, copy=False),
                 )
@@ -290,24 +275,6 @@ def _get_positive_matches_ranges_positions(
                     indexers=indexers,
                 )
             )
-        elif is_extension_array:
-            matches, booleans, counts_array, total, l_counts = (
-                cond_join.get_positive_matches_ranges_positions_ne_pandas_array(
-                    starts=starts,
-                    ends=ends,
-                    sizes=sizes,
-                    op=op,
-                    matches=matches,
-                    left=left,
-                    right=right,
-                    counts_array=counts_array,
-                    booleans=booleans,
-                    left_booleans=left_booleans.astype(np.int8, copy=False),
-                    right_booleans=right_booleans.astype(np.int8, copy=False),
-                    positions=positions,
-                    indexers=indexers,
-                )
-            )
         else:
             matches, booleans, counts_array, total, l_counts = (
                 cond_join.get_positive_matches_ranges_positions_ne(
@@ -315,6 +282,7 @@ def _get_positive_matches_ranges_positions(
                     ends=ends,
                     sizes=sizes,
                     op=op,
+                    is_extension_array=is_extension_array,
                     matches=matches,
                     left=left,
                     right=right,
@@ -454,19 +422,6 @@ def _get_positive_matches_no_ranges(
                 right_index=right_index,
                 booleans=booleans,
             )
-        elif is_extension_array:
-            booleans, total = (
-                cond_join.get_positive_matches_no_ranges_ne_pandas_array(
-                    op=op,
-                    left=left,
-                    right=right,
-                    right_index=right_index,
-                    booleans=booleans,
-                    left_booleans=left_booleans.astype(np.int8, copy=False),
-                    right_booleans=right_booleans.astype(np.int8, copy=False),
-                )
-            )
-
         else:
             booleans, total = cond_join.get_positive_matches_no_ranges_ne(
                 op=op,
@@ -474,6 +429,7 @@ def _get_positive_matches_no_ranges(
                 right=right,
                 right_index=right_index,
                 booleans=booleans,
+                is_extension_array=is_extension_array,
                 left_booleans=left_booleans.astype(np.int8, copy=False),
                 right_booleans=right_booleans.astype(np.int8, copy=False),
             )

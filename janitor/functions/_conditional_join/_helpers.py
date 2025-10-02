@@ -182,9 +182,9 @@ def _get_positive_matches(
     ends = indices["ends"]
     sizes = indices["sizes"]
     booleans = indices["booleans"]
-    matches = np.ones(sizes.sum(), dtype=np.int8)
+    matches = np.empty(sizes.sum(), dtype=np.int8)
     counts_array = np.zeros(sizes.size, dtype=np.intp)
-    for (
+    for number, (
         left,
         right,
         op,
@@ -192,7 +192,7 @@ def _get_positive_matches(
         left_booleans,
         right_booleans,
         any_nulls,
-    ) in conditions:
+    ) in enumerate(conditions):
         if not any_nulls:
             matches, booleans, counts_array, total, l_counts = (
                 cond_join.get_positive_matches(
@@ -205,6 +205,7 @@ def _get_positive_matches(
                     right=right,
                     counts_array=counts_array,
                     booleans=booleans,
+                    first_time=number == 0,
                 )
             )
         else:
@@ -220,6 +221,7 @@ def _get_positive_matches(
                     counts_array=counts_array,
                     booleans=booleans,
                     is_extension_array=is_extension_array,
+                    first_time=number == 0,
                     left_booleans=left_booleans.astype(np.int8, copy=False),
                     right_booleans=right_booleans.astype(np.int8, copy=False),
                 )
@@ -248,9 +250,9 @@ def _get_positive_matches_ranges_positions(
     positions = indices["positions"]
     indexers = indices["indexers"]
     booleans = indices["booleans"]
-    matches = np.ones(sizes.sum(), dtype=np.int8)
+    matches = np.empty(sizes.sum(), dtype=np.int8)
     counts_array = np.zeros(booleans.size, dtype=np.intp)
-    for (
+    for number, (
         left,
         right,
         op,
@@ -258,7 +260,7 @@ def _get_positive_matches_ranges_positions(
         left_booleans,
         right_booleans,
         any_nulls,
-    ) in conditions:
+    ) in enumerate(conditions):
         if not any_nulls:
             matches, booleans, counts_array, total, l_counts = (
                 cond_join.get_positive_matches_ranges_positions(
@@ -273,6 +275,7 @@ def _get_positive_matches_ranges_positions(
                     booleans=booleans,
                     positions=positions,
                     indexers=indexers,
+                    first_time=number == 0,
                 )
             )
         else:
@@ -292,6 +295,7 @@ def _get_positive_matches_ranges_positions(
                     right_booleans=right_booleans.astype(np.int8, copy=False),
                     positions=positions,
                     indexers=indexers,
+                    first_time=number == 0,
                 )
             )
         if total == 0:

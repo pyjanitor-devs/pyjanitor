@@ -41,6 +41,7 @@ def get_positive_matches(
     starts: cython.long[:],
     ends: cython.long[:],
     op: cython.int,
+    first_time: cython.bint,
     matches: cython.schar[:],
     left: scalar_types[:],
     right: scalar_types[:],
@@ -78,7 +79,7 @@ def get_positive_matches(
         end = ends[num]
         count = 0
         for number in range(start, end):
-            if matches[begin] == 0:
+            if (matches[begin] == 0) & (first_time == 0):
                 begin += 1
                 continue
             r_val = right[number]
@@ -109,6 +110,7 @@ def get_positive_matches_ne(
     ends: cython.long[:],
     op: cython.int,
     is_extension_array: cython.bint,
+    first_time: cython.bint,
     matches: cython.schar[:],
     left: scalar_types[:],
     right: scalar_types[:],
@@ -150,7 +152,7 @@ def get_positive_matches_ne(
         count = 0
         l_bool = left_booleans[num]
         for number in range(start, end):
-            if matches[begin] == 0:
+            if (matches[begin] == 0) & (first_time == 0):
                 begin += 1
                 continue
             r_bool = right_booleans[number]
@@ -909,6 +911,7 @@ def get_positive_matches_ranges_positions(
     starts: cython.long[:],
     ends: cython.long[:],
     op: cython.int,
+    first_time: cython.bint,
     matches: cython.schar[:],
     left: scalar_types[:],
     right: scalar_types[:],
@@ -951,7 +954,7 @@ def get_positive_matches_ranges_positions(
         end = ends[indexer]
         count = 0
         for number in range(start, end):
-            if matches[begin] == 0:
+            if (matches[begin] == 0) & (first_time == 0):
                 begin += 1
                 continue
             position = positions[number]
@@ -982,6 +985,7 @@ def get_positive_matches_ranges_positions_ne(
     ends: cython.long[:],
     op: cython.int,
     is_extension_array: cython.bint,
+    first_time: cython.bint,
     matches: cython.schar[:],
     left: scalar_types[:],
     right: scalar_types[:],
@@ -1028,7 +1032,7 @@ def get_positive_matches_ranges_positions_ne(
         l_bool = left_booleans[num]
         count = 0
         for number in range(start, end):
-            if matches[begin] == 0:
+            if (matches[begin] == 0) & (first_time == 0):
                 begin += 1
                 continue
             position = positions[number]

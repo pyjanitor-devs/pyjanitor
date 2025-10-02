@@ -162,7 +162,7 @@ def _row_to_names_dispatch(  # noqa: F811
             "The step argument for slice is not supported in row_to_names."
         )
     headers = df.slice(row_numbers.start, row_numbers.stop - row_numbers.start)
-    expression = pl.all().str.concat(delimiter=separator)
+    expression = pl.all().str.join(delimiter=separator)
     headers = headers.select(expression).row(0, named=True)
     headers = {col: str(repl) for col, repl in headers.items()}
     df = df.rename(mapping=headers)
@@ -193,7 +193,7 @@ def _row_to_names_dispatch(  # noqa: F811
         check("entry in the row_numbers argument", entry, [int])
 
     expression = pl.all().gather(row_numbers)
-    expression = expression.str.concat(delimiter=separator)
+    expression = expression.str.join(delimiter=separator)
     headers = df.select(expression).row(0, named=True)
     headers = {col: str(repl) for col, repl in headers.items()}
     df = df.rename(mapping=headers)

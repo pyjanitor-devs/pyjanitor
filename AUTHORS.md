@@ -115,3 +115,4 @@ Contributors
 -[@kianmeng](https://github.com/kianmeng) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/pull/1290#issue-1906020324)
 - [@lbeltrame](https://github.com/lbeltrame) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/pull/1401)
 - [@derekpowell](https://github.com/derekpowell) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3Aderekpowell)
+- [@emmanuel-ferdman](https://github.com/emmanuel-ferdman) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/issues?q=is%3Aclosed+mentions%3Aemmanuel-ferdman)

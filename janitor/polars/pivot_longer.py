@@ -534,7 +534,7 @@ def _pivot_longer_create_spec(
         expression = (
             pl.col(".name")
             .str.split(by=names_sep)
-            .list.to_struct(n_field_strategy="max_width")
+            .list.to_struct(upper_bound=len(names_to))
             .alias(variable_name)
         )
     else:

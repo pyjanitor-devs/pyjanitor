@@ -13,7 +13,7 @@ Also, do not forget to tag the relevant issue here as well.
 Finally, as commits come in, don't forget to regularly rebase!
 -->
 
-# PR Description
+## PR Description
 
 Please describe the changes proposed in the pull request:
 
@@ -29,7 +29,7 @@ Please describe the changes proposed in the pull request:
 
 <!-- As you go down the PR template, please feel free to delete sections that are irrelevant. -->
 
-# PR Checklist
+## PR Checklist
 
 <!-- This checklist exists for newcomers who are not yet familiar with our requirements. If you are experienced with
 the project, please feel free to delete this section. -->
@@ -43,7 +43,7 @@ Please ensure that you have done the following:
 3. [ ] Add a line to `CHANGELOG.md` under the latest version header (i.e. the one that is "on deck") describing the contribution.
     - Do use some discretion here; if there are multiple PRs that are related, keep them in a single line.
 
-# Automatic checks
+## Automatic checks
 
 There will be automatic checks run on the PR. These include:
 
@@ -53,7 +53,7 @@ There will be automatic checks run on the PR. These include:
 - Making sure that all tests are passed
 - Making sure that code coverage doesn't go down.
 
-# Relevant Reviewers
+## Relevant Reviewers
 
 <!-- Finally, please tag relevant maintainers to review. -->
 

@@ -427,9 +427,9 @@ def test_names_glue_single_column(df_checks_output):
     )
 
     result = df_checks_output.pivot_wider(
-        slice("geoid", "name"),
-        "variable",
-        "estimate",
+        index=slice("geoid", "name"),
+        names_from="variable",
+        values_from="estimate",
         names_glue="{variable}_estimate",
     )
     assert_frame_equal(result, df_out)
@@ -492,7 +492,11 @@ def test_names_expand(df_expand):
         index="year", columns="id", values="percentage"
     ).reindex(columns=pd.Categorical([1, 2, 3], ordered=True))
     expected = df_expand.pivot_wider(
-        "year", "id", "percentage", names_expand=True, flatten_levels=False
+        index="year",
+        names_from="id",
+        values_from="percentage",
+        names_expand=True,
+        flatten_levels=False,
     )
     assert_frame_equal(actual, expected, check_dtype=False)
 
@@ -506,7 +510,11 @@ def test_names_expand_flatten_levels(df_expand):
         .reset_index()
     )
     expected = df_expand.pivot_wider(
-        "year", "id", "percentage", names_expand=True, flatten_levels=True
+        index="year",
+        names_from="id",
+        values_from="percentage",
+        names_expand=True,
+        flatten_levels=True,
     )
     assert_frame_equal(actual, expected, check_dtype=False)
 
@@ -517,7 +525,11 @@ def test_index_expand(df_expand):
         index="id", columns="year", values="percentage"
     ).reindex(pd.Categorical([1, 2, 3], ordered=True))
     expected = df_expand.pivot_wider(
-        "id", "year", "percentage", index_expand=True, flatten_levels=False
+        index="id",
+        names_from="year",
+        values_from="percentage",
+        index_expand=True,
+        flatten_levels=False,
     )
     assert_frame_equal(actual, expected)
 
@@ -531,7 +543,10 @@ def test_index_expand_flatten_levels(df_expand):
         .reset_index()
     )
     expected = df_expand.pivot_wider(
-        "id", "year", "percentage", index_expand=True
+        index="id",
+        names_from="year",
+        values_from="percentage",
+        index_expand=True,
     )
     assert_frame_equal(actual, expected)
 
@@ -556,9 +571,9 @@ def test_expand_multiple_levels(df_expand):
 def test_expand_multiple_levels_flatten_levels(df_expand):
     """Test output for names_expand for multiple names_from."""
     expected = df_expand.pivot_wider(
-        "id",
-        ["year", "gender"],
-        "percentage",
+        index="id",
+        names_from=["year", "gender"],
+        values_from="percentage",
         names_expand=True,
         flatten_levels=True,
     )
@@ -627,3 +642,34 @@ def test_multi_index_values_from_missing(multi):
         multi.pivot_wider(
             names_from=[("sec", "extra")], values_from=[("A", "cat")]
         )
+
+
+def test_index_is_not_None():
+    """
+    Test output if
+    index and names_from is provided,
+    and values_from is None
+    """
+    # https://github.com/pyjanitor-devs/pyjanitor/issues/1509
+    df = pd.DataFrame(
+        {
+            "subject": [1, 1, 1, 2, 2, 2, 2],
+            "pills": [4, 4, 2, 1, 1, 1, 3],
+            "date": [
+                "10/10/2012",
+                "10/11/2012",
+                "10/12/2012",
+                "1/6/2014",
+                "1/7/2014",
+                "1/7/2014",
+                "1/8/2014",
+            ],
+            "strength": [250, 250, 500, 1000, 250, 500, 250],
+        }
+    )
+
+    expected = df.pivot_wider(
+        index=["subject", "date"], names_from="strength", flatten_levels=False
+    )
+    actual = df.pivot(index=["subject", "date"], columns="strength")
+    assert_frame_equal(expected, actual)

@@ -4,6 +4,7 @@
 -   [ENH] Added `row_count` parameter for janitor.conditional_join - Issue #1269 @samukweku
 -   [ENH] Reverse deprecation of `pivot_wider()` -- Issue #1464
 -   [ENH] Add accessor and method for pandas DataFrameGroupBy objects. - Issue #587 @samukweku
+-   [BUG] Fix incorrect output of `pivot_wider`, where `index` and `names_from` is provided, and values_from is None. PR #1509 @samukweku
 
 ## [v0.31.0] - 2025-03-07
 

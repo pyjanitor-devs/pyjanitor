@@ -2111,8 +2111,6 @@ def _computations_pivot_wider(
         index_expand,
     )
 
-    # return names_from, values_from, index
-
     out = df.pivot(  # noqa: PD010
         index=index, columns=names_from, values=values_from
     )

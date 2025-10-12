@@ -118,6 +118,13 @@ def summarise(
         3         2        3      101200
         4         3        2      102201
         5         4        4      103202
+
+        Aggregation on a DataFrame via a callable:
+        >>> df.summarise(lambda df: df.mean().rename("mean"))
+                             mean
+        avg_jump         2.833333
+        avg_run          2.833333
+        combine_id  101367.166667
         Aggregation on a DataFrame via a tuple:
         >>> df.summarise(("avg_*",'mean'))
               avg_jump   avg_run

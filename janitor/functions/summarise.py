@@ -118,9 +118,20 @@ def summarise(
         3         2        3      101200
         4         3        2      102201
         5         4        4      103202
-
-        Aggregation via a callable:
-        >>> df.summarise(lambda df: df.sum(),by='combine_id')
+        Aggregation on a DataFrame via a tuple:
+        >>> df.summarise(("avg_*",'mean'))
+              avg_jump   avg_run
+        mean  2.833333  2.833333
+        Aggregation on a DataFrame via a dictionary:
+        >>> df.summarise({'avg_jump':'mean'})
+              avg_jump
+        mean  2.833333
+        >>> df.summarise({"avg_run_2":("avg_run","mean")})
+              avg_run_2
+        mean   2.833333
+        >>> grouped = df.groupby('combine_id')
+        Aggregation on a grouped object via a callable:
+        >>> grouped.summarise(lambda df: df.sum())
                     avg_jump  avg_run
         combine_id
         100200             7        7
@@ -128,8 +139,8 @@ def summarise(
         102201             3        2
         103202             4        4
 
-        Aggregation via a tuple:
-        >>> df.summarise(("avg_run","mean"), by='combine_id')
+        Aggregation on a grouped object via a tuple:
+        >>> grouped.summarise(("avg_run","mean"))
                     avg_run
         combine_id
         100200          3.5
@@ -137,15 +148,15 @@ def summarise(
         102201          2.0
         103202          4.0
 
-        Aggregation via a dictionary:
-        >>> df.summarise({"avg_run":"mean"}, by='combine_id')
+        Aggregation on a grouped object via a dictionary:
+        >>> grouped.summarise({"avg_run":"mean"})
                     avg_run
         combine_id
         100200          3.5
         101200          2.0
         102201          2.0
         103202          4.0
-        >>> df.summarise({"avg_run_2":("avg_run","mean")}, by='combine_id')
+        >>> grouped.summarise({"avg_run_2":("avg_run","mean")})
                     avg_run_2
         combine_id
         100200            3.5
@@ -156,7 +167,6 @@ def summarise(
     Args:
         df: A pandas DataFrame or DataFrameGroupBy object.
         args: Either a dictionary or a tuple.
-        by: Column(s) to group by.
 
     Raises:
         ValueError: If a tuple is passed and the length is not 2.

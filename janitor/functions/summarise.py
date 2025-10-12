@@ -120,23 +120,27 @@ def summarise(
         5         4        4      103202
 
         Aggregation on a DataFrame via a callable:
-        >>> df.summarise(lambda df: df.mean().rename("mean"))
+        >>> df.summarise(lambda df: df.select('avg*').mean().rename("mean"))
                              mean
         avg_jump         2.833333
         avg_run          2.833333
-        combine_id  101367.166667
+
         Aggregation on a DataFrame via a tuple:
         >>> df.summarise(("avg_*",'mean'))
               avg_jump   avg_run
         mean  2.833333  2.833333
+
         Aggregation on a DataFrame via a dictionary:
         >>> df.summarise({'avg_jump':'mean'})
               avg_jump
         mean  2.833333
+
         >>> df.summarise({"avg_run_2":("avg_run","mean")})
               avg_run_2
         mean   2.833333
+
         >>> grouped = df.groupby('combine_id')
+
         Aggregation on a grouped object via a callable:
         >>> grouped.summarise(lambda df: df.sum())
                     avg_jump  avg_run

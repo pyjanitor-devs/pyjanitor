@@ -19,7 +19,6 @@ from janitor.functions.select import get_index_labels
 def summarise(
     df: pd.DataFrame | DataFrameGroupBy,
     *args: tuple[dict | tuple],
-    by: Any = None,
 ) -> pd.DataFrame:
     """
 
@@ -99,16 +98,8 @@ def summarise(
     Aggregated columns cannot be reused in `summarise`.
 
 
-    `by` can be a `DataFrameGroupBy` object; it is assumed that
-    `by` was created from `df` - the onus is on the user to
-    ensure that, or the aggregations may yield incorrect results.
-
-    `by` accepts anything supported by `pd.DataFrame.groupby`.
-
     Arguments supported in `pd.DataFrame.groupby`
     can also be passed to `by` via a dictionary.
-
-    If `df` is a `DataFrameGroupBy` object, `by` is ignored.
 
     Examples:
         >>> import pandas as pd
@@ -177,17 +168,8 @@ def summarise(
     if isinstance(df, DataFrameGroupBy):
         by = df
         df = df.obj
-    elif by is not None:
-        # it is assumed that by is created from df
-        # onus is on user to ensure that
-        if isinstance(by, DataFrameGroupBy):
-            pass
-        elif isinstance(by, dict):
-            by = df.groupby(**by)
-        else:
-            if is_scalar(by):
-                by = [by]
-            by = df.groupby(by, sort=False, observed=True)
+    else:
+        by = None
     contents = []
     for arg in args:
         aggregate = _aggfunc(arg, df=df, by=by)

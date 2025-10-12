@@ -63,7 +63,7 @@ def ungroup(
 def mutate(
     df: pd.DataFrame | DataFrameGroupBy,
     *args: tuple[dict | tuple],
-) -> pd.DataFrame:
+) -> pd.DataFrame | DataFrameGroupBy:
     """
 
     !!! info "New in version 0.31.0"
@@ -189,7 +189,7 @@ def mutate(
         ValueError: If a tuple is passed and the length is not 2.
 
     Returns:
-        A pandas DataFrame or Series with possibly mutated columns.
+        A pandas DataFrame, Series, or GroupBy object.
     """  # noqa: E501
     if isinstance(df, DataFrameGroupBy):
         df = copy.copy(df)

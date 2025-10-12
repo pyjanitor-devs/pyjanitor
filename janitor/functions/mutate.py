@@ -7,13 +7,15 @@ from functools import singledispatch
 import pandas as pd
 import pandas_flavor as pf
 from pandas.core.common import apply_if_callable
+from pandas.core.groupby.generic import DataFrameGroupBy
 
 from janitor.functions.select import get_index_labels
 
 
+@pf.register_groupby_method
 @pf.register_dataframe_method
 def mutate(
-    df: pd.DataFrame,
+    df: pd.DataFrame | DataFrameGroupBy,
     *args: tuple[dict | tuple],
 ) -> pd.DataFrame:
     """
@@ -143,15 +145,25 @@ def mutate(
     Returns:
         A pandas DataFrame or Series with aggregated columns.
     """  # noqa: E501
+    if isinstance(df, DataFrameGroupBy):
+        df_ = df.obj.copy(deep=None)
+        for arg in args:
+            df_ = _mutator(arg, df=df_, by=df)
+        df.obj = df_
+        return df
     df = df.copy(deep=None)
     for arg in args:
-        df = _mutator(arg, df=df)
+        df = _mutator(arg, df=df, by=None)
     return df
 
 
 @singledispatch
-def _mutator(arg, df):
-    outcome = _process_maybe_callable(func=arg, obj=df)
+def _mutator(arg, df, by):
+    if by is None:
+        val = df
+    else:
+        val = by
+    outcome = _process_maybe_callable(func=arg, obj=val)
     if isinstance(outcome, pd.Series):
         if not outcome.name:
             raise ValueError("Ensure the pandas Series object has a name")
@@ -167,27 +179,31 @@ def _mutator(arg, df):
 
 
 @_mutator.register(dict)
-def _(arg, df):
+def _(arg, df, by):
     """Dispatch function for dictionary"""
+    if by is None:
+        val = df
+    else:
+        val = by
     for column_name, mutator in arg.items():
         if isinstance(mutator, tuple):
             column, func = mutator
-            column = _apply_func_to_obj(mutator=func, obj=df[column])
+            column = _apply_func_to_obj(mutator=func, obj=val[column])
         else:
-            column = _apply_func_to_obj(mutator=mutator, obj=df[column_name])
+            column = _apply_func_to_obj(mutator=mutator, obj=val[column_name])
         df[column_name] = column
     return df
 
 
 @_mutator.register(tuple)
-def _(arg, df):
+def _(arg, df, by):
     """Dispatch function for tuple"""
     if len(arg) != 2:
         raise ValueError("the tuple has to be a length of 2")
     column_names, mutator = arg
     column_names = get_index_labels(arg=[column_names], df=df, axis="columns")
     mapping = {column_name: mutator for column_name in column_names}
-    return _mutator(mapping, df=df)
+    return _mutator(mapping, df=df, by=by)
 
 
 def _process_maybe_callable(func: callable, obj):

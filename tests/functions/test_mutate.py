@@ -97,3 +97,88 @@ def test_mutate_tuple_df_callable(df_mutate):
     actual = df_mutate.mutate(("avg_run", lambda df: df.sum()))
     expected = df_mutate.assign(avg_run=df_mutate["avg_run"].sum())
     assert_frame_equal(actual, expected)
+
+
+def test_mutate_callable_by_grouped_object(df_mutate):
+    """Test output for callable"""
+
+    actual = df_mutate.groupby("combine_id").mutate(
+        lambda df: df.avg_run.transform("sum")
+    )
+    grp = df_mutate.groupby("combine_id")
+    expected = df_mutate.assign(avg_run=grp["avg_run"].transform("sum"))
+    assert_frame_equal(actual.obj, expected)
+
+
+def test_mutate_dict_by_str(df_mutate):
+    """Test output for a dictionary"""
+    actual = df_mutate.groupby("combine_id").mutate({"avg_run": "mean"})
+    grp = df_mutate.groupby("combine_id")["avg_run"]
+    expected = df_mutate.assign(avg_run=grp.transform("mean"))
+    assert_frame_equal(actual.obj, expected)
+
+
+def test_mutate_dict_by_callable(df_mutate):
+    """Test output for a dictionary"""
+    actual = df_mutate.groupby("combine_id").mutate(
+        {"avg_run": lambda df: df.sum()}
+    )
+    expected = df_mutate.assign(
+        avg_run=df_mutate.groupby("combine_id")["avg_run"].transform("sum")
+    )
+    assert_frame_equal(actual.obj, expected)
+
+
+def test_mutate_dict_by_transform_callable(df_mutate):
+    """Test output for a dictionary"""
+    actual = df_mutate.groupby("combine_id").mutate(
+        {"avg_run": lambda df: df.transform("sum")}
+    )
+    expected = df_mutate.assign(
+        avg_run=df_mutate.groupby("combine_id")["avg_run"].transform("sum")
+    )
+    assert_frame_equal(actual.obj, expected)
+
+
+def test_mutate_dict_by_tuple(df_mutate):
+    """Test output for a dictionary"""
+    actual = df_mutate.groupby("combine_id").mutate(
+        {"avg_run_mean": ("avg_run", "mean")}
+    )
+    expected = df_mutate.assign(
+        avg_run_mean=df_mutate.groupby("combine_id")["avg_run"].transform(
+            "mean"
+        )
+    )
+    assert_frame_equal(actual.obj, expected)
+
+
+def test_mutate_by_tuple(df_mutate):
+    """Test output for a dictionary"""
+    actual = df_mutate.groupby("combine_id").mutate(("avg_run", "mean"))
+    expected = df_mutate.assign(
+        avg_run=df_mutate.groupby("combine_id")["avg_run"].transform("mean")
+    )
+    assert_frame_equal(actual.obj, expected)
+
+
+def test_mutate_tuple_by_callable(df_mutate):
+    """Test output for a dictionary"""
+    actual = df_mutate.groupby("combine_id").mutate(
+        ("avg_run", lambda df: df.sum())
+    )
+    expected = df_mutate.assign(
+        avg_run=df_mutate.groupby("combine_id")["avg_run"].transform("sum")
+    )
+    assert_frame_equal(actual.obj, expected)
+
+
+def test_mutate_tuple_by_grouped_object(df_mutate):
+    """Test output for a dictionary"""
+    actual = df_mutate.groupby("combine_id").mutate(
+        ("avg_run", lambda df: df.sum())
+    )
+    expected = df_mutate.assign(
+        avg_run=df_mutate.groupby("combine_id")["avg_run"].transform("sum")
+    )
+    assert_frame_equal(actual.obj, expected)

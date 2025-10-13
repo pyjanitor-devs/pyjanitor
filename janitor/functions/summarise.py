@@ -19,7 +19,6 @@ from janitor.functions.select import get_index_labels
 def summarise(
     df: pd.DataFrame | DataFrameGroupBy,
     *args: tuple[dict | tuple],
-    by: Any = None,
 ) -> pd.DataFrame:
     """
 
@@ -99,16 +98,8 @@ def summarise(
     Aggregated columns cannot be reused in `summarise`.
 
 
-    `by` can be a `DataFrameGroupBy` object; it is assumed that
-    `by` was created from `df` - the onus is on the user to
-    ensure that, or the aggregations may yield incorrect results.
-
-    `by` accepts anything supported by `pd.DataFrame.groupby`.
-
     Arguments supported in `pd.DataFrame.groupby`
     can also be passed to `by` via a dictionary.
-
-    If `df` is a `DataFrameGroupBy` object, `by` is ignored.
 
     Examples:
         >>> import pandas as pd
@@ -128,8 +119,30 @@ def summarise(
         4         3        2      102201
         5         4        4      103202
 
-        Aggregation via a callable:
-        >>> df.summarise(lambda df: df.sum(),by='combine_id')
+        Aggregation on a DataFrame via a callable:
+        >>> df.summarise(lambda df: df.select('avg*').mean().rename("mean"))
+                             mean
+        avg_jump         2.833333
+        avg_run          2.833333
+
+        Aggregation on a DataFrame via a tuple:
+        >>> df.summarise(("avg_*",'mean'))
+              avg_jump   avg_run
+        mean  2.833333  2.833333
+
+        Aggregation on a DataFrame via a dictionary:
+        >>> df.summarise({'avg_jump':'mean'})
+              avg_jump
+        mean  2.833333
+
+        >>> df.summarise({"avg_run_2":("avg_run","mean")})
+              avg_run_2
+        mean   2.833333
+
+        >>> grouped = df.groupby('combine_id')
+
+        Aggregation on a grouped object via a callable:
+        >>> grouped.summarise(lambda df: df.sum())
                     avg_jump  avg_run
         combine_id
         100200             7        7
@@ -137,8 +150,8 @@ def summarise(
         102201             3        2
         103202             4        4
 
-        Aggregation via a tuple:
-        >>> df.summarise(("avg_run","mean"), by='combine_id')
+        Aggregation on a grouped object via a tuple:
+        >>> grouped.summarise(("avg_run","mean"))
                     avg_run
         combine_id
         100200          3.5
@@ -146,15 +159,15 @@ def summarise(
         102201          2.0
         103202          4.0
 
-        Aggregation via a dictionary:
-        >>> df.summarise({"avg_run":"mean"}, by='combine_id')
+        Aggregation on a grouped object via a dictionary:
+        >>> grouped.summarise({"avg_run":"mean"})
                     avg_run
         combine_id
         100200          3.5
         101200          2.0
         102201          2.0
         103202          4.0
-        >>> df.summarise({"avg_run_2":("avg_run","mean")}, by='combine_id')
+        >>> grouped.summarise({"avg_run_2":("avg_run","mean")})
                     avg_run_2
         combine_id
         100200            3.5
@@ -165,7 +178,6 @@ def summarise(
     Args:
         df: A pandas DataFrame or DataFrameGroupBy object.
         args: Either a dictionary or a tuple.
-        by: Column(s) to group by.
 
     Raises:
         ValueError: If a tuple is passed and the length is not 2.
@@ -177,17 +189,8 @@ def summarise(
     if isinstance(df, DataFrameGroupBy):
         by = df
         df = df.obj
-    elif by is not None:
-        # it is assumed that by is created from df
-        # onus is on user to ensure that
-        if isinstance(by, DataFrameGroupBy):
-            pass
-        elif isinstance(by, dict):
-            by = df.groupby(**by)
-        else:
-            if is_scalar(by):
-                by = [by]
-            by = df.groupby(by, sort=False, observed=True)
+    else:
+        by = None
     contents = []
     for arg in args:
         aggregate = _aggfunc(arg, df=df, by=by)

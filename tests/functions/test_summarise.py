@@ -69,14 +69,6 @@ def test_summarise_callable_series(df_summarise):
     assert_frame_equal(actual, expected)
 
 
-def test_summarise_by_callable_grp(df_summarise):
-    """Test output for a callable"""
-    grp = df_summarise.groupby("combine_id")
-    actual = df_summarise.summarise(lambda df: df.sum(), by=grp)
-    expected = grp.sum()
-    assert_frame_equal(actual, expected)
-
-
 def test_summarise_by_callable_grp_grouped(df_summarise):
     """Test output for a callable"""
     grp = df_summarise.groupby("combine_id")
@@ -92,37 +84,10 @@ def test_summarise_dict_df_str(df_summarise):
     assert_frame_equal(actual, expected)
 
 
-def test_summarise_dict_by_str(df_summarise):
-    """Test output for a dictionary"""
-    actual = df_summarise.summarise(
-        {"avg_run": "mean"}, by={"by": "combine_id"}
-    )
-    expected = df_summarise.groupby("combine_id").agg({"avg_run": "mean"})
-    assert_frame_equal(actual, expected)
-
-
 def test_summarise_dict_df_callable(df_summarise):
     """Test output for a dictionary"""
     actual = df_summarise.summarise({"avg_run": lambda df: df.sum()})
     expected = df_summarise.agg({"avg_run": [lambda df: df.sum()]})
-    assert_frame_equal(actual, expected)
-
-
-def test_summarise_dict_by_callable(df_summarise):
-    """Test output for a dictionary"""
-    actual = df_summarise.summarise(
-        {"avg_run": lambda df: df.sum()}, by="combine_id"
-    )
-    expected = df_summarise.groupby("combine_id").agg({"avg_run": "sum"})
-    assert_frame_equal(actual, expected)
-
-
-def test_summarise_dict_by_agg_callable(df_summarise):
-    """Test output for a dictionary"""
-    actual = df_summarise.summarise(
-        {"avg_run": lambda df: df.agg("sum")}, by="combine_id"
-    )
-    expected = df_summarise.groupby("combine_id").agg({"avg_run": "sum"})
     assert_frame_equal(actual, expected)
 
 
@@ -131,17 +96,6 @@ def test_summarise_dict_df_tuple(df_summarise):
     actual = df_summarise.summarise({"avg_run_sum": ("avg_run", "sum")})
     expected = df_summarise.agg(avg_run_sum=("avg_run", "sum")).T.rename(
         index={"avg_run": "sum"}
-    )
-    assert_frame_equal(actual, expected)
-
-
-def test_summarise_dict_by_tuple(df_summarise):
-    """Test output for a dictionary"""
-    actual = df_summarise.summarise(
-        {"avg_run_mean": ("avg_run", "mean")}, by="combine_id"
-    )
-    expected = df_summarise.groupby("combine_id").agg(
-        avg_run_mean=("avg_run", "mean")
     )
     assert_frame_equal(actual, expected)
 
@@ -165,13 +119,6 @@ def test_summarise_df_tuple(df_summarise):
     assert_frame_equal(actual, expected)
 
 
-def test_summarise_by_tuple(df_summarise):
-    """Test output for a tuple"""
-    actual = df_summarise.summarise(("avg_run", "mean"), by="combine_id")
-    expected = df_summarise.groupby("combine_id").agg({"avg_run": "mean"})
-    assert_frame_equal(actual, expected)
-
-
 def test_summarise_by_tuple_grouped(df_summarise):
     """Test output for a tuple"""
     actual = df_summarise.groupby("combine_id").summarise(("avg_run", "mean"))
@@ -183,15 +130,6 @@ def test_summarise_tuple_df_callable(df_summarise):
     """Test output for a tuple"""
     actual = df_summarise.summarise(("avg_run", lambda df: df.sum()))
     expected = df_summarise.agg({"avg_run": [lambda df: df.sum()]})
-    assert_frame_equal(actual, expected)
-
-
-def test_summarise_tuple_by_callable(df_summarise):
-    """Test output for a tuple"""
-    actual = df_summarise.summarise(
-        ("avg_run", lambda df: df.sum()), by="combine_id"
-    )
-    expected = df_summarise.groupby("combine_id").agg({"avg_run": "sum"})
     assert_frame_equal(actual, expected)
 
 
@@ -213,69 +151,6 @@ def test_summarise_MI(dfmi):
     assert_frame_equal(actual, expected)
 
 
-def test_summarise_MI_different_levels(dfmi):
-    """Test summarise on a MultiIndex"""
-    actual = dfmi.summarise(
-        {("a", "bar"): "sum", ("rar", "bla", "gah"): (("a", "foo"), "mean")},
-        ("b", "min"),
-        by={"level": "A"},
-    )
-    actual.columns = ["A", "B", "C", "D"]
-    grp = dfmi.groupby(level="A")
-    expected = grp.agg(
-        {
-            ("a", "bar"): "sum",
-            ("a", "foo"): "mean",
-            ("b", "bah"): "min",
-            ("b", "foo"): "min",
-        }
-    )
-    expected.columns = ["A", "B", "C", "D"]
-    assert_frame_equal(actual, expected)
-
-
-def test_summarise_MI_different_levels_dict(dfmi):
-    """Test summarise on a MultiIndex"""
-    actual = dfmi.summarise(
-        {("a", "bar"): "sum", "rar": (("a", "foo"), "mean")},
-        ("b", "min"),
-        by={"level": "A"},
-    )
-    actual.columns = ["A", "B", "C", "D"]
-    grp = dfmi.groupby(level="A")
-    expected = grp.agg(
-        {
-            ("a", "bar"): "sum",
-            ("a", "foo"): "mean",
-            ("b", "bah"): "min",
-            ("b", "foo"): "min",
-        }
-    )
-    expected.columns = ["A", "B", "C", "D"]
-    assert_frame_equal(actual, expected)
-
-
-def test_summarise_MI_different_levels_tuple(dfmi):
-    """Test summarise on a MultiIndex"""
-    actual = dfmi.summarise(
-        {("a", "bar"): "sum", ("rar",): (("a", "foo"), "mean")},
-        ("b", "min"),
-        by={"level": "A"},
-    )
-    actual.columns = ["A", "B", "C", "D"]
-    grp = dfmi.groupby(level="A")
-    expected = grp.agg(
-        {
-            ("a", "bar"): "sum",
-            ("a", "foo"): "mean",
-            ("b", "bah"): "min",
-            ("b", "foo"): "min",
-        }
-    )
-    expected.columns = ["A", "B", "C", "D"]
-    assert_frame_equal(actual, expected)
-
-
 def test_summarise_MI_different_levels_tuple_grouped(dfmi):
     """Test summarise on a MultiIndex"""
     actual = dfmi.groupby(level="A").summarise(
@@ -294,12 +169,3 @@ def test_summarise_MI_different_levels_tuple_grouped(dfmi):
     )
     expected.columns = ["A", "B", "C", "D"]
     assert_frame_equal(actual, expected)
-
-
-def test_summarise_MI_different_levels_dataframe(dfmi):
-    """raise if dictionary value is a tuple and the returned aggregate is a DataFrame"""
-    with pytest.raises(TypeError, match="Expected a pandas Series object;.+"):
-        dfmi.summarise(
-            {"rar": (("a", "foo"), ["min", "mean"])},
-            by={"level": "A"},
-        )

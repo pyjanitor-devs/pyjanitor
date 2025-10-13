@@ -3,13 +3,13 @@ name: Propose New Feature
 about: If you'd like to propose a new feature, please use this template.
 ---
 
-# Brief Description
+## Brief Description
 
 <!-- Please provide a brief description of what you'd like to propose. -->
 
 I would like to propose...
 
-# Example API
+## Example API
 
 <!-- One of the selling points of pyjanitor is the API. Hence, we guard the API very carefully, and want to
 make sure that it is accessible and understandable to many people. Please provide a few examples of what the API

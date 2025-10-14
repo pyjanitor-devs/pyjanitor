@@ -644,7 +644,7 @@ def test_multi_index_values_from_missing(multi):
         )
 
 
-def test_index_is_not_None():
+def test_values_from_is_None_index_is_not_None():
     """
     Test output if
     index and names_from is provided,

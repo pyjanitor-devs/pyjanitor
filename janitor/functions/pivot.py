@@ -1865,9 +1865,9 @@ def _names_transform(
 @pf.register_dataframe_method
 def pivot_wider(
     df: pd.DataFrame,
-    names_from: list | str,
+    names_from: Any,
     index: Any = None,
-    values_from: list | str = None,
+    values_from: Any = None,
     flatten_levels: bool = True,
     names_sep: str = "_",
     names_glue: str = None,

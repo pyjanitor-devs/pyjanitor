@@ -9,3 +9,4 @@
         - complete
         - pivot_longer
         - row_to_names
+        - dates_to_polars

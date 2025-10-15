@@ -1865,9 +1865,9 @@ def _names_transform(
 @pf.register_dataframe_method
 def pivot_wider(
     df: pd.DataFrame,
+    names_from: Any,
     index: Any = None,
-    names_from: list | str = None,
-    values_from: list | str = None,
+    values_from: Any = None,
     flatten_levels: bool = True,
     names_sep: str = "_",
     names_glue: str = None,
@@ -2012,20 +2012,26 @@ def pivot_wider(
         index: Name(s) of columns to use as identifier variables.
             It should be either a single column name, or a list of column names.
             If `index` is not provided, the DataFrame's index is used.
+            Column selection is possible using the
+            [`select`][janitor.functions.select.select] syntax.
         names_from: Name(s) of column(s) to use to make the new
             DataFrame's columns. Should be either a single column name,
             or a list of column names.
+            Column selection is possible using the
+            [`select`][janitor.functions.select.select] syntax.
         values_from: Name(s) of column(s) that will be used for populating
             the new DataFrame's values.
             If `values_from` is not specified,  all remaining columns
             will be used.
+            Column selection is possible using the
+            [`select`][janitor.functions.select.select] syntax.
         flatten_levels: If `False`, the DataFrame stays as a MultiIndex.
         names_sep: If `names_from` or `values_from` contain multiple
             variables, this will be used to join the values into a single string
             to use as a column name. Default is `_`.
             Applicable only if `flatten_levels` is `True`.
         names_glue: A string to control the output of the flattened columns.
-            It offers more flexibility in creating custom column names,
+            It offers flexibility in creating custom column names,
             and uses python's `str.format_map` under the hood.
             Simply create the string template,
             using the column labels in `names_from`,
@@ -2216,14 +2222,17 @@ def _data_checks_pivot_wider(
     Type annotations are not provided because this function is where type
     checking happens.
     """
-
     if names_from is None:
         raise ValueError(
             "pivot_wider() is missing 1 required argument: 'names_from'"
         )
     names_from = get_index_labels([names_from], df, axis="columns")
 
-    if values_from is None:
+    if (values_from is None) and (index is not None):
+        index_ = get_index_labels([index], df, axis="columns")
+        values_from_ = df.columns.difference(names_from).difference(index_)
+        index_ = None
+    elif values_from is None:
         values_from_ = df.columns.difference(names_from)
     else:
         values_from_ = get_index_labels([values_from], df, axis="columns")

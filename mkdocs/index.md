@@ -3,7 +3,7 @@
 [![](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ericmjl/pyjanitor/dev)
 
 <!-- pypi-doc -->
-`pyjanitor` is a Python implementation of the R package [`janitor`][janitor]. 
+`pyjanitor` is a Python implementation of the R package [`janitor`][janitor].
 It provides a clean user-friendly API for extending pandas with powerful and readable data-cleaning functions .
 
 [janitor]: https://github.com/sfirke/janitor

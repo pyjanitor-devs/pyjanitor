@@ -194,9 +194,9 @@ def mutate(
     if isinstance(df, DataFrameGroupBy):
         df = copy.copy(df)
         df_ = df.obj.copy(deep=None)
+        df.obj = df_
         for arg in args:
             df_ = _mutator(arg, df=df_, by=df)
-        df.obj = df_
         return df
     df = df.copy(deep=None)
     for arg in args:

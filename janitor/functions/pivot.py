@@ -2229,9 +2229,13 @@ def _data_checks_pivot_wider(
     names_from = get_index_labels([names_from], df, axis="columns")
     try:
         # hack to align with pd.pivot
-        # alternatively, if it becomes unwieldy
+        # this means the user passed a scalar
+        # that exists in the columns,
+        # and does not require dynamic evaluation (via the select function)
+        # alternatively, if the below check becomes unwieldy
         # or we have to support too many edge cases,
-        # then we can inform users to
+        # then we can abort this step altogether,
+        # and inform users to
         # set flatten_levels to False
         # and manage the output afterwards
         _ = df.columns.get_loc(values_from)

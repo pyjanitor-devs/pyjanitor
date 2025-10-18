@@ -357,8 +357,10 @@ def filter_column_isin(
     if complement:
         return df[~criteria]
     return df[criteria]
-    
+
+
 from __future__ import annotations
+
 from collections.abc import Iterable
 from typing import Dict, List, Sequence, Tuple, Union
 
@@ -366,6 +368,7 @@ import pandas as pd
 from pandas_flavor import register_dataframe_method
 
 ColumnsArg = Union[str, List[str], Tuple[str, ...], Dict[str, Iterable]]
+
 
 @register_dataframe_method
 def filter_column_isin(
@@ -392,14 +395,18 @@ def filter_column_isin(
 
     elif isinstance(columns, (list, tuple)):
         if values is None:
-            raise ValueError("`values` must be provided when `columns` is a list/tuple.")
+            raise ValueError(
+                "`values` must be provided when `columns` is a list/tuple."
+            )
         cols_seq: Sequence[str] = list(columns)
         combos = [tuple(v) for v in values]
         mask = df.set_index(cols_seq).index.isin(combos)
 
     else:
         if values is None:
-            raise ValueError("`values` must be provided when `columns` is a string.")
+            raise ValueError(
+                "`values` must be provided when `columns` is a string."
+            )
         mask = df[columns].isin(values)
 
     if complement:

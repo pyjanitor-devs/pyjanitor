@@ -2232,7 +2232,7 @@ def _data_checks_pivot_wider(
         # this means the user passed a scalar
         # that exists in the columns,
         # and does not require dynamic evaluation (via the janitor.select function)
-        # alternatively, if the below check becomes unwieldy
+        # if, over time, the below check becomes unwieldy
         # or we have to support too many edge cases,
         # then we can abort this step altogether,
         # and inform users to
@@ -2267,17 +2267,13 @@ def _data_checks_pivot_wider(
         values_from = list(values_from)
     names_from = list(names_from)
     check("flatten_levels", flatten_levels, [bool])
-
     if names_sep is not None:
         check("names_sep", names_sep, [str])
-
     if names_glue is not None:
         check("names_glue", names_glue, [str])
-
     check("reset_index", reset_index, [bool])
     check("names_expand", names_expand, [bool])
     check("index_expand", index_expand, [bool])
-
     return (
         df,
         index,

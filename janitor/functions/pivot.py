@@ -2231,7 +2231,7 @@ def _data_checks_pivot_wider(
         # hack to align with pd.pivot
         # this means the user passed a scalar
         # that exists in the columns,
-        # and does not require dynamic evaluation (via the select function)
+        # and does not require dynamic evaluation (via the janitor.select function)
         # alternatively, if the below check becomes unwieldy
         # or we have to support too many edge cases,
         # then we can abort this step altogether,

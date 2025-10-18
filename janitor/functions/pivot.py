@@ -2245,6 +2245,9 @@ def _data_checks_pivot_wider(
     elif (values_from is not None) and (index is None):
         values_from = get_index_labels([values_from], df, axis="columns")
         index = df.columns.difference(names_from).difference(values_from)
+    elif (values_from is None) and (index is None):
+        values_from = df.columns.difference(names_from)
+        index = pd.Index([])
     elif (values_from is not None) and (index is not None):
         values_from = get_index_labels([values_from], df, axis="columns")
         index = get_index_labels([index], df, axis="columns")

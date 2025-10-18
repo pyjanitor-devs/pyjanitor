@@ -2110,11 +2110,13 @@ def _computations_pivot_wider(
         names_expand,
         index_expand,
     )
-
-    out = df.pivot(  # noqa: PD010
-        index=index, columns=names_from, values=values_from
-    )
-
+    if index is None:
+        # avoids the KeyError issue that arises from passing index=None
+        out = df.pivot(columns=names_from, values=values_from)  # noqa: PD010
+    else:
+        out = df.pivot(  # noqa: PD010
+            index=index, columns=names_from, values=values_from
+        )
     indexer = out.index
     if index_expand and index:
         any_categoricals = (indexer.get_level_values(name) for name in index)
@@ -2259,8 +2261,6 @@ def _data_checks_pivot_wider(
         index = None
     else:
         index = list(index)
-    if values_from.empty:
-        raise ValueError("values_from cannot be empty")
     if values_from_:
         values_from = values_from_
     else:

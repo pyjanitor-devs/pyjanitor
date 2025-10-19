@@ -2,13 +2,17 @@
 import numpy as np
 import pandas as pd
 
-from ._greater_than_indices import _ge_gt_indices
-from ._helpers import (
+from janitor.functions._conditional_join._greater_than_indices import (
+    _ge_gt_indices,
+)
+from janitor.functions._conditional_join._helpers import (
     _keep_output,
     _null_checks_cond_join,
     _sort_if_not_monotonic,
 )
-from ._less_than_indices import _le_lt_indices
+from janitor.functions._conditional_join._less_than_indices import (
+    _le_lt_indices,
+)
 
 
 def _not_equal_indices(

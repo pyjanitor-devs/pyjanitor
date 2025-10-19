@@ -2,11 +2,14 @@
 
 import pandas as pd
 
-from ._greater_than_indices import _greater_than_indices
-from ._helpers import (
+from janitor.functions._conditional_join._greater_than_indices import (
+    _greater_than_indices,
+)
+from janitor.functions._conditional_join._helpers import (
     greater_than_join_types,
     less_than_join_types,
 )
+
 from ._less_than_indices import _less_than_indices
 from ._not_equal_indices import _not_equal_indices
 

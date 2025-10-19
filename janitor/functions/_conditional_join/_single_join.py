@@ -9,9 +9,12 @@ from janitor.functions._conditional_join._helpers import (
     greater_than_join_types,
     less_than_join_types,
 )
-
-from ._less_than_indices import _less_than_indices
-from ._not_equal_indices import _not_equal_indices
+from janitor.functions._conditional_join._less_than_indices import (
+    _less_than_indices,
+)
+from janitor.functions._conditional_join._not_equal_indices import (
+    _not_equal_indices,
+)
 
 
 def _single_join(

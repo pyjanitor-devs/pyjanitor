@@ -1,7 +1,7 @@
 # Changelog
 
 ## [Unreleased]
--   [ENH] `return_ragged_arrays` deprecated; get_join_indices function returns a dictionary - Issue #520 @samukweku
+-   [ENH] `return_ragged_arrays` deprecated; get_join_indices function now returns a dictionary - Issue #520 @samukweku
 -   [ENH] Reverse deprecation of `pivot_wider()` -- Issue #1464
 -   [ENH] Add accessor and method for pandas DataFrameGroupBy objects. - Issue #587 @samukweku
 -   [ENH] Call mutate/summarise directly on groupby objects instead. Also add `ungroup` method to expose underlying dataframe of a grouped object. - Issue #1511 @samukweku

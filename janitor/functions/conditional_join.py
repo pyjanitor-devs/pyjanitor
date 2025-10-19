@@ -31,7 +31,6 @@ from ._conditional_join import _single_join
 
 
 @pf.register_dataframe_method
-@deprecated_kwargs("row_count")
 def conditional_join(
     df: pd.DataFrame,
     right: Union[pd.DataFrame, pd.Series],

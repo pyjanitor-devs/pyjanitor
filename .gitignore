@@ -143,3 +143,4 @@ tags
 *.profraw
 /scratch.py
 midpoint.csv
+examples/notebooks/cond_join.ipynb

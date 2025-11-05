@@ -25,7 +25,9 @@ from janitor.functions.utils import (
     greater_than_join_types,
     less_than_join_types,
 )
-from janitor.utils import check, check_column
+from janitor.utils import check, check_column, deprecated_kwargs
+
+from ._conditional_join import _single_join
 
 
 @pf.register_dataframe_method
@@ -39,7 +41,6 @@ def conditional_join(
     keep: Literal["first", "last", "all"] = "all",
     use_numba: bool = False,
     indicator: Optional[Union[bool, str]] = False,
-    row_count: str = None,
     force: bool = False,
 ) -> pd.DataFrame:
     """The conditional_join function operates similarly to `pd.merge`,
@@ -235,8 +236,6 @@ def conditional_join(
             - Added support for timedelta dtype.
         - 0.28.0
             - `col` class deprecated.
-        - 0.32.0
-            - Added `row_count` parameter.
 
     Args:
         df: A pandas DataFrame.
@@ -267,8 +266,6 @@ def conditional_join(
             `right_only` for observations whose merge key
             only appears in the right DataFrame, and `both` if the observation’s
             merge key is found in both DataFrames.
-        row_count: If not None, adds a new column that captures the number of matching rows
-            from `right` for each row in `df`.
         force: If `True`, force the non-equi join conditions to execute before the equi join.
 
 
@@ -287,7 +284,6 @@ def conditional_join(
         use_numba=use_numba,
         indicator=indicator,
         force=force,
-        row_count=row_count,
     )
 
 
@@ -318,8 +314,6 @@ def _conditional_join_preliminary_checks(
     indicator: Union[bool, str],
     force: bool,
     return_matching_indices: bool = False,
-    return_ragged_arrays: bool = False,
-    row_count: str = None,
 ) -> tuple:
     """
     Preliminary checks for conditional_join are conducted here.
@@ -403,19 +397,6 @@ def _conditional_join_preliminary_checks(
 
     check("force", force, [bool])
 
-    check("return_ragged_arrays", return_ragged_arrays, [bool])
-
-    if row_count is not None:
-        check("row_count", row_count, [Hashable])
-        if row_count in df.columns:
-            raise pd.errors.DuplicateLabelError(
-                f"{row_count} already exists as a column label in df."
-            )
-        if keep != "all":
-            raise ValueError("row_count applies only when `keep=all`")
-        if how != "left":
-            raise ValueError("row_count applies only when `how=left`")
-
     return (
         df,
         right,
@@ -427,8 +408,6 @@ def _conditional_join_preliminary_checks(
         use_numba,
         indicator,
         force,
-        return_ragged_arrays,
-        row_count,
     )
 
 
@@ -480,8 +459,6 @@ def _conditional_join_compute(
     indicator: Union[bool, str],
     force: bool,
     return_matching_indices: bool = False,
-    return_ragged_arrays: bool = False,
-    row_count: str = None,
 ) -> pd.DataFrame:
     """
     This is where the actual computation
@@ -499,8 +476,6 @@ def _conditional_join_compute(
         use_numba,
         indicator,
         force,
-        return_ragged_arrays,
-        row_count,
     ) = _conditional_join_preliminary_checks(
         df=df,
         right=right,
@@ -513,8 +488,6 @@ def _conditional_join_compute(
         indicator=indicator,
         force=force,
         return_matching_indices=return_matching_indices,
-        return_ragged_arrays=return_ragged_arrays,
-        row_count=row_count,
     )
     eq_check = False
     le_lt_check = False
@@ -540,8 +513,8 @@ def _conditional_join_compute(
             keep=keep,
             use_numba=use_numba,
             force=force,
-            return_ragged_arrays=return_ragged_arrays,
-            row_count=row_count,
+            return_ragged_arrays=False,
+            row_count=False,
         )
     elif (len(conditions) > 1) & le_lt_check:
         result = _multiple_conditional_join_le_lt(
@@ -550,8 +523,8 @@ def _conditional_join_compute(
             conditions=conditions,
             keep=keep,
             use_numba=use_numba,
-            return_ragged_arrays=return_ragged_arrays,
-            row_count=row_count,
+            return_ragged_arrays=False,
+            row_count=False,
         )
     elif len(conditions) > 1:
         result = _multiple_conditional_join_ne(
@@ -559,42 +532,34 @@ def _conditional_join_compute(
             right=right,
             conditions=conditions,
             keep=keep,
-            row_count=row_count,
-        )
-    elif use_numba:
-        result = _numba_single_non_equi_join(
-            left=df[left_on],
-            right=right[right_on],
-            op=op,
-            keep=keep,
-            row_count=row_count,
+            row_count=False,
         )
     else:
-        result = _generic_func_cond_join(
-            left=df[left_on],
-            right=right[right_on],
-            op=op,
-            multiple_conditions=False,
+        # TODO: handle numba computations separately
+        result = _single_join._single_join(
+            df=df,
+            right=right,
+            condition=conditions[0],
             keep=keep,
-            return_ragged_arrays=return_ragged_arrays,
-            row_count=row_count,
+            return_matching_indices=return_matching_indices,
         )
-    if row_count:
-        if (df_columns is not None) and (df_columns != slice(None)):
-            df = df.select(columns=df_columns)
-        df = df[:]
-        df[row_count] = 0
-        if result is None:
-            return df
-        _, result = df[row_count].align(result, join="left", fill_value=0)
-        df[row_count] = result
-        return df
 
-    if result is None:
-        result = np.array([], dtype=np.intp), np.array([], dtype=np.intp)
     if return_matching_indices:
         return result
-
+    # TODO: unify into single approach
+    if len(conditions) == 1:
+        return _create_frame(
+            df=df,
+            right=right,
+            left_index=result["left_index"],
+            right_index=result["right_index"],
+            how=how,
+            df_columns=df_columns,
+            right_columns=right_columns,
+            indicator=indicator,
+        )
+    if result is None:
+        result = np.array([], dtype=np.intp), np.array([], dtype=np.intp)
     left_index, right_index = result
     return _create_frame(
         df=df,
@@ -1532,6 +1497,7 @@ def _create_frame(
     return pd.DataFrame(dictionary, copy=False)
 
 
+@deprecated_kwargs("return_ragged_arrays")
 def get_join_indices(
     df: pd.DataFrame,
     right: Union[pd.DataFrame, pd.Series],
@@ -1539,8 +1505,7 @@ def get_join_indices(
     keep: Literal["first", "last", "all"] = "all",
     use_numba: bool = False,
     force: bool = False,
-    return_ragged_arrays: bool = False,
-) -> tuple[np.ndarray, np.ndarray]:
+) -> dict:
     """Convenience function to return the matching indices from an inner join.
 
     !!! info "New in version 0.27.0"
@@ -1549,6 +1514,9 @@ def get_join_indices(
 
         - 0.29.0
             - Add support for ragged array indices.
+        - 0.32.0
+            - ragged array indices deprecated.
+            - return indices as a dictionary
 
     Args:
         df: A pandas DataFrame.
@@ -1557,7 +1525,7 @@ def get_join_indices(
             `(left_on, right_on, op)`, where `left_on` is the column
             label from `df`, `right_on` is the column label from `right`,
             while `op` is the operator.
-            The `col` class is also supported. The operator can be any of
+            The operator can be any of
             `==`, `!=`, `<=`, `<`, `>=`, `>`. For multiple conditions,
             the and(`&`) operator is used to combine the results
             of the individual conditions.
@@ -1565,14 +1533,9 @@ def get_join_indices(
         keep: Choose whether to return the first match, last match or all matches.
         force: If `True`, force the non-equi join conditions
             to execute before the equi join.
-        return_ragged_arrays: If `True`, return slices/ranges of matching right indices
-            for each matching left index. Not applicable if `use_numba` is `True`.
-            If `return_ragged_arrays` is `True`, the join condition
-            should be a single join, or a range join,
-            where the right columns are both monotonically increasing.
 
     Returns:
-        A tuple of indices for the rows in the dataframes that match.
+        A dictionary of indices for the rows in the dataframes that match.
     """
     return _conditional_join_compute(
         df=df,
@@ -1586,7 +1549,6 @@ def get_join_indices(
         indicator=False,
         force=force,
         return_matching_indices=True,
-        return_ragged_arrays=return_ragged_arrays,
     )
 
 

@@ -327,5 +327,5 @@ as part of the official deprecation record.
 
 ## Credits
 
-As of 11/05/2025, the test data for the chemistry submodule 
+As of 11/05/2025, the test data for the chemistry submodule
 is unavailable.

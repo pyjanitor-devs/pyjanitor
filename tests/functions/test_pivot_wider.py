@@ -92,9 +92,9 @@ def test_names_glue_wrong_label1(df_checks_output):
         KeyError, match="'variabl' is not a column label in names_from."
     ):
         df_checks_output.pivot_wider(
-            ["geoid", "name"],
-            "variable",
-            "estimate",
+            index=["geoid", "name"],
+            names_from="variable",
+            values_from="estimate",
             names_glue="{variabl}_estimate",
         )
 
@@ -303,6 +303,32 @@ def test_no_index_names_from_order():
         .reset_index()
         .pivot_wider(names_from="gender", values_from="contVar", index="index")
         .set_index("index")
+        .rename_axis(index=None)
+    )
+
+    assert_frame_equal(result, expected_output)
+
+
+def test_no_index_names_from_order2():
+    """Test output if no `index` is supplied and column order is maintained."""
+    df_in = pd.DataFrame(
+        {
+            "gender": ["Male", "Female", "Female", "Male", "Male"],
+            "contVar": [22379, 24523, 23421, 23831, 29234],
+        },
+        index=[0, 0, 1, 1, 2],
+    )
+
+    expected_output = pd.DataFrame(
+        {
+            "Male": [22379.0, 23831.0, 29234.0],
+            "Female": [24523.0, 23421.0, np.nan],
+        }
+    )
+
+    result = (
+        df_in.pivot_wider(names_from="gender", values_from="contVar")
+        .loc[:, ["Male", "Female"]]
         .rename_axis(index=None)
     )
 
@@ -672,4 +698,36 @@ def test_values_from_is_None_index_is_not_None():
         index=["subject", "date"], names_from="strength", flatten_levels=False
     )
     actual = df.pivot(index=["subject", "date"], columns="strength")
+    assert_frame_equal(expected, actual)
+
+
+def test_values_from_is_None_index_is_None():
+    """
+    Test output if
+    only names_from is provided,
+    """
+    # https://github.com/pyjanitor-devs/pyjanitor/issues/1509
+    df = pd.DataFrame(
+        {
+            "subject": [1, 1, 1, 2, 2, 2, 2],
+            "pills": [4, 4, 2, 1, 1, 1, 3],
+            "date": [
+                "10/10/2012",
+                "10/11/2012",
+                "10/12/2012",
+                "1/6/2014",
+                "1/7/2014",
+                "1/7/2014",
+                "1/8/2014",
+            ],
+            "strength": [250, 250, 500, 1000, 250, 500, 250],
+        }
+    )
+
+    expected = df.pivot_wider(
+        names_from="strength", flatten_levels=False
+    ).sort_index(axis="columns")
+    expected["subject"] = expected["subject"].apply(pd.to_numeric)
+    expected["pills"] = expected["pills"].apply(pd.to_numeric)
+    actual = df.pivot(columns="strength").sort_index(axis="columns")
     assert_frame_equal(expected, actual)

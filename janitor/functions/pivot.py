@@ -11,7 +11,7 @@ from typing import Any, Callable, Pattern
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
-from pandas.api.types import is_extension_array_dtype, is_scalar
+from pandas.api.types import is_extension_array_dtype
 from pandas.core.dtypes.concat import concat_compat
 
 from janitor.functions.select import (
@@ -2110,11 +2110,13 @@ def _computations_pivot_wider(
         names_expand,
         index_expand,
     )
-
-    out = df.pivot(  # noqa: PD010
-        index=index, columns=names_from, values=values_from
-    )
-
+    if index is None:
+        # avoids the KeyError issue that arises from passing index=None
+        out = df.pivot(columns=names_from, values=values_from)  # noqa: PD010
+    else:
+        out = df.pivot(  # noqa: PD010
+            index=index, columns=names_from, values=values_from
+        )
     indexer = out.index
     if index_expand and index:
         any_categoricals = (indexer.get_level_values(name) for name in index)
@@ -2227,43 +2229,51 @@ def _data_checks_pivot_wider(
             "pivot_wider() is missing 1 required argument: 'names_from'"
         )
     names_from = get_index_labels([names_from], df, axis="columns")
-
+    try:
+        # hack to align with pd.pivot
+        # this means the user passed a scalar
+        # that exists in the columns,
+        # and does not require dynamic evaluation (via the janitor.select function)
+        # if, over time, the below check becomes unwieldy
+        # or we have to support too many edge cases,
+        # then we can abort this step altogether,
+        # and inform users to
+        # set flatten_levels to False
+        # and manage the output afterwards
+        _ = df.columns.get_loc(values_from)
+    except (pd.errors.InvalidIndexError, KeyError, TypeError):
+        values_from_ = None
+    else:
+        values_from_ = values_from
     if (values_from is None) and (index is not None):
-        index_ = get_index_labels([index], df, axis="columns")
-        values_from_ = df.columns.difference(names_from).difference(index_)
-        index_ = None
-    elif values_from is None:
-        values_from_ = df.columns.difference(names_from)
-    else:
-        values_from_ = get_index_labels([values_from], df, axis="columns")
-
-    if index is None:
-        index = df.columns.difference(names_from).difference(values_from)
-        if index.empty:
-            index = None
-        else:
-            index = list(index)
-    else:
         index = get_index_labels([index], df, axis="columns")
-        index = list(index)
-    names_from = list(names_from)
-    if is_scalar(values_from) and (values_from is not None):
-        if values_from == values_from_[0]:
-            pass
+        values_from = df.columns.difference(names_from).difference(index)
+    elif (values_from is not None) and (index is None):
+        values_from = get_index_labels([values_from], df, axis="columns")
+        index = df.columns.difference(names_from).difference(values_from)
+    elif (values_from is None) and (index is None):
+        values_from = df.columns.difference(names_from)
+        index = pd.Index([])
+    elif (values_from is not None) and (index is not None):
+        values_from = get_index_labels([values_from], df, axis="columns")
+        index = get_index_labels([index], df, axis="columns")
+    if index.empty:
+        index = None
     else:
-        values_from = list(values_from_)
+        index = list(index)
+    if values_from_:
+        values_from = values_from_
+    else:
+        values_from = list(values_from)
+    names_from = list(names_from)
     check("flatten_levels", flatten_levels, [bool])
-
     if names_sep is not None:
         check("names_sep", names_sep, [str])
-
     if names_glue is not None:
         check("names_glue", names_glue, [str])
-
     check("reset_index", reset_index, [bool])
     check("names_expand", names_expand, [bool])
     check("index_expand", index_expand, [bool])
-
     return (
         df,
         index,

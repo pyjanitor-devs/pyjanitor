@@ -327,6 +327,5 @@ as part of the official deprecation record.
 
 ## Credits
 
-Test data for chemistry submodule can be found at [Predictive Toxicology][predtox].
-
-[predtox]: https://www.predictive-toxicology.org/data/ntp/corrected_smiles.txt
+As of 11/05/2025, the test data for the chemistry submodule 
+is unavailable.

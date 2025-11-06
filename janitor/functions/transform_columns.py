@@ -52,10 +52,12 @@ def transform_column(
 
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame({
-        ...     "a": [2, 3, 4],
-        ...     "b": ["area", "pyjanitor", "grapefruit"],
-        ... })
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "a": [2, 3, 4],
+        ...         "b": ["area", "pyjanitor", "grapefruit"],
+        ...     }
+        ... )
         >>> df
            a           b
         0  2        area
@@ -151,11 +153,13 @@ def transform_columns(
         >>> import numpy as np
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame({
-        ...     "col1": [5, 10, 15],
-        ...     "col2": [3, 6, 9],
-        ...     "col3": [10, 100, 1_000],
-        ... })
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "col1": [5, 10, 15],
+        ...         "col2": [3, 6, 9],
+        ...         "col3": [10, 100, 1_000],
+        ...     }
+        ... )
         >>> df
            col1  col2  col3
         0     5     3    10

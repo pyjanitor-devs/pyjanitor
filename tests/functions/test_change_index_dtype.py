@@ -84,9 +84,7 @@ def test_multiindex_single_key(df_multi):
 
 def test_multiindex_multiple_keys(df_multi):
     """Test output if a dictionary is passed"""
-    actual = df_multi.change_index_dtype(
-        dtype={"second": int, "first": "category"}
-    )
+    actual = df_multi.change_index_dtype(dtype={"second": int, "first": "category"})
     expected = (
         df_multi.reset_index()
         .astype({"second": int, "first": "category"})

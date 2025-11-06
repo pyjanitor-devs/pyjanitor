@@ -34,9 +34,7 @@ def multilevel_dataframe():
     ]
     tuples = list(zip(*arrays))
     index = pd.MultiIndex.from_tuples(tuples, names=["first", "second"])
-    df = pd.DataFrame(
-        np.random.randn(3, 8), index=["A", "B", "C"], columns=index
-    )
+    df = pd.DataFrame(np.random.randn(3, 8), index=["A", "B", "C"], columns=index)
     return df
 
 

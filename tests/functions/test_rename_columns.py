@@ -8,9 +8,7 @@ def test_rename_columns(dataframe):
     Tests If rename_columns renames multiple columns based on the
     dictionary mappings.
     """
-    df = dataframe.clean_names().rename_columns(
-        {"a": "index", "bell_chart": "chart"}
-    )
+    df = dataframe.clean_names().rename_columns({"a": "index", "bell_chart": "chart"})
     assert set(df.columns) == set(
         ["index", "chart", "decorated_elephant", "animals@#$%^", "cities"]
     )

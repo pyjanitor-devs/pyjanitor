@@ -39,9 +39,7 @@ def test_concatenate_columns_errors(dataframe, column_names):
     """
     Test that an error is raised when less than two columns are specified.
     """
-    with pytest.raises(
-        JanitorError, match="At least two columns must be specified"
-    ):
+    with pytest.raises(JanitorError, match="At least two columns must be specified"):
         dataframe.concatenate_columns(
             column_names=column_names, new_column_name="index"
         )

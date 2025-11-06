@@ -51,11 +51,7 @@ def clean_names(
         >>> import polars as pl
         >>> import janitor.polars
         >>> df = pl.DataFrame(
-        ...     {
-        ...         "Aloha": range(3),
-        ...         "Bell Chart": range(3),
-        ...         "Animals@#$%^": range(3)
-        ...     }
+        ...     {"Aloha": range(3), "Bell Chart": range(3), "Animals@#$%^": range(3)}
         ... )
         >>> df
         shape: (3, 3)
@@ -263,9 +259,7 @@ def _strip_underscores_func_expr(
     """Strip underscores from obj."""
     underscore_options = {None, "left", "right", "both", "l", "r", True}
     if strip_underscores not in underscore_options:
-        raise JanitorError(
-            f"strip_underscores must be one of: {underscore_options}"
-        )
+        raise JanitorError(f"strip_underscores must be one of: {underscore_options}")
     if strip_underscores in {"left", "l"}:
         return obj.str.strip_chars_start("_")
     if strip_underscores in {"right", "r"}:

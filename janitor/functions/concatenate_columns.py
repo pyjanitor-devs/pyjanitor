@@ -34,7 +34,8 @@ def concatenate_columns(
         1  3  y
         2  5  z
         >>> df.concatenate_columns(
-        ...     column_names=["a", "b"], new_column_name="m",
+        ...     column_names=["a", "b"],
+        ...     new_column_name="m",
         ... )
            a  b    m
         0  1  x  1-x
@@ -58,9 +59,7 @@ def concatenate_columns(
     if len(column_names) < 2:
         raise JanitorError("At least two columns must be specified")
 
-    df[new_column_name] = (
-        df[column_names].astype(str).fillna("").agg(sep.join, axis=1)
-    )
+    df[new_column_name] = df[column_names].astype(str).fillna("").agg(sep.join, axis=1)
 
     if ignore_empty:
 
@@ -68,8 +67,6 @@ def concatenate_columns(
             """Ignore empty/null string values from the concatenated output."""
             return sep.join(x for x in x.split(sep) if x)
 
-        df[new_column_name] = df[new_column_name].transform(
-            remove_empty_string
-        )
+        df[new_column_name] = df[new_column_name].transform(remove_empty_string)
 
     return df

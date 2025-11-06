@@ -28,8 +28,7 @@ def then(df: pd.DataFrame, func: Callable) -> pd.DataFrame:
 
         >>> import pandas as pd
         >>> import janitor
-        >>> (pd.DataFrame({"a": [1, 2, 3], "b": [7, 8, 9]})
-        ...  .then(lambda df: df * 2))
+        >>> (pd.DataFrame({"a": [1, 2, 3], "b": [7, 8, 9]}).then(lambda df: df * 2))
            a   b
         0  2  14
         1  4  16

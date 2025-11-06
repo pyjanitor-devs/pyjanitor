@@ -25,6 +25,6 @@ def test_skipna():
         df["x"].apply(func)
 
     result = df["x"].apply(skipna(func))
-    assert (
-        result.to_numpy()[:-1] == np.array(["a1", "b1", "c1"])
-    ).all() and np.isnan(result.to_numpy()[-1])
+    assert (result.to_numpy()[:-1] == np.array(["a1", "b1", "c1"])).all() and np.isnan(
+        result.to_numpy()[-1]
+    )

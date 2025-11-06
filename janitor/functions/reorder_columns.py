@@ -30,7 +30,7 @@ def reorder_columns(
         0     1     2     3
         1     1     2     3
         2     1     2     3
-        >>> df.reorder_columns(['col3', 'col1'])
+        >>> df.reorder_columns(["col3", "col1"])
            col3  col1  col2
         0     3     1     2
         1     3     1     2
@@ -57,17 +57,13 @@ def reorder_columns(
 
     if any(col not in df.columns for col in column_order):
         raise IndexError(
-            "One or more columns in `column_order` were not found in the "
-            "DataFrame."
+            "One or more columns in `column_order` were not found in the DataFrame."
         )
 
     # if column_order is a Pandas index, needs conversion to list:
     column_order = list(column_order)
 
     return df.reindex(
-        columns=(
-            column_order
-            + [col for col in df.columns if col not in column_order]
-        ),
+        columns=(column_order + [col for col in df.columns if col not in column_order]),
         copy=False,
     )

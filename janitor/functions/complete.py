@@ -85,7 +85,7 @@ def complete(
         5  2004  Saccharina        2.0
 
         Expose missing years from 1999 to 2004:
-        >>> index = pd.Index(range(1999,2005),name='Year')
+        >>> index = pd.Index(range(1999, 2005), name="Year")
         >>> df.complete(index, "Taxon", sort=True)
             Year       Taxon  Abundance
         0   1999      Agarum        1.0
@@ -102,7 +102,7 @@ def complete(
         11  2004  Saccharina        2.0
 
         A dictionary can be used as well:
-        >>> dictionary = {'Year':range(1999,2005)}
+        >>> dictionary = {"Year": range(1999, 2005)}
         >>> df.complete(dictionary, "Taxon", sort=True)
             Year       Taxon  Abundance
         0   1999      Agarum        1.0
@@ -139,7 +139,7 @@ def complete(
         ...     "group",
         ...     ["item_id", "item_name"],
         ...     fill_value={"value1": 0, "value2": 99},
-        ...     sort=True
+        ...     sort=True,
         ... )
            group  item_id item_name  value1  value2
         0      1        1         a     1.0     4.0
@@ -158,7 +158,7 @@ def complete(
         ...     ["item_id", "item_name"],
         ...     fill_value={"value1": 0, "value2": 99},
         ...     explicit=False,
-        ...     sort=True
+        ...     sort=True,
         ... )
            group  item_id item_name  value1  value2
         0      1        1         a     1.0     4.0
@@ -189,8 +189,10 @@ def complete(
         6    NY  2013      5
 
         >>> def new_year_values(df):
-        ...     return pd.RangeIndex(start=df.year.min(), stop=df.year.max() + 1, name='year')
-        >>> df.complete(new_year_values, by='state',sort=True)
+        ...     return pd.RangeIndex(
+        ...         start=df.year.min(), stop=df.year.max() + 1, name="year"
+        ...     )
+        >>> df.complete(new_year_values, by="state", sort=True)
             state  year  value
         0     CA  2010    1.0
         1     CA  2011    NaN
@@ -264,16 +266,12 @@ def _computations_complete(
 
     fill_value_check = is_scalar(fill_value), isinstance(fill_value, dict)
     if not any(fill_value_check):
-        raise TypeError(
-            "fill_value should either be a dictionary or a scalar value."
-        )
+        raise TypeError("fill_value should either be a dictionary or a scalar value.")
     if fill_value_check[-1]:
         check_column(df, fill_value)
         for column_name, value in fill_value.items():
             if not is_scalar(value):
-                raise ValueError(
-                    f"The value for {column_name} should be a scalar."
-                )
+                raise ValueError(f"The value for {column_name} should be a scalar.")
 
     uniques = df.expand(*columns, by=by, sort=sort)
     if by is None:

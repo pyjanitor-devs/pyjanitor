@@ -48,10 +48,12 @@ def encode_categorical(
 
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame({
-        ...     "foo": ["b", "b", "a", "c", "b"],
-        ...     "bar": range(4, 9),
-        ... })
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "foo": ["b", "b", "a", "c", "b"],
+        ...         "bar": range(4, 9),
+        ...     }
+        ... )
         >>> df
           foo  bar
         0   b    4
@@ -77,10 +79,12 @@ def encode_categorical(
 
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame({
-        ...     "foo": ["b", "b", "a", "c", "b"],
-        ...     "bar": range(4, 9),
-        ... })
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "foo": ["b", "b", "a", "c", "b"],
+        ...         "bar": range(4, 9),
+        ...     }
+        ... )
         >>> df.dtypes
         foo    object
         bar     int64
@@ -112,9 +116,7 @@ def encode_categorical(
     """  # noqa: E501
 
     if all((column_names, kwargs)):
-        raise ValueError(
-            "Only one of `column_names` or `kwargs` can be provided."
-        )
+        raise ValueError("Only one of `column_names` or `kwargs` can be provided.")
     # column_names deal with only category dtype (unordered)
     # kwargs takes care of scenarios where user wants an ordered category
     # or user supplies specific categories to create the categorical
@@ -195,9 +197,7 @@ def _as_categorical_checks(df: pd.DataFrame, **kwargs) -> dict:
 
     for column_name, value in kwargs.items():
         # type check
-        if (value is not None) and not (
-            is_list_like(value) or isinstance(value, str)
-        ):
+        if (value is not None) and not (is_list_like(value) or isinstance(value, str)):
             raise TypeError(f"{value} should be list-like or a string.")
         if is_list_like(value):
             if not hasattr(value, "shape"):
@@ -219,8 +219,7 @@ def _as_categorical_checks(df: pd.DataFrame, **kwargs) -> dict:
 
             if not value.is_unique:
                 raise ValueError(
-                    "Kindly provide unique, "
-                    "non-null values for the array provided."
+                    "Kindly provide unique, non-null values for the array provided."
                 )
 
             if value.empty:
@@ -260,9 +259,7 @@ def _as_categorical_checks(df: pd.DataFrame, **kwargs) -> dict:
         elif isinstance(value, str):
             category_order_types = {ent.value for ent in _CategoryOrder}
             if value.lower() not in category_order_types:
-                raise ValueError(
-                    "Argument should be one of 'appearance' or 'sort'."
-                )
+                raise ValueError("Argument should be one of 'appearance' or 'sort'.")
 
         categories_dict[column_name] = value
 

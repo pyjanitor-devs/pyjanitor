@@ -84,17 +84,13 @@ def test_clean_names_case_type_invalid(spark_df):
 @pytest.mark.spark_functions
 def test_clean_names_camelcase_to_snake(spark_df):
     """Tests case_type parameter 'snake' takes effect."""
-    spark_df = spark_df.selectExpr("a AS AColumnName").clean_names(
-        case_type="snake"
-    )
+    spark_df = spark_df.selectExpr("a AS AColumnName").clean_names(case_type="snake")
     assert list(spark_df.columns) == ["a_column_name"]
 
 
 @pytest.mark.xfail(reason="causing issues in CI, to be fixed later")
 @pytest.mark.spark_functions
-@pytest.mark.parametrize(
-    "strip_underscores", ["both", True, "right", "r", "left", "l"]
-)
+@pytest.mark.parametrize("strip_underscores", ["both", True, "right", "r", "left", "l"])
 def test_clean_names_strip_underscores(spark_df, strip_underscores):
     """Tests strip_underscores parameter takes effect."""
     if strip_underscores in ["right", "r"]:

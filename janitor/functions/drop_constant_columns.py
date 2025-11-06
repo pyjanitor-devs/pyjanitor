@@ -16,7 +16,7 @@ def drop_constant_columns(df: pd.DataFrame) -> pd.DataFrame:
         ...     "b": [1, 2, 3],
         ...     "c": [1, 1, 1],
         ...     "d": ["rabbit", "leopard", "lion"],
-        ...     "e": ["Cambridge", "Shanghai", "Basel"]
+        ...     "e": ["Cambridge", "Shanghai", "Basel"],
         ... }
         >>> df = pd.DataFrame(data_dict)
         >>> df

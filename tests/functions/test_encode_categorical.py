@@ -178,9 +178,7 @@ def test_warnings(df):
     some values in the column are missing in the categories provided.
     """
     with pytest.warns(UserWarning):
-        df.encode_categorical(
-            numbers=[4, 5, 6], names=["John", "Mark", "Luke"]
-        )
+        df.encode_categorical(numbers=[4, 5, 6], names=["John", "Mark", "Luke"])
 
 
 @pytest.mark.functions

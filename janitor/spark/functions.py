@@ -81,9 +81,7 @@ def clean_names(
 
     cols = [_strip_underscores_func(col, strip_underscores) for col in cols]
 
-    cols = [
-        f"`{col}` AS `{new_col}`" for col, new_col in zip(df.columns, cols)
-    ]
+    cols = [f"`{col}` AS `{new_col}`" for col, new_col in zip(df.columns, cols)]
 
     return df.selectExpr(*cols)
 
@@ -105,19 +103,10 @@ def update_where(
         >>> from pyspark.sql import SparkSession
         >>> spark = SparkSession.builder.getOrCreate()
         >>> import janitor.spark
-        >>> data = {
-        ...     "a": [1, 2, 3, 4],
-        ...     "b": [5, 6, 7, 8],
-        ...     "c": [0, 0, 0, 0]
-        ... }
+        >>> data = {"a": [1, 2, 3, 4], "b": [5, 6, 7, 8], "c": [0, 0, 0, 0]}
         >>> df = spark.createDataFrame(pd.DataFrame(data))
-        >>> df = (
-        ...     df
-        ...     .update_where(
-        ...         conditions="a > 2 AND b < 8",
-        ...         target_column_name='c',
-        ...         target_val=10
-        ...     )
+        >>> df = df.update_where(
+        ...     conditions="a > 2 AND b < 8", target_column_name="c", target_val=10
         ... )  # doctest: +SKIP
         >>> df.show()  # doctest: +SKIP
         +---+---+---+

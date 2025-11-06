@@ -27,36 +27,43 @@ def explode_index(
         >>> import pandas as pd
         >>> import janitor
         >>> df = pd.DataFrame(
-        ...          {'max_speed_mean': [267.3333333333333, 50.5],
-        ...           'max_speed_median': [389.0, 50.5]})
+        ...     {
+        ...         "max_speed_mean": [267.3333333333333, 50.5],
+        ...         "max_speed_median": [389.0, 50.5],
+        ...     }
+        ... )
         >>> df
            max_speed_mean  max_speed_median
         0      267.333333             389.0
         1       50.500000              50.5
-        >>> df.explode_index(names_sep='_',axis='columns')  # doctest: +NORMALIZE_WHITESPACE
+        >>> df.explode_index(
+        ...     names_sep="_", axis="columns"
+        ... )  # doctest: +NORMALIZE_WHITESPACE
                   max
                 speed
                  mean median
         0  267.333333  389.0
         1   50.500000   50.5
-        >>> df.explode_index(names_pattern=r"(.+speed)_(.+)",axis='columns') # doctest: +NORMALIZE_WHITESPACE
+        >>> df.explode_index(
+        ...     names_pattern=r"(.+speed)_(.+)", axis="columns"
+        ... )  # doctest: +NORMALIZE_WHITESPACE
             max_speed
                  mean median
         0  267.333333  389.0
         1   50.500000   50.5
         >>> df.explode_index(
         ...     names_pattern=r"(?P<measurement>.+speed)_(?P<aggregation>.+)",
-        ...     axis='columns'
-        ... ) # doctest: +NORMALIZE_WHITESPACE
+        ...     axis="columns",
+        ... )  # doctest: +NORMALIZE_WHITESPACE
         measurement   max_speed
         aggregation        mean median
         0            267.333333  389.0
         1             50.500000   50.5
         >>> df.explode_index(
-        ...     names_sep='_',
-        ...     axis='columns',
-        ...     level_names = ['min or max', 'measurement','aggregation']
-        ... ) # doctest: +NORMALIZE_WHITESPACE
+        ...     names_sep="_",
+        ...     axis="columns",
+        ...     level_names=["min or max", "measurement", "aggregation"],
+        ... )  # doctest: +NORMALIZE_WHITESPACE
         min or max          max
         measurement       speed
         aggregation        mean median
@@ -77,9 +84,7 @@ def explode_index(
     if axis not in {"index", "columns"}:
         raise ValueError("axis should be either index or columns.")
     if (names_sep is None) and (names_pattern is None):
-        raise ValueError(
-            "Provide argument for either names_sep or names_pattern."
-        )
+        raise ValueError("Provide argument for either names_sep or names_pattern.")
     if (names_sep is not None) and (names_pattern is not None):
         raise ValueError(
             "Provide argument for either names_sep or names_pattern, not both."

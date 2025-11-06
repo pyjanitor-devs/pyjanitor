@@ -80,9 +80,7 @@ def test_row_to_names_delete_above_delete_rows(dataframe):
     Test output for remove_rows=True
     and remove_rows_above=True
     """
-    df = dataframe.row_to_names(
-        slice(2, 4), remove_rows=True, remove_rows_above=True
-    )
+    df = dataframe.row_to_names(slice(2, 4), remove_rows=True, remove_rows_above=True)
     assert df.iloc[0, 0] == 2
     assert df.iloc[0, 1] == 2.456234
     assert df.iloc[0, 2] == 2

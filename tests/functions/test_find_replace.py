@@ -5,9 +5,7 @@ import pytest
 
 @pytest.fixture
 def df():
-    return pd.DataFrame(
-        {"a": [1, np.nan, 3], "b": [2, 3, 1], "c": [2, np.nan, 2]}
-    )
+    return pd.DataFrame({"a": [1, np.nan, 3], "b": [2, 3, 1], "c": [2, np.nan, 2]})
 
 
 @pytest.mark.functions

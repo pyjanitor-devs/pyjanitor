@@ -33,10 +33,12 @@ def find_replace(
     Examples:
         For instance, given a DataFrame containing orders at a coffee shop:
 
-        >>> df = pd.DataFrame({
-        ...     "customer": ["Mary", "Tom", "Lila"],
-        ...     "order": ["ice coffee", "lemonade", "regular coffee"]
-        ... })
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "customer": ["Mary", "Tom", "Lila"],
+        ...         "order": ["ice coffee", "lemonade", "regular coffee"],
+        ...     }
+        ... )
         >>> df
           customer           order
         0     Mary      ice coffee
@@ -75,8 +77,8 @@ def find_replace(
 
         >>> df = find_replace(
         ...     df,
-        ...     match='regex',
-        ...     order={'coffee$': 'latte'},
+        ...     match="regex",
+        ...     order={"coffee$": "latte"},
         ... )
         >>> df
           customer     order
@@ -87,8 +89,8 @@ def find_replace(
         Example 2 - Regular-expression-based matching (method chaining usage):
 
         >>> df = df.find_replace(
-        ...     match='regex',
-        ...     order={'coffee$': 'latte'},
+        ...     match="regex",
+        ...     order={"coffee$": "latte"},
         ... )
         >>> df
           customer     order

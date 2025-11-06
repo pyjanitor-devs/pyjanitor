@@ -9,9 +9,7 @@ def test_datatypes_check(dataframe):
     """Test that data types are checked correctly when using jitter."""
     # `scale` should be a numeric value > 0
     with pytest.raises(TypeError):
-        assert dataframe.jitter(
-            column_name="a", dest_column_name="a_jitter", scale="x"
-        )
+        assert dataframe.jitter(column_name="a", dest_column_name="a_jitter", scale="x")
 
     # `random_state` should be an integer or 1-d array
     # (see documentation for np.random.seed)
@@ -40,9 +38,7 @@ def test_datatypes_check(dataframe):
 
     # `scale` should be greater than 0
     with pytest.raises(ValueError):
-        assert dataframe.jitter(
-            column_name="a", dest_column_name="a_jitter", scale=-5
-        )
+        assert dataframe.jitter(column_name="a", dest_column_name="a_jitter", scale=-5)
 
     # `clip` should be a size-2 tuple of numeric values
     with pytest.raises(ValueError):
@@ -74,9 +70,7 @@ def test_jitter_with_nans(missingdata_df):
     This is just an execution test.
     """
     # Functional test to ensure jitter runs without error if NaNs are present
-    missingdata_df.jitter(
-        column_name="a", dest_column_name="a_jitter", scale=1.0
-    )
+    missingdata_df.jitter(column_name="a", dest_column_name="a_jitter", scale=1.0)
 
 
 @pytest.mark.functions

@@ -29,10 +29,12 @@ def count_cumulative_unique(
     Examples:
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame({
-        ...     "letters": list("aabABb"),
-        ...     "numbers": range(4, 10),
-        ... })
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "letters": list("aabABb"),
+        ...         "numbers": range(4, 10),
+        ...     }
+        ... )
         >>> df
           letters  numbers
         0       a        4
@@ -104,9 +106,7 @@ def count_cumulative_unique(
                 f"type. Column {column_name} is {counter.dtype} type."
             ) from e
 
-    counter = (
-        counter.groupby(counter, sort=False).cumcount().to_numpy(copy=False)
-    )
+    counter = counter.groupby(counter, sort=False).cumcount().to_numpy(copy=False)
     counter = np.cumsum(counter == 0)
 
     return df.assign(**{dest_column_name: counter})

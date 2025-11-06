@@ -57,25 +57,21 @@ def test_args_invert(dataframe):
 
 def test_args_axis(dataframe):
     """Raise ValueError if args and axis is not index/columns"""
-    with pytest.raises(
-        ValueError, match="axis should be either 'index' or 'columns'."
-    ):
+    with pytest.raises(ValueError, match="axis should be either 'index' or 'columns'."):
         dataframe.select("col1", axis=1)
 
 
 def test_invert(dataframe):
     "Test output if invert is provided."
-    actual = dataframe.select(
-        columns=["col1"], index=("bar", "one"), invert=True
-    )
-    expected = dataframe.loc[("bar", "two"):, ["col2"]]
+    actual = dataframe.select(columns=["col1"], index=("bar", "one"), invert=True)
+    expected = dataframe.loc[("bar", "two") :, ["col2"]]
     assert_frame_equal(actual, expected)
 
 
 def test_invert_args(dataframe):
     "Test output if invert is provided."
     actual = dataframe.select(("bar", "one"), axis="index", invert=True)
-    expected = dataframe.loc[("bar", "two"):, :]
+    expected = dataframe.loc[("bar", "two") :, :]
     assert_frame_equal(actual, expected)
 
 

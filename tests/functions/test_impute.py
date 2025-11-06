@@ -45,9 +45,7 @@ def test_impute_error_with_invalid_inputs(missingdata_df):
     """Check errors are properly raised with invalid inputs."""
     with pytest.raises(
         ValueError,
-        match="Only one of `value` or "
-        "`statistic_column_name` "
-        "should be provided.",
+        match="Only one of `value` or `statistic_column_name` should be provided.",
     ):
         missingdata_df.impute(
             "a",
@@ -55,9 +53,7 @@ def test_impute_error_with_invalid_inputs(missingdata_df):
             statistic_column_name="mean",
         )
 
-    with pytest.raises(
-        KeyError, match="`statistic_column_name` must be one of.+"
-    ):
+    with pytest.raises(KeyError, match="`statistic_column_name` must be one of.+"):
         missingdata_df.impute("a", statistic_column_name="foobar")
 
     with pytest.raises(

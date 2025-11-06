@@ -41,9 +41,7 @@ def test_presence_index1(df_checks_output):
 def test_presence_index2(df_checks_output):
     """Raise KeyError if labels in `index` do not exist."""
     with pytest.raises(KeyError, match="No match was returned.+"):
-        df_checks_output.pivot_wider(
-            index=["geoid", "Name"], names_from="variable"
-        )
+        df_checks_output.pivot_wider(index=["geoid", "Name"], names_from="variable")
 
 
 def test_presence_names_from1(df_checks_output):
@@ -52,9 +50,7 @@ def test_presence_names_from1(df_checks_output):
         df_checks_output.pivot_wider(index="geoid", names_from="estmt")
 
 
-def test_presence_names_from2(
-    df_checks_output, match="No match was returned.+"
-):
+def test_presence_names_from2(df_checks_output, match="No match was returned.+"):
     """Raise KeyError if labels in `names_from` do not exist."""
     with pytest.raises(KeyError):
         df_checks_output.pivot_wider(index="geoid", names_from=["estimat"])
@@ -352,9 +348,7 @@ def test_index_names():
         {"var": ["var1", "var2", "var3"], "mean": [4, 1, 11], "sd": [7, 2, 14]}
     )
 
-    result = df.pivot_wider(
-        index="var", names_from="stat", values_from="score"
-    )
+    result = df.pivot_wider(index="var", names_from="stat", values_from="score")
 
     assert_frame_equal(result, expected_output)
 
@@ -426,9 +420,7 @@ def test_names_glue_multiple_levels(df_checks_output):
         }
     )
 
-    result = df_checks_output.encode_categorical(
-        variable="appearance"
-    ).pivot_wider(
+    result = df_checks_output.encode_categorical(variable="appearance").pivot_wider(
         index=["geoid", "name"],
         names_from="variable",
         values_from=["estimate", "error"],
@@ -503,9 +495,7 @@ def df_expand():
                 values=(2, 1, 1, 2, 1), categories=(1, 2, 3), ordered=True
             ),
             year=(2018, 2018, 2019, 2020, 2020),
-            gender=pd.Categorical(
-                ("female", "male", "male", "female", "male")
-            ),
+            gender=pd.Categorical(("female", "male", "male", "female", "male")),
             percentage=range(30, 80, 10),
         ),
         index=np.repeat([0], 5),
@@ -514,9 +504,9 @@ def df_expand():
 
 def test_names_expand(df_expand):
     """Test output if `names_expand`"""
-    actual = df_expand.pivot(
-        index="year", columns="id", values="percentage"
-    ).reindex(columns=pd.Categorical([1, 2, 3], ordered=True))
+    actual = df_expand.pivot(index="year", columns="id", values="percentage").reindex(
+        columns=pd.Categorical([1, 2, 3], ordered=True)
+    )
     expected = df_expand.pivot_wider(
         index="year",
         names_from="id",
@@ -547,9 +537,9 @@ def test_names_expand_flatten_levels(df_expand):
 
 def test_index_expand(df_expand):
     """Test output if `index_expand`"""
-    actual = df_expand.pivot(
-        index="id", columns="year", values="percentage"
-    ).reindex(pd.Categorical([1, 2, 3], ordered=True))
+    actual = df_expand.pivot(index="id", columns="year", values="percentage").reindex(
+        pd.Categorical([1, 2, 3], ordered=True)
+    )
     expected = df_expand.pivot_wider(
         index="id",
         names_from="year",
@@ -641,9 +631,7 @@ def test_multiindex_values_from_missing(multi):
     and a tuple is missing
     """
     with pytest.raises(KeyError):
-        multi.pivot_wider(
-            names_from=[("second", "extra")], values_from=[("A", "ct")]
-        )
+        multi.pivot_wider(names_from=[("second", "extra")], values_from=[("A", "ct")])
 
 
 def test_multiindex_index_missing(multi):
@@ -653,9 +641,7 @@ def test_multiindex_index_missing(multi):
     and a tuple is missing
     """
     with pytest.raises(KeyError):
-        multi.pivot_wider(
-            names_from=[("second", "extra")], index=[("first", "ext")]
-        )
+        multi.pivot_wider(names_from=[("second", "extra")], index=[("first", "ext")])
 
 
 def test_multi_index_values_from_missing(multi):
@@ -665,9 +651,7 @@ def test_multi_index_values_from_missing(multi):
     and a tuple is missing
     """
     with pytest.raises(KeyError):
-        multi.pivot_wider(
-            names_from=[("sec", "extra")], values_from=[("A", "cat")]
-        )
+        multi.pivot_wider(names_from=[("sec", "extra")], values_from=[("A", "cat")])
 
 
 def test_values_from_is_None_index_is_not_None():
@@ -724,9 +708,9 @@ def test_values_from_is_None_index_is_None():
         }
     )
 
-    expected = df.pivot_wider(
-        names_from="strength", flatten_levels=False
-    ).sort_index(axis="columns")
+    expected = df.pivot_wider(names_from="strength", flatten_levels=False).sort_index(
+        axis="columns"
+    )
     expected["subject"] = expected["subject"].apply(pd.to_numeric)
     expected["pills"] = expected["pills"].apply(pd.to_numeric)
     actual = df.pivot(columns="strength").sort_index(axis="columns")

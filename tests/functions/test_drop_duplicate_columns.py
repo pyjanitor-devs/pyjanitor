@@ -47,6 +47,4 @@ def test_drop_duplicate_columns_for_third_duplicated_column(
 @pytest.mark.functions
 def test_drop_duplicate_columns_with_error(df_duplicated_columns):
     with pytest.raises(IndexError):
-        df_duplicated_columns.drop_duplicate_columns(
-            column_name="a", nth_index=3
-        )
+        df_duplicated_columns.drop_duplicate_columns(column_name="a", nth_index=3)

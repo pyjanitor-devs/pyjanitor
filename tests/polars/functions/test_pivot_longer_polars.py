@@ -83,7 +83,6 @@ def test_names_to_names_pattern_len(df_checks):
     msg = "The length of names_to does "
     msg += "not match the number of fields extracted.+"
     with pytest.raises(ValueError, match=msg):
-
         df_checks.pivot_longer(
             column_names=cs.starts_with("ht"),
             names_to=(".value"),
@@ -100,7 +99,6 @@ def test_names_to_names_pattern_mismatch(df_checks):
     msg += "any of the groups in the provided regex.+"
 
     with pytest.raises(ValueError, match=msg):
-
         df_checks.pivot_longer(
             column_names=cs.starts_with("ht"),
             names_to=(".value", "age"),
@@ -313,9 +311,7 @@ def test_not_dot_value_sep(not_dot_value):
         .select(
             "country",
             "score",
-            pl.col("variable")
-            .str.split("_")
-            .list.to_struct(fields=["event", "year"]),
+            pl.col("variable").str.split("_").list.to_struct(fields=["event", "year"]),
         )
         .unnest("variable")
         .select("country", "event", "year", "score")
@@ -361,9 +357,7 @@ def test_not_dot_value_pattern(not_dot_value):
         .select(
             "country",
             "score",
-            pl.col("variable")
-            .str.split("_")
-            .list.to_struct(fields=["event", "year"]),
+            pl.col("variable").str.split("_").list.to_struct(fields=["event", "year"]),
         )
         .unnest("variable")
         .select("country", "event", "year", "score")
@@ -453,9 +447,7 @@ def test_names_pattern_single_column(single_val):
     Test output if names_to is only '.value'.
     """
 
-    result = single_val.pivot_longer(
-        "id", names_to=".value", names_pattern="(.)."
-    )
+    result = single_val.pivot_longer("id", names_to=".value", names_pattern="(.).")
 
     assert_frame_equal(result.sort(by=pl.all()), actual3.sort(by=pl.all()))
 

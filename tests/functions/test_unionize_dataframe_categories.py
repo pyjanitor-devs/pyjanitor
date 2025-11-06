@@ -45,35 +45,23 @@ def uniontest_df3():
 
 def test_unionize_dataframe_categories_type(uniontest_df1):
     with pytest.raises(TypeError):
-        janitor.unionize_dataframe_categories(
-            uniontest_df1, uniontest_df1["jerbs"]
-        )
+        janitor.unionize_dataframe_categories(uniontest_df1, uniontest_df1["jerbs"])
 
 
-def test_unionize_dataframe_categories(
-    uniontest_df1, uniontest_df2, uniontest_df3
-):
+def test_unionize_dataframe_categories(uniontest_df1, uniontest_df2, uniontest_df3):
     udf1, udf2, udf3 = janitor.unionize_dataframe_categories(
         uniontest_df1, uniontest_df2, uniontest_df3
     )
 
     # test categories were unioned properly
 
-    assert set(udf1["jerbs"].dtype.categories) == set(
-        udf2["jerbs"].dtype.categories
-    )
+    assert set(udf1["jerbs"].dtype.categories) == set(udf2["jerbs"].dtype.categories)
 
-    assert set(udf1["jerbs"].dtype.categories) == set(
-        udf3["jerbs"].dtype.categories
-    )
+    assert set(udf1["jerbs"].dtype.categories) == set(udf3["jerbs"].dtype.categories)
 
-    assert set(udf1["fruits"].dtype.categories) == set(
-        udf3["fruits"].dtype.categories
-    )
+    assert set(udf1["fruits"].dtype.categories) == set(udf3["fruits"].dtype.categories)
 
-    assert set(udf1["fruits"].dtype.categories) == set(
-        udf3["fruits"].dtype.categories
-    )
+    assert set(udf1["fruits"].dtype.categories) == set(udf3["fruits"].dtype.categories)
 
     assert set(udf2["animals"].dtype.categories) == set(
         udf3["animals"].dtype.categories
@@ -111,9 +99,7 @@ def test_unionize_dataframe_categories(
 def test_unionize_dataframe_categories_original_preservation(
     uniontest_df1, uniontest_df2
 ):
-    udf1, udf2 = janitor.unionize_dataframe_categories(
-        uniontest_df1, uniontest_df2
-    )
+    udf1, udf2 = janitor.unionize_dataframe_categories(uniontest_df1, uniontest_df2)
 
     assert not (
         set(uniontest_df1["fruits"].dtype.categories)
@@ -130,17 +116,12 @@ def test_unionize_dataframe_categories_single(
 
     # check that fruits did get unionized
 
-    assert set(udf1["fruits"].dtype.categories) == set(
-        udf2["fruits"].dtype.categories
-    )
+    assert set(udf1["fruits"].dtype.categories) == set(udf2["fruits"].dtype.categories)
 
-    assert set(udf1["fruits"].dtype.categories) == set(
-        udf3["fruits"].dtype.categories
-    )
+    assert set(udf1["fruits"].dtype.categories) == set(udf3["fruits"].dtype.categories)
 
     # check that jerbs did not when we didn't want it to
 
     assert not (
-        set(udf1["jerbs"].dtype.categories)
-        == set(udf2["jerbs"].dtype.categories)
+        set(udf1["jerbs"].dtype.categories) == set(udf2["jerbs"].dtype.categories)
     )

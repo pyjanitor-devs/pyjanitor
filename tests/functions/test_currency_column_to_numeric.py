@@ -26,9 +26,7 @@ def test_invalid_cleaning_style(currency_df):
     """Ensures a ValueError is thrown if an invalid cleaning style is passed
     in."""
     with pytest.raises(ValueError):
-        currency_df.currency_column_to_numeric(
-            "a_col", cleaning_style="foobar"
-        )
+        currency_df.currency_column_to_numeric("a_col", cleaning_style="foobar")
 
 
 @pytest.mark.functions

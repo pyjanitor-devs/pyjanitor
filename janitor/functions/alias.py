@@ -16,13 +16,13 @@ def alias(series: pd.Series, alias: Any = None) -> pd.Series:
     Examples:
         >>> import pandas as pd
         >>> import janitor
-        >>> s = pd.Series([1, 2, 3], name='series')
+        >>> s = pd.Series([1, 2, 3], name="series")
         >>> s
         0    1
         1    2
         2    3
         Name: series, dtype: int64
-        >>> s.alias('series_new')
+        >>> s.alias("series_new")
         0    1
         1    2
         2    3

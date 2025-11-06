@@ -45,9 +45,7 @@ def test_len_args(dataframe):
         ValueError,
         match="At least two arguments are required for the `args` parameter",
     ):
-        dataframe.case_when(
-            dataframe.a < 10, default="less_than_10", column_name="a"
-        )
+        dataframe.case_when(dataframe.a < 10, default="less_than_10", column_name="a")
 
 
 def test_args_even(dataframe):
@@ -94,12 +92,9 @@ def test_default_ndim():
     df = pd.DataFrame({"a": range(20)})
     with pytest.raises(
         ValueError,
-        match="The argument for the `default` parameter "
-        "should either be a 1-D array.+",
+        match="The argument for the `default` parameter should either be a 1-D array.+",
     ):
-        df.case_when(
-            df.a < 10, "less_than_10", default=df.to_numpy(), column_name="a"
-        )
+        df.case_when(df.a < 10, "less_than_10", default=df.to_numpy(), column_name="a")
 
 
 @pytest.mark.xfail(reason="Error handled by pd.Series.mask")
@@ -122,9 +117,7 @@ def test_error_multiple_conditions():
     """Raise ValueError for multiple conditions."""
     df = pd.DataFrame({"a": range(20)})
     with pytest.raises(ValueError):
-        df.case_when(
-            df.a < 10, "baby", df.a + 5, "kid", default=df.a, column_name="a"
-        )
+        df.case_when(df.a < 10, "baby", df.a + 5, "kid", default=df.a, column_name="a")
 
 
 @given(df=df_strategy())

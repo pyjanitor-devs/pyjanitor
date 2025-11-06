@@ -7,9 +7,7 @@ import pandas_flavor as pf
 
 
 @pf.register_dataframe_method
-def also(
-    df: pd.DataFrame, func: Callable, *args: Any, **kwargs: Any
-) -> pd.DataFrame:
+def also(df: pd.DataFrame, func: Callable, *args: Any, **kwargs: Any) -> pd.DataFrame:
     """Run a function with side effects.
 
     This function allows you to run an arbitrary function
@@ -26,9 +24,7 @@ def also(
         ...     .also(lambda df: print(f"DataFrame shape is: {df.shape}"))
         ...     .rename_column(old_column_name="a", new_column_name="a_new")
         ...     .also(lambda df: df.to_csv("midpoint.csv"))
-        ...     .also(
-        ...         lambda df: print(f"Columns: {df.columns}")
-        ...     )
+        ...     .also(lambda df: print(f"Columns: {df.columns}"))
         ... )
         DataFrame shape is: (2, 2)
         Columns: Index(['a_new', 'b'], dtype='object')

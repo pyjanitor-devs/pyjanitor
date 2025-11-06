@@ -45,10 +45,10 @@ def convert_units(
         >>> import janitor.engineering
         >>> df = pd.DataFrame({"temp_F": [-40, 112]})
         >>> df = df.convert_units(
-        ...     column_name='temp_F',
-        ...     existing_units='degF',
-        ...     to_units='degC',
-        ...     dest_column_name='temp_C'
+        ...     column_name="temp_F",
+        ...     existing_units="degF",
+        ...     to_units="degC",
+        ...     dest_column_name="temp_C",
         ... )
         >>> df
            temp_F     temp_C

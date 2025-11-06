@@ -4,18 +4,16 @@ import pytest
 
 @pytest.mark.functions
 def test_single_column_label_encode():
-    df = pd.DataFrame(
-        {"a": ["hello", "hello", "sup"], "b": [1, 2, 3]}
-    ).label_encode(column_names="a")
+    df = pd.DataFrame({"a": ["hello", "hello", "sup"], "b": [1, 2, 3]}).label_encode(
+        column_names="a"
+    )
     assert "a_enc" in df.columns
 
 
 @pytest.mark.functions
 def test_single_column_fail_label_encode():
     with pytest.raises(ValueError):
-        pd.DataFrame(
-            {"a": ["hello", "hello", "sup"], "b": [1, 2, 3]}
-        ).label_encode(
+        pd.DataFrame({"a": ["hello", "hello", "sup"], "b": [1, 2, 3]}).label_encode(
             column_names="c"
         )  # noqa: 841
 

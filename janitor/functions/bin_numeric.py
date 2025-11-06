@@ -39,7 +39,8 @@ def bin_numeric(
         >>> import janitor
         >>> df = pd.DataFrame({"a": [3, 6, 9, 12, 15]})
         >>> df.bin_numeric(
-        ...     from_column_name="a", to_column_name="a_binned",
+        ...     from_column_name="a",
+        ...     to_column_name="a_binned",
         ...     bins=[0, 5, 11, 15],
         ... )
             a  a_binned

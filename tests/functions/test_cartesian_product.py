@@ -12,41 +12,31 @@ from janitor.testing_utils.strategies import (
 
 def test_not_pandas_object():
     """Raise Error if `others` is not a pandas Index/Series/DataFrame."""
-    with pytest.raises(
-        TypeError, match=r"input should be either a Pandas DataFrame.+"
-    ):
+    with pytest.raises(TypeError, match=r"input should be either a Pandas DataFrame.+"):
         cartesian_product([1, 2])
 
 
 def test_Series_duplicated_label():
     """Raise if Series's name is duplicated."""
     with pytest.raises(ValueError, match=r"Label x in the Series at.+"):
-        cartesian_product(
-            pd.Series([1, 2], name="x"), pd.Series([4, 5], name="x")
-        )
+        cartesian_product(pd.Series([1, 2], name="x"), pd.Series([4, 5], name="x"))
 
 
 def test_Index_duplicated_label():
     """Raise if Index's name is duplicated."""
     with pytest.raises(ValueError, match=r"Label x in the Index at.+"):
-        cartesian_product(
-            pd.Index([1, 2], name="x"), pd.Index([4, 5], name="x")
-        )
+        cartesian_product(pd.Index([1, 2], name="x"), pd.Index([4, 5], name="x"))
 
 
 def test_Series_no_label():
     """Raise if Series's name is None."""
-    with pytest.raises(
-        ValueError, match=r"Kindly ensure the Series at position.+"
-    ):
+    with pytest.raises(ValueError, match=r"Kindly ensure the Series at position.+"):
         cartesian_product(pd.Series([1, 2]))
 
 
 def test_Index_no_label():
     """Raise if Index's name is None."""
-    with pytest.raises(
-        ValueError, match=r"Kindly ensure the Index at position.+"
-    ):
+    with pytest.raises(ValueError, match=r"Kindly ensure the Index at position.+"):
         cartesian_product(pd.Index([1, 2]))
 
 
@@ -80,9 +70,7 @@ def test_cartesian_output(df):
     index = pd.Index(df["a"], name="rar")
     mi = pd.MultiIndex.from_frame(frame, names=["mi1", "mi2", "mi3"])
     dictionary = {"dictionary": [2, 4]}
-    result = cartesian_product(
-        df["a"], df["cities"], frame, index, mi, dictionary
-    )
+    result = cartesian_product(df["a"], df["cities"], frame, index, mi, dictionary)
     expected = (
         pd.merge(df["a"], df["cities"], how="cross")
         .merge(frame, how="cross")

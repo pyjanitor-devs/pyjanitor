@@ -33,11 +33,13 @@ def collapse_levels(
     Examples:
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame({
-        ...     "class": ["bird", "bird", "bird", "mammal", "mammal"],
-        ...     "max_speed": [389, 389, 24, 80, 21],
-        ...     "type": ["falcon", "falcon", "parrot", "Lion", "Monkey"],
-        ... })
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "class": ["bird", "bird", "bird", "mammal", "mammal"],
+        ...         "max_speed": [389, 389, 24, 80, 21],
+        ...         "type": ["falcon", "falcon", "parrot", "Lion", "Monkey"],
+        ...     }
+        ... )
         >>> df
             class  max_speed    type
         0    bird        389  falcon
@@ -45,7 +47,7 @@ def collapse_levels(
         2    bird         24  parrot
         3  mammal         80    Lion
         4  mammal         21  Monkey
-        >>> grouped_df = df.groupby("class")[['max_speed']].agg(["mean", "median"])
+        >>> grouped_df = df.groupby("class")[["max_speed"]].agg(["mean", "median"])
         >>> grouped_df  # doctest: +NORMALIZE_WHITESPACE
                  max_speed
                       mean median
@@ -75,9 +77,10 @@ def collapse_levels(
         For more control, a `glue` specification can be passed,
         where the names of the levels are used to control the output of the
         flattened index:
-        >>> (grouped_df
-        ...  .rename_axis(columns=['column_name', 'agg_name'])
-        ...  .collapse_levels(glue="{agg_name}_{column_name}")
+        >>> (
+        ...     grouped_df.rename_axis(
+        ...         columns=["column_name", "agg_name"]
+        ...     ).collapse_levels(glue="{agg_name}_{column_name}")
         ... )
                 mean_max_speed  median_max_speed
         class
@@ -113,9 +116,7 @@ def collapse_levels(
         check("glue", glue, [str])
     check("axis", axis, [str])
     if axis not in {"index", "columns"}:
-        raise ValueError(
-            "axis argument should be either 'index' or 'columns'."
-        )
+        raise ValueError("axis argument should be either 'index' or 'columns'.")
 
     if not isinstance(getattr(df, axis), pd.MultiIndex):
         return df

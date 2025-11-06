@@ -177,12 +177,14 @@ def expand(
     Examples:
         >>> import pandas as pd
         >>> import janitor
-        >>> data = [{'type': 'apple', 'year': 2010, 'size': 'XS'},
-        ...         {'type': 'orange', 'year': 2010, 'size': 'S'},
-        ...         {'type': 'apple', 'year': 2012, 'size': 'M'},
-        ...         {'type': 'orange', 'year': 2010, 'size': 'S'},
-        ...         {'type': 'orange', 'year': 2011, 'size': 'S'},
-        ...         {'type': 'orange', 'year': 2012, 'size': 'M'}]
+        >>> data = [
+        ...     {"type": "apple", "year": 2010, "size": "XS"},
+        ...     {"type": "orange", "year": 2010, "size": "S"},
+        ...     {"type": "apple", "year": 2012, "size": "M"},
+        ...     {"type": "orange", "year": 2010, "size": "S"},
+        ...     {"type": "orange", "year": 2011, "size": "S"},
+        ...     {"type": "orange", "year": 2012, "size": "M"},
+        ... ]
         >>> df = pd.DataFrame(data)
         >>> df
              type  year size
@@ -194,16 +196,16 @@ def expand(
         5  orange  2012    M
 
         Get unique observations:
-        >>> df.expand('type')
+        >>> df.expand("type")
              type
         0   apple
         1  orange
-        >>> df.expand('size')
+        >>> df.expand("size")
           size
         0   XS
         1    S
         2    M
-        >>> df.expand('type', 'size')
+        >>> df.expand("type", "size")
              type size
         0   apple   XS
         1   apple    S
@@ -211,7 +213,7 @@ def expand(
         3  orange   XS
         4  orange    S
         5  orange    M
-        >>> df.expand('type','size','year')
+        >>> df.expand("type", "size", "year")
               type size  year
         0    apple   XS  2010
         1    apple   XS  2012
@@ -233,13 +235,13 @@ def expand(
         17  orange    M  2011
 
         Get observations that only occur in the data:
-        >>> df.expand(['type','size'])
+        >>> df.expand(["type", "size"])
              type size
         0   apple   XS
         1  orange    S
         2   apple    M
         3  orange    M
-        >>> df.expand(['type','size','year'])
+        >>> df.expand(["type", "size", "year"])
              type size  year
         0   apple   XS  2010
         1  orange    S  2010
@@ -248,7 +250,7 @@ def expand(
         4  orange    M  2012
 
         Expand the DataFrame to include new observations:
-        >>> df.expand('type','size',{'new_year':range(2010,2014)})
+        >>> df.expand("type", "size", {"new_year": range(2010, 2014)})
               type size  new_year
         0    apple   XS      2010
         1    apple   XS      2011
@@ -276,8 +278,8 @@ def expand(
         23  orange    M      2013
 
         Filter for missing observations:
-        >>> combo = df.expand('type','size','year')
-        >>> anti_join = df.merge(combo, how='right', indicator=True)
+        >>> combo = df.expand("type", "size", "year")
+        >>> anti_join = df.merge(combo, how="right", indicator=True)
         >>> anti_join.query("_merge=='right_only'").drop(columns="_merge")
               type  year size
         1    apple  2012   XS
@@ -295,7 +297,7 @@ def expand(
         18  orange  2011    M
 
         Expand within each group, using `by`:
-        >>> df.expand('year','size',by='type')
+        >>> df.expand("year", "size", by="type")
                 year size
         type
         apple   2010   XS
@@ -354,9 +356,7 @@ def expand(
         lengths.append(length)
         for k, v in objects.items():
             dictionary[k].append(v)
-    dictionary = {
-        key: concat_compat(value) for key, value in dictionary.items()
-    }
+    dictionary = {key: concat_compat(value) for key, value in dictionary.items()}
     index = index.repeat(lengths)
     out = pd.DataFrame(data=dictionary, index=index, copy=False)
     if sort:
@@ -416,7 +416,7 @@ def cartesian_product(*inputs: tuple, sort: bool = False) -> pd.DataFrame:
         >>> import pandas as pd
         >>> import janitor as jn
         >>> df = pd.DataFrame({"x": [1, 2], "y": [2, 1]})
-        >>> data = pd.Series([1, 2, 3], name='z')
+        >>> data = pd.Series([1, 2, 3], name="z")
         >>> jn.cartesian_product(df, data)
            x  y  z
         0  1  2  1
@@ -553,8 +553,7 @@ def _validate_pandas_object_(  # noqa: F811
     for label in pandas_object:
         if label in unique_names:
             raise ValueError(
-                f"Label {label} in the DataFrame at "
-                f"position {position} is duplicated."
+                f"Label {label} in the DataFrame at position {position} is duplicated."
             )
         unique_names.add(label)
     return unique_names
@@ -576,8 +575,7 @@ def _validate_pandas_object_(  # noqa: F811
     for label in labels:
         if label in unique_names:
             raise ValueError(
-                f"Label {label} in the MultiIndex "
-                f"at position {position} is duplicated."
+                f"Label {label} in the MultiIndex at position {position} is duplicated."
             )
         unique_names.add(label)
     return unique_names

@@ -21,9 +21,7 @@ def test_expand_and_concat():
         "col2": [1, 2, 3, 4],
     }
 
-    df = pd.DataFrame(data).expand_column(
-        column_name="col1", sep=", ", concat=True
-    )
+    df = pd.DataFrame(data).expand_column(column_name="col1", sep=", ", concat=True)
     assert df.shape[1] == 8
 
 

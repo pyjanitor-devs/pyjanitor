@@ -46,10 +46,12 @@ def groupby_agg(
 
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame({
-        ...     "item": ["shoe", "shoe", "bag", "shoe", "bag"],
-        ...     "quantity": [100, 120, 75, 200, 25],
-        ... })
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "item": ["shoe", "shoe", "bag", "shoe", "bag"],
+        ...         "quantity": [100, 120, 75, 200, 25],
+        ...     }
+        ... )
         >>> df.groupby_agg(
         ...     by="item",
         ...     agg="mean",
@@ -68,9 +70,12 @@ def groupby_agg(
 
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame({
-        ...     "x": ["a", "a", None, "b"], "y": [9, 9, 9, 9],
-        ... })
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "x": ["a", "a", None, "b"],
+        ...         "y": [9, 9, 9, 9],
+        ...     }
+        ... )
         >>> df.groupby_agg(
         ...     by="x",
         ...     agg="count",
@@ -100,8 +105,8 @@ def groupby_agg(
 
     return df.assign(
         **{
-            new_column_name: df.groupby(by, dropna=dropna)[
-                agg_column_name
-            ].transform(agg),
+            new_column_name: df.groupby(by, dropna=dropna)[agg_column_name].transform(
+                agg
+            ),
         }
     )

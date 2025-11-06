@@ -78,9 +78,7 @@ def test_expected_result_with_full_country_name(dataframe):
     """Test inflation calculation works when providing country name."""
     initialval = dataframe["a"].sum()
     # Pulled raw values from API website for USA 2018 and 2015
-    inflator = _inflate_currency(
-        "United States", currency_year=2018, to_year=2015
-    )
+    inflator = _inflate_currency("United States", currency_year=2018, to_year=2015)
     df = dataframe.inflate_currency(
         "a",
         country="United States",

@@ -49,8 +49,7 @@ def move(
         Move a column:
         >>> import pandas as pd
         >>> import janitor
-        >>> data = [{"a": 1, "b": 1, "c": 1,
-        ...          "d": "a", "e": "a","f": "a"}]
+        >>> data = [{"a": 1, "b": 1, "c": 1, "d": "a", "e": "a", "f": "a"}]
         >>> df = pd.DataFrame(data)
         >>> df
            a  b  c  d  e  f
@@ -73,7 +72,9 @@ def move(
         >>> df.move(source=is_numeric_dtype, target=None, position="after", axis=1)
            d  e  f  a  b  c
         0  a  a  a  1  1  1
-        >>> df.move(source = ["d", "f"], target=is_numeric_dtype, position="before", axis=1)
+        >>> df.move(
+        ...     source=["d", "f"], target=is_numeric_dtype, position="before", axis=1
+        ... )
            d  f  a  b  c  e
         0  a  a  1  1  1  a
 

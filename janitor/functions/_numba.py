@@ -1012,7 +1012,6 @@ accepted_types = (
 
 @overload(_compare)
 def _numba_compare(x, y, op):
-
     if (
         isinstance(x, accepted_types)
         and isinstance(y, accepted_types)
@@ -1585,16 +1584,14 @@ def _numba_non_equi_join_not_monotonic_keep_all_indices(
                 lengths[posn_] += 1
             else:
                 posn = _numba_less_than_base(arr=arr, value=region)
-                sorted_array, positions_array, lengths, maxxes = (
-                    _numba_sorted_array(
-                        sorted_array=sorted_array,
-                        positions_array=positions_array,
-                        maxxes=maxxes,
-                        lengths=lengths,
-                        region=region,
-                        posn=posn,
-                        num=num,
-                    )
+                sorted_array, positions_array, lengths, maxxes = _numba_sorted_array(
+                    sorted_array=sorted_array,
+                    positions_array=positions_array,
+                    maxxes=maxxes,
+                    lengths=lengths,
+                    region=region,
+                    posn=posn,
+                    num=num,
                 )
             r_count += 1
             posn_ = np.uintp(posn)
@@ -1684,16 +1681,14 @@ def _numba_non_equi_join_not_monotonic_keep_all_indices(
                 lengths[posn_] += 1
             else:
                 posn = _numba_less_than_base(arr=arr, value=region)
-                sorted_array, positions_array, lengths, maxxes = (
-                    _numba_sorted_array(
-                        sorted_array=sorted_array,
-                        positions_array=positions_array,
-                        maxxes=maxxes,
-                        lengths=lengths,
-                        region=region,
-                        posn=posn,
-                        num=num,
-                    )
+                sorted_array, positions_array, lengths, maxxes = _numba_sorted_array(
+                    sorted_array=sorted_array,
+                    positions_array=positions_array,
+                    maxxes=maxxes,
+                    lengths=lengths,
+                    region=region,
+                    posn=posn,
+                    num=num,
                 )
             r_count += 1
             posn_ = np.uintp(posn)
@@ -1816,24 +1811,20 @@ def _numba_non_equi_join_not_monotonic_dual_keep_all(
                 lengths[posn_] += 1
             else:
                 posn = _numba_less_than_base(arr=arr, value=region)
-                sorted_array, positions_array, lengths, maxxes = (
-                    _numba_sorted_array(
-                        sorted_array=sorted_array,
-                        positions_array=positions_array,
-                        maxxes=maxxes,
-                        lengths=lengths,
-                        region=region,
-                        posn=posn,
-                        num=num,
-                    )
+                sorted_array, positions_array, lengths, maxxes = _numba_sorted_array(
+                    sorted_array=sorted_array,
+                    positions_array=positions_array,
+                    maxxes=maxxes,
+                    lengths=lengths,
+                    region=region,
+                    posn=posn,
+                    num=num,
                 )
             r_count += 1
             posn_ = np.uintp(posn)
             # have we exceeded the size of this column?
             # do we need to trim and move data to other columns?
-            check = (lengths[posn_] == (load_factor * 2)) & (
-                r_count < right_index.size
-            )
+            check = (lengths[posn_] == (load_factor * 2)) & (r_count < right_index.size)
             if check:
                 (
                     sorted_array,
@@ -1916,24 +1907,20 @@ def _numba_non_equi_join_not_monotonic_dual_keep_all(
                 lengths[posn_] += 1
             else:
                 posn = _numba_less_than_base(arr=arr, value=region)
-                sorted_array, positions_array, lengths, maxxes = (
-                    _numba_sorted_array(
-                        sorted_array=sorted_array,
-                        positions_array=positions_array,
-                        maxxes=maxxes,
-                        lengths=lengths,
-                        region=region,
-                        posn=posn,
-                        num=num,
-                    )
+                sorted_array, positions_array, lengths, maxxes = _numba_sorted_array(
+                    sorted_array=sorted_array,
+                    positions_array=positions_array,
+                    maxxes=maxxes,
+                    lengths=lengths,
+                    region=region,
+                    posn=posn,
+                    num=num,
                 )
             r_count += 1
             posn_ = np.uintp(posn)
             # have we reached the max size of this column?
             # do we need to trim and move data to other columns?
-            check = (lengths[posn_] == (load_factor * 2)) & (
-                r_count < right_index.size
-            )
+            check = (lengths[posn_] == (load_factor * 2)) & (r_count < right_index.size)
             if check:
                 (
                     sorted_array,
@@ -2036,24 +2023,20 @@ def _numba_non_equi_join_not_monotonic_dual_keep_first(
                 lengths[posn_] += 1
             else:
                 posn = _numba_less_than_base(arr=arr, value=region)
-                sorted_array, positions_array, lengths, maxxes = (
-                    _numba_sorted_array(
-                        sorted_array=sorted_array,
-                        positions_array=positions_array,
-                        maxxes=maxxes,
-                        lengths=lengths,
-                        region=region,
-                        posn=posn,
-                        num=num,
-                    )
+                sorted_array, positions_array, lengths, maxxes = _numba_sorted_array(
+                    sorted_array=sorted_array,
+                    positions_array=positions_array,
+                    maxxes=maxxes,
+                    lengths=lengths,
+                    region=region,
+                    posn=posn,
+                    num=num,
                 )
             r_count += 1
             posn_ = np.uintp(posn)
             # have we exceeded the size of this column?
             # do we need to trim and move data to other columns?
-            check = (lengths[posn_] == (load_factor * 2)) & (
-                r_count < right_index.size
-            )
+            check = (lengths[posn_] == (load_factor * 2)) & (r_count < right_index.size)
             if check:
                 (
                     sorted_array,
@@ -2169,24 +2152,20 @@ def _numba_non_equi_join_not_monotonic_dual_keep_last(
                 lengths[posn_] += 1
             else:
                 posn = _numba_less_than_base(arr=arr, value=region)
-                sorted_array, positions_array, lengths, maxxes = (
-                    _numba_sorted_array(
-                        sorted_array=sorted_array,
-                        positions_array=positions_array,
-                        maxxes=maxxes,
-                        lengths=lengths,
-                        region=region,
-                        posn=posn,
-                        num=num,
-                    )
+                sorted_array, positions_array, lengths, maxxes = _numba_sorted_array(
+                    sorted_array=sorted_array,
+                    positions_array=positions_array,
+                    maxxes=maxxes,
+                    lengths=lengths,
+                    region=region,
+                    posn=posn,
+                    num=num,
                 )
             r_count += 1
             posn_ = np.uintp(posn)
             # have we exceeded the size of this column?
             # do we need to trim and move data to other columns?
-            check = (lengths[posn_] == (load_factor * 2)) & (
-                r_count < right_index.size
-            )
+            check = (lengths[posn_] == (load_factor * 2)) & (r_count < right_index.size)
             if check:
                 (
                     sorted_array,
@@ -2351,9 +2330,7 @@ def _expand_sorted_array(
     maxxes[forward] = sorted_array[-1, current]
     lengths[forward] = load_factor
     sorted_array[:load_factor, forward] = sorted_array[load_factor:, current]
-    positions_array[:load_factor, forward] = positions_array[
-        load_factor:, current
-    ]
+    positions_array[:load_factor, forward] = positions_array[load_factor:, current]
     # update the length and maxxes arrays
     lengths[current] = load_factor
     maxxes[current] = sorted_array[np.uintp(load_factor - 1), current]

@@ -10,9 +10,7 @@ from janitor.testing_utils.strategies import df_strategy
 @settings(deadline=None, max_examples=10)
 def test_get_features_targets(df):
     """Test one column returned as target and rest as features."""
-    X, y = df.clean_names().get_features_targets(
-        target_column_names="bell_chart"
-    )
+    X, y = df.clean_names().get_features_targets(target_column_names="bell_chart")
     assert X.shape[1] == 4
     assert len(y.shape) == 1
 

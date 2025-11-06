@@ -32,10 +32,12 @@ def row_to_names(
 
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame({
-        ...     "a": ["nums", 6, 9],
-        ...     "b": ["chars", "x", "y"],
-        ... })
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "a": ["nums", 6, 9],
+        ...         "b": ["chars", "x", "y"],
+        ...     }
+        ... )
         >>> df
               a      b
         0  nums  chars
@@ -45,7 +47,7 @@ def row_to_names(
           nums chars
         0    6     x
         1    9     y
-        >>> df.row_to_names([0,1], remove_rows=True, reset_index=True)
+        >>> df.row_to_names([0, 1], remove_rows=True, reset_index=True)
           nums chars
              6     x
         0    9     y
@@ -54,17 +56,21 @@ def row_to_names(
 
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame({
-        ...     "a": ["bla1", "nums", 6, 9],
-        ...     "b": ["bla2", "chars", "x", "y"],
-        ... })
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "a": ["bla1", "nums", 6, 9],
+        ...         "b": ["bla2", "chars", "x", "y"],
+        ...     }
+        ... )
         >>> df
               a      b
         0  bla1   bla2
         1  nums  chars
         2     6      x
         3     9      y
-        >>> df.row_to_names(1, remove_rows=True, remove_rows_above=True, reset_index=True)
+        >>> df.row_to_names(
+        ...     1, remove_rows=True, remove_rows_above=True, reset_index=True
+        ... )
           nums chars
         0    6     x
         1    9     y

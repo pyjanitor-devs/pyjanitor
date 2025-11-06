@@ -29,10 +29,12 @@ def currency_column_to_numeric(
     Examples:
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame({
-        ...     "a_col": [" 24.56", "-", "(12.12)", "1,000,000"],
-        ...     "d_col": ["", "foo", "1.23 dollars", "-1,000 yen"],
-        ... })
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "a_col": [" 24.56", "-", "(12.12)", "1,000,000"],
+        ...         "d_col": ["", "foo", "1.23 dollars", "-1,000 yen"],
+        ...     }
+        ... )
         >>> df  # doctest: +NORMALIZE_WHITESPACE
                a_col         d_col
         0      24.56
@@ -51,7 +53,9 @@ def currency_column_to_numeric(
 
         The accounting cleaning style.
 
-        >>> df.currency_column_to_numeric("a_col", cleaning_style="accounting")  # doctest: +NORMALIZE_WHITESPACE
+        >>> df.currency_column_to_numeric(
+        ...     "a_col", cleaning_style="accounting"
+        ... )  # doctest: +NORMALIZE_WHITESPACE
                 a_col         d_col
         0       24.56
         1        0.00           foo

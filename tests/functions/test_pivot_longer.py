@@ -102,17 +102,13 @@ def test_name_pattern_wrong_type(df_checks):
 
 def test_name_pattern_no_names_to(df_checks):
     """Raise ValueError if names_pattern and names_to is None."""
-    with pytest.raises(
-        ValueError, match="Kindly provide values for names_to."
-    ):
+    with pytest.raises(ValueError, match="Kindly provide values for names_to."):
         df_checks.pivot_longer(names_to=None, names_pattern="(.+)(.)")
 
 
 def test_name_pattern_seq_no_names_to(df_checks):
     """Raise ValueError if names_pattern is a sequence and names_to is None."""
-    with pytest.raises(
-        ValueError, match="Kindly provide values for names_to."
-    ):
+    with pytest.raises(ValueError, match="Kindly provide values for names_to."):
         df_checks.pivot_longer(names_to=None, names_pattern=[".{2}", "\\d"])
 
 
@@ -136,9 +132,7 @@ def test_names_pattern_wrong_subtype(df_checks):
     and wrong subtype is supplied.
     """
     with pytest.raises(TypeError, match="'1' in names_pattern.+"):
-        df_checks.pivot_longer(
-            names_to=["ht", "num"], names_pattern=[1, "\\d"]
-        )
+        df_checks.pivot_longer(names_to=["ht", "num"], names_pattern=[1, "\\d"])
 
 
 def test_names_pattern_names_to_unequal_length(df_checks):
@@ -151,9 +145,7 @@ def test_names_pattern_names_to_unequal_length(df_checks):
         match="The length of names_to does not match "
         "the number of regexes in names_pattern.+",
     ):
-        df_checks.pivot_longer(
-            names_to=["variable"], names_pattern=["^ht", ".+i.+"]
-        )
+        df_checks.pivot_longer(names_to=["variable"], names_pattern=["^ht", ".+i.+"])
 
 
 def test_names_pattern_names_to_dot_value(df_checks):
@@ -163,8 +155,7 @@ def test_names_pattern_names_to_dot_value(df_checks):
     """
     with pytest.raises(
         ValueError,
-        match=".value is not accepted in names_to "
-        "if names_pattern is a list/tuple.",
+        match=".value is not accepted in names_to if names_pattern is a list/tuple.",
     ):
         df_checks.pivot_longer(
             names_to=["variable", ".value"], names_pattern=["^ht", ".+i.+"]
@@ -196,8 +187,7 @@ def test_values_to_wrong_type_names_pattern(df_checks):
     """
     with pytest.raises(
         TypeError,
-        match="values_to can be a list/tuple only "
-        "if names_pattern is a list/tuple.",
+        match="values_to can be a list/tuple only if names_pattern is a list/tuple.",
     ):
         df_checks.pivot_longer(values_to=["salvo"])
 
@@ -245,9 +235,7 @@ def test_sub_values_to(df_checks):
 
 def test_duplicate_values_to(df_checks):
     """Raise error if values_to is a sequence, and contains duplicates."""
-    with pytest.raises(
-        ValueError, match="'salvo' is duplicated in values_to."
-    ):
+    with pytest.raises(ValueError, match="'salvo' is duplicated in values_to."):
         df_checks.pivot_longer(
             names_to=["x", "y"],
             names_pattern=[r"ht", r"\d"],
@@ -464,9 +452,7 @@ def test_names_pattern_list_empty_any(df_checks):
     Raise ValueError if names_pattern is a list,
     and not all matches are returned.
     """
-    with pytest.raises(
-        ValueError, match="No match was returned for the regex.+"
-    ):
+    with pytest.raises(ValueError, match="No match was returned for the regex.+"):
         df_checks.pivot_longer(
             index=["famid", "birth"],
             names_to=["ht"],
@@ -519,9 +505,7 @@ def test_pivot_index_only(df_checks):
         values_to="num",
     )
 
-    actual = df_checks.melt(
-        ["famid", "birth"], var_name="dim", value_name="num"
-    )
+    actual = df_checks.melt(["famid", "birth"], var_name="dim", value_name="num")
 
     assert_frame_equal(result, actual)
 
@@ -596,12 +580,8 @@ def test_multiindex_column_level(df_multi):
     Test output from MultiIndex column,
     when column_level is provided.
     """
-    result = df_multi.pivot_longer(
-        index="name", column_names="names", column_level=0
-    )
-    expected_output = df_multi.melt(
-        id_vars="name", value_vars="names", col_level=0
-    )
+    result = df_multi.pivot_longer(index="name", column_names="names", column_level=0)
+    expected_output = df_multi.melt(id_vars="name", value_vars="names", col_level=0)
     assert_frame_equal(result, expected_output)
 
 
@@ -796,9 +776,7 @@ def test_names_pattern_list():
     ).loc[:, ["Activity", "General", "Task", "M"]]
 
     actual = (
-        pd.wide_to_long(
-            df, i=["Activity", "General"], stubnames=["t", "m"], j="number"
-        )
+        pd.wide_to_long(df, i=["Activity", "General"], stubnames=["t", "m"], j="number")
         .set_axis(["Task", "M"], axis="columns")
         .droplevel(-1)
         .reset_index()
@@ -830,9 +808,7 @@ def test_names_pattern_dict():
     ).loc[:, ["Activity", "General", "Task", "M"]]
 
     actual = (
-        pd.wide_to_long(
-            df, i=["Activity", "General"], stubnames=["t", "m"], j="number"
-        )
+        pd.wide_to_long(df, i=["Activity", "General"], stubnames=["t", "m"], j="number")
         .set_axis(["Task", "M"], axis="columns")
         .droplevel(-1)
         .reset_index()
@@ -865,9 +841,7 @@ def test_not_dot_value_sep(not_dot_value):
         values_to="score",
         sort_by_appearance=True,
     )
-    result = result.sort_values(
-        ["country", "event", "year"], ignore_index=True
-    )
+    result = result.sort_values(["country", "event", "year"], ignore_index=True)
     actual = not_dot_value.set_index("country")
     actual.columns = actual.columns.str.split("_", expand=True)
     actual.columns.names = ["event", "year"]
@@ -891,9 +865,7 @@ def test_not_dot_value_sep2(not_dot_value):
         values_to="score",
     )
 
-    actual = not_dot_value.melt(
-        "country", var_name="event", value_name="score"
-    )
+    actual = not_dot_value.melt("country", var_name="event", value_name="score")
 
     assert_frame_equal(result, actual)
 
@@ -908,9 +880,7 @@ def test_not_dot_value_pattern(not_dot_value):
         values_to="score",
         sort_by_appearance=True,
     )
-    result = result.sort_values(
-        ["country", "event", "year"], ignore_index=True
-    )
+    result = result.sort_values(["country", "event", "year"], ignore_index=True)
     actual = not_dot_value.set_index("country")
     actual.columns = actual.columns.str.split("_", expand=True)
     actual.columns.names = ["event", "year"]
@@ -935,9 +905,7 @@ def test_not_dot_value_pattern_named_groups(not_dot_value):
         values_to="score",
         sort_by_appearance=True,
     )
-    result = result.sort_values(
-        ["country", "event", "year"], ignore_index=True
-    )
+    result = result.sort_values(["country", "event", "year"], ignore_index=True)
     actual = not_dot_value.set_index("country")
     actual.columns = actual.columns.str.split("_", expand=True)
     actual.columns.names = ["event", "year"]
@@ -964,9 +932,7 @@ def test_not_dot_value_sep_single_column(not_dot_value):
         names_sep="_",
         values_to="score",
     )
-    result = result.sort_values(
-        ["country", "event", "year"], ignore_index=True
-    )
+    result = result.sort_values(["country", "event", "year"], ignore_index=True)
     actual = A.set_index("country")
     actual.columns = actual.columns.str.split("_", expand=True)
     actual.columns.names = ["event", "year"]
@@ -1094,9 +1060,7 @@ def test_names_pattern_sequence_single_unique_column(single_val):
     Test output if names_pattern is a sequence of length 1.
     """
 
-    result = single_val.pivot_longer(
-        "id", names_to=["x"], names_pattern=("x",)
-    )
+    result = single_val.pivot_longer("id", names_to=["x"], names_pattern=("x",))
     actual = (
         pd.wide_to_long(single_val, ["x"], i="id", j="num")
         .droplevel("num")
@@ -1111,9 +1075,7 @@ def test_names_pattern_single_column(single_val):
     Test output if names_to is only '.value'.
     """
 
-    result = single_val.pivot_longer(
-        "id", names_to=".value", names_pattern="(.)."
-    )
+    result = single_val.pivot_longer("id", names_to=".value", names_pattern="(.).")
     actual = (
         pd.wide_to_long(single_val, ["x"], i="id", j="num")
         .droplevel("num")
@@ -1262,9 +1224,7 @@ def test_names_pattern_dict_no_match(multiple_values_to):
     """
     Raise Error if there is no match for the regex
     """
-    with pytest.raises(
-        ValueError, match="No match was returned for the regex.+"
-    ):
+    with pytest.raises(ValueError, match="No match was returned for the regex.+"):
         multiple_values_to.pivot_longer(
             index=["City", "State"],
             column_names=slice("Mango", "Vodka"),
@@ -1280,9 +1240,7 @@ def test_names_pattern_dict_names_to(multiple_values_to):
     Raise Error if names_pattern is a dict
     and one of the keys exists in the index
     """
-    with pytest.raises(
-        ValueError, match="'City' in the names_pattern dictionary.+"
-    ):
+    with pytest.raises(ValueError, match="'City' in the names_pattern dictionary.+"):
         multiple_values_to.pivot_longer(
             index=["City", "State"],
             column_names=slice("Mango", "Vodka"),
@@ -1435,8 +1393,7 @@ def test_names_pattern_dict_value(multiple_values_to):
     """
     with pytest.raises(
         TypeError,
-        match="The value paired with 'Fruit' "
-        "in the names_pattern dictionary.+",
+        match="The value paired with 'Fruit' in the names_pattern dictionary.+",
     ):
         multiple_values_to.pivot_longer(
             index=["City", "State"],
@@ -1482,12 +1439,8 @@ def test_output_values_to_seq1(multiple_values_to):
         value_name="Ounces",
     )
 
-    df1 = df1.set_index(
-        ["City", "State", df1.groupby(["City", "State"]).cumcount()]
-    )
-    df2 = df2.set_index(
-        ["City", "State", df2.groupby(["City", "State"]).cumcount()]
-    )
+    df1 = df1.set_index(["City", "State", df1.groupby(["City", "State"]).cumcount()])
+    df2 = df2.set_index(["City", "State", df2.groupby(["City", "State"]).cumcount()])
 
     actual = (
         pd.concat([df1, df2], axis=1)
@@ -1530,12 +1483,8 @@ def test_output_names_pattern_nested_dictionary(multiple_values_to):
         value_name="Ounces",
     )
 
-    df1 = df1.set_index(
-        ["City", "State", df1.groupby(["City", "State"]).cumcount()]
-    )
-    df2 = df2.set_index(
-        ["City", "State", df2.groupby(["City", "State"]).cumcount()]
-    )
+    df1 = df1.set_index(["City", "State", df1.groupby(["City", "State"]).cumcount()])
+    df2 = df2.set_index(["City", "State", df2.groupby(["City", "State"]).cumcount()])
 
     actual = (
         pd.concat([df1, df2], axis=1)
@@ -1566,12 +1515,8 @@ def test_output_names_pattern_nested_dictionary(multiple_values_to):
 def test_categorical(df_checks):
     """Test category output for names_to."""
 
-    actual = df_checks.melt(["famid", "birth"]).astype(
-        {"variable": "category"}
-    )
-    expected = df_checks.pivot_longer(
-        ["famid", "birth"], names_transform="category"
-    )
+    actual = df_checks.melt(["famid", "birth"]).astype({"variable": "category"})
+    expected = df_checks.pivot_longer(["famid", "birth"], names_transform="category")
 
     assert_frame_equal(actual, expected, check_categorical=False)
 

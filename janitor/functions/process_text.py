@@ -50,8 +50,9 @@ def process_text(
         >>> import pandas as pd
         >>> import janitor
         >>> import re
-        >>> df = pd.DataFrame({"text": ["Ragnar", "sammywemmy", "ginger"],
-        ... "code": [1, 2, 3]})
+        >>> df = pd.DataFrame(
+        ...     {"text": ["Ragnar", "sammywemmy", "ginger"], "code": [1, 2, 3]}
+        ... )
         >>> df
                  text  code
         0      Ragnar     1

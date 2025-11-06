@@ -23,9 +23,9 @@ def register_dataframe_method(method: Callable) -> Callable:
 
     Example:
         >>> @register_dataframe_method # doctest: +SKIP
-        >>> def print_column(df, col): # doctest: +SKIP
-        ...    '''Print the dataframe column given''' # doctest: +SKIP
-        ...    print(df[col]) # doctest: +SKIP
+        >>> def print_column(df, col):  # doctest: +SKIP
+        ...     '''Print the dataframe column given'''  # doctest: +SKIP
+        ...     print(df[col])  # doctest: +SKIP
 
     !!! info "New in version 0.28.0"
 
@@ -37,9 +37,7 @@ def register_dataframe_method(method: Callable) -> Callable:
     """
 
     def inner(*args, **kwargs):
-
         class AccessorMethod(object):
-
             def __init__(self, polars_obj):
                 self._obj = polars_obj
 
@@ -58,9 +56,9 @@ def register_lazyframe_method(method: Callable) -> Callable:
 
     Example:
         >>> @register_lazyframe_method # doctest: +SKIP
-        >>> def print_column(df, col): # doctest: +SKIP
-        ...    '''Print the dataframe column given''' # doctest: +SKIP
-        ...    print(df[col]) # doctest: +SKIP
+        >>> def print_column(df, col):  # doctest: +SKIP
+        ...     '''Print the dataframe column given'''  # doctest: +SKIP
+        ...     print(df[col])  # doctest: +SKIP
 
     !!! info "New in version 0.28.0"
 
@@ -72,9 +70,7 @@ def register_lazyframe_method(method: Callable) -> Callable:
     """
 
     def inner(*args, **kwargs):
-
         class AccessorMethod(object):
-
             def __init__(self, polars_obj):
                 self._obj = polars_obj
 
@@ -93,7 +89,6 @@ def register_expr_method(method):
     """Register a function as a method attached to a Polars Expression."""
 
     def inner(*args, **kwargs):
-
         class AccessorMethod(object):
             __doc__ = method.__doc__
 

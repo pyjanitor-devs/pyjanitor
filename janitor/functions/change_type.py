@@ -54,9 +54,12 @@ def change_type(
         1     1     5
         2     2  True
         >>> df.change_type(
-        ...     "col1", dtype=str,
+        ...     "col1",
+        ...     dtype=str,
         ... ).change_type(
-        ...     "col2", dtype=float, ignore_exception="fillna",
+        ...     "col2",
+        ...     dtype=float,
+        ...     ignore_exception="fillna",
         ... )
           col1  col2
         0    0   NaN
@@ -69,7 +72,7 @@ def change_type(
         >>> import pandas as pd
         >>> import janitor
         >>> df = pd.DataFrame({"col1": range(3), "col2": ["m", 5, True]})
-        >>> df.change_type(['col1', 'col2'], str)
+        >>> df.change_type(["col1", "col2"], str)
           col1  col2
         0    0     m
         1    1     5

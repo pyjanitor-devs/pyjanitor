@@ -39,13 +39,15 @@ def clone_using(
         >>> import xarray as xr
         >>> import janitor.xarray
         >>> da = xr.DataArray(
-        ...     np.zeros((512, 1024)), dims=["ax_1", "ax_2"],
-        ...     coords=dict(ax_1=np.linspace(0, 1, 512),
-        ...                 ax_2=np.logspace(-2, 2, 1024)),
+        ...     np.zeros((512, 1024)),
+        ...     dims=["ax_1", "ax_2"],
+        ...     coords=dict(ax_1=np.linspace(0, 1, 512), ax_2=np.logspace(-2, 2, 1024)),
         ...     name="original",
         ... )
         >>> new_da = da.clone_using(
-        ...     np.ones((4, 6)), new_name='new_and_improved', use_coords=False,
+        ...     np.ones((4, 6)),
+        ...     new_name="new_and_improved",
+        ...     use_coords=False,
         ... )
         >>> new_da
         <xarray.DataArray 'new_and_improved' (ax_1: 4, ax_2: 6)> Size: 192B
@@ -83,13 +85,11 @@ def clone_using(
 
     if np_arr.ndim != da.ndim:
         raise ValueError(
-            "Number of dims in the NumPy array and the DataArray "
-            "must match."
+            "Number of dims in the NumPy array and the DataArray must match."
         )
 
     if use_coords and not all(
-        np_ax_len == da_ax_len
-        for np_ax_len, da_ax_len in zip(np_arr.shape, da.shape)
+        np_ax_len == da_ax_len for np_ax_len, da_ax_len in zip(np_arr.shape, da.shape)
     ):
         raise ValueError(
             "Input NumPy array and DataArray must have the same "
@@ -126,7 +126,7 @@ def convert_datetime_to_number(
         >>> da = xr.DataArray(
         ...     np.array([2, 8, 0, 1, 7, 7]),
         ...     dims="time",
-        ...     coords=dict(time=np.arange(6) * np.timedelta64(1, "m"))
+        ...     coords=dict(time=np.arange(6) * np.timedelta64(1, "m")),
         ... )
         >>> da_minutes = da.convert_datetime_to_number("s", dim="time")
         >>> da_minutes

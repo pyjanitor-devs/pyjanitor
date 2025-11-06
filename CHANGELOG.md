@@ -1,6 +1,9 @@
 # Changelog
 
 ## [Unreleased]
+
+## [v0.32.1] - 2025-11-06
+
 -   [ENH] update `pypa/gh-action-pypi-publish` from master to release/v1 - Issue #1524 @samukweku
 
 ## [v0.32.0] - 2025-11-06
@@ -402,7 +405,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.0...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.1...HEAD
+
+[v0.32.1]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.0...v0.32.1
 
 [v0.32.0]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.31.0...v0.32.0
 

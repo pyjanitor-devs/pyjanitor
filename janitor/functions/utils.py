@@ -101,9 +101,7 @@ def unionize_dataframe_categories(
                 [
                     column_name
                     for column_name in dataframe.columns
-                    if isinstance(
-                        dataframe[column_name].dtype, pd.CategoricalDtype
-                    )
+                    if isinstance(dataframe[column_name].dtype, pd.CategoricalDtype)
                 ]
             )
 
@@ -266,9 +264,7 @@ greater_than_join_types = {
 }
 
 
-def _null_checks_cond_join(
-    left: pd.Series, right: pd.Series
-) -> Union[tuple, None]:
+def _null_checks_cond_join(left: pd.Series, right: pd.Series) -> Union[tuple, None]:
     """
     Checks for nulls in the arrays before conducting binary search.
 
@@ -657,9 +653,7 @@ def _not_equal_row_count(
     `left` is exactly  not equal to `right`.
     """
 
-    null_count = pd.Series(
-        index=left.index, data=right.isna().sum(), name=row_count
-    )
+    null_count = pd.Series(index=left.index, data=right.isna().sum(), name=row_count)
     null_count[left.isna()] += right.notna().sum()
     outcome = _less_than_indices(
         left,
@@ -732,9 +726,7 @@ def _generic_func_cond_join(
             row_count=row_count,
         )
     if (op == _JoinOperator.NOT_EQUAL.value) and row_count:
-        return _not_equal_row_count(
-            left=left, right=right, row_count=row_count
-        )
+        return _not_equal_row_count(left=left, right=right, row_count=row_count)
     if op == _JoinOperator.NOT_EQUAL.value:
         return _not_equal_indices(left=left, right=right, keep=keep)
     return _equal_indices(
@@ -822,9 +814,7 @@ def _strip_underscores_func(
     """Strip underscores from obj."""
     underscore_options = {None, "left", "right", "both", "l", "r", True}
     if strip_underscores not in underscore_options:
-        raise JanitorError(
-            f"strip_underscores must be one of: {underscore_options}"
-        )
+        raise JanitorError(f"strip_underscores must be one of: {underscore_options}")
 
     if strip_underscores in {"left", "l"}:
         return obj.lstrip("_")

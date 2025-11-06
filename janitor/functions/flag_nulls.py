@@ -26,9 +26,12 @@ def flag_nulls(
     Examples:
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame({
-        ...     "a": ["w", "x", None, "z"], "b": [5, None, 7, 8],
-        ... })
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "a": ["w", "x", None, "z"],
+        ...         "b": [5, None, 7, 8],
+        ...     }
+        ... )
         >>> df.flag_nulls()
               a    b  null_flag
         0     w  5.0          0

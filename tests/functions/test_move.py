@@ -37,9 +37,7 @@ def test_move_row_after(dataframe):
     row = dataframe.loc[source, :]
 
     # Exercise
-    result = dataframe.move(
-        source=source, target=target, position="after", axis=0
-    )
+    result = dataframe.move(source=source, target=target, position="after", axis=0)
 
     # Verify
     assert_series_equal(result.iloc[target, :], row)
@@ -83,9 +81,7 @@ def test_move_row_after_strings(dataframe):
     row = dataframe.loc[source, :]
 
     # Exercise
-    result = dataframe.move(
-        source=source, target=target, position="after", axis=0
-    )
+    result = dataframe.move(source=source, target=target, position="after", axis=0)
 
     # Verify
     assert_series_equal(result.iloc[target_index, :], row)
@@ -125,9 +121,7 @@ def test_move_col_after(dataframe):
     col = dataframe[source]
 
     # Exercise
-    result = dataframe.move(
-        source=source, target=target, position="after", axis=1
-    )
+    result = dataframe.move(source=source, target=target, position="after", axis=1)
 
     # Verify
     assert_series_equal(result.iloc[:, target_index], col)
@@ -162,8 +156,7 @@ def test_move_invalid_args(dataframe):
 def test_move_reorder_columns(df):
     """Replicate reorder_columns"""
     assert all(
-        df.move(source=df.columns, axis=1, position="after").columns
-        == df.columns
+        df.move(source=df.columns, axis=1, position="after").columns == df.columns
     )
 
     assert all(df.move(source=df.index, position="before").index == df.index)

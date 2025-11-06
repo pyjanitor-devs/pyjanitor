@@ -16,9 +16,7 @@ from janitor.utils import deprecated_alias, refactored_function
         "Please use `jn.transform_columns` instead."
     )
 )
-def to_datetime(
-    df: pd.DataFrame, column_name: Hashable, **kwargs: Any
-) -> pd.DataFrame:
+def to_datetime(df: pd.DataFrame, column_name: Hashable, **kwargs: Any) -> pd.DataFrame:
     """Convert column to a datetime type, in-place.
 
     Intended to be the method-chaining equivalent of:
@@ -40,13 +38,13 @@ def to_datetime(
 
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame({'date': ['20200101', '20200202', '20200303']})
+        >>> df = pd.DataFrame({"date": ["20200101", "20200202", "20200303"]})
         >>> df
                date
         0  20200101
         1  20200202
         2  20200303
-        >>> df.to_datetime('date', format='%Y%m%d')
+        >>> df.to_datetime("date", format="%Y%m%d")
                 date
         0 2020-01-01
         1 2020-02-02

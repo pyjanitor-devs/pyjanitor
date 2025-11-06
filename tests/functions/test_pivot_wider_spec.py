@@ -108,9 +108,7 @@ def test_spec_columns_len_2(df_checks):
 
 def test_spec_columns_not_unique(df_checks):
     """Raise ValueError if the spec's columns is not unique."""
-    with pytest.raises(
-        ValueError, match="Kindly ensure the spec's columns is unique."
-    ):
+    with pytest.raises(ValueError, match="Kindly ensure the spec's columns is unique."):
         df_checks.pipe(
             pivot_wider_spec,
             spec=spec.set_axis(labels=[".name", ".name", "age"], axis=1),
@@ -127,9 +125,7 @@ def test_pivot_wider_spec(df_checks):
         .rename_axis(columns=None)
         .reset_index()
     )
-    actual = df_checks.pipe(
-        pivot_wider_spec, spec=spec, index=["famid", "birth"]
-    )
+    actual = df_checks.pipe(pivot_wider_spec, spec=spec, index=["famid", "birth"])
     assert_frame_equal(
         actual.sort_values(expected.columns.tolist(), ignore_index=True),
         expected.sort_values(expected.columns.tolist(), ignore_index=True),

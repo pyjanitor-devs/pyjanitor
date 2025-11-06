@@ -92,9 +92,7 @@ def test_series(df):
     B = df.loc[:, ["cities"]]
     expected = A.assign(key=1).merge(B.assign(key=1), on="key")
     expected = expected.drop(columns="key")
-    expected.columns = pd.MultiIndex.from_arrays(
-        [["A", "B"], expected.columns]
-    )
+    expected.columns = pd.MultiIndex.from_arrays([["A", "B"], expected.columns])
     assert_frame_equal(result, expected)
 
 
@@ -109,9 +107,7 @@ def test_series_dataframe(df):
     A = df.loc[:, ["a"]]
     expected = A.assign(key=1).merge(B.assign(key=1), on="key")
     expected = expected.drop(columns="key")
-    expected.columns = pd.MultiIndex.from_arrays(
-        [["A", "B", "B"], expected.columns]
-    )
+    expected.columns = pd.MultiIndex.from_arrays([["A", "B", "B"], expected.columns])
     assert_frame_equal(result, expected)
 
 
@@ -151,9 +147,7 @@ def test_numpy_1d(df):
     A = df.loc[:, ["a"]].rename(columns={"a": 0})
     B = df.loc[:, ["cities"]]
     expected = A.merge(B, how="cross")
-    expected.columns = pd.MultiIndex.from_arrays(
-        [["A", "B"], expected.columns]
-    )
+    expected.columns = pd.MultiIndex.from_arrays([["A", "B"], expected.columns])
     assert_frame_equal(result, expected)
 
 
@@ -169,9 +163,7 @@ def test_numpy_2d(df):
     A = df.loc[:, ["names"]]
     B = base.set_axis([0, 1], axis=1)
     expected = A.merge(B, how="cross")
-    expected.columns = pd.MultiIndex.from_arrays(
-        [["A", "B", "B"], expected.columns]
-    )
+    expected.columns = pd.MultiIndex.from_arrays([["A", "B", "B"], expected.columns])
     assert_frame_equal(result, expected, check_dtype=False)
 
 
@@ -186,9 +178,7 @@ def test_index(df):
     A = df.loc[:, ["a"]]
     B = df.loc[:, ["cities"]]
     expected = A.merge(B, how="cross")
-    expected.columns = pd.MultiIndex.from_arrays(
-        [["A", "B"], expected.columns]
-    )
+    expected.columns = pd.MultiIndex.from_arrays([["A", "B"], expected.columns])
     assert_frame_equal(result, expected)
 
 
@@ -219,9 +209,7 @@ def test_multiindex(df):
     A = df.loc[:, ["names"]]
     B = base.copy()
     expected = A.merge(B, how="cross")
-    expected.columns = pd.MultiIndex.from_arrays(
-        [["A", "B", "B"], expected.columns]
-    )
+    expected.columns = pd.MultiIndex.from_arrays([["A", "B", "B"], expected.columns])
     assert_frame_equal(result, expected)
 
 
@@ -237,9 +225,7 @@ def test_multiindex_names_none(df):
     A = df.loc[:, ["names"]]
     B = base.copy()
     expected = A.merge(B, how="cross")
-    expected.columns = pd.MultiIndex.from_arrays(
-        [["A", "B", "B"], ["names", 0, 1]]
-    )
+    expected.columns = pd.MultiIndex.from_arrays([["A", "B", "B"], ["names", 0, 1]])
     assert_frame_equal(result, expected)
 
 
@@ -254,9 +240,7 @@ def test_pandas_extension_array(df):
     A = df.loc[:, ["a"]]
     B = df.loc[:, ["cities"]].astype("string").set_axis([0], axis=1)
     expected = A.merge(B, how="cross")
-    expected.columns = pd.MultiIndex.from_arrays(
-        [["A", "B"], expected.columns]
-    )
+    expected.columns = pd.MultiIndex.from_arrays([["A", "B"], expected.columns])
     assert_frame_equal(result, expected)
 
 
@@ -271,9 +255,7 @@ def test_sequence(df):
     A = df.loc[:, ["a"]].rename(columns={"a": 0})
     B = df.loc[:, ["cities"]]
     expected = A.merge(B, how="cross")
-    expected.columns = pd.MultiIndex.from_arrays(
-        [["A", "B"], expected.columns]
-    )
+    expected.columns = pd.MultiIndex.from_arrays([["A", "B"], expected.columns])
     assert_frame_equal(result, expected, check_dtype=False)
 
 
@@ -289,9 +271,7 @@ def test_scalar(df):
     B = pd.DataFrame([2])
     expected = A.assign(key=1).merge(B.assign(key=1), on="key")
     expected = expected.drop(columns="key")
-    expected.columns = pd.MultiIndex.from_arrays(
-        [["A", "B"], expected.columns]
-    )
+    expected.columns = pd.MultiIndex.from_arrays([["A", "B"], expected.columns])
     assert_frame_equal(result, expected, check_dtype=False)
 
 
@@ -306,9 +286,7 @@ def test_chain_df(df):
     A = df.loc[:, ["a"]]
     expected = B.assign(key=1).merge(A.assign(key=1), on="key")
     expected = expected.drop(columns="key")
-    expected.columns = pd.MultiIndex.from_arrays(
-        [["city", "A"], expected.columns]
-    )
+    expected.columns = pd.MultiIndex.from_arrays([["city", "A"], expected.columns])
     assert_frame_equal(result, expected)
 
 
@@ -323,18 +301,14 @@ def test_series_name(df):
     A = df.loc[:, ["a"]]
     expected = B.assign(key=1).merge(A.assign(key=1), on="key")
     expected = expected.drop(columns="key")
-    expected.columns = pd.MultiIndex.from_arrays(
-        [["city", "A"], ["cities", 0]]
-    )
+    expected.columns = pd.MultiIndex.from_arrays([["city", "A"], ["cities", 0]])
     assert_frame_equal(result, expected)
 
 
 def test_extension_array():
     """Test output on an extension array"""
     others = dict(
-        id=pd.Categorical(
-            values=(2, 1, 1, 2, 1), categories=(1, 2, 3), ordered=True
-        ),
+        id=pd.Categorical(values=(2, 1, 1, 2, 1), categories=(1, 2, 3), ordered=True),
         year=(2018, 2018, 2019, 2020, 2020),
         gender=pd.Categorical(("female", "male", "male", "female", "male")),
     )

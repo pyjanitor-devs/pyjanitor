@@ -104,11 +104,11 @@ def summarise(
     Examples:
         >>> import pandas as pd
         >>> import janitor
-        >>> data = {'avg_jump': [3, 4, 1, 2, 3, 4],
-        ...         'avg_run': [3, 4, 1, 3, 2, 4],
-        ...         'combine_id': [100200, 100200,
-        ...                        101200, 101200,
-        ...                        102201, 103202]}
+        >>> data = {
+        ...     "avg_jump": [3, 4, 1, 2, 3, 4],
+        ...     "avg_run": [3, 4, 1, 3, 2, 4],
+        ...     "combine_id": [100200, 100200, 101200, 101200, 102201, 103202],
+        ... }
         >>> df = pd.DataFrame(data)
         >>> df
            avg_jump  avg_run  combine_id
@@ -120,26 +120,26 @@ def summarise(
         5         4        4      103202
 
         Aggregation on a DataFrame via a callable:
-        >>> df.summarise(lambda df: df.select('avg*').mean().rename("mean"))
+        >>> df.summarise(lambda df: df.select("avg*").mean().rename("mean"))
                              mean
         avg_jump         2.833333
         avg_run          2.833333
 
         Aggregation on a DataFrame via a tuple:
-        >>> df.summarise(("avg_*",'mean'))
+        >>> df.summarise(("avg_*", "mean"))
               avg_jump   avg_run
         mean  2.833333  2.833333
 
         Aggregation on a DataFrame via a dictionary:
-        >>> df.summarise({'avg_jump':'mean'})
+        >>> df.summarise({"avg_jump": "mean"})
               avg_jump
         mean  2.833333
 
-        >>> df.summarise({"avg_run_2":("avg_run","mean")})
+        >>> df.summarise({"avg_run_2": ("avg_run", "mean")})
               avg_run_2
         mean   2.833333
 
-        >>> grouped = df.groupby('combine_id')
+        >>> grouped = df.groupby("combine_id")
 
         Aggregation on a grouped object via a callable:
         >>> grouped.summarise(lambda df: df.sum())
@@ -151,7 +151,7 @@ def summarise(
         103202             4        4
 
         Aggregation on a grouped object via a tuple:
-        >>> grouped.summarise(("avg_run","mean"))
+        >>> grouped.summarise(("avg_run", "mean"))
                     avg_run
         combine_id
         100200          3.5
@@ -160,14 +160,14 @@ def summarise(
         103202          4.0
 
         Aggregation on a grouped object via a dictionary:
-        >>> grouped.summarise({"avg_run":"mean"})
+        >>> grouped.summarise({"avg_run": "mean"})
                     avg_run
         combine_id
         100200          3.5
         101200          2.0
         102201          2.0
         103202          4.0
-        >>> grouped.summarise({"avg_run_2":("avg_run","mean")})
+        >>> grouped.summarise({"avg_run_2": ("avg_run", "mean")})
                     avg_run_2
         combine_id
         100200            3.5
@@ -211,9 +211,7 @@ def summarise(
             length = counts - length_
             if length:
                 patch = [""] * length
-                columns = [
-                    entry.columns.get_level_values(n) for n in range(length_)
-                ]
+                columns = [entry.columns.get_level_values(n) for n in range(length_)]
                 columns.append(patch)
                 names = [*entry.columns.names]
                 names.extend([None] * length)
@@ -290,8 +288,7 @@ def _(arg, df, by):
             )
             if not isinstance(column, pd.Series):
                 raise TypeError(
-                    "Expected a pandas Series object; "
-                    f"instead got {type(column)}"
+                    f"Expected a pandas Series object; instead got {type(column)}"
                 )
         else:
             column = val.agg({column_name: aggfunc})

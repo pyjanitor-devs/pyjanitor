@@ -50,14 +50,10 @@ def test_sort_column_value_order(company_sales_df):
     df2 = pd.DataFrame.from_dict(company_sales_2)
     df2 = df2.set_index("Company1")
     with pytest.raises(ValueError):
-        assert pd.DataFrame().equals(
-            sort_column_value_order(pd.DataFrame(), "", {})
-        )
+        assert pd.DataFrame().equals(sort_column_value_order(pd.DataFrame(), "", {}))
     with pytest.raises(ValueError):
         assert pd.DataFrame().equals(
-            sort_column_value_order(
-                df, "", {"April": 1, "Mar": 2, "Feb": 3, "Jan": 4}
-            )
+            sort_column_value_order(df, "", {"April": 1, "Mar": 2, "Feb": 3, "Jan": 4})
         )
     assert df2.equals(
         df.sort_column_value_order(

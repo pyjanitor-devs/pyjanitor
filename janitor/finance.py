@@ -322,8 +322,7 @@ def _check_currency(currency: str):
     """Check that currency is in supported set."""
     if currency not in currency_set:
         raise ValueError(
-            f"currency {currency} not in supported currency set, "
-            f"{currency_set}"
+            f"currency {currency} not in supported currency set, {currency_set}"
         )
 
 
@@ -614,9 +613,7 @@ def _inflate_currency(
             f"data for {to_year} for {country}."
         )
 
-    inflator = (
-        inflation_dict_ready[to_year] / inflation_dict_ready[currency_year]
-    )
+    inflator = inflation_dict_ready[to_year] / inflation_dict_ready[currency_year]
     return inflator
 
 
@@ -642,7 +639,7 @@ def inflate_currency(
 
         >>> import pandas as pd
         >>> import janitor.finance
-        >>> df = pd.DataFrame({"profit":[100.10, 200.20, 300.30, 400.40, 500.50]})
+        >>> df = pd.DataFrame({"profit": [100.10, 200.20, 300.30, 400.40, 500.50]})
         >>> df
            profit
         0   100.1
@@ -651,11 +648,11 @@ def inflate_currency(
         3   400.4
         4   500.5
         >>> df.inflate_currency(
-        ...    column_name='profit',
-        ...    country='USA',
-        ...    currency_year=2015,
-        ...    to_year=2018,
-        ...    make_new_column=True
+        ...     column_name="profit",
+        ...     country="USA",
+        ...     currency_year=2015,
+        ...     to_year=2018,
+        ...     make_new_column=True,
         ... )
            profit  profit_2018
         0   100.1   106.050596
@@ -704,6 +701,7 @@ def convert_stock(stock_symbol: str) -> str:
 
         ```python
         import janitor.finance
+
         janitor.finance.convert_stock("aapl")
         ```
 
@@ -720,9 +718,7 @@ def convert_stock(stock_symbol: str) -> str:
         stock_symbol = stock_symbol.upper()
         return get_symbol(stock_symbol)
     else:
-        raise ConnectionError(
-            "Connection Error: Client Not Connected to Internet"
-        )
+        raise ConnectionError("Connection Error: Client Not Connected to Internet")
 
 
 def get_symbol(symbol: str) -> Optional[str]:
@@ -734,6 +730,7 @@ def get_symbol(symbol: str) -> Optional[str]:
 
         ```python
         import janitor.finance
+
         janitor.finance.get_symbol("aapl")
         ```
 

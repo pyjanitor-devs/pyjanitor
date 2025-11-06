@@ -31,10 +31,12 @@ def round_to_fraction(
         >>> import numpy as np
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame({
-        ...     "a1": [1.263, 2.499, np.nan],
-        ...     "a2": ["x", "y", "z"],
-        ... })
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "a1": [1.263, 2.499, np.nan],
+        ...         "a2": ["x", "y", "z"],
+        ...     }
+        ... )
         >>> df
               a1 a2
         0  1.263  x

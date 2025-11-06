@@ -37,9 +37,8 @@ def fill_missing_timestamps(
 
         >>> import pandas as pd
         >>> import janitor.timeseries
-        >>> df = (
-        ...     pd.DataFrame(...)
-        ...     .fill_missing_timestamps(frequency="1H")
+        >>> df = pd.DataFrame(...).fill_missing_timestamps(
+        ...     frequency="1H"
         ... )  # doctest: +SKIP
 
     Args:
@@ -127,9 +126,8 @@ def sort_timestamps_monotonically(
 
         >>> import pandas as pd
         >>> import janitor.timeseries
-        >>> df = (
-        ...     pd.DataFrame(...)
-        ...     .sort_timestamps_monotonically(direction="increasing")
+        >>> df = pd.DataFrame(...).sort_timestamps_monotonically(
+        ...     direction="increasing"
         ... )  # doctest: +SKIP
 
     Args:
@@ -208,8 +206,7 @@ def _flag_jumps_single_col(
     direction_types = ["increasing", "decreasing", "any"]
     if direction not in direction_types:
         raise JanitorError(
-            f"Unrecognized direction: '{direction}'. "
-            f"Must be one of: {direction_types}."
+            f"Unrecognized direction: '{direction}'. Must be one of: {direction_types}."
         )
 
     if threshold < 0:
@@ -269,26 +266,18 @@ def flag_jumps(
         Applies specified criteria across all columns of the DataFrame
         and appends a flag column for each column in the DataFrame
 
-        >>> df = (
-        ...     pd.DataFrame(...)
-        ...     .flag_jumps(
-        ...         scale="absolute",
-        ...         direction="any",
-        ...         threshold=2
-        ...     )
+        >>> df = pd.DataFrame(...).flag_jumps(
+        ...     scale="absolute", direction="any", threshold=2
         ... )  # doctest: +SKIP
 
         Applies specific criteria to certain DataFrame columns,
         applies default criteria to columns *not* specifically listed and
         appends a flag column for each column in the DataFrame
 
-        >>> df = (
-        ...     pd.DataFrame(...)
-        ...     .flag_jumps(
-        ...         scale=dict(col1="absolute", col2="percentage"),
-        ...         direction=dict(col1="increasing", col2="any"),
-        ...         threshold=dict(col1=1, col2=0.5),
-        ...     )
+        >>> df = pd.DataFrame(...).flag_jumps(
+        ...     scale=dict(col1="absolute", col2="percentage"),
+        ...     direction=dict(col1="increasing", col2="any"),
+        ...     threshold=dict(col1=1, col2=0.5),
         ... )  # doctest: +SKIP
 
         Applies specific criteria to certain DataFrame columns,
@@ -296,13 +285,10 @@ def flag_jumps(
         appends a flag column for only those columns found in specified
         criteria
 
-        >>> df = (
-        ...     pd.DataFrame(...)
-        ...     .flag_jumps(
-        ...         scale=dict(col1="absolute"),
-        ...         threshold=dict(col2=1),
-        ...         strict=True,
-        ...     )
+        >>> df = pd.DataFrame(...).flag_jumps(
+        ...     scale=dict(col1="absolute"),
+        ...     threshold=dict(col2=1),
+        ...     strict=True,
         ... )  # doctest: +SKIP
 
     Args:
@@ -353,10 +339,7 @@ def flag_jumps(
     df = df.copy()
 
     if strict:
-        if (
-            any(isinstance(arg, dict) for arg in (scale, direction, threshold))
-            is False
-        ):
+        if any(isinstance(arg, dict) for arg in (scale, direction, threshold)) is False:
             raise JanitorError(
                 "When enacting 'strict=True', 'scale', 'direction', or "
                 + "'threshold' must be a dictionary."
@@ -365,9 +348,7 @@ def flag_jumps(
         # Only append a flag col for the cols that appear
         # in at least one of the input dicts
         arg_keys = [
-            arg.keys()
-            for arg in (scale, direction, threshold)
-            if isinstance(arg, dict)
+            arg.keys() for arg in (scale, direction, threshold) if isinstance(arg, dict)
         ]
         cols = set(itertools.chain.from_iterable(arg_keys))
 
@@ -379,16 +360,8 @@ def flag_jumps(
     for col in sorted(cols):
         # Allow arguments to be a mix of dict and single instances
         s = scale.get(col, "percentage") if isinstance(scale, dict) else scale
-        d = (
-            direction.get(col, "any")
-            if isinstance(direction, dict)
-            else direction
-        )
-        t = (
-            threshold.get(col, 0.0)
-            if isinstance(threshold, dict)
-            else threshold
-        )
+        d = direction.get(col, "any") if isinstance(direction, dict) else direction
+        t = threshold.get(col, 0.0) if isinstance(threshold, dict) else threshold
 
         columns_to_add[f"{col}_jump_flag"] = _flag_jumps_single_col(
             df, col, scale=s, direction=d, threshold=t

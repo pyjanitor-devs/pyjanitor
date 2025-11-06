@@ -24,12 +24,16 @@ def change_index_dtype(
         >>> import janitor
         >>> rng = np.random.default_rng(seed=0)
         >>> np.random.seed(0)
-        >>> tuples = list(zip(*[['bar', 'bar', 'baz', 'baz',
-        ...             'foo', 'foo', 'qux', 'qux'],
-        ...              [1.0, 2.0, 1.0, 2.0,
-        ...               1.0, 2.0, 1.0, 2.0]]))
-        >>> idx = pd.MultiIndex.from_tuples(tuples, names=['first', 'second'])
-        >>> df = pd.DataFrame(np.random.randn(8, 2), index=idx, columns=['A', 'B'])
+        >>> tuples = list(
+        ...     zip(
+        ...         *[
+        ...             ["bar", "bar", "baz", "baz", "foo", "foo", "qux", "qux"],
+        ...             [1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 2.0],
+        ...         ]
+        ...     )
+        ... )
+        >>> idx = pd.MultiIndex.from_tuples(tuples, names=["first", "second"])
+        >>> df = pd.DataFrame(np.random.randn(8, 2), index=idx, columns=["A", "B"])
         >>> df
                              A         B
         first second
@@ -41,7 +45,7 @@ def change_index_dtype(
               2.0     0.144044  1.454274
         qux   1.0     0.761038  0.121675
               2.0     0.443863  0.333674
-        >>> outcome=df.change_index_dtype(dtype=str)
+        >>> outcome = df.change_index_dtype(dtype=str)
         >>> outcome
                              A         B
         first second
@@ -57,7 +61,7 @@ def change_index_dtype(
         first     object
         second    object
         dtype: object
-        >>> outcome=df.change_index_dtype(dtype={'second':int})
+        >>> outcome = df.change_index_dtype(dtype={"second": int})
         >>> outcome
                              A         B
         first second
@@ -73,7 +77,7 @@ def change_index_dtype(
         first     object
         second     int64
         dtype: object
-        >>> outcome=df.change_index_dtype(dtype={0:'category',1:int})
+        >>> outcome = df.change_index_dtype(dtype={0: "category", 1: int})
         >>> outcome
                              A         B
         first second
@@ -120,17 +124,13 @@ def change_index_dtype(
         return df
 
     if not isinstance(dtype, dict):
-        dtype = {
-            level_number: dtype
-            for level_number in range(current_index.nlevels)
-        }
+        dtype = {level_number: dtype for level_number in range(current_index.nlevels)}
 
     all_str = all(isinstance(level, str) for level in dtype)
     all_int = all(isinstance(level, int) for level in dtype)
     if not all_str | all_int:
         raise TypeError(
-            "The levels in the dictionary "
-            "should be either all strings or all integers."
+            "The levels in the dictionary should be either all strings or all integers."
         )
 
     dtype = {

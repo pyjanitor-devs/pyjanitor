@@ -22,9 +22,7 @@ def test_morgan_fingerprint_counts(chemdf):
 @pytest.mark.chemistry
 def test_morgan_fingerprint_bits(chemdf):
     """Test bits of Morgan Fingerprints converted from Mol objects."""
-    morgans = chemdf.smiles2mol("smiles", "mol").morgan_fingerprint(
-        "mol", kind="bits"
-    )
+    morgans = chemdf.smiles2mol("smiles", "mol").morgan_fingerprint("mol", kind="bits")
     assert morgans.shape == (10, 2048)
     assert set(morgans.to_numpy().flatten().tolist()) == set([0, 1])
 

@@ -40,7 +40,7 @@ def remove_columns(
         0  2  1  7
         1  4  3  8
         2  6  5  9
-        >>> df.remove_columns(column_names=['a', 'c'])
+        >>> df.remove_columns(column_names=["a", "c"])
            b
         0  1
         1  3

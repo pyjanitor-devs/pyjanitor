@@ -102,8 +102,7 @@ def groupby_topk(
 
     if k < 1:
         raise ValueError(
-            "Numbers of rows per group "
-            "to be returned must be greater than 0."
+            "Numbers of rows per group to be returned must be greater than 0."
         )
 
     indices = df.groupby(by=by, dropna=dropna, sort=False, observed=True)
@@ -115,9 +114,7 @@ def groupby_topk(
         else:
             indices = indices.nlargest(n=k)
     except TypeError:
-        indices = indices.apply(
-            lambda d: d.sort_values(ascending=ascending).head(k)
-        )
+        indices = indices.apply(lambda d: d.sort_values(ascending=ascending).head(k))
 
     indices = indices.index.get_level_values(-1)
     if ignore_index:

@@ -15,9 +15,7 @@ Test 4: ZZZZ does not belong to any company,
 """
 
 
-@pytest.mark.xfail(
-    reason="Flaky, because it depends on internet connectivity."
-)
+@pytest.mark.xfail(reason="Flaky, because it depends on internet connectivity.")
 def test_get_symbol():
     assert get_symbol("GME") == "GameStop Corp."
     assert get_symbol("GME") != "Globus Medical Inc."

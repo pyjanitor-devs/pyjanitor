@@ -57,9 +57,7 @@ def test_expand_2(df):
     """
     Test output for janitor.expand.
     """
-    expected = df.expand(
-        "group", df.get_column("item_id"), "item_name", sort=True
-    )
+    expected = df.expand("group", df.get_column("item_id"), "item_name", sort=True)
     actual = (
         df.select(pl.col("group").unique())
         .join(df.select(pl.col("item_id").unique()), how="cross")

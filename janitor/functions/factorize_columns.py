@@ -30,10 +30,12 @@ def factorize_columns(
     Examples:
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame({
-        ...     "foo": ["b", "b", "a", "c", "b"],
-        ...     "bar": range(4, 9),
-        ... })
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "foo": ["b", "b", "a", "c", "b"],
+        ...         "bar": range(4, 9),
+        ...     }
+        ... )
         >>> df
           foo  bar
         0   b    4

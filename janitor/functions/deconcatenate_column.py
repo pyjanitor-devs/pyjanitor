@@ -110,8 +110,7 @@ def deconcatenate_column(
     if isinstance(df[column_name].iloc[0], str):
         if sep is None:
             raise ValueError(
-                "`sep` must be specified if the column values "
-                "are of type `str`."
+                "`sep` must be specified if the column values are of type `str`."
             )
         df_deconcat = df[column_name].str.split(sep, expand=True)
     else:
@@ -120,9 +119,7 @@ def deconcatenate_column(
         )
 
     if new_column_names is None and autoname is None:
-        raise ValueError(
-            "One of `new_column_names` or `autoname` must be supplied."
-        )
+        raise ValueError("One of `new_column_names` or `autoname` must be supplied.")
 
     if autoname:
         new_column_names = [

@@ -35,7 +35,7 @@ def expand_column(
         >>> df = expand_column(
         ...     df,
         ...     column_name="col1",
-        ...     sep=", "  # note space in sep
+        ...     sep=", ",  # note space in sep
         ... )
         >>> df
               col1  col2  A  B  C  D  E  F
@@ -48,18 +48,12 @@ def expand_column(
 
         >>> import pandas as pd
         >>> import janitor
-        >>> df = (
-        ...     pd.DataFrame(
-        ...         {
-        ...             "col1": ["A, B", "B, C, D", "E, F", "A, E, F"],
-        ...             "col2": [1, 2, 3, 4],
-        ...         }
-        ...     )
-        ...     .expand_column(
-        ...         column_name='col1',
-        ...         sep=', '
-        ...     )
-        ... )
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "col1": ["A, B", "B, C, D", "E, F", "A, E, F"],
+        ...         "col2": [1, 2, 3, 4],
+        ...     }
+        ... ).expand_column(column_name="col1", sep=", ")
         >>> df
               col1  col2  A  B  C  D  E  F
         0     A, B     1  1  1  0  0  0  0

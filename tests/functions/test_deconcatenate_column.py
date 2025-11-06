@@ -20,9 +20,7 @@ def test_deconcatenate_column_collection(dataframe: pd.DataFrame):
     )
 
     deconcat_df = (
-        concat_df.deconcatenate_column(
-            "concatenated", new_column_names=column_names
-        )
+        concat_df.deconcatenate_column("concatenated", new_column_names=column_names)
         .remove_columns("concatenated")
         .reorder_columns(dataframe.columns)
     )
@@ -81,18 +79,16 @@ def test_deconcatenate_column_preserve_position_string(dataframe):
     assert "index" not in df.columns, "column_name not dropped"
     assert "col1" in df.columns, "new column not present"
     assert "col2" in df.columns, "new column not present"
-    assert len(df_original.columns) + 1 == len(
-        df.columns
-    ), "Number of columns inconsistent"
-    assert (
-        list(df.columns).index("col1") == index_original
-    ), "Position not preserved"
-    assert (
-        list(df.columns).index("col2") == index_original + 1
-    ), "Position not preserved"
-    assert len(df.columns) == (
-        len(df_original.columns) + len(new_column_names) - 1
-    ), "Number of columns after deconcatenation is incorrect"
+    assert len(df_original.columns) + 1 == len(df.columns), (
+        "Number of columns inconsistent"
+    )
+    assert list(df.columns).index("col1") == index_original, "Position not preserved"
+    assert list(df.columns).index("col2") == index_original + 1, (
+        "Position not preserved"
+    )
+    assert len(df.columns) == (len(df_original.columns) + len(new_column_names) - 1), (
+        "Number of columns after deconcatenation is incorrect"
+    )
 
 
 def test_deconcatenate_column_autoname(dataframe):

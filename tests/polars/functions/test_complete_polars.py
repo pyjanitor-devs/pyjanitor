@@ -152,9 +152,7 @@ def test_groupby_complete():
 def test_complete_2(fill_df):
     """Test output for janitor.complete."""
     result = (
-        fill_df.select(
-            "group", pl.struct("item_id", "item_name"), "value1", "value2"
-        )
+        fill_df.select("group", pl.struct("item_id", "item_name"), "value1", "value2")
         .complete(
             "group",
             pl.col("item_id").unique().sort(),

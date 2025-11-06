@@ -111,9 +111,9 @@ def test_groupby_agg_null_columns(df):
     the right aggregated value.
     """
     expected = df.copy()
-    expected["num_count"] = expected.groupby(["nulls"], dropna=False)[
-        "type"
-    ].transform("size")
+    expected["num_count"] = expected.groupby(["nulls"], dropna=False)["type"].transform(
+        "size"
+    )
     assert_frame_equal(
         df.groupby_agg(
             by="nulls",

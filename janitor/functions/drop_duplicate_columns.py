@@ -22,12 +22,14 @@ def drop_duplicate_columns(
     Examples:
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame({
-        ...     "a": range(2, 5),
-        ...     "b": range(3, 6),
-        ...     "A": range(4, 7),
-        ...     "a*": range(6, 9),
-        ... }).clean_names(remove_special=True)
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "a": range(2, 5),
+        ...         "b": range(3, 6),
+        ...         "A": range(4, 7),
+        ...         "a*": range(6, 9),
+        ...     }
+        ... ).clean_names(remove_special=True)
         >>> df
            a  b  a  a
         0  2  3  4  6
@@ -57,8 +59,6 @@ def drop_duplicate_columns(
     # Select the column to remove based on nth_index.
     removed_col_idx = col_indexes[nth_index]
     # Filter out columns except for the one to be removed.
-    filtered_cols = [
-        c_i for c_i, _ in enumerate(df.columns) if c_i != removed_col_idx
-    ]
+    filtered_cols = [c_i for c_i, _ in enumerate(df.columns) if c_i != removed_col_idx]
 
     return df.iloc[:, filtered_cols]

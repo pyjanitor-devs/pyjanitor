@@ -63,14 +63,11 @@ def read_csvs(
     # String to file/folder or file pattern provided
     if isinstance(files_path, str):
         dfs_dict = {
-            os.path.basename(f): pd.read_csv(f, **kwargs)
-            for f in glob(files_path)
+            os.path.basename(f): pd.read_csv(f, **kwargs) for f in glob(files_path)
         }
     # Iterable of file paths provided
     else:
-        dfs_dict = {
-            os.path.basename(f): pd.read_csv(f, **kwargs) for f in files_path
-        }
+        dfs_dict = {os.path.basename(f): pd.read_csv(f, **kwargs) for f in files_path}
     # Check if dataframes have been read
     if not dfs_dict:
         raise ValueError("No CSV files to read with the given `files_path`")
@@ -93,9 +90,7 @@ def read_csvs(
     return dfs_dict
 
 
-def read_commandline(
-    cmd: str, engine: str = "pandas", **kwargs: Any
-) -> Mapping:
+def read_commandline(cmd: str, engine: str = "pandas", **kwargs: Any) -> Mapping:
     """Read a CSV file based on a command-line command.
 
     For example, you may wish to run the following command on `sep-quarter.csv`
@@ -178,11 +173,11 @@ def xlsx_table(
         >>> import pandas as pd
         >>> import polars as pl
         >>> from janitor import xlsx_table
-        >>> filename="../pyjanitor/tests/test_data/016-MSPTDA-Excel.xlsx"
+        >>> filename = "../pyjanitor/tests/test_data/016-MSPTDA-Excel.xlsx"
 
         Single table:
 
-        >>> xlsx_table(filename, table='dCategory')
+        >>> xlsx_table(filename, table="dCategory")
            CategoryID       Category
         0           1       Beginner
         1           2       Advanced
@@ -190,7 +185,7 @@ def xlsx_table(
         3           4    Competition
         4           5  Long Distance
 
-        >>> xlsx_table(filename, table='dCategory', engine='polars')
+        >>> xlsx_table(filename, table="dCategory", engine="polars")
         shape: (5, 2)
         ┌────────────┬───────────────┐
         │ CategoryID ┆ Category      │
@@ -206,7 +201,7 @@ def xlsx_table(
 
         Multiple tables:
 
-        >>> out=xlsx_table(filename, table=["dCategory", "dSalesReps"])
+        >>> out = xlsx_table(filename, table=["dCategory", "dSalesReps"])
         >>> out["dCategory"]
            CategoryID       Category
         0           1       Beginner
@@ -250,8 +245,7 @@ def xlsx_table(
     # TODO: remove in version 1.0
     if sheetname:
         warnings.warn(
-            "The keyword argument "
-            "'sheetname' of 'xlsx_tables' is deprecated.",
+            "The keyword argument 'sheetname' of 'xlsx_tables' is deprecated.",
             DeprecationWarning,
             stacklevel=find_stack_level(),
         )
@@ -316,12 +310,10 @@ def xlsx_table(
         if isinstance(table, str):
             table_is_a_string = True
             table = [table]
-        table_names = (
-            entry for worksheet in worksheets for entry in worksheet.tables
-        )
+        table_names = (entry for worksheet in worksheets for entry in worksheet.tables)
         missing = set(table).difference(table_names)
         if missing:
-            raise KeyError(f"Tables {*missing,} do not exist in the Workbook.")
+            raise KeyError(f"Tables {(*missing,)} do not exist in the Workbook.")
         tables = [
             (entry, worksheet)
             for worksheet in worksheets
@@ -330,13 +322,9 @@ def xlsx_table(
         ]
     else:
         tables = [
-            (entry, worksheet)
-            for worksheet in worksheets
-            for entry in worksheet.tables
+            (entry, worksheet) for worksheet in worksheets for entry in worksheet.tables
         ]
-    data = _create_dataframe_or_dictionary_from_table(
-        table_name_and_worksheet=tables
-    )
+    data = _create_dataframe_or_dictionary_from_table(table_name_and_worksheet=tables)
     if table_is_a_string:
         return data[table[0]]
     return data
@@ -394,7 +382,9 @@ def xlsx_cells(
 
         Access cell formatting such as fill:
 
-        >>> out=xlsx_cells(filename, sheetnames="highlights", fill=True).select("value", "fill", axis='columns')
+        >>> out = xlsx_cells(filename, sheetnames="highlights", fill=True).select(
+        ...     "value", "fill", axis="columns"
+        ... )
         >>> out
             value                                                                                                                                              fill
         0     Age     {'patternType': None, 'fgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}}
@@ -421,7 +411,9 @@ def xlsx_cells(
 
         Access cell formatting in a polars DataFrame:
 
-        >>> out = xlsx_cells(filename, sheetnames="highlights", engine='polars', fill=True).get_column('fill')
+        >>> out = xlsx_cells(
+        ...     filename, sheetnames="highlights", engine="polars", fill=True
+        ... ).get_column("fill")
         >>> out
         shape: (8,)
         Series: 'fill' [struct[3]]
@@ -438,7 +430,7 @@ def xlsx_cells(
 
         Specific cell attributes can be acessed via Polars' struct:
 
-        >>> out.struct.field('fgColor').struct.field('rgb')
+        >>> out.struct.field("fgColor").struct.field("rgb")
         shape: (8,)
         Series: 'rgb' [str]
         [
@@ -512,12 +504,8 @@ def xlsx_cells(
         # if comments is True, read_only has to be False,
         # as lazy loading is not enabled for comments
         if comment and read_only:
-            raise ValueError(
-                "To access comments, kindly set 'read_only' to False."
-            )
-        path = load_workbook(
-            filename=path, read_only=read_only, keep_links=False
-        )
+            raise ValueError("To access comments, kindly set 'read_only' to False.")
+        path = load_workbook(filename=path, read_only=read_only, keep_links=False)
     if engine not in {"pandas", "polars"}:
         raise ValueError("engine should be one of pandas or polars.")
     base_engine = pd
@@ -580,13 +568,10 @@ def xlsx_cells(
         for key in kwargs:
             if key in defaults:
                 raise ValueError(
-                    f"{key} is part of the default attributes "
-                    "returned as a column."
+                    f"{key} is part of the default attributes returned as a column."
                 )
             elif key not in attrs:
-                raise AttributeError(
-                    f"{key} is not a recognized attribute of {_cell}."
-                )
+                raise AttributeError(f"{key} is not a recognized attribute of {_cell}.")
         parameters.update(kwargs)
 
     if not sheetnames:

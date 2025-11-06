@@ -22,7 +22,7 @@ def check(varname: str, value, expected_types: list):
 
     Examples:
         ```python
-        check('x', x, [int, float])
+        check("x", x, [int, float])
         ```
 
     Args:
@@ -53,8 +53,7 @@ def _expand_grid(value, grid_index, key):
     """
 
     raise TypeError(
-        f"{type(value).__name__} data type "
-        "is not supported in `expand_grid`."
+        f"{type(value).__name__} data type is not supported in `expand_grid`."
     )
 
 
@@ -110,14 +109,9 @@ def _sub_expand_grid(value, grid_index, key):  # noqa: F811
     Returns a dictionary.
     """
     if isinstance(value.columns, pd.MultiIndex):
-        return {
-            (key, *name): val._values[grid_index]
-            for name, val in value.items()
-        }
+        return {(key, *name): val._values[grid_index] for name, val in value.items()}
 
-    return {
-        (key, name): val._values[grid_index] for name, val in value.items()
-    }
+    return {(key, name): val._values[grid_index] for name, val in value.items()}
 
 
 @_expand_grid.register(pd.MultiIndex)
@@ -174,10 +168,7 @@ def import_message(
             installable = False
             installation = f"{package} cannot be installed via pip"
 
-    print(
-        f"To use the janitor submodule {submodule}, you need to install "
-        f"{package}."
-    )
+    print(f"To use the janitor submodule {submodule}, you need to install {package}.")
     print()
     if installable:
         print("To do so, use the following command:")
@@ -206,9 +197,7 @@ def idempotent(func: Callable, df: pd.DataFrame, *args: Any, **kwargs: Any):
     if not func(df, *args, **kwargs) == func(
         func(df, *args, **kwargs), *args, **kwargs
     ):
-        raise ValueError(
-            "Supplied function is not idempotent for the given DataFrame."
-        )
+        raise ValueError("Supplied function is not idempotent for the given DataFrame.")
 
 
 def deprecated_kwargs(
@@ -225,7 +214,8 @@ def deprecated_kwargs(
         ```python
         from janitor.utils import deprecated_kwargs
 
-        @deprecated_kwargs('x', 'y')
+
+        @deprecated_kwargs("x", "y")
         def plus(a, b, x=0, y=0):
             return a + b
         ```
@@ -280,7 +270,7 @@ def deprecated_alias(**aliases) -> Callable:
 
     Examples:
         ```python
-        @deprecated_alias(a='alpha', b='beta')
+        @deprecated_alias(a="alpha", b="beta")
         def simple_sum(alpha, beta):
             return alpha + beta
         ```
@@ -379,7 +369,7 @@ def check_column(
 
     Examples:
         ```python
-        check(df, ['a', 'b'], present=True)
+        check(df, ["a", "b"], present=True)
         ```
 
     This will check whether columns `'a'` and `'b'` are present in
@@ -404,13 +394,9 @@ def check_column(
 
     for column_name in column_names:
         if present and column_name not in df.columns:  # skipcq: PYL-R1720
-            raise ValueError(
-                f"{column_name} not present in dataframe columns!"
-            )
+            raise ValueError(f"{column_name} not present in dataframe columns!")
         elif not present and column_name in df.columns:
-            raise ValueError(
-                f"{column_name} already present in dataframe columns!"
-            )
+            raise ValueError(f"{column_name} already present in dataframe columns!")
 
 
 def skipna(f: Callable) -> Callable:
@@ -444,15 +430,12 @@ def skipna(f: Callable) -> Callable:
     return _wrapped
 
 
-def skiperror(
-    f: Callable, return_x: bool = False, return_val=np.nan
-) -> Callable:
+def skiperror(f: Callable, return_x: bool = False, return_val=np.nan) -> Callable:
     """Decorator for escaping any error in a function.
 
     Examples:
         ```python
-        df[column].apply(
-            skiperror(transform, return_val=3, return_x=False))
+        df[column].apply(skiperror(transform, return_val=3, return_x=False))
         ```
 
         Can also be used as shown below
@@ -561,9 +544,7 @@ def dynamic_import(file_path: Path):
             # Get the module name (without the .py extension)
             module_name = filename.name
             # Dynamically import the module
-            module = importlib.import_module(
-                f".{module_name}", package=__name__
-            )
+            module = importlib.import_module(f".{module_name}", package=__name__)
             # Import all symbols from the module into the current namespace
             for name in dir(module):
                 if not name.startswith("_"):  # avoid importing private symbols

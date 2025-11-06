@@ -35,10 +35,12 @@ def row_to_names(
 
         >>> import polars as pl
         >>> import janitor.polars
-        >>> df = pl.DataFrame({
-        ...     "a": ["nums", '6', '9'],
-        ...     "b": ["chars", "x", "y"],
-        ... })
+        >>> df = pl.DataFrame(
+        ...     {
+        ...         "a": ["nums", "6", "9"],
+        ...         "b": ["chars", "x", "y"],
+        ...     }
+        ... )
         >>> df
         shape: (3, 2)
         ┌──────┬───────┐
@@ -60,7 +62,7 @@ def row_to_names(
         │ 6    ┆ x     │
         │ 9    ┆ y     │
         └──────┴───────┘
-        >>> df.row_to_names(row_numbers=[0,1], remove_rows=True)
+        >>> df.row_to_names(row_numbers=[0, 1], remove_rows=True)
         shape: (1, 2)
         ┌────────┬─────────┐
         │ nums_6 ┆ chars_x │
@@ -72,10 +74,12 @@ def row_to_names(
 
         Remove rows above the elevated row and the elevated row itself.
 
-        >>> df = pl.DataFrame({
-        ...     "a": ["bla1", "nums", '6', '9'],
-        ...     "b": ["bla2", "chars", "x", "y"],
-        ... })
+        >>> df = pl.DataFrame(
+        ...     {
+        ...         "a": ["bla1", "nums", "6", "9"],
+        ...         "b": ["bla2", "chars", "x", "y"],
+        ...     }
+        ... )
         >>> df
         shape: (4, 2)
         ┌──────┬───────┐

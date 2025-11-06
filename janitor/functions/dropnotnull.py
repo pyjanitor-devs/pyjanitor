@@ -19,7 +19,7 @@ def dropnotnull(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
         >>> import numpy as np
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame({"a": [1., np.NaN, 3.], "b": [None, "y", "z"]})
+        >>> df = pd.DataFrame({"a": [1.0, np.NaN, 3.0], "b": [None, "y", "z"]})
         >>> df
              a     b
         0  1.0  None

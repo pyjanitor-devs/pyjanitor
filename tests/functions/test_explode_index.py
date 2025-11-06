@@ -51,9 +51,7 @@ def test_names_sep_pattern_both_none(df_checks):
     """Raise ValueError if neither names_sep nor names_pattern is provided."""
     msg = "Provide argument for either names_sep or names_pattern."
     with pytest.raises(ValueError, match=msg):
-        df_checks.explode_index(
-            axis="columns", names_sep=None, names_pattern=None
-        )
+        df_checks.explode_index(axis="columns", names_sep=None, names_pattern=None)
 
 
 def test_names_sep_typeerror(df_checks):

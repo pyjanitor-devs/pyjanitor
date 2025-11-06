@@ -148,9 +148,7 @@ def multiindex():
     """pytest fixture."""
     arrays = [
         ["bar", "bar", "baz", "baz", "foo", "foo", "qux", "qux"],
-        pd.Categorical(
-            ["one", "two", "one", "two", "one", "two", "one", "two"]
-        ),
+        pd.Categorical(["one", "two", "one", "two", "one", "two", "one", "two"]),
     ]
     index = pd.MultiIndex.from_arrays(arrays, names=["first", "second"])
     return pd.DataFrame(np.random.randn(4, 8), columns=index)
@@ -224,9 +222,7 @@ def test_col_not_found3(df_dates):
 def test_strings_cat(df_strings):
     """Test output on categorical columns"""
     df_strings.columns = df_strings.columns.astype("category")
-    assert_frame_equal(
-        df_strings.select_columns("id"), df_strings.loc[:, ["id"]]
-    )
+    assert_frame_equal(df_strings.select_columns("id"), df_strings.loc[:, ["id"]])
     assert_frame_equal(
         df_strings.select_columns("*type*"), df_strings.filter(like="type")
     )
@@ -310,14 +306,10 @@ slicers = [
 slicers = product(["df_strings"], slicers)
 
 
-@pytest.mark.parametrize(
-    "df_strings, slicer", slicers, indirect=["df_strings"]
-)
+@pytest.mark.parametrize("df_strings, slicer", slicers, indirect=["df_strings"])
 def test_slice(df_strings, slicer):
     """Test output on slices."""
-    assert_frame_equal(
-        df_strings.select_columns(slicer), df_strings.loc[:, slicer]
-    )
+    assert_frame_equal(df_strings.select_columns(slicer), df_strings.loc[:, slicer])
 
 
 def test_slice_reverse(df_strings):
@@ -358,9 +350,7 @@ def test_boolean_list_dtypes(df_dates):
     is unequal to the number of columns
     in the dataframe.
     """
-    with pytest.raises(
-        ValueError, match="The length of the list of booleans.+"
-    ):
+    with pytest.raises(ValueError, match="The length of the list of booleans.+"):
         df_dates.select_columns([True, False])
 
 
@@ -386,8 +376,7 @@ def test_callable(numbers):
     """
     with pytest.raises(
         ValueError,
-        match="The output of the applied callable "
-        "should be a 1-D boolean array.",
+        match="The output of the applied callable should be a 1-D boolean array.",
     ):
         numbers.select_columns(lambda df: df + 3)
 

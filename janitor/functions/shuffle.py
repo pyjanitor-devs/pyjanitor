@@ -20,10 +20,12 @@ def shuffle(
     Examples:
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame({
-        ...     "col1": range(5),
-        ...     "col2": list("abcde"),
-        ... })
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "col1": range(5),
+        ...         "col2": list("abcde"),
+        ...     }
+        ... )
         >>> df
            col1 col2
         0     0    a

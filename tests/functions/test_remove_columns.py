@@ -56,6 +56,4 @@ def test_remove_columns_strange_cols_multilevel(multilevel_dataframe):
     )
 
     # Then the total number of codes must be 12 (16-4)
-    assert (
-        len([item for sublist in df.columns.codes for item in sublist]) == 12
-    )
+    assert len([item for sublist in df.columns.codes for item in sublist]) == 12

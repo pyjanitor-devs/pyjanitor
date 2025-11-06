@@ -48,9 +48,7 @@ def test_check_filename():
 
 def test_table_exists():
     """Raise error if there is no table in the workbook."""
-    with pytest.raises(
-        ValueError, match="There are no tables in the Workbook."
-    ):
+    with pytest.raises(ValueError, match="There are no tables in the Workbook."):
         io.xlsx_table(no_tables, table="Cover")
 
 
@@ -97,9 +95,7 @@ def test_table_str():
     """Test output for single table."""
     expected = io.xlsx_table(filename, table="dSupplier")
     actual = (
-        pd.read_excel(
-            filename, engine="openpyxl", sheet_name="Tables", usecols="N:R"
-        )
+        pd.read_excel(filename, engine="openpyxl", sheet_name="Tables", usecols="N:R")
         .rename(columns={"SupplierID.1": "SupplierID"})
         .dropna()
     )

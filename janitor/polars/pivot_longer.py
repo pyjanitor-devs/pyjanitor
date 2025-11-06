@@ -64,10 +64,11 @@ def pivot_longer_spec(
         │ 5.1          ┆ 3.5         ┆ 1.4          ┆ 0.2         ┆ setosa    │
         │ 5.9          ┆ 3.0         ┆ 5.1          ┆ 1.8         ┆ virginica │
         └──────────────┴─────────────┴──────────────┴─────────────┴───────────┘
-        >>> spec = {'.name':['Sepal.Length','Petal.Length',
-        ...                  'Sepal.Width','Petal.Width'],
-        ...         '.value':['Length','Length','Width','Width'],
-        ...         'part':['Sepal','Petal','Sepal','Petal']}
+        >>> spec = {
+        ...     ".name": ["Sepal.Length", "Petal.Length", "Sepal.Width", "Petal.Width"],
+        ...     ".value": ["Length", "Length", "Width", "Width"],
+        ...     "part": ["Sepal", "Petal", "Sepal", "Petal"],
+        ... }
         >>> spec = pl.DataFrame(spec)
         >>> spec
         shape: (4, 3)
@@ -81,7 +82,7 @@ def pivot_longer_spec(
         │ Sepal.Width  ┆ Width  ┆ Sepal │
         │ Petal.Width  ┆ Width  ┆ Petal │
         └──────────────┴────────┴───────┘
-        >>> df.pipe(pivot_longer_spec,spec=spec).sort(by=pl.all())
+        >>> df.pipe(pivot_longer_spec, spec=spec).sort(by=pl.all())
         shape: (4, 4)
         ┌───────────┬───────┬────────┬───────┐
         │ Species   ┆ part  ┆ Length ┆ Width │
@@ -125,35 +126,25 @@ def pivot_longer_spec(
     check("spec", spec, [pl.DataFrame])
     spec_columns = spec.collect_schema().names()
     if ".name" not in spec_columns:
-        raise KeyError(
-            "Kindly ensure the spec DataFrame has a `.name` column."
-        )
+        raise KeyError("Kindly ensure the spec DataFrame has a `.name` column.")
     if ".value" not in spec_columns:
-        raise KeyError(
-            "Kindly ensure the spec DataFrame has a `.value` column."
-        )
+        raise KeyError("Kindly ensure the spec DataFrame has a `.value` column.")
     if spec.get_column(".name").is_duplicated().any():
         raise ValueError("The labels in the `.name` column should be unique.")
     df_columns = df.collect_schema().names()
     exclude = set(df_columns).intersection(spec_columns)
     if exclude:
         raise ValueError(
-            f"Labels {*exclude, } in the spec dataframe already exist "
+            f"Labels {(*exclude,)} in the spec dataframe already exist "
             "as column labels in the source dataframe. "
             "Kindly ensure the spec DataFrame's columns "
             "are not present in the source DataFrame."
         )
 
-    index = [
-        label for label in df_columns if label not in spec.get_column(".name")
-    ]
-    others = [
-        label for label in spec_columns if label not in {".name", ".value"}
-    ]
+    index = [label for label in df_columns if label not in spec.get_column(".name")]
+    others = [label for label in spec_columns if label not in {".name", ".value"}]
     if others:
-        if (len(others) == 1) & (
-            spec.get_column(others[0]).dtype == pl.String
-        ):
+        if (len(others) == 1) & (spec.get_column(others[0]).dtype == pl.String):
             # shortcut that avoids the implode/explode approach - and is faster
             # if the requirements are met
             # inspired by https://github.com/pola-rs/polars/pull/18519#issue-2500860927
@@ -242,7 +233,7 @@ def pivot_longer(
         └──────────────┴─────────────┴──────────────┴─────────────┴───────────┘
 
         Replicate polars' [melt](https://docs.pola.rs/py-polars/html/reference/dataframe/api/polars.DataFrame.unpivot.html#polars-dataframe-melt):
-        >>> df.pivot_longer(index = 'Species').sort(by=pl.all())
+        >>> df.pivot_longer(index="Species").sort(by=pl.all())
         shape: (8, 3)
         ┌───────────┬──────────────┬───────┐
         │ Species   ┆ variable     ┆ value │
@@ -261,10 +252,10 @@ def pivot_longer(
 
         Split the column labels into individual columns:
         >>> df.pivot_longer(
-        ...     index = 'Species',
-        ...     names_to = ('part', 'dimension'),
-        ...     names_sep = '.',
-        ... ).select('Species','part','dimension','value').sort(by=pl.all())
+        ...     index="Species",
+        ...     names_to=("part", "dimension"),
+        ...     names_sep=".",
+        ... ).select("Species", "part", "dimension", "value").sort(by=pl.all())
         shape: (8, 4)
         ┌───────────┬───────┬───────────┬───────┐
         │ Species   ┆ part  ┆ dimension ┆ value │
@@ -283,10 +274,10 @@ def pivot_longer(
 
         Retain parts of the column names as headers:
         >>> df.pivot_longer(
-        ...     index = 'Species',
-        ...     names_to = ('part', '.value'),
-        ...     names_sep = '.',
-        ... ).select('Species','part','Length','Width').sort(by=pl.all())
+        ...     index="Species",
+        ...     names_to=("part", ".value"),
+        ...     names_sep=".",
+        ... ).select("Species", "part", "Length", "Width").sort(by=pl.all())
         shape: (4, 4)
         ┌───────────┬───────┬────────┬───────┐
         │ Species   ┆ part  ┆ Length ┆ Width │
@@ -311,10 +302,10 @@ def pivot_longer(
         │ 1   ┆ 2            ┆ 3          │
         └─────┴──────────────┴────────────┘
         >>> df.pivot_longer(
-        ...     index = 'id',
-        ...     names_to = ('diagnosis', 'gender', 'age'),
-        ...     names_pattern = r"new_?(.+)_(.)([0-9]+)",
-        ... ).select('id','diagnosis','gender','age','value').sort(by=pl.all())
+        ...     index="id",
+        ...     names_to=("diagnosis", "gender", "age"),
+        ...     names_pattern=r"new_?(.+)_(.)([0-9]+)",
+        ... ).select("id", "diagnosis", "gender", "age", "value").sort(by=pl.all())
         shape: (2, 5)
         ┌─────┬───────────┬────────┬──────┬───────┐
         │ id  ┆ diagnosis ┆ gender ┆ age  ┆ value │
@@ -327,10 +318,10 @@ def pivot_longer(
 
         Convert the dtypes of specific columns with `names_transform`:
         >>> df.pivot_longer(
-        ...     index = "id",
+        ...     index="id",
         ...     names_pattern=r"new_?(.+)_(.)([0-9]+)",
         ...     names_to=("diagnosis", "gender", "age"),
-        ...     names_transform=pl.col('age').cast(pl.Int32),
+        ...     names_transform=pl.col("age").cast(pl.Int32),
         ... ).select("id", "diagnosis", "gender", "age", "value").sort(by=pl.all())
         shape: (2, 5)
         ┌─────┬───────────┬────────┬──────┬───────┐
@@ -367,7 +358,7 @@ def pivot_longer(
         ...     index="unit",
         ...     names_to=(".value", "time", ".value"),
         ...     names_pattern=r"(x|y)_([0-9])(_mean)",
-        ... ).select('unit','time','x_mean','y_mean').sort(by=pl.all())
+        ... ).select("unit", "time", "x_mean", "y_mean").sort(by=pl.all())
         shape: (2, 4)
         ┌──────┬──────┬────────┬────────┐
         │ unit ┆ time ┆ x_mean ┆ y_mean │
@@ -490,11 +481,7 @@ def _pivot_longer(
         data = spec.get_column(variable_name)
         others = data.struct.fields
         data = data.struct[others[0]]
-        if (
-            (len(others) == 1)
-            & (data.dtype == pl.String)
-            & (names_transform is None)
-        ):
+        if (len(others) == 1) & (data.dtype == pl.String) & (names_transform is None):
             spec = spec.unnest(variable_name)
             return _pivot_longer_dot_value_string(
                 df=df,
@@ -559,9 +546,7 @@ def _pivot_longer_create_spec(
         expression = pl.exclude(".name").is_null().any()
         expression = pl.any_horizontal(expression)
         null_check = (
-            spec.unnest(columns=variable_name)
-            .filter(expression)
-            .get_column(".name")
+            spec.unnest(columns=variable_name).filter(expression).get_column(".name")
         )
         if null_check.len():
             column_name = null_check.gather(0).item()
@@ -598,9 +583,7 @@ def _pivot_longer_create_spec(
         dot_value = _spec.select(expression)
         dot_value = dot_value.to_series(0)
         return spec.select(".name", dot_value)
-    dot_value = [
-        field for field, label in zip(fields, names_to) if label == ".value"
-    ]
+    dot_value = [field for field, label in zip(fields, names_to) if label == ".value"]
     dot_value = pl.concat_str(dot_value).alias(".value")
     not_dot_value = [
         pl.col(field).alias(label)
@@ -646,9 +629,7 @@ def _pivot_longer_no_dot_value(
     if names_transform is not None:
         outcome = outcome.with_columns(names_transform)
     columns = [
-        name
-        for name in outcome.collect_schema().names()
-        if name not in names_to
+        name for name in outcome.collect_schema().names() if name not in names_to
     ]
     outcome = outcome.explode(columns=columns)
     return outcome
@@ -709,9 +690,7 @@ def _pivot_longer_dot_value(
     if dot_value_only:
         outcome = (
             df.select(expressions)
-            .unpivot(
-                index=index, variable_name=variable_name, value_name=".value"
-            )
+            .unpivot(index=index, variable_name=variable_name, value_name=".value")
             .select(pl.exclude(variable_name))
             .unnest(".value")
         )
@@ -775,9 +754,7 @@ def _data_checks_pivot_longer(
         )
 
     if names_sep and names_pattern:
-        raise ValueError(
-            "Only one of names_pattern or names_sep should be provided."
-        )
+        raise ValueError("Only one of names_pattern or names_sep should be provided.")
 
     if names_sep is not None:
         check("names_sep", names_sep, [str])

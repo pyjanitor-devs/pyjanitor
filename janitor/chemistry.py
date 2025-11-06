@@ -98,9 +98,7 @@ def smiles2mol(
         >>> import janitor.chemistry
         >>> df = pd.DataFrame({"smiles": ["O=C=O", "CCC(=O)O"]})
         >>> df = janitor.chemistry.smiles2mol(
-        ...    df=df,
-        ...    smiles_column_name='smiles',
-        ...    mols_column_name='mols'
+        ...     df=df, smiles_column_name="smiles", mols_column_name="mols"
         ... )
         >>> df.mols[0].GetNumAtoms(), df.mols[0].GetNumBonds()
         (3, 2)
@@ -111,10 +109,7 @@ def smiles2mol(
 
         >>> import pandas as pd
         >>> import janitor.chemistry
-        >>> df = df.smiles2mol(
-        ...     smiles_column_name='smiles',
-        ...     mols_column_name='rdkmol'
-        ... )
+        >>> df = df.smiles2mol(smiles_column_name="smiles", mols_column_name="rdkmol")
         >>> df.rdkmol[0].GetNumAtoms(), df.rdkmol[0].GetNumBonds()
         (3, 2)
 
@@ -191,11 +186,11 @@ def morgan_fingerprint(
         - For "counts" kind
 
         >>> morgans = janitor.chemistry.morgan_fingerprint(
-        ...     df=df.smiles2mol('smiles', 'mols'),
-        ...     mols_column_name='mols',
-        ...     radius=3,      # Defaults to 3
-        ...     nbits=2048,    # Defaults to 2048
-        ...     kind='counts'  # Defaults to "counts"
+        ...     df=df.smiles2mol("smiles", "mols"),
+        ...     mols_column_name="mols",
+        ...     radius=3,  # Defaults to 3
+        ...     nbits=2048,  # Defaults to 2048
+        ...     kind="counts",  # Defaults to "counts"
         ... )
         >>> set(morgans.iloc[0])
         {0.0, 1.0, 2.0}
@@ -203,12 +198,12 @@ def morgan_fingerprint(
         - For "bits" kind
 
         >>> morgans = janitor.chemistry.morgan_fingerprint(
-        ...     df=df.smiles2mol('smiles', 'mols'),
-        ...     mols_column_name='mols',
-        ...     radius=3,      # Defaults to 3
-        ...     nbits=2048,    # Defaults to 2048
-        ...     kind='bits'    # Defaults to "counts"
-        ...  )
+        ...     df=df.smiles2mol("smiles", "mols"),
+        ...     mols_column_name="mols",
+        ...     radius=3,  # Defaults to 3
+        ...     nbits=2048,  # Defaults to 2048
+        ...     kind="bits",  # Defaults to "counts"
+        ... )
         >>> set(morgans.iloc[0])
         {0.0, 1.0}
 
@@ -220,29 +215,22 @@ def morgan_fingerprint(
 
         - For "counts" kind
 
-        >>> morgans = (
-        ...     df.smiles2mol('smiles', 'mols')
-        ...     .morgan_fingerprint(
-        ...         mols_column_name='mols',
-        ...         radius=3,      # Defaults to 3
-        ...         nbits=2048,    # Defaults to 2048
-        ...         kind='counts'  # Defaults to "counts"
-        ...     )
+        >>> morgans = df.smiles2mol("smiles", "mols").morgan_fingerprint(
+        ...     mols_column_name="mols",
+        ...     radius=3,  # Defaults to 3
+        ...     nbits=2048,  # Defaults to 2048
+        ...     kind="counts",  # Defaults to "counts"
         ... )
         >>> set(morgans.iloc[0])
         {0.0, 1.0, 2.0}
 
         - For "bits" kind
 
-        >>> morgans = (
-        ...     df
-        ...     .smiles2mol('smiles', 'mols')
-        ...     .morgan_fingerprint(
-        ...         mols_column_name='mols',
-        ...         radius=3,    # Defaults to 3
-        ...         nbits=2048,  # Defaults to 2048
-        ...         kind='bits'  # Defaults to "counts"
-        ...     )
+        >>> morgans = df.smiles2mol("smiles", "mols").morgan_fingerprint(
+        ...     mols_column_name="mols",
+        ...     radius=3,  # Defaults to 3
+        ...     nbits=2048,  # Defaults to 2048
+        ...     kind="bits",  # Defaults to "counts"
         ... )
         >>> set(morgans.iloc[0])
         {0.0, 1.0}
@@ -297,9 +285,7 @@ def morgan_fingerprint(
 
 @pf.register_dataframe_method
 @deprecated_alias(mols_col="mols_column_name")
-def molecular_descriptors(
-    df: pd.DataFrame, mols_column_name: Hashable
-) -> pd.DataFrame:
+def molecular_descriptors(df: pd.DataFrame, mols_column_name: Hashable) -> pd.DataFrame:
     """Convert a column of RDKIT mol objects into a Pandas DataFrame
     of molecular descriptors.
 
@@ -438,8 +424,7 @@ def maccs_keys_fingerprint(
         >>> import janitor.chemistry
         >>> df = pd.DataFrame({"smiles": ["O=C=O", "CCC(=O)O"]})
         >>> maccs = janitor.chemistry.maccs_keys_fingerprint(
-        ...     df=df.smiles2mol('smiles', 'mols'),
-        ...     mols_column_name='mols'
+        ...     df=df.smiles2mol("smiles", "mols"), mols_column_name="mols"
         ... )
         >>> len(maccs.columns)
         167
@@ -449,9 +434,8 @@ def maccs_keys_fingerprint(
         >>> import pandas as pd
         >>> import janitor.chemistry
         >>> df = pd.DataFrame({"smiles": ["O=C=O", "CCC(=O)O"]})
-        >>> maccs = (
-        ...     df.smiles2mol('smiles', 'mols')
-        ...         .maccs_keys_fingerprint(mols_column_name='mols')
+        >>> maccs = df.smiles2mol("smiles", "mols").maccs_keys_fingerprint(
+        ...     mols_column_name="mols"
         ... )
         >>> len(maccs.columns)
         167

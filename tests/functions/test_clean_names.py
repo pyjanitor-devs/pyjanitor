@@ -77,9 +77,7 @@ def test_multiindex_clean_names(multiindex_dataframe):
 
 
 @pytest.mark.functions
-@pytest.mark.parametrize(
-    "strip_underscores", ["both", True, "right", "r", "left", "l"]
-)
+@pytest.mark.parametrize("strip_underscores", ["both", True, "right", "r", "left", "l"])
 def test_clean_names_strip_underscores(
     multiindex_dataframe,
     strip_underscores,
@@ -163,9 +161,7 @@ def test_clean_names_camelcase_to_snake_multi(dataframe):
         .rename_column("a", "snakesOnAPlane")
         .rename_column("Bell__Chart", "SnakesOnAPlane2")
         .rename_column("decorated-elephant", "snakes_on_a_plane3")
-        .clean_names(
-            case_type="snake", strip_underscores=True, remove_special=True
-        )
+        .clean_names(case_type="snake", strip_underscores=True, remove_special=True)
     )
     assert list(df.columns) == [
         "snakes_on_a_plane",

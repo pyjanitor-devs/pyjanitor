@@ -41,19 +41,27 @@ def join_fasta(
         >>> import pandas as pd
         >>> import janitor.biology
         >>> tf = tempfile.NamedTemporaryFile()
-        >>> tf.write('''>SEQUENCE_1
+        >>> tf.write(
+        ...     '''>SEQUENCE_1
         ... MTEITAAMVKELRESTGAGMMDCK
         ... >SEQUENCE_2
-        ... SATVSEINSETDFVAKN'''.encode('utf8'))
+        ... SATVSEINSETDFVAKN'''.encode("utf8")
+        ... )
         66
         >>> tf.seek(0)
         0
-        >>> df = pd.DataFrame({"sequence_accession":
-        ... ["SEQUENCE_1", "SEQUENCE_2", ]})
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "sequence_accession": [
+        ...             "SEQUENCE_1",
+        ...             "SEQUENCE_2",
+        ...         ]
+        ...     }
+        ... )
         >>> df = df.join_fasta(  # doctest: +SKIP
         ...     filename=tf.name,
-        ...     id_col='sequence_accession',
-        ...     column_name='sequence',
+        ...     id_col="sequence_accession",
+        ...     column_name="sequence",
         ... )
         >>> df.sequence  # doctest: +SKIP
         0    MTEITAAMVKELRESTGAGMMDCK
@@ -69,9 +77,7 @@ def join_fasta(
     Returns:
         A pandas DataFrame with new FASTA string sequence column.
     """
-    seqrecords = {
-        x.id: x.seq.__str__() for x in SeqIO.parse(filename, "fasta")
-    }
+    seqrecords = {x.id: x.seq.__str__() for x in SeqIO.parse(filename, "fasta")}
     seq_col = [seqrecords[i] for i in df[id_col]]
     df[column_name] = seq_col
     return df

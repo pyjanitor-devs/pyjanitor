@@ -26,11 +26,11 @@ def ungroup(
     Examples:
         >>> import pandas as pd
         >>> import janitor
-        >>> data = {'avg_jump': [3, 4, 1, 2, 3, 4],
-        ...         'avg_run': [3, 4, 1, 3, 2, 4],
-        ...         'combine_id': [100200, 100200,
-        ...                        101200, 101200,
-        ...                        102201, 103202]}
+        >>> data = {
+        ...     "avg_jump": [3, 4, 1, 2, 3, 4],
+        ...     "avg_run": [3, 4, 1, 3, 2, 4],
+        ...     "combine_id": [100200, 100200, 101200, 101200, 102201, 103202],
+        ... }
         >>> df = pd.DataFrame(data)
         >>> df
            avg_jump  avg_run  combine_id
@@ -40,7 +40,7 @@ def ungroup(
         3         2        3      101200
         4         3        2      102201
         5         4        4      103202
-        >>> df.groupby('combine_id').mutate('mean').ungroup()
+        >>> df.groupby("combine_id").mutate("mean").ungroup()
            avg_jump  avg_run  combine_id
         0       3.5      3.5      100200
         1       3.5      3.5      100200
@@ -146,17 +146,16 @@ def mutate(
         >>> import pandas as pd
         >>> import numpy as np
         >>> import janitor
-        >>> df = pd.DataFrame({
-        ...     "col1": [5, 10, 15],
-        ...     "col2": [3, 6, 9],
-        ...     "col3": [10, 100, 1_000],
-        ... })
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "col1": [5, 10, 15],
+        ...         "col2": [3, 6, 9],
+        ...         "col3": [10, 100, 1_000],
+        ...     }
+        ... )
 
         Transformation via a dictionary:
-        >>> df.mutate(
-        ...     {"col4": ('col1',np.log10),
-        ...      "col1": np.log10}
-        ...     )
+        >>> df.mutate({"col4": ("col1", np.log10), "col1": np.log10})
                col1  col2  col3      col4
         0  0.698970     3    10  0.698970
         1  1.000000     6   100  1.000000
@@ -175,7 +174,7 @@ def mutate(
         2  1.176091  0.954243   3.0
 
         Transformation via a callable:
-        >>> df.mutate(lambda df: df.sum(axis=1).rename('total'))
+        >>> df.mutate(lambda df: df.sum(axis=1).rename("total"))
            col1  col2  col3  total
         0     5     3    10     18
         1    10     6   100    116

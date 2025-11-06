@@ -39,11 +39,13 @@ def coalesce(
         >>> import pandas as pd
         >>> import numpy as np
         >>> import janitor
-        >>> df = pd.DataFrame({
-        ...     "a": [np.nan, 1, np.nan],
-        ...     "b": [2, 3, np.nan],
-        ...     "c": [4, np.nan, np.nan],
-        ... })
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "a": [np.nan, 1, np.nan],
+        ...         "b": [2, 3, np.nan],
+        ...         "c": [4, np.nan, np.nan],
+        ...     }
+        ... )
         >>> df.coalesce("a", "b", "c")
              a    b    c
         0  2.0  2.0  4.0
@@ -63,12 +65,15 @@ def coalesce(
         >>> import pandas as pd
         >>> import numpy as np
         >>> import janitor
-        >>> df = pd.DataFrame({
-        ...     "a": [1, np.nan, np.nan],
-        ...     "b": [2, 3, np.nan],
-        ... })
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "a": [1, np.nan, np.nan],
+        ...         "b": [2, 3, np.nan],
+        ...     }
+        ... )
         >>> df.coalesce(
-        ...     "a", "b",
+        ...     "a",
+        ...     "b",
         ...     target_column_name="new_col",
         ...     default_value=-1,
         ... )
@@ -104,9 +109,7 @@ def coalesce(
     indexers = _select_index([*column_names], df, axis="columns")
 
     if len(indexers) < 2:
-        raise ValueError(
-            "The number of columns to coalesce should be a minimum of 2."
-        )
+        raise ValueError("The number of columns to coalesce should be a minimum of 2.")
 
     if target_column_name:
         check("target_column_name", target_column_name, [str])

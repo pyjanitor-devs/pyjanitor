@@ -103,9 +103,7 @@ def test_fill_value_dict_scalar(fill_df):
     Raise ValueError if `fill_value` is a dictionary
     and the value is not a scalar.
     """
-    with pytest.raises(
-        ValueError, match="The value for item_name should be a scalar."
-    ):
+    with pytest.raises(ValueError, match="The value for item_name should be a scalar."):
         fill_df.complete(
             "group", "item_id", fill_value={"item_name": pd.Series([2, 3, 4])}
         )
@@ -148,27 +146,20 @@ def test_dict_callable(df):
     """
     cols = ["names", "numbers"]
     df = df.assign(names=[*ascii_lowercase[: len(df)]])
-    new_numbers = {
-        "numbers": lambda df: range(df.numbers.min(), df.numbers.max() + 1)
-    }
+    new_numbers = {"numbers": lambda df: range(df.numbers.min(), df.numbers.max() + 1)}
     cols = ["numbers", "names"]
     result = df.complete(new_numbers, "names", sort=True)
     columns = df.columns
     new_index = range(df.numbers.min(), df.numbers.max() + 1)
     new_index = pd.MultiIndex.from_product([new_index, df.names], names=cols)
     expected = (
-        df.set_index(cols)
-        .reindex(new_index)
-        .reset_index()
-        .reindex(columns=columns)
+        df.set_index(cols).reindex(new_index).reset_index().reindex(columns=columns)
     )
 
     assert_frame_equal(result, expected)
 
 
-@pytest.mark.xfail(
-    reason="CI failure due to dtype mismatch. Tests successful locally."
-)
+@pytest.mark.xfail(reason="CI failure due to dtype mismatch. Tests successful locally.")
 @given(df=categoricaldf_strategy())
 def test_dict_extension_array(df):
     """
@@ -184,10 +175,7 @@ def test_dict_extension_array(df):
     result = df.complete("names", new_numbers, sort=True)
 
     expected = (
-        df.set_index(cols)
-        .reindex(new_index)
-        .reset_index()
-        .reindex(columns=df.columns)
+        df.set_index(cols).reindex(new_index).reset_index().reindex(columns=df.columns)
     )
 
     assert_frame_equal(result, expected)
@@ -213,10 +201,7 @@ def test_dict_Index(df):
     new_index = range(df.numbers.min(), df.numbers.max() + 1)
     new_index = pd.MultiIndex.from_product([new_index, df.names], names=cols)
     expected = (
-        df.set_index(cols)
-        .reindex(new_index)
-        .reset_index()
-        .reindex(columns=columns)
+        df.set_index(cols).reindex(new_index).reset_index().reindex(columns=columns)
     )
 
     assert_frame_equal(result, expected)
@@ -240,10 +225,7 @@ def test_complete_Index(df):
     new_index = range(df.numbers.min(), df.numbers.max() + 1)
     new_index = pd.MultiIndex.from_product([new_index, df.names], names=cols)
     expected = (
-        df.set_index(cols)
-        .reindex(new_index)
-        .reset_index()
-        .reindex(columns=columns)
+        df.set_index(cols).reindex(new_index).reset_index().reindex(columns=columns)
     )
 
     assert_frame_equal(result, expected)
@@ -266,10 +248,7 @@ def test_complete_Series(df):
     new_index = range(df.numbers.min(), df.numbers.max() + 1)
     new_index = pd.MultiIndex.from_product([new_index, df.names], names=cols)
     expected = (
-        df.set_index(cols)
-        .reindex(new_index)
-        .reset_index()
-        .reindex(columns=columns)
+        df.set_index(cols).reindex(new_index).reset_index().reindex(columns=columns)
     )
 
     assert_frame_equal(result, expected)
@@ -297,10 +276,7 @@ def test_complete_callable(df):
     new_index = range(df.numbers.min(), df.numbers.max() + 1)
     new_index = pd.MultiIndex.from_product([new_index, df.names], names=cols)
     expected = (
-        df.set_index(cols)
-        .reindex(new_index)
-        .reset_index()
-        .reindex(columns=columns)
+        df.set_index(cols).reindex(new_index).reset_index().reindex(columns=columns)
     )
 
     assert_frame_equal(result, expected)
@@ -530,9 +506,7 @@ def test_complete_groupby():
     expected = (
         df.set_index("year")
         .groupby("state")
-        .value.apply(
-            lambda x: x.reindex(range(x.index.min(), x.index.max() + 1))
-        )
+        .value.apply(lambda x: x.reindex(range(x.index.min(), x.index.max() + 1)))
         .drop(columns="state")
         .reset_index()
     )

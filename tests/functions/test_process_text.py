@@ -39,9 +39,7 @@ def test_new_column_names_type(process_test_df):
 def test_column_name_presence(process_test_df):
     """Raise ValueError if `column_name` is not in dataframe."""
     with pytest.raises(ValueError):
-        process_test_df.process_text(
-            column_name="Test", string_function="lower"
-        )
+        process_test_df.process_text(column_name="Test", string_function="lower")
 
 
 @pytest.mark.xfail(reason="new_column_names is deprecated.")
@@ -98,9 +96,7 @@ def test_string_function_is_None(process_test_df):
 def test_str_split(process_test_df):
     """Test wrapper for Pandas `str.split()` method."""
 
-    expected = process_test_df.assign(
-        text=process_test_df["text"].str.split("_")
-    )
+    expected = process_test_df.assign(text=process_test_df["text"].str.split("_"))
 
     result = process_test_df.process_text(
         column_name="text", string_function="split", pat="_"
@@ -183,9 +179,7 @@ def test_str_cat_result_is_a_string_and_new_column_names(no_nulls_df):
 def test_str_get():
     """Test outcome for Pandas `.str.get()` method."""
 
-    df = pd.DataFrame(
-        {"text": ["aA", "bB", "cC", "dD"], "numbers": range(1, 5)}
-    )
+    df = pd.DataFrame({"text": ["aA", "bB", "cC", "dD"], "numbers": range(1, 5)})
 
     expected = df.assign(text=df["text"].str.get(1))
 
@@ -272,9 +266,7 @@ def test_return_dataframe_merge_is_not_None(returns_frame_1):
     expected_output = pd.concat(
         [
             returns_frame_1,
-            returns_frame_1["ticker"]
-            .str.split(" ", expand=True)
-            .add_prefix("new_"),
+            returns_frame_1["ticker"].str.split(" ", expand=True).add_prefix("new_"),
         ],
         axis="columns",
     )

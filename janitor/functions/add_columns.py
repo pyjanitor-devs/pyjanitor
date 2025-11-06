@@ -92,15 +92,11 @@ def add_column(
     check("column_name", column_name, [str])
 
     if column_name in df.columns:
-        raise ValueError(
-            f"Attempted to add column that already exists: " f"{column_name}."
-        )
+        raise ValueError(f"Attempted to add column that already exists: {column_name}.")
 
     nrows = len(df)
 
-    if hasattr(value, "__len__") and not isinstance(
-        value, (str, bytes, bytearray)
-    ):
+    if hasattr(value, "__len__") and not isinstance(value, (str, bytes, bytearray)):
         len_value = len(value)
 
         # if `value` is a list, ndarray, etc.
@@ -116,9 +112,7 @@ def add_column(
                 " not equal to number of DataFrame rows"
             )
         if not len_value:
-            raise ValueError(
-                "`value` has to be an iterable of minimum length 1"
-            )
+            raise ValueError("`value` has to be an iterable of minimum length 1")
 
     elif fill_remaining:
         # relevant if a scalar val was passed, yet fill_remaining == True

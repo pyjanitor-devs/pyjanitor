@@ -75,7 +75,7 @@ def pivot_longer(
         1           5.9          3.0           5.1          1.8  virginica
 
         Replicate pandas' melt:
-        >>> df.pivot_longer(index = 'Species')
+        >>> df.pivot_longer(index="Species")
              Species      variable  value
         0     setosa  Sepal.Length    5.1
         1  virginica  Sepal.Length    5.9
@@ -89,7 +89,7 @@ def pivot_longer(
         Convenient, flexible column selection in the `index` via the
         [`select`][janitor.functions.select.select] syntax:
         >>> from pandas.api.types import is_string_dtype
-        >>> df.pivot_longer(index = is_string_dtype)
+        >>> df.pivot_longer(index=is_string_dtype)
              Species      variable  value
         0     setosa  Sepal.Length    5.1
         1  virginica  Sepal.Length    5.9
@@ -102,10 +102,10 @@ def pivot_longer(
 
         Split the column labels into individual columns:
         >>> df.pivot_longer(
-        ...     index = 'Species',
-        ...     names_to = ('part', 'dimension'),
-        ...     names_sep = '.',
-        ...     sort_by_appearance = True,
+        ...     index="Species",
+        ...     names_to=("part", "dimension"),
+        ...     names_sep=".",
+        ...     sort_by_appearance=True,
         ... )
              Species   part dimension  value
         0     setosa  Sepal    Length    5.1
@@ -119,10 +119,10 @@ def pivot_longer(
 
         Retain parts of the column names as headers:
         >>> df.pivot_longer(
-        ...     index = 'Species',
-        ...     names_to = ('part', '.value'),
-        ...     names_sep = '.',
-        ...     sort_by_appearance = True,
+        ...     index="Species",
+        ...     names_to=("part", ".value"),
+        ...     names_sep=".",
+        ...     sort_by_appearance=True,
         ... )
              Species   part  Length  Width
         0     setosa  Sepal     5.1    3.5
@@ -136,9 +136,9 @@ def pivot_longer(
            id  new_sp_m5564  newrel_f65
         0   1             2           3
         >>> df.pivot_longer(
-        ...     index = 'id',
-        ...     names_to = ('diagnosis', 'gender', 'age'),
-        ...     names_pattern = r"new_?(.+)_(.)(\\d+)",
+        ...     index="id",
+        ...     names_to=("diagnosis", "gender", "age"),
+        ...     names_pattern=r"new_?(.+)_(.)(\\d+)",
         ... )
            id diagnosis gender   age  value
         0   1        sp      m  5564      2
@@ -146,20 +146,19 @@ def pivot_longer(
 
         Split the column labels for the above dataframe using named groups in `names_pattern`:
         >>> df.pivot_longer(
-        ...     index = 'id',
-        ...     names_pattern = r"new_?(?P<diagnosis>.+)_(?P<gender>.)(?P<age>\\d+)",
+        ...     index="id",
+        ...     names_pattern=r"new_?(?P<diagnosis>.+)_(?P<gender>.)(?P<age>\\d+)",
         ... )
             id diagnosis gender   age  value
         0   1        sp      m  5564      2
         1   1       rel      f    65      3
 
         Convert the dtypes of specific columns with `names_transform`:
-        >>> result = (df
-        ...          .pivot_longer(
-        ...              index = 'id',
-        ...              names_to = ('diagnosis', 'gender', 'age'),
-        ...              names_pattern = r"new_?(.+)_(.)(\\d+)",
-        ...              names_transform = {'gender': 'category', 'age':'int'})
+        >>> result = df.pivot_longer(
+        ...     index="id",
+        ...     names_to=("diagnosis", "gender", "age"),
+        ...     names_pattern=r"new_?(.+)_(.)(\\d+)",
+        ...     names_transform={"gender": "category", "age": "int"},
         ... )
         >>> result.dtypes
         id           int64
@@ -223,19 +222,21 @@ def pivot_longer(
         1    50    2      20      40
 
         Reshape the dataframe by passing a sequence to `names_pattern`:
-        >>> df = pd.DataFrame({'hr1': [514, 573],
-        ...                    'hr2': [545, 526],
-        ...                    'team': ['Red Sox', 'Yankees'],
-        ...                    'year1': [2007, 2007],
-        ...                    'year2': [2008, 2008]})
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "hr1": [514, 573],
+        ...         "hr2": [545, 526],
+        ...         "team": ["Red Sox", "Yankees"],
+        ...         "year1": [2007, 2007],
+        ...         "year2": [2008, 2008],
+        ...     }
+        ... )
         >>> df
            hr1  hr2     team  year1  year2
         0  514  545  Red Sox   2007   2008
         1  573  526  Yankees   2007   2008
         >>> df.pivot_longer(
-        ...     index = 'team',
-        ...     names_to = ['year', 'hr'],
-        ...     names_pattern = ['year', 'hr']
+        ...     index="team", names_to=["year", "hr"], names_pattern=["year", "hr"]
         ... )
               team   hr  year
         0  Red Sox  514  2007
@@ -245,10 +246,7 @@ def pivot_longer(
 
 
         Reshape the above dataframe by passing a dictionary to `names_pattern`:
-        >>> df.pivot_longer(
-        ...     index = 'team',
-        ...     names_pattern = {"year":"year", "hr":"hr"}
-        ... )
+        >>> df.pivot_longer(index="team", names_pattern={"year": "year", "hr": "hr"})
               team   hr  year
         0  Red Sox  514  2007
         1  Yankees  573  2007
@@ -257,29 +255,29 @@ def pivot_longer(
 
         Multiple values_to:
         >>> df = pd.DataFrame(
-        ...         {
-        ...             "City": ["Houston", "Austin", "Hoover"],
-        ...             "State": ["Texas", "Texas", "Alabama"],
-        ...             "Name": ["Aria", "Penelope", "Niko"],
-        ...             "Mango": [4, 10, 90],
-        ...             "Orange": [10, 8, 14],
-        ...             "Watermelon": [40, 99, 43],
-        ...             "Gin": [16, 200, 34],
-        ...             "Vodka": [20, 33, 18],
-        ...         },
-        ...     )
+        ...     {
+        ...         "City": ["Houston", "Austin", "Hoover"],
+        ...         "State": ["Texas", "Texas", "Alabama"],
+        ...         "Name": ["Aria", "Penelope", "Niko"],
+        ...         "Mango": [4, 10, 90],
+        ...         "Orange": [10, 8, 14],
+        ...         "Watermelon": [40, 99, 43],
+        ...         "Gin": [16, 200, 34],
+        ...         "Vodka": [20, 33, 18],
+        ...     },
+        ... )
         >>> df
               City    State      Name  Mango  Orange  Watermelon  Gin  Vodka
         0  Houston    Texas      Aria      4      10          40   16     20
         1   Austin    Texas  Penelope     10       8          99  200     33
         2   Hoover  Alabama      Niko     90      14          43   34     18
         >>> df.pivot_longer(
-        ...         index=["City", "State"],
-        ...         column_names=slice("Mango", "Vodka"),
-        ...         names_to=("Fruit", "Drink"),
-        ...         values_to=("Pounds", "Ounces"),
-        ...         names_pattern=["M|O|W", "G|V"],
-        ...     )
+        ...     index=["City", "State"],
+        ...     column_names=slice("Mango", "Vodka"),
+        ...     names_to=("Fruit", "Drink"),
+        ...     values_to=("Pounds", "Ounces"),
+        ...     names_pattern=["M|O|W", "G|V"],
+        ... )
               City    State       Fruit  Drink  Pounds  Ounces
         0  Houston    Texas       Mango    Gin       4    16.0
         1   Austin    Texas       Mango    Gin      10   200.0
@@ -453,10 +451,11 @@ def pivot_longer_spec(
            Sepal.Length  Sepal.Width  Petal.Length  Petal.Width    Species
         0           5.1          3.5           1.4          0.2     setosa
         1           5.9          3.0           5.1          1.8  virginica
-        >>> spec = {'.name':['Sepal.Length','Petal.Length',
-        ...                  'Sepal.Width','Petal.Width'],
-        ...         '.value':['Length','Length','Width','Width'],
-        ...         'part':['Sepal','Petal','Sepal','Petal']}
+        >>> spec = {
+        ...     ".name": ["Sepal.Length", "Petal.Length", "Sepal.Width", "Petal.Width"],
+        ...     ".value": ["Length", "Length", "Width", "Width"],
+        ...     "part": ["Sepal", "Petal", "Sepal", "Petal"],
+        ... }
         >>> spec = pd.DataFrame(spec)
         >>> spec
                   .name  .value   part
@@ -464,7 +463,7 @@ def pivot_longer_spec(
         1  Petal.Length  Length  Petal
         2   Sepal.Width   Width  Sepal
         3   Petal.Width   Width  Petal
-        >>> pivot_longer_spec(df=df,spec=spec)
+        >>> pivot_longer_spec(df=df, spec=spec)
              Species   part  Length  Width
         0     setosa  Sepal     5.1    3.5
         1  virginica  Sepal     5.9    3.0
@@ -509,13 +508,9 @@ def pivot_longer_spec(
     if not spec.columns.is_unique:
         raise ValueError("Kindly ensure the spec's columns is unique.")
     if ".name" not in spec.columns:
-        raise KeyError(
-            "Kindly ensure the spec DataFrame has a `.name` column."
-        )
+        raise KeyError("Kindly ensure the spec DataFrame has a `.name` column.")
     if ".value" not in spec.columns:
-        raise KeyError(
-            "Kindly ensure the spec DataFrame has a `.value` column."
-        )
+        raise KeyError("Kindly ensure the spec DataFrame has a `.value` column.")
     if spec.columns.tolist()[:2] != [".name", ".value"]:
         raise ValueError(
             "The first two columns of the spec DataFrame "
@@ -528,7 +523,7 @@ def pivot_longer_spec(
     exclude = df.columns.intersection(spec.columns)
     if not exclude.empty:
         raise ValueError(
-            f"Labels {*exclude, } in the spec DataFrame already exist "
+            f"Labels {(*exclude,)} in the spec DataFrame already exist "
             "as column labels in the source DataFrame. "
             "Kindly ensure the spec DataFrame's columns "
             "are not present in the source DataFrame."
@@ -544,9 +539,7 @@ def pivot_longer_spec(
 
     df = df.loc[:, spec[".name"]]
     if not df_columns_is_unique:
-        spec = pd.DataFrame({".name": df.columns}).merge(
-            spec, on=".name", how="inner"
-        )
+        spec = pd.DataFrame({".name": df.columns}).merge(spec, on=".name", how="inner")
     others = [label for label in spec if label not in {".name", ".value"}]
     return _pivot_longer_dot_value(
         df=df,
@@ -593,9 +586,7 @@ def _data_checks_pivot_longer(
         check("column_level", column_level, [int, str])
         df.columns = df.columns.get_level_values(column_level)
 
-    if any((names_sep, names_pattern)) and (
-        isinstance(df.columns, pd.MultiIndex)
-    ):
+    if any((names_sep, names_pattern)) and (isinstance(df.columns, pd.MultiIndex)):
         raise ValueError(
             "Unpivoting a MultiIndex column dataframe "
             "when names_sep or names_pattern is supplied "
@@ -659,14 +650,13 @@ def _data_checks_pivot_longer(
     if isinstance(values_to, (list, tuple)):
         if not isinstance(names_pattern, (list, tuple)):
             raise TypeError(
-                "values_to can be a list/tuple only "
-                "if names_pattern is a list/tuple."
+                "values_to can be a list/tuple only if names_pattern is a list/tuple."
             )
         if index:
             exclude = set(values_to).intersection(index)
             if exclude:
                 raise ValueError(
-                    f"Labels {*exclude, } in values_to already exist as "
+                    f"Labels {(*exclude,)} in values_to already exist as "
                     "column labels assigned to the dataframe's "
                     "index parameter. Kindly use unique labels."
                 )
@@ -684,25 +674,17 @@ def _data_checks_pivot_longer(
         )
 
     if names_sep and names_pattern:
-        raise ValueError(
-            "Only one of names_pattern or names_sep should be provided."
-        )
+        raise ValueError("Only one of names_pattern or names_sep should be provided.")
 
     if names_pattern is not None:
-        check(
-            "names_pattern", names_pattern, [str, Pattern, list, tuple, dict]
-        )
+        check("names_pattern", names_pattern, [str, Pattern, list, tuple, dict])
         if isinstance(names_pattern, (str, Pattern)):
             regex = re.compile(names_pattern)
             if names_to is None:
                 if regex.groupindex:
                     names_to = regex.groupindex.keys()
                     names_to = [
-                        (
-                            ".value"
-                            if ("_" in name) and (len(set(name)) == 1)
-                            else name
-                        )
+                        (".value" if ("_" in name) and (len(set(name)) == 1) else name)
                         for name in names_to
                     ]
                     len_names_to = len(names_to)
@@ -752,14 +734,11 @@ def _data_checks_pivot_longer(
                     check(f"{word} in values_to", word, [str])
                     if word in names_to:
                         raise ValueError(
-                            f"'{word}' in values_to "
-                            "already exists in names_to."
+                            f"'{word}' in values_to already exists in names_to."
                         )
 
                     if word in uniques:
-                        raise ValueError(
-                            f"'{word}' is duplicated in values_to."
-                        )
+                        raise ValueError(f"'{word}' is duplicated in values_to.")
                     uniques.add(word)
         # outer keys belong to names_to
         # if the values are dicts,
@@ -769,8 +748,7 @@ def _data_checks_pivot_longer(
         elif isinstance(names_pattern, dict):
             if names_to is not None:
                 raise ValueError(
-                    "names_to should be None "
-                    "when names_pattern is a dictionary"
+                    "names_to should be None when names_pattern is a dictionary"
                 )
             for key, value in names_pattern.items():
                 check(f"'{key}' in names_pattern", key, [str])
@@ -782,9 +760,7 @@ def _data_checks_pivot_longer(
                         "Kindly use a unique name"
                     )
             names_to = list(names_pattern)
-            is_dict = (
-                isinstance(arg, dict) for _, arg in names_pattern.items()
-            )
+            is_dict = (isinstance(arg, dict) for _, arg in names_pattern.items())
             if all(is_dict):
                 values_to = []
                 patterns = []
@@ -863,7 +839,7 @@ def _data_checks_pivot_longer(
             exclude = set(names_to).intersection(index)
             if exclude:
                 raise ValueError(
-                    f"Labels {*exclude, } in names_to already exist "
+                    f"Labels {(*exclude,)} in names_to already exist "
                     "as column labels assigned to the dataframe's "
                     "index parameter. Kindly provide unique label(s)."
                 )
@@ -877,9 +853,7 @@ def _data_checks_pivot_longer(
     if isinstance(df.columns, pd.MultiIndex):
         if not any(df.columns.names):
             if len(names_to) == 1:
-                names = [
-                    f"{names_to[0]}_{i}" for i in range(df.columns.nlevels)
-                ]
+                names = [f"{names_to[0]}_{i}" for i in range(df.columns.nlevels)]
                 df.columns = df.columns.set_names(names)
             elif len(names_to) == df.columns.nlevels:
                 df.columns = df.columns.set_names(names_to)
@@ -893,8 +867,7 @@ def _data_checks_pivot_longer(
                 )
         elif None in df.columns.names:
             raise ValueError(
-                "Kindly ensure there is no None "
-                "in the names for the column levels."
+                "Kindly ensure there is no None in the names for the column levels."
             )
     elif (
         not isinstance(df.columns, pd.MultiIndex)
@@ -1065,8 +1038,7 @@ def _pivot_longer_values_to_sequence(
     """
     columns = df.columns
     booleans = [
-        columns.str.contains(regex, na=False, regex=True)
-        for regex in names_pattern
+        columns.str.contains(regex, na=False, regex=True) for regex in names_pattern
     ]
     # within each match, check the individual matches
     # and raise an error if any is False
@@ -1181,8 +1153,7 @@ def _pivot_longer_names_pattern_sequence(
     """
     columns = df.columns
     booleans = [
-        columns.str.contains(regex, na=False, regex=True)
-        for regex in names_pattern
+        columns.str.contains(regex, na=False, regex=True) for regex in names_pattern
     ]
     # within each match, check the individual matches
     # and raise an error if any is False
@@ -1231,7 +1202,7 @@ def _pivot_longer_names_pattern_str(
     if nulls_found.any(axis=None):
         no_match = df.columns[nulls_found.any(axis="columns")]
         raise ValueError(
-            f"Column labels {*no_match,} "
+            f"Column labels {(*no_match,)} "
             "could not be matched with any of the groups "
             "in the provided regex. Kindly provide a regular expression "
             "(with the correct groups) that matches all labels in the columns."
@@ -1372,9 +1343,7 @@ def _pivot_longer_dot_value(
     df = {**index, **spec, **contents}
     df = pd.DataFrame(data=df, index=df_index, copy=False)
     if dropna:
-        df = _pivot_longer_dropna(
-            df=df, contents=contents, ignore_index=ignore_index
-        )
+        df = _pivot_longer_dropna(df=df, contents=contents, ignore_index=ignore_index)
     return df
 
 
@@ -1390,11 +1359,7 @@ def _dot_value_extra_checks(
 
     others = [name for name in names_to if name != ".value"]
     if names_to.count(".value") > 1:
-        arrays = [
-            pos
-            for pos, name in zip(spec.columns, names_to)
-            if name == ".value"
-        ]
+        arrays = [pos for pos, name in zip(spec.columns, names_to) if name == ".value"]
         arrays = [spec.pop(pos) for pos in arrays]
         arr = reduce(operator.add, arrays)
         if others:
@@ -1405,13 +1370,11 @@ def _dot_value_extra_checks(
 
     dot_value = spec[".value"]
     exclude = {
-        word
-        for word in dot_value.array
-        if (word in names_to) and (word != ".value")
+        word for word in dot_value.array if (word in names_to) and (word != ".value")
     }
     if exclude:
         raise ValueError(
-            f"Labels {*exclude, } in names_to already exist "
+            f"Labels {(*exclude,)} in names_to already exist "
             "in the new dataframe's columns. "
             "Kindly provide unique label(s)."
         )
@@ -1420,7 +1383,7 @@ def _dot_value_extra_checks(
         exclude = set(index).intersection(dot_value.array)
         if exclude:
             raise ValueError(
-                f"Labels {*exclude, } already exist "
+                f"Labels {(*exclude,)} already exist "
                 "as column labels assigned to the dataframe's "
                 "index parameter. Kindly provide unique label(s)."
             )
@@ -1781,9 +1744,7 @@ def _stack_non_dot_value_sort(spec, df, reps, index, ignore_index) -> tuple:
     return index, spec, df_index
 
 
-def _stack_non_dot_value_do_not_sort(
-    spec, df, reps, index, ignore_index
-) -> tuple:
+def _stack_non_dot_value_do_not_sort(spec, df, reps, index, ignore_index) -> tuple:
     """
     Flip components that are not .value
     into long form.
@@ -1899,10 +1860,12 @@ def pivot_wider(
     Examples:
         >>> import pandas as pd
         >>> import janitor
-        >>> df = [{'dep': 5.5, 'step': 1, 'a': 20, 'b': 30},
-        ...       {'dep': 5.5, 'step': 2, 'a': 25, 'b': 37},
-        ...       {'dep': 6.1, 'step': 1, 'a': 22, 'b': 19},
-        ...       {'dep': 6.1, 'step': 2, 'a': 18, 'b': 29}]
+        >>> df = [
+        ...     {"dep": 5.5, "step": 1, "a": 20, "b": 30},
+        ...     {"dep": 5.5, "step": 2, "a": 25, "b": 37},
+        ...     {"dep": 6.1, "step": 1, "a": 22, "b": 19},
+        ...     {"dep": 6.1, "step": 2, "a": 18, "b": 29},
+        ... ]
         >>> df = pd.DataFrame(df)
         >>> df
            dep  step   a   b
@@ -1912,29 +1875,29 @@ def pivot_wider(
         3  6.1     2  18  29
 
         Pivot and flatten columns:
-        >>> df.pivot_wider( # doctest: +SKIP
-        ...     index = "dep",
-        ...     names_from = "step",
+        >>> df.pivot_wider(  # doctest: +SKIP
+        ...     index="dep",
+        ...     names_from="step",
         ... )
            dep  a_1  a_2  b_1  b_2
         0  5.5   20   25   30   37
         1  6.1   22   18   19   29
 
         Modify columns with `names_sep`:
-        >>> df.pivot_wider( # doctest: +SKIP
-        ...     index = "dep",
-        ...     names_from = "step",
-        ...     names_sep = "",
+        >>> df.pivot_wider(  # doctest: +SKIP
+        ...     index="dep",
+        ...     names_from="step",
+        ...     names_sep="",
         ... )
            dep  a1  a2  b1  b2
         0  5.5  20  25  30  37
         1  6.1  22  18  19  29
 
         Modify columns with `names_glue`:
-        >>> df.pivot_wider( # doctest: +SKIP
-        ...     index = "dep",
-        ...     names_from = "step",
-        ...     names_glue = "{_value}_step{step}",
+        >>> df.pivot_wider(  # doctest: +SKIP
+        ...     index="dep",
+        ...     names_from="step",
+        ...     names_glue="{_value}_step{step}",
         ... )
            dep  a_step1  a_step2  b_step1  b_step2
         0  5.5       20       25       30       37
@@ -1950,7 +1913,7 @@ def pivot_wider(
         ...         ),
         ...         "value": (2, 3, 1, 5),
         ...     },
-        ... index=[0, 0, 0, 0],
+        ...     index=[0, 0, 0, 0],
         ... )
         >>> daily
            day  value
@@ -1958,39 +1921,41 @@ def pivot_wider(
         0  Thu      3
         0  Fri      1
         0  Mon      5
-        >>> daily.pivot_wider(names_from='day', values_from='value') # doctest: +SKIP
+        >>> daily.pivot_wider(names_from="day", values_from="value")  # doctest: +SKIP
            Tue  Thu  Fri  Mon
         0    2    3    1    5
-        >>> (daily # doctest: +SKIP
-        ... .pivot_wider(
-        ...     names_from='day',
-        ...     values_from='value',
-        ...     names_expand=True)
+        >>> (
+        ...     daily.pivot_wider(  # doctest: +SKIP
+        ...         names_from="day", values_from="value", names_expand=True
+        ...     )
         ... )
            Mon  Tue  Wed  Thu  Fri  Sat  Sun
         0    5    2  NaN    3    1  NaN  NaN
 
         Expand the index to expose implicit missing values
         - this applies only to categorical columns:
-        >>> daily = daily.assign(letter = list('ABBA'))
+        >>> daily = daily.assign(letter=list("ABBA"))
         >>> daily
            day  value letter
         0  Tue      2      A
         0  Thu      3      B
         0  Fri      1      B
         0  Mon      5      A
-        >>> daily.pivot_wider(index='day',names_from='letter',values_from='value') # doctest: +SKIP
+        >>> daily.pivot_wider(
+        ...     index="day", names_from="letter", values_from="value"
+        ... )  # doctest: +SKIP
            day    A    B
         0  Tue  2.0  NaN
         1  Thu  NaN  3.0
         2  Fri  NaN  1.0
         3  Mon  5.0  NaN
-        >>> (daily # doctest: +SKIP
-        ... .pivot_wider(
-        ...     index='day',
-        ...     names_from='letter',
-        ...     values_from='value',
-        ...     index_expand=True)
+        >>> (
+        ...     daily.pivot_wider(  # doctest: +SKIP
+        ...         index="day",
+        ...         names_from="letter",
+        ...         values_from="value",
+        ...         index_expand=True,
+        ...     )
         ... )
            day    A    B
         0  Mon  5.0  NaN
@@ -2121,8 +2086,7 @@ def _computations_pivot_wider(
     if index_expand and index:
         any_categoricals = (indexer.get_level_values(name) for name in index)
         any_categoricals = (
-            isinstance(entry, pd.CategoricalIndex)
-            for entry in any_categoricals
+            isinstance(entry, pd.CategoricalIndex) for entry in any_categoricals
         )
         any_categoricals = any(any_categoricals)
         if any_categoricals:
@@ -2131,12 +2095,9 @@ def _computations_pivot_wider(
 
     indexer = out.columns
     if names_expand:
+        any_categoricals = (indexer.get_level_values(name) for name in names_from)
         any_categoricals = (
-            indexer.get_level_values(name) for name in names_from
-        )
-        any_categoricals = (
-            isinstance(entry, pd.CategoricalIndex)
-            for entry in any_categoricals
+            isinstance(entry, pd.CategoricalIndex) for entry in any_categoricals
         )
         any_categoricals = any(any_categoricals)
         if any_categoricals:
@@ -2168,29 +2129,22 @@ def _computations_pivot_wider(
             )
         try:
             # there'll only be one None
-            names_from = [
-                "_value" if ent is None else ent for ent in new_columns.names
-            ]
+            names_from = ["_value" if ent is None else ent for ent in new_columns.names]
             new_columns = [
                 names_glue.format_map(dict(zip(names_from, entry)))
                 for entry in new_columns
             ]
         except KeyError as error:
-            raise KeyError(
-                f"{error} is not a column label in names_from."
-            ) from error
+            raise KeyError(f"{error} is not a column label in names_from.") from error
 
         out.columns = new_columns
     elif names_glue:
         try:
             new_columns = [
-                names_glue.format_map({names_from[0]: entry})
-                for entry in out.columns
+                names_glue.format_map({names_from[0]: entry}) for entry in out.columns
             ]
         except KeyError as error:
-            raise KeyError(
-                f"{error} is not a column label in names_from."
-            ) from error
+            raise KeyError(f"{error} is not a column label in names_from.") from error
         out.columns = new_columns
     else:
         names_sep = "_" if names_sep is None else names_sep
@@ -2225,9 +2179,7 @@ def _data_checks_pivot_wider(
     checking happens.
     """
     if names_from is None:
-        raise ValueError(
-            "pivot_wider() is missing 1 required argument: 'names_from'"
-        )
+        raise ValueError("pivot_wider() is missing 1 required argument: 'names_from'")
     names_from = get_index_labels([names_from], df, axis="columns")
     try:
         # hack to align with pd.pivot
@@ -2305,9 +2257,7 @@ def _expand(indexer, retain_categories):
         if not retain_categories:
             indexer = pd.MultiIndex.from_product(indexer.levels, names=names)
         else:
-            indexer = [
-                indexer.get_level_values(n) for n in range(indexer.nlevels)
-            ]
+            indexer = [indexer.get_level_values(n) for n in range(indexer.nlevels)]
             indexer = [
                 (
                     pd.Categorical(
@@ -2359,26 +2309,26 @@ def pivot_wider_spec(
         >>> import pandas as pd
         >>> from janitor import pivot_wider_spec
         >>> df = pd.DataFrame(
-        ... [
-        ...    {"famid": 1, "birth": 1, "age": 1, "ht": 2.8},
-        ...    {"famid": 1, "birth": 1, "age": 2, "ht": 3.4},
-        ...    {"famid": 1, "birth": 2, "age": 1, "ht": 2.9},
-        ...    {"famid": 1, "birth": 2, "age": 2, "ht": 3.8},
-        ...    {"famid": 1, "birth": 3, "age": 1, "ht": 2.2},
-        ...    {"famid": 1, "birth": 3, "age": 2, "ht": 2.9},
-        ...    {"famid": 2, "birth": 1, "age": 1, "ht": 2.0},
-        ...    {"famid": 2, "birth": 1, "age": 2, "ht": 3.2},
-        ...    {"famid": 2, "birth": 2, "age": 1, "ht": 1.8},
-        ...    {"famid": 2, "birth": 2, "age": 2, "ht": 2.8},
-        ...    {"famid": 2, "birth": 3, "age": 1, "ht": 1.9},
-        ...    {"famid": 2, "birth": 3, "age": 2, "ht": 2.4},
-        ...    {"famid": 3, "birth": 1, "age": 1, "ht": 2.2},
-        ...    {"famid": 3, "birth": 1, "age": 2, "ht": 3.3},
-        ...    {"famid": 3, "birth": 2, "age": 1, "ht": 2.3},
-        ...    {"famid": 3, "birth": 2, "age": 2, "ht": 3.4},
-        ...    {"famid": 3, "birth": 3, "age": 1, "ht": 2.1},
-        ...    {"famid": 3, "birth": 3, "age": 2, "ht": 2.9},
-        ... ]
+        ...     [
+        ...         {"famid": 1, "birth": 1, "age": 1, "ht": 2.8},
+        ...         {"famid": 1, "birth": 1, "age": 2, "ht": 3.4},
+        ...         {"famid": 1, "birth": 2, "age": 1, "ht": 2.9},
+        ...         {"famid": 1, "birth": 2, "age": 2, "ht": 3.8},
+        ...         {"famid": 1, "birth": 3, "age": 1, "ht": 2.2},
+        ...         {"famid": 1, "birth": 3, "age": 2, "ht": 2.9},
+        ...         {"famid": 2, "birth": 1, "age": 1, "ht": 2.0},
+        ...         {"famid": 2, "birth": 1, "age": 2, "ht": 3.2},
+        ...         {"famid": 2, "birth": 2, "age": 1, "ht": 1.8},
+        ...         {"famid": 2, "birth": 2, "age": 2, "ht": 2.8},
+        ...         {"famid": 2, "birth": 3, "age": 1, "ht": 1.9},
+        ...         {"famid": 2, "birth": 3, "age": 2, "ht": 2.4},
+        ...         {"famid": 3, "birth": 1, "age": 1, "ht": 2.2},
+        ...         {"famid": 3, "birth": 1, "age": 2, "ht": 3.3},
+        ...         {"famid": 3, "birth": 2, "age": 1, "ht": 2.3},
+        ...         {"famid": 3, "birth": 2, "age": 2, "ht": 3.4},
+        ...         {"famid": 3, "birth": 3, "age": 1, "ht": 2.1},
+        ...         {"famid": 3, "birth": 3, "age": 2, "ht": 2.9},
+        ...     ]
         ... )
         >>> df
             famid  birth  age   ht
@@ -2400,15 +2350,13 @@ def pivot_wider_spec(
         15      3      2    2  3.4
         16      3      3    1  2.1
         17      3      3    2  2.9
-        >>> spec = {".name": ["ht1", "ht2"],
-        ...         ".value": ["ht", "ht"],
-        ...         "age": [1, 2]}
+        >>> spec = {".name": ["ht1", "ht2"], ".value": ["ht", "ht"], "age": [1, 2]}
         >>> spec = pd.DataFrame(spec)
         >>> spec
           .name .value  age
         0   ht1     ht    1
         1   ht2     ht    2
-        >>> pivot_wider_spec(df=df,spec=spec, index=['famid','birth'])
+        >>> pivot_wider_spec(df=df, spec=spec, index=["famid", "birth"])
            famid  birth  ht1  ht2
         0      1      1  2.8  3.4
         1      1      2  2.9  3.8
@@ -2449,13 +2397,9 @@ def pivot_wider_spec(
     if not spec.columns.is_unique:
         raise ValueError("Kindly ensure the spec's columns is unique.")
     if ".name" not in spec.columns:
-        raise KeyError(
-            "Kindly ensure the spec DataFrame has a `.name` column."
-        )
+        raise KeyError("Kindly ensure the spec DataFrame has a `.name` column.")
     if ".value" not in spec.columns:
-        raise KeyError(
-            "Kindly ensure the spec DataFrame has a `.value` column."
-        )
+        raise KeyError("Kindly ensure the spec DataFrame has a `.value` column.")
     if spec.columns.tolist()[:2] != [".name", ".value"]:
         raise ValueError(
             "The first two columns of the spec DataFrame "
@@ -2464,8 +2408,7 @@ def pivot_wider_spec(
         )
     if spec.columns.size == 2:
         raise ValueError(
-            "Kindly provide the column(s) "
-            "to use to make new frame’s columns"
+            "Kindly provide the column(s) to use to make new frame’s columns"
         )
     columns = spec.columns[2:]
     values = spec[".value"].unique()

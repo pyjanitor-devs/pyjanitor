@@ -38,7 +38,7 @@ def rename_column(
         >>> import pandas as pd
         >>> import janitor
         >>> df = pd.DataFrame({"a": list(range(3)), "b": list("abc")})
-        >>> df.rename_column(old_column_name='a', new_column_name='a_new')
+        >>> df.rename_column(old_column_name="a", new_column_name="a_new")
            a_new  b
         0      0  a
         1      1  b
@@ -124,9 +124,7 @@ def rename_columns(
     """  # noqa: E501
 
     if new_column_names is None and function is None:
-        raise ValueError(
-            "One of new_column_names or function must be provided"
-        )
+        raise ValueError("One of new_column_names or function must be provided")
 
     if new_column_names is not None:
         check_column(df, new_column_names)

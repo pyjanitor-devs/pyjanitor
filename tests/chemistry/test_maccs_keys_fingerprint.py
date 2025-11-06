@@ -15,8 +15,6 @@ pytestmark = pytest.mark.skipif(
 @pytest.mark.chemistry
 def test_maccs_keys_fingerprint(chemdf):
     """Test conversion of SMILES strings to MACCS keys fingerprints."""
-    maccs_keys = chemdf.smiles2mol("smiles", "mol").maccs_keys_fingerprint(
-        "mol"
-    )
+    maccs_keys = chemdf.smiles2mol("smiles", "mol").maccs_keys_fingerprint("mol")
     assert maccs_keys.shape == (10, 167)
     assert set(maccs_keys.to_numpy().flatten().tolist()) == set([0, 1])

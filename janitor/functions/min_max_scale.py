@@ -38,7 +38,7 @@ def min_max_scale(
     Examples:
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame({'a':[1, 2], 'b':[0, 1]})
+        >>> df = pd.DataFrame({"a": [1, 2], "b": [0, 1]})
         >>> df.min_max_scale()
              a    b
         0  0.0  0.0
@@ -52,7 +52,7 @@ def min_max_scale(
 
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame({'a':[1, 2], 'b':[0, 1]})
+        >>> df = pd.DataFrame({"a": [1, 2], "b": [0, 1]})
         >>> df.min_max_scale(feature_range=(0, 100))
                a      b
         0    0.0    0.0
@@ -66,7 +66,7 @@ def min_max_scale(
 
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame({'a':[1, 2], 'b':[0, 1], 'c': [1, 0]})
+        >>> df = pd.DataFrame({"a": [1, 2], "b": [0, 1], "c": [1, 0]})
         >>> df.min_max_scale(
         ...     feature_range=(0, 100),
         ...     column_name=["a", "c"],
@@ -82,7 +82,7 @@ def min_max_scale(
                a  b     c
         0   50.0  0  50.0
         1  100.0  1   0.0
-        >>> df.min_max_scale(feature_range=(0, 100), column_name='a')
+        >>> df.min_max_scale(feature_range=(0, 100), column_name="a")
                a  b  c
         0    0.0  0  1
         1  100.0  1  0

@@ -96,7 +96,5 @@ def test_charac():
 def test_clean_column_values():
     """Clean column values"""
     raw = pl.DataFrame({"raw": ["Abçdê fgí j"]})
-    outcome = raw.with_columns(
-        pl.col("raw").make_clean_names(strip_accents=True)
-    )
+    outcome = raw.with_columns(pl.col("raw").make_clean_names(strip_accents=True))
     assert list(outcome)[0][0] == "abcde_fgi_j"

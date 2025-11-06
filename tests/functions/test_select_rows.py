@@ -27,9 +27,7 @@ def multiindex():
     """pytest fixture."""
     arrays = [
         ["bar", "bar", "baz", "baz", "foo", "foo", "qux", "qux"],
-        pd.Categorical(
-            ["one", "two", "one", "two", "one", "two", "one", "two"]
-        ),
+        pd.Categorical(["one", "two", "one", "two", "one", "two", "one", "two"]),
     ]
     index = pd.MultiIndex.from_arrays(arrays, names=["first", "second"])
     return pd.DataFrame(np.random.randn(8, 4), index=index)
@@ -109,9 +107,7 @@ def test_boolean_list_uneven_length(dates):
     Raise ValueError if `rows` is a list of booleans
     and the length is unequal to the length of the dataframe's index
     """
-    with pytest.raises(
-        ValueError, match="The length of the list of booleans.+"
-    ):
+    with pytest.raises(ValueError, match="The length of the list of booleans.+"):
         dates.select_rows([True, False])
 
 
@@ -178,9 +174,7 @@ def test_callable(dates):
     Test output for callable
     """
     func = lambda df: df.index.month == 4  # noqa : E731
-    assert_frame_equal(
-        dates.loc[func], dates.select_rows(func), check_freq=False
-    )
+    assert_frame_equal(dates.loc[func], dates.select_rows(func), check_freq=False)
 
 
 def test_multiindex_tuple_present(multiindex):

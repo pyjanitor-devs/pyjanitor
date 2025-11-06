@@ -29,9 +29,7 @@ def timeseries_dataframe() -> pd.DataFrame:
 @pytest.mark.timeseries
 def test_sort_timestamps_monotonically(timeseries_dataframe):
     """Test sort_timestamps_monotonically for ascending order"""
-    df = timeseries_dataframe.shuffle(
-        reset_index=False
-    ).sort_timestamps_monotonically()
+    df = timeseries_dataframe.shuffle(reset_index=False).sort_timestamps_monotonically()
     assert df.equals(timeseries_dataframe)
 
 
@@ -48,7 +46,7 @@ def test_sort_timestamps_monotonically_strict(timeseries_dataframe):
     """Test sort_timestamps_monotonically for index duplication handling"""
     df = timeseries_dataframe.shuffle(reset_index=False)
     random_number = df.index[randint(1, len(timeseries_dataframe))]
-    df = pd.concat(
-        [df, df.loc[[random_number], :]]
-    ).sort_timestamps_monotonically(direction="increasing", strict=True)
+    df = pd.concat([df, df.loc[[random_number], :]]).sort_timestamps_monotonically(
+        direction="increasing", strict=True
+    )
     assert df.equals(timeseries_dataframe)

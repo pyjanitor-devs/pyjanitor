@@ -131,10 +131,7 @@ def test_glue_output(mi_index):
     expected = mi_index.collapse_levels(glue="{A}{B}{C}{D}", axis="index")
     index = reduce(
         lambda x, y: x + y,
-        [
-            mi_index.index.get_level_values(num)
-            for num in range(mi_index.index.nlevels)
-        ],
+        [mi_index.index.get_level_values(num) for num in range(mi_index.index.nlevels)],
     )
     actual = mi_index.copy()
     actual.index = index

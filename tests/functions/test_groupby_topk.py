@@ -66,26 +66,20 @@ def test_descending_groupby_k_3(df):
         .sort_index(axis="columns")
     )
     assert_frame_equal(
-        df.groupby_topk("result", "age", 3, ascending=False).sort_index(
-            axis="columns"
-        ),
+        df.groupby_topk("result", "age", 3, ascending=False).sort_index(axis="columns"),
         expected,
     )
 
 
 def test_wrong_groupby_column_name(df):
     """Raise Value Error if wrong groupby column name is provided."""
-    with pytest.raises(
-        ValueError, match="RESULT not present in dataframe columns!"
-    ):
+    with pytest.raises(ValueError, match="RESULT not present in dataframe columns!"):
         df.groupby_topk("RESULT", "age", 3)
 
 
 def test_wrong_sort_column_name(df):
     """Raise Value Error if wrong sort column name is provided."""
-    with pytest.raises(
-        ValueError, match="Age not present in dataframe columns!"
-    ):
+    with pytest.raises(ValueError, match="Age not present in dataframe columns!"):
         df.groupby_topk("result", "Age", 3)
 
 

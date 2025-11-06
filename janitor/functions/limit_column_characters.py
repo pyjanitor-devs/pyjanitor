@@ -81,9 +81,7 @@ def limit_column_characters(
     final_col_names = []
     for idx, col_name in enumerate(col_names):
         if col_name_count[idx] > 0:
-            col_name_to_append = (
-                col_name + col_separator + str(col_name_count[idx])
-            )
+            col_name_to_append = col_name + col_separator + str(col_name_count[idx])
             final_col_names.append(col_name_to_append)
         else:
             final_col_names.append(col_name)

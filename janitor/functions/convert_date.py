@@ -28,7 +28,7 @@ def convert_excel_date(
         0  39690
         1  39690
         2  37118
-        >>> df.convert_excel_date('date')
+        >>> df.convert_excel_date("date")
                 date
         0 2008-08-30
         1 2008-08-30
@@ -46,9 +46,7 @@ def convert_excel_date(
         column_names = [column_names]
     # https://stackoverflow.com/a/65460255/7175713
     dictionary = {
-        column_name: pd.to_datetime(
-            df[column_name], unit="D", origin="1899-12-30"
-        )
+        column_name: pd.to_datetime(df[column_name], unit="D", origin="1899-12-30")
         for column_name in column_names
     }
 
@@ -77,7 +75,7 @@ def convert_matlab_date(
         1  737124.815863
         2  737124.498500
         3  737124.000000
-        >>> df.convert_matlab_date('date')
+        >>> df.convert_matlab_date("date")
                                    date
         0 2018-03-06 00:00:00.000000000
         1 2018-03-05 19:34:50.563199671
@@ -132,7 +130,7 @@ def convert_unix_date(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
         0  1651510462
         1    53394822
         2  1126233195
-        >>> df.convert_unix_date('date')
+        >>> df.convert_unix_date("date")
                          date
         0 2022-05-02 16:54:22
         1 1971-09-10 23:53:42

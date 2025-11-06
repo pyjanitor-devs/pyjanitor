@@ -33,9 +33,7 @@ def test_spec_is_a_dataframe(df_checks):
 
 def test_spec_columns_not_unique(df_checks):
     """Raise ValueError if the spec's columns is not unique."""
-    with pytest.raises(
-        ValueError, match="Kindly ensure the spec's columns is unique."
-    ):
+    with pytest.raises(ValueError, match="Kindly ensure the spec's columns is unique."):
         df_checks.pipe(
             pivot_longer_spec,
             spec=spec.set_axis(labels=[".name", ".name", "age"], axis=1),
@@ -89,9 +87,7 @@ def test_spec_columns_dot_name_unique(df_checks):
     with pytest.raises(
         ValueError, match="The labels in the `.name` column should be unique.+"
     ):
-        df_checks.pipe(
-            pivot_longer_spec, spec=spec.assign(**{".name": ["ht2", "ht2"]})
-        )
+        df_checks.pipe(pivot_longer_spec, spec=spec.assign(**{".name": ["ht2", "ht2"]}))
 
 
 def test_spec_columns_index(df_checks):
@@ -101,16 +97,12 @@ def test_spec_columns_index(df_checks):
         ValueError,
         match=msg,
     ):
-        df_checks.pipe(
-            pivot_longer_spec, spec=spec.assign(birth=["ht2", "ht2"])
-        )
+        df_checks.pipe(pivot_longer_spec, spec=spec.assign(birth=["ht2", "ht2"]))
 
 
 def test_sort_by_appearance(df_checks):
     """Raise error if sort_by_appearance is not boolean."""
-    with pytest.raises(
-        TypeError, match="sort_by_appearance should be one of.+"
-    ):
+    with pytest.raises(TypeError, match="sort_by_appearance should be one of.+"):
         df_checks.pipe(pivot_longer_spec, spec=spec, sort_by_appearance=1)
 
 
@@ -122,9 +114,7 @@ def test_ignore_index(df_checks):
 
 def test_df_columns_is_unique(df_checks):
     """Raise error if df_columns_is_unique is not boolean."""
-    with pytest.raises(
-        TypeError, match="df_columns_is_unique should be one of.+"
-    ):
+    with pytest.raises(TypeError, match="df_columns_is_unique should be one of.+"):
         df_checks.pipe(pivot_longer_spec, spec=spec, df_columns_is_unique=1)
 
 
@@ -161,9 +151,7 @@ def test_pivot_longer_spec_dot_value_only(df_checks):
     specs = pd.DataFrame(specs)
     actual = df_checks.pipe(pivot_longer_spec, spec=specs)
     expected = (
-        pd.wide_to_long(
-            df_checks, stubnames="ht", i=["famid", "birth"], j="age"
-        )
+        pd.wide_to_long(df_checks, stubnames="ht", i=["famid", "birth"], j="age")
         .reset_index()
         .drop(columns="age")
     )

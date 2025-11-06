@@ -26,7 +26,7 @@ def join_apply(
 
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame({"a":[1, 2, 3], "b": [2, 3, 4]})
+        >>> df = pd.DataFrame({"a": [1, 2, 3], "b": [2, 3, 4]})
         >>> df
            a  b
         0  1  2

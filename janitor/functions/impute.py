@@ -51,11 +51,13 @@ def impute(
         >>> import numpy as np
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame({
-        ...     "a": [1, 2, 3],
-        ...     "sales": np.nan,
-        ...     "score": [np.nan, 3, 2],
-        ... })
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "a": [1, 2, 3],
+        ...         "sales": np.nan,
+        ...         "score": [np.nan, 3, 2],
+        ...     }
+        ... )
         >>> df
            a  sales  score
         0  1    NaN    NaN
@@ -102,8 +104,7 @@ def impute(
 
     if value is not None and statistic_column_name is not None:
         raise ValueError(
-            "Only one of `value` or `statistic_column_name` should be "
-            "provided."
+            "Only one of `value` or `statistic_column_name` should be provided."
         )
 
     column_names = get_index_labels([column_names], df, axis="columns")
@@ -127,9 +128,7 @@ def impute(
         }
         # Check that the statistic keyword argument is one of the approved.
         if statistic_column_name not in funcs:
-            raise KeyError(
-                f"`statistic_column_name` must be one of {funcs.keys()}."
-            )
+            raise KeyError(f"`statistic_column_name` must be one of {funcs.keys()}.")
 
         value = dict(product(column_names, [funcs[statistic_column_name]]))
 

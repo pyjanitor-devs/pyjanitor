@@ -18,11 +18,13 @@ def remove_empty(df: pd.DataFrame, reset_index: bool = True) -> pd.DataFrame:
         >>> import numpy as np
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame({
-        ...     "a": [1, np.nan, 2],
-        ...     "b": [3, np.nan, 4],
-        ...     "c": [np.nan, np.nan, np.nan],
-        ... })
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "a": [1, np.nan, 2],
+        ...         "b": [3, np.nan, 4],
+        ...         "c": [np.nan, np.nan, np.nan],
+        ...     }
+        ... )
         >>> df
              a    b   c
         0  1.0  3.0 NaN

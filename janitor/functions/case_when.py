@@ -87,10 +87,12 @@ def case_when(
         3   2    5     9
         4  hi  bye  wait
         >>> df.case_when(
-        ...     ((df.a == 0) & (df.b != 0)) | (df.c == "wait"), df.a,
-        ...     (df.b == 0) & (df.a == 0), "x",
-        ...     default = df.c,
-        ...     column_name = "value",
+        ...     ((df.a == 0) & (df.b != 0)) | (df.c == "wait"),
+        ...     df.a,
+        ...     (df.b == 0) & (df.a == 0),
+        ...     "x",
+        ...     default=df.c,
+        ...     column_name="value",
         ... )
             a    b     c value
         0   0    0     6     x
@@ -137,9 +139,7 @@ def case_when(
     check("column_name", column_name, [str])
     len_args = len(args)
     if len_args < 2:
-        raise ValueError(
-            "At least two arguments are required for the `args` parameter"
-        )
+        raise ValueError("At least two arguments are required for the `args` parameter")
 
     if len_args % 2:
         if default is None:
@@ -158,8 +158,8 @@ def case_when(
         else:
             raise ValueError(
                 "The number of conditions and values do not match. "
-                f"There are {len_args - len_args//2} conditions "
-                f"and {len_args//2} values."
+                f"There are {len_args - len_args // 2} conditions "
+                f"and {len_args // 2} values."
             )
 
     booleans = []

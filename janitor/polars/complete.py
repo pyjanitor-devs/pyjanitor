@@ -51,12 +51,14 @@ def expand(
     Examples:
         >>> import polars as pl
         >>> import janitor.polars
-        >>> data = [{'type': 'apple', 'year': 2010, 'size': 'XS'},
-        ...         {'type': 'orange', 'year': 2010, 'size': 'S'},
-        ...         {'type': 'apple', 'year': 2012, 'size': 'M'},
-        ...         {'type': 'orange', 'year': 2010, 'size': 'S'},
-        ...         {'type': 'orange', 'year': 2011, 'size': 'S'},
-        ...         {'type': 'orange', 'year': 2012, 'size': 'M'}]
+        >>> data = [
+        ...     {"type": "apple", "year": 2010, "size": "XS"},
+        ...     {"type": "orange", "year": 2010, "size": "S"},
+        ...     {"type": "apple", "year": 2012, "size": "M"},
+        ...     {"type": "orange", "year": 2010, "size": "S"},
+        ...     {"type": "orange", "year": 2011, "size": "S"},
+        ...     {"type": "orange", "year": 2012, "size": "M"},
+        ... ]
         >>> df = pl.DataFrame(data)
         >>> df
         shape: (6, 3)
@@ -74,7 +76,7 @@ def expand(
         └────────┴──────┴──────┘
 
         Get unique observations:
-        >>> df.expand('type',sort=True)
+        >>> df.expand("type", sort=True)
         shape: (2, 1)
         ┌────────┐
         │ type   │
@@ -84,7 +86,7 @@ def expand(
         │ apple  │
         │ orange │
         └────────┘
-        >>> df.expand('size',sort=True)
+        >>> df.expand("size", sort=True)
         shape: (3, 1)
         ┌──────┐
         │ size │
@@ -95,7 +97,7 @@ def expand(
         │ S    │
         │ XS   │
         └──────┘
-        >>> df.expand('type', 'size',sort=True)
+        >>> df.expand("type", "size", sort=True)
         shape: (6, 2)
         ┌────────┬──────┐
         │ type   ┆ size │
@@ -110,7 +112,7 @@ def expand(
         │ orange ┆ XS   │
         └────────┴──────┘
         >>> with pl.Config(tbl_rows=-1):
-        ...     df.expand('type','size','year',sort=True)
+        ...     df.expand("type", "size", "year", sort=True)
         shape: (18, 3)
         ┌────────┬──────┬──────┐
         │ type   ┆ size ┆ year │
@@ -138,7 +140,7 @@ def expand(
         └────────┴──────┴──────┘
 
         Get observations that only occur in the data:
-        >>> df.expand(pl.struct('type','size'),sort=True).unnest('type')
+        >>> df.expand(pl.struct("type", "size"), sort=True).unnest("type")
         shape: (4, 2)
         ┌────────┬──────┐
         │ type   ┆ size │
@@ -150,7 +152,7 @@ def expand(
         │ orange ┆ M    │
         │ orange ┆ S    │
         └────────┴──────┘
-        >>> df.expand(pl.struct('type','size','year'),sort=True).unnest('type')
+        >>> df.expand(pl.struct("type", "size", "year"), sort=True).unnest("type")
         shape: (5, 3)
         ┌────────┬──────┬──────┐
         │ type   ┆ size ┆ year │
@@ -166,7 +168,12 @@ def expand(
 
         Expand the DataFrame to include new observations:
         >>> with pl.Config(tbl_rows=-1):
-        ...     df.expand('type','size',pl.int_range(2010,2014).alias('new_year'),sort=True)
+        ...     df.expand(
+        ...         "type",
+        ...         "size",
+        ...         pl.int_range(2010, 2014).alias("new_year"),
+        ...         sort=True,
+        ...     )
         shape: (24, 3)
         ┌────────┬──────┬──────────┐
         │ type   ┆ size ┆ new_year │
@@ -200,9 +207,9 @@ def expand(
         └────────┴──────┴──────────┘
 
         Filter for missing observations:
-        >>> columns = ('type','size','year')
+        >>> columns = ("type", "size", "year")
         >>> with pl.Config(tbl_rows=-1):
-        ...     df.expand(*columns).join(df, how='anti', on=columns).sort(by=pl.all())
+        ...     df.expand(*columns).join(df, how="anti", on=columns).sort(by=pl.all())
         shape: (13, 3)
         ┌────────┬──────┬──────┐
         │ type   ┆ size ┆ year │
@@ -226,7 +233,7 @@ def expand(
 
         Expand within each group, using `by`:
         >>> with pl.Config(tbl_rows=-1):
-        ...     df.expand('year','size',by='type',sort=True)
+        ...     df.expand("year", "size", by="type", sort=True)
         shape: (10, 3)
         ┌────────┬──────┬──────┐
         │ type   ┆ year ┆ size │
@@ -447,9 +454,9 @@ def complete(
         pass a polars expression with the new dates,
         and ensure the expression's name already exists
         in the DataFrame:
-        >>> expression = pl.int_range(1999,2005).alias('Year')
+        >>> expression = pl.int_range(1999, 2005).alias("Year")
         >>> with pl.Config(tbl_rows=-1):
-        ...     df.complete(expression,'Taxon',sort=True)
+        ...     df.complete(expression, "Taxon", sort=True)
         shape: (12, 3)
         ┌──────┬────────────┬───────────┐
         │ Year ┆ Taxon      ┆ Abundance │
@@ -493,11 +500,11 @@ def complete(
         │ NY    ┆ 2009 ┆ 2     │
         │ NY    ┆ 2013 ┆ 5     │
         └───────┴──────┴───────┘
-        >>> low = pl.col('year').min()
-        >>> high = pl.col('year').max().add(1)
-        >>> new_year_values=pl.int_range(low,high).alias('year')
+        >>> low = pl.col("year").min()
+        >>> high = pl.col("year").max().add(1)
+        >>> new_year_values = pl.int_range(low, high).alias("year")
         >>> with pl.Config(tbl_rows=-1):
-        ...     df.complete(new_year_values,by='state',sort=True)
+        ...     df.complete(new_year_values, by="state", sort=True)
         shape: (16, 3)
         ┌───────┬──────┬───────┐
         │ state ┆ year ┆ value │
@@ -599,9 +606,7 @@ def _expand(
     else:
         uniques = df.group_by(by, maintain_order=sort).agg(_columns)
         uniques_schema = uniques.collect_schema()
-        _columns = cs.expand_selector(
-            uniques_schema, cs.exclude(by), strict=False
-        )
+        _columns = cs.expand_selector(uniques_schema, cs.exclude(by), strict=False)
     for column in _columns:
         uniques = uniques.explode(column)
 
@@ -627,9 +632,7 @@ def _complete(
     df_columns = df.collect_schema()
     columns_to_fill = df_columns.keys() ^ uniques_schema.keys()
     if (fill_value is None) or not columns_to_fill:
-        return uniques.join(
-            df, on=uniques_schema.names(), how="left", coalesce=True
-        )
+        return uniques.join(df, on=uniques_schema.names(), how="left", coalesce=True)
     idx = None
     columns_to_select = df_columns.names()
     if not explicit:
@@ -651,9 +654,7 @@ def _complete(
             for column_name in _columns
         ]
     else:
-        fill_value = [
-            pl.col(column).fill_null(value=fill_value) for column in _columns
-        ]
+        fill_value = [pl.col(column).fill_null(value=fill_value) for column in _columns]
     if not explicit:
         condition = pl.col(idx).is_null()
         fill_value = [

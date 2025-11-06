@@ -19,10 +19,12 @@ def truncate_datetime_dataframe(
     Examples:
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame({
-        ...     "foo": ["xxxx", "yyyy", "zzzz"],
-        ...     "dt": pd.date_range("2020-03-11", periods=3, freq="15H"),
-        ... })
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "foo": ["xxxx", "yyyy", "zzzz"],
+        ...         "dt": pd.date_range("2020-03-11", periods=3, freq="15H"),
+        ...     }
+        ... )
         >>> df
             foo                  dt
         0  xxxx 2020-03-11 00:00:00

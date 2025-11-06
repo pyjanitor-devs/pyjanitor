@@ -47,9 +47,7 @@ def dfmi():
 
 def test_summarise_callable_series_unnamed(df_summarise):
     """Test output for callable"""
-    with pytest.raises(
-        ValueError, match="Ensure the pandas Series object has a name"
-    ):
+    with pytest.raises(ValueError, match="Ensure the pandas Series object has a name"):
         df_summarise.summarise(lambda df: df.mean())
 
 
@@ -145,9 +143,9 @@ def test_summarise_tuple_by_callable_grouped(df_summarise):
 def test_summarise_MI(dfmi):
     """Test summarise on a MultiIndex"""
     actual = dfmi.summarise(("a", "min"))
-    expected = dfmi.agg(
-        {("a", "bar"): "min", ("a", "foo"): ["min"]}
-    ).rename_axis(columns=[None, None])
+    expected = dfmi.agg({("a", "bar"): "min", ("a", "foo"): ["min"]}).rename_axis(
+        columns=[None, None]
+    )
     assert_frame_equal(actual, expected)
 
 

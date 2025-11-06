@@ -100,4 +100,3 @@ max-complexity = 10
 [tool.pydoclint]
 style = 'google'
 exclude = '\.git|\.tox|tests/data|some_script\.py'
-require-return-section-when-returning-nothing = true

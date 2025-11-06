@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+-   [ENH] update `pypa/gh-action-pypi-publish` from master to release/v1 - Issue #1524 @samukweku
 
 ## [v0.32.0] - 2025-11-06
 

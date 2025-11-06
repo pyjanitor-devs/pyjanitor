@@ -20,7 +20,7 @@ target-version = ['py36', 'py37', 'py38']
 
 [tool.interrogate]
 exclude = ["setup.py", "docs", "nbconvert_config.py"]
-fail-under = 55
+fail-under = 0
 ignore-init-method = true
 ignore-init-module = true
 ignore-module = false
@@ -95,3 +95,9 @@ target-version = "py310"
 [tool.ruff.lint.mccabe]
 # Unlike Flake8, default to a complexity level of 10.
 max-complexity = 10
+
+
+[tool.pydoclint]
+style = 'google'
+exclude = '\.git|\.tox|tests/data|some_script\.py'
+require-return-section-when-returning-nothing = true

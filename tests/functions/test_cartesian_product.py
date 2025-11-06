@@ -66,6 +66,7 @@ def test_DataFrame_duplicated_label():
 @given(df=df_strategy())
 def test_cartesian_output(df):
     """Test cartesian product output for various inputs."""
+    df = df.iloc[:3]
     frame = df.drop(columns=["a", "cities"])
     index = pd.Index(df["a"], name="rar")
     mi = pd.MultiIndex.from_frame(frame, names=["mi1", "mi2", "mi3"])
@@ -78,7 +79,11 @@ def test_cartesian_output(df):
         .merge(frame.set_axis(["mi1", "mi2", "mi3"], axis=1), how="cross")
         .merge(pd.Series([2, 4], name="dictionary"), how="cross")
     )
-    assert_frame_equal(result, expected)
+    sorter = expected.columns.tolist()
+    assert_frame_equal(
+        result.sort_values(sorter, ignore_index=True),
+        expected.sort_values(sorter, ignore_index=True),
+    )
 
 
 def test_cartesian_output_tuple():

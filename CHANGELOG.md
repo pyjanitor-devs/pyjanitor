@@ -1,6 +1,9 @@
 # Changelog
 
 ## [Unreleased]
+
+## [v0.32.0] - 2025-11-06
+
 -   [ENH] `return_ragged_arrays` deprecated; get_join_indices function now returns a dictionary - Issue #520 @samukweku
 -   [ENH] Reverse deprecation of `pivot_wider()` -- Issue #1464
 -   [ENH] Add accessor and method for pandas DataFrameGroupBy objects. - Issue #587 @samukweku
@@ -398,7 +401,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.31.0...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.0...HEAD
+
+[v0.32.0]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.31.0...v0.32.0
 
 [v0.31.0]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.30.0...v0.31.0
 

@@ -265,6 +265,7 @@ def select_columns(
 
 
 @pf.register_dataframe_method
+@pf.register_series_method
 def select_rows(
     df: pd.DataFrame,
     *args: Any,

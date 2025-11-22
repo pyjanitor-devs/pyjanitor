@@ -24,13 +24,8 @@ from janitor.functions.utils import _is_str_or_cat
 from janitor.utils import check, deprecated_alias, refactored_function
 
 
+@pf.register_dataframe_groupby_method
 @pf.register_dataframe_method
-@refactored_function(
-    message=(
-        "This function will be deprecated in a 1.x release. "
-        "Please use `jn.select` instead."
-    )
-)
 def select_columns(
     df: pd.DataFrame,
     *args: Any,
@@ -264,17 +259,12 @@ def select_columns(
     Returns:
         A pandas DataFrame with the specified columns selected.
     """  # noqa: E501
-
+    if isinstance(df, DataFrameGroupBy):
+        return _get_columns_on_a_grouped_object(group=df, label=list(args))
     return _select(df, columns=list(args), invert=invert)
 
 
 @pf.register_dataframe_method
-@refactored_function(
-    message=(
-        "This function will be deprecated in a 1.x release. "
-        "Please use `jn.select` instead."
-    )
-)
 def select_rows(
     df: pd.DataFrame,
     *args: Any,
@@ -344,10 +334,16 @@ def select_rows(
     return _select(df, rows=list(args), invert=invert)
 
 
-@pf.register_groupby_method
+@pf.register_dataframe_groupby_method
 @pf.register_dataframe_method
 @pf.register_series_method
 @deprecated_alias(rows="index")
+@refactored_function(
+    message=(
+        "This function has been deprecated. "
+        "Kindly use `jn.select_columns` or `jn.select_rows` instead."
+    )
+)
 def select(
     df: pd.DataFrame | pd.Series | DataFrameGroupBy,
     *args: tuple,

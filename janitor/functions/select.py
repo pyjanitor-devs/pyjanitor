@@ -509,9 +509,7 @@ def get_index_labels(
 
 
 @pf.register_dataframe_groupby_method
-def get_columns(
-    group: DataFrameGroupBy | SeriesGroupBy, label: Any
-) -> pd.DataFrame | pd.Series:
+def get_columns(group: DataFrameGroupBy | SeriesGroupBy, label: Any) -> pd.DataFrame:
     """
     Get column(s) from a grouped object,
     using the
@@ -544,7 +542,7 @@ def get_columns(
         label: column(s) to select.
 
     Returns:
-        A pandas DataFrame or Series.
+        A pandas DataFrame.
     """
     return _select(group.obj, columns=label, invert=None)
 

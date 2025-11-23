@@ -303,7 +303,7 @@ def filter_date(
 @refactored_function(
     message=(
         "This function will be deprecated in a 1.x release. "
-        "Please use `pd.DataFrame.query` or `pd.isin` instead."
+        "Please use `pd.DataFrame.query` or `pd.DataFrame.isin` instead."
     )
 )
 @deprecated_alias(column="column_name")
@@ -362,7 +362,7 @@ def filter_column_isin(
 
     warnings.warn(
         "This function will be deprecated in a 1.x release. "
-        "Kindly use `pd.DataFrame.query` or `pd.isin` instead.",
+        "Kindly use `pd.DataFrame.query` or `pd.DataFrame.isin` instead.",
         DeprecationWarning,
         stacklevel=find_stack_level(),
     )

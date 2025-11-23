@@ -27,7 +27,7 @@ dependencies:
   - numba
   - numpy==1.24.4
   - openpyxl
-  - pandas-flavor==0.8.1
+  - pandas-flavor
   - pandas-vet
   - pandas>=2.0
   - pip

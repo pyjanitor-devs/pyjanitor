@@ -19,7 +19,7 @@ pandas==1.4.1
     # via
     #   pandas-flavor
     #   xarray
-pandas-flavor==0.8.0
+pandas-flavor==0.8.1
     # via -r .requirements/base.in
 pyparsing==3.0.7
     # via packaging

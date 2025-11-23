@@ -508,15 +508,10 @@ def get_index_labels(
     return index[_select_index(arg, df, axis)]
 
 
-@refactored_function(
-    message=(
-        "This function will be deprecated in a 1.x release. "
-        "Please use `jn.select` instead."
-    )
-)
+@pf.register_dataframe_groupby_method
 def get_columns(
     group: DataFrameGroupBy | SeriesGroupBy, label: Any
-) -> DataFrameGroupBy | SeriesGroupBy:
+) -> pd.DataFrame | pd.Series:
     """
     Helper function for selecting columns on a grouped object,
     using the
@@ -524,19 +519,34 @@ def get_columns(
 
     !!! info "New in version 0.25.0"
 
-    !!!note
+    Examples:
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame(
+        ...     [[1, 2], [4, 5], [7, 8]],
+        ...     index=["cobra", "viper", "sidewinder"],
+        ...     columns=["max_speed", "shield"],
+        ... )
+        >>> df
+                    max_speed  shield
+        cobra               1       2
+        viper               4       5
+        sidewinder          7       8
+        >>> df.groupby(level=0).get_columns("*ed")
+                    max_speed
+        cobra               1
+        viper               4
+        sidewinder          7
 
-        This function will be deprecated in a 1.x release.
-        Please use `jn.select` instead.
 
     Args:
         group: A Pandas GroupBy object.
         label: column(s) to select.
 
     Returns:
-        A pandas groupby object.
+        A pandas DataFrame or Series.
     """
-    return _get_columns_on_a_grouped_object(group=group, label=label)
+    return _select(group.obj, columns=label, invert=None)
 
 
 def _get_columns_on_a_grouped_object(

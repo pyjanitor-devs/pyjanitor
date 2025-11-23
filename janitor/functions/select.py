@@ -513,7 +513,7 @@ def get_columns(
     group: DataFrameGroupBy | SeriesGroupBy, label: Any
 ) -> pd.DataFrame | pd.Series:
     """
-    Helper function for selecting columns on a grouped object,
+    Get column(s) from a grouped object,
     using the
     [`select`][janitor.functions.select.select] syntax.
 

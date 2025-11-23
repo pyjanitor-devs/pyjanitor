@@ -165,6 +165,18 @@ def select_columns(
         3  0.00029    0.019
         4  0.42300  600.000
 
+
+        Selection is possible on a grouped object:
+        >>> df.groupby("name").select_columns("*wt").min()
+                                    brainwt   bodywt
+        name
+        Cheetah                         NaN   50.000
+        Cow                         0.42300  600.000
+        Greater short-tailed shrew  0.00029    0.019
+        Mountain beaver                 NaN    1.350
+        Owl monkey                  0.01550    0.480
+
+
         Selection on MultiIndex columns:
         >>> d = {
         ...     "num_legs": [4, 4, 2, 2],
@@ -236,16 +248,6 @@ def select_columns(
         locomotion  walks flies
         num_legs        4     2
         num_wings       0     2
-
-        Selection is possible on a grouped object:
-        >>> df.groupby("name").select_columns("*wt").min()
-                                    brainwt   bodywt
-        name
-        Cheetah                         NaN   50.000
-        Cow                         0.42300  600.000
-        Greater short-tailed shrew  0.00029    0.019
-        Mountain beaver                 NaN    1.350
-        Owl monkey                  0.01550    0.480
 
     Args:
         df: A pandas DataFrame, Series or GroupBy object.

@@ -49,11 +49,6 @@ def select_columns(
         is with `.loc` or `.iloc` methods.
         `select_columns` is primarily for convenience.
 
-    !!!note
-
-        This function will be deprecated in a 1.x release.
-        Please use `jn.select` instead.
-
     Examples:
         >>> import pandas as pd
         >>> import janitor
@@ -242,8 +237,18 @@ def select_columns(
         num_legs        4     2
         num_wings       0     2
 
+        Selection is possible on a grouped object:
+        >>> df.groupby("name").select_columns("*wt").min()
+                                    brainwt   bodywt
+        name
+        Cheetah                         NaN   50.000
+        Cow                         0.42300  600.000
+        Greater short-tailed shrew  0.00029    0.019
+        Mountain beaver                 NaN    1.350
+        Owl monkey                  0.01550    0.480
+
     Args:
-        df: A pandas DataFrame.
+        df: A pandas DataFrame, Series or GroupBy object.
         *args: Valid inputs include: an exact column name to look for,
             a shell-style glob string (e.g. `*_thing_*`),
             a regular expression,
@@ -257,7 +262,7 @@ def select_columns(
             of the complement of the columns provided.
 
     Returns:
-        A pandas DataFrame with the specified columns selected.
+        A pandas DataFrame, Series, or GroupBy object, with the specified columns selected.
     """  # noqa: E501
     if isinstance(df, DataFrameGroupBy):
         return _get_columns_on_a_grouped_object(group=df, label=list(args))
@@ -292,11 +297,6 @@ def select_rows(
         is with `.loc` or `.iloc` methods, as they are generally performant.
         `select_rows` is primarily for convenience.
 
-    !!!note
-
-        This function will be deprecated in a 1.x release.
-        Please use `jn.select` instead.
-
     Examples:
         >>> import pandas as pd
         >>> import janitor
@@ -316,7 +316,7 @@ def select_rows(
     [`select_columns`][janitor.functions.select.select_columns] section.
 
     Args:
-        df: A pandas DataFrame.
+        df: A pandas DataFrame or Series.
         *args: Valid inputs include: an exact index name to look for,
             a shell-style glob string (e.g. `*_thing_*`),
             a regular expression,
@@ -330,7 +330,7 @@ def select_rows(
             of the complement of the rows provided.
 
     Returns:
-        A pandas DataFrame with the specified rows selected.
+        A pandas DataFrame or Series with the specified rows selected.
     """  # noqa: E501
     return _select(df, rows=list(args), invert=invert)
 
@@ -378,6 +378,11 @@ def select(
         The preferred option when selecting columns or rows in a Pandas DataFrame
         is with `.loc` or `.iloc` methods, as they are generally performant.
         `select` is primarily for convenience.
+
+    !!!note
+
+        This function has been deprecated.
+        Kindly use `jn.select_columns` or `jn.select_rows`
 
     !!! abstract "Version Changed"
 

@@ -300,6 +300,12 @@ def filter_date(
 
 
 @pf.register_dataframe_method
+@refactored_function(
+    message=(
+        "This function will be deprecated in a 1.x release. "
+        "Please use `pd.DataFrame.query` or `pd.isin` instead."
+    )
+)
 @deprecated_alias(column="column_name")
 def filter_column_isin(
     df: pd.DataFrame,
@@ -353,6 +359,14 @@ def filter_column_isin(
     Returns:
         A filtered pandas DataFrame.
     """  # noqa: E501
+
+    warnings.warn(
+        "This function will be deprecated in a 1.x release. "
+        "Kindly use `pd.DataFrame.query` or `pd.isin` instead.",
+        DeprecationWarning,
+        stacklevel=find_stack_level(),
+    )
+
     if len(iterable) == 0:
         raise ValueError(
             "`iterable` kwarg must be given an iterable of length 1 or greater."

@@ -344,7 +344,7 @@ def select_rows(
     return _select(df, rows=list(args), invert=invert)
 
 
-@pf.register_groupby_method
+@pf.register_series_groupby_method
 @pf.register_dataframe_method
 @pf.register_series_method
 @deprecated_alias(rows="index")

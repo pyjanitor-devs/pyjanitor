@@ -14,7 +14,7 @@ from pandas.core.groupby.generic import DataFrameGroupBy
 from janitor.functions.select import get_index_labels
 
 
-@pf.register_groupby_method
+@pf.register_series_groupby_method
 @pf.register_dataframe_method
 def summarise(
     df: pd.DataFrame | DataFrameGroupBy,

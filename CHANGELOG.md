@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [ENH] switch to register_dataframe_groupby_method - Issue #1534 @bryanpmayfield
+
 ## [v0.32.1] - 2025-11-06
 
 -   [ENH] update `pypa/gh-action-pypi-publish` from master to release/v1 - Issue #1524 @samukweku

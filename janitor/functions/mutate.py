@@ -13,7 +13,7 @@ from pandas.core.groupby.generic import DataFrameGroupBy
 from janitor.functions.select import get_index_labels
 
 
-@pf.register_groupby_method
+@pf.register_dataframe_groupby_method
 def ungroup(
     df: DataFrameGroupBy,
 ) -> pd.DataFrame:
@@ -58,7 +58,7 @@ def ungroup(
     return df.obj
 
 
-@pf.register_groupby_method
+@pf.register_dataframe_groupby_method
 @pf.register_dataframe_method
 def mutate(
     df: pd.DataFrame | DataFrameGroupBy,

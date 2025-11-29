@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import warnings
 from functools import singledispatch
 
 import pandas as pd
@@ -11,6 +12,60 @@ from pandas.core.common import apply_if_callable
 from pandas.core.groupby.generic import DataFrameGroupBy
 
 from janitor.functions.select import get_index_labels
+from janitor.utils import find_stack_level, refactored_function
+
+
+@pf.register_dataframe_groupby_method
+@refactored_function(
+    message=("This function is deprecated. Please use `jn.get_columns` instead.")
+)
+def ungroup(
+    df: DataFrameGroupBy,
+) -> pd.DataFrame:
+    """
+
+    !!! info "New in version 0.32.0"
+
+    Ungroups a GroupBy object into a DataFrame.
+
+    Examples:
+        >>> import pandas as pd
+        >>> import janitor
+        >>> data = {
+        ...     "avg_jump": [3, 4, 1, 2, 3, 4],
+        ...     "avg_run": [3, 4, 1, 3, 2, 4],
+        ...     "combine_id": [100200, 100200, 101200, 101200, 102201, 103202],
+        ... }
+        >>> df = pd.DataFrame(data)
+        >>> df
+           avg_jump  avg_run  combine_id
+        0         3        3      100200
+        1         4        4      100200
+        2         1        1      101200
+        3         2        3      101200
+        4         3        2      102201
+        5         4        4      103202
+        >>> df.groupby("combine_id").mutate("mean").ungroup()
+           avg_jump  avg_run  combine_id
+        0       3.5      3.5      100200
+        1       3.5      3.5      100200
+        2       1.5      2.0      101200
+        3       1.5      2.0      101200
+        4       3.0      2.0      102201
+        5       4.0      4.0      103202
+
+    Args:
+        df: A pandas GroupBy object.
+
+    Returns:
+        A pandas DataFrame.
+    """
+    warnings.warn(
+        "This function is deprecated. Kindly use `jn.get_columns` instead.",
+        DeprecationWarning,
+        stacklevel=find_stack_level(),
+    )
+    return df.obj
 
 
 @pf.register_dataframe_groupby_method

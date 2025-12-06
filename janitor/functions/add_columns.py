@@ -96,6 +96,9 @@ def add_column(
 
     nrows = len(df)
 
+    if fill_remaining:
+        warnings.warn("The fill_remaining parameter is no longer being used")
+
     if hasattr(value, "__len__") and not isinstance(value, (str, bytes, bytearray)):
         len_value = len(value)
 

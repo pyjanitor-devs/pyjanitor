@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v0.32.2] - 2025-12-06
+
 -   [ENH] switch to register_dataframe_groupby_method - Issue #1534 @bryanpmayfield
 
 ## [v0.32.1] - 2025-11-06
@@ -407,7 +409,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.1...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.2...HEAD
+
+[v0.32.2]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.1...v0.32.2
 
 [v0.32.1]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.0...v0.32.1
 

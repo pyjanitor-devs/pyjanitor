@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+- [ENH] Undeprecate `select_columns` and `select_rows` - Issue #1514 @samukweku
 
 ## [v0.32.2] - 2025-12-06
 

@@ -24,13 +24,8 @@ from janitor.functions.utils import _is_str_or_cat
 from janitor.utils import check, deprecated_alias, refactored_function
 
 
+@pf.register_dataframe_groupby_method
 @pf.register_dataframe_method
-@refactored_function(
-    message=(
-        "This function will be deprecated in a 1.x release. "
-        "Please use `jn.select` instead."
-    )
-)
 def select_columns(
     df: pd.DataFrame,
     *args: Any,
@@ -53,11 +48,6 @@ def select_columns(
         The preferred option when selecting columns or rows in a Pandas DataFrame
         is with `.loc` or `.iloc` methods.
         `select_columns` is primarily for convenience.
-
-    !!!note
-
-        This function will be deprecated in a 1.x release.
-        Please use `jn.select` instead.
 
     Examples:
         >>> import pandas as pd
@@ -175,6 +165,18 @@ def select_columns(
         3  0.00029    0.019
         4  0.42300  600.000
 
+
+        Selection is possible on a grouped object:
+        >>> df.groupby("name").select_columns("*wt").min()
+                                    brainwt   bodywt
+        name
+        Cheetah                         NaN   50.000
+        Cow                         0.42300  600.000
+        Greater short-tailed shrew  0.00029    0.019
+        Mountain beaver                 NaN    1.350
+        Owl monkey                  0.01550    0.480
+
+
         Selection on MultiIndex columns:
         >>> d = {
         ...     "num_legs": [4, 4, 2, 2],
@@ -248,7 +250,7 @@ def select_columns(
         num_wings       0     2
 
     Args:
-        df: A pandas DataFrame.
+        df: A pandas DataFrame, Series or GroupBy object.
         *args: Valid inputs include: an exact column name to look for,
             a shell-style glob string (e.g. `*_thing_*`),
             a regular expression,
@@ -262,19 +264,15 @@ def select_columns(
             of the complement of the columns provided.
 
     Returns:
-        A pandas DataFrame with the specified columns selected.
+        A pandas DataFrame, Series, or GroupBy object, with the specified columns selected.
     """  # noqa: E501
-
+    if isinstance(df, DataFrameGroupBy):
+        return _get_columns_on_a_grouped_object(group=df, label=list(args))
     return _select(df, columns=list(args), invert=invert)
 
 
 @pf.register_dataframe_method
-@refactored_function(
-    message=(
-        "This function will be deprecated in a 1.x release. "
-        "Please use `jn.select` instead."
-    )
-)
+@pf.register_series_method
 def select_rows(
     df: pd.DataFrame,
     *args: Any,
@@ -301,11 +299,6 @@ def select_rows(
         is with `.loc` or `.iloc` methods, as they are generally performant.
         `select_rows` is primarily for convenience.
 
-    !!!note
-
-        This function will be deprecated in a 1.x release.
-        Please use `jn.select` instead.
-
     Examples:
         >>> import pandas as pd
         >>> import janitor
@@ -325,7 +318,7 @@ def select_rows(
     [`select_columns`][janitor.functions.select.select_columns] section.
 
     Args:
-        df: A pandas DataFrame.
+        df: A pandas DataFrame or Series.
         *args: Valid inputs include: an exact index name to look for,
             a shell-style glob string (e.g. `*_thing_*`),
             a regular expression,
@@ -339,7 +332,7 @@ def select_rows(
             of the complement of the rows provided.
 
     Returns:
-        A pandas DataFrame with the specified rows selected.
+        A pandas DataFrame or Series with the specified rows selected.
     """  # noqa: E501
     return _select(df, rows=list(args), invert=invert)
 
@@ -349,6 +342,12 @@ def select_rows(
 @pf.register_series_groupby_method
 @pf.register_series_method
 @deprecated_alias(rows="index")
+@refactored_function(
+    message=(
+        "This function has been deprecated. "
+        "Kindly use `jn.select_columns` or `jn.select_rows` instead."
+    )
+)
 def select(
     df: pd.DataFrame | pd.Series | DataFrameGroupBy,
     *args: tuple,
@@ -382,6 +381,11 @@ def select(
         The preferred option when selecting columns or rows in a Pandas DataFrame
         is with `.loc` or `.iloc` methods, as they are generally performant.
         `select` is primarily for convenience.
+
+    !!!note
+
+        This function has been deprecated.
+        Kindly use `jn.select_columns` or `jn.select_rows`
 
     !!! abstract "Version Changed"
 
@@ -505,35 +509,43 @@ def get_index_labels(
     return index[_select_index(arg, df, axis)]
 
 
-@refactored_function(
-    message=(
-        "This function will be deprecated in a 1.x release. "
-        "Please use `jn.select` instead."
-    )
-)
-def get_columns(
-    group: DataFrameGroupBy | SeriesGroupBy, label: Any
-) -> DataFrameGroupBy | SeriesGroupBy:
+@pf.register_dataframe_groupby_method
+def get_columns(group: DataFrameGroupBy | SeriesGroupBy, label: Any) -> pd.DataFrame:
     """
-    Helper function for selecting columns on a grouped object,
+    Get column(s) from a grouped object,
     using the
     [`select`][janitor.functions.select.select] syntax.
 
     !!! info "New in version 0.25.0"
 
-    !!!note
+    Examples:
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df = pd.DataFrame(
+        ...     [[1, 2], [4, 5], [7, 8]],
+        ...     index=["cobra", "viper", "sidewinder"],
+        ...     columns=["max_speed", "shield"],
+        ... )
+        >>> df
+                    max_speed  shield
+        cobra               1       2
+        viper               4       5
+        sidewinder          7       8
+        >>> df.groupby(level=0).get_columns("*ed")
+                    max_speed
+        cobra               1
+        viper               4
+        sidewinder          7
 
-        This function will be deprecated in a 1.x release.
-        Please use `jn.select` instead.
 
     Args:
         group: A Pandas GroupBy object.
         label: column(s) to select.
 
     Returns:
-        A pandas groupby object.
+        A pandas DataFrame.
     """
-    return _get_columns_on_a_grouped_object(group=group, label=label)
+    return _select(group.obj, columns=label, invert=None)
 
 
 def _get_columns_on_a_grouped_object(

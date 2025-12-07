@@ -8,7 +8,7 @@ import pytest
 from pandas.api.types import is_numeric_dtype
 from pandas.testing import assert_frame_equal
 
-from janitor.functions.select import DropLabel, get_columns
+from janitor.functions.select import DropLabel
 from janitor.functions.utils import patterns
 
 
@@ -464,7 +464,7 @@ def test_regex_multi(multiindex):
 def test_select_groupby(dataframe):
     """Test output on a grouped object"""
     expected = dataframe.select_dtypes("number").groupby(dataframe["a"]).sum()
-    actual = dataframe.groupby("a").pipe(get_columns, is_numeric_dtype).sum()
+    actual = dataframe.groupby("a").select_columns(is_numeric_dtype).sum()
     assert_frame_equal(expected, actual)
 
 

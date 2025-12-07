@@ -339,6 +339,7 @@ def select_rows(
 
 @pf.register_dataframe_groupby_method
 @pf.register_dataframe_method
+@pf.register_series_groupby_method
 @pf.register_series_method
 @deprecated_alias(rows="index")
 @refactored_function(

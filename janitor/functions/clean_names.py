@@ -220,7 +220,7 @@ def _change_case(
 
 def _normalize_1(obj: pd.Index | pd.Series) -> pd.Index | pd.Series:
     """Perform normalization of labels in obj."""
-    FIXES = [(r"[ /:,?()\.-]", "_"), (r"['’]", ""), (r"[\xa0]", "_")]
+    FIXES = [(r"[ /:,?()\.-]", "_"), (r"['’]", ""), (r"[\xa0]", "_"),(r"(?<=\w)@(?=\w)", "_")]
     for search, replace in FIXES:
         obj = obj.str.replace(pat=search, repl=replace, regex=True)
 

@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 - [ENH] Undeprecate `select_columns` and `select_rows` - Issue #1514 @samukweku
+- [ENH] Fix `clean_names` to match R janitor - Issue #1257
+@Kevin-Smith77
 
 ## [v0.32.2] - 2025-12-06
 

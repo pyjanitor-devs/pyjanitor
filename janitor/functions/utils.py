@@ -774,7 +774,7 @@ def _change_case(
 
 def _normalize_1(obj: str) -> str:
     """Perform normalization of obj."""
-    FIXES = [(r"[ /:,?()\.-]", "_"), (r"['’]", ""), (r"[\xa0]", "_")]
+    FIXES = [(r"[ /:,?()\.-]", "_"), (r"['’]", ""), (r"[\xa0]", "_"), (r"(?<=\w)@(?=\w)", "_")]
     for search, replace in FIXES:
         obj = re.sub(pattern=search, repl=replace, string=obj)
 

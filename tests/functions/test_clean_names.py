@@ -224,7 +224,7 @@ def test_clean_names_enforce_str():
     assert outcome == ["1", "11"]
 
 
-def test_normalize_1_various_cases():
+def test_normalize_1():
     """Test _normalize_1 normalization."""
     from janitor.functions.clean_names import _normalize_1
     raw = pd.Series([
@@ -240,3 +240,18 @@ def test_normalize_1_various_cases():
     result = _normalize_1(raw)
     assert result.equals(expected)
 
+
+def test_clean_names_normalization_cases():
+    """Test clean_names normalization using cases from test_normalize_1."""
+    df = pd.DataFrame({
+        "A b/c:d?e(f)g-h.i": [1],
+        "O'Neil’s\xa0Test": [2],
+        "foo@bar baz@": [3],
+    })
+    expected_columns = [
+        "A_b_c_d_e_f_g_h_i",
+        "ONeils_Test",
+        "foo_bar_baz@",
+    ]
+    result = df.clean_names()
+    assert result.columns.tolist() == expected_columns

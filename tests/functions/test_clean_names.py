@@ -249,8 +249,8 @@ def test_clean_names_normalization_cases():
         "foo@bar baz@": [3],
     })
     expected_columns = [
-        "A_b_c_d_e_f_g_h_i",
-        "ONeils_Test",
+        "a_b_c_d_e_f_g_h_i",
+        "oneils_test",
         "foo_bar_baz@",
     ]
     result = df.clean_names()

@@ -1,8 +1,11 @@
 # Changelog
 
 ## [Unreleased]
-- [ENH] Undeprecate `select_columns` and `select_rows` - Issue #1514 @samukweku
-- [ENH] `clean_names()` now replaces `@` with `_` when between word characters - Issue #1257 @Kevin-Smith77
+
+## [v0.32.3] - 2025-12-11
+
+-   [ENH] Undeprecate `select_columns` and `select_rows` - Issue #1514 @samukweku
+-   [ENH] `clean_names()` now replaces `@` with `_` when between word characters - Issue #1257 @Kevin-Smith77
 
 ## [v0.32.2] - 2025-12-06
 
@@ -411,7 +414,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.2...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.3...HEAD
+
+[v0.32.3]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.2...v0.32.3
 
 [v0.32.2]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.1...v0.32.2
 

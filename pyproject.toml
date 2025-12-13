@@ -118,7 +118,7 @@ include-package-data = true
 where = ["."]
 namespaces = false
 
-[tool.pixi.project]
+[tool.pixi.workspace]
 channels = ["https://prefix.dev/conda-forge"]
 platforms = ["osx-arm64", "linux-64"]
 

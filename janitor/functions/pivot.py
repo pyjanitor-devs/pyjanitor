@@ -1307,8 +1307,17 @@ def _pivot_longer_dot_value(
             df=df,
             sort_by_appearance=sort_by_appearance,
         )
+        # When others is empty, spec has columns like ['dim', '.value']
+        # We need to pass the non-'.value' columns to _stack_non_dot_value
+        # so it can create the "dim" column in the correct order
+        spec_for_non_dot = None
+        if spec is not None and len(spec.columns) > 1:
+            # Extract columns that are not '.value'
+            non_value_cols = [col for col in spec.columns if col != ".value"]
+            if non_value_cols:
+                spec_for_non_dot = {col: spec[col]._values for col in non_value_cols}
         index, _, df_index = _stack_non_dot_value(
-            spec=None,
+            spec=spec_for_non_dot,
             reps=reps,
             df=df,
             index=index,

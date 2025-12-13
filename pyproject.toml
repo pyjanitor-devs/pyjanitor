@@ -139,6 +139,9 @@ interrogate = "*"
 pandas-vet = "*"
 polars = "*"
 py = "*"
+unyt = "*"
+matplotlib = "*"
+openpyxl = "*"
 
 [tool.pixi.feature.docs.dependencies]
 mkdocs = "*"
@@ -147,20 +150,6 @@ mkdocstrings = "*"
 mkdocstrings-python = "*"
 mknotebooks = "*"
 ipython = "*"
-
-[tool.pixi.feature.devtools.dependencies]
-pre-commit = "*"
-pip-tools = "*"
-isort = "*"
-black = "*"
-darglint = "*"
-flake8 = "*"
-
-[tool.pixi.feature.notebook.dependencies]
-ipykernel = "*"
-ipython = "*"
-jupyter = "*"
-pixi-kernel = "*"
 
 [tool.pixi.feature.biology.dependencies]
 biopython = "*"
@@ -188,10 +177,6 @@ release = "python -m build"
 [tool.pixi.feature.tests.tasks]
 test = "pytest -v -n auto --color=yes"
 
-[tool.pixi.feature.devtools.tasks]
-lint = "pre-commit run --all-files"
-format = "pre-commit run ruff-format --all-files"
-
 [tool.pixi.feature.docs.tasks]
 build-docs = "mkdocs build"
 serve-docs = "mkdocs serve"
@@ -201,13 +186,13 @@ setup = "pre-commit autoupdate && pre-commit install --install-hooks"
 update = "pre-commit autoupdate"
 
 [tool.pixi.environments]
-default = { features = ["tests", "devtools", "notebook", "setup"] }
+default = { features = ["tests", "setup"] }
 docs = { features = ["docs"] }
 tests = { features = ["tests", "setup"] }
-biology = { features = ["tests", "devtools", "notebook", "setup", "biology"] }
-chemistry = { features = ["tests", "devtools", "notebook", "setup", "chemistry"] }
-engineering = { features = ["tests", "devtools", "notebook", "setup", "engineering"] }
-spark = { features = ["tests", "devtools", "notebook", "setup", "spark"] }
+biology = { features = ["tests", "setup", "biology"] }
+chemistry = { features = ["tests", "setup", "chemistry"] }
+engineering = { features = ["tests", "setup", "engineering"] }
+spark = { features = ["tests", "setup", "spark"] }
 
 [tool.coverage.run]
 omit = [

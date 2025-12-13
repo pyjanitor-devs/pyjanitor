@@ -26,13 +26,14 @@ jobs:
           pixi-version: latest
           cache: true
           cache-write: true
+          environment: docs
 
       - name: Install pyjanitor
         # use editable mode to avoid _pytest.pathlib.ImportPathMismatchError
         run: pixi run pip install -e .
 
       - name: Build docs
-        run: pixi run mkdocs build
+        run: pixi run build-docs
 
       - uses: actions/upload-artifact@v4
         with:

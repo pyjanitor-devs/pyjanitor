@@ -1,4 +1,4 @@
-name: documentation
+name: Build documentation
 
 on:
   push:
@@ -8,9 +8,16 @@ on:
     branches:
       - dev
 
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+  pull-requests: write
+
 jobs:
-  build:
+  build-docs:
     runs-on: ubuntu-latest
+    name: Build documentation
 
     defaults:
       run:
@@ -18,59 +25,37 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Setup Pixi Environment
         uses: prefix-dev/setup-pixi@v0.9.3
         with:
           pixi-version: latest
           cache: true
-          cache-write: true
-          environment: docs
-
-      - name: Install pyjanitor
-        # use editable mode to avoid _pytest.pathlib.ImportPathMismatchError
-        run: pixi run pip install -e .
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'dev' }}
+          environments: docs
 
       - name: Build docs
         run: pixi run build-docs
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: website
-          path: site/
-
-      - name: Test docs
-        run: pixi run pytest -m "documentation"
-
-      - name: Docs preview
-        if: ${{ github.event_name == 'pull_request' }}
-        uses: nwtgck/actions-netlify@v1.1
-        with:
-          publish-dir: "./site"
-          production-deploy: false
-          github-token: ${{ secrets.GHPAGES_TOKEN }}
-          deploy-message: "Deploy from GitHub Actions"
-          enable-pull-request-comment: true
-          enable-commit-comment: false
-          overwrites-pull-request-comment: true
-          alias: deploy-preview-${{ github.event.number }}
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-        timeout-minutes: 1
-
       - name: Deploy website
-        if: ${{ github.event_name == 'push' }}
-        uses: peaceiris/actions-gh-pages@v3
+        if: github.ref_name == 'dev'
+        uses: peaceiris/actions-gh-pages@v4
         with:
           # https://github.com/peaceiris/actions-gh-pages#%EF%B8%8F-set-personal-access-token-personal_token
           personal_token: ${{ secrets.GHPAGES_TOKEN }}
-          publish_dir: ./site/
+          publish_dir: ./site
           publish_branch: gh-pages
-          # destination_dir: manuscript
           allow_empty_commit: false
           keep_files: false
           force_orphan: true
           enable_jekyll: false
-          disable_nojekyll: false
+
+      - name: Deploy PR Preview
+        if: github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'dev'
+        uses: rossjrw/pr-preview-action@v1.6.3
+        with:
+          source-dir: ./site
+          preview-branch: gh-pages

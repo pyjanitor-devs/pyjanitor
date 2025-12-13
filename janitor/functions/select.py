@@ -246,7 +246,9 @@ def select_columns(
         num_wings       0     2
 
         Selection with a callable on a level:
-        >>> df.select_columns({"animal": lambda f: f.str.endswith("t")})
+        >>> df.select_columns(
+        ...     {"animal": lambda f: f.str.endswith("t")}
+        ... )  # doctest: +NORMALIZE_WHITESPACE
         class      mammal
         animal        cat   bat
         locomotion  walks flies

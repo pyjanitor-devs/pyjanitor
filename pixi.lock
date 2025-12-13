@@ -8581,7 +8581,7 @@ packages:
 - pypi: ./
   name: pyjanitor
   version: 0.32.3
-  sha256: 51e1a8b7bda03bb579b72095d9dd549bcf2052a41348bd10c31c410fbbab2f52
+  sha256: c71a3cf9d97e1daf899693ed5b2b74d034201457123d988c5024ed634189fb1b
   requires_dist:
   - natsort
   - pandas-flavor==0.8.1

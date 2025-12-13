@@ -169,7 +169,9 @@ def summarise(
         101200          2.0
         102201          2.0
         103202          4.0
-        >>> grouped.summarise({"avg_run_2": ("avg_run", "mean")})
+        >>> grouped.summarise(
+        ...     {"avg_run_2": ("avg_run", "mean")}
+        ... )  # doctest: +NORMALIZE_WHITESPACE
                     avg_run_2
         combine_id
         100200            3.5

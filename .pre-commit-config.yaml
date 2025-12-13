@@ -1,42 +1,39 @@
-# See https://pre-commit.com for more information
-# See https://pre-commit.com/hooks.html for more hooks
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v6.0.0
+    rev: v4.4.0
     hooks:
-      - id: trailing-whitespace
-      - id: end-of-file-fixer
       - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
       - id: check-added-large-files
-  # - repo: https://github.com/psf/black-pre-commit-mirror
-  #   rev: 25.9.0
-  #   hooks:
-  #     - id: black
-  #       args: [--config, pyproject.toml]
+  - repo: https://github.com/kynan/nbstripout
+    rev: 0.6.1
+    hooks:
+      - id: nbstripout
   - repo: https://github.com/econchick/interrogate
     rev: 1.7.0
     hooks:
       - id: interrogate
         args: [-c, pyproject.toml]
-  # Taking out darglint because it takes too long to run.
-  # It may be superseded by ruff: https://github.com/astral-sh/ruff/issues/458
-  # - repo: https://github.com/terrencepreilly/darglint
-  #   rev: v1.8.1
-  #   hooks:
-  #     - id: darglint
-  #       args: [-v 2] # this config makes the error messages a bit less cryptic.
-
-  # # The interim replacement for darglint is pydoclint.
-  # - repo: https://github.com/jsh9/pydoclint
-  #   rev: 0.8.1
-  #   hooks:
-  #     - id: pydoclint
-  #       args:
-  #       - "--config=pyproject.toml"
+  - repo: https://github.com/jsh9/pydoclint
+    rev: 0.3.8
+    hooks:
+      - id: pydoclint
+        args:
+          - "--config=pyproject.toml"
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
     rev: v0.14.4
     hooks:
       - id: ruff-check
-        args: [--fix]
+        args: [--fix, --exit-non-zero-on-fix]
       - id: ruff-format
+  - repo: local
+    hooks:
+      - id: pixi-install
+        name: Keep lockfile up-to-date
+        entry: pixi install
+        language: system
+        always_run: true
+        require_serial: true
+        pass_filenames: false

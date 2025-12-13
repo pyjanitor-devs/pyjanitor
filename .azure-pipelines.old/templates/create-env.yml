@@ -1,8 +1,0 @@
-steps:
-  - script: |
-      conda env create -f environment-dev.yml
-      conda install -y python=$(python.version)
-      $(activate.command) pyjanitor-dev
-      python -m ipykernel install --user --name pyjanitor-dev
-      python setup.py develop
-    displayName: 'Install kernel, package and dependencies'

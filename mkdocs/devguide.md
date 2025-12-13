@@ -58,29 +58,29 @@ Then, clone your fork locally:
 git clone git@github.com:<your_github_username>/pyjanitor.git
 ```
 
-### Setup the conda environment
+### Setup the pixi environment
 
-Now, install your cloned repo into a conda environment.
-Assuming you have conda installed,
-this is how you set up your fork for local development
+This project uses `pixi` for dependency management and environment setup.
+Install pixi from [https://pixi.sh](https://pixi.sh) if you haven't already.
+
+To set up your fork for local development:
 
 ```bash
 cd pyjanitor/
-# Activate the pyjanitor conda environment
-source activate pyjanitor-dev
 
-# Create your conda environment
-conda env create -f environment-dev.yml
+# Install pixi environment (this installs all dependencies)
+pixi install
 
 # Install PyJanitor in development mode
-python setup.py develop
+pixi run pip install -e .
 
-# Register current virtual environment as a Jupyter Python kernel
-python -m ipykernel install --user --name pyjanitor-dev --display-name "PyJanitor development"
+# Register current environment as a Jupyter Python kernel (optional, for notebooks)
+pixi run python -m ipykernel install --user --name pyjanitor-dev --display-name "PyJanitor development"
 ```
-If you plan to write any notebooks,
-make sure they run correctly inside the environment by
-selecting the correct kernel from the top right corner of JupyterLab!
+
+If you plan to work with notebooks,
+they are now in Marimo format (`.py` files).
+Open them with `uvx marimo edit --watch examples/notebooks/notebook_name.py`.
 
 !!! note "PyCharm Users"
 
@@ -91,14 +91,11 @@ selecting the correct kernel from the top right corner of JupyterLab!
 
 `pre-commit` hooks are available
 to run code formatting checks automagically before git commits happen.
-If you did not have these installed before,
-run the following commands:
+Install and set up pre-commit hooks:
 
 ```bash
-# Update your environment to install pre-commit
-conda env update -f environment-dev.yml
-# Install pre-commit hooks
-pre-commit install
+# Install pre-commit hooks (pre-commit is included in pixi environment)
+pixi run pre-commit install
 ```
 
 ### Build docs locally
@@ -107,16 +104,16 @@ You should also be able to preview the docs locally.
 To do this, from the main `pyjanitor` directory:
 
 ```bash
-python -m mkdocs serve
+pixi run serve-docs
 ```
-The command above allows you to view the documentation locally in your browser.
 
-If you get any errors about importing modules when running `mkdocs serve`,
-first activate the development environment:
+Or alternatively:
 
 ```bash
-source activate pyjanitor-dev || conda activate pyjanitor-dev
+pixi run mkdocs serve
 ```
+
+The command above allows you to view the documentation locally in your browser.
 
 ### Plan out the change you'd like to contribute
 
@@ -174,7 +171,13 @@ apply the `@settings(max_examples=10, timeout=None)` decorator.
 To ensure that your environment is properly set up, run the following command:
 
 ```bash
-python -m pytest -m "not turtle"
+pixi run test
+```
+
+Or to run tests excluding slow ones:
+
+```bash
+pixi run pytest -m "not turtle"
 ```
 
 If all tests pass then your environment is setup for
@@ -196,7 +199,7 @@ we can take things slowly to get it right,
 and make this an educational opportunity for all who come by!
 
 !!! tip
-    You can run `python -m pytest -m "not turtle"` to run the fast tests.
+    You can run `pixi run pytest -m "not turtle"` to run the fast tests.
 
 !!! note "Running test locally"
     When you run tests locally,
@@ -267,5 +270,16 @@ If possible, it is preferable to stick to this section ordering within each docs
 To run a subset of tests:
 
 ```bash
-pytest tests.test_functions
+pixi run pytest tests.test_functions
 ```
+
+## Common Development Tasks
+
+All development tasks are available as pixi tasks:
+
+- `pixi run test` - Run the test suite
+- `pixi run lint` - Run linting checks
+- `pixi run format` - Format code
+- `pixi run docs` - Build documentation
+- `pixi run serve-docs` - Serve documentation locally
+- `pixi run check` - Run all checks (tests, docs, linting, formatting)

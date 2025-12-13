@@ -167,7 +167,9 @@ def select_columns(
 
 
         Selection is possible on a grouped object:
-        >>> df.groupby("name").select_columns("*wt").min()
+        >>> df.groupby("name").select_columns(
+        ...     "*wt"
+        ... ).min()  # doctest: +NORMALIZE_WHITESPACE
                                     brainwt   bodywt
         name
         Cheetah                         NaN   50.000

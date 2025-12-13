@@ -120,7 +120,9 @@ def summarise(
         5         4        4      103202
 
         Aggregation on a DataFrame via a callable:
-        >>> df.summarise(lambda df: df.select("avg*").mean().rename("mean"))
+        >>> df.summarise(
+        ...     lambda df: df.select("avg*").mean().rename("mean")
+        ... )  # doctest: +NORMALIZE_WHITESPACE
                              mean
         avg_jump         2.833333
         avg_run          2.833333

@@ -297,7 +297,7 @@ def expand(
         18  orange  2011    M
 
         Expand within each group, using `by`:
-        >>> df.expand("year", "size", by="type")
+        >>> df.expand("year", "size", by="type")  # doctest: +NORMALIZE_WHITESPACE
                 year size
         type
         apple   2010   XS

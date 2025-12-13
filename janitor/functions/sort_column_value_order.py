@@ -34,7 +34,7 @@ def sort_column_value_order(
         2        Feb     200.0     250.0     500.0
         3        Mar     300.0       NaN     600.0
         4      April     400.0     500.0     675.0
-        >>> df.sort_column_value_order(
+        >>> df.sort_column_value_order(  # doctest: +NORMALIZE_WHITESPACE
         ...     "SalesMonth", {"April": 1, "Mar": 2, "Feb": 3, "Jan": 4}
         ... )
           SalesMonth  Company1  Company2  Company3

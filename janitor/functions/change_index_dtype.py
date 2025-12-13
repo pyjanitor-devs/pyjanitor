@@ -34,7 +34,7 @@ def change_index_dtype(
         ... )
         >>> idx = pd.MultiIndex.from_tuples(tuples, names=["first", "second"])
         >>> df = pd.DataFrame(np.random.randn(8, 2), index=idx, columns=["A", "B"])
-        >>> df
+        >>> df  # doctest: +NORMALIZE_WHITESPACE
                              A         B
         first second
         bar   1.0     1.764052  0.400157

@@ -369,7 +369,9 @@ def xlsx_cells(
 
         Each cell is returned as a row:
 
-        >>> xlsx_cells(filename, sheetnames="highlights")
+        >>> xlsx_cells(
+        ...     filename, sheetnames="highlights"
+        ... )  # doctest: +NORMALIZE_WHITESPACE
             value internal_value coordinate  row  column data_type  is_date number_format
         0     Age            Age         A1    1       1         s    False       General
         1  Height         Height         B1    1       2         s    False       General

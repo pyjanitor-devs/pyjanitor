@@ -142,6 +142,7 @@ py = "*"
 unyt = "*"
 matplotlib = "*"
 openpyxl = "*"
+rdkit = "*"
 
 [tool.pixi.feature.docs.dependencies]
 mkdocs = "*"

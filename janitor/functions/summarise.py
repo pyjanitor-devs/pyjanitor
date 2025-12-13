@@ -162,7 +162,7 @@ def summarise(
         103202          4.0
 
         Aggregation on a grouped object via a dictionary:
-        >>> grouped.summarise({"avg_run": "mean"})
+        >>> grouped.summarise({"avg_run": "mean"})  # doctest: +NORMALIZE_WHITESPACE
                     avg_run
         combine_id
         100200          3.5

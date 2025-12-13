@@ -78,7 +78,7 @@ def change_index_dtype(
         second     int64
         dtype: object
         >>> outcome = df.change_index_dtype(dtype={0: "category", 1: int})
-        >>> outcome
+        >>> outcome  # doctest: +NORMALIZE_WHITESPACE
                              A         B
         first second
         bar   1       1.764052  0.400157

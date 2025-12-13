@@ -236,7 +236,9 @@ def select_columns(
         num_wings       2
 
         Selection with a regex on a level:
-        >>> df.select_columns({"animal": re.compile(".+t$")})
+        >>> df.select_columns(
+        ...     {"animal": re.compile(".+t$")}
+        ... )  # doctest: +NORMALIZE_WHITESPACE
         class      mammal
         animal        cat   bat
         locomotion  walks flies

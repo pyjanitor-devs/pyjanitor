@@ -31,7 +31,7 @@ repos:
   - repo: local
     hooks:
       - id: pixi-install
-        name: Keep lockfile up-to-date
+        name: pixi-install
         entry: pixi install
         language: system
         always_run: true

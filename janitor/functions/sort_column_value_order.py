@@ -71,5 +71,6 @@ def sort_column_value_order(
     if columns is not None:
         sort_by = ["cond_order"] + columns
 
-    df = df.sort_values(sort_by).remove_columns("cond_order")
+    # Use stable sort to preserve original order for equal values
+    df = df.sort_values(sort_by, kind="stable").remove_columns("cond_order")
     return df

@@ -579,19 +579,21 @@ def _data_checks_pivot_longer(
     checking happens.
     """
     # checks here are only on the columns
-    # a slice is safe
-    df = df[:]
+    # Use copy() to preserve MultiIndex structure
+    df = df.copy()
 
-    if column_level is not None:
-        check("column_level", column_level, [int, str])
-        df.columns = df.columns.get_level_values(column_level)
-
+    # Check MultiIndex with names_sep/names_pattern BEFORE any column selection
+    # This must happen before column_level processing to catch the error early
     if any((names_sep, names_pattern)) and (isinstance(df.columns, pd.MultiIndex)):
         raise ValueError(
             "Unpivoting a MultiIndex column dataframe "
             "when names_sep or names_pattern is supplied "
             "is not supported."
         )
+
+    if column_level is not None:
+        check("column_level", column_level, [int, str])
+        df.columns = df.columns.get_level_values(column_level)
 
     if (index is None) and (column_names is None):
         column_names = slice(None)

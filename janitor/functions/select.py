@@ -197,7 +197,7 @@ def select_columns(
         num_wings       0     0     2       2
 
         Selection with a scalar:
-        >>> df.select_columns("mammal")
+        >>> df.select_columns("mammal")  # doctest: +NORMALIZE_WHITESPACE
         class      mammal
         animal        cat   dog   bat
         locomotion  walks walks flies

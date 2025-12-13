@@ -144,8 +144,8 @@ def summarise(
         >>> grouped = df.groupby("combine_id")
 
         Aggregation on a grouped object via a callable:
-        >>> grouped.summarise(lambda df: df.sum())
-                    avg_jump  avg_run
+        >>> grouped.summarise(lambda df: df.sum())  # doctest: +NORMALIZE_WHITESPACE
+                 avg_jump  avg_run
         combine_id
         100200             7        7
         101200             3        4

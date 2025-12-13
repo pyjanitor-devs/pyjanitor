@@ -160,7 +160,7 @@ def pivot_longer(
         ...     names_pattern=r"new_?(.+)_(.)(\\d+)",
         ...     names_transform={"gender": "category", "age": "int"},
         ... )
-        >>> result.dtypes
+        >>> result.dtypes  # doctest: +NORMALIZE_WHITESPACE
         id           int64
         diagnosis   object
         gender    category

@@ -46,7 +46,7 @@ def change_index_dtype(
         qux   1.0     0.761038  0.121675
               2.0     0.443863  0.333674
         >>> outcome = df.change_index_dtype(dtype=str)
-        >>> outcome
+        >>> outcome  # doctest: +NORMALIZE_WHITESPACE
                              A         B
         first second
         bar   1.0     1.764052  0.400157

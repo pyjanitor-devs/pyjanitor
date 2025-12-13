@@ -416,7 +416,7 @@ def xlsx_cells(
         >>> out = xlsx_cells(
         ...     filename, sheetnames="highlights", engine="polars", fill=True
         ... ).get_column("fill")
-        >>> out
+        >>> out  # doctest: +NORMALIZE_WHITESPACE
         shape: (8,)
         Series: 'fill' [struct[3]]
         [

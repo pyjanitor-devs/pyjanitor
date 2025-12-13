@@ -15,6 +15,13 @@ except ImportError:
         pip_install=True,
     )
 
+    # Define a dummy function to prevent NameError when pyspark is not installed
+    def register_dataframe_accessor(name):
+        def decorator(accessor):
+            return accessor
+
+        return decorator
+
 
 def register_dataframe_method(method):
     """Register a function as a method attached to the Pyspark DataFrame.

@@ -143,6 +143,9 @@ unyt = "*"
 matplotlib = "*"
 openpyxl = "*"
 rdkit = "*"
+requests = "*"
+numba = "*"
+pyspark = "*"
 
 [tool.pixi.feature.docs.dependencies]
 mkdocs = "*"

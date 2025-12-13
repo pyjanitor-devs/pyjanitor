@@ -49,7 +49,7 @@ jobs:
         run: pixi run pip install -e .
 
       - name: Run docstrings tests
-        run: pixi run pytest -v -r a -n auto --color=yes --durations=0 --cov=janitor --cov-append --cov-report term-missing --cov-report xml --doctest-only janitor
+        run: pixi run pytest -v -r a -n auto --color=yes --durations=0 --cov=janitor --cov-append --cov-report term-missing --cov-report xml --doctest-modules --ignore=tests janitor
 
       - name: Run unit tests
         run: pixi run pytest -v -r a -n auto --color=yes --durations=0 --cov=janitor --cov-append --cov-report term-missing --cov-report xml tests

@@ -432,7 +432,9 @@ def xlsx_cells(
 
         Specific cell attributes can be acessed via Polars' struct:
 
-        >>> out.struct.field("fgColor").struct.field("rgb")
+        >>> out.struct.field("fgColor").struct.field(
+        ...     "rgb"
+        ... )  # doctest: +NORMALIZE_WHITESPACE
         shape: (8,)
         Series: 'rgb' [str]
         [

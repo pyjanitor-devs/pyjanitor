@@ -220,7 +220,7 @@ def select_columns(
         locomotion  walks
         num_legs        4
         num_wings       0
-        >>> df.select_columns({1: ["bat", "cat"]})
+        >>> df.select_columns({1: ["bat", "cat"]})  # doctest: +NORMALIZE_WHITESPACE
         class      mammal
         animal        bat   cat
         locomotion  flies walks

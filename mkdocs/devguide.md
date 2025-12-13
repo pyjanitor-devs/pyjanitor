@@ -208,7 +208,7 @@ and make this an educational opportunity for all who come by!
     the optional dependencies (e.g. `rdkit`) installed.
 
 !!! info
-    * pre-commit **does not run** your tests locally rather all tests are run in continuous integration (CI).
+    *pre-commit **does not run** your tests locally rather all tests are run in continuous integration (CI).
     * All tests must pass in CI before the pull request is accepted,
     and the continuous integration system up on GitHub Actions
     will help run all of the tests before they are committed to the repository.
@@ -257,7 +257,7 @@ We follow the Google docstring style, please read [Napoleon's documentation](htt
 
 We are using the following docstring section identifiers -- please stick to them if you are contributing a docstring change:
 
-- **Examples:** for sample code blocks demonstrating the use of pyjanitor. keep example blocks in the `pycon` (python-console) style, i.e., input code prefixed by `>>> ` and `... `, and output code with no prefix.
+- **Examples:** for sample code blocks demonstrating the use of pyjanitor. keep example blocks in the `pycon` (python-console) style, i.e., input code prefixed by `>>>` and `...`, and output code with no prefix.
 - **Args:** for function parameters
 - **Raises:** for exceptions
 - **Returns:** for function return value(s)

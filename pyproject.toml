@@ -167,6 +167,15 @@ unyt = "*"
 [tool.pixi.feature.spark.dependencies]
 pyspark = "*"
 
+[tool.pixi.feature.py311.dependencies]
+python = "3.11.*"
+
+[tool.pixi.feature.py312.dependencies]
+python = "3.12.*"
+
+[tool.pixi.feature.py313.dependencies]
+python = "3.13.*"
+
 [tool.pixi.tasks]
 format = "pre-commit run ruff-format --all-files"
 test = "pytest -v -n auto --color=yes"
@@ -197,6 +206,9 @@ biology = { features = ["tests", "setup", "biology"] }
 chemistry = { features = ["tests", "setup", "chemistry"] }
 engineering = { features = ["tests", "setup", "engineering"] }
 spark = { features = ["tests", "setup", "spark"] }
+py311 = { features = ["tests", "setup", "py311"] }
+py312 = { features = ["tests", "setup", "py312"] }
+py313 = { features = ["tests", "setup", "py313"] }
 
 [tool.coverage.run]
 omit = [

@@ -78,6 +78,7 @@ Contributors
 - [@gjlynx](https://github.com/gjlynx) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Agjlynx)
 - [@aopisco](https://github.com/aopisco) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Aaopisco)
 - [@gaworecki5](https://github.com/gaworecki5) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Agaworecki5)
+- [@gcamargo2](https://github.com/gcamargo2) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Agcamargo2)
 - [@puruckertom](https://github.com/puruckertom) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Apuruckertom)
 - [@thomasjpfan](https://github.com/thomasjpfan) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Athomasjpfan)
 - [@jiafengkevinchen](https://github.com/jiafengkevinchen) | [contributions](https://github.com/pyjanitor-devs/pyjanitor/pulls?utf8=%E2%9C%93&q=is%3Aclosed+mentions%3Ajiafengkevinchen)

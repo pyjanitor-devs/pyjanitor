@@ -1,285 +1,233 @@
-# Development Guide
+# How to Get Started Developing pyjanitor
 
-For those of you who are interested in contributing code to the project,
-many previous contributors have wrestled with
-a variety of ways of getting set up.
-While we can't cover every single last configuration,
-we could cover some of the more common cases.
-Here they are for your benefit!
+This guide walks you through setting up a development environment for `pyjanitor` and making your first contribution.
 
-## Development Containers with VSCode
+## Prerequisites
 
-As of 29 May 2020, development containers are supported!
-This is the preferred way to get you started up and running,
-as it creates a uniform setup environment
-that is much easier for the maintainers to debug,
-because you are provided with a pre-built and clean development environment
-free of any assumptions of your own system.
-You don't have to wrestle with conda wait times if you don't want to!
+Before you begin, ensure you have:
 
-To get started:
+- Git installed and configured
+- A GitHub account
+- [Pixi](https://pixi.sh) installed for dependency management
 
-1. Fork the repository.
-2. Ensure you have Docker running on your local machine.
-3. Ensure you have VSCode running on your local machine.
-4. In VS Code, Install an extension called `Remote - Containers`.
-5. In Visual Studio Code,
-    click on the quick actions Status Bar item in the lower left corner.
-6. Then select "Remote Containers: Clone Repository In Container Volume".
-7. Enter in the URL of your fork of `pyjanitor`.
+## Step 1: Fork and Clone the Repository
 
-VSCode will pull down the prebuilt Docker container,
-git clone the repository for you inside an isolated Docker volume,
-and mount the repository directory inside your Docker container.
-
-Follow best practices to submit a pull request by making a feature branch.
-Now, hack away, and submit in your pull request!
-
-You shouldn't be able to access the cloned repo
-on your local hard drive.
-If you do want local access, then clone the repo locally first
-before selecting "Remote Containers: Open Folder In Container".
-
-If you find something is broken because a utility is missing in the container,
-submit a PR with the appropriate build command inserted in the Dockerfile.
-Care has been taken to document what each step does,
-so please read the in-line documentation in the Dockerfile carefully.
-
-## Manual Setup
-
-### Fork the repository
-
-Firstly, begin by forking the [`pyjanitor` repo][repo] on GitHub.
-Then, clone your fork locally:
+Fork the [`pyjanitor` repository][repo] on GitHub, then clone your fork locally:
 
 [repo]: https://github.com/pyjanitor-devs/pyjanitor
 
 ```bash
 git clone git@github.com:<your_github_username>/pyjanitor.git
+cd pyjanitor
 ```
 
-### Setup the pixi environment
+## Step 2: Set Up the Development Environment
 
-This project uses `pixi` for dependency management and environment setup.
-Install pixi from [https://pixi.sh](https://pixi.sh) if you haven't already.
-
-To set up your fork for local development:
+Install the pixi environment and set up the project:
 
 ```bash
-cd pyjanitor/
-
 # Install pixi environment (this installs all dependencies)
 pixi install
 
-# Install PyJanitor in development mode
-pixi run pip install -e .
-
-# Register current environment as a Jupyter Python kernel (optional, for notebooks)
-pixi run python -m ipykernel install --user --name pyjanitor-dev --display-name "PyJanitor development"
+# Install pyjanitor in development mode and set up pre-commit hooks
+pixi run start
 ```
 
-If you plan to work with notebooks,
-they are now in Marimo format (`.py` files).
-Open them with `uvx marimo edit --watch examples/notebooks/notebook_name.py`.
+The `start` command installs `pyjanitor` in editable mode and configures pre-commit hooks that will automatically check your code before commits.
 
-!!! note "PyCharm Users"
+## Step 3: Verify Your Setup
 
-    For PyCharm users,
-    here are some `instructions <PYCHARM_USERS.html>`__  to get your Conda environment set up.
-
-### Install the pre-commit hooks
-
-`pre-commit` hooks are available
-to run code formatting checks automagically before git commits happen.
-Install and set up pre-commit hooks:
+Run the test suite to ensure everything is working:
 
 ```bash
-# Install pre-commit hooks (pre-commit is included in pixi environment)
-pixi run pre-commit install
-```
-
-### Build docs locally
-
-You should also be able to preview the docs locally.
-To do this, from the main `pyjanitor` directory:
-
-```bash
-pixi run serve-docs
-```
-
-Or alternatively:
-
-```bash
-pixi run mkdocs serve
-```
-
-The command above allows you to view the documentation locally in your browser.
-
-### Plan out the change you'd like to contribute
-
-The old adage rings true:
-
-> failing to plan means planning to fail.
-
-We'd encourage you to flesh out the idea you'd like to contribute
-on the GitHub issue tracker before embarking on a contribution.
-Submitting new code, in particular,
-is one where the maintainers will need more consideration,
-after all, any new code submitted introduces a new maintenance burden,
-unless you the contributor would like to join the maintainers team!
-
-To kickstart the discussion,
-submit an issue to the [`pyjanitor` GitHub issue tracker][issuetracker]
-describing your planned changes.
-The issue tracker also helps us keep track of who is working on what.
-
-[issuetracker]: https://github.com/pyjanitor-devs/pyjanitor
-
-### Create a branch for local development
-
-New contributions to `pyjanitor`
-should be done in a new branch that you have
-based off the latest version of the `dev` branch.
-
-To create a new branch:
-
-```bash
-git checkout -b <name-of-your-bugfix-or-feature> dev
-```
-
-### Write the Code
-
-As you work, remember to adhere to the coding standards and practices that pyjanitor follows. If in doubt, refer to existing code or bring up your questions in the GitHub issue you created. Some tips for writing code:
-
-**Commit Early, Commit Often:** Make frequent, smaller commits. This helps to track progress and makes it easier for maintainers to follow your work. Include useful commit messages that describe the changes you're making:
-
-**Stay Updated with dev branch:** Regularly pull the latest changes from the dev branch to ensure your feature branch is up-to-date, reducing the likelihood of merge conflicts:
-
-```bash
-git fetch origin dev
-git rebase origin/dev
-```
-
-**Write Tests:** For every feature or bugfix, accompanying tests are essential.
-They ensure the feature works as expected or the bug is truly fixed.
-Tests should ideally run in less than 2 seconds.
-If using Hypothesis for testing,
-apply the `@settings(max_examples=10, timeout=None)` decorator.
-
-### Check your environment
-
-To ensure that your environment is properly set up, run the following command:
-
-```bash
+# Run all tests
 pixi run test
-```
 
-Or to run tests excluding slow ones:
-
-```bash
+# Or run only fast tests (excludes slow "turtle" tests)
 pixi run pytest -m "not turtle"
 ```
 
-If all tests pass then your environment is setup for
-development and you are ready to contribute 🥳.
+If all tests pass, your environment is ready for development.
 
-### Check your code
+!!! note "Optional Dependencies"
 
-When you're done making changes,
-commit your staged files with a meaningful message.
-If installed correctly, you will automatically run pre-commit hooks
-that check code for code style adherence.
-These same checks will be run on GitHub Actions,
-so no worries if you don't have the running locally.
-If the pre-commit hooks fail,
-be sure to fix the issues (as raised by them) before committing.
-If you feel lost on how to fix the code,
-please feel free to ping the maintainers on GitHub -
-we can take things slowly to get it right,
-and make this an educational opportunity for all who come by!
-
-!!! tip
-    You can run `pixi run pytest -m "not turtle"` to run the fast tests.
-
-!!! note "Running test locally"
     When you run tests locally,
-    the tests in `chemistry.py`, `biology.py`, `spark.py`
+    tests in `chemistry.py`, `biology.py`, and `spark.py`
     are automatically skipped if you don't have
-    the optional dependencies (e.g. `rdkit`) installed.
+    the optional dependencies (e.g., `rdkit`, `pyspark`) installed.
+    These will still run in CI where all dependencies are available.
 
-!!! info
-    *pre-commit **does not run** your tests locally rather all tests are run in continuous integration (CI).
-    * All tests must pass in CI before the pull request is accepted,
-    and the continuous integration system up on GitHub Actions
-    will help run all of the tests before they are committed to the repository.
+## Step 4: Plan Your Contribution
 
-### Commit your changes
+Before writing code, discuss your planned changes on the [GitHub issue tracker][issuetracker].
+This helps:
 
-Now you can commit your changes and push your branch to GitHub:
+- Ensure your idea aligns with the project's direction
+- Avoid duplicate work
+- Get feedback early
+- Track who is working on what
+
+[issuetracker]: https://github.com/pyjanitor-devs/pyjanitor
+
+## Step 5: Create a Feature Branch
+
+Create a new branch from the `dev` branch for your work:
+
+```bash
+git fetch origin dev
+git checkout -b <name-of-your-bugfix-or-feature> origin/dev
+```
+
+Use a descriptive branch name that indicates what you're working on (e.g., `fix-clean-names-underscore`, `add-new-function`).
+
+## Step 6: Make Your Changes
+
+As you write code, keep these guidelines in mind:
+
+### Code Standards
+
+- Follow existing code patterns and style
+- Write clear, readable code
+- Add docstrings following the [Google style](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html)
+- Use the docstring sections: **Examples**, **Args**, **Raises**, **Returns**, **Yields** (in that order when applicable)
+
+### Commit Practices
+
+- **Commit early and often**: Make frequent, smaller commits with clear messages
+- **Stay updated**: Regularly sync with the `dev` branch:
+
+  ```bash
+  git fetch origin dev
+  git rebase origin/dev
+  ```
+
+### Write Tests
+
+Every feature or bugfix needs tests. Tests should:
+
+- Run quickly (ideally under 2 seconds)
+- Use `@settings(max_examples=10, timeout=None)` when using Hypothesis
+- Be placed in the `tests/` directory mirroring the source structure
+
+### Working with Marimo Notebooks
+
+Notebooks are in Marimo format (`.py` files). To edit them:
+
+```bash
+# Navigate to the notebooks directory
+cd examples/notebooks
+
+# Edit a notebook (replace notebook_name.py with the actual filename)
+uvx marimo edit --watch notebook_name.py
+```
+
+You must be in the `examples/notebooks` directory when running the `marimo edit` command.
+
+## Step 7: Check Your Code
+
+Before committing, verify your code passes all checks:
+
+```bash
+# Run tests
+pixi run test
+
+# Or run fast tests only
+pixi run pytest -m "not turtle"
+
+# Check code style and formatting
+pixi run lint
+```
+
+Pre-commit hooks will automatically run when you commit, but you can also run them manually:
+
+```bash
+pixi run lint
+```
+
+!!! info "Pre-commit Hooks"
+
+    Pre-commit hooks check code style automatically before commits.
+    They do **not** run your tests locally.
+    All tests are run in CI on GitHub Actions before your pull request is accepted.
+
+## Step 8: Commit and Push Your Changes
+
+Once your code is ready, commit and push:
 
 ```bash
 git add .
-git commit -m "Your detailed description of your changes."
+git commit -m "Your detailed description of your changes"
 git push origin <name-of-your-bugfix-or-feature>
 ```
 
-### Submit a pull request through the GitHub website
+If pre-commit hooks fail, fix the issues they report before committing.
 
-Congratulations 🎉🎉🎉, you've made it to the penultimate step;
-your code is ready to be checked and reviewed by the maintainers!
-Head over to the GitHub website and create a pull request.
-When you are picking out which branch to merge into,
-a.k.a. the target branch, be sure to select `dev` (not `master`).
+## Step 9: Submit a Pull Request
 
-### Fix any remaining issues
+1. Go to the [pyjanitor repository][repo] on GitHub
+2. Click "New Pull Request"
+3. Select your branch and set the target branch to **`dev`** (not `main` or `master`)
+4. Fill out the pull request template with details about your changes
+5. Submit the pull request
 
-It's rare, but you might at this point still encounter issues,
-as the continuous integration (CI) system on GitHub Actions checks your code.
-Some of these might not be your fault;
-rather, it might well be the case that your code fell a little bit out of date
-as others' pull requests are merged into the repository.
+## Step 10: Address Review Feedback
 
-In any case, if there are any issues, the pipeline will fail out.
-We check for code style, docstring coverage, test coverage, and doc discovery.
-If you're comfortable looking at the pipeline logs, feel free to do so;
-they are open to all to view.
-Otherwise, one of the dev team members
-can help you with reviewing the code checks.
+GitHub Actions will automatically run:
 
-## Code Compatibility
+- Code style checks
+- Docstring coverage
+- Test coverage
+- Documentation discovery
+- All tests across Python 3.11, 3.12, and 3.13
 
-pyjanitor supports Python 3.6+,
-so all contributed code must maintain this compatibility.
-
-## Docstring Style
-
-We follow the Google docstring style, please read [Napoleon's documentation](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html) for a detailed introduction.
-
-We are using the following docstring section identifiers -- please stick to them if you are contributing a docstring change:
-
-- **Examples:** for sample code blocks demonstrating the use of pyjanitor. keep example blocks in the `pycon` (python-console) style, i.e., input code prefixed by `>>>` and `...`, and output code with no prefix.
-- **Args:** for function parameters
-- **Raises:** for exceptions
-- **Returns:** for function return value(s)
-- **Yields:** for generator yield value(s)
-
-If possible, it is preferable to stick to this section ordering within each docstring.
-
-## Tips
-
-To run a subset of tests:
-
-```bash
-pixi run pytest tests.test_functions
-```
+If any checks fail, review the logs and fix the issues. Maintainers may also request changes during code review. Update your branch and push new commits to address feedback.
 
 ## Common Development Tasks
 
-All development tasks are available as pixi tasks:
+All development tasks are available as pixi commands:
 
+- `pixi run start` - Set up development environment (install package and pre-commit hooks)
 - `pixi run test` - Run the test suite
 - `pixi run lint` - Run linting checks
 - `pixi run format` - Format code
 - `pixi run docs` - Build documentation
 - `pixi run serve-docs` - Serve documentation locally
 - `pixi run check` - Run all checks (tests, docs, linting, formatting)
+
+## Tips
+
+### Running Specific Tests
+
+Run a subset of tests:
+
+```bash
+# Run tests for a specific module
+pixi run pytest tests/functions/test_clean_names.py
+
+# Run a specific test
+pixi run pytest tests/functions/test_clean_names.py::test_clean_names_basic
+```
+
+### Viewing Documentation Locally
+
+Preview documentation while developing:
+
+```bash
+pixi run serve-docs
+```
+
+This starts a local server (usually at `http://127.0.0.1:8000`) where you can view the documentation.
+
+## Code Compatibility
+
+`pyjanitor` supports Python 3.11, 3.12, and 3.13. All contributed code must maintain compatibility with these versions. Tests run automatically across all supported Python versions in CI.
+
+## Getting Help
+
+If you encounter issues or have questions:
+
+- Check existing [GitHub issues](https://github.com/pyjanitor-devs/pyjanitor/issues)
+- Ask questions in your pull request
+- Reach out to maintainers on GitHub
+
+We're here to help make your contribution experience smooth and educational!

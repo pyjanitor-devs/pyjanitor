@@ -177,6 +177,7 @@ python = "3.12.*"
 python = "3.13.*"
 
 [tool.pixi.tasks]
+start = "pre-commit install"
 format = "pre-commit run ruff-format --all-files"
 test = "pytest -v -n auto --color=yes"
 lint = "pre-commit run --all-files"

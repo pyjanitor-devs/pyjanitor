@@ -428,7 +428,7 @@ def xlsx_cells(
            {null,{"00000000","rgb",0.0},{"00000000","rgb",0.0}}
         ]
 
-        Specific cell attributes can be acessed via Polars' struct:
+        Specific cell attributes can be accessed via Polars' struct:
 
         >>> out.struct.field("fgColor").struct.field("rgb")
         shape: (8,)

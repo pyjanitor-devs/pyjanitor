@@ -372,7 +372,7 @@ def test_callable(numbers):
     """
     Check that error is raised if `columns_to_select` is a
     callable, and at lease one Series has a wrong data type
-    that makes the callable unapplicable.
+    that makes the callable inapplicable.
     """
     with pytest.raises(
         ValueError,

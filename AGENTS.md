@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This file provides guidance to LLM agents when working with code in this repository.
+This file provides guidance to LLM agents working with code in this repository.
 It serves as the agent's "constitution" for pyjanitor development.
 
 ---
@@ -11,33 +11,47 @@ It serves as the agent's "constitution" for pyjanitor development.
 
 **CRITICAL RULE**: This file is a living document. Agents MUST update it when:
 
-1. **User Corrections**: If the user corrects you on anything, immediately record the correction in this file (AGENTS.md) in an appropriate section, then continue with what you were doing, applying the correction.
+1. **User Corrections**: If the user corrects you on anything, immediately record
+   the correction in this file (AGENTS.md) in an appropriate section, then
+   continue with what you were doing, applying the correction.
 
-2. **Discovered Patterns**: If you discover a pattern, convention, or best practice not documented here while working on the codebase, add it to the appropriate section.
+2. **Discovered Patterns**: If you discover a pattern, convention, or best
+   practice not documented here while working on the codebase, add it to the
+   appropriate section.
 
-3. **Command Updates**: If you find that a command has changed, been deprecated, or a better alternative exists, update the Commands section.
+3. **Command Updates**: If you find that a command has changed, been deprecated,
+   or a better alternative exists, update the Commands section.
 
-4. **Anti-Patterns**: If you make a mistake and learn from it, document the anti-pattern in the appropriate section to prevent future occurrences.
+4. **Anti-Patterns**: If you make a mistake and learn from it, document the
+   anti-pattern in the appropriate section to prevent future occurrences.
 
-**How to Update**: Add new learnings to the `## Learned Patterns` section at the bottom of this file. The maintainer will periodically review and integrate these into the main sections.
+**How to Update**: Add new learnings to the `## Learned Patterns` section at
+the bottom of this file. The maintainer will periodically review and integrate
+these into the main sections.
 
 ### Core Principles
 
-- **Read Before Edit**: Always read and understand relevant files before proposing changes.
-- **Minimal Changes**: Make the smallest change necessary to accomplish the task.
+- **Read Before Edit**: Always read and understand relevant files before
+  proposing changes.
+- **Minimal Changes**: Make the smallest change necessary to accomplish the
+  task.
 - **Test-Driven**: Always run tests after making code changes.
 - **Document**: Keep docstrings up-to-date using Google-style format.
+- **Lint Markdown**: Always run `markdownlint` on markdown files after editing.
 
 ---
 
 ## Project Overview
 
-pyjanitor is a Python implementation of the R package janitor. It provides a clean, chainable API for extending pandas with powerful and readable data-cleaning functions.
+pyjanitor is a Python implementation of the R package janitor. It provides a
+clean, chainable API for extending pandas with powerful and readable
+data-cleaning functions.
 
 **Key Design Philosophy**:
+
 - Methods are chainable (fluent interface)
 - Methods are registered via `pandas_flavor` as DataFrame methods
-- All methods return a DataFrame (immutability pattern - methods don't mutate input)
+- All methods return a DataFrame (immutability pattern - no mutation)
 - Functions follow a consistent signature pattern: `df` first, then parameters
 
 ---
@@ -48,7 +62,8 @@ pyjanitor is a Python implementation of the R package janitor. It provides a cle
 
 **This project uses `pixi` for dependency management and environment setup.**
 
-**⚠️ CRITICAL FOR LLM AGENTS**: All Python commands MUST be run within a pixi context. Never run Python commands directly without the `pixi run` prefix.
+**⚠️ CRITICAL FOR LLM AGENTS**: All Python commands MUST be run within a pixi
+context. Never run Python commands directly without the `pixi run` prefix.
 
 ```bash
 # ✅ CORRECT
@@ -100,9 +115,9 @@ pixi run -e <environment> <command>
 | Task | Command |
 |------|---------|
 | Run all tests | `pixi run test` |
-| Run specific test file | `pixi run pytest tests/functions/test_clean_names.py -v` |
+| Run specific test | `pixi run pytest tests/functions/test_clean_names.py` |
 | Run tests matching pattern | `pixi run pytest -k "test_clean_names" -v` |
-| Run tests with coverage | `pixi run pytest --cov=janitor --cov-report=term-missing` |
+| Run tests with coverage | `pixi run pytest --cov=janitor` |
 | Build documentation | `pixi run docs` |
 | Serve docs locally | `pixi run serve-docs` |
 | Run linting | `pixi run lint` |
@@ -130,7 +145,7 @@ pixi run pytest -m "biology" -v
 pixi run pytest -m "chemistry" -v
 
 # Run a single test function
-pixi run pytest tests/functions/test_clean_names.py::test_clean_names_method_chain -v
+pixi run pytest tests/functions/test_clean_names.py::test_clean_names_method_chain
 ```
 
 ### Documentation Commands
@@ -162,6 +177,21 @@ pixi run isort
 pixi run style
 ```
 
+### Markdown Linting
+
+**Always run `markdownlint` on markdown files after editing them.**
+
+```bash
+# Lint a markdown file
+markdownlint AGENTS.md
+
+# Lint all markdown files
+markdownlint "**/*.md"
+
+# If markdownlint is not on PATH, install it globally:
+pixi global install markdownlint-cli
+```
+
 ### Notebook Commands
 
 ```bash
@@ -175,13 +205,14 @@ uvx marimo edit --watch <notebook.py>
 uvx marimo run <notebook.py>
 ```
 
-**⚠️ CRITICAL**: Always use `uvx marimo convert` to convert Jupyter notebooks. Do NOT manually convert or create conversion scripts.
+**⚠️ CRITICAL**: Always use `uvx marimo convert` to convert Jupyter notebooks.
+Do NOT manually convert or create conversion scripts.
 
 ---
 
 ## Project Structure
 
-```
+```text
 pyjanitor/
 ├── janitor/                    # Source code
 │   ├── __init__.py            # Package entry point
@@ -219,7 +250,8 @@ pyjanitor/
 
 ### Adding a New Function
 
-1. **Create the function** in the appropriate module (e.g., `janitor/functions/my_function.py`)
+1. **Create the function** in the appropriate module
+   (e.g., `janitor/functions/my_function.py`)
 2. **Register as DataFrame method** using `@pf.register_dataframe_method`
 3. **Export in `__init__.py`** of the parent package
 4. **Write tests** in `tests/functions/test_my_function.py`
@@ -384,6 +416,7 @@ pixi run pytest -m "not turtle" -v
 ### ❌ DON'T
 
 1. **Don't run Python/pytest without pixi**
+
    ```bash
    # Wrong
    python script.py
@@ -391,6 +424,7 @@ pixi run pytest -m "not turtle" -v
    ```
 
 2. **Don't mutate input DataFrames**
+
    ```python
    # Wrong
    def my_func(df):
@@ -399,6 +433,7 @@ pixi run pytest -m "not turtle" -v
    ```
 
 3. **Don't manually convert notebooks**
+
    ```bash
    # Wrong - don't write custom conversion scripts
    python convert_notebook.py
@@ -410,15 +445,20 @@ pixi run pytest -m "not turtle" -v
 5. **Don't skip docstrings**
    - Interrogate enforces >55% docstring coverage
 
+6. **Don't forget to lint markdown**
+   - Always run `markdownlint` on markdown files after editing
+
 ### ✅ DO
 
 1. **Always use pixi run**
+
    ```bash
    pixi run pytest tests/
    pixi run python script.py
    ```
 
 2. **Work on copies**
+
    ```python
    def my_func(df):
        df = df.copy()
@@ -427,6 +467,7 @@ pixi run pytest -m "not turtle" -v
    ```
 
 3. **Use uvx marimo for notebooks**
+
    ```bash
    uvx marimo convert notebook.ipynb -o notebook.py
    ```
@@ -434,6 +475,13 @@ pixi run pytest -m "not turtle" -v
 4. **Write tests alongside code**
 
 5. **Write Google-style docstrings with examples**
+
+6. **Run markdownlint on markdown files**
+
+   ```bash
+   markdownlint AGENTS.md
+   # Install if not on PATH: pixi global install markdownlint-cli
+   ```
 
 ---
 
@@ -443,11 +491,12 @@ pixi run pytest -m "not turtle" -v
 
 | Issue | Solution |
 |-------|----------|
-| `ModuleNotFoundError: No module named 'janitor'` | Use `pixi run` or enter `pixi shell` first |
-| Tests failing with import errors | Ensure you're in the correct pixi environment |
-| Pre-commit hooks failing | Run `pixi run lint` to see detailed errors |
-| Docstring coverage failing | Add docstrings to functions/methods |
-| rdkit import error | Use `pixi run -e chemistry` for chemistry tests |
+| `ModuleNotFoundError: janitor` | Use `pixi run` or `pixi shell` |
+| Tests failing with import errors | Use correct pixi environment |
+| Pre-commit hooks failing | Run `pixi run lint` for details |
+| Docstring coverage failing | Add docstrings to functions |
+| rdkit import error | Use `pixi run -e chemistry` |
+| markdownlint not found | `pixi global install markdownlint-cli` |
 
 ### Environment Issues
 
@@ -471,15 +520,23 @@ This section is for agents to record new learnings.
 Add entries in the format:
 
 ### [Date] Learning Title
+
 **Context**: What you were doing
 **Learning**: What you discovered
 **Recommendation**: How to apply this learning
 -->
 
-*No entries yet. Agents will add learnings here as they work on the codebase.*
+### [2025-12-19] Always Run markdownlint
+
+**Context**: Editing AGENTS.md file
+**Learning**: Markdown files should be linted with `markdownlint` to ensure
+consistent formatting and catch issues like long lines.
+**Recommendation**: After editing any markdown file, run `markdownlint <file>`.
+If not installed, use `pixi global install markdownlint-cli`.
 
 ---
 
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol
+- **2025-12-19**: Added markdownlint requirement and fixed line length issues

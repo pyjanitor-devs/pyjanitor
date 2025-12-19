@@ -330,7 +330,7 @@ def _computations_complete(
     # to cater for scenarios where the column_name
     # is not a string
     # assign only works with keys that are strings
-    # Also, the output wil be floats (for numeric types),
+    # Also, the output will be floats (for numeric types),
     # even if all the columns could be integers
     # user can always convert to int if required
     for column_name, value in fill_value.items():

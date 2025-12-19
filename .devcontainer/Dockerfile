@@ -16,7 +16,7 @@ ARG USERNAME=vscode
 ARG USER_UID=1000
 ARG USER_GID=$USER_UID
 
-# Copy environment-dev.yml (if found) to a temp locaition so we update the environment. Also
+# Copy environment-dev.yml (if found) to a temp location so we update the environment. Also
 # copy "noop.txt" so the COPY instruction does not fail if no environment-dev.yml exists.
 COPY environment-dev.yml* .devcontainer/noop.txt /tmp/conda-tmp/
 

@@ -219,7 +219,7 @@ def _eq_join_tuple_compare(
     ends: np.ndarray,
     tupled: tuple,
 ):
-    """Comparision when tupled is present in an equi join"""
+    """Comparison when tupled is present in an equi join"""
 
     for _tuple in literal_unroll(tupled):
         left_arr = _tuple[0]

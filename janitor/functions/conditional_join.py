@@ -324,14 +324,15 @@ def _conditional_join_preliminary_checks(
 
     check("right", right, [pd.DataFrame, pd.Series])
 
-    df = df[:]
-    right = right[:]
+    df = df.copy()
+    right = right.copy()
 
     if isinstance(right, pd.Series):
         if not right.name:
             raise ValueError("Unnamed Series are not supported for conditional_join.")
         right = right.to_frame()
 
+    # Check MultiIndex column level mismatch first, before any column existence checks
     if df.columns.nlevels != right.columns.nlevels:
         raise ValueError(
             "The number of column levels "
@@ -339,6 +340,14 @@ def _conditional_join_preliminary_checks(
             "The number of column levels from the left dataframe "
             f"is {df.columns.nlevels}, while the number of column levels "
             f"from the right dataframe is {right.columns.nlevels}."
+        )
+
+    # Check MultiIndex dictionary renaming before column existence checks
+    if (df.columns.nlevels > 1) and (
+        isinstance(df_columns, dict) or isinstance(right_columns, dict)
+    ):
+        raise ValueError(
+            "Column renaming with a dictionary is not supported for MultiIndex columns."
         )
 
     if not conditions:
@@ -371,13 +380,6 @@ def _conditional_join_preliminary_checks(
 
     if how not in {"inner", "left", "right", "outer"}:
         raise ValueError("'how' should be one of 'inner', 'left', 'right' or 'outer'.")
-
-    if (df.columns.nlevels > 1) and (
-        isinstance(df_columns, dict) or isinstance(right_columns, dict)
-    ):
-        raise ValueError(
-            "Column renaming with a dictionary is not supported for MultiIndex columns."
-        )
 
     check("keep", keep, [str])
 

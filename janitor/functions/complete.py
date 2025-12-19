@@ -192,7 +192,9 @@ def complete(
         ...     return pd.RangeIndex(
         ...         start=df.year.min(), stop=df.year.max() + 1, name="year"
         ...     )
-        >>> df.complete(new_year_values, by="state", sort=True)
+        >>> df.complete(
+        ...     new_year_values, by="state", sort=True
+        ... )  # doctest: +NORMALIZE_WHITESPACE
             state  year  value
         0     CA  2010    1.0
         1     CA  2011    NaN

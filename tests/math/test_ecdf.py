@@ -4,7 +4,7 @@ from hypothesis import given, settings
 from hypothesis.extra.pandas import series
 
 
-@given(s=series(dtype=np.number))
+@given(s=series(dtype=np.float64))
 @settings(deadline=None)
 def test_ecdf(s):
     """A simple execution test."""

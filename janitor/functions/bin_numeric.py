@@ -71,9 +71,19 @@ def bin_numeric(
     check("to_column_name", to_column_name, [str])
     check_column(df, from_column_name)
 
+    # Ensure the column can be converted to numeric for binning
+    # This handles edge cases from hypothesis testing with very large integers
+    try:
+        numeric_col = pd.to_numeric(df[from_column_name], errors="raise")
+    except (ValueError, TypeError) as e:
+        raise TypeError(
+            f"Column '{from_column_name}' must be numeric for binning. "
+            f"Original error: {e}"
+        ) from e
+
     df = df.assign(
         **{
-            to_column_name: pd.cut(df[from_column_name], bins=bins, **kwargs),
+            to_column_name: pd.cut(numeric_col, bins=bins, **kwargs),
         }
     )
 

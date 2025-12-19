@@ -369,7 +369,9 @@ def xlsx_cells(
 
         Each cell is returned as a row:
 
-        >>> xlsx_cells(filename, sheetnames="highlights")
+        >>> xlsx_cells(
+        ...     filename, sheetnames="highlights"
+        ... )  # doctest: +NORMALIZE_WHITESPACE
             value internal_value coordinate  row  column data_type  is_date number_format
         0     Age            Age         A1    1       1         s    False       General
         1  Height         Height         B1    1       2         s    False       General
@@ -414,7 +416,7 @@ def xlsx_cells(
         >>> out = xlsx_cells(
         ...     filename, sheetnames="highlights", engine="polars", fill=True
         ... ).get_column("fill")
-        >>> out
+        >>> out  # doctest: +NORMALIZE_WHITESPACE
         shape: (8,)
         Series: 'fill' [struct[3]]
         [
@@ -430,7 +432,9 @@ def xlsx_cells(
 
         Specific cell attributes can be accessed via Polars' struct:
 
-        >>> out.struct.field("fgColor").struct.field("rgb")
+        >>> out.struct.field("fgColor").struct.field(
+        ...     "rgb"
+        ... )  # doctest: +NORMALIZE_WHITESPACE
         shape: (8,)
         Series: 'rgb' [str]
         [

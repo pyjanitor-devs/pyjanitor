@@ -1,3 +1,221 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyjanitor"
+version = "0.32.3"
+description = "Tools for cleaning pandas DataFrames"
+requires-python = ">=3.6"
+license = {text = "MIT"}
+authors = [
+    {name = "pyjanitor devs", email = "ericmajinglong@gmail.com"}
+]
+maintainers = [
+    {name = "pyjanitor devs", email = "ericmajinglong@gmail.com"}
+]
+keywords = ["pandas", "data-cleaning", "data-science", "janitor"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering",
+]
+dependencies = [
+    "natsort",
+    "pandas-flavor==0.8.1",
+    "multipledispatch",
+    "scipy",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pip-tools",
+    "pre-commit",
+    "isort>=4.3.18",
+    "black>=19.3b0",
+    "darglint",
+    "flake8",
+]
+docs = [
+    "mkdocs",
+    "polars",
+    "mkdocs-material",
+    "mkdocstrings>=0.19.0",
+    "mkdocstrings-python",
+    "ipython>7.31.1",
+    "biopython",
+    "tqdm",
+    "unyt",
+    "pyspark",
+]
+test = [
+    "pytest-cov",
+    "pytest-xdist",
+    "pytest>=3.4.2",
+    "hypothesis>=4.4.0",
+    "interrogate",
+    "pandas-vet",
+    "polars",
+    "py>=1.10.0",
+]
+biology = [
+    "biopython",
+]
+chemistry = [
+    "tqdm",
+]
+engineering = [
+    "unyt",
+]
+spark = [
+    "pyspark",
+]
+all = [
+    "pip-tools",
+    "pre-commit",
+    "isort>=4.3.18",
+    "black>=19.3b0",
+    "darglint",
+    "flake8",
+    "mkdocs",
+    "polars",
+    "mkdocs-material",
+    "mkdocstrings>=0.19.0",
+    "mkdocstrings-python",
+    "ipython>7.31.1",
+    "biopython",
+    "tqdm",
+    "unyt",
+    "pyspark",
+    "pytest-cov",
+    "pytest-xdist",
+    "pytest>=3.4.2",
+    "hypothesis>=4.4.0",
+    "interrogate",
+    "pandas-vet",
+    "py>=1.10.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/pyjanitor-devs/pyjanitor"
+Documentation = "https://pyjanitor-devs.github.io/pyjanitor"
+Repository = "https://github.com/pyjanitor-devs/pyjanitor"
+"Bug Tracker" = "https://github.com/pyjanitor-devs/pyjanitor/issues"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+namespaces = false
+
+[tool.pixi.workspace]
+channels = ["https://prefix.dev/conda-forge"]
+platforms = ["osx-arm64", "linux-64"]
+
+[tool.pixi.pypi-dependencies]
+pyjanitor = { path = ".", editable = true }
+
+[tool.pixi.dependencies]
+python = ">=3.6"
+pandas = "*"
+numpy = "*"
+
+[tool.pixi.feature.tests.dependencies]
+pytest = "*"
+pytest-cov = "*"
+pytest-xdist = "*"
+hypothesis = "*"
+interrogate = "*"
+pandas-vet = "*"
+polars = "*"
+py = "*"
+unyt = "*"
+matplotlib = "*"
+openpyxl = "*"
+rdkit = "*"
+requests = "*"
+numba = "*"
+pyspark = "*"
+
+[tool.pixi.feature.docs.dependencies]
+mkdocs = "*"
+mkdocs-material = "*"
+mkdocstrings = "*"
+mkdocstrings-python = "*"
+mknotebooks = "*"
+ipython = "*"
+
+[tool.pixi.feature.biology.dependencies]
+biopython = "*"
+
+[tool.pixi.feature.chemistry.dependencies]
+tqdm = "*"
+
+[tool.pixi.feature.engineering.dependencies]
+unyt = "*"
+
+[tool.pixi.feature.spark.dependencies]
+pyspark = "*"
+
+[tool.pixi.feature.py311.dependencies]
+python = "3.11.*"
+
+[tool.pixi.feature.py312.dependencies]
+python = "3.12.*"
+
+[tool.pixi.feature.py313.dependencies]
+python = "3.13.*"
+
+[tool.pixi.tasks]
+start = "pre-commit install"
+format = "pre-commit run ruff-format --all-files"
+test = "pytest -v -n auto --color=yes"
+lint = "pre-commit run --all-files"
+docs = "mkdocs build"
+serve-docs = "mkdocs serve"
+isort = "isort --check-only --use-parentheses --trailing-comma --multi-line 3 --line-length 79 ."
+check = { cmd = "pytest -v -n auto --color=yes && mkdocs build && isort --check-only --use-parentheses --trailing-comma --multi-line 3 --line-length 79 . && pre-commit run ruff-format --all-files && pre-commit run --all-files", "depends-on" = [] }
+style = { cmd = "isort --check-only --use-parentheses --trailing-comma --multi-line 3 --line-length 79 . && pre-commit run ruff-format --all-files", "depends-on" = [] }
+release = "python -m build"
+
+[tool.pixi.feature.tests.tasks]
+test = "pytest -v -n auto --color=yes"
+
+[tool.pixi.feature.docs.tasks]
+build-docs = "mkdocs build"
+serve-docs = "mkdocs serve"
+
+[tool.pixi.feature.setup.tasks]
+setup = "pre-commit autoupdate && pre-commit install --install-hooks"
+update = "pre-commit autoupdate"
+
+[tool.pixi.environments]
+default = { features = ["tests", "setup"] }
+docs = { features = ["docs"] }
+tests = { features = ["tests", "setup"] }
+biology = { features = ["tests", "setup", "biology"] }
+chemistry = { features = ["tests", "setup", "chemistry"] }
+engineering = { features = ["tests", "setup", "engineering"] }
+spark = { features = ["tests", "setup", "spark"] }
+py311 = { features = ["tests", "setup", "py311"] }
+py312 = { features = ["tests", "setup", "py312"] }
+py313 = { features = ["tests", "setup", "py313"] }
+
+[tool.coverage.run]
+omit = [
+    "tests/*",
+]
+
 [tool.black]
 exclude = '''
 /(
@@ -19,7 +237,7 @@ line-length = 79
 target-version = ['py36', 'py37', 'py38']
 
 [tool.interrogate]
-exclude = ["setup.py", "docs", "nbconvert_config.py"]
+exclude = ["docs"]
 fail-under = 55
 ignore-init-method = true
 ignore-init-module = true
@@ -46,6 +264,8 @@ markers = [
     "documentation: tests for documentation",
     "turtle: tests that take more than 5 seconds to execute",
 ]
+# Normalize whitespace in all doctests to handle pandas output formatting differences
+doctest_optionflags = "NORMALIZE_WHITESPACE"
 
 
 [tool.ruff]
@@ -80,7 +300,6 @@ exclude = [
     "dist",
     "node_modules",
     "venv",
-    "nbconvert_config.py",
 ]
 
 

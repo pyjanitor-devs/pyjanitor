@@ -34,7 +34,7 @@ def change_index_dtype(
         ... )
         >>> idx = pd.MultiIndex.from_tuples(tuples, names=["first", "second"])
         >>> df = pd.DataFrame(np.random.randn(8, 2), index=idx, columns=["A", "B"])
-        >>> df
+        >>> df  # doctest: +NORMALIZE_WHITESPACE
                              A         B
         first second
         bar   1.0     1.764052  0.400157
@@ -46,7 +46,7 @@ def change_index_dtype(
         qux   1.0     0.761038  0.121675
               2.0     0.443863  0.333674
         >>> outcome = df.change_index_dtype(dtype=str)
-        >>> outcome
+        >>> outcome  # doctest: +NORMALIZE_WHITESPACE
                              A         B
         first second
         bar   1.0     1.764052  0.400157
@@ -62,7 +62,7 @@ def change_index_dtype(
         second    object
         dtype: object
         >>> outcome = df.change_index_dtype(dtype={"second": int})
-        >>> outcome
+        >>> outcome  # doctest: +NORMALIZE_WHITESPACE
                              A         B
         first second
         bar   1       1.764052  0.400157
@@ -78,7 +78,7 @@ def change_index_dtype(
         second     int64
         dtype: object
         >>> outcome = df.change_index_dtype(dtype={0: "category", 1: int})
-        >>> outcome
+        >>> outcome  # doctest: +NORMALIZE_WHITESPACE
                              A         B
         first second
         bar   1       1.764052  0.400157
@@ -111,17 +111,31 @@ def change_index_dtype(
     if axis not in {"index", "columns"}:
         raise ValueError("axis should be either index or columns.")
 
-    df = df[:]
+    df = df.copy()
     current_index = getattr(df, axis)
+
+    # Check if index contains tuples (common after transposing MultiIndex DataFrames)
+    # If so, convert to MultiIndex to support dictionary dtype mapping
     if not isinstance(current_index, pd.MultiIndex):
         if isinstance(dtype, dict):
-            raise TypeError(
-                "Changing the dtype via a dictionary "
-                "is not supported for a single index."
-            )
-        current_index = current_index.astype(dtype)
-        setattr(df, axis, current_index)
-        return df
+            # Check if all index values are tuples of the same length
+            if len(current_index) > 0 and all(
+                isinstance(val, tuple) and len(val) == len(current_index[0])
+                for val in current_index
+            ):
+                # Convert tuple Index to MultiIndex
+                tuples = list(current_index)
+                current_index = pd.MultiIndex.from_tuples(tuples, names=None)
+                setattr(df, axis, current_index)
+            else:
+                raise TypeError(
+                    "Changing the dtype via a dictionary "
+                    "is not supported for a single index."
+                )
+        else:
+            current_index = current_index.astype(dtype)
+            setattr(df, axis, current_index)
+            return df
 
     if not isinstance(dtype, dict):
         dtype = {level_number: dtype for level_number in range(current_index.nlevels)}

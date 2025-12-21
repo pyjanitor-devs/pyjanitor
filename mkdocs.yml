@@ -44,7 +44,7 @@ nav:
       - Input/Output (io): api/io.md
       - Machine Learning: api/ml.md
       - Math: api/math.md
-      # - PySpark: api/pyspark.md  # will be added back later
+      # - PySpark: api/pyspark.md  # Experimental and unsupported
       - Polars: api/polars.md
       - Timeseries: api/timeseries.md
       - XArray: api/xarray.md
@@ -53,7 +53,6 @@ nav:
       - Multi-Python Environments: development/multi_python_environments.md
       - Lazy Imports: development/lazy_imports.md
   - Changelog: CHANGELOG.md
-  - Authors: AUTHORS.md
 
 plugins:
   - search
@@ -72,14 +71,6 @@ plugins:
             show_submodules: true
             show_source: true
             members_order: alphabetical
-# - mknotebooks:
-#     execute: true
-#     write_markdown: true
-#     allow_errors: true
-#     timeout: 1200
-#     binder: true
-#     binder_service_name: "gh"
-#     binder_branch: "master"
 
 markdown_extensions:
   - admonition

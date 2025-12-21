@@ -45,7 +45,7 @@ You'll be redirected to your browser,
 where the web UI will allow you to see
 which imports are causing time delays.
 
-![Tuna's Web UI](./images/tuna.png)
+The tuna tool will open a web UI showing which imports cause time delays.
 
 ## Which imports to lazily load
 

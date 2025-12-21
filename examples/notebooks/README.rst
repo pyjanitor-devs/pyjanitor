@@ -2,8 +2,16 @@
 Examples
 ========
 
-This folder contains jupyter notebooks demonstrating different ways to
+This folder contains Marimo notebooks (.py files) demonstrating different ways to
 implement pyjanitor in your workflow.
+
+To run a notebook interactively::
+
+    uvx marimo edit --watch <notebook.py>
+
+To view a notebook as a static app::
+
+    uvx marimo run <notebook.py>
 
 Guidelines
 ~~~~~~~~~~

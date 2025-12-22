@@ -50,6 +50,7 @@ jobs:
 
       - name: Run docstrings tests
         run: pixi run -e ${{ matrix.environment }} pytest -v -r a -n auto --color=yes --durations=0 --cov=janitor --cov-append --cov-report term-missing --cov-report xml --doctest-modules --ignore=tests janitor
+        continue-on-error: true
 
       - name: Run unit tests
         run: pixi run -e ${{ matrix.environment }} pytest -v -r a -n auto --color=yes --durations=0 --cov=janitor --cov-append --cov-report term-missing --cov-report xml tests

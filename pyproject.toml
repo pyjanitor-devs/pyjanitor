@@ -119,7 +119,7 @@ where = ["."]
 namespaces = false
 
 [tool.pixi.workspace]
-channels = ["https://prefix.dev/conda-forge"]
+channels = ["https://prefix.dev/conda-forge", "https://conda.anaconda.org/conda-forge/label/pandas_rc/"]
 platforms = ["osx-arm64", "linux-64"]
 
 [tool.pixi.pypi-dependencies]
@@ -176,6 +176,9 @@ python = "3.12.*"
 [tool.pixi.feature.py313.dependencies]
 python = "3.13.*"
 
+[tool.pixi.feature.pandas30rc.dependencies]
+pandas = { version = "==3.0.0rc1", channel="https://conda.anaconda.org/conda-forge/label/pandas_rc/" }
+
 [tool.pixi.tasks]
 start = "pre-commit install"
 format = "pre-commit run ruff-format --all-files"
@@ -209,7 +212,7 @@ engineering = { features = ["tests", "setup", "engineering"] }
 spark = { features = ["tests", "setup", "spark"] }
 py311 = { features = ["tests", "setup", "py311"] }
 py312 = { features = ["tests", "setup", "py312"] }
-py313 = { features = ["tests", "setup", "py313"] }
+py313 = { features = ["tests", "setup", "py313", "pandas30rc"] }
 
 [tool.coverage.run]
 omit = [

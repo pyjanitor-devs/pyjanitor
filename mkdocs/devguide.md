@@ -1,6 +1,7 @@
 # How to Get Started Developing pyjanitor
 
-This guide walks you through setting up a development environment for `pyjanitor` and making your first contribution.
+This guide walks you through setting up a development environment
+for `pyjanitor` and making your first contribution.
 
 ## Prerequisites
 
@@ -33,7 +34,9 @@ pixi install
 pixi run start
 ```
 
-The `start` command installs `pyjanitor` in editable mode and configures pre-commit hooks that will automatically check your code before commits.
+The `start` command installs `pyjanitor` in editable mode
+and configures pre-commit hooks
+that will automatically check your code before commits.
 
 ## Step 3: Verify Your Setup
 
@@ -78,7 +81,8 @@ git fetch origin dev
 git checkout -b <name-of-your-bugfix-or-feature> origin/dev
 ```
 
-Use a descriptive branch name that indicates what you're working on (e.g., `fix-clean-names-underscore`, `add-new-function`).
+Use a descriptive branch name that indicates what you're working on
+(e.g., `fix-clean-names-underscore`, `add-new-function`).
 
 ## Step 6: Make Your Changes
 
@@ -88,8 +92,11 @@ As you write code, keep these guidelines in mind:
 
 - Follow existing code patterns and style
 - Write clear, readable code
-- Add docstrings following the [Google style](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html)
-- Use the docstring sections: **Examples**, **Args**, **Raises**, **Returns**, **Yields** (in that order when applicable)
+- Add docstrings following the
+  [Google style](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html)
+- Use the docstring sections:
+  **Examples**, **Args**, **Raises**, **Returns**, **Yields**
+  (in that order when applicable)
 
 ### Commit Practices
 
@@ -121,7 +128,8 @@ cd examples/notebooks
 uvx marimo edit --watch notebook_name.py
 ```
 
-You must be in the `examples/notebooks` directory when running the `marimo edit` command.
+You must be in the `examples/notebooks` directory
+when running the `marimo edit` command.
 
 ## Step 7: Check Your Code
 
@@ -138,7 +146,8 @@ pixi run pytest -m "not turtle"
 pixi run lint
 ```
 
-Pre-commit hooks will automatically run when you commit, but you can also run them manually:
+Pre-commit hooks will automatically run when you commit,
+but you can also run them manually:
 
 ```bash
 pixi run lint
@@ -180,13 +189,16 @@ GitHub Actions will automatically run:
 - Documentation discovery
 - All tests across Python 3.11, 3.12, and 3.13
 
-If any checks fail, review the logs and fix the issues. Maintainers may also request changes during code review. Update your branch and push new commits to address feedback.
+If any checks fail, review the logs and fix the issues.
+Maintainers may also request changes during code review.
+Update your branch and push new commits to address feedback.
 
 ## Common Development Tasks
 
 All development tasks are available as pixi commands:
 
-- `pixi run start` - Set up development environment (install package and pre-commit hooks)
+- `pixi run start` - Set up development environment
+  (install package and pre-commit hooks)
 - `pixi run test` - Run the test suite
 - `pixi run lint` - Run linting checks
 - `pixi run format` - Format code
@@ -216,11 +228,47 @@ Preview documentation while developing:
 pixi run serve-docs
 ```
 
-This starts a local server (usually at `http://127.0.0.1:8000`) where you can view the documentation.
+This starts a local server (usually at `http://127.0.0.1:8000`)
+where you can view the documentation.
 
 ## Code Compatibility
 
-`pyjanitor` supports Python 3.11, 3.12, and 3.13. All contributed code must maintain compatibility with these versions. Tests run automatically across all supported Python versions in CI.
+`pyjanitor` supports Python 3.11, 3.12, and 3.13.
+All contributed code must maintain compatibility with these versions.
+Tests run automatically across all supported Python versions in CI.
+
+## Troubleshooting
+
+### TLS Certificate Errors Behind a Firewall
+
+If you're behind a corporate firewall or proxy that performs TLS inspection,
+you may encounter certificate errors like:
+
+```text
+Error:   × failed to solve requirements of environment 'tests' for platform 'linux-64'
+  ├─▶ Request failed after 3 retries
+  ├─▶ error sending request for url (https://prefix.dev/...)
+  ├─▶ client error (Connect)
+  ╰─▶ invalid peer certificate: UnknownIssuer
+```
+
+To work around this, use the `--tls-no-verify` flag when adding packages:
+
+```bash
+pixi add --pypi <package-name> --tls-no-verify
+```
+
+Alternatively, you can configure pixi globally to skip TLS verification
+by setting the environment variable:
+
+```bash
+export PIXI_TLS_NO_VERIFY=true
+pixi install
+```
+
+**Note:** Disabling TLS verification reduces security.
+Only use this workaround in trusted network environments
+where you understand the implications.
 
 ## Getting Help
 

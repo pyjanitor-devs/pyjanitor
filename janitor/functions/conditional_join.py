@@ -556,7 +556,6 @@ def _conditional_join_compute(
             keep=keep,
             return_matching_indices=return_matching_indices,
         )
-    # return result
     if return_matching_indices:
         return result
     # TODO: unify into single approach

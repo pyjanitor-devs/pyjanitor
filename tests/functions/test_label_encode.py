@@ -15,7 +15,7 @@ def test_single_column_fail_label_encode():
     with pytest.raises(ValueError):
         pd.DataFrame({"a": ["hello", "hello", "sup"], "b": [1, 2, 3]}).label_encode(
             column_names="c"
-        )  # noqa: 841
+        )
 
 
 @pytest.mark.functions

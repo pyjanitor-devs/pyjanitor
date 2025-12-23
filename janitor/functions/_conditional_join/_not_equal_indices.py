@@ -24,7 +24,7 @@ def _not_equal_indices(left: pd.Series, right: pd.Series, keep: str) -> dict | N
     and strictly greater than indices.
     """
 
-    dummy = np.array([], dtype=int)
+    dummy = np.array([], dtype=np.intp)
 
     # deal with nulls
     l1_nulls = dummy
@@ -104,8 +104,8 @@ def _not_equal_indices(left: pd.Series, right: pd.Series, keep: str) -> dict | N
     right = np.concatenate(lt_right)
     if (not left.size) & (not right.size):
         return {
-            "left_index": np.array([], dtype=np.intp),
-            "right_index": np.array([], dtype=np.intp),
+            "left_index": dummy,
+            "right_index": dummy,
         }
     outcome = _keep_output(keep, left, right)
     outcome = zip(["left_index", "right_index"], outcome)

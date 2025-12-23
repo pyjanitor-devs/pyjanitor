@@ -5,16 +5,15 @@ from hypothesis import given, settings
 from pandas import Timedelta
 from pandas.testing import assert_frame_equal
 
-# from janitor import get_join_indices
 from janitor.testing_utils.strategies import (
     conditional_df,
     conditional_right,
 )
 
-# # turn on to view dataframes from failed tests
-# pd.set_option("display.max_columns", None)
-# pd.set_option("display.expand_frame_repr", False)
-# pd.set_option("max_colwidth", None)
+# turn on to view dataframes from failed tests
+pd.set_option("display.max_columns", None)
+pd.set_option("display.expand_frame_repr", False)
+pd.set_option("max_colwidth", None)
 
 
 @pytest.fixture
@@ -1514,6 +1513,72 @@ def test_dual_conditions_gt_and_lt_dates(df, right):
             (middle, left_on, ">"),
             (middle, right_on, "<"),
             how="inner",
+        )
+        .sort_values(["E", "Dates", "Dates_Right"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_conditions_gt_and_lt_dates_keep_first(df, right):
+    """Test output for interval conditions."""
+
+    middle, left_on, right_on = ("E", "Dates", "Dates_Right")
+    expected = (
+        df[["E"]]
+        .reset_index(names="index")
+        .merge(right[["Dates", "Dates_Right"]], how="cross")
+        .loc[lambda df: df.E.between(df.Dates, df.Dates_Right, inclusive="neither")]
+        .groupby("index", sort=False)
+        .head(1)
+        .drop(columns="index")
+        .sort_values(["E", "Dates", "Dates_Right"], ignore_index=True)
+    )
+
+    actual = (
+        df[["E"]]
+        .conditional_join(
+            right[["Dates", "Dates_Right"]],
+            (middle, left_on, ">"),
+            (middle, right_on, "<"),
+            how="inner",
+            keep="first",
+        )
+        .sort_values(["E", "Dates", "Dates_Right"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_conditions_gt_and_lt_dates_keep_last(df, right):
+    """Test output for interval conditions."""
+
+    middle, left_on, right_on = ("E", "Dates", "Dates_Right")
+    expected = (
+        df[["E"]]
+        .reset_index(names="index")
+        .merge(right[["Dates", "Dates_Right"]], how="cross")
+        .loc[lambda df: df.E.between(df.Dates, df.Dates_Right, inclusive="neither")]
+        .groupby("index", sort=False)
+        .tail(1)
+        .drop(columns="index")
+        .sort_values(["E", "Dates", "Dates_Right"], ignore_index=True)
+    )
+
+    actual = (
+        df[["E"]]
+        .conditional_join(
+            right[["Dates", "Dates_Right"]],
+            (middle, left_on, ">"),
+            (middle, right_on, "<"),
+            how="inner",
+            keep="last",
         )
         .sort_values(["E", "Dates", "Dates_Right"], ignore_index=True)
     )
@@ -3828,6 +3893,7 @@ def test_multiple_non_equii_numba_(df, right):
             ("B", "Floats", "<"),
             ("B", "Numeric", ">"),
             how="inner",
+            use_numba=True,
         )
         .sort_values(columns, ignore_index=True)
         .loc[:, columns]
@@ -4030,7 +4096,7 @@ def test_multiple_non_eq_numba(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=10, print_blob=True)
 @given(df=conditional_df(), right=conditional_right())
 def test_multiple_non_eq_first(df, right):
     """Test output for multiple conditions - grab only the first match."""

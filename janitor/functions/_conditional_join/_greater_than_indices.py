@@ -1,4 +1,5 @@
 # helper functions for >/>=
+import janitor_rs
 import numpy as np
 import pandas as pd
 
@@ -34,30 +35,31 @@ def _ge_gt_indices(
         left = left[booleans]
         left_index = left_index[booleans]
         search_indices = search_indices[booleans]
+    if not strict:
+        return left_index, search_indices
     # the idea here is that if there are any equal values
     # shift downwards to the immediate next position
     # that is not equal
-    if strict:
-        booleans = left == right[search_indices - 1]
-        # replace positions where rows are equal with
-        # searchsorted('left');
-        # this works fine since we will be using the value
-        # as the right side of a slice, which is not included
-        # in the final computed value
-        if booleans.any():
-            replacements = right.searchsorted(left, side="left")
-            # now we can safely replace values
-            # with strictly greater than positions
-            search_indices = np.where(booleans, replacements, search_indices)
-        # any value less than 1 should be discarded
-        # since the lowest value for binary search
-        # with side='right' should be 1
-        booleans = search_indices > 0
-        if not booleans.any():
-            return None
-        if not booleans.all():
-            left_index = left_index[booleans]
-            search_indices = search_indices[booleans]
+    booleans = left == right[search_indices - 1]
+    # replace positions where rows are equal with
+    # searchsorted('left');
+    # this works fine since we will be using the value
+    # as the right side of a slice, which is not included
+    # in the final computed value
+    if booleans.any():
+        replacements = right.searchsorted(left, side="left")
+        # now we can safely replace values
+        # with strictly greater than positions
+        search_indices = np.where(booleans, replacements, search_indices)
+    # any value less than 1 should be discarded
+    # since the lowest value for binary search
+    # with side='right' should be 1
+    booleans = search_indices > 0
+    if not booleans.any():
+        return None
+    if not booleans.all():
+        left_index = left_index[booleans]
+        search_indices = search_indices[booleans]
     return left_index, search_indices
 
 
@@ -76,24 +78,19 @@ def _greater_than_indices(
     where `left` is greater than
     (but not equal to) `right` are returned.
     """
-    # quick break, avoiding the hassle
-    if left.max() < right.min():
-        return {
-            "left_index": np.array([], dtype=np.intp),
-            "right_index": np.array([], dtype=np.intp),
-        }
+    empty_array = np.array([], dtype=np.intp)
     outcome = _null_checks_cond_join(series=left)
     if outcome is None:
         return {
-            "left_index": np.array([], dtype=np.intp),
-            "right_index": np.array([], dtype=np.intp),
+            "left_index": empty_array,
+            "right_index": empty_array,
         }
     left, _ = outcome
     outcome = _null_checks_cond_join(series=right)
     if outcome is None:
         return {
-            "left_index": np.array([], dtype=np.intp),
-            "right_index": np.array([], dtype=np.intp),
+            "left_index": empty_array,
+            "right_index": empty_array,
         }
     right, any_nulls = outcome
     right, right_is_sorted = _sort_if_not_monotonic(series=right)
@@ -105,8 +102,8 @@ def _greater_than_indices(
     )
     if outcome is None:
         return {
-            "left_index": np.array([], dtype=np.intp),
-            "right_index": np.array([], dtype=np.intp),
+            "left_index": empty_array,
+            "right_index": empty_array,
         }
     left_index, search_indices = outcome
     right_index = right.index._values
@@ -137,5 +134,9 @@ def _greater_than_indices(
         )
     right = [right_index[:ind] for ind in search_indices]
     right = np.concatenate(right)
-    left = left_index.repeat(search_indices)
+    left = janitor_rs.repeat_index(
+        index=left_index,
+        counts=search_indices,
+        length=search_indices.sum(),
+    )
     return {"left_index": left, "right_index": right}

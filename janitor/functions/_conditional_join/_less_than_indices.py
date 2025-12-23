@@ -1,4 +1,5 @@
 # helper functions for </<=
+import janitor_rs
 import numpy as np
 import pandas as pd
 
@@ -38,33 +39,34 @@ def _le_lt_indices(
         left = left[booleans]
         left_index = left_index[booleans]
         search_indices = search_indices[booleans]
+    if not strict:
+        return left_index, search_indices
     # the idea here is that if there are any equal values
     # shift to the right to the immediate next position
     # that is not equal
-    if strict:
-        booleans = left == right[search_indices]
-        # replace positions where rows are equal
-        # with positions from searchsorted('right')
-        # positions from searchsorted('right') will never
-        # be equal and will be the furthermost in terms of position
-        # example : right -> [2, 2, 2, 3], and we need
-        # positions where values are not equal for 2;
-        # the furthermost will be 3, and searchsorted('right')
-        # will return position 3.
-        if booleans.any():
-            replacements = right.searchsorted(left, side="right")
-            # now we can safely replace values
-            # with strictly less than positions
-            search_indices = np.where(booleans, replacements, search_indices)
-        # check again if any of the values
-        # have become equal to length of right
-        # and get rid of them
-        booleans = search_indices < len_right
-        if not booleans.any():
-            return None
-        if not booleans.all():
-            left_index = left_index[booleans]
-            search_indices = search_indices[booleans]
+    booleans = left == right[search_indices]
+    # replace positions where rows are equal
+    # with positions from searchsorted('right')
+    # positions from searchsorted('right') will never
+    # be equal and will be the furthermost in terms of position
+    # example : right -> [2, 2, 2, 3], and we need
+    # positions where values are not equal for 2;
+    # the furthermost will be 3, and searchsorted('right')
+    # will return position 3.
+    if booleans.any():
+        replacements = right.searchsorted(left, side="right")
+        # now we can safely replace values
+        # with strictly less than positions
+        search_indices = np.where(booleans, replacements, search_indices)
+    # check again if any of the values
+    # have become equal to length of right
+    # and get rid of them
+    booleans = search_indices < len_right
+    if not booleans.any():
+        return None
+    if not booleans.all():
+        left_index = left_index[booleans]
+        search_indices = search_indices[booleans]
     return left_index, search_indices
 
 
@@ -83,24 +85,19 @@ def _less_than_indices(
     where `left` is less than
     (but not equal to) `right` are returned.
     """
-    # no point going through all the hassle
-    if left.min() > right.max():
-        return {
-            "left_index": np.array([], dtype=np.intp),
-            "right_index": np.array([], dtype=np.intp),
-        }
+    empty_array = np.array([], dtype=np.intp)
     outcome = _null_checks_cond_join(series=left)
     if not outcome:
         return {
-            "left_index": np.array([], dtype=np.intp),
-            "right_index": np.array([], dtype=np.intp),
+            "left_index": empty_array,
+            "right_index": empty_array,
         }
     left, _ = outcome
     outcome = _null_checks_cond_join(series=right)
     if not outcome:
         return {
-            "left_index": np.array([], dtype=np.intp),
-            "right_index": np.array([], dtype=np.intp),
+            "left_index": empty_array,
+            "right_index": empty_array,
         }
     right, any_nulls = outcome
     right, right_is_sorted = _sort_if_not_monotonic(series=right)
@@ -112,8 +109,8 @@ def _less_than_indices(
     )
     if not outcome:
         return {
-            "left_index": np.array([], dtype=np.intp),
-            "right_index": np.array([], dtype=np.intp),
+            "left_index": empty_array,
+            "right_index": empty_array,
         }
     left_index, search_indices = outcome
     len_right = right.size
@@ -146,5 +143,10 @@ def _less_than_indices(
         )
     right = [right_index[ind:len_right] for ind in search_indices]
     right = np.concatenate(right)
-    left = left_index.repeat(len_right - search_indices)
+    counts = len_right - search_indices
+    left = janitor_rs.repeat_index(
+        index=left_index,
+        counts=counts,
+        length=counts.sum(),
+    )
     return {"left_index": left, "right_index": right}

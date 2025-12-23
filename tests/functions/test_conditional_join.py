@@ -11,9 +11,9 @@ from janitor.testing_utils.strategies import (
 )
 
 # turn on to view dataframes from failed tests
-pd.set_option("display.max_columns", None)
-pd.set_option("display.expand_frame_repr", False)
-pd.set_option("max_colwidth", None)
+# pd.set_option("display.max_columns", None)
+# pd.set_option("display.expand_frame_repr", False)
+# pd.set_option("max_colwidth", None)
 
 
 @pytest.fixture
@@ -4096,7 +4096,7 @@ def test_multiple_non_eq_numba(df, right):
 
 
 @pytest.mark.turtle
-@settings(deadline=None, max_examples=10, print_blob=True)
+@settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
 def test_multiple_non_eq_first(df, right):
     """Test output for multiple conditions - grab only the first match."""

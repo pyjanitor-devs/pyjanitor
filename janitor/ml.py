@@ -66,7 +66,7 @@ def get_features_targets(
     if feature_column_names:
         X = df[feature_column_names]
     else:
-        if isinstance(target_column_names, (list, tuple)):  # noqa: W503
+        if isinstance(target_column_names, (list, tuple)):
             xcols = [c for c in df.columns if c not in target_column_names]
         else:
             xcols = [c for c in df.columns if target_column_names != c]

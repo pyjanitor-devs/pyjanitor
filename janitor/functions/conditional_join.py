@@ -57,7 +57,7 @@ def conditional_join(
 
     !!! warning
 
-    The `df_columns` and `right_columns` arguments are deprecated.
+        The `df_columns` and `right_columns` arguments are deprecated.
 
     Column selection in `df_columns` and `right_columns` is possible using the
     [`select`][janitor.functions.select.select] syntax.

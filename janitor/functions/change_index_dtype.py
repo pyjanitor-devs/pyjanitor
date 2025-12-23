@@ -96,7 +96,7 @@ def change_index_dtype(
 
     Args:
         df: A pandas DataFrame.
-        dtype : Use a str or dtype to cast the entire Index
+        dtype: Use a str or dtype to cast the entire Index
             to the same type.
             Alternatively, use a dictionary to change the MultiIndex
             to new dtypes.

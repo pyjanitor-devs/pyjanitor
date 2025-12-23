@@ -4,6 +4,6 @@
 natsort
 # seaborn
 janitor_rs
-pandas_flavor==0.8.1
+pandas_flavor
 multipledispatch
 scipy

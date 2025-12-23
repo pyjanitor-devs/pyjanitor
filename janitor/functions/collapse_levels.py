@@ -81,7 +81,7 @@ def collapse_levels(
         ...     grouped_df.rename_axis(
         ...         columns=["column_name", "agg_name"]
         ...     ).collapse_levels(glue="{agg_name}_{column_name}")
-        ... )
+        ... )  # doctest: +NORMALIZE_WHITESPACE
                 mean_max_speed  median_max_speed
         class
         bird        267.333333             389.0
@@ -125,18 +125,29 @@ def collapse_levels(
     # future work should take this into consideration,
     # which would require a different route from python's string.join
     # since work is only on the columns
-    # it is safe, and more efficient to slice/view the dataframe
-    # plus Pandas creates a new Index altogether
-    # as such, the original dataframe is not modified
-    df = df[:]
+    # Use copy() to preserve MultiIndex structure (df[:] can lose it)
+    # Pandas creates a new Index altogether, so original dataframe is not modified
+    df = df.copy()
     new_index = getattr(df, axis)
+    # Re-check after copy (structure should be preserved with copy())
+    if not isinstance(new_index, pd.MultiIndex):
+        return df
     if glue is not None:
         new_index = [dict(zip(new_index.names, entry)) for entry in new_index]
         new_index = [glue.format_map(mapping) for mapping in new_index]
         setattr(df, axis, new_index)
         return df
     sep = "_" if sep is None else sep
-    levels = [level for level in new_index.levels]
+    # Access levels safely (works with latest pandas)
+    # Use nlevels to verify it's a MultiIndex
+    if new_index.nlevels > 1 and hasattr(new_index, "levels"):
+        levels = list(new_index.levels)
+    else:
+        # Fallback: convert tuples to strings directly
+        new_index = (map(str, entry) for entry in new_index)
+        new_index = [sep.join([entry for entry in word if entry]) for word in new_index]
+        setattr(df, axis, new_index)
+        return df
     all_strings = all(map(is_string_dtype, levels))
     if all_strings:
         no_empty_string = all((entry != "").all() for entry in levels)

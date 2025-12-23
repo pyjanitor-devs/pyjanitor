@@ -49,6 +49,9 @@ nav:
       - Timeseries: api/timeseries.md
       - XArray: api/xarray.md
   - Development Guide: devguide.md
+  - Development:
+      - Multi-Python Environments: development/multi_python_environments.md
+      - Lazy Imports: development/lazy_imports.md
   - Changelog: CHANGELOG.md
   - Authors: AUTHORS.md
 

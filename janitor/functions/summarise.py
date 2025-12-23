@@ -120,7 +120,9 @@ def summarise(
         5         4        4      103202
 
         Aggregation on a DataFrame via a callable:
-        >>> df.summarise(lambda df: df.select("avg*").mean().rename("mean"))
+        >>> df.summarise(
+        ...     lambda df: df.select("avg*").mean().rename("mean")
+        ... )  # doctest: +NORMALIZE_WHITESPACE
                              mean
         avg_jump         2.833333
         avg_run          2.833333
@@ -142,8 +144,8 @@ def summarise(
         >>> grouped = df.groupby("combine_id")
 
         Aggregation on a grouped object via a callable:
-        >>> grouped.summarise(lambda df: df.sum())
-                    avg_jump  avg_run
+        >>> grouped.summarise(lambda df: df.sum())  # doctest: +NORMALIZE_WHITESPACE
+                 avg_jump  avg_run
         combine_id
         100200             7        7
         101200             3        4
@@ -151,7 +153,7 @@ def summarise(
         103202             4        4
 
         Aggregation on a grouped object via a tuple:
-        >>> grouped.summarise(("avg_run", "mean"))
+        >>> grouped.summarise(("avg_run", "mean"))  # doctest: +NORMALIZE_WHITESPACE
                     avg_run
         combine_id
         100200          3.5
@@ -160,14 +162,16 @@ def summarise(
         103202          4.0
 
         Aggregation on a grouped object via a dictionary:
-        >>> grouped.summarise({"avg_run": "mean"})
+        >>> grouped.summarise({"avg_run": "mean"})  # doctest: +NORMALIZE_WHITESPACE
                     avg_run
         combine_id
         100200          3.5
         101200          2.0
         102201          2.0
         103202          4.0
-        >>> grouped.summarise({"avg_run_2": ("avg_run", "mean")})
+        >>> grouped.summarise(
+        ...     {"avg_run_2": ("avg_run", "mean")}
+        ... )  # doctest: +NORMALIZE_WHITESPACE
                     avg_run_2
         combine_id
         100200            3.5

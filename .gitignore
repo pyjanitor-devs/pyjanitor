@@ -115,7 +115,7 @@ ENV/
 # Custom
 .pytest_cache
 
-# Ingore docs' symbolic link to notebooks
+# Ignore docs' symbolic link to notebooks
 docs/notebooks
 docs/*
 

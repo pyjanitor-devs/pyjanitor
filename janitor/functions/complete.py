@@ -192,7 +192,9 @@ def complete(
         ...     return pd.RangeIndex(
         ...         start=df.year.min(), stop=df.year.max() + 1, name="year"
         ...     )
-        >>> df.complete(new_year_values, by="state", sort=True)
+        >>> df.complete(
+        ...     new_year_values, by="state", sort=True
+        ... )  # doctest: +NORMALIZE_WHITESPACE
             state  year  value
         0     CA  2010    1.0
         1     CA  2011    NaN
@@ -328,7 +330,7 @@ def _computations_complete(
     # to cater for scenarios where the column_name
     # is not a string
     # assign only works with keys that are strings
-    # Also, the output wil be floats (for numeric types),
+    # Also, the output will be floats (for numeric types),
     # even if all the columns could be integers
     # user can always convert to int if required
     for column_name, value in fill_value.items():

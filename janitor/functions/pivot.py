@@ -139,13 +139,13 @@ def pivot_longer(
         ...     index="id",
         ...     names_to=("diagnosis", "gender", "age"),
         ...     names_pattern=r"new_?(.+)_(.)(\\d+)",
-        ... )
+        ... )  # doctest: +NORMALIZE_WHITESPACE
            id diagnosis gender   age  value
         0   1        sp      m  5564      2
         1   1       rel      f    65      3
 
         Split the column labels for the above dataframe using named groups in `names_pattern`:
-        >>> df.pivot_longer(
+        >>> df.pivot_longer(  # doctest: +NORMALIZE_WHITESPACE
         ...     index="id",
         ...     names_pattern=r"new_?(?P<diagnosis>.+)_(?P<gender>.)(?P<age>\\d+)",
         ... )
@@ -160,7 +160,7 @@ def pivot_longer(
         ...     names_pattern=r"new_?(.+)_(.)(\\d+)",
         ...     names_transform={"gender": "category", "age": "int"},
         ... )
-        >>> result.dtypes
+        >>> result.dtypes  # doctest: +NORMALIZE_WHITESPACE
         id           int64
         diagnosis   object
         gender    category
@@ -579,19 +579,21 @@ def _data_checks_pivot_longer(
     checking happens.
     """
     # checks here are only on the columns
-    # a slice is safe
-    df = df[:]
+    # Use copy() to preserve MultiIndex structure
+    df = df.copy()
 
-    if column_level is not None:
-        check("column_level", column_level, [int, str])
-        df.columns = df.columns.get_level_values(column_level)
-
+    # Check MultiIndex with names_sep/names_pattern BEFORE any column selection
+    # This must happen before column_level processing to catch the error early
     if any((names_sep, names_pattern)) and (isinstance(df.columns, pd.MultiIndex)):
         raise ValueError(
             "Unpivoting a MultiIndex column dataframe "
             "when names_sep or names_pattern is supplied "
             "is not supported."
         )
+
+    if column_level is not None:
+        check("column_level", column_level, [int, str])
+        df.columns = df.columns.get_level_values(column_level)
 
     if (index is None) and (column_names is None):
         column_names = slice(None)
@@ -1305,8 +1307,17 @@ def _pivot_longer_dot_value(
             df=df,
             sort_by_appearance=sort_by_appearance,
         )
+        # When others is empty, spec has columns like ['dim', '.value']
+        # We need to pass the non-'.value' columns to _stack_non_dot_value
+        # so it can create the "dim" column in the correct order
+        spec_for_non_dot = None
+        if spec is not None and len(spec.columns) > 1:
+            # Extract columns that are not '.value'
+            non_value_cols = [col for col in spec.columns if col != ".value"]
+            if non_value_cols:
+                spec_for_non_dot = {col: spec[col]._values for col in non_value_cols}
         index, _, df_index = _stack_non_dot_value(
-            spec=None,
+            spec=spec_for_non_dot,
             reps=reps,
             df=df,
             index=index,

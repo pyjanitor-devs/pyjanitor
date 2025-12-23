@@ -127,7 +127,7 @@ def clean_names(
         return df
 
     assert axis in {"index", "columns"}
-    df = df[:]
+    df = df.copy()
     target_axis = getattr(df, axis)
     if isinstance(target_axis, pd.MultiIndex):
         target_axis = [
@@ -146,6 +146,10 @@ def clean_names(
             )
             for obj in target_axis
         ]
+        # Convert list of arrays back to MultiIndex
+        target_axis = pd.MultiIndex.from_arrays(
+            target_axis, names=getattr(df, axis).names
+        )
     else:
         target_axis = _clean_names(
             obj=target_axis,
@@ -220,7 +224,12 @@ def _change_case(
 
 def _normalize_1(obj: pd.Index | pd.Series) -> pd.Index | pd.Series:
     """Perform normalization of labels in obj."""
-    FIXES = [(r"[ /:,?()\.-]", "_"), (r"['’]", ""), (r"[\xa0]", "_")]
+    FIXES = [
+        (r"[ /:,?()\.-]", "_"),
+        (r"['’]", ""),
+        (r"[\xa0]", "_"),
+        (r"(?<=\w)@(?=\w)", "_"),
+    ]
     for search, replace in FIXES:
         obj = obj.str.replace(pat=search, repl=replace, regex=True)
 

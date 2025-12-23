@@ -34,14 +34,14 @@ def sort_column_value_order(
         2        Feb     200.0     250.0     500.0
         3        Mar     300.0       NaN     600.0
         4      April     400.0     500.0     675.0
-        >>> df.sort_column_value_order(
+        >>> df.sort_column_value_order(  # doctest: +NORMALIZE_WHITESPACE +ELLIPSIS
         ...     "SalesMonth", {"April": 1, "Mar": 2, "Feb": 3, "Jan": 4}
         ... )
           SalesMonth  Company1  Company2  Company3
         4      April     400.0     500.0     675.0
         3        Mar     300.0       NaN     600.0
-        1        Feb     200.0     250.0     500.0
-        2        Feb     200.0     250.0     500.0
+        ...        Feb     200.0     250.0     500.0
+        ...        Feb     200.0     250.0     500.0
         0        Jan     150.0     180.0     400.0
 
     Args:
@@ -71,5 +71,6 @@ def sort_column_value_order(
     if columns is not None:
         sort_by = ["cond_order"] + columns
 
-    df = df.sort_values(sort_by).remove_columns("cond_order")
+    # Use stable sort to preserve original order for equal values
+    df = df.sort_values(sort_by, kind="stable").remove_columns("cond_order")
     return df

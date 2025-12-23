@@ -167,7 +167,9 @@ def select_columns(
 
 
         Selection is possible on a grouped object:
-        >>> df.groupby("name").select_columns("*wt").min()
+        >>> df.groupby("name").select_columns(
+        ...     "*wt"
+        ... ).min()  # doctest: +NORMALIZE_WHITESPACE
                                     brainwt   bodywt
         name
         Cheetah                         NaN   50.000
@@ -195,7 +197,7 @@ def select_columns(
         num_wings       0     0     2       2
 
         Selection with a scalar:
-        >>> df.select_columns("mammal")
+        >>> df.select_columns("mammal")  # doctest: +NORMALIZE_WHITESPACE
         class      mammal
         animal        cat   dog   bat
         locomotion  walks walks flies
@@ -218,7 +220,7 @@ def select_columns(
         locomotion  walks
         num_legs        4
         num_wings       0
-        >>> df.select_columns({1: ["bat", "cat"]})
+        >>> df.select_columns({1: ["bat", "cat"]})  # doctest: +NORMALIZE_WHITESPACE
         class      mammal
         animal        bat   cat
         locomotion  flies walks
@@ -234,7 +236,9 @@ def select_columns(
         num_wings       2
 
         Selection with a regex on a level:
-        >>> df.select_columns({"animal": re.compile(".+t$")})
+        >>> df.select_columns(
+        ...     {"animal": re.compile(".+t$")}
+        ... )  # doctest: +NORMALIZE_WHITESPACE
         class      mammal
         animal        cat   bat
         locomotion  walks flies
@@ -242,7 +246,9 @@ def select_columns(
         num_wings       0     2
 
         Selection with a callable on a level:
-        >>> df.select_columns({"animal": lambda f: f.str.endswith("t")})
+        >>> df.select_columns(
+        ...     {"animal": lambda f: f.str.endswith("t")}
+        ... )  # doctest: +NORMALIZE_WHITESPACE
         class      mammal
         animal        cat   bat
         locomotion  walks flies

@@ -411,7 +411,7 @@ def test_flag_jumps_default_args(timeseries_dataframe):
 
 
 @pytest.mark.timeseries
-def test_flag_jumps_all_args_specifed_as_non_dict(timeseries_dataframe):
+def test_flag_jumps_all_args_specified_as_non_dict(timeseries_dataframe):
     """Test provided kwargs (not of type dict) behave as expected."""
     # Setup
     df = timeseries_dataframe

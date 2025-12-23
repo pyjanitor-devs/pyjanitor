@@ -1,4 +1,0 @@
-[darglint]
-docstring_style=google
-strictness=short
-ignore_regex=^(test_|_)(.*)

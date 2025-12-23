@@ -157,7 +157,7 @@ jobs:
 
       - name: Build package
         if: steps.check_release.outputs.already_released == 'false'
-        run: pixi run release
+        run: uv build
 
       - name: Publish package (trusted publishing)
         if: steps.check_release.outputs.already_released == 'false'

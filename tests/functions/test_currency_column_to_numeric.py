@@ -46,6 +46,26 @@ def test_accounting_style(currency_df):
 
 
 @pytest.mark.functions
+def test_accounting_style_with_dollar_sign():
+    """Test accounting style handles $ currency symbol."""
+    df = pd.DataFrame({"amount": ["$24.56", "($12.12)", "$1,000,000", "-"]})
+    result = df.currency_column_to_numeric("amount", cleaning_style="accounting")
+    expected = pd.DataFrame({"amount": [24.56, -12.12, 1_000_000.0, 0.0]})
+    assert_frame_equal(result, expected)
+
+
+@pytest.mark.functions
+def test_accounting_style_with_various_currency_symbols():
+    """Test accounting style handles various currency symbols."""
+    df = pd.DataFrame(
+        {"amount": ["€100.50", "£200.75", "¥300", "(€50.25)", "₹1,000", "₩500"]}
+    )
+    result = df.currency_column_to_numeric("amount", cleaning_style="accounting")
+    expected = pd.DataFrame({"amount": [100.50, 200.75, 300.0, -50.25, 1000.0, 500.0]})
+    assert_frame_equal(result, expected)
+
+
+@pytest.mark.functions
 def test_default_cleaning_style(currency_df):
     """Checks that the default cleaning style is correctly applied."""
     result = currency_df.currency_column_to_numeric(

@@ -31,25 +31,25 @@ def currency_column_to_numeric(
         >>> import janitor
         >>> df = pd.DataFrame(
         ...     {
-        ...         "a_col": [" 24.56", "-", "(12.12)", "1,000,000"],
+        ...         "a_col": [" $24.56", "-", "($12.12)", "$1,000,000"],
         ...         "d_col": ["", "foo", "1.23 dollars", "-1,000 yen"],
         ...     }
         ... )
         >>> df  # doctest: +NORMALIZE_WHITESPACE
-               a_col         d_col
-        0      24.56
-        1          -           foo
-        2    (12.12)  1.23 dollars
-        3  1,000,000    -1,000 yen
+                a_col         d_col
+        0      $24.56
+        1           -           foo
+        2   ($12.12)  1.23 dollars
+        3  $1,000,000    -1,000 yen
 
         The default cleaning style.
 
         >>> df.currency_column_to_numeric("d_col")
-               a_col    d_col
-        0      24.56      NaN
-        1          -      NaN
-        2    (12.12)     1.23
-        3  1,000,000 -1000.00
+                a_col    d_col
+        0      $24.56      NaN
+        1           -      NaN
+        2   ($12.12)     1.23
+        3  $1,000,000 -1000.00
 
         The accounting cleaning style.
 
@@ -67,7 +67,8 @@ def currency_column_to_numeric(
     - `None`: Default cleaning is applied. Empty strings are always retained as
         `NaN`. Numbers, `-`, `.` are extracted and the resulting string
         is cast to a float.
-    - `'accounting'`: Replaces numbers in parentheses with negatives, removes commas.
+    - `'accounting'`: Replaces numbers in parentheses with negatives, removes
+        commas and currency symbols ($, €, £, ¥, ₹, ₩, ₽, ₱, ฿, ₺).
 
     Args:
         df: The pandas DataFrame.
@@ -100,6 +101,7 @@ def currency_column_to_numeric(
         outcome = (
             df[column_name]
             .str.strip()
+            .str.replace(r"[$€£¥₹₩₽₱฿₺]", "", regex=True)
             .str.replace(",", "", regex=False)
             .str.replace(")", "", regex=False)
             .str.replace("(", "-", regex=False)

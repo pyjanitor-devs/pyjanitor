@@ -1,17 +1,21 @@
 # pyjanitor
 
-[![](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ericmjl/pyjanitor/dev)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ericmjl/pyjanitor/dev)
 
 <!-- pypi-doc -->
 `pyjanitor` is a Python implementation of the R package [`janitor`][janitor].
-It provides a clean user-friendly API for extending pandas with powerful and readable data-cleaning functions .
+It provides a clean user-friendly API for extending pandas
+with powerful and readable data-cleaning functions.
 
 [janitor]: https://github.com/sfirke/janitor
 
 ## Quick start
 
-- Installation: `conda install -c conda-forge pyjanitor`. Read more installation instructions [here](https://pyjanitor-devs.github.io/pyjanitor/#installation).
-- Check out the collection of [general functions](https://pyjanitor-devs.github.io/pyjanitor/api/functions/).
+- Installation: `conda install -c conda-forge pyjanitor`.
+  Read more [installation instructions](#installation).
+- Check out the collection of [general functions][funcs].
+
+[funcs]: https://pyjanitor-devs.github.io/pyjanitor/api/functions/
 
 ## Why janitor?
 
@@ -130,7 +134,6 @@ df = (
 # 3      April   500.0     675.0   800.0
 ```
 
-
 With `pyjanitor`, we enable method chaining with method names
 that are *explicitly named verbs*, which describe the action taken.
 
@@ -158,7 +161,6 @@ Firstly, it's about extending Pandas with convenient data cleaning routines.
 Secondly, it's about providing a cleaner, method-chaining, verb-based API
 for common pandas routines.
 
-
 <!-- pypi-doc -->
 ## Installation
 
@@ -174,13 +176,14 @@ pip install pyjanitor
 conda install pyjanitor -c conda-forge
 ```
 
-`pyjanitor` can be installed by the pipenv environment manager too. This requires enabling prerelease dependencies:
+`pyjanitor` can be installed by the pipenv environment manager too.
+This requires enabling prerelease dependencies:
 
 ```bash
 pipenv install --pre pyjanitor
 ```
 
-`pyjanitor` requires Python 3.6+.
+`pyjanitor` requires Python 3.11+.
 
 ## Functionality
 
@@ -259,7 +262,10 @@ df = (
 
 ## Contributing
 
-Follow the [development guide](https://pyjanitor-devs.github.io/pyjanitor/devguide/) for a full description of the process of contributing to `pyjanitor`.
+Follow the [development guide][devguide] for a full description
+of the process of contributing to `pyjanitor`.
+
+[devguide]: https://pyjanitor-devs.github.io/pyjanitor/devguide/
 
 ## Adding new functionality
 
@@ -283,8 +289,10 @@ def my_data_cleaning_function(df, arg1, arg2, ...):
     return df
 ```
 
-We use [`pandas_flavor`](https://github.com/Zsailer/pandas_flavor) to register the function natively on a `pandas.DataFrame`.
+We use [`pandas_flavor`][pf] to register the function natively
+on a `pandas.DataFrame`.
 
+[pf]: https://github.com/Zsailer/pandas_flavor
 
 ### Add a test case
 
@@ -323,7 +331,6 @@ and internalize it as part of the official `pandas` API,
 then we will deprecate it from `pyjanitor`,
 while acknowledging the original contributors' contribution
 as part of the official deprecation record.
-
 
 ## Contributors
 
@@ -462,7 +469,10 @@ Thanks goes to these wonderful people who have contributed to pyjanitor:
 
 <!-- ALL-CONTRIBUTORS-LIST:END -->
 
-This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!
+This project follows the [all-contributors][ac] specification.
+Contributions of any kind welcome!
+
+[ac]: https://github.com/all-contributors/all-contributors
 
 ## Credits
 

@@ -29,7 +29,7 @@ def test_single_column_fail_factorize_columns():
     with pytest.raises(ValueError):
         pd.DataFrame(
             {"a": ["hello", "hello", "sup"], "b": [1, 2, 3]}
-        ).factorize_columns(column_names="c")  # noqa: 841
+        ).factorize_columns(column_names="c")
 
 
 @pytest.mark.functions

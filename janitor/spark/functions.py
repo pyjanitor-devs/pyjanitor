@@ -77,7 +77,7 @@ def clean_names(
     if remove_special:
         cols = [_remove_special(col) for col in cols]
 
-    cols = [re.sub("_+", "_", col) for col in cols]  # noqa: PD005
+    cols = [re.sub("_+", "_", col) for col in cols]
 
     cols = [_strip_underscores_func(col, strip_underscores) for col in cols]
 

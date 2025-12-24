@@ -1,11 +1,22 @@
 name: Auto-release
 
 on:
-  # The below workflow_dispatch section is for a "manual" kick off of the
-  # auto-release script. To cut a new release, navigate to the Actions section
-  # of the repo and select this workflow (Auto-release) on the right hand side.
-  # Then, click "Run workflow" and you will be prompted to input the new
-  # version (which should be major, minor, or patch).
+  # Automatic patch release after tests pass on dev branch.
+  # This triggers whenever the "pyjanitor tests" workflow completes.
+  # The job-level `if` condition ensures we only release when:
+  # 1. Tests passed (conclusion == 'success')
+  # 2. It was a push event (not a PR) - i.e., code was merged to dev
+  workflow_run:
+    workflows: ["pyjanitor tests"]
+    types:
+      - completed
+    branches:
+      - dev
+
+  # Manual release for minor/major versions.
+  # To cut a new release, navigate to the Actions section of the repo
+  # and select this workflow (Auto-release) on the right hand side.
+  # Then, click "Run workflow" and select major, minor, or patch.
   workflow_dispatch:
     inputs:
       version_name:
@@ -28,6 +39,13 @@ jobs:
   release:
     name: Create a new release
     runs-on: ubuntu-latest
+    # Run if:
+    # 1. Manual trigger (workflow_dispatch), OR
+    # 2. Automatic trigger where tests passed AND it was a push (not PR)
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push')
 
     defaults:
       run:
@@ -45,15 +63,32 @@ jobs:
           git checkout dev
           git pull
 
+      - name: Check if already released
+        id: check_release
+        run: |
+          CURRENT_COMMIT=$(git rev-parse HEAD)
+          echo "Current commit: $CURRENT_COMMIT"
+          if git tag --points-at $CURRENT_COMMIT | grep -q "^v"; then
+            echo "already_released=true" >> $GITHUB_OUTPUT
+            echo "This commit already has a release tag. Will skip release."
+            git tag --points-at $CURRENT_COMMIT
+          else
+            echo "already_released=false" >> $GITHUB_OUTPUT
+            echo "No release tag found. Proceeding with release."
+          fi
+
       - name: Setup Python environment
+        if: steps.check_release.outputs.already_released == 'false'
         uses: actions/setup-python@v6
         with:
           python-version: 3.13
 
       - name: Install uv
+        if: steps.check_release.outputs.already_released == 'false'
         uses: astral-sh/setup-uv@v7
 
       - name: Setup Pixi Environment
+        if: steps.check_release.outputs.already_released == 'false'
         uses: prefix-dev/setup-pixi@v0.9.3
         with:
           pixi-version: latest
@@ -61,40 +96,51 @@ jobs:
           cache-write: true
 
       - name: Set up Python tools
+        if: steps.check_release.outputs.already_released == 'false'
         run: uv tool install bump2version
 
       - name: Set version name
+        if: steps.check_release.outputs.already_released == 'false'
         run: echo "VERSION_NAME=${{ github.event.inputs.version_name || env.DEFAULT_VERSION_NAME }}" >> $GITHUB_ENV
 
       - name: Dry run bump2version
+        if: steps.check_release.outputs.already_released == 'false'
         run: bump2version --dry-run ${{ env.VERSION_NAME }} --allow-dirty --verbose
 
       - name: Store new version number
+        if: steps.check_release.outputs.already_released == 'false'
         run: echo "version_number=$(bump2version --dry-run --list ${{ env.VERSION_NAME }} | grep new_version | sed -r 's/^.*=//')" >> $GITHUB_ENV
 
       - name: Display new version number
+        if: steps.check_release.outputs.already_released == 'false'
         run: |
           echo "version_name: ${{ env.VERSION_NAME }}"
           echo "version_number: v${{ env.version_number }}"
 
       - name: Ensure repo status is clean
+        if: steps.check_release.outputs.already_released == 'false'
         run: git status
 
       - name: Configure Git
+        if: steps.check_release.outputs.already_released == 'false'
         run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
 
       - name: Run bump2version
+        if: steps.check_release.outputs.already_released == 'false'
         run: bump2version ${{ env.VERSION_NAME }} --verbose
 
       - name: Ensure tag creation
+        if: steps.check_release.outputs.already_released == 'false'
         run: git tag | grep ${{ env.version_number }}
 
       - name: Install llamabot package
+        if: steps.check_release.outputs.already_released == 'false'
         run: pixi run pip install llamabot[cli]
 
       - name: Write release notes
+        if: steps.check_release.outputs.already_released == 'false'
         env:
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -103,22 +149,27 @@ jobs:
           llamabot git write-release-notes
 
       - name: Commit release notes
+        if: steps.check_release.outputs.already_released == 'false'
         run: |
           pixi run pre-commit run --all-files || pixi run pre-commit run --all-files
           git add .
           git commit -m "Add release notes for ${{ env.version_number }}"
 
       - name: Build package
-        run: pixi run release
+        if: steps.check_release.outputs.already_released == 'false'
+        run: uv build
 
       - name: Publish package (trusted publishing)
+        if: steps.check_release.outputs.already_released == 'false'
         run: uv publish --trusted-publishing always
 
       - name: Push changes with tags
+        if: steps.check_release.outputs.already_released == 'false'
         run: |
           git push && git push --tags
 
       - name: Create release in GitHub repo
+        if: steps.check_release.outputs.already_released == 'false'
         uses: ncipollo/release-action@v1
         with:
           bodyFile: "docs/releases/v${{ env.version_number }}.md"
@@ -126,4 +177,5 @@ jobs:
           tag: v${{ env.version_number }}
 
       - name: Ensure complete
+        if: steps.check_release.outputs.already_released == 'false'
         run: echo "Auto-release complete!"

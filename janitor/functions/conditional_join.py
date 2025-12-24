@@ -475,9 +475,6 @@ def _conditional_join_compute(
     This is where the actual computation
     for the conditional join takes place.
     """
-    # print(df.to_dict())
-    # print("\n\n\n")
-    # print(right.to_dict())
     (
         df,
         right,

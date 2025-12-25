@@ -27,7 +27,7 @@ from janitor.functions.utils import (
 )
 from janitor.utils import check, check_column, deprecated_kwargs
 
-from ._conditional_join import _single_join
+from ._conditional_join import _get_indices_non_equi, _get_indices_single_join
 
 
 @pf.register_dataframe_method
@@ -55,8 +55,16 @@ def conditional_join(
     There is also pandas' IntervalIndex, which is efficient for range joins,
     especially if the intervals do not overlap.
 
+    !!! warning
+
+        The `df_columns` and `right_columns` arguments are deprecated.
+
     Column selection in `df_columns` and `right_columns` is possible using the
     [`select`][janitor.functions.select.select] syntax.
+
+    !!! warning
+
+        The `use_numba` argument is deprecated.
 
     Performance might be improved by setting `use_numba` to `True` -
     this can be handy for equi joins that have lots of duplicated keys.
@@ -237,6 +245,10 @@ def conditional_join(
             - Added support for timedelta dtype.
         - 0.28.0
             - `col` class deprecated.
+        - 0.33.0
+            - `use_numba` deprecated.
+            - `df_columns` deprecated.
+            - `right_columns` deprecated.
 
     Args:
         df: A pandas DataFrame.
@@ -254,10 +266,13 @@ def conditional_join(
         df_columns: Columns to select from `df` in the final output dataframe.
             Column selection is based on the
             [`select`][janitor.functions.select.select] syntax.
+            !!! warning "Deprecated in 0.33.0"
         right_columns: Columns to select from `right` in the final output dataframe.
             Column selection is based on the
             [`select`][janitor.functions.select.select] syntax.
+            !!! warning "Deprecated in 0.33.0"
         use_numba: Use numba, if installed, to accelerate the computation.
+            !!! warning "Deprecated in 0.33.0"
         keep: Choose whether to return the first match, last match or all matches.
         indicator: If `True`, adds a column to the output DataFrame
             called `_merge` with information on the source of each row.
@@ -386,6 +401,7 @@ def _conditional_join_preliminary_checks(
     if keep not in {"all", "first", "last"}:
         raise ValueError("'keep' should be one of 'all', 'first', 'last'.")
 
+    # deprecate in a future version
     check("use_numba", use_numba, [bool])
 
     check("indicator", indicator, [bool, str])
@@ -459,7 +475,6 @@ def _conditional_join_compute(
     This is where the actual computation
     for the conditional join takes place.
     """
-
     (
         df,
         right,
@@ -496,7 +511,7 @@ def _conditional_join_compute(
         )
         if op == _JoinOperator.STRICTLY_EQUAL.value:
             eq_check = True
-        elif op in less_than_join_types.union(greater_than_join_types):
+        if op in less_than_join_types.union(greater_than_join_types):
             le_lt_check = True
     df.index = range(len(df))
     right.index = range(len(right))
@@ -518,7 +533,7 @@ def _conditional_join_compute(
             conditions=conditions,
             keep=keep,
             use_numba=use_numba,
-            return_ragged_arrays=False,
+            return_matching_indices=return_matching_indices,
             row_count=False,
         )
     elif len(conditions) > 1:
@@ -531,18 +546,21 @@ def _conditional_join_compute(
         )
     else:
         # TODO: handle numba computations separately
-        result = _single_join._single_join(
+        result = _get_indices_single_join._single_join(
             df=df,
             right=right,
             condition=conditions[0],
             keep=keep,
             return_matching_indices=return_matching_indices,
         )
-
     if return_matching_indices:
         return result
     # TODO: unify into single approach
-    if len(conditions) == 1:
+    if (
+        (len(conditions) == 1)
+        or (eq_check and force)
+        or (le_lt_check and not use_numba and not eq_check)
+    ):
         return _create_frame(
             df=df,
             right=right,
@@ -675,7 +693,7 @@ def _multiple_conditional_join_eq(
             conditions=conditions,
             keep=keep,
             use_numba=use_numba,
-            return_ragged_arrays=False,
+            return_matching_indices=False,
             row_count=row_count,
         )
 
@@ -861,7 +879,7 @@ def _multiple_conditional_join_le_lt(
     conditions: list,
     keep: str,
     use_numba: bool,
-    return_ragged_arrays: bool,
+    return_matching_indices: bool,
     row_count: Hashable = None,
 ) -> tuple:
     """
@@ -908,269 +926,51 @@ def _multiple_conditional_join_le_lt(
             )
         if indices is None:
             return None
-    else:
-        # there is an opportunity for optimization for range joins
-        # which is usually `lower_value < value < upper_value`
-        # or `lower_value < a` and `b < upper_value`
-        # intervalindex is not used here, as there are scenarios
-        # where there will be overlapping intervals;
-        # intervalindex does not offer an efficient way to get
-        # the indices for overlaps
-        # also, intervalindex covers only the first option
-        # i.e => `lower_value < value < upper_value`
-        # it does not extend to range joins for different columns
-        # i.e => `lower_value < a` and `b < upper_value`
-        # the option used for range joins is a simple form
-        # dependent on sorting and extensible to overlaps
-        # as well as the second option:
-        # i.e =>`lower_value < a` and `b < upper_value`
-        # range joins are also the more common types of non-equi joins
-        # the other joins do not have an optimisation opportunity
-        # within this space, as far as I know,
-        # so a blowup of all the rows is unavoidable.
-
-        # first step is to get two conditions, if possible
-        # where one has a less than operator
-        # and the other has a greater than operator
-        # get the indices from that
-        # and then build the remaining indices,
-        # using _generate_indices function
-        # the aim of this for loop is to see if there is
-        # the possibility of a range join, and if there is,
-        # then use the optimised path
-        first_two = [op for *_, op in conditions[:2]]
-        range_join_ops = itertools.product(
-            less_than_join_types, greater_than_join_types
-        )
-        range_join_ops = map(set, range_join_ops)
-        is_range_join = set(first_two) in range_join_ops
-        # optimised path
-        if is_range_join:
-            if first_two[0] in less_than_join_types:
-                le_lt, ge_gt = conditions[:2]
-            else:
-                ge_gt, le_lt = conditions[:2]
-            conditions = [
-                condition for condition in conditions if condition not in (ge_gt, le_lt)
-            ]
-            if conditions:
-                _keep = None
-                return_ragged_arrays = False
-                right_is_sorted = False
-            else:
-                first = ge_gt[1]
-                second = le_lt[1]
-                right_is_sorted = (
-                    right[first].is_monotonic_increasing
-                    & right[second].is_monotonic_increasing
-                )
-                if right_is_sorted:
-                    _keep = keep
-                else:
-                    _keep = None
-            indices = _range_indices(
-                df=df,
-                right=right,
-                first=ge_gt,
-                second=le_lt,
-                keep=_keep,
-                return_ragged_arrays=return_ragged_arrays,
-                right_is_sorted=right_is_sorted,
-                row_count=row_count if not conditions else None,
+        if conditions:
+            conditions = (
+                (df[left_on], right[right_on], op)
+                for left_on, right_on, op in conditions
             )
+            indices = _generate_indices(*indices, conditions)
             if indices is None:
                 return None
-            if row_count and not conditions:
-                return indices
-            if _keep or (return_ragged_arrays & isinstance(indices[1], list)):
-                return indices
+        return _keep_output(keep, *indices)
+    # there is an opportunity for optimization for range joins
+    # which is usually `lower_value < value < upper_value`
+    # or `lower_value < a` and `b < upper_value`
+    # intervalindex is not used here, as there are scenarios
+    # where there will be overlapping intervals;
+    # intervalindex does not offer an efficient way to get
+    # the indices for overlaps
+    # also, intervalindex covers only the first option
+    # i.e => `lower_value < value < upper_value`
+    # it does not extend to range joins for different columns
+    # i.e => `lower_value < a` and `b < upper_value`
+    # the option used for range joins is a simple form
+    # dependent on sorting and extensible to overlaps
+    # as well as the second option:
+    # i.e =>`lower_value < a` and `b < upper_value`
+    # range joins are also the more common types of non-equi joins
+    # the other joins do not have an optimisation opportunity
+    # within this space, as far as I know,
+    # so a blowup of all the rows is unavoidable.
 
-        # no optimised path
-        # blow up the rows and prune
-        else:
-            lt_or_gt = None
-            for condition in conditions:
-                if condition[-1] in less_than_join_types.union(greater_than_join_types):
-                    lt_or_gt = condition
-                    break
-            conditions = [
-                condition for condition in conditions if condition != lt_or_gt
-            ]
-            left_on, right_on, op = lt_or_gt
-            indices = _generic_func_cond_join(
-                left=df[left_on],
-                right=right[right_on],
-                op=op,
-                multiple_conditions=False,
-                keep="all",
-            )
-    if indices is None:
-        return None
-    if conditions:
-        conditions = (
-            (df[left_on], right[right_on], op) for left_on, right_on, op in conditions
-        )
-        indices = _generate_indices(*indices, conditions)
-        if indices is None:
-            return None
-
-    if row_count:
-        left_index, _ = indices
-        return pd.Index(left_index).value_counts(sort=False).rename(row_count)
-    return _keep_output(keep, *indices)
-
-
-def _range_indices(
-    df: pd.DataFrame,
-    right: pd.DataFrame,
-    first: tuple,
-    second: tuple,
-    keep: str,
-    right_is_sorted: bool,
-    return_ragged_arrays: bool,
-    row_count: Hashable = None,
-) -> Union[tuple[np.ndarray, np.ndarray], None]:
-    """
-    Retrieve index positions for range/interval joins.
-
-    Idea inspired by article:
-    https://www.vertica.com/blog/what-is-a-range-join-and-why-is-it-so-fastba-p223413/
-
-    Returns a tuple of (left_index, right_index)
-    """
-    # summary of code for range join:
-    # get the positions where start_left is >/>= start_right
-    # then within the positions,
-    # get the positions where end_left is </<= end_right
-    # this should reduce the search space
-    left_on, right_on, op = first
-    left_c = df[left_on]
-    right_c = right[right_on]
-    left_on, right_on, _ = second
-    # get rid of any nulls
-    # this is helpful as we can convert extension arrays
-    # to numpy arrays safely
-    # and simplify the search logic below
-    # if there is no fastpath available
-    any_nulls = df[left_on].isna()
-    if any_nulls.any():
-        left_c = left_c[~any_nulls]
-    any_nulls = right[right_on].isna()
-    if any_nulls.any():
-        right_c = right_c[~any_nulls]
-    any_nulls = any_nulls.any()
-
-    outcome = _generic_func_cond_join(
-        left=left_c,
-        right=right_c,
-        op=op,
-        multiple_conditions=True,
-        keep="all",
+    # first step is to get two conditions, if possible
+    # where one has a less than operator
+    # and the other has a greater than operator
+    # get the indices from that
+    # and then build the remaining indices,
+    # using _generate_indices function
+    # the aim of this for loop is to see if there is
+    # the possibility of a range join, and if there is,
+    # then use the optimised path
+    return _get_indices_non_equi._get_indices(
+        df=df,
+        right=right,
+        conditions=conditions,
+        keep=keep,
+        return_matching_indices=return_matching_indices,
     )
-    if outcome is None:
-        return None
-    left_index, right_index, ends = outcome
-    left_on, right_on, op = second
-    left_on = df.columns.get_loc(left_on)
-    right_on = right.columns.get_loc(right_on)
-    right_c = right.iloc[right_index, right_on]
-    left_c = df.iloc[left_index, left_on]
-    # if True, we can use a binary search
-    # for more performance, instead of a linear search
-    fastpath = right_c.is_monotonic_increasing
-
-    if fastpath:
-        outcome = _generic_func_cond_join(
-            left=left_c,
-            right=right_c,
-            op=op,
-            multiple_conditions=False,
-            keep="first",
-        )
-        if outcome is None:
-            return None
-        left_c, starts = outcome
-    else:
-        # the aim here is to get the first match
-        # where the left array is </<= than the right array
-        # this is solved by getting the cumulative max
-        # thus ensuring that the first match is obtained
-        # via a binary search
-        outcome = _generic_func_cond_join(
-            left=left_c,
-            right=right_c.cummax(),
-            op=op,
-            multiple_conditions=True,
-            keep="all",
-        )
-        if outcome is None:
-            return None
-        left_c, right_index, starts = outcome
-    if left_c.size < left_index.size:
-        keep_rows = pd.Index(left_c).get_indexer(left_index) != -1
-        ends = ends[keep_rows]
-        left_index = left_c
-    # no point searching within (a, b)
-    # if a == b
-    # since range(a, b) yields none
-    keep_rows = starts < ends
-
-    if not keep_rows.any():
-        return None
-
-    if not keep_rows.all():
-        left_index = left_index[keep_rows]
-        starts = starts[keep_rows]
-        ends = ends[keep_rows]
-
-    repeater = ends - starts
-    if row_count and (fastpath or repeater.max() == 1):
-        return pd.Series(index=left_index, data=repeater, name=row_count)
-
-    if repeater.max() == 1:
-        # no point running a comparison op
-        # if the width is all 1
-        # this also implies that the intervals
-        # do not overlap on the right side
-        return left_index, right_index[starts]
-    if keep == "first":
-        return left_index, right_index[starts]
-    if keep == "last":
-        return left_index, right_index[ends - 1]
-    if return_ragged_arrays & right_is_sorted & fastpath & (not any_nulls):
-        right_index = [slice(start, end) for start, end in zip(starts, ends)]
-        return left_index, right_index
-    right_index = [right_index[start:end] for start, end in zip(starts, ends)]
-    if return_ragged_arrays & fastpath:
-        return left_index, right_index
-    right_index = np.concatenate(right_index)
-    left_index = left_index.repeat(repeater)
-    if fastpath:
-        return left_index, right_index
-    # here we search for actual positions
-    # where left_c is </<= right_c
-    # safe to index the arrays, since we are picking the positions
-    # which are all in the original `df` and `right`
-    # doing this allows some speed gains
-    # while still ensuring correctness
-    left_on, right_on, op = second
-    left_c = df[left_on]._values[left_index]
-    right_c = right[right_on]._values[right_index]
-    ext_arr = is_extension_array_dtype(left_c)
-    op = operator_map[op]
-    mask = op(left_c, right_c)
-
-    if ext_arr:
-        mask = mask.to_numpy(dtype=bool, na_value=False)
-    if not mask.all():
-        left_index = left_index[mask]
-        right_index = right_index[mask]
-
-    if row_count:
-        row_count = pd.Index(left_index).value_counts(sort=False).rename(row_count)
-        return row_count
-
-    return left_index, right_index
 
 
 def _create_multiindex_column(df: pd.DataFrame, right: pd.DataFrame) -> tuple:
@@ -1205,6 +1005,8 @@ def _create_frame(
     """
     Create final dataframe
     """
+    # TODO: deprecate df_columns and right_columns
+    # user can handle column renaming before the join
     if (df_columns is None) and (right_columns is None):
         raise ValueError("df_columns and right_columns cannot both be None.")
     if (df_columns is not None) and (df_columns != slice(None)):

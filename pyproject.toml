@@ -34,6 +34,7 @@ dependencies = [
     "pandas-flavor==0.8.1",
     "multipledispatch",
     "scipy",
+    "janitor-rs>=0.3.0,<0.4"
 ]
 
 [project.optional-dependencies]

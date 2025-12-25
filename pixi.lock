@@ -12085,8 +12085,8 @@ packages:
   timestamp: 1750615908735
 - pypi: ./
   name: pyjanitor
-  version: 0.32.5
-  sha256: eef069a44f8c9dc22dde11154ff115668dd55d6b14557fb08d90bef80ead3a40
+  version: 0.32.6
+  sha256: 5c84ecdb9460bbaa761a1849b3ab1ebaaf1e5e6cecaba0825bbfe8b836900e82
   requires_dist:
   - natsort
   - pandas-flavor==0.8.1
@@ -12145,7 +12145,6 @@ packages:
   - pandas-vet ; extra == 'all'
   - py>=1.10.0 ; extra == 'all'
   requires_python: '>=3.6'
-  editable: true
 - conda: https://prefix.dev/conda-forge/noarch/pymdown-extensions-10.19-pyhd8ed1ab_0.conda
   sha256: a3477c99d72a926810f16858fa9e7de87c9238ec75396b61dfb22f1533fc2b23
   md5: 13fd024a09076e225d76a29db7355d67

@@ -90,18 +90,16 @@ def adorn_totals(
     if where in ("row", "both"):
         # Create totals row
         totals_row = {}
+        first_col = df.columns[0]
         for col in df.columns:
             if col in numeric_cols or col == name:
                 totals_row[col] = df[col].sum(skipna=na_rm)
+            elif col == first_col:
+                # First column gets the totals row name (e.g., "Total")
+                totals_row[col] = name
             else:
-                totals_row[col] = (
-                    fill if pd.api.types.is_string_dtype(df[col]) else name
-                )
-
-        # For the first column (typically the index/label column), use the name
-        first_col = df.columns[0]
-        if first_col not in numeric_cols and first_col != name:
-            totals_row[first_col] = name
+                # All other non-numeric columns get the fill value
+                totals_row[col] = fill
 
         totals_df = pd.DataFrame([totals_row])
         df = pd.concat([df, totals_df], ignore_index=True)
@@ -347,13 +345,13 @@ def adorn_ns(
 
     df = df.copy()
 
-    # Default format function
+    # Default format function with thousand separator (matching R janitor behavior)
     if format_func is None:
 
         def _default_format_func(n):
             if pd.isna(n):
                 return ""
-            return f"({int(n)})"
+            return f"({int(n):,})"
 
         format_func = _default_format_func
 
@@ -361,11 +359,15 @@ def adorn_ns(
     numeric_cols = ns.select_dtypes(include=[np.number]).columns.tolist()
 
     # Apply to matching columns
+    # Use positional indexing to handle cases where df has more rows than ns
+    # (e.g., after adorn_totals adds a totals row)
+    df_index_list = df.index.tolist()
     for col in numeric_cols:
         if col in df.columns:
-            for idx in df.index:
-                if idx < len(ns):
-                    n_value = ns.loc[ns.index[idx], col]
+            for i, idx in enumerate(df_index_list):
+                # Only process rows that exist in the original counts
+                if i < len(ns):
+                    n_value = ns.iloc[i][col]
                     formatted_n = format_func(n_value)
                     current_value = df.loc[idx, col]
                     if pd.notna(current_value) and formatted_n:

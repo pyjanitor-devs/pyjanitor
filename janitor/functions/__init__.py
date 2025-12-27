@@ -16,6 +16,14 @@ pyjanitor's general-purpose data cleaning functions.
 # 7. Never import utils.
 
 from .add_columns import add_columns
+from .adorn import (
+    adorn_ns,
+    adorn_pct_formatting,
+    adorn_percentages,
+    adorn_rounding,
+    adorn_title,
+    adorn_totals,
+)
 from .alias import alias
 from .also import also
 from .bin_numeric import bin_numeric
@@ -97,6 +105,12 @@ from .utils import (
 
 __all__ = [
     "add_columns",
+    "adorn_ns",
+    "adorn_pct_formatting",
+    "adorn_percentages",
+    "adorn_rounding",
+    "adorn_title",
+    "adorn_totals",
     "alias",
     "also",
     "bin_numeric",

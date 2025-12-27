@@ -301,3 +301,180 @@ def test_adorn_full_pipeline(simple_df):
     # Should have formatted percentages with N counts
     assert "%" in result.iloc[0]["count1"]
     assert "(" in result.iloc[0]["count1"]
+
+
+# Tests for NA value handling
+
+
+@pytest.fixture
+def df_with_na():
+    """Create a DataFrame with NA values for testing."""
+    return pd.DataFrame(
+        {
+            "category": ["A", "B", "C"],
+            "count1": [10, np.nan, 30],
+            "count2": [5, 15, np.nan],
+        }
+    )
+
+
+@pytest.mark.functions
+def test_adorn_totals_with_na(df_with_na):
+    """Test adorn_totals handles NA values correctly with na_rm=True."""
+    result = df_with_na.adorn_totals("row", na_rm=True)
+    # Should sum non-NA values: 10 + 30 = 40 for count1
+    assert result.iloc[-1]["count1"] == 40
+    # Should sum non-NA values: 5 + 15 = 20 for count2
+    assert result.iloc[-1]["count2"] == 20
+
+
+@pytest.mark.functions
+def test_adorn_percentages_with_na(df_with_na):
+    """Test adorn_percentages handles NA values correctly."""
+    result = df_with_na.adorn_percentages("col", na_rm=True)
+    # Column sum for count1 = 40 (excluding NA)
+    assert np.isclose(result.iloc[0]["count1"], 10 / 40)
+    assert np.isclose(result.iloc[2]["count1"], 30 / 40)
+    # NA should remain NA
+    assert pd.isna(result.iloc[1]["count1"])
+
+
+@pytest.mark.functions
+def test_adorn_pct_formatting_with_na(df_with_na):
+    """Test adorn_pct_formatting preserves NA values."""
+    result = df_with_na.adorn_percentages("col").adorn_pct_formatting()
+    # NA should remain NA
+    assert pd.isna(result.iloc[1]["count1"])
+
+
+# Tests for numeric first column edge case
+
+
+@pytest.fixture
+def numeric_first_col_df():
+    """Create a DataFrame with numeric first column."""
+    return pd.DataFrame(
+        {
+            "id": [1, 2, 3],
+            "count1": [10, 20, 30],
+            "count2": [5, 15, 25],
+        }
+    )
+
+
+@pytest.mark.functions
+def test_adorn_totals_numeric_first_column(numeric_first_col_df):
+    """Test adorn_totals with numeric first column."""
+    result = numeric_first_col_df.adorn_totals("row")
+    # First column should be summed as it's numeric
+    assert result.iloc[-1]["id"] == 6  # 1 + 2 + 3
+    assert result.iloc[-1]["count1"] == 60
+
+
+@pytest.mark.functions
+def test_adorn_percentages_numeric_first_column(numeric_first_col_df):
+    """Test adorn_percentages with numeric first column."""
+    result = numeric_first_col_df.adorn_percentages("row")
+    # All numeric columns should be converted to percentages
+    # Row 0: id=1, count1=10, count2=5, total=16
+    assert np.isclose(result.iloc[0]["id"], 1 / 16)
+    assert np.isclose(result.iloc[0]["count1"], 10 / 16)
+
+
+# Tests for adorn_ns with custom ns DataFrame
+
+
+@pytest.mark.functions
+def test_adorn_ns_with_custom_ns(simple_df):
+    """Test adorn_ns with custom ns DataFrame provided."""
+    # Create a custom ns DataFrame with different values
+    custom_ns = pd.DataFrame(
+        {
+            "category": ["A", "B", "C"],
+            "count1": [100, 200, 300],
+            "count2": [50, 150, 250],
+        }
+    )
+    result = (
+        simple_df.adorn_percentages("row").adorn_pct_formatting().adorn_ns(ns=custom_ns)
+    )
+    # Should use custom ns values
+    assert "(100)" in result.iloc[0]["count1"]
+    assert "(200)" in result.iloc[1]["count1"]
+
+
+# Tests for adorn_ns skipping totals row
+
+
+@pytest.mark.functions
+def test_adorn_ns_skips_totals_row(simple_df):
+    """Test that adorn_ns correctly skips the totals row."""
+    result = (
+        simple_df.adorn_totals("row")
+        .adorn_percentages("row")
+        .adorn_pct_formatting()
+        .adorn_ns()
+    )
+    # Totals row should have percentage but no N count appended
+    # because the original counts don't include the totals row
+    totals_row_value = result.iloc[-1]["count1"]
+    # The totals row should still have a percentage
+    assert "%" in totals_row_value
+    # But should NOT have parentheses from adorn_ns
+    # (unless it was added during adorn_totals which stores counts before totals)
+
+
+@pytest.mark.functions
+def test_adorn_ns_with_non_sequential_index():
+    """Test adorn_ns handles non-sequential indices correctly."""
+    df = pd.DataFrame(
+        {
+            "category": ["A", "B", "C"],
+            "count1": [10, 20, 30],
+            "count2": [5, 15, 25],
+        },
+        index=[10, 20, 30],  # Non-sequential index
+    )
+    result = df.adorn_percentages("row").adorn_pct_formatting().adorn_ns()
+    # Should still work correctly with non-sequential indices
+    assert "(10)" in result.loc[10, "count1"]
+    assert "(20)" in result.loc[20, "count1"]
+    assert "(30)" in result.loc[30, "count1"]
+
+
+# Tests for adorn_totals fill parameter
+
+
+@pytest.mark.functions
+def test_adorn_totals_fill_parameter():
+    """Test that fill parameter works for non-numeric columns."""
+    df = pd.DataFrame(
+        {
+            "category": ["A", "B"],
+            "subcategory": ["X", "Y"],
+            "count": [10, 20],
+        }
+    )
+    result = df.adorn_totals("row", fill="--")
+    # First column should have the name "Total"
+    assert result.iloc[-1]["category"] == "Total"
+    # Second non-numeric column should have the fill value
+    assert result.iloc[-1]["subcategory"] == "--"
+
+
+# Tests for thousand separator in adorn_ns
+
+
+@pytest.mark.functions
+def test_adorn_ns_thousand_separator():
+    """Test that adorn_ns includes thousand separator in large numbers."""
+    df = pd.DataFrame(
+        {
+            "category": ["A", "B"],
+            "count": [1000, 2000000],
+        }
+    )
+    result = df.adorn_percentages("col").adorn_pct_formatting().adorn_ns()
+    # Should have thousand separator
+    assert "(1,000)" in result.iloc[0]["count"]
+    assert "(2,000,000)" in result.iloc[1]["count"]

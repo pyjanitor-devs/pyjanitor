@@ -27,7 +27,7 @@ from janitor.functions.utils import (
 )
 from janitor.utils import check, check_column, deprecated_kwargs
 
-from ._conditional_join import _get_indices_non_equi, _get_indices_single_join
+from ._conditional_join import _get_indices_non_equi, _get_indices_single_join, _not_equal_indices
 
 
 @pf.register_dataframe_method
@@ -542,7 +542,6 @@ def _conditional_join_compute(
             right=right,
             conditions=conditions,
             keep=keep,
-            row_count=False,
         )
     else:
         # TODO: handle numba computations separately
@@ -560,6 +559,7 @@ def _conditional_join_compute(
         (len(conditions) == 1)
         or (eq_check and force)
         or (le_lt_check and not use_numba and not eq_check)
+        or (not eq_check and not le_lt_check)
     ):
         return _create_frame(
             df=df,
@@ -632,7 +632,6 @@ def _multiple_conditional_join_ne(
     right: pd.DataFrame,
     conditions: list[tuple[pd.Series, pd.Series, str]],
     keep: str,
-    row_count: Hashable = None,
 ) -> tuple:
     """
     Get indices for multiple conditions,
@@ -647,26 +646,30 @@ def _multiple_conditional_join_ne(
     first, *rest = conditions
     left_on, right_on, op = first
 
-    indices = _generic_func_cond_join(
+    indices = _not_equal_indices._not_equal_indices(
         left=df[left_on],
         right=right[right_on],
-        op=op,
-        multiple_conditions=False,
         keep="all",
     )
-    if indices is None:
-        return None
+    left_index = indices['left_index']
+    if not left_index.size:
+        return {
+            "left_index": np.array([], dtype=np.intp),
+            "right_index": np.array([], dtype=np.intp),
+        }
 
     rest = ((df[left_on], right[right_on], op) for left_on, right_on, op in rest)
 
-    indices = _generate_indices(*indices, rest)
-
-    if not indices:
-        return None
-    if row_count:
-        left_index, _ = indices
-        return pd.Index(left_index).value_counts(sort=False).rename(row_count)
-    return _keep_output(keep, *indices)
+    indices = _generate_indices(left_index=indices['left_index'], right_index=indices['right_index'], conditions=rest)
+    if indices is None:
+        return {
+            "left_index": np.array([], dtype=np.intp),
+            "right_index": np.array([], dtype=np.intp),
+        }
+    outcome = _keep_output(keep, *indices)
+    outcome = zip(["left_index", "right_index"], outcome)
+    outcome = dict(outcome)
+    return outcome
 
 
 def _multiple_conditional_join_eq(

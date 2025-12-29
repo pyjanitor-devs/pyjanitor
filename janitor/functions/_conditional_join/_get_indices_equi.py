@@ -21,7 +21,7 @@ def _get_indices(
 ) -> tuple:
     """
     Get indices, or aggregates, for multiple conditions,
-    where `>/>=` or `</<=` is present
+    where `==` is present
     """
     empty_array = np.array([], dtype=np.intp)
     mapping = _helpers._separate_conditions_based_on_op(conditions=conditions)

@@ -80,8 +80,14 @@ def adorn_totals(
     if "_original_counts" not in df.attrs:
         df.attrs["_original_counts"] = df.copy()
 
-    # Identify numeric columns (excluding the first column if it's not numeric)
-    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    # Identify numeric columns, excluding the first column which is treated
+    # as a row identifier (consistent with R janitor's tabyl behavior)
+    first_col = df.columns[0]
+    numeric_cols = [
+        col
+        for col in df.select_dtypes(include=[np.number]).columns.tolist()
+        if col != first_col
+    ]
 
     if where in ("col", "both"):
         # Add totals column
@@ -90,7 +96,6 @@ def adorn_totals(
     if where in ("row", "both"):
         # Create totals row
         totals_row = {}
-        first_col = df.columns[0]
         for col in df.columns:
             if col in numeric_cols or col == name:
                 totals_row[col] = df[col].sum(skipna=na_rm)
@@ -165,8 +170,14 @@ def adorn_percentages(
     if "_original_counts" not in df.attrs:
         df.attrs["_original_counts"] = df.copy()
 
-    # Identify numeric columns
-    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    # Identify numeric columns, excluding the first column which is treated
+    # as a row identifier (consistent with R janitor's tabyl behavior)
+    first_col = df.columns[0]
+    numeric_cols = [
+        col
+        for col in df.select_dtypes(include=[np.number]).columns.tolist()
+        if col != first_col
+    ]
 
     if not numeric_cols:
         return df

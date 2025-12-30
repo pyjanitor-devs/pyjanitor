@@ -364,21 +364,31 @@ def numeric_first_col_df():
 
 @pytest.mark.functions
 def test_adorn_totals_numeric_first_column(numeric_first_col_df):
-    """Test adorn_totals with numeric first column."""
+    """Test adorn_totals with numeric first column.
+
+    The first column is always treated as a row identifier (consistent with
+    R janitor tabyl behavior), so it gets "Total" instead of being summed.
+    """
     result = numeric_first_col_df.adorn_totals("row")
-    # First column should be summed as it's numeric
-    assert result.iloc[-1]["id"] == 6  # 1 + 2 + 3
+    # First column is treated as row identifier, gets "Total" label
+    assert result.iloc[-1]["id"] == "Total"
     assert result.iloc[-1]["count1"] == 60
 
 
 @pytest.mark.functions
 def test_adorn_percentages_numeric_first_column(numeric_first_col_df):
-    """Test adorn_percentages with numeric first column."""
+    """Test adorn_percentages with numeric first column.
+
+    The first column is always treated as a row identifier (consistent with
+    R janitor tabyl behavior), so it's not converted to percentages.
+    """
     result = numeric_first_col_df.adorn_percentages("row")
-    # All numeric columns should be converted to percentages
-    # Row 0: id=1, count1=10, count2=5, total=16
-    assert np.isclose(result.iloc[0]["id"], 1 / 16)
-    assert np.isclose(result.iloc[0]["count1"], 10 / 16)
+    # First column is treated as row identifier, not converted to percentages
+    # Original values are preserved
+    assert result.iloc[0]["id"] == 1
+    # Row 0: count1=10, count2=5, total=15
+    assert np.isclose(result.iloc[0]["count1"], 10 / 15)
+    assert np.isclose(result.iloc[0]["count2"], 5 / 15)
 
 
 # Tests for adorn_ns with custom ns DataFrame

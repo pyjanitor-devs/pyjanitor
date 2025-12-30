@@ -12145,6 +12145,7 @@ packages:
   - pandas-vet ; extra == 'all'
   - py>=1.10.0 ; extra == 'all'
   requires_python: '>=3.6'
+  editable: true
 - conda: https://prefix.dev/conda-forge/noarch/pymdown-extensions-10.19-pyhd8ed1ab_0.conda
   sha256: a3477c99d72a926810f16858fa9e7de87c9238ec75396b61dfb22f1533fc2b23
   md5: 13fd024a09076e225d76a29db7355d67

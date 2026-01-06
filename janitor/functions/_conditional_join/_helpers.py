@@ -33,18 +33,13 @@ greater_than_join_types = {
 operator_mapping = {">": 0, ">=": 1, "<": 2, "<=": 3, "==": 4, "!=": 5}
 
 
-def _maybe_remove_nulls_from_dataframe(
-    df: pd.DataFrame, columns: Sequence, return_bools: bool = False
-):
+def _maybe_remove_nulls_from_dataframe(df: pd.DataFrame, columns: Sequence):
     """
     Remove nulls if op is not !=;
     """
     any_nulls = df.loc[:, [*columns]].isna().any(axis=1)
     if any_nulls.all():
         return None
-    if return_bools:
-        any_nulls = ~any_nulls
-        return any_nulls
     if any_nulls.any():
         df = df.loc[~any_nulls]
     return df
@@ -132,6 +127,178 @@ def _separate_conditions_based_on_op(conditions: Sequence):
         "ge_gt": ge_gt,
         "le_or_ge": le_or_ge,
     }
+
+
+def _binary_search_lt(
+    left: np.ndarray,
+    right: np.ndarray,
+    starts: np.ndarray,
+    ends: np.ndarray,
+) -> tuple:
+    """
+    Get starts for < joins
+    """
+    mapping = {
+        "int64": janitor_rs.binary_search_lt_int64,
+        "int32": janitor_rs.binary_search_lt_int32,
+        "int16": janitor_rs.binary_search_lt_int16,
+        "int8": janitor_rs.binary_search_lt_int8,
+        "uint64": janitor_rs.binary_search_lt_uint64,
+        "uint32": janitor_rs.binary_search_lt_uint32,
+        "uint16": janitor_rs.binary_search_lt_uint16,
+        "uint8": janitor_rs.binary_search_lt_uint8,
+        "float64": janitor_rs.binary_search_lt_float64,
+        "float32": janitor_rs.binary_search_lt_float32,
+    }
+    dtype_name = left.dtype.name
+    func = mapping[dtype_name]
+    return func(left, right, starts, ends)
+
+
+def _binary_search_le(
+    left: np.ndarray,
+    right: np.ndarray,
+    starts: np.ndarray,
+    ends: np.ndarray,
+) -> tuple:
+    """
+    Get starts for <= joins
+    """
+    mapping = {
+        "int64": janitor_rs.binary_search_le_int64,
+        "int32": janitor_rs.binary_search_le_int32,
+        "int16": janitor_rs.binary_search_le_int16,
+        "int8": janitor_rs.binary_search_le_int8,
+        "uint64": janitor_rs.binary_search_le_uint64,
+        "uint32": janitor_rs.binary_search_le_uint32,
+        "uint16": janitor_rs.binary_search_le_uint16,
+        "uint8": janitor_rs.binary_search_le_uint8,
+        "float64": janitor_rs.binary_search_le_float64,
+        "float32": janitor_rs.binary_search_le_float32,
+    }
+    dtype_name = left.dtype.name
+    func = mapping[dtype_name]
+    return func(left, right, starts, ends)
+
+
+def _binary_search_gt(
+    left: np.ndarray,
+    right: np.ndarray,
+    starts: np.ndarray,
+    ends: np.ndarray,
+) -> tuple:
+    """
+    Get ends for > joins
+    """
+    mapping = {
+        "int64": janitor_rs.binary_search_gt_int64,
+        "int32": janitor_rs.binary_search_gt_int32,
+        "int16": janitor_rs.binary_search_gt_int16,
+        "int8": janitor_rs.binary_search_gt_int8,
+        "uint64": janitor_rs.binary_search_gt_uint64,
+        "uint32": janitor_rs.binary_search_gt_uint32,
+        "uint16": janitor_rs.binary_search_gt_uint16,
+        "uint8": janitor_rs.binary_search_gt_uint8,
+        "float64": janitor_rs.binary_search_gt_float64,
+        "float32": janitor_rs.binary_search_gt_float32,
+    }
+    dtype_name = left.dtype.name
+    func = mapping[dtype_name]
+    return func(left, right, starts, ends)
+
+
+def _binary_search_ge(
+    left: np.ndarray,
+    right: np.ndarray,
+    starts: np.ndarray,
+    ends: np.ndarray,
+) -> tuple:
+    """
+    Get ends for >= joins
+    """
+    mapping = {
+        "int64": janitor_rs.binary_search_ge_int64,
+        "int32": janitor_rs.binary_search_ge_int32,
+        "int16": janitor_rs.binary_search_ge_int16,
+        "int8": janitor_rs.binary_search_ge_int8,
+        "uint64": janitor_rs.binary_search_ge_uint64,
+        "uint32": janitor_rs.binary_search_ge_uint32,
+        "uint16": janitor_rs.binary_search_ge_uint16,
+        "uint8": janitor_rs.binary_search_ge_uint8,
+        "float64": janitor_rs.binary_search_ge_float64,
+        "float32": janitor_rs.binary_search_ge_float32,
+    }
+    dtype_name = left.dtype.name
+    func = mapping[dtype_name]
+    return func(left, right, starts, ends)
+
+
+def _compare_ne_no_ranges(
+    left: np.ndarray,
+    right: np.ndarray,
+    positions: np.ndarray,
+    left_booleans: np.ndarray,
+    right_booleans: np.ndarray,
+    is_extension_array: bool,
+    op: int,
+) -> tuple:
+    """
+    Compute comparsons for no ranges (no starts/ends) for != operator
+    """
+    mapping = {
+        "int64": janitor_rs.compare_no_range_ne_int64,
+        "int32": janitor_rs.compare_no_range_ne_int32,
+        "int16": janitor_rs.compare_no_range_ne_int16,
+        "int8": janitor_rs.compare_no_range_ne_int8,
+        "uint64": janitor_rs.compare_no_range_ne_uint64,
+        "uint32": janitor_rs.compare_no_range_ne_uint32,
+        "uint16": janitor_rs.compare_no_range_ne_uint16,
+        "uint8": janitor_rs.compare_no_range_ne_uint8,
+        "float64": janitor_rs.compare_no_range_ne_float64,
+        "float32": janitor_rs.compare_no_range_ne_float32,
+    }
+    dtype_name = left.dtype.name
+    func = mapping[dtype_name]
+    return func(
+        left,
+        right,
+        positions,
+        left_booleans,
+        right_booleans,
+        is_extension_array,
+        op,
+    )
+
+
+def _compare_no_ranges(
+    left: np.ndarray,
+    right: np.ndarray,
+    positions: np.ndarray,
+    op: int,
+) -> tuple:
+    """
+    Compute comparsons for no ranges (no starts/ends)
+    """
+    mapping = {
+        "int64": janitor_rs.compare_no_range_int64,
+        "int32": janitor_rs.compare_no_range_int32,
+        "int16": janitor_rs.compare_no_range_int16,
+        "int8": janitor_rs.compare_no_range_int8,
+        "uint64": janitor_rs.compare_no_range_uint64,
+        "uint32": janitor_rs.compare_no_range_uint32,
+        "uint16": janitor_rs.compare_no_range_uint16,
+        "uint8": janitor_rs.compare_no_range_uint8,
+        "float64": janitor_rs.compare_no_range_float64,
+        "float32": janitor_rs.compare_no_range_float32,
+    }
+    dtype_name = left.dtype.name
+    func = mapping[dtype_name]
+    return func(
+        left,
+        right,
+        positions,
+        op,
+    )
 
 
 def _compare_ne_first_run_starts_only(
@@ -623,6 +790,74 @@ def _convert_array_to_numpy(
     ):
         array = array.view(np.int64)
     return array
+
+
+def _update_positions_no_range(
+    left: np.ndarray,
+    right: np.ndarray,
+    positions: np.ndarray,
+    op: str,
+    left_booleans: np.ndarray | None,
+    right_booleans: np.ndarray | None,
+    is_extension_array: bool,
+):
+    """
+    Compute positive matches for left vs right when there is no start/end
+    """
+    if (left_booleans is None) and (right_booleans is None):
+        positions, total = _compare_no_ranges(
+            left=left,
+            right=right,
+            positions=positions,
+            op=operator_mapping[op],
+        )
+    else:
+        positions, total = _compare_ne_no_ranges(
+            left=left,
+            right=right,
+            positions=positions,
+            left_booleans=left_booleans,
+            right_booleans=right_booleans,
+            is_extension_array=is_extension_array,
+            op=operator_mapping[op],
+        )
+
+    return positions, total
+
+
+def _update_positions_no_range_(
+    df: pd.DataFrame,
+    right: pd.DataFrame,
+    conditions: list,
+    positions: np.ndarray,
+):
+    """
+    Update positions for conditions when there is no range
+    """
+
+    for left_on, right_on, op in conditions:
+        left_array = df[left_on]
+        right_array = right[right_on]
+        left_booleans, right_booleans, is_extension_array = _get_boolean_args_for_ne(
+            op=op, left=left_array, right=right_array
+        )
+        left_array = _convert_array_to_numpy(array=left_array._values)
+        right_array = _convert_array_to_numpy(array=right_array._values)
+        positions, total = _update_positions_no_range(
+            left=left_array,
+            right=right_array,
+            positions=positions,
+            op=op,
+            left_booleans=left_booleans,
+            right_booleans=right_booleans,
+            is_extension_array=is_extension_array,
+        )
+        if total == 0:
+            return None
+    return {
+        "positions": positions,
+        "total": total,
+    }
 
 
 def _get_positive_matches_positions(

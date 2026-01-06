@@ -34,8 +34,8 @@ dependencies = [
     "pandas-flavor==0.8.1",
     "multipledispatch",
     "scipy",
-    "janitor-rs>=0.3.0,<0.4"
-]
+    "janitor-rs @ file:///C:/Users/ogora/Documents/janitor_rs/janitor-rs/target/wheels/janitor_rs-0.4.0-cp38-abi3-win_amd64.whl"
+, "pre-commit>=4.5.1,<5", "ipython>=9.8.0,<10"]
 
 [project.optional-dependencies]
 dev = [
@@ -130,6 +130,11 @@ pyjanitor = { path = ".", editable = true }
 python = ">=3.6"
 pandas = "*"
 numpy = "*"
+jupyter = ">=1.1.1,<2"
+ipython = ">=9.8.0,<10"
+ipykernel = ">=7.1.0,<8"
+pixi-kernel = ">=0.7.1,<0.8"
+jupyterlab = ">=4.5.1,<5"
 
 [tool.pixi.feature.tests.dependencies]
 pytest = "*"

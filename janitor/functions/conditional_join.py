@@ -3,6 +3,7 @@ from __future__ import annotations
 import itertools
 import math
 import operator
+import warnings
 from typing import Any, Hashable, Literal, Optional
 
 import numpy as np
@@ -401,6 +402,9 @@ def _conditional_join_preliminary_checks(
 
     # deprecate in a future version
     check("use_numba", use_numba, [bool])
+
+    if use_numba:
+        warnings.warn("numba support deprecated.", DeprecationWarning)
 
     check("indicator", indicator, [bool, str])
 
@@ -901,9 +905,9 @@ def _create_frame(
     if (df_columns is None) and (right_columns is None):
         raise ValueError("df_columns and right_columns cannot both be None.")
     if (df_columns is not None) and (df_columns != slice(None)):
-        df = df.select(columns=df_columns)
+        df = df.select_columns(df_columns)
     if (right_columns is not None) and (right_columns != slice(None)):
-        right = right.select(columns=right_columns)
+        right = right.select_columns(right_columns)
     if df_columns is None:
         df = pd.DataFrame([])
     elif right_columns is None:

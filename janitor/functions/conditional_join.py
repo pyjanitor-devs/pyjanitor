@@ -61,10 +61,6 @@ def conditional_join(
     There is also pandas' IntervalIndex, which is efficient for range joins,
     especially if the intervals do not overlap.
 
-    !!! warning
-
-        The `df_columns` and `right_columns` arguments are deprecated.
-
     Column selection in `df_columns` and `right_columns` is possible using the
     [`select`][janitor.functions.select.select] syntax.
 
@@ -253,8 +249,6 @@ def conditional_join(
             - `col` class deprecated.
         - 0.33.0
             - `use_numba` deprecated.
-            - `df_columns` deprecated.
-            - `right_columns` deprecated.
 
     Args:
         df: A pandas DataFrame.
@@ -272,11 +266,9 @@ def conditional_join(
         df_columns: Columns to select from `df` in the final output dataframe.
             Column selection is based on the
             [`select`][janitor.functions.select.select] syntax.
-            !!! warning "Deprecated in 0.33.0"
         right_columns: Columns to select from `right` in the final output dataframe.
             Column selection is based on the
             [`select`][janitor.functions.select.select] syntax.
-            !!! warning "Deprecated in 0.33.0"
         use_numba: Use numba, if installed, to accelerate the computation.
             !!! warning "Deprecated in 0.33.0"
         keep: Choose whether to return the first match, last match or all matches.

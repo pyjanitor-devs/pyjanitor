@@ -33,9 +33,7 @@ dependencies = [
     "natsort",
     "pandas-flavor==0.8.1",
     "multipledispatch",
-    "scipy",
-    "janitor-rs @ file:///C:/Users/ogora/Documents/janitor_rs/janitor-rs/target/wheels/janitor_rs-0.4.0-cp38-abi3-win_amd64.whl"
-, "pre-commit>=4.5.1,<5", "ipython>=9.8.0,<10"]
+    "scipy", "pre-commit>=4.5.1,<5", "ipython>=9.8.0,<10", "janitor-rs>=0.4.0,<0.5"]
 
 [project.optional-dependencies]
 dev = [

@@ -16,6 +16,14 @@ pyjanitor's general-purpose data cleaning functions.
 # 7. Never import utils.
 
 from .add_columns import add_columns
+from .adorn import (
+    adorn_ns,
+    adorn_pct_formatting,
+    adorn_percentages,
+    adorn_rounding,
+    adorn_title,
+    adorn_totals,
+)
 from .alias import alias
 from .also import also
 from .bin_numeric import bin_numeric
@@ -84,6 +92,7 @@ from .shuffle import shuffle
 from .sort_column_value_order import sort_column_value_order
 from .sort_naturally import sort_naturally
 from .summarise import summarise
+from .tabyl import tabyl
 from .take_first import take_first
 from .then import then
 from .to_datetime import to_datetime
@@ -97,6 +106,12 @@ from .utils import (
 
 __all__ = [
     "add_columns",
+    "adorn_ns",
+    "adorn_pct_formatting",
+    "adorn_percentages",
+    "adorn_rounding",
+    "adorn_title",
+    "adorn_totals",
     "alias",
     "also",
     "bin_numeric",
@@ -164,6 +179,7 @@ __all__ = [
     "sort_column_value_order",
     "sort_naturally",
     "summarise",
+    "tabyl",
     "take_first",
     "then",
     "to_datetime",

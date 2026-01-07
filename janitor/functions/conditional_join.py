@@ -3,7 +3,7 @@ from __future__ import annotations
 import itertools
 import math
 import operator
-from typing import Any, Hashable, Literal, Optional, Union
+from typing import Any, Hashable, Literal, Optional
 
 import numpy as np
 import pandas as pd
@@ -19,10 +19,6 @@ from pandas.core.dtypes.concat import concat_compat
 
 from janitor.functions.utils import (
     _generic_func_cond_join,
-    _JoinOperator,
-    _keep_output,
-    greater_than_join_types,
-    less_than_join_types,
 )
 from janitor.utils import check, check_column, deprecated_kwargs
 
@@ -32,19 +28,25 @@ from ._conditional_join import (
     _get_indices_single_join,
     _not_equal_indices,
 )
+from ._conditional_join._helpers import (
+    _JoinOperator,
+    _keep_output,
+    greater_than_join_types,
+    less_than_join_types,
+)
 
 
 @pf.register_dataframe_method
 def conditional_join(
     df: pd.DataFrame,
-    right: Union[pd.DataFrame, pd.Series],
+    right: pd.DataFrame | pd.Series,
     *conditions: Any,
     how: Literal["inner", "left", "right", "outer"] = "inner",
     df_columns: Optional[Any] = slice(None),
     right_columns: Optional[Any] = slice(None),
     keep: Literal["first", "last", "all"] = "all",
     use_numba: bool = False,
-    indicator: Optional[Union[bool, str]] = False,
+    indicator: Optional[bool | str] = False,
     force: bool = False,
 ) -> pd.DataFrame:
     """The conditional_join function operates similarly to `pd.merge`,
@@ -261,7 +263,7 @@ def conditional_join(
             `(left_on, right_on, op)`, where `left_on` is the column
             label from `df`, `right_on` is the column label from `right`,
             while `op` is the operator.
-            The `col` class is also supported. The operator can be any of
+            The operator can be any of
             `==`, `!=`, `<=`, `<`, `>=`, `>`. For multiple conditions,
             the and(`&`) operator is used to combine the results
             of the individual conditions.
@@ -323,14 +325,14 @@ def _check_operator(op: str):
 
 def _conditional_join_preliminary_checks(
     df: pd.DataFrame,
-    right: Union[pd.DataFrame, pd.Series],
+    right: pd.DataFrame | pd.Series,
     conditions: tuple,
     how: str,
     df_columns: Any,
     right_columns: Any,
     keep: str,
     use_numba: bool,
-    indicator: Union[bool, str],
+    indicator: bool | str,
     force: bool,
     return_matching_indices: bool = False,
 ) -> tuple:
@@ -471,7 +473,7 @@ def _conditional_join_compute(
     right_columns: Any,
     keep: str,
     use_numba: bool,
-    indicator: Union[bool, str],
+    indicator: bool | str,
     force: bool,
     return_matching_indices: bool = False,
 ) -> pd.DataFrame:
@@ -813,6 +815,7 @@ def _multiple_conditional_join_le_lt(
 
     Returns a tuple of (df_index, right_index)
     """
+    # deprecated - numba implementation no longer maintained
     if use_numba:
         gt_lt = [
             condition
@@ -845,7 +848,6 @@ def _multiple_conditional_join_le_lt(
                 right=right[right_on],
                 op=op,
                 keep="all",
-                row_count=None,
             )
         if conditions and (indices is not None):
             conditions = (
@@ -897,7 +899,7 @@ def _create_frame(
     how: str,
     df_columns: Any,
     right_columns: Any,
-    indicator: Union[bool, str],
+    indicator: bool | str,
 ) -> pd.DataFrame:
     """
     Create final dataframe
@@ -919,7 +921,7 @@ def _create_frame(
         df, right = _create_multiindex_column(df, right)
 
     def _add_indicator(
-        indicator: Union[bool, str],
+        indicator: bool | str,
         how: str,
         column_length: int,
         columns: pd.Index,
@@ -967,7 +969,7 @@ def _create_frame(
         right: pd.DataFrame,
         left_index: np.ndarray,
         right_index: np.ndarray,
-        indicator: Union[bool, str],
+        indicator: bool | str,
     ) -> pd.DataFrame:
         """Computes an inner joined DataFrame.
 
@@ -1177,7 +1179,7 @@ def _create_frame(
 @deprecated_kwargs("return_ragged_arrays")
 def get_join_indices(
     df: pd.DataFrame,
-    right: Union[pd.DataFrame, pd.Series],
+    right: pd.DataFrame | pd.Series,
     conditions: list[tuple[str]],
     keep: Literal["first", "last", "all"] = "all",
     use_numba: bool = False,
@@ -1193,7 +1195,9 @@ def get_join_indices(
             - Add support for ragged array indices.
         - 0.32.0
             - ragged array indices deprecated.
-            - return indices as a dictionary
+            - return indices as a dictionary.
+        - 0.33.0
+            - `use_numba` deprecated.
 
     Args:
         df: A pandas DataFrame.
@@ -1207,6 +1211,7 @@ def get_join_indices(
             the and(`&`) operator is used to combine the results
             of the individual conditions.
         use_numba: Use numba, if installed, to accelerate the computation.
+            !!! warning "Deprecated in 0.33.0"
         keep: Choose whether to return the first match, last match or all matches.
         force: If `True`, force the non-equi join conditions
             to execute before the equi join.
@@ -1246,24 +1251,14 @@ def construct_1d_array_from_inferred_fill_value(
     return take_nd(arr, taker)
 
 
+# TODO: deprecate this function - numba not supported
 def _numba_single_non_equi_join(
     left: pd.Series,
     right: pd.Series,
     op: str,
     keep: str,
-    row_count: str | None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Return matching indices for single non-equi join."""
-    if row_count:
-        return _generic_func_cond_join(
-            left=left,
-            right=right,
-            op=op,
-            multiple_conditions=False,
-            keep=keep,
-            return_ragged_arrays=False,
-            row_count=row_count,
-        )
     if op == "!=":
         return _generic_func_cond_join(
             left=left, right=right, op=op, multiple_conditions=False, keep=keep
@@ -1308,6 +1303,7 @@ def _numba_single_non_equi_join(
     )
 
 
+# deprecate - numba no longer maintained
 def _numba_multiple_non_equi_join(
     df: pd.DataFrame,
     right: pd.DataFrame,
@@ -2098,7 +2094,7 @@ def _numba_equi_join(
     le_lt: tuple,
     rest: tuple,
     row_count: str,
-) -> Union[tuple[np.ndarray, np.ndarray], None]:
+) -> tuple[np.ndarray, np.ndarray] | None:
     """
     Compute indices when an equi join is present.
     """

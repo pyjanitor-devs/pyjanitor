@@ -24,6 +24,7 @@ from janitor.functions.utils import (
 from janitor.utils import check, check_column, deprecated_kwargs
 
 from ._conditional_join import (
+    _get_aggs_single_join,
     _get_indices_equi,
     _get_indices_non_equi,
     _get_indices_single_join,
@@ -107,6 +108,8 @@ def conditional_join(
     If the columns from `df` and `right` have nothing in common,
     a single index column is returned; else, a MultiIndex column
     is returned.
+
+
 
     Examples:
         >>> import pandas as pd
@@ -284,6 +287,7 @@ def conditional_join(
         force: If `True`, force the non-equi join conditions to execute before the equi join.
 
 
+
     Returns:
         A pandas DataFrame of the two merged Pandas objects.
     """  # noqa: E501
@@ -299,6 +303,7 @@ def conditional_join(
         use_numba=use_numba,
         indicator=indicator,
         force=force,
+        aggfunc=None,
     )
 
 
@@ -328,6 +333,7 @@ def _conditional_join_preliminary_checks(
     indicator: bool | str,
     force: bool,
     return_matching_indices: bool = False,
+    aggfunc: list[tuple] = None,
 ) -> tuple:
     """
     Preliminary checks for conditional_join are conducted here.
@@ -384,12 +390,6 @@ def _conditional_join_preliminary_checks(
         check_column(right, [right_on])
         _check_operator(op)
 
-    if (
-        all((op == _JoinOperator.STRICTLY_EQUAL.value for *_, op in conditions))
-        and not return_matching_indices
-    ):
-        raise ValueError("Equality only joins are not supported.")
-
     check("how", how, [str])
 
     if how not in {"inner", "left", "right", "outer"}:
@@ -410,6 +410,50 @@ def _conditional_join_preliminary_checks(
 
     check("force", force, [bool])
 
+    if aggfunc is not None:
+        check("aggfunc", aggfunc, [list])
+        if all((op == _JoinOperator.NOT_EQUAL.value for *_, op in conditions)):
+            raise NotImplementedError(
+                "aggfunc is not supported when all the join conditions are !="
+            )
+        for entry in aggfunc:
+            check("entry in aggfunc", entry, [tuple])
+            if len(entry) != 2:
+                raise ValueError(
+                    "The tuple in an aggfunc should be 2 elements; "
+                    "The first element in the tuple should be the column name "
+                    "in the right dataframe, while the second element "
+                    "in the tuple should be an aggregation function"
+                )
+        r_cols = right.columns
+        aggs = {"sum", "min", "max", "size", "prod"}
+        for column_name, agg in aggfunc:
+            if column_name not in r_cols:
+                raise KeyError(
+                    f"{column_name} in aggfunc does not exist in the right dataframe"
+                )
+            if agg not in aggs:
+                raise ValueError(
+                    f"The aggregation function for {column_name} "
+                    f"should be one of {','.join(aggs)}; "
+                    f"instead got {agg}"
+                )
+            if (agg == "sum") and not pd.api.types.is_numeric_dtype(right[column_name]):
+                raise ValueError(f"{agg} is supported only for numeric columns")
+    if all((op == _JoinOperator.STRICTLY_EQUAL.value for *_, op in conditions)):
+        if not (return_matching_indices or (aggfunc is not None)):
+            raise ValueError(
+                "Equality only joins are supported only "
+                "if aggfunc is provided, "
+                "or only indices are to be returned."
+            )
+        if return_matching_indices and use_numba:
+            raise ValueError(
+                "Equality only joins are supported only "
+                "if indices are to be returned, "
+                "and use_numba is False."
+            )
+
     return (
         df,
         right,
@@ -421,6 +465,7 @@ def _conditional_join_preliminary_checks(
         use_numba,
         indicator,
         force,
+        aggfunc,
     )
 
 
@@ -472,6 +517,7 @@ def _conditional_join_compute(
     indicator: bool | str,
     force: bool,
     return_matching_indices: bool = False,
+    aggfunc: list[tuple] = None,
 ) -> pd.DataFrame:
     """
     This is where the actual computation
@@ -488,6 +534,7 @@ def _conditional_join_compute(
         use_numba,
         indicator,
         force,
+        aggfunc,
     ) = _conditional_join_preliminary_checks(
         df=df,
         right=right,
@@ -500,7 +547,12 @@ def _conditional_join_compute(
         indicator=indicator,
         force=force,
         return_matching_indices=return_matching_indices,
+        aggfunc=aggfunc,
     )
+    print("df")
+    print(df.to_dict())
+    print("right")
+    print(right.to_dict())
     eq_check = False
     le_lt_check = False
     for condition in conditions:
@@ -543,6 +595,11 @@ def _conditional_join_compute(
             conditions=conditions,
             keep=keep,
         )
+    elif (len(conditions) == 1) and aggfunc:
+        result = _get_aggs_single_join._single_join(
+            df=df, right=right, condition=conditions[0], aggfunc=aggfunc
+        )
+        return result
     else:
         result = _get_indices_single_join._single_join(
             df=df,
@@ -1177,9 +1234,9 @@ def get_join_indices(
     df: pd.DataFrame,
     right: pd.DataFrame | pd.Series,
     conditions: list[tuple[str]],
-    keep: Literal["first", "last", "all"] = "all",
-    use_numba: bool = False,
-    force: bool = False,
+    keep: Literal["first", "last", "all"],
+    use_numba: bool,
+    force: bool,
 ) -> dict:
     """Convenience function to return the matching indices from an inner join.
 
@@ -1227,6 +1284,60 @@ def get_join_indices(
         indicator=False,
         force=force,
         return_matching_indices=True,
+        aggfunc=None,
+    )
+
+
+@pf.register_dataframe_method
+def join_agg(
+    df: pd.DataFrame,
+    right: pd.DataFrame | pd.Series,
+    *conditions,
+    aggfunc: list[tuple],
+    force: bool = False,
+) -> dict:
+    """Compute an aggregation from an inner join.
+
+    !!! info "New in version 0.34.0"
+
+    Args:
+        df: A pandas DataFrame.
+        right: Named Series or DataFrame to join to.
+        conditions: List of arguments of tuple(s) of the form
+            `(left_on, right_on, op)`, where `left_on` is the column
+            label from `df`, `right_on` is the column label from `right`,
+            while `op` is the operator.
+            The operator can be any of
+            `==`, `!=`, `<=`, `<`, `>=`, `>`. For multiple conditions,
+            the and(`&`) operator is used to combine the results
+            of the individual conditions.
+        force: If `True`, force the non-equi join conditions
+            to execute before the equi join.
+        aggfunc: Compute aggregates on the right dataframe
+            for each row of the left DataFrame (that has a match)
+            based on the join keys.
+            Supported aggregation functions are
+            `sum`, `size`, `min`, `max`, `prod`.
+
+    Returns:
+        A pandas DataFrame.
+        The index of the dataframe represent the positions
+        of the rows from the left dataframe
+        that have matches in the right dataframe.
+    """
+    return _conditional_join_compute(
+        df=df,
+        right=right,
+        conditions=conditions,
+        how="inner",
+        df_columns=None,
+        right_columns=None,
+        keep="all",
+        use_numba=False,
+        indicator=False,
+        force=force,
+        return_matching_indices=False,
+        aggfunc=aggfunc,
     )
 
 

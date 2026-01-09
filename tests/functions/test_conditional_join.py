@@ -173,7 +173,9 @@ def test_equi_only(dummy):
     """
     Raise ValueError if only an equi-join is present.
     """
-    with pytest.raises(ValueError, match="Equality only joins are not supported"):
+    with pytest.raises(
+        ValueError, match="Equality only joins are supported only if aggfunc.+"
+    ):
         dummy.conditional_join(
             dummy.rename(columns={"S": "Strings"}), ("S", "Strings", "==")
         )
@@ -238,6 +240,84 @@ def test_check_use_numba_equi_join(dummy):
     with pytest.raises(TypeError, match="Only numeric, timedelta and datetime types.+"):
         dummy.conditional_join(
             dummy, ("S", "S", "=="), ("id", "id", ">"), use_numba=True
+        )
+
+
+def test_check_aggfunc_type(dummy, series):
+    """
+    Raise TypeError if `aggfunc` is not a list.
+    """
+    with pytest.raises(TypeError, match="aggfunc should be one of.+"):
+        dummy.join_agg(series, ("id", "B", "<"), aggfunc=1)
+
+
+def test_check_aggfunc_ne(dummy, series):
+    """
+    Raise TypeError if all join conditions are !=
+    """
+    with pytest.raises(
+        NotImplementedError,
+        match="aggfunc is not supported when all the join conditions.+",
+    ):
+        dummy.join_agg(series, ("id", "B", "!="), aggfunc=[("B", "sum")])
+
+
+def test_check_aggfunc_sub(dummy, series):
+    """
+    Raise TypeError if entry in `aggfunc` is not a tuple.
+    """
+    with pytest.raises(TypeError, match="entry in aggfunc should be one of.+"):
+        dummy.join_agg(series, ("id", "B", "<"), aggfunc=[1])
+
+
+def test_check_aggfunc_sub_size(dummy, series):
+    """
+    Raise TypeError if entry in `aggfunc` is a tuple of len != 2.
+    """
+    with pytest.raises(
+        ValueError, match="The tuple in an aggfunc should be 2 elements.+"
+    ):
+        dummy.join_agg(series, ("id", "B", "<"), aggfunc=[("B",)])
+
+
+def test_check_aggfunc_column(dummy, series):
+    """
+    Raise Error if `column` is not in right_dataframe.
+    """
+    with pytest.raises(
+        KeyError, match="BB in aggfunc does not exist in the right dataframe"
+    ):
+        dummy.join_agg(
+            series,
+            ("id", "B", "<"),
+            aggfunc=[("BB", "sum")],
+        )
+
+
+def test_check_aggfunc_unsupported(dummy, series):
+    """
+    Raise Error if `aggfunc` is not in default aggs.
+    """
+    with pytest.raises(
+        ValueError, match="The aggregation function for B should be one of.+"
+    ):
+        dummy.join_agg(
+            series,
+            ("id", "B", "<"),
+            aggfunc=[("B", "summ")],
+        )
+
+
+def test_check_aggfunc_numeric(dummy):
+    """
+    Raise Error if `aggfunc` column is not numeric.
+    """
+    ser = pd.DatetimeIndex(["1970-01-01"], name="B").to_series()
+    with pytest.raises(ValueError, match="sum is supported only for numeric columns"):
+        dummy.join_agg(
+            ser,
+            ("id", "B", "<"),
+            aggfunc=[("B", "sum")],
         )
 
 
@@ -1367,7 +1447,7 @@ def test_how_left_multiindex(df, right):
         )
         .collapse_levels()
         .rename(columns={"left_A": "A", "right_A": "A_y"})
-        .select("A", "A_y", "_merge", axis="columns")
+        .select_columns("A", "A_y", "_merge")
         .sort_values(["A", "A_y"], ignore_index=True)
     )
 
@@ -4426,7 +4506,7 @@ def test_multiple_eqs_outer(df, right):
             how="outer",
             indicator=True,
         )
-        .select(("right", "B"), axis="columns", invert=True)
+        .select_columns(("right", "B"), invert=True)
         .droplevel(axis=1, level=0)
         .rename(columns={"": "_merge"})
         .sort_values(columns, ignore_index=True)
@@ -4809,4 +4889,114 @@ def test_numba_equi_extension_array():
         use_numba=True,
     )
 
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_less_than_dates_agg(df, right):
+    """Test output for a single condition. "<"."""
+    # sorting is done to ensure correctness for sum on floats
+    right = right.sort_values("Dates", ignore_index=True)
+    expected = (
+        df.reset_index(names="l")
+        .merge(right, how="cross")
+        .query("E < Dates")
+        .groupby("l")
+        .agg({"Numeric": ["size", "min", "max", "prod"]})
+    )
+    expected.index.names = [None]
+
+    actual = df.join_agg(
+        right,
+        ("E", "Dates", "<"),
+        aggfunc=[
+            ("Numeric", "size"),
+            ("Numeric", "min"),
+            ("Numeric", "max"),
+            ("Numeric", "prod"),
+        ],
+    )
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_greater_than_dates_agg(df, right):
+    """Test output for a single condition. ">"."""
+    # sorting is done to ensure correctness for sum on floats
+    right = right.sort_values("Dates", ignore_index=True)
+    expected = (
+        df.reset_index(names="l")
+        .merge(right, how="cross")
+        .query("E > Dates")
+        .groupby("l")
+        .agg({"Numeric": ["size", "min", "max", "prod"]})
+    )
+    expected.index.names = [None]
+
+    actual = df.join_agg(
+        right,
+        ("E", "Dates", ">"),
+        aggfunc=[
+            ("Numeric", "size"),
+            ("Numeric", "min"),
+            ("Numeric", "max"),
+            ("Numeric", "prod"),
+        ],
+    )
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_gt_agg_sum_ints(df, right):
+    """Test output for a single condition. ">"."""
+    # sorting is done to ensure correctness for sum on floats
+    right = right.sort_values("Dates", ignore_index=True)
+    expected = (
+        df.reset_index(names="l")
+        .merge(right, how="cross")
+        .query("E > Dates")
+        .groupby("l")
+        .agg({"Integers": ["sum"]})
+    )
+    expected.index.names = [None]
+
+    actual = df.join_agg(
+        right,
+        ("E", "Dates", ">"),
+        aggfunc=[
+            ("Integers", "sum"),
+        ],
+    )
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_single_condition_le_agg_sum_ints(df, right):
+    """Test output for a single condition. "<="."""
+    # sorting is done to ensure correctness for sum on floats
+    right = right.sort_values("Dates", ignore_index=True)
+    expected = (
+        df.reset_index(names="l")
+        .merge(right, how="cross")
+        .query("E <= Dates")
+        .groupby("l")
+        .agg({"Integers": ["sum"]})
+    )
+    expected.index.names = [None]
+
+    actual = df.join_agg(
+        right,
+        ("E", "Dates", "<="),
+        aggfunc=[
+            ("Integers", "sum"),
+        ],
+    )
     assert_frame_equal(expected, actual)

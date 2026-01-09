@@ -35,7 +35,7 @@ from .coalesce import coalesce
 from .collapse_levels import collapse_levels
 from .complete import complete
 from .concatenate_columns import concatenate_columns
-from .conditional_join import conditional_join, get_join_indices
+from .conditional_join import conditional_join, get_join_indices, join_agg
 from .convert_date import (
     convert_excel_date,
     convert_matlab_date,
@@ -155,6 +155,7 @@ __all__ = [
     "impute",
     "jitter",
     "join_apply",
+    "join_agg",
     "label_encode",
     "limit_column_characters",
     "min_max_scale",

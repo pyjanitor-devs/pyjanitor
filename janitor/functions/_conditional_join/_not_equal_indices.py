@@ -15,7 +15,11 @@ from janitor.functions._conditional_join._less_than_indices import (
 )
 
 
-def _not_equal_indices(left: pd.Series, right: pd.Series, keep: str) -> dict | None:
+def _not_equal_indices(
+    left: pd.Series,
+    right: pd.Series,
+    keep: str,
+) -> dict | None:
     """
     Use binary search to get indices where
     `left` is exactly  not equal to `right`.
@@ -108,6 +112,5 @@ def _not_equal_indices(left: pd.Series, right: pd.Series, keep: str) -> dict | N
             "right_index": dummy,
         }
     outcome = _keep_output(keep, left, right)
-    outcome = zip(["left_index", "right_index"], outcome)
-    outcome = dict(outcome)
-    return outcome
+    left_index, right_index = outcome
+    return {"left_index": left_index, "right_index": right_index}

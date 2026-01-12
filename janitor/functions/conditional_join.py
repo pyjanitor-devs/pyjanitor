@@ -63,7 +63,7 @@ def conditional_join(
     especially if the intervals do not overlap.
 
     Column selection in `df_columns` and `right_columns` is possible using the
-    [`select`][janitor.functions.select.select] syntax.
+    [`select_columns`][janitor.functions.select.select_columns] syntax.
 
     !!! warning
 
@@ -266,10 +266,10 @@ def conditional_join(
             It can be one of `inner`, `left`, `right` or `outer`.
         df_columns: Columns to select from `df` in the final output dataframe.
             Column selection is based on the
-            [`select`][janitor.functions.select.select] syntax.
+            [`select_columns`][janitor.functions.select.select_columns] syntax.
         right_columns: Columns to select from `right` in the final output dataframe.
             Column selection is based on the
-            [`select`][janitor.functions.select.select] syntax.
+            [`select_columns`][janitor.functions.select.select_columns] syntax.
         use_numba: Use numba, if installed, to accelerate the computation.
             !!! warning "Deprecated in 0.33.0"
         keep: Choose whether to return the first match, last match or all matches.

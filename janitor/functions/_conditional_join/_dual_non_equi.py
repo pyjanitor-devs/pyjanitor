@@ -159,7 +159,6 @@ def _get_indices(
     """
     Compute indices for a dual non-equi join
     """
-    # return df.index._values, right.index._values
     (left_on, right_on, op) = first_condition
     left_col = df[left_on]
     # sorting is done here to enable easy region filtering later on

@@ -550,10 +550,6 @@ def _conditional_join_compute(
         return_matching_indices=return_matching_indices,
         aggfunc=aggfunc,
     )
-    print("df")
-    print(df.to_dict())
-    print("right")
-    print(right.to_dict())
     eq_check = False
     le_lt_check = False
     for condition in conditions:
@@ -1319,6 +1315,49 @@ def join_agg(
 
     !!! info "New in version 0.34.0"
 
+    Examples:
+        >>> import pandas as pd
+        >>> import janitor
+        >>> df1 = pd.DataFrame({"value_1": [2, 5, 7, 1, 3, 4]})
+        >>> df2 = pd.DataFrame(
+        ...     {
+        ...         "value_2A": [0, 3, 7, 12, 0, 2, 3, 1],
+        ...         "value_2B": [1, 5, 9, 15, 1, 4, 6, 3],
+        ...     }
+        ... )
+        >>> df1
+           value_1
+        0        2
+        1        5
+        2        7
+        3        1
+        4        3
+        5        4
+        >>> df2
+           value_2A  value_2B
+        0         0         1
+        1         3         5
+        2         7         9
+        3        12        15
+        4         0         1
+        5         2         4
+        6         3         6
+        7         1         3
+
+        >>> (
+        ...     df1.join_agg(
+        ...         df2,
+        ...         ("id", "id", "=="),
+        ...         ("value_1", "value_2A", ">="),
+        ...         ("value_1", "value_2A", "<="),
+        ...         aggfunc=[("value_2A", "sum"), ("value_2B", "min"), ("id", "size")],
+        ...     )
+        ... )
+          value_2A value_2B   id
+               sum      min size
+        2        7        9    1
+        4        3        6    1
+
     Args:
         df: A pandas DataFrame.
         right: Named Series or DataFrame to join to.
@@ -1337,6 +1376,7 @@ def join_agg(
             based on the join keys.
             Supported aggregation functions are
             `sum`, `size`, `min`, `max`, `prod`.
+
 
     Returns:
         A pandas DataFrame.

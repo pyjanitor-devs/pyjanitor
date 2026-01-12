@@ -505,7 +505,6 @@ def _get_indices_le_or_ge_and_not_range_join(
     left_index = df.index._values
     if booleans.any():
         booleans = ~booleans
-        indexers = indexers[booleans]
         starts = starts[booleans]
         ends = ends[booleans]
         left_index = left_index[booleans]

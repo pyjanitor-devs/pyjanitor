@@ -300,7 +300,7 @@ def _get_indices_range_join(
     outcome = _get_indexers(l_cols=l_cols, uniques=uniques, starts=starts, ends=ends)
     if outcome is None:
         return {"left_index": empty_array, "right_index": empty_array}
-    indexers, starts, ends = outcome
+    _, starts, ends = outcome
     (l1_col, r1_col, op) = mapping["ge_gt"]
     r_column = right[r1_col]._values
     r_column = _helpers._convert_array_to_numpy(array=r_column)
@@ -415,7 +415,6 @@ def _get_indices_ne_only(
     left_index = df.index._values
     if booleans.any():
         booleans = ~booleans
-        indexers = indexers[booleans]
         starts = starts[booleans]
         ends = ends[booleans]
         left_index = left_index[booleans]
@@ -473,7 +472,7 @@ def _get_indices_le_or_ge_and_not_range_join(
     outcome = _get_indexers(l_cols=l_cols, uniques=uniques, starts=starts, ends=ends)
     if outcome is None:
         return {"left_index": empty_array, "right_index": empty_array}
-    indexers, starts, ends = outcome
+    _, starts, ends = outcome
     (l1_col, r1_col, op), *rest = mapping["le_or_ge"]
     r_column = right[r1_col]._values
     r_column = _helpers._convert_array_to_numpy(array=r_column)
@@ -562,10 +561,16 @@ def _get_indices_equi_join_only(
             positions=positions, starts=starts
         )
         right = right.iloc[reordered_positions]
-    indexers, starts, ends = _get_indexers(
+    outcome = _get_indexers(
         l_cols=l_cols, uniques=uniques, starts=starts, ends=ends
     )
-    booleans = (starts == -1) | (ends == -1) | (starts >= ends)
+    if outcome is None:
+        return {
+            "left_index": np.array([], dtype=np.intp),
+            "right_index": np.array([], dtype=np.intp),
+        } 
+    indexers, starts, ends = outcome
+    booleans = indexers == -1
     if booleans.all():
         return {
             "left_index": np.array([], dtype=np.intp),
@@ -574,7 +579,6 @@ def _get_indices_equi_join_only(
     left_index = df.index._values
     if booleans.any():
         booleans = ~booleans
-        indexers = indexers[booleans]
         starts = starts[booleans]
         ends = ends[booleans]
         left_index = left_index[booleans]

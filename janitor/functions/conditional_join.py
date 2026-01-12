@@ -1252,7 +1252,7 @@ def get_join_indices(
     keep: Literal["first", "last", "all"],
     use_numba: bool,
     force: bool,
-) -> pd.DataFrame:
+) -> dict:
     """Convenience function to return the matching indices from an inner join.
 
     !!! info "New in version 0.27.0"
@@ -1310,8 +1310,13 @@ def join_agg(
     *conditions,
     aggfunc: list[tuple],
     force: bool = False,
-) -> dict:
-    """Compute an aggregation from an inner join.
+) -> pd.DataFrame:
+    """
+    Compute an aggregation from an inner join.
+
+    The index of the returned dataframe represent the positions
+    of the rows from the left dataframe that have matches 
+    in the right dataframe.
 
     !!! info "New in version 0.34.0"
 
@@ -1361,7 +1366,7 @@ def join_agg(
     Args:
         df: A pandas DataFrame.
         right: Named Series or DataFrame to join to.
-        conditions: List of arguments of tuple(s) of the form
+        conditions: Variable arguments of tuple(s) of the form
             `(left_on, right_on, op)`, where `left_on` is the column
             label from `df`, `right_on` is the column label from `right`,
             while `op` is the operator.
@@ -1378,8 +1383,7 @@ def join_agg(
             `sum`, `size`, `min`, `max`, `prod`.
 
     Returns:
-        A pandas DataFrame. The index of the dataframe represent the positions
-        of the rows from the left dataframe that have matches in the right dataframe.
+        A pandas DataFrame.
     """
     return _conditional_join_compute(
         df=df,

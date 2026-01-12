@@ -43,7 +43,7 @@ from ._conditional_join._helpers import (
 def conditional_join(
     df: pd.DataFrame,
     right: pd.DataFrame | pd.Series,
-    *conditions: Any,
+    *conditions: tuple,
     how: Literal["inner", "left", "right", "outer"] = "inner",
     df_columns: Optional[Any] = slice(None),
     right_columns: Optional[Any] = slice(None),
@@ -1248,7 +1248,7 @@ def _create_frame(
 def get_join_indices(
     df: pd.DataFrame,
     right: pd.DataFrame | pd.Series,
-    conditions: list[tuple[str]],
+    *conditions: tuple,
     keep: Literal["first", "last", "all"],
     use_numba: bool,
     force: bool,
@@ -1270,7 +1270,7 @@ def get_join_indices(
     Args:
         df: A pandas DataFrame.
         right: Named Series or DataFrame to join to.
-        conditions: List of arguments of tuple(s) of the form
+        conditions: Variable arguments of tuple(s) of the form
             `(left_on, right_on, op)`, where `left_on` is the column
             label from `df`, `right_on` is the column label from `right`,
             while `op` is the operator.
@@ -1316,8 +1316,10 @@ def join_agg(
     the aggregaton is computed on the right dataframe
     for each row of the left DataFrame (that has a match)
     based on the join keys.
+    
     Supported aggregation functions are
-    `sum`, `count`, `size`, `min`, `max`.
+    `sum`, `prod`, `size`, `min`, `max`.
+    
     This is limited to an inner join.
 
     The index of the returned dataframe represent the positions

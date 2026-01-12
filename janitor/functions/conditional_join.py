@@ -439,7 +439,7 @@ def _conditional_join_preliminary_checks(
                     f"should be one of {','.join(aggs)}; "
                     f"instead got {agg}"
                 )
-            if (agg == "sum") and not pd.api.types.is_numeric_dtype(right[column_name]):
+            if (agg in {"sum","prod"}) and not pd.api.types.is_numeric_dtype(right[column_name]):
                 raise ValueError(f"{agg} is supported only for numeric columns")
     if all((op == _JoinOperator.STRICTLY_EQUAL.value for *_, op in conditions)):
         if not (return_matching_indices or (aggfunc is not None)):

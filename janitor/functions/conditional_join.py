@@ -1318,9 +1318,10 @@ def join_agg(
     Examples:
         >>> import pandas as pd
         >>> import janitor
-        >>> df1 = pd.DataFrame({"value_1": [2, 5, 7, 1, 3, 4]})
+        >>> df1 = pd.DataFrame({"id": [1,1,1,2,2,3], "value_1": [2, 5, 7, 1, 3, 4]})
         >>> df2 = pd.DataFrame(
         ...     {
+        ...         "id": [1,1,1,1,2,2,2,3],
         ...         "value_2A": [0, 3, 7, 12, 0, 2, 3, 1],
         ...         "value_2B": [1, 5, 9, 15, 1, 4, 6, 3],
         ...     }

@@ -1252,7 +1252,7 @@ def get_join_indices(
     keep: Literal["first", "last", "all"],
     use_numba: bool,
     force: bool,
-) -> dict:
+) -> pd.DataFrame:
     """Convenience function to return the matching indices from an inner join.
 
     !!! info "New in version 0.27.0"

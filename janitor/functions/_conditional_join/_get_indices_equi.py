@@ -7,6 +7,7 @@ import pandas as pd
 from janitor.functions._conditional_join import (
     _helpers,
     _range_indices,
+    _binary_search
 )
 
 
@@ -257,10 +258,10 @@ def _update_positions_ge_gt(
     ends: np.ndarray,
 ) -> np.ndarray:
     if op == ">":
-        return _helpers._binary_search_gt(
+        return _binary_search._binary_search_gt(
             left=l_column, right=r_column, starts=starts, ends=ends
         )
-    return _helpers._binary_search_ge(
+    return _binary_search._binary_search_ge(
         left=l_column, right=r_column, starts=starts, ends=ends
     )
 
@@ -273,10 +274,10 @@ def _update_positions_le_lt(
     ends: np.ndarray,
 ) -> np.ndarray:
     if op == "<":
-        return _helpers._binary_search_lt(
+        return _binary_search._binary_search_lt(
             left=l_column, right=r_column, starts=starts, ends=ends
         )
-    return _helpers._binary_search_le(
+    return _binary_search._binary_search_le(
         left=l_column, right=r_column, starts=starts, ends=ends
     )
 
@@ -625,9 +626,9 @@ def _get_indices_equi_join_only(
         return {
             "left_index": np.array([], dtype=np.intp),
             "right_index": np.array([], dtype=np.intp),
-        }
-    _, starts, ends = outcome
-    booleans = (starts == -1) | (ends == -1) | (starts >= ends)
+        } 
+    indexers, starts, ends = outcome
+    booleans = indexers == -1
     if booleans.all():
         return {
             "left_index": np.array([], dtype=np.intp),

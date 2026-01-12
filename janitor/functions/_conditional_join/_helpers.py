@@ -7,6 +7,8 @@ import janitor_rs
 import numpy as np
 import pandas as pd
 
+from janitor.functions._conditional_join import _compare
+
 
 class _JoinOperator(Enum):
     """
@@ -115,7 +117,9 @@ def _separate_conditions_based_on_op(conditions: Sequence):
     is_range_join = all((le_lt, ge_gt))
     if is_range_join:
         le_or_ge = [
-            condition for condition in le_or_ge if condition not in (ge_gt, le_lt)
+            condition
+            for condition in le_or_ge
+            if condition not in (ge_gt, le_lt)
         ]
     return {
         "l_cols": l_cols,
@@ -129,650 +133,6 @@ def _separate_conditions_based_on_op(conditions: Sequence):
     }
 
 
-def _binary_search_lt(
-    left: np.ndarray,
-    right: np.ndarray,
-    starts: np.ndarray,
-    ends: np.ndarray,
-) -> tuple:
-    """
-    Get starts for < joins
-    """
-    mapping = {
-        "int64": janitor_rs.binary_search_lt_int64,
-        "int32": janitor_rs.binary_search_lt_int32,
-        "int16": janitor_rs.binary_search_lt_int16,
-        "int8": janitor_rs.binary_search_lt_int8,
-        "uint64": janitor_rs.binary_search_lt_uint64,
-        "uint32": janitor_rs.binary_search_lt_uint32,
-        "uint16": janitor_rs.binary_search_lt_uint16,
-        "uint8": janitor_rs.binary_search_lt_uint8,
-        "float64": janitor_rs.binary_search_lt_float64,
-        "float32": janitor_rs.binary_search_lt_float32,
-    }
-    dtype_name = left.dtype.name
-    func = mapping[dtype_name]
-    return func(left, right, starts, ends)
-
-
-def _binary_search_le(
-    left: np.ndarray,
-    right: np.ndarray,
-    starts: np.ndarray,
-    ends: np.ndarray,
-) -> tuple:
-    """
-    Get starts for <= joins
-    """
-    mapping = {
-        "int64": janitor_rs.binary_search_le_int64,
-        "int32": janitor_rs.binary_search_le_int32,
-        "int16": janitor_rs.binary_search_le_int16,
-        "int8": janitor_rs.binary_search_le_int8,
-        "uint64": janitor_rs.binary_search_le_uint64,
-        "uint32": janitor_rs.binary_search_le_uint32,
-        "uint16": janitor_rs.binary_search_le_uint16,
-        "uint8": janitor_rs.binary_search_le_uint8,
-        "float64": janitor_rs.binary_search_le_float64,
-        "float32": janitor_rs.binary_search_le_float32,
-    }
-    dtype_name = left.dtype.name
-    func = mapping[dtype_name]
-    return func(left, right, starts, ends)
-
-
-def _binary_search_gt(
-    left: np.ndarray,
-    right: np.ndarray,
-    starts: np.ndarray,
-    ends: np.ndarray,
-) -> tuple:
-    """
-    Get ends for > joins
-    """
-    mapping = {
-        "int64": janitor_rs.binary_search_gt_int64,
-        "int32": janitor_rs.binary_search_gt_int32,
-        "int16": janitor_rs.binary_search_gt_int16,
-        "int8": janitor_rs.binary_search_gt_int8,
-        "uint64": janitor_rs.binary_search_gt_uint64,
-        "uint32": janitor_rs.binary_search_gt_uint32,
-        "uint16": janitor_rs.binary_search_gt_uint16,
-        "uint8": janitor_rs.binary_search_gt_uint8,
-        "float64": janitor_rs.binary_search_gt_float64,
-        "float32": janitor_rs.binary_search_gt_float32,
-    }
-    dtype_name = left.dtype.name
-    func = mapping[dtype_name]
-    return func(left, right, starts, ends)
-
-
-def _binary_search_ge(
-    left: np.ndarray,
-    right: np.ndarray,
-    starts: np.ndarray,
-    ends: np.ndarray,
-) -> tuple:
-    """
-    Get ends for >= joins
-    """
-    mapping = {
-        "int64": janitor_rs.binary_search_ge_int64,
-        "int32": janitor_rs.binary_search_ge_int32,
-        "int16": janitor_rs.binary_search_ge_int16,
-        "int8": janitor_rs.binary_search_ge_int8,
-        "uint64": janitor_rs.binary_search_ge_uint64,
-        "uint32": janitor_rs.binary_search_ge_uint32,
-        "uint16": janitor_rs.binary_search_ge_uint16,
-        "uint8": janitor_rs.binary_search_ge_uint8,
-        "float64": janitor_rs.binary_search_ge_float64,
-        "float32": janitor_rs.binary_search_ge_float32,
-    }
-    dtype_name = left.dtype.name
-    func = mapping[dtype_name]
-    return func(left, right, starts, ends)
-
-
-def _compare_ne_no_ranges(
-    left: np.ndarray,
-    right: np.ndarray,
-    positions: np.ndarray,
-    left_booleans: np.ndarray,
-    right_booleans: np.ndarray,
-    is_extension_array: bool,
-    op: int,
-) -> tuple:
-    """
-    Compute comparsons for no ranges (no starts/ends) for != operator
-    """
-    mapping = {
-        "int64": janitor_rs.compare_no_range_ne_int64,
-        "int32": janitor_rs.compare_no_range_ne_int32,
-        "int16": janitor_rs.compare_no_range_ne_int16,
-        "int8": janitor_rs.compare_no_range_ne_int8,
-        "uint64": janitor_rs.compare_no_range_ne_uint64,
-        "uint32": janitor_rs.compare_no_range_ne_uint32,
-        "uint16": janitor_rs.compare_no_range_ne_uint16,
-        "uint8": janitor_rs.compare_no_range_ne_uint8,
-        "float64": janitor_rs.compare_no_range_ne_float64,
-        "float32": janitor_rs.compare_no_range_ne_float32,
-    }
-    dtype_name = left.dtype.name
-    func = mapping[dtype_name]
-    return func(
-        left,
-        right,
-        positions,
-        left_booleans,
-        right_booleans,
-        is_extension_array,
-        op,
-    )
-
-
-def _compare_no_ranges(
-    left: np.ndarray,
-    right: np.ndarray,
-    positions: np.ndarray,
-    op: int,
-) -> tuple:
-    """
-    Compute comparsons for no ranges (no starts/ends)
-    """
-    mapping = {
-        "int64": janitor_rs.compare_no_range_int64,
-        "int32": janitor_rs.compare_no_range_int32,
-        "int16": janitor_rs.compare_no_range_int16,
-        "int8": janitor_rs.compare_no_range_int8,
-        "uint64": janitor_rs.compare_no_range_uint64,
-        "uint32": janitor_rs.compare_no_range_uint32,
-        "uint16": janitor_rs.compare_no_range_uint16,
-        "uint8": janitor_rs.compare_no_range_uint8,
-        "float64": janitor_rs.compare_no_range_float64,
-        "float32": janitor_rs.compare_no_range_float32,
-    }
-    dtype_name = left.dtype.name
-    func = mapping[dtype_name]
-    return func(
-        left,
-        right,
-        positions,
-        op,
-    )
-
-
-def _compare_ne_first_run_starts_only(
-    left: np.ndarray,
-    right: np.ndarray,
-    starts: np.ndarray,
-    left_booleans: np.ndarray,
-    right_booleans: np.ndarray,
-    is_extension_array: bool,
-    op: int,
-) -> tuple:
-    """
-    Compute booleans for first run
-    """
-    mapping = {
-        "int64": janitor_rs.compare_start_ne_1st_int64,
-        "int32": janitor_rs.compare_start_ne_1st_int32,
-        "int16": janitor_rs.compare_start_ne_1st_int16,
-        "int8": janitor_rs.compare_start_ne_1st_int8,
-        "uint64": janitor_rs.compare_start_ne_1st_uint64,
-        "uint32": janitor_rs.compare_start_ne_1st_uint32,
-        "uint16": janitor_rs.compare_start_ne_1st_uint16,
-        "uint8": janitor_rs.compare_start_ne_1st_uint8,
-        "float64": janitor_rs.compare_start_ne_1st_float64,
-        "float32": janitor_rs.compare_start_ne_1st_float32,
-    }
-    dtype_name = left.dtype.name
-    func = mapping[dtype_name]
-    return func(
-        left,
-        right,
-        starts,
-        left_booleans,
-        right_booleans,
-        is_extension_array,
-        op,
-    )
-
-
-def _compare_ne_starts_only(
-    left: np.ndarray,
-    right: np.ndarray,
-    starts: np.ndarray,
-    left_booleans: np.ndarray,
-    right_booleans: np.ndarray,
-    is_extension_array: bool,
-    counts_array: np.ndarray,
-    matches: np.ndarray,
-    op: int,
-) -> tuple:
-    """
-    Compute booleans for starts
-    """
-    mapping = {
-        "int64": janitor_rs.compare_start_ne_int64,
-        "int32": janitor_rs.compare_start_ne_int32,
-        "int16": janitor_rs.compare_start_ne_int16,
-        "int8": janitor_rs.compare_start_ne_int8,
-        "uint64": janitor_rs.compare_start_ne_uint64,
-        "uint32": janitor_rs.compare_start_ne_uint32,
-        "uint16": janitor_rs.compare_start_ne_uint16,
-        "uint8": janitor_rs.compare_start_ne_uint8,
-        "float64": janitor_rs.compare_start_ne_float64,
-        "float32": janitor_rs.compare_start_ne_float32,
-    }
-    dtype_name = left.dtype.name
-    func = mapping[dtype_name]
-    return func(
-        left,
-        right,
-        starts,
-        left_booleans,
-        right_booleans,
-        counts_array,
-        matches,
-        is_extension_array,
-        op,
-    )
-
-
-def _compare_ne_first_run_ends_only(
-    left: np.ndarray,
-    right: np.ndarray,
-    ends: np.ndarray,
-    left_booleans: np.ndarray,
-    right_booleans: np.ndarray,
-    is_extension_array: bool,
-    op: int,
-) -> tuple:
-    """
-    Compute booleans for first run
-    """
-    mapping = {
-        "int64": janitor_rs.compare_end_ne_1st_int64,
-        "int32": janitor_rs.compare_end_ne_1st_int32,
-        "int16": janitor_rs.compare_end_ne_1st_int16,
-        "int8": janitor_rs.compare_end_ne_1st_int8,
-        "uint64": janitor_rs.compare_end_ne_1st_uint64,
-        "uint32": janitor_rs.compare_end_ne_1st_uint32,
-        "uint16": janitor_rs.compare_end_ne_1st_uint16,
-        "uint8": janitor_rs.compare_end_ne_1st_uint8,
-        "float64": janitor_rs.compare_end_ne_1st_float64,
-        "float32": janitor_rs.compare_end_ne_1st_float32,
-    }
-    dtype_name = left.dtype.name
-    func = mapping[dtype_name]
-    return func(
-        left,
-        right,
-        ends,
-        left_booleans,
-        right_booleans,
-        is_extension_array,
-        op,
-    )
-
-
-def _compare_ne_ends_only(
-    left: np.ndarray,
-    right: np.ndarray,
-    ends: np.ndarray,
-    left_booleans: np.ndarray,
-    right_booleans: np.ndarray,
-    is_extension_array: bool,
-    counts_array: np.ndarray,
-    matches: np.ndarray,
-    op: int,
-) -> tuple:
-    """
-    Compute booleans for ends
-    """
-    mapping = {
-        "int64": janitor_rs.compare_end_ne_int64,
-        "int32": janitor_rs.compare_end_ne_int32,
-        "int16": janitor_rs.compare_end_ne_int16,
-        "int8": janitor_rs.compare_end_ne_int8,
-        "uint64": janitor_rs.compare_end_ne_uint64,
-        "uint32": janitor_rs.compare_end_ne_uint32,
-        "uint16": janitor_rs.compare_end_ne_uint16,
-        "uint8": janitor_rs.compare_end_ne_uint8,
-        "float64": janitor_rs.compare_end_ne_float64,
-        "float32": janitor_rs.compare_end_ne_float32,
-    }
-    dtype_name = left.dtype.name
-    func = mapping[dtype_name]
-    return func(
-        left,
-        right,
-        ends,
-        left_booleans,
-        right_booleans,
-        counts_array,
-        matches,
-        is_extension_array,
-        op,
-    )
-
-
-def _compare_ne_first_run_starts_ends(
-    left: np.ndarray,
-    right: np.ndarray,
-    starts: np.ndarray,
-    ends: np.ndarray,
-    left_booleans: np.ndarray,
-    right_booleans: np.ndarray,
-    is_extension_array: bool,
-    op: int,
-) -> tuple:
-    """
-    Compute booleans for first run
-    """
-    mapping = {
-        "int64": janitor_rs.compare_start_end_ne_1st_int64,
-        "int32": janitor_rs.compare_start_end_ne_1st_int32,
-        "int16": janitor_rs.compare_start_end_ne_1st_int16,
-        "int8": janitor_rs.compare_start_end_ne_1st_int8,
-        "uint64": janitor_rs.compare_start_end_ne_1st_uint64,
-        "uint32": janitor_rs.compare_start_end_ne_1st_uint32,
-        "uint16": janitor_rs.compare_start_end_ne_1st_uint16,
-        "uint8": janitor_rs.compare_start_end_ne_1st_uint8,
-        "float64": janitor_rs.compare_start_end_ne_1st_float64,
-        "float32": janitor_rs.compare_start_end_ne_1st_float32,
-    }
-    dtype_name = left.dtype.name
-    func = mapping[dtype_name]
-    return func(
-        left,
-        right,
-        starts,
-        ends,
-        left_booleans,
-        right_booleans,
-        is_extension_array,
-        op,
-    )
-
-
-def _compare_ne_starts_ends(
-    left: np.ndarray,
-    right: np.ndarray,
-    starts: np.ndarray,
-    ends: np.ndarray,
-    left_booleans: np.ndarray,
-    right_booleans: np.ndarray,
-    is_extension_array: bool,
-    matches: np.ndarray,
-    op: int,
-) -> tuple:
-    """
-    Compute booleans for starts and ends
-    """
-    mapping = {
-        "int64": janitor_rs.compare_start_end_ne_int64,
-        "int32": janitor_rs.compare_start_end_ne_int32,
-        "int16": janitor_rs.compare_start_end_ne_int16,
-        "int8": janitor_rs.compare_start_end_ne_int8,
-        "uint64": janitor_rs.compare_start_end_ne_uint64,
-        "uint32": janitor_rs.compare_start_end_ne_uint32,
-        "uint16": janitor_rs.compare_start_end_ne_uint16,
-        "uint8": janitor_rs.compare_start_end_ne_uint8,
-        "float64": janitor_rs.compare_start_end_ne_float64,
-        "float32": janitor_rs.compare_start_end_ne_float32,
-    }
-    dtype_name = left.dtype.name
-    func = mapping[dtype_name]
-    return func(
-        left,
-        right,
-        starts,
-        ends,
-        left_booleans,
-        right_booleans,
-        matches,
-        is_extension_array,
-        op,
-    )
-
-
-def _compare_first_run_starts_only(
-    left: np.ndarray,
-    right: np.ndarray,
-    starts: np.ndarray,
-    op: int,
-) -> tuple:
-    """
-    Compute booleans for first run
-    """
-    mapping = {
-        "int64": janitor_rs.compare_first_start_int64,
-        "int32": janitor_rs.compare_first_start_int32,
-        "int16": janitor_rs.compare_first_start_int16,
-        "int8": janitor_rs.compare_first_start_int8,
-        "uint64": janitor_rs.compare_first_start_uint64,
-        "uint32": janitor_rs.compare_first_start_uint32,
-        "uint16": janitor_rs.compare_first_start_uint16,
-        "uint8": janitor_rs.compare_first_start_uint8,
-        "float64": janitor_rs.compare_first_start_float64,
-        "float32": janitor_rs.compare_first_start_float32,
-    }
-    dtype_name = left.dtype.name
-    func = mapping[dtype_name]
-    return func(left, right, starts, op)
-
-
-def _compare_starts_only(
-    left: np.ndarray,
-    right: np.ndarray,
-    starts: np.ndarray,
-    counts_array: np.ndarray,
-    matches: np.ndarray,
-    op: int,
-) -> tuple:
-    """
-    Compute booleans for starts
-    """
-    mapping = {
-        "int64": janitor_rs.compare_start_int64,
-        "int32": janitor_rs.compare_start_int32,
-        "int16": janitor_rs.compare_start_int16,
-        "int8": janitor_rs.compare_start_int8,
-        "uint64": janitor_rs.compare_start_uint64,
-        "uint32": janitor_rs.compare_start_uint32,
-        "uint16": janitor_rs.compare_start_uint16,
-        "uint8": janitor_rs.compare_start_uint8,
-        "float64": janitor_rs.compare_start_float64,
-        "float32": janitor_rs.compare_start_float32,
-    }
-    dtype_name = left.dtype.name
-    func = mapping[dtype_name]
-    return func(left, right, starts, counts_array, matches, op)
-
-
-def _compare_first_run_ends_only(
-    left: np.ndarray, right: np.ndarray, ends: np.ndarray, op: int
-) -> tuple:
-    """
-    Compute booleans for first run
-    """
-    mapping = {
-        "int64": janitor_rs.compare_first_end_int64,
-        "int32": janitor_rs.compare_first_end_int32,
-        "int16": janitor_rs.compare_first_end_int16,
-        "int8": janitor_rs.compare_first_end_int8,
-        "uint64": janitor_rs.compare_first_end_uint64,
-        "uint32": janitor_rs.compare_first_end_uint32,
-        "uint16": janitor_rs.compare_first_end_uint16,
-        "uint8": janitor_rs.compare_first_end_uint8,
-        "float64": janitor_rs.compare_first_end_float64,
-        "float32": janitor_rs.compare_first_end_float32,
-    }
-    dtype_name = left.dtype.name
-    func = mapping[dtype_name]
-    return func(left, right, ends, op)
-
-
-def _compare_ends_only(
-    left: np.ndarray,
-    right: np.ndarray,
-    ends: np.ndarray,
-    counts_array: np.ndarray,
-    matches: np.ndarray,
-    op: int,
-) -> tuple:
-    """
-    Compute booleans for ends
-    """
-    mapping = {
-        "int64": janitor_rs.compare_end_int64,
-        "int32": janitor_rs.compare_end_int32,
-        "int16": janitor_rs.compare_end_int16,
-        "int8": janitor_rs.compare_end_int8,
-        "uint64": janitor_rs.compare_end_uint64,
-        "uint32": janitor_rs.compare_end_uint32,
-        "uint16": janitor_rs.compare_end_uint16,
-        "uint8": janitor_rs.compare_end_uint8,
-        "float64": janitor_rs.compare_end_float64,
-        "float32": janitor_rs.compare_end_float32,
-    }
-    dtype_name = left.dtype.name
-    func = mapping[dtype_name]
-    return func(left, right, ends, counts_array, matches, op)
-
-
-def _compare_first_run_starts_ends(
-    left: np.ndarray,
-    right: np.ndarray,
-    starts: np.ndarray,
-    ends: np.ndarray,
-    op: int,
-) -> tuple:
-    """
-    Compute booleans for first run
-    """
-    mapping = {
-        "int64": janitor_rs.compare_first_start_end_int64,
-        "int32": janitor_rs.compare_first_start_end_int32,
-        "int16": janitor_rs.compare_first_start_end_int16,
-        "int8": janitor_rs.compare_first_start_end_int8,
-        "uint64": janitor_rs.compare_first_start_end_uint64,
-        "uint32": janitor_rs.compare_first_start_end_uint32,
-        "uint16": janitor_rs.compare_first_start_end_uint16,
-        "uint8": janitor_rs.compare_first_start_end_uint8,
-        "float64": janitor_rs.compare_first_start_end_float64,
-        "float32": janitor_rs.compare_first_start_end_float32,
-    }
-    dtype_name = left.dtype.name
-    func = mapping[dtype_name]
-    return func(left, right, starts, ends, op)
-
-
-def _compare_starts_ends(
-    left: np.ndarray,
-    right: np.ndarray,
-    starts: np.ndarray,
-    ends: np.ndarray,
-    matches: np.ndarray,
-    op: int,
-) -> tuple:
-    """
-    Compute booleans for starts and ends
-    """
-    mapping = {
-        "int64": janitor_rs.compare_start_end_int64,
-        "int32": janitor_rs.compare_start_end_int32,
-        "int16": janitor_rs.compare_start_end_int16,
-        "int8": janitor_rs.compare_start_end_int8,
-        "uint64": janitor_rs.compare_start_end_uint64,
-        "uint32": janitor_rs.compare_start_end_uint32,
-        "uint16": janitor_rs.compare_start_end_uint16,
-        "uint8": janitor_rs.compare_start_end_uint8,
-        "float64": janitor_rs.compare_start_end_float64,
-        "float32": janitor_rs.compare_start_end_float32,
-    }
-    dtype_name = left.dtype.name
-    func = mapping[dtype_name]
-    return func(left, right, starts, ends, matches, op)
-
-
-def _compare_positions(
-    left: np.ndarray,
-    right: np.ndarray,
-    positions: np.ndarray,
-    starts: np.ndarray,
-    ends: np.ndarray,
-    op: int,
-) -> tuple:
-    """
-    Compute booleans for first run
-    """
-    mapping = {
-        "int64": janitor_rs.compare_posns_int64,
-        "int32": janitor_rs.compare_posns_int32,
-        "int16": janitor_rs.compare_posns_int16,
-        "int8": janitor_rs.compare_posns_int8,
-        "uint64": janitor_rs.compare_posns_uint64,
-        "uint32": janitor_rs.compare_posns_uint32,
-        "uint16": janitor_rs.compare_posns_uint16,
-        "uint8": janitor_rs.compare_posns_uint8,
-        "float64": janitor_rs.compare_posns_float64,
-        "float32": janitor_rs.compare_posns_float32,
-    }
-    dtype_name = left.dtype.name
-    func = mapping[dtype_name]
-    return func(
-        left=left,
-        right=right,
-        positions=positions,
-        starts=starts,
-        ends=ends,
-        op=op,
-    )
-
-
-def _compare_positions_ne(
-    left: np.ndarray,
-    right: np.ndarray,
-    starts: np.ndarray,
-    ends: np.ndarray,
-    positions: np.ndarray,
-    left_booleans: np.ndarray | None,
-    right_booleans: np.ndarray | None,
-    is_extension_array: bool,
-    op: int,
-) -> tuple:
-    """
-    Compute booleans for first run
-    """
-    mapping = {
-        "int64": janitor_rs.compare_posns_ne_int64,
-        "int32": janitor_rs.compare_posns_ne_int32,
-        "int16": janitor_rs.compare_posns_ne_int16,
-        "int8": janitor_rs.compare_posns_ne_int8,
-        "uint64": janitor_rs.compare_posns_ne_uint64,
-        "uint32": janitor_rs.compare_posns_ne_uint32,
-        "uint16": janitor_rs.compare_posns_ne_uint16,
-        "uint8": janitor_rs.compare_posns_ne_uint8,
-        "float64": janitor_rs.compare_posns_ne_float64,
-        "float32": janitor_rs.compare_posns_ne_float32,
-    }
-    dtype_name = left.dtype.name
-    func = mapping[dtype_name]
-    return func(
-        left=left,
-        right=right,
-        starts=starts,
-        ends=ends,
-        positions=positions,
-        left_booleans=left_booleans,
-        right_booleans=right_booleans,
-        is_extension_array=is_extension_array,
-        op=op,
-    )
-
-
 def _convert_array_to_numpy(
     array: np.ndarray,
     na_value: int = 0,
@@ -782,12 +142,14 @@ def _convert_array_to_numpy(
     """
     if pd.api.types.is_extension_array_dtype(array):
         array_dtype = array.dtype.numpy_dtype
-        array = array.to_numpy(dtype=array_dtype, na_value=na_value, copy=False)
+        array = array.to_numpy(
+            dtype=array_dtype, na_value=na_value, copy=False
+        )
     if pd.api.types.is_timedelta64_dtype(array):
         array = array.to_numpy(copy=False)
-    if pd.api.types.is_datetime64_dtype(array) or pd.api.types.is_timedelta64_dtype(
+    if pd.api.types.is_datetime64_dtype(
         array
-    ):
+    ) or pd.api.types.is_timedelta64_dtype(array):
         array = array.view(np.int64)
     return array
 
@@ -805,14 +167,14 @@ def _update_positions_no_range(
     Compute positive matches for left vs right when there is no start/end
     """
     if (left_booleans is None) and (right_booleans is None):
-        positions, total = _compare_no_ranges(
+        positions, total = _compare._compare_no_ranges(
             left=left,
             right=right,
             positions=positions,
             op=operator_mapping[op],
         )
     else:
-        positions, total = _compare_ne_no_ranges(
+        positions, total = _compare._compare_ne_no_ranges(
             left=left,
             right=right,
             positions=positions,
@@ -838,8 +200,8 @@ def _update_positions_no_range_(
     for left_on, right_on, op in conditions:
         left_array = df[left_on]
         right_array = right[right_on]
-        left_booleans, right_booleans, is_extension_array = _get_boolean_args_for_ne(
-            op=op, left=left_array, right=right_array
+        left_booleans, right_booleans, is_extension_array = (
+            _get_boolean_args_for_ne(op=op, left=left_array, right=right_array)
         )
         left_array = _convert_array_to_numpy(array=left_array._values)
         right_array = _convert_array_to_numpy(array=right_array._values)
@@ -875,7 +237,7 @@ def _get_positive_matches_positions(
     Compute positive matches for left vs right
     """
     if (left_booleans is None) and (right_booleans is None):
-        positions, counts_array, total = _compare_positions(
+        positions, counts_array, total = _compare._compare_positions(
             left=left,
             right=right,
             positions=positions,
@@ -884,7 +246,7 @@ def _get_positive_matches_positions(
             op=operator_mapping[op],
         )
     else:
-        positions, counts_array, total = _compare_positions_ne(
+        positions, counts_array, total = _compare._compare_positions_ne(
             left=left,
             right=right,
             positions=positions,
@@ -916,8 +278,8 @@ def _get_positive_matches_conditions_posns(
     (left_on, right_on, op), *rest = conditions
     left_array = df.loc[left_index, left_on]
     right_array = right.loc[right_index, right_on]
-    left_booleans, right_booleans, is_extension_array = _get_boolean_args_for_ne(
-        op=op, left=left_array, right=right_array
+    left_booleans, right_booleans, is_extension_array = (
+        _get_boolean_args_for_ne(op=op, left=left_array, right=right_array)
     )
     left_array = _convert_array_to_numpy(array=left_array._values)
     right_array = _convert_array_to_numpy(array=right_array._values)
@@ -937,8 +299,8 @@ def _get_positive_matches_conditions_posns(
     for left_on, right_on, op in rest:
         left_array = df.loc[left_index, left_on]
         right_array = right.loc[right_index, right_on]
-        left_booleans, right_booleans, is_extension_array = _get_boolean_args_for_ne(
-            op=op, left=left_array, right=right_array
+        left_booleans, right_booleans, is_extension_array = (
+            _get_boolean_args_for_ne(op=op, left=left_array, right=right_array)
         )
         left_array = _convert_array_to_numpy(array=left_array._values)
         right_array = _convert_array_to_numpy(array=right_array._values)
@@ -979,14 +341,14 @@ def _get_positive_matches(
     """
     if (starts is not None) and (ends is None) and (counts_array is None):
         if (left_booleans is None) and (right_booleans is None):
-            matches, counts_array, total = _compare_first_run_starts_only(
+            matches, counts_array, total = _compare._compare_first_run_starts_only(
                 left=left,
                 right=right,
                 starts=starts,
                 op=operator_mapping[op],
             )
         else:
-            matches, counts_array, total = _compare_ne_first_run_starts_only(
+            matches, counts_array, total = _compare._compare_ne_first_run_starts_only(
                 left=left,
                 right=right,
                 starts=starts,
@@ -997,14 +359,14 @@ def _get_positive_matches(
             )
     elif (starts is None) and (ends is not None) and (counts_array is None):
         if (left_booleans is None) and (right_booleans is None):
-            matches, counts_array, total = _compare_first_run_ends_only(
+            matches, counts_array, total = _compare._compare_first_run_ends_only(
                 left=left,
                 right=right,
                 ends=ends,
                 op=operator_mapping[op],
             )
         else:
-            matches, counts_array, total = _compare_ne_first_run_ends_only(
+            matches, counts_array, total = _compare._compare_ne_first_run_ends_only(
                 left=left,
                 right=right,
                 ends=ends,
@@ -1013,9 +375,11 @@ def _get_positive_matches(
                 is_extension_array=is_extension_array,
                 op=operator_mapping[op],
             )
-    elif (starts is not None) and (ends is None) and (counts_array is not None):
+    elif (
+        (starts is not None) and (ends is None) and (counts_array is not None)
+    ):
         if (left_booleans is None) and (right_booleans is None):
-            matches, counts_array, total = _compare_starts_only(
+            matches, counts_array, total = _compare._compare_starts_only(
                 left=left,
                 right=right,
                 starts=starts,
@@ -1024,7 +388,7 @@ def _get_positive_matches(
                 op=operator_mapping[op],
             )
         else:
-            matches, counts_array, total = _compare_ne_starts_only(
+            matches, counts_array, total = _compare._compare_ne_starts_only(
                 left=left,
                 right=right,
                 starts=starts,
@@ -1035,9 +399,11 @@ def _get_positive_matches(
                 matches=matches,
                 op=operator_mapping[op],
             )
-    elif (starts is None) and (ends is not None) and (counts_array is not None):
+    elif (
+        (starts is None) and (ends is not None) and (counts_array is not None)
+    ):
         if (left_booleans is None) and (right_booleans is None):
-            matches, counts_array, total = _compare_ends_only(
+            matches, counts_array, total = _compare._compare_ends_only(
                 left=left,
                 right=right,
                 ends=ends,
@@ -1046,7 +412,7 @@ def _get_positive_matches(
                 op=operator_mapping[op],
             )
         else:
-            matches, counts_array, total = _compare_ne_ends_only(
+            matches, counts_array, total = _compare._compare_ne_ends_only(
                 left=left,
                 right=right,
                 ends=ends,
@@ -1057,9 +423,11 @@ def _get_positive_matches(
                 matches=matches,
                 op=operator_mapping[op],
             )
-    elif (starts is not None) and (ends is not None) and (counts_array is None):
+    elif (
+        (starts is not None) and (ends is not None) and (counts_array is None)
+    ):
         if (left_booleans is None) and (right_booleans is None):
-            matches, counts_array, total = _compare_first_run_starts_ends(
+            matches, counts_array, total = _compare._compare_first_run_starts_ends(
                 left=left,
                 right=right,
                 starts=starts,
@@ -1067,7 +435,7 @@ def _get_positive_matches(
                 op=operator_mapping[op],
             )
         else:
-            matches, counts_array, total = _compare_ne_first_run_starts_ends(
+            matches, counts_array, total = _compare._compare_ne_first_run_starts_ends(
                 left=left,
                 right=right,
                 starts=starts,
@@ -1077,9 +445,13 @@ def _get_positive_matches(
                 is_extension_array=is_extension_array,
                 op=operator_mapping[op],
             )
-    elif (starts is not None) and (ends is not None) and (counts_array is not None):
+    elif (
+        (starts is not None)
+        and (ends is not None)
+        and (counts_array is not None)
+    ):
         if (left_booleans is None) and (right_booleans is None):
-            matches, counts_array, total = _compare_starts_ends(
+            matches, counts_array, total = _compare._compare_starts_ends(
                 left=left,
                 right=right,
                 starts=starts,
@@ -1088,7 +460,7 @@ def _get_positive_matches(
                 op=operator_mapping[op],
             )
         else:
-            matches, counts_array, total = _compare_ne_starts_ends(
+            matches, counts_array, total = _compare._compare_ne_starts_ends(
                 left=left,
                 right=right,
                 starts=starts,
@@ -1119,8 +491,8 @@ def _get_positive_matches_conditions(
     (left_on, right_on, op), *rest = conditions
     left_array = df.loc[left_index, left_on]
     right_array = right[right_on]
-    left_booleans, right_booleans, is_extension_array = _get_boolean_args_for_ne(
-        op=op, left=left_array, right=right_array
+    left_booleans, right_booleans, is_extension_array = (
+        _get_boolean_args_for_ne(op=op, left=left_array, right=right_array)
     )
     left_array = _convert_array_to_numpy(array=left_array._values)
     right_array = _convert_array_to_numpy(array=right_array._values)
@@ -1141,8 +513,8 @@ def _get_positive_matches_conditions(
     for left_on, right_on, op in rest:
         left_array = df.loc[left_index, left_on]
         right_array = right[right_on]
-        left_booleans, right_booleans, is_extension_array = _get_boolean_args_for_ne(
-            op=op, left=left_array, right=right_array
+        left_booleans, right_booleans, is_extension_array = (
+            _get_boolean_args_for_ne(op=op, left=left_array, right=right_array)
         )
         left_array = _convert_array_to_numpy(array=left_array._values)
         right_array = _convert_array_to_numpy(array=right_array._values)
@@ -1176,8 +548,12 @@ def _get_boolean_args_for_ne(
     if not any((left_booleans.any(), right_booleans.any())):
         return None, None, False
     is_extension_array = pd.api.types.is_extension_array_dtype(left)
-    left_booleans = left_booleans.to_numpy(na_value=False, copy=False, dtype=np.bool_)
-    right_booleans = right_booleans.to_numpy(na_value=False, copy=False, dtype=np.bool_)
+    left_booleans = left_booleans.to_numpy(
+        na_value=False, copy=False, dtype=np.bool_
+    )
+    right_booleans = right_booleans.to_numpy(
+        na_value=False, copy=False, dtype=np.bool_
+    )
     return left_booleans, right_booleans, is_extension_array
 
 

@@ -1377,12 +1377,9 @@ def join_agg(
             Supported aggregation functions are
             `sum`, `size`, `min`, `max`, `prod`.
 
-
     Returns:
-        A pandas DataFrame.
-        The index of the dataframe represent the positions
-        of the rows from the left dataframe
-        that have matches in the right dataframe.
+        A pandas DataFrame. The index of the dataframe represent the positions
+        of the rows from the left dataframe that have matches in the right dataframe.
     """
     return _conditional_join_compute(
         df=df,

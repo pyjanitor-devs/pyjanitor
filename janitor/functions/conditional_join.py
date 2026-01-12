@@ -1312,7 +1312,13 @@ def join_agg(
     force: bool = False,
 ) -> pd.DataFrame:
     """
-    Compute an aggregation from an inner join.
+    Compute an aggregation after the successful execution of a join;
+    the aggregaton is computed on the right dataframe
+    for each row of the left DataFrame (that has a match)
+    based on the join keys.
+    Supported aggregation functions are
+    `sum`, `count`, `size`, `min`, `max`.
+    This is limited to an inner join.
 
     The index of the returned dataframe represent the positions
     of the rows from the left dataframe that have matches 

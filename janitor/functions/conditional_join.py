@@ -1362,14 +1362,16 @@ def join_agg(
         ...         df2,
         ...         ("id", "id", "=="),
         ...         ("value_1", "value_2A", ">="),
-        ...         ("value_1", "value_2A", "<="),
+        ...         ("value_1", "value_2B", "<="),
         ...         aggfunc=[("value_2A", "sum"), ("value_2B", "min"), ("id", "size")],
         ...     )
         ... )
           value_2A value_2B   id
                sum      min size
+        1        3        5    1
         2        7        9    1
-        4        3        6    1
+        3        0        1    1
+        4        5        4    2
 
     Args:
         df: A pandas DataFrame.

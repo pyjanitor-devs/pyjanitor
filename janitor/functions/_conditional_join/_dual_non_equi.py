@@ -159,6 +159,7 @@ def _get_indices(
     """
     Compute indices for a dual non-equi join
     """
+    # return df.index._values, right.index._values
     (left_on, right_on, op) = first_condition
     left_col = df[left_on]
     # sorting is done here to enable easy region filtering later on
@@ -223,6 +224,8 @@ def _get_indices(
         l_index = l_index[booleans]
         l2_region = l2_region[booleans]
         search_indices = search_indices[booleans]
+    # at this point there cant be any -1s
+    # this is the base stage
     positions, counts_array, total = janitor_rs.get_positions_where_left_le_right(
         left=l2_region,
         right=r2_region,
@@ -303,50 +306,9 @@ def _align_regions(
     return left_index, left_region, right_region
 
 
-def _build_indices(
-    left_index: np.ndarray,
-    right_index: np.ndarray,
-    starts: np.ndarray,
-    ends: np.ndarray,
-    positions: np.ndarray,
-    counts_array: np.ndarray,
-    total: int,
-    keep: str,
-):
-    """
-    Build indices for a dual join
-    """
-    if keep == "all":
-        left_index = janitor_rs.repeat_index(
-            index=left_index, counts=counts_array, length=total
-        )
-        right_index = janitor_rs.build_positional_index(
-            index=right_index, positions=positions, length=total
-        )
-    elif keep == "first":
-        total = np.count_nonzero(counts_array)
-        left_index = janitor_rs.trim_index(
-            index=left_index, counts=counts_array, length=total
-        )
-        right_index = janitor_rs.build_positional_index_first(
-            index=right_index,
-            starts=starts,
-            ends=ends,
-            counts=counts_array,
-            positions=positions,
-            length=total,
-        )
-    else:
-        total = np.count_nonzero(counts_array)
-        left_index = janitor_rs.trim_index(
-            index=left_index, counts=counts_array, length=total
-        )
-        right_index = janitor_rs.build_positional_index_last(
-            index=right_index,
-            starts=starts,
-            ends=ends,
-            counts=counts_array,
-            positions=positions,
-            length=total,
-        )
-    return {"left_index": left_index, "right_index": right_index}
+def _build_starts_and_ends(counts: np.ndarray) -> tuple:
+    ends = counts.cumsum()
+    starts = np.empty(counts.size, dtype=np.int64)
+    starts[0] = 0
+    starts[1:] = ends[:-1]
+    return starts, ends

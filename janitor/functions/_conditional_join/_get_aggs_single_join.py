@@ -4,11 +4,7 @@ from typing import Hashable
 
 import pandas as pd
 
-from janitor.functions._conditional_join._greater_than_indices import (
-    _greater_than_indices,
-)
-from janitor.functions._conditional_join._helpers import (
-    _convert_array_to_numpy,
+from janitor.functions._conditional_join._agg_functions import (
     _max_ends,
     _max_starts,
     _min_ends,
@@ -17,6 +13,12 @@ from janitor.functions._conditional_join._helpers import (
     _prod_starts,
     _sum_ends,
     _sum_starts,
+)
+from janitor.functions._conditional_join._greater_than_indices import (
+    _greater_than_indices,
+)
+from janitor.functions._conditional_join._helpers import (
+    _convert_array_to_numpy,
     less_than_join_types,
 )
 from janitor.functions._conditional_join._less_than_indices import (
@@ -24,7 +26,7 @@ from janitor.functions._conditional_join._less_than_indices import (
 )
 
 
-def _single_join(
+def _agg_join(
     df: pd.DataFrame,
     right: pd.DataFrame,
     condition: tuple,

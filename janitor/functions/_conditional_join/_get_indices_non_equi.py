@@ -18,6 +18,7 @@ def _get_indices(
     conditions: list,
     keep: str,
     return_matching_indices: bool,
+    return_indices_for_aggfunc: bool = False,
 ) -> tuple:
     """
     Get indices, or aggregates, for multiple conditions,
@@ -113,6 +114,12 @@ def _get_indices(
                 "left_index": empty_array,
                 "right_index": empty_array,
             }
+        if return_indices_for_aggfunc:
+            outcome["left_index"] = left_index
+            outcome["right_index"] = right.index._values
+            outcome["starts"] = starts
+            outcome["ends"] = ends
+            return outcome
         return _helpers.build_indices_matches(
             left_index=left_index,
             right_index=right.index._values,
@@ -133,7 +140,6 @@ def _get_indices(
             first_condition=first_condition,
             second_condition=second_condition,
         )
-
         rest = []
         for entry in others:
             if not entry:
@@ -147,19 +153,34 @@ def _get_indices(
                 "left_index": empty_array,
                 "right_index": empty_array,
             }
+        if return_indices_for_aggfunc and not rest:
+            starts, ends = _dual_non_equi._build_starts_and_ends(
+                counts=outcome["counts_array"]
+            )
+            outcome["starts"] = starts
+            outcome["ends"] = ends
+            return outcome
         if not rest:
-            return _dual_non_equi._build_indices(
+            if keep == "all":
+                starts = None
+                ends = None
+            else:
+                starts, ends = _dual_non_equi._build_starts_and_ends(
+                    counts=outcome["counts_array"]
+                )
+            return _helpers._build_indices_positions(
                 left_index=outcome["left_index"],
                 right_index=outcome["right_index"],
                 positions=outcome["positions"],
+                starts=starts,
+                ends=ends,
                 counts_array=outcome["counts_array"],
                 total=outcome["total"],
                 keep=keep,
             )
-        ends = outcome["counts_array"].cumsum()
-        starts = np.empty(outcome["counts_array"].size, dtype=np.int64)
-        starts[0] = 0
-        starts[1:] = ends[:-1]
+        starts, ends = _dual_non_equi._build_starts_and_ends(
+            counts=outcome["counts_array"]
+        )
         out = _helpers._get_positive_matches_conditions_posns(
             df=df,
             right=right,
@@ -175,6 +196,11 @@ def _get_indices(
                 "left_index": empty_array,
                 "right_index": empty_array,
             }
+        if return_indices_for_aggfunc:
+            out["starts"] = starts
+            out["ends"] = ends
+            out = outcome | out
+            return out
         return _helpers._build_indices_positions(
             left_index=outcome["left_index"],
             right_index=outcome["right_index"],
@@ -222,6 +248,9 @@ def _get_indices(
                 "left_index": empty_array,
                 "right_index": empty_array,
             }
+        if return_indices_for_aggfunc and not rest:
+            outcome["right_index"] = right.index._values
+            return outcome
         if not rest:
             return _range_indices._build_indices(
                 left_index=outcome["left_index"],
@@ -245,6 +274,10 @@ def _get_indices(
                 "left_index": empty_array,
                 "right_index": empty_array,
             }
+        if return_indices_for_aggfunc:
+            out = outcome | out
+            out["right_index"] = right.index._values
+            return out
         return _helpers.build_indices_matches(
             left_index=outcome["left_index"],
             right_index=right.index._values,
@@ -270,13 +303,25 @@ def _get_indices(
     starts = np.empty(outcome["counts_array"].size, dtype=np.int64)
     starts[0] = 0
     starts[1:] = ends[:-1]
+    if return_indices_for_aggfunc and not rest:
+        outcome["starts"] = starts
+        outcome["ends"] = ends
+        return outcome
     if not rest:
-        return _dual_non_equi._build_indices(
+        if keep == "all":
+            starts = None
+            ends = None
+        else:
+            ends = outcome["counts_array"].cumsum()
+            starts = np.empty(outcome["counts_array"].size, dtype=np.int64)
+            starts[0] = 0
+            starts[1:] = ends[:-1]
+        return _helpers._build_indices_positions(
             left_index=outcome["left_index"],
             right_index=outcome["right_index"],
+            positions=outcome["positions"],
             starts=starts,
             ends=ends,
-            positions=outcome["positions"],
             counts_array=outcome["counts_array"],
             total=outcome["total"],
             keep=keep,
@@ -296,6 +341,11 @@ def _get_indices(
             "left_index": empty_array,
             "right_index": empty_array,
         }
+    if return_indices_for_aggfunc:
+        out["starts"] = starts
+        out["ends"] = ends
+        out = outcome | out
+        return out
     return _helpers._build_indices_positions(
         left_index=outcome["left_index"],
         right_index=outcome["right_index"],

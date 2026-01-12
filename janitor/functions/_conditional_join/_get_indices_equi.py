@@ -16,6 +16,7 @@ def _get_indices(
     conditions: list,
     keep: str,
     return_matching_indices: bool,
+    return_indices_for_aggfunc: bool = False,
 ) -> tuple:
     """
     Get indices, or aggregates, for multiple conditions,
@@ -55,6 +56,8 @@ def _get_indices(
             "right_index": empty_array,
         }
     try:
+        # this section assumes one-to-one or many-to-one
+        # no need to capture indices for aggfunc here
         l_cols = []
         r_cols = []
         for left_col, right_col, _ in mapping["equals"]:
@@ -139,9 +142,16 @@ def _get_indices(
                 mapping=mapping,
                 keep=keep,
                 return_matching_indices=return_matching_indices,
+                return_indices_for_aggfunc=return_indices_for_aggfunc,
             )
         if mapping["not_equals"] and not mapping["le_or_ge"]:
-            return _get_indices_ne_only(df=df, right=right, mapping=mapping, keep=keep)
+            return _get_indices_ne_only(
+                df=df,
+                right=right,
+                mapping=mapping,
+                keep=keep,
+                return_indices_for_aggfunc=return_indices_for_aggfunc,
+            )
         if mapping["le_or_ge"]:
             return _get_indices_le_or_ge_and_not_range_join(
                 df=df,
@@ -149,12 +159,14 @@ def _get_indices(
                 mapping=mapping,
                 keep=keep,
                 return_matching_indices=return_matching_indices,
+                return_indices_for_aggfunc=return_indices_for_aggfunc,
             )
         return _get_indices_equi_join_only(
             df=df,
             right=right,
             mapping=mapping,
             return_matching_indices=return_matching_indices,
+            return_indices_for_aggfunc=return_indices_for_aggfunc,
             keep=keep,
         )
 
@@ -275,6 +287,7 @@ def _get_indices_range_join(
     mapping: dict,
     keep: str,
     return_matching_indices: bool,
+    return_indices_for_aggfunc: bool,
 ) -> dict:
     """Get indices if '>/>=' and '</<=' present"""
     empty_array = np.array([], dtype=np.intp)
@@ -299,7 +312,7 @@ def _get_indices_range_join(
     outcome = _get_indexers(l_cols=l_cols, uniques=uniques, starts=starts, ends=ends)
     if outcome is None:
         return {"left_index": empty_array, "right_index": empty_array}
-    indexers, starts, ends = outcome
+    _, starts, ends = outcome
     (l1_col, r1_col, op) = mapping["ge_gt"]
     r_column = right[r1_col]._values
     r_column = _helpers._convert_array_to_numpy(array=r_column)
@@ -347,10 +360,16 @@ def _get_indices_range_join(
     left_index = df.index._values
     if booleans.any():
         booleans = ~booleans
-        indexers = indexers[booleans]
         starts = starts[booleans]
         ends = ends[booleans]
         left_index = left_index[booleans]
+    if return_indices_for_aggfunc and not rest:
+        return {
+            "left_index": left_index,
+            "right_index": right.index._values,
+            "starts": starts,
+            "ends": ends,
+        }
     if not rest:
         right_index = right.index._values
         return _range_indices._build_indices(
@@ -375,6 +394,15 @@ def _get_indices_range_join(
             "left_index": empty_array,
             "right_index": empty_array,
         }
+    if return_indices_for_aggfunc:
+        return {
+            "left_index": left_index,
+            "right_index": right.index._values,
+            "starts": starts,
+            "ends": ends,
+            "counts_array": outcome["counts_array"],
+            "matches": outcome["matches"],
+        }
     return _helpers.build_indices_matches(
         left_index=left_index,
         right_index=right.index._values,
@@ -388,7 +416,11 @@ def _get_indices_range_join(
 
 
 def _get_indices_ne_only(
-    df: pd.DataFrame, right: pd.DataFrame, mapping: dict, keep: str
+    df: pd.DataFrame,
+    right: pd.DataFrame,
+    mapping: dict,
+    keep: str,
+    return_indices_for_aggfunc: bool,
 ) -> dict:
     """
     Get indices for != only
@@ -415,7 +447,6 @@ def _get_indices_ne_only(
     left_index = df.index._values
     if booleans.any():
         booleans = ~booleans
-        indexers = indexers[booleans]
         starts = starts[booleans]
         ends = ends[booleans]
         left_index = left_index[booleans]
@@ -431,6 +462,15 @@ def _get_indices_ne_only(
         return {
             "left_index": empty_array,
             "right_index": empty_array,
+        }
+    if return_indices_for_aggfunc:
+        return {
+            "left_index": left_index,
+            "right_index": right.index._values,
+            "starts": starts,
+            "ends": ends,
+            "counts_array": outcome["counts_array"],
+            "matches": outcome["matches"],
         }
     return _helpers.build_indices_matches(
         left_index=left_index,
@@ -450,6 +490,7 @@ def _get_indices_le_or_ge_and_not_range_join(
     mapping: dict,
     keep: str,
     return_matching_indices: bool,
+    return_indices_for_aggfunc: bool,
 ) -> dict:
     """Get indices if </<=/>/>= but not range join"""
     empty_array = np.array([], dtype=np.intp)
@@ -473,7 +514,7 @@ def _get_indices_le_or_ge_and_not_range_join(
     outcome = _get_indexers(l_cols=l_cols, uniques=uniques, starts=starts, ends=ends)
     if outcome is None:
         return {"left_index": empty_array, "right_index": empty_array}
-    indexers, starts, ends = outcome
+    _, starts, ends = outcome
     (l1_col, r1_col, op), *rest = mapping["le_or_ge"]
     r_column = right[r1_col]._values
     r_column = _helpers._convert_array_to_numpy(array=r_column)
@@ -506,10 +547,16 @@ def _get_indices_le_or_ge_and_not_range_join(
     left_index = df.index._values
     if booleans.any():
         booleans = ~booleans
-        indexers = indexers[booleans]
         starts = starts[booleans]
         ends = ends[booleans]
         left_index = left_index[booleans]
+    if return_indices_for_aggfunc and not rest:
+        return {
+            "left_index": left_index,
+            "right_index": right.index._values,
+            "starts": starts,
+            "ends": ends,
+        }
     if not rest:
         right_index = right.index._values
         return _range_indices._build_indices(
@@ -534,6 +581,15 @@ def _get_indices_le_or_ge_and_not_range_join(
             "left_index": empty_array,
             "right_index": empty_array,
         }
+    if return_indices_for_aggfunc:
+        return {
+            "left_index": left_index,
+            "right_index": right.index._values,
+            "starts": starts,
+            "ends": ends,
+            "counts_array": outcome["counts_array"],
+            "matches": outcome["matches"],
+        }
     return _helpers.build_indices_matches(
         left_index=left_index,
         right_index=right.index._values,
@@ -551,6 +607,7 @@ def _get_indices_equi_join_only(
     right: pd.DataFrame,
     mapping: dict,
     return_matching_indices: bool,
+    return_indices_for_aggfunc: bool,
     keep: str,
 ) -> dict:
     """Get indices for an equi join only"""
@@ -563,9 +620,13 @@ def _get_indices_equi_join_only(
             positions=positions, starts=starts
         )
         right = right.iloc[reordered_positions]
-    indexers, starts, ends = _get_indexers(
-        l_cols=l_cols, uniques=uniques, starts=starts, ends=ends
-    )
+    outcome = _get_indexers(l_cols=l_cols, uniques=uniques, starts=starts, ends=ends)
+    if outcome is None:
+        return {
+            "left_index": np.array([], dtype=np.intp),
+            "right_index": np.array([], dtype=np.intp),
+        }
+    _, starts, ends = outcome
     booleans = (starts == -1) | (ends == -1) | (starts >= ends)
     if booleans.all():
         return {
@@ -575,11 +636,17 @@ def _get_indices_equi_join_only(
     left_index = df.index._values
     if booleans.any():
         booleans = ~booleans
-        indexers = indexers[booleans]
         starts = starts[booleans]
         ends = ends[booleans]
         left_index = left_index[booleans]
     right_index = right.index._values
+    if return_indices_for_aggfunc:
+        return {
+            "left_index": left_index,
+            "right_index": right_index,
+            "starts": starts,
+            "ends": ends,
+        }
     return _range_indices._build_indices(
         left_index=left_index,
         right_index=right_index,

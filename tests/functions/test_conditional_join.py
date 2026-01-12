@@ -1603,6 +1603,192 @@ def test_dual_conditions_gt_and_lt_dates(df, right):
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
+def test_dual_conditions_gt_and_ge_dates(df, right):
+    """Test output for multiple conditions."""
+
+    expected = (
+        df[["E"]]
+        .merge(right[["Dates", "Dates_Right"]], how="cross")
+        .query("E>Dates and E>=Dates_Right")
+        .sort_values(["E", "Dates", "Dates_Right"], ignore_index=True)
+    )
+
+    actual = (
+        df[["E"]]
+        .conditional_join(
+            right[["Dates", "Dates_Right"]],
+            ("E", "Dates", ">"),
+            ("E", "Dates_Right", ">="),
+            how="inner",
+        )
+        .sort_values(["E", "Dates", "Dates_Right"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_conditions_gt_and_ge_dates_first(df, right):
+    """Test output for multiple conditions."""
+
+    expected = (
+        df[["E"]]
+        .reset_index()
+        .merge(right[["Dates", "Dates_Right"]], how="cross")
+        .query("E>Dates and E>=Dates_Right")
+        .groupby("index", as_index=False)
+        .head(1)
+        .drop(columns="index")
+        .reset_index(drop=True)
+    )
+    expected = expected.sort_values(expected.columns.tolist(), ignore_index=True)
+
+    actual = (
+        df[["E"]]
+        .conditional_join(
+            right[["Dates", "Dates_Right"]],
+            ("E", "Dates", ">"),
+            ("E", "Dates_Right", ">="),
+            how="inner",
+            keep="first",
+        )
+        .sort_values(expected.columns.tolist(), ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual__dates_first(df, right):
+    """Test output for multiple conditions."""
+
+    expected = (
+        df[["E"]]
+        .reset_index()
+        .merge(right[["Dates", "Dates_Right"]], how="cross")
+        .query("E>Dates and E<=Dates_Right")
+        .groupby("index", as_index=False)
+        .head(1)
+        .drop(columns="index")
+        .reset_index(drop=True)
+    )
+    expected = expected.sort_values(expected.columns.tolist(), ignore_index=True)
+
+    actual = (
+        df[["E"]]
+        .conditional_join(
+            right[["Dates", "Dates_Right"]],
+            ("E", "Dates", ">"),
+            ("E", "Dates_Right", "<="),
+            how="inner",
+            keep="first",
+        )
+        .sort_values(expected.columns.tolist(), ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual__dates_last(df, right):
+    """Test output for multiple conditions."""
+
+    expected = (
+        df[["E"]]
+        .reset_index()
+        .merge(right[["Dates", "Dates_Right"]], how="cross")
+        .query("E>Dates and E<=Dates_Right")
+        .groupby("index", as_index=False)
+        .tail(1)
+        .drop(columns="index")
+        .reset_index(drop=True)
+    )
+    expected = expected.sort_values(expected.columns.tolist(), ignore_index=True)
+
+    actual = (
+        df[["E"]]
+        .conditional_join(
+            right[["Dates", "Dates_Right"]],
+            ("E", "Dates", ">"),
+            ("E", "Dates_Right", "<="),
+            how="inner",
+            keep="last",
+        )
+        .sort_values(expected.columns.tolist(), ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_conditions_gt_and_ge_dates_last(df, right):
+    """Test output for multiple conditions."""
+
+    expected = (
+        df[["E"]]
+        .reset_index()
+        .merge(right[["Dates", "Dates_Right"]], how="cross")
+        .query("E>Dates and E>=Dates_Right")
+        .groupby("index", as_index=False)
+        .tail(1)
+        .drop(columns="index")
+        .reset_index(drop=True)
+    )
+    expected = expected.sort_values(expected.columns.tolist(), ignore_index=True)
+
+    actual = (
+        df[["E"]]
+        .conditional_join(
+            right[["Dates", "Dates_Right"]],
+            ("E", "Dates", ">"),
+            ("E", "Dates_Right", ">="),
+            how="inner",
+            keep="last",
+        )
+        .sort_values(expected.columns.tolist(), ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_conditions_lt_and_le_dates(df, right):
+    """Test output for multiple conditions."""
+
+    expected = (
+        df[["E"]]
+        .merge(right[["Dates", "Dates_Right"]], how="cross")
+        .query("E<=Dates and E<Dates_Right")
+        .sort_values(["E", "Dates", "Dates_Right"], ignore_index=True)
+    )
+
+    actual = (
+        df[["E"]]
+        .conditional_join(
+            right[["Dates", "Dates_Right"]],
+            ("E", "Dates", "<="),
+            ("E", "Dates_Right", "<"),
+            how="inner",
+        )
+        .sort_values(["E", "Dates", "Dates_Right"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_gt_and_lt_dates_keep_first(df, right):
     """Test output for interval conditions."""
 
@@ -3726,115 +3912,6 @@ def test_ge_eq_and_le_datess_numba(df, right):
     assert_frame_equal(expected, actual)
 
 
-# @settings(deadline=None, max_examples=10)
-# @given(df=conditional_df(), right=conditional_right())
-# @pytest.mark.turtle
-# def test_ge_eq_and_le_datess_numba_indices(df, right):
-#     """compare join indices for multiple conditions."""
-
-#     expected = (
-#         df.reset_index()
-#         .dropna(subset=["E"])
-#         .merge(
-#             right.dropna(subset=["Dates"]),
-#             left_on="E",
-#             right_on="Dates",
-#             how="inner",
-#             sort=False,
-#         )
-#         .loc[
-#             lambda df: df.B.gt(df.Floats)
-#             & df.A.lt(df.Integers)
-#             & df.B.ne(df.Numeric),
-#             "index",
-#         ]
-#     )
-#     expected = pd.Index(expected)
-
-#     actual, _ = get_join_indices(
-#         df[["B", "A", "E"]],
-#         right[["Floats", "Integers", "Dates", "Numeric"]],
-#         [
-#             ("A", "Integers", "<"),
-#             ("E", "Dates", "=="),
-#             ("B", "Floats", ">"),
-#             ("B", "Numeric", "!="),
-#         ],
-#         use_numba=True,
-#     )
-#     actual = df.index[actual]
-#     assert_index_equal(expected, actual, check_names=False)
-
-
-# @settings(deadline=None, max_examples=10)
-# @given(df=conditional_df(), right=conditional_right())
-# @pytest.mark.turtle
-# def test_eq_indices(df, right):
-#     """compare join indices for single condition."""
-
-#     expected = (
-#         df.reset_index()
-#         .dropna(subset=["E"])
-#         .merge(
-#             right.dropna(subset=["Dates"]),
-#             left_on="E",
-#             right_on="Dates",
-#             how="inner",
-#             sort=False,
-#         )
-#         .loc[:, "index"]
-#     )
-#     expected = pd.Index(expected)
-
-#     actual, _ = get_join_indices(
-#         df,
-#         right,
-#         [
-#             ("E", "Dates", "=="),
-#         ],
-#     )
-#     actual = df.index[actual]
-#     assert_index_equal(expected, actual, check_names=False)
-
-
-# @settings(deadline=None, max_examples=10)
-# @given(df=conditional_df(), right=conditional_right())
-# @pytest.mark.turtle
-# def test_ge_eq_and_le_datess_indices(df, right):
-#     """compare join indices for multiple conditions."""
-#     expected = (
-#         df.dropna(subset="E")
-#         .reset_index()
-#         .merge(
-#             right.dropna(subset="Dates"),
-#             left_on="E",
-#             right_on="Dates",
-#             how="inner",
-#             sort=False,
-#         )
-#         .loc[
-#             lambda df: df.B.gt(df.Floats)
-#             & df.A.lt(df.Integers)
-#             & df.B.ne(df.Numeric),
-#             "index",
-#         ]
-#     )
-#     expected = pd.Index(expected)
-
-#     actual, _ = get_join_indices(
-#         df[["B", "A", "E"]],
-#         right[["Floats", "Integers", "Dates", "Numeric"]],
-#         [
-#             ("A", "Integers", "<"),
-#             ("E", "Dates", "=="),
-#             ("B", "Floats", ">"),
-#             ("B", "Numeric", "!="),
-#         ],
-#     )
-#     actual = df.index[actual]
-#     assert_index_equal(expected, actual, check_names=False)
-
-
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
@@ -4897,14 +4974,22 @@ def test_numba_equi_extension_array():
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_less_than_dates_agg(df, right):
     """Test output for a single condition. "<"."""
-    # sorting is done to ensure correctness for sum on floats
     right = right.sort_values("Dates", ignore_index=True)
     expected = (
         df.reset_index(names="l")
         .merge(right, how="cross")
         .query("E < Dates")
         .groupby("l")
-        .agg({"Numeric": ["size", "min", "max", "prod"]})
+        .agg(
+            {
+                "Numeric": [
+                    "size",
+                    "min",
+                    "max",
+                ],
+                "Integers": ["prod", "sum"],
+            }
+        )
     )
     expected.index.names = [None]
 
@@ -4915,7 +5000,8 @@ def test_single_condition_less_than_dates_agg(df, right):
             ("Numeric", "size"),
             ("Numeric", "min"),
             ("Numeric", "max"),
-            ("Numeric", "prod"),
+            ("Integers", "prod"),
+            ("Integers", "sum"),
         ],
     )
     assert_frame_equal(expected, actual)
@@ -4926,14 +5012,13 @@ def test_single_condition_less_than_dates_agg(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_single_condition_greater_than_dates_agg(df, right):
     """Test output for a single condition. ">"."""
-    # sorting is done to ensure correctness for sum on floats
     right = right.sort_values("Dates", ignore_index=True)
     expected = (
         df.reset_index(names="l")
         .merge(right, how="cross")
         .query("E > Dates")
         .groupby("l")
-        .agg({"Numeric": ["size", "min", "max", "prod"]})
+        .agg({"Numeric": ["size", "min", "max"], "Integers": ["prod", "sum"]})
     )
     expected.index.names = [None]
 
@@ -4944,7 +5029,8 @@ def test_single_condition_greater_than_dates_agg(df, right):
             ("Numeric", "size"),
             ("Numeric", "min"),
             ("Numeric", "max"),
-            ("Numeric", "prod"),
+            ("Integers", "prod"),
+            ("Integers", "sum"),
         ],
     )
     assert_frame_equal(expected, actual)
@@ -4953,50 +5039,590 @@ def test_single_condition_greater_than_dates_agg(df, right):
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
-def test_single_condition_gt_agg_sum_ints(df, right):
-    """Test output for a single condition. ">"."""
-    # sorting is done to ensure correctness for sum on floats
+def test_gt_ne_agg(df, right):
+    """Test output for agg."""
     right = right.sort_values("Dates", ignore_index=True)
     expected = (
         df.reset_index(names="l")
         .merge(right, how="cross")
-        .query("E > Dates")
+        .query("E > Dates and B != Numeric")
         .groupby("l")
-        .agg({"Integers": ["sum"]})
+        .agg({"Numeric": ["size", "min", "max"], "Integers": ["prod", "sum"]})
     )
     expected.index.names = [None]
 
     actual = df.join_agg(
         right,
         ("E", "Dates", ">"),
+        ("B", "Numeric", "!="),
         aggfunc=[
+            ("Numeric", "size"),
+            ("Numeric", "min"),
+            ("Numeric", "max"),
+            ("Integers", "prod"),
             ("Integers", "sum"),
         ],
     )
+    actual = actual.loc[expected.index]
     assert_frame_equal(expected, actual)
 
 
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
-def test_single_condition_le_agg_sum_ints(df, right):
-    """Test output for a single condition. "<="."""
-    # sorting is done to ensure correctness for sum on floats
+def test_lt_ne_agg(df, right):
+    """Test output for agg."""
     right = right.sort_values("Dates", ignore_index=True)
     expected = (
         df.reset_index(names="l")
         .merge(right, how="cross")
-        .query("E <= Dates")
+        .query("E < Dates and B != Numeric")
         .groupby("l")
-        .agg({"Integers": ["sum"]})
+        .agg({"Numeric": ["size", "min", "max"], "Integers": ["prod", "sum"]})
     )
     expected.index.names = [None]
 
     actual = df.join_agg(
         right,
-        ("E", "Dates", "<="),
+        ("E", "Dates", "<"),
+        ("B", "Numeric", "!="),
         aggfunc=[
+            ("Numeric", "size"),
+            ("Numeric", "min"),
+            ("Numeric", "max"),
+            ("Integers", "prod"),
             ("Integers", "sum"),
         ],
     )
+    actual = actual.loc[expected.index]
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_gt_agg(df, right):
+    """Test output for agg."""
+    right = right.sort_values("Dates", ignore_index=True)
+    expected = (
+        df.reset_index(names="l")
+        .merge(right, how="cross")
+        .query("E > Dates and B > Numeric")
+        .groupby("l")
+        .agg({"Numeric": ["size", "min", "max"], "Integers": ["prod", "sum"]})
+    )
+    expected.index.names = [None]
+    actual = df.join_agg(
+        right,
+        ("E", "Dates", ">"),
+        ("B", "Numeric", ">"),
+        aggfunc=[
+            ("Numeric", "size"),
+            ("Numeric", "min"),
+            ("Numeric", "max"),
+            ("Integers", "prod"),
+            ("Integers", "sum"),
+        ],
+    )
+    actual = actual.loc[expected.index]
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_lt_agg(df, right):
+    """Test output for agg."""
+    right = right.sort_values("Dates", ignore_index=True)
+    expected = (
+        df.reset_index(names="l")
+        .merge(right, how="cross")
+        .query("E < Dates and B <= Numeric")
+        .groupby("l")
+        .agg({"Numeric": ["size", "min", "max"], "Integers": ["prod", "sum"]})
+    )
+    expected.index.names = [None]
+    actual = df.join_agg(
+        right,
+        ("E", "Dates", "<"),
+        ("B", "Numeric", "<="),
+        aggfunc=[
+            ("Numeric", "size"),
+            ("Numeric", "min"),
+            ("Numeric", "max"),
+            ("Integers", "prod"),
+            ("Integers", "sum"),
+        ],
+    )
+    actual = actual.loc[expected.index]
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_multiple__ge__agg(df, right):
+    """Test output for agg."""
+    right = right.sort_values("Dates", ignore_index=True)
+    expected = (
+        df.reset_index(names="l")
+        .merge(right, how="cross")
+        .query("E > Dates and B > Numeric and A!=Integers")
+        .groupby("l")
+        .agg({"Numeric": ["size", "min", "max"], "Integers": ["prod", "sum"]})
+    )
+    expected.index.names = [None]
+    actual = df.join_agg(
+        right,
+        ("E", "Dates", ">"),
+        ("B", "Numeric", ">"),
+        ("A", "Integers", "!="),
+        aggfunc=[
+            ("Numeric", "size"),
+            ("Numeric", "min"),
+            ("Numeric", "max"),
+            ("Integers", "prod"),
+            ("Integers", "sum"),
+        ],
+    )
+    actual = actual.loc[expected.index]
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_multiple__le__agg(df, right):
+    """Test output for agg."""
+    right = right.sort_values("Dates", ignore_index=True)
+    expected = (
+        df.reset_index(names="l")
+        .merge(right, how="cross")
+        .query("E < Dates and B <= Numeric and A!=Integers")
+        .groupby("l")
+        .agg({"Numeric": ["size", "min", "max"], "Integers": ["prod", "sum"]})
+    )
+    expected.index.names = [None]
+    actual = df.join_agg(
+        right,
+        ("E", "Dates", "<"),
+        ("B", "Numeric", "<="),
+        ("A", "Integers", "!="),
+        aggfunc=[
+            ("Numeric", "size"),
+            ("Numeric", "min"),
+            ("Numeric", "max"),
+            ("Integers", "prod"),
+            ("Integers", "sum"),
+        ],
+    )
+    actual = actual.loc[expected.index]
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_multiple_range_aggs(df, right):
+    """Test output for agg."""
+    right = right.sort_values("Dates", ignore_index=True)
+    expected = (
+        df.reset_index(names="l")
+        .merge(right, how="cross")
+        .query("E > Dates and B < Numeric and A!=Integers")
+        .groupby("l")
+        .agg({"Numeric": ["size", "min", "max"], "Integers": ["prod", "sum"]})
+    )
+    expected.index.names = [None]
+    actual = df.join_agg(
+        right,
+        ("E", "Dates", ">"),
+        ("B", "Numeric", "<"),
+        ("A", "Integers", "!="),
+        aggfunc=[
+            ("Numeric", "size"),
+            ("Numeric", "min"),
+            ("Numeric", "max"),
+            ("Integers", "prod"),
+            ("Integers", "sum"),
+        ],
+    )
+    actual = actual.loc[expected.index]
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_multiple_range_ne_agg(df, right):
+    """Test output for agg."""
+    right = right.sort_values("Dates", ignore_index=True)
+    expected = (
+        df.reset_index(names="l")
+        .merge(right, how="cross")
+        .query("E > Dates and E <= Dates_Right and B < Numeric and A!=Integers")
+        .groupby("l")
+        .agg({"Numeric": ["size", "min", "max"], "Integers": ["prod", "sum"]})
+    )
+    expected.index.names = [None]
+    actual = df.join_agg(
+        right,
+        ("E", "Dates", ">"),
+        ("E", "Dates_Right", "<="),
+        ("B", "Numeric", "<"),
+        ("A", "Integers", "!="),
+        aggfunc=[
+            ("Numeric", "size"),
+            ("Numeric", "min"),
+            ("Numeric", "max"),
+            ("Integers", "prod"),
+            ("Integers", "sum"),
+        ],
+    )
+    actual = actual.loc[expected.index]
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_range_only_agg(df, right):
+    """Test output for agg."""
+    right = right.sort_values("Dates", ignore_index=True)
+    expected = (
+        df.reset_index(names="l")
+        .merge(right, how="cross")
+        .query("E > Dates and B < Numeric")
+        .groupby("l")
+        .agg({"Numeric": ["size", "min", "max"], "Integers": ["prod", "sum"]})
+    )
+    expected.index.names = [None]
+    actual = df.join_agg(
+        right,
+        ("E", "Dates", ">"),
+        ("B", "Numeric", "<"),
+        aggfunc=[
+            ("Numeric", "size"),
+            ("Numeric", "min"),
+            ("Numeric", "max"),
+            ("Integers", "prod"),
+            ("Integers", "sum"),
+        ],
+    )
+    actual = actual.loc[expected.index]
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_equi_agg(df, right):
+    """Test output for agg."""
+    right = right.sort_values("Dates", ignore_index=True)
+    expected = (
+        df.reset_index(names="l")
+        .merge(right, how="cross")
+        .query("E == Dates and A == Integers")
+        .groupby("l")
+        .agg({"Numeric": ["size", "min", "max"], "Integers": ["prod", "sum"]})
+    )
+    expected.index.names = [None]
+    actual = df.join_agg(
+        right,
+        ("E", "Dates", "=="),
+        ("A", "Integers", "=="),
+        aggfunc=[
+            ("Numeric", "size"),
+            ("Numeric", "min"),
+            ("Numeric", "max"),
+            ("Integers", "prod"),
+            ("Integers", "sum"),
+        ],
+    )
+    actual = actual.loc[expected.index]
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_equi_only_agg(df, right):
+    """Test output for agg."""
+    right = right.sort_values("Dates", ignore_index=True)
+    expected = (
+        df.reset_index(names="l")
+        .merge(right, how="cross")
+        .query("E == Dates")
+        .groupby("l")
+        .agg({"Numeric": ["size", "min", "max"], "Integers": ["prod", "sum"]})
+    )
+    expected.index.names = [None]
+    actual = df.join_agg(
+        right,
+        ("E", "Dates", "=="),
+        aggfunc=[
+            ("Numeric", "size"),
+            ("Numeric", "min"),
+            ("Numeric", "max"),
+            ("Integers", "prod"),
+            ("Integers", "sum"),
+        ],
+    )
+    actual = actual.loc[expected.index]
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_equi_ne_agg(df, right):
+    """Test output for agg."""
+    right = right.sort_values("Dates", ignore_index=True)
+    expected = (
+        df.reset_index(names="l")
+        .merge(right, how="cross")
+        .query("E == Dates and B!=Numeric")
+        .groupby("l")
+        .agg({"Numeric": ["size", "min", "max"], "Integers": ["prod", "sum"]})
+    )
+    expected.index.names = [None]
+    actual = df.join_agg(
+        right,
+        ("E", "Dates", "=="),
+        ("B", "Numeric", "!="),
+        aggfunc=[
+            ("Numeric", "size"),
+            ("Numeric", "min"),
+            ("Numeric", "max"),
+            ("Integers", "prod"),
+            ("Integers", "sum"),
+        ],
+    )
+    actual = actual.loc[expected.index]
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_equi_le_ne_agg(df, right):
+    """Test output for agg."""
+    right = right.sort_values("Dates", ignore_index=True)
+    expected = (
+        df.reset_index(names="l")
+        .merge(right, how="cross")
+        .query("E == Dates and B <= Numeric and A != Integers")
+        .groupby("l")
+        .agg({"Numeric": ["size", "min", "max"], "Integers": ["prod", "sum"]})
+    )
+    expected.index.names = [None]
+    actual = df.join_agg(
+        right,
+        ("E", "Dates", "=="),
+        ("B", "Numeric", "<="),
+        ("A", "Integers", "!="),
+        aggfunc=[
+            ("Numeric", "size"),
+            ("Numeric", "min"),
+            ("Numeric", "max"),
+            ("Integers", "prod"),
+            ("Integers", "sum"),
+        ],
+    )
+    actual = actual.loc[expected.index]
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_equi_ge_ne_agg(df, right):
+    """Test output for agg."""
+    right = right.sort_values("Dates", ignore_index=True)
+    expected = (
+        df.reset_index(names="l")
+        .merge(right, how="cross")
+        .query("E == Dates and B >= Numeric and A != Integers")
+        .groupby("l")
+        .agg({"Numeric": ["size", "min", "max"], "Integers": ["prod", "sum"]})
+    )
+    expected.index.names = [None]
+    actual = df.join_agg(
+        right,
+        ("E", "Dates", "=="),
+        ("B", "Numeric", ">="),
+        ("A", "Integers", "!="),
+        aggfunc=[
+            ("Numeric", "size"),
+            ("Numeric", "min"),
+            ("Numeric", "max"),
+            ("Integers", "prod"),
+            ("Integers", "sum"),
+        ],
+    )
+    actual = actual.loc[expected.index]
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_equi_le_ge_agg(df, right):
+    """Test output for agg."""
+    right = right.sort_values("Dates", ignore_index=True)
+    expected = (
+        df.reset_index(names="l")
+        .merge(right, how="cross")
+        .query("E == Dates and B <= Numeric and A >= Integers")
+        .groupby("l")
+        .agg({"Numeric": ["size", "min", "max"], "Integers": ["prod", "sum"]})
+    )
+    expected.index.names = [None]
+    actual = df.join_agg(
+        right,
+        ("E", "Dates", "=="),
+        ("B", "Numeric", "<="),
+        ("A", "Integers", ">="),
+        aggfunc=[
+            ("Numeric", "size"),
+            ("Numeric", "min"),
+            ("Numeric", "max"),
+            ("Integers", "prod"),
+            ("Integers", "sum"),
+        ],
+    )
+    actual = actual.loc[expected.index]
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_equi_le_ge_ne_agg(df, right):
+    """Test output for agg."""
+    right = right.sort_values("Dates", ignore_index=True)
+    expected = (
+        df.reset_index(names="l")
+        .merge(right, how="cross")
+        .query("E == Dates and B <= Numeric and A >= Integers and E!=Dates_Right")
+        .groupby("l")
+        .agg({"Numeric": ["size", "min", "max"], "Integers": ["prod", "sum"]})
+    )
+    expected.index.names = [None]
+    actual = df.join_agg(
+        right,
+        ("E", "Dates", "=="),
+        ("B", "Numeric", "<="),
+        ("A", "Integers", ">="),
+        ("E", "Dates_Right", "!="),
+        aggfunc=[
+            ("Numeric", "size"),
+            ("Numeric", "min"),
+            ("Numeric", "max"),
+            ("Integers", "prod"),
+            ("Integers", "sum"),
+        ],
+    )
+    actual = actual.loc[expected.index]
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_equi_ge_ge_ne_agg(df, right):
+    """Test output for agg."""
+    right = right.sort_values("Dates", ignore_index=True)
+    expected = (
+        df.reset_index(names="l")
+        .merge(right, how="cross")
+        .query("E == Dates and B > Numeric and A >= Integers and E!=Dates_Right")
+        .groupby("l")
+        .agg({"Numeric": ["size", "min", "max"], "Integers": ["prod", "sum"]})
+    )
+    expected.index.names = [None]
+    actual = df.join_agg(
+        right,
+        ("E", "Dates", "=="),
+        ("B", "Numeric", ">"),
+        ("A", "Integers", ">="),
+        ("E", "Dates_Right", "!="),
+        aggfunc=[
+            ("Numeric", "size"),
+            ("Numeric", "min"),
+            ("Numeric", "max"),
+            ("Integers", "prod"),
+            ("Integers", "sum"),
+        ],
+    )
+    actual = actual.loc[expected.index]
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_equi_le_le_ne_agg(df, right):
+    """Test output for agg."""
+    right = right.sort_values("Dates", ignore_index=True)
+    expected = (
+        df.reset_index(names="l")
+        .merge(right, how="cross")
+        .query("E == Dates and B < Numeric and A <= Integers and E!=Dates_Right")
+        .groupby("l")
+        .agg({"Numeric": ["size", "min", "max"], "Integers": ["prod", "sum"]})
+    )
+    expected.index.names = [None]
+    actual = df.join_agg(
+        right,
+        ("E", "Dates", "=="),
+        ("B", "Numeric", "<"),
+        ("A", "Integers", "<="),
+        ("E", "Dates_Right", "!="),
+        aggfunc=[
+            ("Numeric", "size"),
+            ("Numeric", "min"),
+            ("Numeric", "max"),
+            ("Integers", "prod"),
+            ("Integers", "sum"),
+        ],
+    )
+    actual = actual.loc[expected.index]
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_equi_le_ge_ge_ne_agg(df, right):
+    """Test output for agg."""
+    right = right.sort_values("Dates", ignore_index=True)
+    expected = (
+        df.reset_index(names="l")
+        .merge(right, how="cross")
+        .query(
+            "E == Dates and B <= Numeric "
+            "and B > Floats and A >= Integers "
+            "and E!=Dates_Right"
+        )
+        .groupby("l")
+        .agg({"Numeric": ["size", "min", "max"], "Integers": ["prod", "sum"]})
+    )
+    expected.index.names = [None]
+    actual = df.join_agg(
+        right,
+        ("E", "Dates", "=="),
+        ("B", "Numeric", "<="),
+        ("B", "Floats", ">"),
+        ("A", "Integers", ">="),
+        ("E", "Dates_Right", "!="),
+        aggfunc=[
+            ("Numeric", "size"),
+            ("Numeric", "min"),
+            ("Numeric", "max"),
+            ("Integers", "prod"),
+            ("Integers", "sum"),
+        ],
+    )
+    actual = actual.loc[expected.index]
     assert_frame_equal(expected, actual)

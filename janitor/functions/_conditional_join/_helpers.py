@@ -1184,12 +1184,12 @@ def _get_boolean_args_for_ne(
 def _build_indices_positions(
     left_index: np.ndarray,
     right_index: np.ndarray,
-    starts: np.ndarray,
-    ends: np.ndarray,
     positions: np.ndarray,
     counts_array: np.ndarray,
     total: int,
     keep: str,
+    starts: np.ndarray | None = None,
+    ends: np.ndarray | None = None,
 ):
     """
     Build indices for multiple joins
@@ -1243,7 +1243,6 @@ def build_indices_matches(
     """
     Build indices for multiple joins, where `matches` exist
     """
-    # return starts, ends, counts_array, matches, total, left_index
     if (keep == "all") and (starts is not None) and (ends is None):
         left = janitor_rs.repeat_index(
             index=left_index,
@@ -1336,203 +1335,3 @@ def build_indices_matches(
             counts=counts_array,
         )
     return {"left_index": left, "right_index": right}
-
-
-def _sum_starts(
-    arr: np.ndarray,
-    starts: np.ndarray,
-    booleans: np.ndarray,
-) -> tuple:
-    """
-    Compute sum
-    """
-    mapping = {
-        "int64": janitor_rs.compute_sum_start_int64,
-        "int32": janitor_rs.compute_sum_start_int32,
-        "int16": janitor_rs.compute_sum_start_int16,
-        "int8": janitor_rs.compute_sum_start_int8,
-        "uint64": janitor_rs.compute_sum_start_uint64,
-        "uint32": janitor_rs.compute_sum_start_uint32,
-        "uint16": janitor_rs.compute_sum_start_uint16,
-        "uint8": janitor_rs.compute_sum_start_uint8,
-        "float64": janitor_rs.compute_sum_start_f64,
-        "float32": janitor_rs.compute_sum_start_f32,
-    }
-    dtype_name = arr.dtype.name
-    func = mapping[dtype_name]
-    return func(arr=arr, starts=starts, booleans=booleans)
-
-
-def _sum_ends(
-    arr: np.ndarray,
-    ends: np.ndarray,
-    booleans: np.ndarray,
-) -> tuple:
-    """
-    Compute sum
-    """
-    mapping = {
-        "int64": janitor_rs.compute_sum_end_int64,
-        "int32": janitor_rs.compute_sum_end_int32,
-        "int16": janitor_rs.compute_sum_end_int16,
-        "int8": janitor_rs.compute_sum_end_int8,
-        "uint64": janitor_rs.compute_sum_end_uint64,
-        "uint32": janitor_rs.compute_sum_end_uint32,
-        "uint16": janitor_rs.compute_sum_end_uint16,
-        "uint8": janitor_rs.compute_sum_end_uint8,
-        "float64": janitor_rs.compute_sum_end_f64,
-        "float32": janitor_rs.compute_sum_end_f32,
-    }
-    dtype_name = arr.dtype.name
-    func = mapping[dtype_name]
-    return func(arr=arr, ends=ends, booleans=booleans)
-
-
-def _min_starts(
-    arr: np.ndarray,
-    starts: np.ndarray,
-    booleans: np.ndarray,
-) -> tuple:
-    """
-    Compute min
-    """
-    mapping = {
-        "int64": janitor_rs.compute_min_start_int64,
-        "int32": janitor_rs.compute_min_start_int32,
-        "int16": janitor_rs.compute_min_start_int16,
-        "int8": janitor_rs.compute_min_start_int8,
-        "uint64": janitor_rs.compute_min_start_uint64,
-        "uint32": janitor_rs.compute_min_start_uint32,
-        "uint16": janitor_rs.compute_min_start_uint16,
-        "uint8": janitor_rs.compute_min_start_uint8,
-        "float64": janitor_rs.compute_min_start_f64,
-        "float32": janitor_rs.compute_min_start_f32,
-    }
-    dtype_name = arr.dtype.name
-    func = mapping[dtype_name]
-    return func(arr=arr, starts=starts, booleans=booleans)
-
-
-def _min_ends(
-    arr: np.ndarray,
-    ends: np.ndarray,
-    booleans: np.ndarray,
-) -> tuple:
-    """
-    Compute min
-    """
-    mapping = {
-        "int64": janitor_rs.compute_min_end_int64,
-        "int32": janitor_rs.compute_min_end_int32,
-        "int16": janitor_rs.compute_min_end_int16,
-        "int8": janitor_rs.compute_min_end_int8,
-        "uint64": janitor_rs.compute_min_end_uint64,
-        "uint32": janitor_rs.compute_min_end_uint32,
-        "uint16": janitor_rs.compute_min_end_uint16,
-        "uint8": janitor_rs.compute_min_end_uint8,
-        "float64": janitor_rs.compute_min_end_f64,
-        "float32": janitor_rs.compute_min_end_f32,
-    }
-    dtype_name = arr.dtype.name
-    func = mapping[dtype_name]
-    return func(arr=arr, ends=ends, booleans=booleans)
-
-
-def _max_starts(
-    arr: np.ndarray,
-    starts: np.ndarray,
-    booleans: np.ndarray,
-) -> tuple:
-    """
-    Compute max
-    """
-    mapping = {
-        "int64": janitor_rs.compute_max_start_int64,
-        "int32": janitor_rs.compute_max_start_int32,
-        "int16": janitor_rs.compute_max_start_int16,
-        "int8": janitor_rs.compute_max_start_int8,
-        "uint64": janitor_rs.compute_max_start_uint64,
-        "uint32": janitor_rs.compute_max_start_uint32,
-        "uint16": janitor_rs.compute_max_start_uint16,
-        "uint8": janitor_rs.compute_max_start_uint8,
-        "float64": janitor_rs.compute_max_start_f64,
-        "float32": janitor_rs.compute_max_start_f32,
-    }
-    dtype_name = arr.dtype.name
-    func = mapping[dtype_name]
-    return func(arr=arr, starts=starts, booleans=booleans)
-
-
-def _max_ends(
-    arr: np.ndarray,
-    ends: np.ndarray,
-    booleans: np.ndarray,
-) -> tuple:
-    """
-    Compute max
-    """
-    mapping = {
-        "int64": janitor_rs.compute_max_end_int64,
-        "int32": janitor_rs.compute_max_end_int32,
-        "int16": janitor_rs.compute_max_end_int16,
-        "int8": janitor_rs.compute_max_end_int8,
-        "uint64": janitor_rs.compute_max_end_uint64,
-        "uint32": janitor_rs.compute_max_end_uint32,
-        "uint16": janitor_rs.compute_max_end_uint16,
-        "uint8": janitor_rs.compute_max_end_uint8,
-        "float64": janitor_rs.compute_max_end_f64,
-        "float32": janitor_rs.compute_max_end_f32,
-    }
-    dtype_name = arr.dtype.name
-    func = mapping[dtype_name]
-    return func(arr=arr, ends=ends, booleans=booleans)
-
-
-def _prod_starts(
-    arr: np.ndarray,
-    starts: np.ndarray,
-    booleans: np.ndarray,
-) -> tuple:
-    """
-    Compute prod
-    """
-    mapping = {
-        "int64": janitor_rs.compute_prod_start_int64,
-        "int32": janitor_rs.compute_prod_start_int32,
-        "int16": janitor_rs.compute_prod_start_int16,
-        "int8": janitor_rs.compute_prod_start_int8,
-        "uint64": janitor_rs.compute_prod_start_uint64,
-        "uint32": janitor_rs.compute_prod_start_uint32,
-        "uint16": janitor_rs.compute_prod_start_uint16,
-        "uint8": janitor_rs.compute_prod_start_uint8,
-        "float64": janitor_rs.compute_prod_start_f64,
-        "float32": janitor_rs.compute_prod_start_f32,
-    }
-    dtype_name = arr.dtype.name
-    func = mapping[dtype_name]
-    return func(arr=arr, starts=starts, booleans=booleans)
-
-
-def _prod_ends(
-    arr: np.ndarray,
-    ends: np.ndarray,
-    booleans: np.ndarray,
-) -> tuple:
-    """
-    Compute prod
-    """
-    mapping = {
-        "int64": janitor_rs.compute_prod_end_int64,
-        "int32": janitor_rs.compute_prod_end_int32,
-        "int16": janitor_rs.compute_prod_end_int16,
-        "int8": janitor_rs.compute_prod_end_int8,
-        "uint64": janitor_rs.compute_prod_end_uint64,
-        "uint32": janitor_rs.compute_prod_end_uint32,
-        "uint16": janitor_rs.compute_prod_end_uint16,
-        "uint8": janitor_rs.compute_prod_end_uint8,
-        "float64": janitor_rs.compute_prod_end_f64,
-        "float32": janitor_rs.compute_prod_end_f32,
-    }
-    dtype_name = arr.dtype.name
-    func = mapping[dtype_name]
-    return func(arr=arr, ends=ends, booleans=booleans)

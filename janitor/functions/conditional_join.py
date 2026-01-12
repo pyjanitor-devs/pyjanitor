@@ -24,6 +24,7 @@ from janitor.functions.utils import (
 from janitor.utils import check, check_column, deprecated_kwargs
 
 from ._conditional_join import (
+    _get_aggs_multiple_join,
     _get_aggs_single_join,
     _get_indices_equi,
     _get_indices_non_equi,
@@ -569,7 +570,16 @@ def _conditional_join_compute(
             le_lt_check = True
     df.index = range(len(df))
     right.index = range(len(right))
-    if eq_check:
+    if eq_check and aggfunc:
+        return _get_aggs_multiple_join._agg_join(
+            df=df,
+            right=right,
+            conditions=conditions,
+            aggfunc=aggfunc,
+            eq_check=eq_check,
+            force=force,
+        )
+    elif eq_check:
         result = _multiple_conditional_join_eq(
             df=df,
             right=right,
@@ -578,6 +588,15 @@ def _conditional_join_compute(
             use_numba=use_numba,
             force=force,
             return_matching_indices=return_matching_indices,
+        )
+    elif (len(conditions) > 1) and le_lt_check and aggfunc:
+        return _get_aggs_multiple_join._agg_join(
+            df=df,
+            right=right,
+            conditions=conditions,
+            aggfunc=aggfunc,
+            eq_check=False,
+            force=False,
         )
     elif (len(conditions) > 1) & le_lt_check:
         result = _multiple_conditional_join_le_lt(
@@ -596,7 +615,7 @@ def _conditional_join_compute(
             keep=keep,
         )
     elif (len(conditions) == 1) and aggfunc:
-        result = _get_aggs_single_join._single_join(
+        result = _get_aggs_single_join._agg_join(
             df=df, right=right, condition=conditions[0], aggfunc=aggfunc
         )
         return result

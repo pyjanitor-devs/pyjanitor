@@ -77,7 +77,6 @@ def _build_indices(
     ends: np.ndarray,
     keep: str,
     right_is_sorted: bool,
-    return_matching_indices: bool,
 ):
     """
     Build indices for a dual range join
@@ -101,13 +100,6 @@ def _build_indices(
         right = [right_index[start:end] for start, end in zip(starts, ends)]
         right = [arr.max() for arr in right]
         return {"left_index": left_index, "right_index": right}
-    if return_matching_indices:
-        return dict(
-            left_index=left_index,
-            right_index=right_index,
-            starts=starts,
-            ends=ends,
-        )
     right = [right_index[start:end] for start, end in zip(starts, ends)]
     right = np.concatenate(right)
     left = janitor_rs.repeat_index(

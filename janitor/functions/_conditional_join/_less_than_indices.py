@@ -75,7 +75,6 @@ def _less_than_indices(
     right: pd.Series,
     strict: bool,
     keep: str,
-    return_matching_indices: bool,
 ) -> dict | None:
     """
     Use binary search to get indices where left
@@ -134,13 +133,6 @@ def _less_than_indices(
         right = [right_index[ind:len_right] for ind in search_indices]
         right = [arr.max() for arr in right]
         return {"left_index": left_index, "right_index": right}
-    if return_matching_indices:
-        return dict(
-            left_index=left_index,
-            right_index=right_index,
-            starts=search_indices,
-            ends=np.repeat(len_right, search_indices.size),
-        )
     right = [right_index[ind:len_right] for ind in search_indices]
     right = np.concatenate(right)
     counts = len_right - search_indices

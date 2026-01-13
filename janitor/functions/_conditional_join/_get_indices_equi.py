@@ -16,7 +16,6 @@ def _get_indices(
     right: pd.DataFrame,
     conditions: list,
     keep: str,
-    return_matching_indices: bool,
 ) -> tuple:
     """
     Get indices, or aggregates, for multiple conditions,
@@ -139,7 +138,6 @@ def _get_indices(
                 right=right,
                 mapping=mapping,
                 keep=keep,
-                return_matching_indices=return_matching_indices,
             )
         if mapping["not_equals"] and not mapping["le_or_ge"]:
             return _get_indices_ne_only(df=df, right=right, mapping=mapping, keep=keep)
@@ -149,13 +147,11 @@ def _get_indices(
                 right=right,
                 mapping=mapping,
                 keep=keep,
-                return_matching_indices=return_matching_indices,
             )
         return _get_indices_equi_join_only(
             df=df,
             right=right,
             mapping=mapping,
-            return_matching_indices=return_matching_indices,
             keep=keep,
         )
 
@@ -275,7 +271,6 @@ def _get_indices_range_join(
     right: pd.DataFrame,
     mapping: dict,
     keep: str,
-    return_matching_indices: bool,
 ) -> dict:
     """Get indices if '>/>=' and '</<=' present"""
     empty_array = np.array([], dtype=np.intp)
@@ -360,7 +355,6 @@ def _get_indices_range_join(
             ends=ends,
             keep=keep,
             right_is_sorted=check and is_sorted,
-            return_matching_indices=return_matching_indices,
         )
     outcome = _helpers._get_positive_matches_conditions(
         df=df,
@@ -448,7 +442,6 @@ def _get_indices_le_or_ge_and_not_range_join(
     right: pd.DataFrame,
     mapping: dict,
     keep: str,
-    return_matching_indices: bool,
 ) -> dict:
     """Get indices if </<=/>/>= but not range join"""
     empty_array = np.array([], dtype=np.intp)
@@ -517,7 +510,6 @@ def _get_indices_le_or_ge_and_not_range_join(
             ends=ends,
             keep=keep,
             right_is_sorted=check and is_sorted,
-            return_matching_indices=return_matching_indices,
         )
     outcome = _helpers._get_positive_matches_conditions(
         df=df,
@@ -548,7 +540,6 @@ def _get_indices_equi_join_only(
     df: pd.DataFrame,
     right: pd.DataFrame,
     mapping: dict,
-    return_matching_indices: bool,
     keep: str,
 ) -> dict:
     """Get indices for an equi join only"""
@@ -590,5 +581,4 @@ def _get_indices_equi_join_only(
         ends=ends,
         keep=keep,
         right_is_sorted=check,
-        return_matching_indices=return_matching_indices,
     )

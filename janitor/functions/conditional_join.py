@@ -525,7 +525,6 @@ def _conditional_join_compute(
             keep=keep,
             use_numba=use_numba,
             force=force,
-            return_matching_indices=return_matching_indices,
         )
     elif (len(conditions) > 1) & le_lt_check:
         result = _multiple_conditional_join_le_lt(
@@ -534,7 +533,6 @@ def _conditional_join_compute(
             conditions=conditions,
             keep=keep,
             use_numba=use_numba,
-            return_matching_indices=return_matching_indices,
         )
     elif len(conditions) > 1:
         result = _multiple_conditional_join_ne(
@@ -549,7 +547,6 @@ def _conditional_join_compute(
             right=right,
             condition=conditions[0],
             keep=keep,
-            return_matching_indices=return_matching_indices,
         )
     if return_matching_indices:
         return result
@@ -660,7 +657,6 @@ def _multiple_conditional_join_eq(
     keep: str,
     use_numba: bool,
     force: bool,
-    return_matching_indices: bool,
 ) -> tuple:
     """
     Get indices for multiple conditions,
@@ -676,7 +672,6 @@ def _multiple_conditional_join_eq(
             conditions=conditions,
             keep=keep,
             use_numba=use_numba,
-            return_matching_indices=return_matching_indices,
         )
     # deprecated - no longer maintained
     if use_numba:
@@ -792,7 +787,6 @@ def _multiple_conditional_join_eq(
         right=right,
         conditions=conditions,
         keep=keep,
-        return_matching_indices=return_matching_indices,
     )
 
 
@@ -802,7 +796,6 @@ def _multiple_conditional_join_le_lt(
     conditions: list,
     keep: str,
     use_numba: bool,
-    return_matching_indices: bool,
 ) -> tuple:
     """
     Get indices for multiple conditions,
@@ -864,7 +857,6 @@ def _multiple_conditional_join_le_lt(
         right=right,
         conditions=conditions,
         keep=keep,
-        return_matching_indices=return_matching_indices,
     )
 
 

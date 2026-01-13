@@ -68,7 +68,6 @@ def _greater_than_indices(
     right: pd.Series,
     strict: bool,
     keep: str,
-    return_matching_indices: bool,
 ) -> dict | None:
     """
     Use binary search to get indices where left
@@ -125,13 +124,6 @@ def _greater_than_indices(
         right = [right_index[:ind] for ind in search_indices]
         right = [arr.max() for arr in right]
         return {"left_index": left_index, "right_index": right}
-    if return_matching_indices:
-        return dict(
-            left_index=left_index,
-            right_index=right_index,
-            starts=np.repeat(0, search_indices.size),
-            ends=search_indices,
-        )
     right = [right_index[:ind] for ind in search_indices]
     right = np.concatenate(right)
     left = janitor_rs.repeat_index(

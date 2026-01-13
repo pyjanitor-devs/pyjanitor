@@ -56,9 +56,11 @@ tomli==2.0.1
     # via
     #   black
     #   pep517
-typing-extensions==4.10.0
-    # via black
-virtualenv==20.26.6
+typing-extensions==4.15.0
+    # via
+    #   black
+    #   virtualenv
+virtualenv==20.36.1
     # via pre-commit
 wheel==0.38.1
     # via pip-tools

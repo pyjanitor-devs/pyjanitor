@@ -51,6 +51,7 @@ def conditional_join(
     use_numba: bool = False,
     indicator: Optional[bool | str] = False,
     force: bool = False,
+    include_join_positions: bool = False,
 ) -> pd.DataFrame:
     """The conditional_join function operates similarly to `pd.merge`,
     but supports joins on inequality operators,
@@ -109,6 +110,10 @@ def conditional_join(
     If the columns from `df` and `right` have nothing in common,
     a single index column is returned; else, a MultiIndex column
     is returned.
+
+    If `include_join_positions` is `True`, the index of the returned dataframe 
+    will be a MultiIndex; the first level points to the original positions in `df`, 
+    while the second level points to the original positions in `right`.
 
 
 
@@ -254,6 +259,8 @@ def conditional_join(
             - `col` class deprecated.
         - 0.33.0
             - `use_numba` deprecated.
+        - 0.34.0
+            - Added `include_join_positions` parameter.
 
     Args:
         df: A pandas DataFrame.
@@ -286,6 +293,8 @@ def conditional_join(
             only appears in the right DataFrame, and `both` if the observation’s
             merge key is found in both DataFrames.
         force: If `True`, force the non-equi join conditions to execute before the equi join.
+        include_join_positions: Determines if the join positions of the left and right DataFrame 
+            should be included as an index of the final dataframe.
 
 
 
@@ -305,6 +314,7 @@ def conditional_join(
         indicator=indicator,
         force=force,
         aggfunc=None,
+        include_join_positions=include_join_positions
     )
 
 
@@ -335,6 +345,7 @@ def _conditional_join_preliminary_checks(
     force: bool,
     return_matching_indices: bool = False,
     aggfunc: list[tuple] = None,
+    include_join_positions:bool=False
 ) -> tuple:
     """
     Preliminary checks for conditional_join are conducted here.
@@ -454,6 +465,10 @@ def _conditional_join_preliminary_checks(
                 "if indices are to be returned, "
                 "and use_numba is False."
             )
+        
+    check("include_join_positions", include_join_positions, [bool])
+    if include_join_positions and (how != 'inner'):
+        raise ValueError("include_join_positions is valid only if `how='inner'`")
 
     return (
         df,
@@ -467,6 +482,7 @@ def _conditional_join_preliminary_checks(
         indicator,
         force,
         aggfunc,
+        include_join_positions
     )
 
 
@@ -519,6 +535,7 @@ def _conditional_join_compute(
     force: bool,
     return_matching_indices: bool = False,
     aggfunc: list[tuple] = None,
+    include_join_positions:bool = False
 ) -> pd.DataFrame:
     """
     This is where the actual computation
@@ -536,6 +553,7 @@ def _conditional_join_compute(
         indicator,
         force,
         aggfunc,
+        include_join_positions
     ) = _conditional_join_preliminary_checks(
         df=df,
         right=right,
@@ -549,6 +567,7 @@ def _conditional_join_compute(
         force=force,
         return_matching_indices=return_matching_indices,
         aggfunc=aggfunc,
+        include_join_positions=include_join_positions
     )
     eq_check = False
     le_lt_check = False
@@ -634,6 +653,7 @@ def _conditional_join_compute(
         df_columns=df_columns,
         right_columns=right_columns,
         indicator=indicator,
+        include_join_positions=include_join_positions
     )
 
 
@@ -968,6 +988,7 @@ def _create_frame(
     df_columns: Any,
     right_columns: Any,
     indicator: bool | str,
+    include_join_positions:bool
 ) -> pd.DataFrame:
     """
     Create final dataframe
@@ -1038,6 +1059,7 @@ def _create_frame(
         left_index: np.ndarray,
         right_index: np.ndarray,
         indicator: bool | str,
+        include_join_positions:bool=False
     ) -> pd.DataFrame:
         """Computes an inner joined DataFrame.
 
@@ -1047,7 +1069,9 @@ def _create_frame(
             left_index: indices from df for rows that match right.
             right_index: indices from right for rows that match df.
             indicator: Indicator column name or True for default name "_merge".
-
+            include_join_positions: Determines if the join positions of the left 
+                and right DataFrame should be included as an index 
+                of the final dataframe.
         Returns:
             An inner joined DataFrame.
         """
@@ -1064,6 +1088,9 @@ def _create_frame(
                 columns=df.columns.union(right.columns),
             )
             dictionary[indicator] = arr
+        if include_join_positions:
+            index = pd.MultiIndex.from_arrays([left_index, right_index])
+            return pd.DataFrame(dictionary, copy=False, index=index)
         return pd.DataFrame(dictionary, copy=False)
 
     if how == "inner":
@@ -1073,6 +1100,7 @@ def _create_frame(
             left_index=left_index,
             right_index=right_index,
             indicator=indicator,
+            include_join_positions=include_join_positions
         )
     if how == "left":
         indexer = pd.unique(left_index)
@@ -1300,6 +1328,7 @@ def get_join_indices(
         force=force,
         return_matching_indices=True,
         aggfunc=None,
+        include_join_positions=False
     )
 
 

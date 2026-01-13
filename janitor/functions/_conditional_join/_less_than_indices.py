@@ -76,7 +76,6 @@ def _less_than_indices(
     strict: bool,
     keep: str,
     return_matching_indices: bool,
-    return_indices_for_aggfunc: bool = False,
 ) -> dict | None:
     """
     Use binary search to get indices where left
@@ -116,12 +115,6 @@ def _less_than_indices(
     left_index, search_indices = outcome
     len_right = right.size
     right_index = right.index._values
-    if return_indices_for_aggfunc:
-        return {
-            "left_index": left_index,
-            "right_index": right_index,
-            "starts": search_indices,
-        }
     if right_is_sorted & (keep == "last"):
         indexer = np.empty_like(search_indices)
         indexer[:] = len_right - 1
@@ -146,7 +139,7 @@ def _less_than_indices(
             left_index=left_index,
             right_index=right_index,
             starts=search_indices,
-            ends=np.repeat(len_right, search_indices.size),
+            ends=len_right,
         )
     right = [right_index[ind:len_right] for ind in search_indices]
     right = np.concatenate(right)

@@ -314,7 +314,8 @@ def conditional_join(
         indicator=indicator,
         force=force,
         aggfunc=None,
-        include_join_positions=include_join_positions
+        include_join_positions=include_join_positions,
+        return_building_blocks=False
     )
 
 
@@ -345,7 +346,8 @@ def _conditional_join_preliminary_checks(
     force: bool,
     return_matching_indices: bool = False,
     aggfunc: list[tuple] = None,
-    include_join_positions:bool=False
+    include_join_positions:bool=False,
+    return_building_blocks:bool=False
 ) -> tuple:
     """
     Preliminary checks for conditional_join are conducted here.
@@ -469,7 +471,7 @@ def _conditional_join_preliminary_checks(
     check("include_join_positions", include_join_positions, [bool])
     if include_join_positions and (how != 'inner'):
         raise ValueError("include_join_positions is valid only if `how='inner'`")
-
+    check("return_building_blocks",return_building_blocks,[bool])
     return (
         df,
         right,
@@ -482,7 +484,8 @@ def _conditional_join_preliminary_checks(
         indicator,
         force,
         aggfunc,
-        include_join_positions
+        include_join_positions,
+        return_building_blocks
     )
 
 
@@ -535,7 +538,8 @@ def _conditional_join_compute(
     force: bool,
     return_matching_indices: bool = False,
     aggfunc: list[tuple] = None,
-    include_join_positions:bool = False
+    include_join_positions:bool = False,
+    return_building_blocks:bool = False
 ) -> pd.DataFrame:
     """
     This is where the actual computation
@@ -553,7 +557,8 @@ def _conditional_join_compute(
         indicator,
         force,
         aggfunc,
-        include_join_positions
+        include_join_positions,
+        return_building_blocks
     ) = _conditional_join_preliminary_checks(
         df=df,
         right=right,
@@ -567,7 +572,8 @@ def _conditional_join_compute(
         force=force,
         return_matching_indices=return_matching_indices,
         aggfunc=aggfunc,
-        include_join_positions=include_join_positions
+        include_join_positions=include_join_positions,
+        return_building_blocks=return_building_blocks
     )
     eq_check = False
     le_lt_check = False
@@ -602,7 +608,7 @@ def _conditional_join_compute(
             keep=keep,
             use_numba=use_numba,
             force=force,
-            return_matching_indices=return_matching_indices,
+            return_matching_indices=return_building_blocks,
         )
     elif (len(conditions) > 1) and le_lt_check and aggfunc:
         return _get_aggs_multiple_join._agg_join(
@@ -620,7 +626,7 @@ def _conditional_join_compute(
             conditions=conditions,
             keep=keep,
             use_numba=use_numba,
-            return_matching_indices=return_matching_indices,
+            return_matching_indices=return_building_blocks,
         )
     elif len(conditions) > 1:
         result = _multiple_conditional_join_ne(
@@ -640,7 +646,7 @@ def _conditional_join_compute(
             right=right,
             condition=conditions[0],
             keep=keep,
-            return_matching_indices=return_matching_indices,
+            return_matching_indices=return_building_blocks,
         )
     if return_matching_indices:
         return result
@@ -1277,9 +1283,10 @@ def get_join_indices(
     df: pd.DataFrame,
     right: pd.DataFrame | pd.Series,
     *conditions: tuple,
-    keep: Literal["first", "last", "all"],
-    use_numba: bool,
-    force: bool,
+    keep: Literal["first", "last", "all"]='all',
+    use_numba: bool=False,
+    force: bool=False,
+    return_building_blocks:bool=False
 ) -> dict:
     """Convenience function to return the matching indices from an inner join.
 
@@ -1294,6 +1301,8 @@ def get_join_indices(
             - return indices as a dictionary.
         - 0.33.0
             - `use_numba` deprecated.
+        - 0.34.0
+            - Added experimental `return_building_blocks` parameter.
 
     Args:
         df: A pandas DataFrame.
@@ -1311,6 +1320,9 @@ def get_join_indices(
         keep: Choose whether to return the first match, last match or all matches.
         force: If `True`, force the non-equi join conditions
             to execute before the equi join.
+        return_building_blocks: Return a possibly more extensive dictionary,
+            containing data that will be used to build the indices.
+            !!! warning "This feature is experimental and may change without warning."
 
     Returns:
         A dictionary of indices for the rows in the dataframes that match.
@@ -1328,7 +1340,8 @@ def get_join_indices(
         force=force,
         return_matching_indices=True,
         aggfunc=None,
-        include_join_positions=False
+        include_join_positions=False,
+        return_building_blocks=return_building_blocks
     )
 
 

@@ -69,7 +69,6 @@ def _greater_than_indices(
     strict: bool,
     keep: str,
     return_matching_indices: bool,
-    return_indices_for_aggfunc: bool = False,
 ) -> dict | None:
     """
     Use binary search to get indices where left
@@ -108,12 +107,6 @@ def _greater_than_indices(
         }
     left_index, search_indices = outcome
     right_index = right.index._values
-    if return_indices_for_aggfunc:
-        return {
-            "left_index": left_index,
-            "right_index": right_index,
-            "ends": search_indices,
-        }
     if right_is_sorted & (keep == "first"):
         indexer = np.zeros_like(search_indices)
         return {"left_index": left_index, "right_index": right_index[indexer]}
@@ -136,7 +129,7 @@ def _greater_than_indices(
         return dict(
             left_index=left_index,
             right_index=right_index,
-            starts=np.repeat(0, search_indices.size),
+            starts=0,
             ends=search_indices,
         )
     right = [right_index[:ind] for ind in search_indices]

@@ -5861,13 +5861,15 @@ def test_join_positions():
             "value_2B": [1, 5, 9, 15, 1, 4, 6, 3],
         }
     )
-    actual = df1.conditional_join(
-        df2,
-        ("value_1", "value_2A", ">"),
-        ("value_1", "value_2B", "<"),
-        ("id", "id", "=="),
-        include_join_positions=True,
-        right_columns="value*",
+    actual = (
+        df1.conditional_join(
+            df2,
+            ("value_1", "value_2A", ">"),
+            ("value_1", "value_2B", "<"),
+            ('id','id','=='),
+            include_join_positions=True,
+            right_columns='value*'
+        )
     )
     expected = (
         df1.reset_index(names=["l"])

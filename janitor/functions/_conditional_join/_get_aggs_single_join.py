@@ -42,8 +42,7 @@ def _agg_join(
             right=right[right_on],
             strict=op == "<",
             keep="all",
-            return_indices_for_aggfunc=True,
-            return_matching_indices=False,
+            return_matching_indices=True,
         )
         if not indices["left_index"].size:
             dtypes = right.dtypes
@@ -97,8 +96,7 @@ def _agg_join(
         right=right[right_on],
         strict=op == ">",
         keep="all",
-        return_indices_for_aggfunc=True,
-        return_matching_indices=False,
+        return_matching_indices=True,
     )
     if not indices["left_index"].size:
         dtypes = right.dtypes

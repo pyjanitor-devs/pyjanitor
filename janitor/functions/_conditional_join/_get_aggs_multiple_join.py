@@ -53,8 +53,7 @@ def _agg_join(
             right=right,
             conditions=conditions,
             keep="all",
-            return_indices_for_aggfunc=True,
-            return_matching_indices=False,
+            return_matching_indices=True,
         )
     else:
         indices = _get_indices_non_equi._get_indices(
@@ -62,8 +61,7 @@ def _agg_join(
             right=right,
             conditions=conditions,
             keep="all",
-            return_indices_for_aggfunc=True,
-            return_matching_indices=False,
+            return_matching_indices=True,
         )
     if not indices["left_index"].size:
         dtypes = right.dtypes

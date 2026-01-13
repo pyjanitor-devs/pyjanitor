@@ -18,7 +18,6 @@ def _get_indices(
     conditions: list,
     keep: str,
     return_matching_indices: bool,
-    return_indices_for_aggfunc: bool = False,
 ) -> tuple:
     """
     Get indices, or aggregates, for multiple conditions,
@@ -114,7 +113,7 @@ def _get_indices(
                 "left_index": empty_array,
                 "right_index": empty_array,
             }
-        if return_indices_for_aggfunc:
+        if return_matching_indices:
             outcome["left_index"] = left_index
             outcome["right_index"] = right.index._values
             outcome["starts"] = starts
@@ -153,7 +152,7 @@ def _get_indices(
                 "left_index": empty_array,
                 "right_index": empty_array,
             }
-        if return_indices_for_aggfunc and not rest:
+        if return_matching_indices and not rest:
             starts, ends = _dual_non_equi._build_starts_and_ends(
                 counts=outcome["counts_array"]
             )
@@ -196,7 +195,7 @@ def _get_indices(
                 "left_index": empty_array,
                 "right_index": empty_array,
             }
-        if return_indices_for_aggfunc:
+        if return_matching_indices:
             out["starts"] = starts
             out["ends"] = ends
             out = outcome | out
@@ -248,7 +247,7 @@ def _get_indices(
                 "left_index": empty_array,
                 "right_index": empty_array,
             }
-        if return_indices_for_aggfunc and not rest:
+        if return_matching_indices and not rest:
             outcome["right_index"] = right.index._values
             return outcome
         if not rest:
@@ -259,7 +258,6 @@ def _get_indices(
                 ends=outcome["ends"],
                 keep=keep,
                 right_is_sorted=right_is_sorted,
-                return_matching_indices=return_matching_indices,
             )
         out = _helpers._get_positive_matches_conditions(
             df=df,
@@ -274,7 +272,7 @@ def _get_indices(
                 "left_index": empty_array,
                 "right_index": empty_array,
             }
-        if return_indices_for_aggfunc:
+        if return_matching_indices:
             out = outcome | out
             out["right_index"] = right.index._values
             return out
@@ -303,7 +301,7 @@ def _get_indices(
     starts = np.empty(outcome["counts_array"].size, dtype=np.int64)
     starts[0] = 0
     starts[1:] = ends[:-1]
-    if return_indices_for_aggfunc and not rest:
+    if return_matching_indices and not rest:
         outcome["starts"] = starts
         outcome["ends"] = ends
         return outcome
@@ -341,7 +339,7 @@ def _get_indices(
             "left_index": empty_array,
             "right_index": empty_array,
         }
-    if return_indices_for_aggfunc:
+    if return_matching_indices:
         out["starts"] = starts
         out["ends"] = ends
         out = outcome | out

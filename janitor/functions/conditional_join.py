@@ -315,7 +315,8 @@ def conditional_join(
         force=force,
         aggfunc=None,
         include_join_positions=include_join_positions,
-        return_building_blocks=False
+        return_building_blocks=False,
+        reverse=False
     )
 
 
@@ -347,7 +348,8 @@ def _conditional_join_preliminary_checks(
     return_matching_indices: bool = False,
     aggfunc: list[tuple] = None,
     include_join_positions:bool=False,
-    return_building_blocks:bool=False
+    return_building_blocks:bool=False,
+    reverse:bool=False
 ) -> tuple:
     """
     Preliminary checks for conditional_join are conducted here.
@@ -424,6 +426,8 @@ def _conditional_join_preliminary_checks(
 
     check("force", force, [bool])
 
+    check("reverse", reverse, [bool])
+
     if aggfunc is not None:
         check("aggfunc", aggfunc, [list])
         if all((op == _JoinOperator.NOT_EQUAL.value for *_, op in conditions)):
@@ -439,12 +443,19 @@ def _conditional_join_preliminary_checks(
                     "in the right dataframe, while the second element "
                     "in the tuple should be an aggregation function"
                 )
-        r_cols = right.columns
         aggs = {"sum", "min", "max", "size", "prod"}
+        if reverse:
+            cols = df.columns
+            frame = df
+            replacement = 'left'
+        else:
+            cols = right.columns
+            frame = right
+            replacement = 'right'
         for column_name, agg in aggfunc:
-            if column_name not in r_cols:
+            if column_name not in cols:
                 raise KeyError(
-                    f"{column_name} in aggfunc does not exist in the right dataframe"
+                    f"{column_name} in aggfunc does not exist in the {replacement} dataframe"
                 )
             if agg not in aggs:
                 raise ValueError(
@@ -452,7 +463,7 @@ def _conditional_join_preliminary_checks(
                     f"should be one of {','.join(aggs)}; "
                     f"instead got {agg}"
                 )
-            if (agg in {"sum","prod"}) and not pd.api.types.is_numeric_dtype(right[column_name]):
+            if (agg in {"sum","prod"}) and not pd.api.types.is_numeric_dtype(frame[column_name]):
                 raise ValueError(f"{agg} is supported only for numeric columns")
     if all((op == _JoinOperator.STRICTLY_EQUAL.value for *_, op in conditions)):
         if not (return_matching_indices or (aggfunc is not None)):
@@ -472,6 +483,7 @@ def _conditional_join_preliminary_checks(
     if include_join_positions and (how != 'inner'):
         raise ValueError("include_join_positions is valid only if `how='inner'`")
     check("return_building_blocks",return_building_blocks,[bool])
+
     return (
         df,
         right,
@@ -485,7 +497,8 @@ def _conditional_join_preliminary_checks(
         force,
         aggfunc,
         include_join_positions,
-        return_building_blocks
+        return_building_blocks,
+        reverse
     )
 
 
@@ -539,7 +552,8 @@ def _conditional_join_compute(
     return_matching_indices: bool = False,
     aggfunc: list[tuple] = None,
     include_join_positions:bool = False,
-    return_building_blocks:bool = False
+    return_building_blocks:bool = False,
+    reverse:bool = False,
 ) -> pd.DataFrame:
     """
     This is where the actual computation
@@ -558,7 +572,8 @@ def _conditional_join_compute(
         force,
         aggfunc,
         include_join_positions,
-        return_building_blocks
+        return_building_blocks,
+        reverse
     ) = _conditional_join_preliminary_checks(
         df=df,
         right=right,
@@ -573,7 +588,8 @@ def _conditional_join_compute(
         return_matching_indices=return_matching_indices,
         aggfunc=aggfunc,
         include_join_positions=include_join_positions,
-        return_building_blocks=return_building_blocks
+        return_building_blocks=return_building_blocks,
+        reverse=reverse
     )
     eq_check = False
     le_lt_check = False
@@ -1341,7 +1357,8 @@ def get_join_indices(
         return_matching_indices=True,
         aggfunc=None,
         include_join_positions=False,
-        return_building_blocks=return_building_blocks
+        return_building_blocks=return_building_blocks,
+        reverse=False
     )
 
 
@@ -1352,12 +1369,17 @@ def join_agg(
     *conditions,
     aggfunc: list[tuple],
     force: bool = False,
+    reverse: bool = False,
 ) -> pd.DataFrame:
     """
     Compute an aggregation after the successful execution of a join;
     the aggregaton is computed on the right dataframe
     for each row of the left DataFrame (that has a match)
     based on the join keys.
+
+    If `reverse=True`, the aggregaton is computed 
+    on the left dataframe for each row of the right DataFrame 
+    (that has a match) based on the join keys.
     
     Supported aggregation functions are
     `sum`, `prod`, `size`, `min`, `max`.
@@ -1367,6 +1389,10 @@ def join_agg(
     The index of the returned dataframe represent the positions
     of the rows from the left dataframe that have matches 
     in the right dataframe.
+
+    If `reverse=True`, the index of the returned dataframe 
+    represent the positions of the rows from the right dataframe
+    that have matches in the left dataframe.
 
     !!! info "New in version 0.34.0"
 
@@ -1433,6 +1459,9 @@ def join_agg(
             based on the join keys.
             Supported aggregation functions are
             `sum`, `size`, `min`, `max`, `prod`.
+        reverse: If `True`, compute the aggregation on the columns 
+            of the left dataframe; if `False`, which is the default, 
+            compute the aggregation on the columns of the right dataframe.
 
     Returns:
         A pandas DataFrame.
@@ -1450,6 +1479,7 @@ def join_agg(
         force=force,
         return_matching_indices=False,
         aggfunc=aggfunc,
+        reverse=reverse
     )
 
 

@@ -53,24 +53,6 @@ def test_rle_id_single_row():
 
 
 @pytest.mark.functions
-def test_rle_id_all_same_values():
-    """Test rle_id when all values are the same."""
-    df = pd.DataFrame({"grp": ["A", "A", "A"], "value": [1, 2, 3]})
-    result = df.rle_id("grp")
-    expected = df.assign(rle_id=[1, 1, 1])
-    assert_frame_equal(result, expected)
-
-
-@pytest.mark.functions
-def test_rle_id_all_different_values():
-    """Test rle_id when all values are different."""
-    df = pd.DataFrame({"grp": ["A", "B", "C"], "value": [1, 2, 3]})
-    result = df.rle_id("grp")
-    expected = df.assign(rle_id=[1, 2, 3])
-    assert_frame_equal(result, expected)
-
-
-@pytest.mark.functions
 def test_rle_id_nan_handling():
     """Test rle_id treats consecutive NaN values as the same run."""
     df = pd.DataFrame(
@@ -185,3 +167,43 @@ def test_rle_id_all_nan():
     result = df.rle_id("grp")
     expected = df.assign(rle_id=[1, 1, 1])
     assert_frame_equal(result, expected)
+
+
+@pytest.mark.functions
+def test_rle_id_groupby_single_column():
+    """Test rle_id on GroupBy object restarts IDs within each group."""
+    df = pd.DataFrame(
+        {
+            "group": ["X", "X", "X", "Y", "Y", "Y"],
+            "grp": ["A", "A", "B", "A", "B", "B"],
+            "value": [1, 2, 3, 4, 5, 6],
+        }
+    )
+    result = df.groupby("group").rle_id("grp")
+    expected = df.assign(rle_id=[1, 1, 2, 1, 2, 2])
+    assert_frame_equal(result.obj, expected)
+
+
+@pytest.mark.functions
+def test_rle_id_groupby_multiple_group_columns():
+    """Test rle_id with multiple grouping columns."""
+    df = pd.DataFrame(
+        {
+            "g1": ["A", "A", "A", "A", "B", "B"],
+            "g2": ["X", "X", "Y", "Y", "X", "X"],
+            "val": [1, 1, 2, 2, 3, 4],
+            "data": [10, 20, 30, 40, 50, 60],
+        }
+    )
+    result = df.groupby(["g1", "g2"]).rle_id("val")
+    expected = df.assign(rle_id=[1, 1, 1, 1, 1, 2])
+    assert_frame_equal(result.obj, expected)
+
+
+@pytest.mark.functions
+def test_rle_id_groupby_single_group():
+    """Test rle_id with only one group."""
+    df = pd.DataFrame({"g": ["X", "X"], "v": ["A", "B"]})
+    result = df.groupby("g").rle_id("v")
+    expected = df.assign(rle_id=[1, 2])
+    assert_frame_equal(result.obj, expected)

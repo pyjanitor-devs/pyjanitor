@@ -1,20 +1,23 @@
 """Implementation of the `rle_id` function."""
 
+import copy
 from typing import Hashable, Iterable, Union
 
 import pandas as pd
 import pandas_flavor as pf
 from pandas.api.types import is_list_like
+from pandas.core.groupby.generic import DataFrameGroupBy
 
 from janitor.utils import check_column
 
 
+@pf.register_dataframe_groupby_method
 @pf.register_dataframe_method
 def rle_id(
-    df: pd.DataFrame,
+    df: Union[pd.DataFrame, DataFrameGroupBy],
     column_names: Union[Hashable, Iterable[Hashable]],
     new_column_name: Hashable = "rle_id",
-) -> pd.DataFrame:
+) -> Union[pd.DataFrame, DataFrameGroupBy]:
     """Generate run-length encoding IDs for consecutive identical values.
 
     This function assigns a unique ID to each consecutive run of identical
@@ -91,7 +94,7 @@ def rle_id(
         Name: value, dtype: int64
 
     Args:
-        df: A pandas DataFrame.
+        df: A pandas DataFrame or GroupBy object.
         column_names: A column name or an iterable of column names to
             use for computing the run-length encoding IDs.
         new_column_name: The name of the new column containing the
@@ -103,13 +106,19 @@ def rle_id(
         ValueError: If `new_column_name` already exists in the DataFrame.
 
     Returns:
-        A pandas DataFrame with a new column containing the run-length
-        encoding IDs.
+        A pandas DataFrame or GroupBy object with the new column.
     """
+    grp = None
+    if isinstance(df, DataFrameGroupBy):
+        grp = copy.copy(df)
+        group_keys = grp.keys
+        df = grp.obj
+    else:
+        group_keys = None
+
     if not is_list_like(column_names):
         column_names = [column_names]
     elif isinstance(column_names, tuple) and column_names in df.columns:
-        # tuple exists as a column name (e.g., MultiIndex)
         column_names = [column_names]
     else:
         column_names = list(column_names)
@@ -117,25 +126,33 @@ def rle_id(
     check_column(df, column_names)
     check_column(df, [new_column_name], present=False)
 
-    def _values_changed(col: pd.Series) -> pd.Series:
-        """Check if values changed, treating consecutive NaN as equal."""
-        current = col
-        previous = col.shift()
-        both_not_nan = current.notna() & previous.notna()
-        return (both_not_nan & (current != previous)) | (
-            current.isna() != previous.isna()
+    def _values_changed(col):
+        prev = col.shift()
+        both_notna = col.notna() & prev.notna()
+        return (both_notna & (col != prev)) | (col.isna() != prev.isna())
+
+    def _compute_rle(frame):
+        if len(column_names) == 1:
+            changed = _values_changed(frame[column_names[0]])
+        else:
+            changed = pd.Series(False, index=frame.index)
+            for col in column_names:
+                changed = changed | _values_changed(frame[col])
+        if len(changed) > 0:
+            changed.iloc[0] = True
+        return changed.cumsum()
+
+    if group_keys is not None:
+        rle_ids = df.groupby(group_keys, group_keys=False).apply(
+            _compute_rle, include_groups=False
         )
-
-    if len(column_names) == 1:
-        changed = _values_changed(df[column_names[0]])
+        if isinstance(rle_ids, pd.DataFrame):
+            rle_ids = rle_ids.stack().droplevel(0)
     else:
-        changed = pd.Series(False, index=df.index)
-        for col in column_names:
-            changed = changed | _values_changed(df[col])
+        rle_ids = _compute_rle(df)
 
-    if len(changed) > 0:
-        changed.iloc[0] = True
-
-    rle_ids = changed.cumsum()
-
-    return df.assign(**{new_column_name: rle_ids})
+    result = df.assign(**{new_column_name: rle_ids})
+    if grp is not None:
+        grp.obj = result
+        return grp
+    return result

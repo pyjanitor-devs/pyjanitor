@@ -56,5 +56,10 @@ def test__get_missing_timestamps(timeseries_dataframe):
     timeseries_dataframe.index.freq = None
     timestamps_to_drop = sample(timeseries_dataframe.index.tolist(), 3)
     df = timeseries_dataframe.drop(index=timestamps_to_drop)
-    missing_timestamps = _get_missing_timestamps(df, "1h")
+    missing_timestamps = _get_missing_timestamps(
+        df,
+        frequency="1h",
+        first_time_stamp=timeseries_dataframe.index.min(),
+        last_time_stamp=timeseries_dataframe.index.max(),
+    )
     assert set(missing_timestamps.index) == set(timestamps_to_drop)

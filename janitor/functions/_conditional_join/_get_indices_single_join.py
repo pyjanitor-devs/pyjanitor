@@ -23,7 +23,7 @@ def _single_join(
     condition: tuple,
     keep: str,
     return_matching_indices: bool,
-) -> dict | None:
+) -> dict:
     """
     Compute indices for a single join
     """

@@ -24,11 +24,10 @@ from janitor.functions.utils import (
 from janitor.utils import check, check_column, deprecated_kwargs
 
 from ._conditional_join import (
-    _get_aggs_multiple_join,
-    _get_aggs_single_join,
     _get_indices_equi,
     _get_indices_non_equi,
     _get_indices_single_join,
+    _get_join_aggs,
     _not_equal_indices,
 )
 from ._conditional_join._helpers import (
@@ -111,8 +110,8 @@ def conditional_join(
     a single index column is returned; else, a MultiIndex column
     is returned.
 
-    If `include_join_positions` is `True`, the index of the returned dataframe 
-    will be a MultiIndex; the first level points to the original positions in `df`, 
+    If `include_join_positions` is `True`, the index of the returned dataframe
+    will be a MultiIndex; the first level points to the original positions in `df`,
     while the second level points to the original positions in `right`.
 
 
@@ -293,7 +292,7 @@ def conditional_join(
             only appears in the right DataFrame, and `both` if the observation’s
             merge key is found in both DataFrames.
         force: If `True`, force the non-equi join conditions to execute before the equi join.
-        include_join_positions: Determines if the join positions of the left and right DataFrame 
+        include_join_positions: Determines if the join positions of the left and right DataFrame
             should be included as an index of the final dataframe.
 
 
@@ -316,7 +315,7 @@ def conditional_join(
         aggfunc=None,
         include_join_positions=include_join_positions,
         return_building_blocks=False,
-        reverse=False
+        reverse=False,
     )
 
 
@@ -347,9 +346,9 @@ def _conditional_join_preliminary_checks(
     force: bool,
     return_matching_indices: bool = False,
     aggfunc: list[tuple] = None,
-    include_join_positions:bool=False,
-    return_building_blocks:bool=False,
-    reverse:bool=False
+    include_join_positions: bool = False,
+    return_building_blocks: bool = False,
+    reverse: bool = False,
 ) -> tuple:
     """
     Preliminary checks for conditional_join are conducted here.
@@ -447,15 +446,16 @@ def _conditional_join_preliminary_checks(
         if reverse:
             cols = df.columns
             frame = df
-            replacement = 'left'
+            replacement = "left"
         else:
             cols = right.columns
             frame = right
-            replacement = 'right'
+            replacement = "right"
         for column_name, agg in aggfunc:
             if column_name not in cols:
                 raise KeyError(
-                    f"{column_name} in aggfunc does not exist in the {replacement} dataframe"
+                    f"{column_name} in aggfunc does not "
+                    f"exist in the {replacement} dataframe"
                 )
             if agg not in aggs:
                 raise ValueError(
@@ -463,7 +463,9 @@ def _conditional_join_preliminary_checks(
                     f"should be one of {','.join(aggs)}; "
                     f"instead got {agg}"
                 )
-            if (agg in {"sum","prod"}) and not pd.api.types.is_numeric_dtype(frame[column_name]):
+            if (agg in {"sum", "prod"}) and not pd.api.types.is_numeric_dtype(
+                frame[column_name]
+            ):
                 raise ValueError(f"{agg} is supported only for numeric columns")
     if all((op == _JoinOperator.STRICTLY_EQUAL.value for *_, op in conditions)):
         if not (return_matching_indices or (aggfunc is not None)):
@@ -478,11 +480,11 @@ def _conditional_join_preliminary_checks(
                 "if indices are to be returned, "
                 "and use_numba is False."
             )
-        
+
     check("include_join_positions", include_join_positions, [bool])
-    if include_join_positions and (how != 'inner'):
+    if include_join_positions and (how != "inner"):
         raise ValueError("include_join_positions is valid only if `how='inner'`")
-    check("return_building_blocks",return_building_blocks,[bool])
+    check("return_building_blocks", return_building_blocks, [bool])
 
     return (
         df,
@@ -498,7 +500,7 @@ def _conditional_join_preliminary_checks(
         aggfunc,
         include_join_positions,
         return_building_blocks,
-        reverse
+        reverse,
     )
 
 
@@ -551,9 +553,9 @@ def _conditional_join_compute(
     force: bool,
     return_matching_indices: bool = False,
     aggfunc: list[tuple] = None,
-    include_join_positions:bool = False,
-    return_building_blocks:bool = False,
-    reverse:bool = False,
+    include_join_positions: bool = False,
+    return_building_blocks: bool = False,
+    reverse: bool = False,
 ) -> pd.DataFrame:
     """
     This is where the actual computation
@@ -573,7 +575,7 @@ def _conditional_join_compute(
         aggfunc,
         include_join_positions,
         return_building_blocks,
-        reverse
+        reverse,
     ) = _conditional_join_preliminary_checks(
         df=df,
         right=right,
@@ -589,7 +591,7 @@ def _conditional_join_compute(
         aggfunc=aggfunc,
         include_join_positions=include_join_positions,
         return_building_blocks=return_building_blocks,
-        reverse=reverse
+        reverse=reverse,
     )
     eq_check = False
     le_lt_check = False
@@ -607,75 +609,64 @@ def _conditional_join_compute(
             le_lt_check = True
     df.index = range(len(df))
     right.index = range(len(right))
-    if eq_check and aggfunc:
-        return _get_aggs_multiple_join._agg_join(
-            df=df,
-            right=right,
-            conditions=conditions,
-            aggfunc=aggfunc,
-            eq_check=eq_check,
-            force=force,
-        )
-    elif eq_check:
-        result = _multiple_conditional_join_eq(
+    if eq_check:
+        indices = _multiple_conditional_join_eq(
             df=df,
             right=right,
             conditions=conditions,
             keep=keep,
             use_numba=use_numba,
             force=force,
-            return_matching_indices=return_building_blocks,
-        )
-    elif (len(conditions) > 1) and le_lt_check and aggfunc:
-        return _get_aggs_multiple_join._agg_join(
-            df=df,
-            right=right,
-            conditions=conditions,
-            aggfunc=aggfunc,
-            eq_check=False,
-            force=False,
+            return_matching_indices=return_building_blocks or aggfunc,
         )
     elif (len(conditions) > 1) & le_lt_check:
-        result = _multiple_conditional_join_le_lt(
+        indices = _multiple_conditional_join_le_lt(
             df=df,
             right=right,
             conditions=conditions,
             keep=keep,
             use_numba=use_numba,
-            return_matching_indices=return_building_blocks,
+            return_matching_indices=return_building_blocks or aggfunc,
         )
     elif len(conditions) > 1:
-        result = _multiple_conditional_join_ne(
+        indices = _multiple_conditional_join_ne(
             df=df,
             right=right,
             conditions=conditions,
             keep=keep,
         )
-    elif (len(conditions) == 1) and aggfunc:
-        result = _get_aggs_single_join._agg_join(
-            df=df, right=right, condition=conditions[0], aggfunc=aggfunc
-        )
-        return result
     else:
-        result = _get_indices_single_join._single_join(
+        indices = _get_indices_single_join._single_join(
             df=df,
             right=right,
             condition=conditions[0],
             keep=keep,
-            return_matching_indices=return_building_blocks,
+            return_matching_indices=return_building_blocks or aggfunc,
+        )
+    if aggfunc and reverse:
+        return _get_join_aggs._agg_join_left(
+            df=df,
+            aggfunc=aggfunc,
+            indices=indices,
+        )
+    if aggfunc:
+        return _get_join_aggs._agg_join_right(
+            right=right,
+            aggfunc=aggfunc,
+            indices=indices,
         )
     if return_matching_indices:
-        return result
+        return indices
     return _create_frame(
         df=df,
         right=right,
-        left_index=result["left_index"],
-        right_index=result["right_index"],
+        left_index=indices["left_index"],
+        right_index=indices["right_index"],
         how=how,
         df_columns=df_columns,
         right_columns=right_columns,
         indicator=indicator,
-        include_join_positions=include_join_positions
+        include_join_positions=include_join_positions,
     )
 
 
@@ -1010,7 +1001,7 @@ def _create_frame(
     df_columns: Any,
     right_columns: Any,
     indicator: bool | str,
-    include_join_positions:bool
+    include_join_positions: bool,
 ) -> pd.DataFrame:
     """
     Create final dataframe
@@ -1081,7 +1072,7 @@ def _create_frame(
         left_index: np.ndarray,
         right_index: np.ndarray,
         indicator: bool | str,
-        include_join_positions:bool=False
+        include_join_positions: bool = False,
     ) -> pd.DataFrame:
         """Computes an inner joined DataFrame.
 
@@ -1091,8 +1082,8 @@ def _create_frame(
             left_index: indices from df for rows that match right.
             right_index: indices from right for rows that match df.
             indicator: Indicator column name or True for default name "_merge".
-            include_join_positions: Determines if the join positions of the left 
-                and right DataFrame should be included as an index 
+            include_join_positions: Determines if the join positions of the left
+                and right DataFrame should be included as an index
                 of the final dataframe.
         Returns:
             An inner joined DataFrame.
@@ -1122,7 +1113,7 @@ def _create_frame(
             left_index=left_index,
             right_index=right_index,
             indicator=indicator,
-            include_join_positions=include_join_positions
+            include_join_positions=include_join_positions,
         )
     if how == "left":
         indexer = pd.unique(left_index)
@@ -1299,10 +1290,10 @@ def get_join_indices(
     df: pd.DataFrame,
     right: pd.DataFrame | pd.Series,
     *conditions: tuple,
-    keep: Literal["first", "last", "all"]='all',
-    use_numba: bool=False,
-    force: bool=False,
-    return_building_blocks:bool=False
+    keep: Literal["first", "last", "all"] = "all",
+    use_numba: bool = False,
+    force: bool = False,
+    return_building_blocks: bool = False,
 ) -> dict:
     """Convenience function to return the matching indices from an inner join.
 
@@ -1358,7 +1349,7 @@ def get_join_indices(
         aggfunc=None,
         include_join_positions=False,
         return_building_blocks=return_building_blocks,
-        reverse=False
+        reverse=False,
     )
 
 
@@ -1377,20 +1368,20 @@ def join_agg(
     for each row of the left DataFrame (that has a match)
     based on the join keys.
 
-    If `reverse=True`, the aggregaton is computed 
-    on the left dataframe for each row of the right DataFrame 
+    If `reverse=True`, the aggregaton is computed
+    on the left dataframe for each row of the right DataFrame
     (that has a match) based on the join keys.
-    
+
     Supported aggregation functions are
     `sum`, `prod`, `size`, `min`, `max`.
-    
+
     This is limited to an inner join.
 
     The index of the returned dataframe represent the positions
-    of the rows from the left dataframe that have matches 
+    of the rows from the left dataframe that have matches
     in the right dataframe.
 
-    If `reverse=True`, the index of the returned dataframe 
+    If `reverse=True`, the index of the returned dataframe
     represent the positions of the rows from the right dataframe
     that have matches in the left dataframe.
 
@@ -1399,10 +1390,12 @@ def join_agg(
     Examples:
         >>> import pandas as pd
         >>> import janitor
-        >>> df1 = pd.DataFrame({"id": [1,1,1,2,2,3], "value_1": [2, 5, 7, 1, 3, 4]})
+        >>> df1 = pd.DataFrame(
+        ...     {"id": [1, 1, 1, 2, 2, 3], "value_1": [2, 5, 7, 1, 3, 4]}
+        ... )
         >>> df2 = pd.DataFrame(
         ...     {
-        ...         "id": [1,1,1,1,2,2,2,3],
+        ...         "id": [1, 1, 1, 1, 2, 2, 2, 3],
         ...         "value_2A": [0, 3, 7, 12, 0, 2, 3, 1],
         ...         "value_2B": [1, 5, 9, 15, 1, 4, 6, 3],
         ...     }
@@ -1459,8 +1452,8 @@ def join_agg(
             based on the join keys.
             Supported aggregation functions are
             `sum`, `size`, `min`, `max`, `prod`.
-        reverse: If `True`, compute the aggregation on the columns 
-            of the left dataframe; if `False`, which is the default, 
+        reverse: If `True`, compute the aggregation on the columns
+            of the left dataframe; if `False`, which is the default,
             compute the aggregation on the columns of the right dataframe.
 
     Returns:
@@ -1479,7 +1472,7 @@ def join_agg(
         force=force,
         return_matching_indices=False,
         aggfunc=aggfunc,
-        reverse=reverse
+        reverse=reverse,
     )
 
 

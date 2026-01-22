@@ -31,7 +31,9 @@ mypy-extensions==0.4.3
 nodeenv==1.6.0
     # via pre-commit
 packaging==24.0
-    # via black
+    # via
+    #   black
+    #   wheel
 pathspec==0.9.0
     # via black
 pep517==0.12.0
@@ -62,7 +64,7 @@ typing-extensions==4.15.0
     #   virtualenv
 virtualenv==20.36.1
     # via pre-commit
-wheel==0.38.1
+wheel==0.46.2
     # via pip-tools
 
 # The following packages are considered to be unsafe in a requirements file:

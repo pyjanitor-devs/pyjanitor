@@ -609,6 +609,9 @@ def _conditional_join_compute(
             le_lt_check = True
     df.index = range(len(df))
     right.index = range(len(right))
+    print("df", df.to_dict())
+    print("\n")
+    print("right", right.to_dict())
     if eq_check:
         indices = _multiple_conditional_join_eq(
             df=df,

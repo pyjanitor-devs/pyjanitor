@@ -293,7 +293,6 @@ def _computations_complete(
         df,
         how="outer",
         on=merge_columns,
-        copy=False,
         sort=False,
         indicator=indicator,
     )

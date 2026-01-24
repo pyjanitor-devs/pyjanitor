@@ -61,9 +61,10 @@ def test_truncate_datetime_containing_NaT():
     """Ensure NaT is ignored safely (no-op) and no TypeError is thrown."""
     x = datetime(2022, 3, 21, 9, 1, 15, 666)
     df = pd.DataFrame({"dt": [x, pd.NaT], "foo": [np.nan, 3]})
+    # df['dt']=df['dt'].dt.as_unit('ns')
     expected = pd.DataFrame(
         {"dt": [x.replace(microsecond=0), pd.NaT], "foo": [np.nan, 3]}
-    )
+    ).assign(dt=lambda df: df["dt"].dt.as_unit("ns"))
 
     result = df.truncate_datetime_dataframe("second").assign(
         dt=lambda df: df["dt"].dt.as_unit("ns")

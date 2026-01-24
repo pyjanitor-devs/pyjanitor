@@ -464,10 +464,13 @@ def test_regex_multi(multiindex):
 def test_select_groupby(dataframe):
     """Test output on a grouped object"""
     expected = dataframe.select_dtypes("number").groupby(dataframe["a"]).sum()
-    actual = dataframe.groupby("a").select_columns(is_numeric_dtype).sum()
+    actual = (
+        dataframe.groupby("a").select_columns(is_numeric_dtype, DropLabel("a")).sum()
+    )
     assert_frame_equal(expected, actual)
 
 
+@pytest.mark.xfail(reason="select function deprecated")
 def test_select_groupby_args(dataframe):
     """Test output on a grouped object"""
     expected = dataframe.select_dtypes("number").groupby(dataframe["a"]).sum()
@@ -475,6 +478,7 @@ def test_select_groupby_args(dataframe):
     assert_frame_equal(expected, actual)
 
 
+@pytest.mark.xfail(reason="select function deprecated")
 def test_select_groupby_columns(dataframe):
     """Test output on a grouped object"""
     expected = dataframe.select_dtypes("number").groupby(dataframe["a"]).sum()

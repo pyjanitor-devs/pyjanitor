@@ -196,9 +196,7 @@ df = pd.DataFrame(np.random.random(size=(5, 10)), columns=list("abcdefghij"))
 def test_move_source_target_seq():
     """Test output when both source and targets are sequences"""
     expected = df.move(source=["j", "a"], target=["c", "e"], axis=1).columns
-    actual = pd.Index(
-        ["b", "j", "a", "c", "d", "e", "f", "g", "h", "i"], dtype="object"
-    )
+    actual = pd.Index(["b", "j", "a", "c", "d", "e", "f", "g", "h", "i"], dtype="str")
     assert_index_equal(expected, actual)
 
 
@@ -207,7 +205,5 @@ def test_move_source_target_seq_after():
     expected = df.move(
         source=["j", "a"], target=["c", "e"], position="after", axis=1
     ).columns
-    actual = pd.Index(
-        ["b", "c", "d", "e", "j", "a", "f", "g", "h", "i"], dtype="object"
-    )
+    actual = pd.Index(["b", "c", "d", "e", "j", "a", "f", "g", "h", "i"], dtype="str")
     assert_index_equal(expected, actual)

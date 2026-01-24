@@ -697,7 +697,7 @@ def test_df():
 
 def test_names_pattern_str(test_df):
     """Test output for names_pattern and .value."""
-
+    test_df.columns = test_df.columns.astype(object)
     result = test_df.pivot_longer(
         column_names="*_*",
         names_to=["set", ".value"],

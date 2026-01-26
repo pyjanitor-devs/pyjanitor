@@ -1,9 +1,5 @@
-
-
-import numpy as np
 import janitor_rs
-
-
+import numpy as np
 
 
 def _binary_search_lt(
@@ -24,8 +20,8 @@ def _binary_search_lt(
         "uint32": janitor_rs.binary_search_lt_uint32,
         "uint16": janitor_rs.binary_search_lt_uint16,
         "uint8": janitor_rs.binary_search_lt_uint8,
-        "float64": janitor_rs.binary_search_lt_float64,
-        "float32": janitor_rs.binary_search_lt_float32,
+        "float64": janitor_rs.binary_search_lt_f64,
+        "float32": janitor_rs.binary_search_lt_f32,
     }
     dtype_name = left.dtype.name
     try:
@@ -53,8 +49,8 @@ def _binary_search_le(
         "uint32": janitor_rs.binary_search_le_uint32,
         "uint16": janitor_rs.binary_search_le_uint16,
         "uint8": janitor_rs.binary_search_le_uint8,
-        "float64": janitor_rs.binary_search_le_float64,
-        "float32": janitor_rs.binary_search_le_float32,
+        "float64": janitor_rs.binary_search_le_f64,
+        "float32": janitor_rs.binary_search_le_f32,
     }
     dtype_name = left.dtype.name
     try:
@@ -82,8 +78,8 @@ def _binary_search_gt(
         "uint32": janitor_rs.binary_search_gt_uint32,
         "uint16": janitor_rs.binary_search_gt_uint16,
         "uint8": janitor_rs.binary_search_gt_uint8,
-        "float64": janitor_rs.binary_search_gt_float64,
-        "float32": janitor_rs.binary_search_gt_float32,
+        "float64": janitor_rs.binary_search_gt_f64,
+        "float32": janitor_rs.binary_search_gt_f32,
     }
     dtype_name = left.dtype.name
     try:
@@ -111,8 +107,8 @@ def _binary_search_ge(
         "uint32": janitor_rs.binary_search_ge_uint32,
         "uint16": janitor_rs.binary_search_ge_uint16,
         "uint8": janitor_rs.binary_search_ge_uint8,
-        "float64": janitor_rs.binary_search_ge_float64,
-        "float32": janitor_rs.binary_search_ge_float32,
+        "float64": janitor_rs.binary_search_ge_f64,
+        "float32": janitor_rs.binary_search_ge_f32,
     }
     dtype_name = left.dtype.name
     try:

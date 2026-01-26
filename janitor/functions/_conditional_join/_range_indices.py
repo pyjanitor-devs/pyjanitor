@@ -11,10 +11,7 @@ from janitor.functions._conditional_join import (
 
 
 def _range_indices(
-    df: pd.DataFrame,
-    right: pd.DataFrame,
-    ge_gt: tuple,
-    le_lt: tuple,
+    df: pd.DataFrame, right: pd.DataFrame, ge_gt: tuple, le_lt: tuple, is_sorted: bool
 ) -> dict | None:
     """
     Retrieve index positions for range/interval joins.
@@ -42,10 +39,13 @@ def _range_indices(
     l_index, ends = outcome
     left_on, right_on, op = le_lt
     l_col = df.loc[l_index, left_on]
+    right = right[right_on]
+    if not is_sorted:
+        right = right.cummax()
     outcome = _less_than_indices._le_lt_indices(
         left=l_col._values,
         left_index=l_col.index._values,
-        right=right[right_on]._values,
+        right=right._values,
         strict=op == "<",
     )
     if outcome is None:
@@ -58,15 +58,12 @@ def _range_indices(
     # if a == b
     # since range(a, b) yields none
     keep_rows = starts < ends
-
     if not keep_rows.any():
         return None
-
     if not keep_rows.all():
         left_index = left_index[keep_rows]
         starts = starts[keep_rows]
         ends = ends[keep_rows]
-
     return {"left_index": left_index, "starts": starts, "ends": ends}
 
 

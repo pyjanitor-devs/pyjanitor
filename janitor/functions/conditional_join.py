@@ -50,6 +50,7 @@ def conditional_join(
     use_numba: bool = False,
     indicator: Optional[bool | str] = False,
     force: bool = False,
+    join_algorithm: str = "default",
     include_join_positions: bool = False,
 ) -> pd.DataFrame:
     """The conditional_join function operates similarly to `pd.merge`,
@@ -292,6 +293,8 @@ def conditional_join(
             only appears in the right DataFrame, and `both` if the observation’s
             merge key is found in both DataFrames.
         force: If `True`, force the non-equi join conditions to execute before the equi join.
+        join_algorithm: Determines what algorithm to use for multiple non-equi joins.
+            Currently limited to `default` and `regions`.
         include_join_positions: Determines if the join positions of the left and right DataFrame
             should be included as an index of the final dataframe.
 
@@ -316,6 +319,8 @@ def conditional_join(
         include_join_positions=include_join_positions,
         return_building_blocks=False,
         reverse=False,
+        return_matching_indices=False,
+        join_algorithm=join_algorithm,
     )
 
 
@@ -349,6 +354,7 @@ def _conditional_join_preliminary_checks(
     include_join_positions: bool = False,
     return_building_blocks: bool = False,
     reverse: bool = False,
+    join_algorithm: str = "default",
 ) -> tuple:
     """
     Preliminary checks for conditional_join are conducted here.
@@ -485,6 +491,12 @@ def _conditional_join_preliminary_checks(
     if include_join_positions and (how != "inner"):
         raise ValueError("include_join_positions is valid only if `how='inner'`")
     check("return_building_blocks", return_building_blocks, [bool])
+    check("join_algorithm", join_algorithm, [str])
+    if join_algorithm not in {"default", "regions"}:
+        raise ValueError(
+            f"join_algorithm should be either default or regions, "
+            f"instead got {join_algorithm}"
+        )
 
     return (
         df,
@@ -501,6 +513,7 @@ def _conditional_join_preliminary_checks(
         include_join_positions,
         return_building_blocks,
         reverse,
+        join_algorithm,
     )
 
 
@@ -556,6 +569,7 @@ def _conditional_join_compute(
     include_join_positions: bool = False,
     return_building_blocks: bool = False,
     reverse: bool = False,
+    join_algorithm: str = "default",
 ) -> pd.DataFrame:
     """
     This is where the actual computation
@@ -576,6 +590,7 @@ def _conditional_join_compute(
         include_join_positions,
         return_building_blocks,
         reverse,
+        join_algorithm,
     ) = _conditional_join_preliminary_checks(
         df=df,
         right=right,
@@ -592,6 +607,7 @@ def _conditional_join_compute(
         include_join_positions=include_join_positions,
         return_building_blocks=return_building_blocks,
         reverse=reverse,
+        join_algorithm=join_algorithm,
     )
     eq_check = False
     le_lt_check = False
@@ -618,6 +634,7 @@ def _conditional_join_compute(
             use_numba=use_numba,
             force=force,
             return_matching_indices=return_building_blocks or aggfunc,
+            join_algorithm=join_algorithm,
         )
     elif (len(conditions) > 1) & le_lt_check:
         indices = _multiple_conditional_join_le_lt(
@@ -627,6 +644,7 @@ def _conditional_join_compute(
             keep=keep,
             use_numba=use_numba,
             return_matching_indices=return_building_blocks or aggfunc,
+            join_algorithm=join_algorithm,
         )
     elif len(conditions) > 1:
         indices = _multiple_conditional_join_ne(
@@ -643,6 +661,7 @@ def _conditional_join_compute(
             keep=keep,
             return_matching_indices=return_building_blocks or aggfunc,
         )
+    return indices
     if aggfunc and reverse:
         return _get_join_aggs._agg_join_left(
             df=df,
@@ -766,6 +785,7 @@ def _multiple_conditional_join_eq(
     use_numba: bool,
     force: bool,
     return_matching_indices: bool,
+    join_algorithm: str,
 ) -> tuple:
     """
     Get indices for multiple conditions,
@@ -782,6 +802,7 @@ def _multiple_conditional_join_eq(
             keep=keep,
             use_numba=use_numba,
             return_matching_indices=return_matching_indices,
+            join_algorithm=join_algorithm,
         )
     # deprecated - no longer maintained
     if use_numba:
@@ -908,6 +929,7 @@ def _multiple_conditional_join_le_lt(
     keep: str,
     use_numba: bool,
     return_matching_indices: bool,
+    join_algorithm: str,
 ) -> tuple:
     """
     Get indices for multiple conditions,
@@ -970,6 +992,7 @@ def _multiple_conditional_join_le_lt(
         conditions=conditions,
         keep=keep,
         return_matching_indices=return_matching_indices,
+        join_algorithm=join_algorithm,
     )
 
 

@@ -1,8 +1,5 @@
-import numpy as np
 import janitor_rs
-
-
-
+import numpy as np
 
 
 def _compare_ne_no_ranges(
@@ -15,7 +12,7 @@ def _compare_ne_no_ranges(
     op: int,
 ) -> tuple:
     """
-    Compute comparsons for no ranges (no starts/ends) for != operator
+    Compute for no ranges (no starts/ends) for != operator
     """
     mapping = {
         "int64": janitor_rs.compare_no_range_ne_int64,
@@ -26,8 +23,8 @@ def _compare_ne_no_ranges(
         "uint32": janitor_rs.compare_no_range_ne_uint32,
         "uint16": janitor_rs.compare_no_range_ne_uint16,
         "uint8": janitor_rs.compare_no_range_ne_uint8,
-        "float64": janitor_rs.compare_no_range_ne_float64,
-        "float32": janitor_rs.compare_no_range_ne_float32,
+        "float64": janitor_rs.compare_no_range_ne_f64,
+        "float32": janitor_rs.compare_no_range_ne_f32,
     }
     dtype_name = left.dtype.name
     try:
@@ -52,7 +49,7 @@ def _compare_no_ranges(
     op: int,
 ) -> tuple:
     """
-    Compute comparsons for no ranges (no starts/ends)
+    Compute for no ranges (no starts/ends)
     """
     mapping = {
         "int64": janitor_rs.compare_no_range_int64,
@@ -63,8 +60,8 @@ def _compare_no_ranges(
         "uint32": janitor_rs.compare_no_range_uint32,
         "uint16": janitor_rs.compare_no_range_uint16,
         "uint8": janitor_rs.compare_no_range_uint8,
-        "float64": janitor_rs.compare_no_range_float64,
-        "float32": janitor_rs.compare_no_range_float32,
+        "float64": janitor_rs.compare_no_range_f64,
+        "float32": janitor_rs.compare_no_range_f32,
     }
     dtype_name = left.dtype.name
     try:
@@ -89,7 +86,7 @@ def _compare_ne_first_run_starts_only(
     op: int,
 ) -> tuple:
     """
-    Compute booleans for first run
+    compute for first run
     """
     mapping = {
         "int64": janitor_rs.compare_start_ne_1st_int64,
@@ -100,8 +97,8 @@ def _compare_ne_first_run_starts_only(
         "uint32": janitor_rs.compare_start_ne_1st_uint32,
         "uint16": janitor_rs.compare_start_ne_1st_uint16,
         "uint8": janitor_rs.compare_start_ne_1st_uint8,
-        "float64": janitor_rs.compare_start_ne_1st_float64,
-        "float32": janitor_rs.compare_start_ne_1st_float32,
+        "float64": janitor_rs.compare_start_ne_1st_f64,
+        "float32": janitor_rs.compare_start_ne_1st_f32,
     }
     dtype_name = left.dtype.name
     try:
@@ -131,7 +128,7 @@ def _compare_ne_starts_only(
     op: int,
 ) -> tuple:
     """
-    Compute booleans for starts
+    compute for starts
     """
     mapping = {
         "int64": janitor_rs.compare_start_ne_int64,
@@ -142,8 +139,8 @@ def _compare_ne_starts_only(
         "uint32": janitor_rs.compare_start_ne_uint32,
         "uint16": janitor_rs.compare_start_ne_uint16,
         "uint8": janitor_rs.compare_start_ne_uint8,
-        "float64": janitor_rs.compare_start_ne_float64,
-        "float32": janitor_rs.compare_start_ne_float32,
+        "float64": janitor_rs.compare_start_ne_f64,
+        "float32": janitor_rs.compare_start_ne_f32,
     }
     dtype_name = left.dtype.name
     try:
@@ -173,7 +170,7 @@ def _compare_ne_first_run_ends_only(
     op: int,
 ) -> tuple:
     """
-    Compute booleans for first run
+    compute for first run
     """
     mapping = {
         "int64": janitor_rs.compare_end_ne_1st_int64,
@@ -184,8 +181,8 @@ def _compare_ne_first_run_ends_only(
         "uint32": janitor_rs.compare_end_ne_1st_uint32,
         "uint16": janitor_rs.compare_end_ne_1st_uint16,
         "uint8": janitor_rs.compare_end_ne_1st_uint8,
-        "float64": janitor_rs.compare_end_ne_1st_float64,
-        "float32": janitor_rs.compare_end_ne_1st_float32,
+        "float64": janitor_rs.compare_end_ne_1st_f64,
+        "float32": janitor_rs.compare_end_ne_1st_f32,
     }
     dtype_name = left.dtype.name
     try:
@@ -215,7 +212,7 @@ def _compare_ne_ends_only(
     op: int,
 ) -> tuple:
     """
-    Compute booleans for ends
+    compute for ends
     """
     mapping = {
         "int64": janitor_rs.compare_end_ne_int64,
@@ -226,8 +223,8 @@ def _compare_ne_ends_only(
         "uint32": janitor_rs.compare_end_ne_uint32,
         "uint16": janitor_rs.compare_end_ne_uint16,
         "uint8": janitor_rs.compare_end_ne_uint8,
-        "float64": janitor_rs.compare_end_ne_float64,
-        "float32": janitor_rs.compare_end_ne_float32,
+        "float64": janitor_rs.compare_end_ne_f64,
+        "float32": janitor_rs.compare_end_ne_f32,
     }
     dtype_name = left.dtype.name
     try:
@@ -258,7 +255,7 @@ def _compare_ne_first_run_starts_ends(
     op: int,
 ) -> tuple:
     """
-    Compute booleans for first run
+    compute for first run
     """
     mapping = {
         "int64": janitor_rs.compare_start_end_ne_1st_int64,
@@ -269,8 +266,8 @@ def _compare_ne_first_run_starts_ends(
         "uint32": janitor_rs.compare_start_end_ne_1st_uint32,
         "uint16": janitor_rs.compare_start_end_ne_1st_uint16,
         "uint8": janitor_rs.compare_start_end_ne_1st_uint8,
-        "float64": janitor_rs.compare_start_end_ne_1st_float64,
-        "float32": janitor_rs.compare_start_end_ne_1st_float32,
+        "float64": janitor_rs.compare_start_end_ne_1st_f64,
+        "float32": janitor_rs.compare_start_end_ne_1st_f32,
     }
     dtype_name = left.dtype.name
     try:
@@ -301,7 +298,7 @@ def _compare_ne_starts_ends(
     op: int,
 ) -> tuple:
     """
-    Compute booleans for starts and ends
+    compute for starts and ends
     """
     mapping = {
         "int64": janitor_rs.compare_start_end_ne_int64,
@@ -312,8 +309,8 @@ def _compare_ne_starts_ends(
         "uint32": janitor_rs.compare_start_end_ne_uint32,
         "uint16": janitor_rs.compare_start_end_ne_uint16,
         "uint8": janitor_rs.compare_start_end_ne_uint8,
-        "float64": janitor_rs.compare_start_end_ne_float64,
-        "float32": janitor_rs.compare_start_end_ne_float32,
+        "float64": janitor_rs.compare_start_end_ne_f64,
+        "float32": janitor_rs.compare_start_end_ne_f32,
     }
     dtype_name = left.dtype.name
     try:
@@ -340,7 +337,7 @@ def _compare_first_run_starts_only(
     op: int,
 ) -> tuple:
     """
-    Compute booleans for first run
+    compute for first run
     """
     mapping = {
         "int64": janitor_rs.compare_first_start_int64,
@@ -351,8 +348,8 @@ def _compare_first_run_starts_only(
         "uint32": janitor_rs.compare_first_start_uint32,
         "uint16": janitor_rs.compare_first_start_uint16,
         "uint8": janitor_rs.compare_first_start_uint8,
-        "float64": janitor_rs.compare_first_start_float64,
-        "float32": janitor_rs.compare_first_start_float32,
+        "float64": janitor_rs.compare_first_start_f64,
+        "float32": janitor_rs.compare_first_start_f32,
     }
     dtype_name = left.dtype.name
     try:
@@ -371,7 +368,7 @@ def _compare_starts_only(
     op: int,
 ) -> tuple:
     """
-    Compute booleans for starts
+    compute for starts
     """
     mapping = {
         "int64": janitor_rs.compare_start_int64,
@@ -382,8 +379,8 @@ def _compare_starts_only(
         "uint32": janitor_rs.compare_start_uint32,
         "uint16": janitor_rs.compare_start_uint16,
         "uint8": janitor_rs.compare_start_uint8,
-        "float64": janitor_rs.compare_start_float64,
-        "float32": janitor_rs.compare_start_float32,
+        "float64": janitor_rs.compare_start_f64,
+        "float32": janitor_rs.compare_start_f32,
     }
     dtype_name = left.dtype.name
     try:
@@ -397,7 +394,7 @@ def _compare_first_run_ends_only(
     left: np.ndarray, right: np.ndarray, ends: np.ndarray, op: int
 ) -> tuple:
     """
-    Compute booleans for first run
+    compute for first run
     """
     mapping = {
         "int64": janitor_rs.compare_first_end_int64,
@@ -408,8 +405,8 @@ def _compare_first_run_ends_only(
         "uint32": janitor_rs.compare_first_end_uint32,
         "uint16": janitor_rs.compare_first_end_uint16,
         "uint8": janitor_rs.compare_first_end_uint8,
-        "float64": janitor_rs.compare_first_end_float64,
-        "float32": janitor_rs.compare_first_end_float32,
+        "float64": janitor_rs.compare_first_end_f64,
+        "float32": janitor_rs.compare_first_end_f32,
     }
     dtype_name = left.dtype.name
     try:
@@ -428,7 +425,7 @@ def _compare_ends_only(
     op: int,
 ) -> tuple:
     """
-    Compute booleans for ends
+    compute for ends
     """
     mapping = {
         "int64": janitor_rs.compare_end_int64,
@@ -439,8 +436,8 @@ def _compare_ends_only(
         "uint32": janitor_rs.compare_end_uint32,
         "uint16": janitor_rs.compare_end_uint16,
         "uint8": janitor_rs.compare_end_uint8,
-        "float64": janitor_rs.compare_end_float64,
-        "float32": janitor_rs.compare_end_float32,
+        "float64": janitor_rs.compare_end_f64,
+        "float32": janitor_rs.compare_end_f32,
     }
     dtype_name = left.dtype.name
     try:
@@ -458,7 +455,7 @@ def _compare_first_run_starts_ends(
     op: int,
 ) -> tuple:
     """
-    Compute booleans for first run
+    compute for first run
     """
     mapping = {
         "int64": janitor_rs.compare_first_start_end_int64,
@@ -469,8 +466,8 @@ def _compare_first_run_starts_ends(
         "uint32": janitor_rs.compare_first_start_end_uint32,
         "uint16": janitor_rs.compare_first_start_end_uint16,
         "uint8": janitor_rs.compare_first_start_end_uint8,
-        "float64": janitor_rs.compare_first_start_end_float64,
-        "float32": janitor_rs.compare_first_start_end_float32,
+        "float64": janitor_rs.compare_first_start_end_f64,
+        "float32": janitor_rs.compare_first_start_end_f32,
     }
     dtype_name = left.dtype.name
     try:
@@ -489,7 +486,7 @@ def _compare_starts_ends(
     op: int,
 ) -> tuple:
     """
-    Compute booleans for starts and ends
+    compute for starts and ends
     """
     mapping = {
         "int64": janitor_rs.compare_start_end_int64,
@@ -500,8 +497,8 @@ def _compare_starts_ends(
         "uint32": janitor_rs.compare_start_end_uint32,
         "uint16": janitor_rs.compare_start_end_uint16,
         "uint8": janitor_rs.compare_start_end_uint8,
-        "float64": janitor_rs.compare_start_end_float64,
-        "float32": janitor_rs.compare_start_end_float32,
+        "float64": janitor_rs.compare_start_end_f64,
+        "float32": janitor_rs.compare_start_end_f32,
     }
     dtype_name = left.dtype.name
     try:
@@ -520,7 +517,7 @@ def _compare_positions(
     op: int,
 ) -> tuple:
     """
-    Compute booleans for first run
+    compute for first run
     """
     mapping = {
         "int64": janitor_rs.compare_posns_int64,
@@ -531,8 +528,8 @@ def _compare_positions(
         "uint32": janitor_rs.compare_posns_uint32,
         "uint16": janitor_rs.compare_posns_uint16,
         "uint8": janitor_rs.compare_posns_uint8,
-        "float64": janitor_rs.compare_posns_float64,
-        "float32": janitor_rs.compare_posns_float32,
+        "float64": janitor_rs.compare_posns_f64,
+        "float32": janitor_rs.compare_posns_f32,
     }
     dtype_name = left.dtype.name
     try:
@@ -561,7 +558,7 @@ def _compare_positions_ne(
     op: int,
 ) -> tuple:
     """
-    Compute booleans for first run
+    compute for first run
     """
     mapping = {
         "int64": janitor_rs.compare_posns_ne_int64,
@@ -572,8 +569,8 @@ def _compare_positions_ne(
         "uint32": janitor_rs.compare_posns_ne_uint32,
         "uint16": janitor_rs.compare_posns_ne_uint16,
         "uint8": janitor_rs.compare_posns_ne_uint8,
-        "float64": janitor_rs.compare_posns_ne_float64,
-        "float32": janitor_rs.compare_posns_ne_float32,
+        "float64": janitor_rs.compare_posns_ne_f64,
+        "float32": janitor_rs.compare_posns_ne_f32,
     }
     dtype_name = left.dtype.name
     try:

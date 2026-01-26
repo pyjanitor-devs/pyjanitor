@@ -33,7 +33,7 @@ dependencies = [
     "natsort",
     "pandas-flavor==0.8.1",
     "multipledispatch",
-    "scipy", "pre-commit>=4.5.1,<5", "janitor-rs @ file:/Users/samuel.oranyeli/janitor-rs/target/wheels/janitor_rs-0.6.0-cp38-abi3-macosx_11_0_arm64.whl"]
+    "scipy", "pre-commit>=4.5.1,<5", "janitor-rs @ file:/Users/samuel.oranyeli/janitor-rs/target/wheels/janitor_rs-0.6.0-cp38-abi3-macosx_11_0_arm64.whl", "duckdb>=1.4.3,<2"]
 [project.optional-dependencies]
 dev = [
     "pip-tools",

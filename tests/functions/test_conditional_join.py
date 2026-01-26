@@ -118,6 +118,20 @@ def test_join_return_building_blocks(dummy, series):
         jn.get_join_indices(dummy, series, ("id", "B", ">"), return_building_blocks=1)
 
 
+def test_join_algorithm_type(dummy, series):
+    """Raise TypeError if join_algorithm is not a str."""
+    with pytest.raises(TypeError, match="join_algorithm should be one of.+"):
+        jn.conditional_join(dummy, series, ("id", "B", ">"), join_algorithm=1)
+
+
+def test_join_algorithm_options(dummy, series):
+    """Raise Value if join_algorithm is not default/regions."""
+    with pytest.raises(
+        ValueError, match="join_algorithm should be either default or regions.+"
+    ):
+        jn.conditional_join(dummy, series, ("id", "B", ">"), join_algorithm="region")
+
+
 def test_join_aggs_reverse(dummy, series):
     """Raise TypeError if reverse is not a boolean."""
     with pytest.raises(TypeError, match="reverse should be one of.+"):
@@ -1595,6 +1609,35 @@ def test_dual_conditions_gt_and_lt_dates(df, right):
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
+def test_dual_conditions_gt_and_lt_dates_regions(df, right):
+    """Test output for interval conditions."""
+
+    middle, left_on, right_on = ("E", "Dates", "Dates_Right")
+    expected = (
+        df[["E"]]
+        .merge(right[["Dates", "Dates_Right"]], how="cross")
+        .loc[lambda df: df.E.between(df.Dates, df.Dates_Right, inclusive="neither")]
+        .sort_values(["E", "Dates", "Dates_Right"], ignore_index=True)
+    )
+
+    actual = (
+        df[["E"]]
+        .conditional_join(
+            right[["Dates", "Dates_Right"]],
+            (middle, left_on, ">"),
+            (middle, right_on, "<"),
+            how="inner",
+            join_algorithm="regions",
+        )
+        .sort_values(["E", "Dates", "Dates_Right"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_gt_and_ge_dates(df, right):
     """Test output for multiple conditions."""
 
@@ -1612,6 +1655,34 @@ def test_dual_conditions_gt_and_ge_dates(df, right):
             ("E", "Dates", ">"),
             ("E", "Dates_Right", ">="),
             how="inner",
+        )
+        .sort_values(["E", "Dates", "Dates_Right"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_conditions_gt_and_ge_dates_regions(df, right):
+    """Test output for multiple conditions."""
+
+    expected = (
+        df[["E"]]
+        .merge(right[["Dates", "Dates_Right"]], how="cross")
+        .query("E>Dates and E>=Dates_Right")
+        .sort_values(["E", "Dates", "Dates_Right"], ignore_index=True)
+    )
+
+    actual = (
+        df[["E"]]
+        .conditional_join(
+            right[["Dates", "Dates_Right"]],
+            ("E", "Dates", ">"),
+            ("E", "Dates_Right", ">="),
+            how="inner",
+            join_algorithm="regions",
         )
         .sort_values(["E", "Dates", "Dates_Right"], ignore_index=True)
     )
@@ -1754,6 +1825,40 @@ def test_dual_conditions_gt_and_ge_dates_last(df, right):
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
+def test_dual_conditions_gt_and_ge_dates_last_regions(df, right):
+    """Test output for multiple conditions."""
+
+    expected = (
+        df[["E"]]
+        .reset_index()
+        .merge(right[["Dates", "Dates_Right"]], how="cross")
+        .query("E>Dates and E>=Dates_Right")
+        .groupby("index", as_index=False)
+        .tail(1)
+        .drop(columns="index")
+        .reset_index(drop=True)
+    )
+    expected = expected.sort_values(expected.columns.tolist(), ignore_index=True)
+
+    actual = (
+        df[["E"]]
+        .conditional_join(
+            right[["Dates", "Dates_Right"]],
+            ("E", "Dates", ">"),
+            ("E", "Dates_Right", ">="),
+            how="inner",
+            keep="last",
+            join_algorithm="regions",
+        )
+        .sort_values(expected.columns.tolist(), ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
 def test_dual_conditions_lt_and_le_dates(df, right):
     """Test output for multiple conditions."""
 
@@ -1804,6 +1909,40 @@ def test_dual_conditions_gt_and_lt_dates_keep_first(df, right):
             (middle, right_on, "<"),
             how="inner",
             keep="first",
+        )
+        .sort_values(["E", "Dates", "Dates_Right"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_conditions_gt_and_lt_dates_keep_first_regions(df, right):
+    """Test output for interval conditions."""
+
+    middle, left_on, right_on = ("E", "Dates", "Dates_Right")
+    expected = (
+        df[["E"]]
+        .reset_index(names="index")
+        .merge(right[["Dates", "Dates_Right"]], how="cross")
+        .loc[lambda df: df.E.between(df.Dates, df.Dates_Right, inclusive="neither")]
+        .groupby("index", sort=False)
+        .head(1)
+        .drop(columns="index")
+        .sort_values(["E", "Dates", "Dates_Right"], ignore_index=True)
+    )
+
+    actual = (
+        df[["E"]]
+        .conditional_join(
+            right[["Dates", "Dates_Right"]],
+            (middle, left_on, ">"),
+            (middle, right_on, "<"),
+            how="inner",
+            keep="first",
+            join_algorithm="regions",
         )
         .sort_values(["E", "Dates", "Dates_Right"], ignore_index=True)
     )
@@ -2174,6 +2313,34 @@ def test_dual_conditions_gt_and_lt_numbers(df, right):
             ("B", "Floats", "<"),
             ("B", "Numeric", ">"),
             how="inner",
+        )
+        .sort_values(["B", "Numeric", "Floats"], ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+def test_dual_conditions_gt_and_lt_numbers_regions(df, right):
+    """Test output for interval conditions."""
+
+    expected = (
+        df[["B"]]
+        .merge(right[["Numeric", "Floats"]], how="cross")
+        .loc[lambda df: df.B.between(df.Numeric, df.Floats, inclusive="neither")]
+        .sort_values(["B", "Numeric", "Floats"], ignore_index=True)
+    )
+
+    actual = (
+        df[["B"]]
+        .conditional_join(
+            right[["Numeric", "Floats"]],
+            ("B", "Floats", "<"),
+            ("B", "Numeric", ">"),
+            how="inner",
+            join_algorithm="regions",
         )
         .sort_values(["B", "Numeric", "Floats"], ignore_index=True)
     )
@@ -2762,6 +2929,38 @@ def test_gt_lt_ne_conditions(df, right):
             ("B", "Numeric", "<"),
             ("E", "Dates", "!="),
             how="inner",
+        )
+        .sort_values(filters, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
+@pytest.mark.turtle
+def test_gt_lt_ne_conditions_regions(df, right):
+    """
+    Test output for multiple conditions.
+    """
+
+    filters = ["A", "B", "E", "Integers", "Numeric", "Dates"]
+    expected = (
+        df[["A", "B", "E"]]
+        .merge(right[["Integers", "Numeric", "Dates"]], how="cross")
+        .loc[lambda df: df.A.gt(df.Integers) & df.B.lt(df.Numeric) & df.E.ne(df.Dates)]
+        .sort_values(filters, ignore_index=True)
+    )
+
+    actual = (
+        df[["A", "B", "E"]]
+        .conditional_join(
+            right[["Integers", "Numeric", "Dates"]],
+            ("A", "Integers", ">"),
+            ("B", "Numeric", "<"),
+            ("E", "Dates", "!="),
+            how="inner",
+            join_algorithm="regions",
         )
         .sort_values(filters, ignore_index=True)
     )
@@ -3941,6 +4140,41 @@ def test_multiple_non_equi(df, right):
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
+def test_multiple_non_equi_regions(df, right):
+    """Test output for multiple conditions."""
+
+    columns = ["B", "A", "E", "Floats", "Integers", "Dates"]
+    expected = (
+        df.merge(
+            right,
+            how="cross",
+        )
+        .loc[
+            lambda df: df.A.ge(df.Integers) & df.E.le(df.Dates) & df.B.lt(df.Floats),
+            columns,
+        ]
+        .sort_values(columns, ignore_index=True)
+    )
+
+    actual = (
+        df[["B", "A", "E"]]
+        .conditional_join(
+            right[["Floats", "Integers", "Dates"]],
+            ("A", "Integers", ">="),
+            ("E", "Dates", "<="),
+            ("B", "Floats", "<"),
+            how="inner",
+            join_algorithm="regions",
+        )
+        .sort_values(columns, ignore_index=True)
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.turtle
+@settings(deadline=None, max_examples=10)
+@given(df=conditional_df(), right=conditional_right())
 def test_multiple_non_equi_numba_(df, right):
     """Test output for multiple conditions."""
 
@@ -4624,7 +4858,6 @@ def test_multiple_eqs_col_syntax(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_eq_strings(df, right):
     """Test output for joins on strings."""
-
     columns = ["C", "A", "Strings", "Integers"]
     expected = df.merge(
         right,

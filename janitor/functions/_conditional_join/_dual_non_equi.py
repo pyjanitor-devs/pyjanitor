@@ -161,11 +161,12 @@ def _get_indices(
     """
     (left_on, right_on, op) = first_condition
     left_col = df[left_on]
-    # sorting is done here to enable easy region filtering later on
-    # by starting from the highest region
-    left_col, _ = _helpers._sort_if_not_monotonic(series=left_col)
+    # # sorting is done here to enable easy region filtering later on
+    # # by starting from the highest region
+    # left_col, _ = _helpers._sort_if_not_monotonic(series=left_col)
     right_col = right[right_on]
     outcome = _build_regions(left=left_col, right=right_col, op=op)
+    return outcome
     if outcome is None:
         return None
     l1_index, l1_region, r1_index, r1_region = outcome
@@ -258,6 +259,7 @@ def _build_regions(left: pd.Series, right: pd.Series, op: str) -> tuple:
             right=right._values,
             strict=op == ">",
         )
+    return left, right, outcome
     if outcome is None:
         return None
     left_index, search_indices = outcome

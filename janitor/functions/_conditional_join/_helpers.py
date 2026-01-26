@@ -117,9 +117,7 @@ def _separate_conditions_based_on_op(conditions: Sequence):
     is_range_join = all((le_lt, ge_gt))
     if is_range_join:
         le_or_ge = [
-            condition
-            for condition in le_or_ge
-            if condition not in (ge_gt, le_lt)
+            condition for condition in le_or_ge if condition not in (ge_gt, le_lt)
         ]
     return {
         "l_cols": l_cols,
@@ -142,14 +140,12 @@ def _convert_array_to_numpy(
     """
     if pd.api.types.is_extension_array_dtype(array):
         array_dtype = array.dtype.numpy_dtype
-        array = array.to_numpy(
-            dtype=array_dtype, na_value=na_value, copy=False
-        )
+        array = array.to_numpy(dtype=array_dtype, na_value=na_value, copy=False)
     if pd.api.types.is_timedelta64_dtype(array):
         array = array.to_numpy(copy=False)
-    if pd.api.types.is_datetime64_dtype(
+    if pd.api.types.is_datetime64_dtype(array) or pd.api.types.is_timedelta64_dtype(
         array
-    ) or pd.api.types.is_timedelta64_dtype(array):
+    ):
         array = array.view(np.int64)
     return array
 
@@ -200,8 +196,8 @@ def _update_positions_no_range_(
     for left_on, right_on, op in conditions:
         left_array = df[left_on]
         right_array = right[right_on]
-        left_booleans, right_booleans, is_extension_array = (
-            _get_boolean_args_for_ne(op=op, left=left_array, right=right_array)
+        left_booleans, right_booleans, is_extension_array = _get_boolean_args_for_ne(
+            op=op, left=left_array, right=right_array
         )
         left_array = _convert_array_to_numpy(array=left_array._values)
         right_array = _convert_array_to_numpy(array=right_array._values)
@@ -278,8 +274,8 @@ def _get_positive_matches_conditions_posns(
     (left_on, right_on, op), *rest = conditions
     left_array = df.loc[left_index, left_on]
     right_array = right.loc[right_index, right_on]
-    left_booleans, right_booleans, is_extension_array = (
-        _get_boolean_args_for_ne(op=op, left=left_array, right=right_array)
+    left_booleans, right_booleans, is_extension_array = _get_boolean_args_for_ne(
+        op=op, left=left_array, right=right_array
     )
     left_array = _convert_array_to_numpy(array=left_array._values)
     right_array = _convert_array_to_numpy(array=right_array._values)
@@ -299,8 +295,8 @@ def _get_positive_matches_conditions_posns(
     for left_on, right_on, op in rest:
         left_array = df.loc[left_index, left_on]
         right_array = right.loc[right_index, right_on]
-        left_booleans, right_booleans, is_extension_array = (
-            _get_boolean_args_for_ne(op=op, left=left_array, right=right_array)
+        left_booleans, right_booleans, is_extension_array = _get_boolean_args_for_ne(
+            op=op, left=left_array, right=right_array
         )
         left_array = _convert_array_to_numpy(array=left_array._values)
         right_array = _convert_array_to_numpy(array=right_array._values)
@@ -375,9 +371,7 @@ def _get_positive_matches(
                 is_extension_array=is_extension_array,
                 op=operator_mapping[op],
             )
-    elif (
-        (starts is not None) and (ends is None) and (counts_array is not None)
-    ):
+    elif (starts is not None) and (ends is None) and (counts_array is not None):
         if (left_booleans is None) and (right_booleans is None):
             matches, counts_array, total = _compare._compare_starts_only(
                 left=left,
@@ -399,9 +393,7 @@ def _get_positive_matches(
                 matches=matches,
                 op=operator_mapping[op],
             )
-    elif (
-        (starts is None) and (ends is not None) and (counts_array is not None)
-    ):
+    elif (starts is None) and (ends is not None) and (counts_array is not None):
         if (left_booleans is None) and (right_booleans is None):
             matches, counts_array, total = _compare._compare_ends_only(
                 left=left,
@@ -423,9 +415,7 @@ def _get_positive_matches(
                 matches=matches,
                 op=operator_mapping[op],
             )
-    elif (
-        (starts is not None) and (ends is not None) and (counts_array is None)
-    ):
+    elif (starts is not None) and (ends is not None) and (counts_array is None):
         if (left_booleans is None) and (right_booleans is None):
             matches, counts_array, total = _compare._compare_first_run_starts_ends(
                 left=left,
@@ -445,11 +435,7 @@ def _get_positive_matches(
                 is_extension_array=is_extension_array,
                 op=operator_mapping[op],
             )
-    elif (
-        (starts is not None)
-        and (ends is not None)
-        and (counts_array is not None)
-    ):
+    elif (starts is not None) and (ends is not None) and (counts_array is not None):
         if (left_booleans is None) and (right_booleans is None):
             matches, counts_array, total = _compare._compare_starts_ends(
                 left=left,
@@ -491,8 +477,8 @@ def _get_positive_matches_conditions(
     (left_on, right_on, op), *rest = conditions
     left_array = df.loc[left_index, left_on]
     right_array = right[right_on]
-    left_booleans, right_booleans, is_extension_array = (
-        _get_boolean_args_for_ne(op=op, left=left_array, right=right_array)
+    left_booleans, right_booleans, is_extension_array = _get_boolean_args_for_ne(
+        op=op, left=left_array, right=right_array
     )
     left_array = _convert_array_to_numpy(array=left_array._values)
     right_array = _convert_array_to_numpy(array=right_array._values)
@@ -513,8 +499,8 @@ def _get_positive_matches_conditions(
     for left_on, right_on, op in rest:
         left_array = df.loc[left_index, left_on]
         right_array = right[right_on]
-        left_booleans, right_booleans, is_extension_array = (
-            _get_boolean_args_for_ne(op=op, left=left_array, right=right_array)
+        left_booleans, right_booleans, is_extension_array = _get_boolean_args_for_ne(
+            op=op, left=left_array, right=right_array
         )
         left_array = _convert_array_to_numpy(array=left_array._values)
         right_array = _convert_array_to_numpy(array=right_array._values)
@@ -548,12 +534,8 @@ def _get_boolean_args_for_ne(
     if not any((left_booleans.any(), right_booleans.any())):
         return None, None, False
     is_extension_array = pd.api.types.is_extension_array_dtype(left)
-    left_booleans = left_booleans.to_numpy(
-        na_value=False, copy=False, dtype=np.bool_
-    )
-    right_booleans = right_booleans.to_numpy(
-        na_value=False, copy=False, dtype=np.bool_
-    )
+    left_booleans = left_booleans.to_numpy(na_value=False, copy=False, dtype=np.bool_)
+    right_booleans = right_booleans.to_numpy(na_value=False, copy=False, dtype=np.bool_)
     return left_booleans, right_booleans, is_extension_array
 
 
@@ -653,19 +635,27 @@ def build_indices_matches(
 
     elif (keep == "first") and (starts is not None) and (ends is None):
         total = np.count_nonzero(counts_array)
-        left_index = janitor_rs.trim_index(
+        left = janitor_rs.trim_index(
             index=left_index, counts=counts_array, length=total
         )
         right = janitor_rs.index_starts_only_keep_first(
-            index=right_index, starts=starts, matches=matches, length=total
+            index=right_index,
+            starts=starts,
+            counts=counts_array,
+            matches=matches,
+            length=total,
         )
     elif (keep == "first") and (starts is None) and (ends is not None):
         total = np.count_nonzero(counts_array)
-        left_index = janitor_rs.trim_index(
+        left = janitor_rs.trim_index(
             index=left_index, counts=counts_array, length=total
         )
         right = janitor_rs.index_ends_only_keep_first(
-            index=right_index, ends=ends, matches=matches, length=total
+            index=right_index,
+            ends=ends,
+            counts=counts_array,
+            matches=matches,
+            length=total,
         )
     elif (keep == "first") and (starts is not None) and (ends is not None):
         total = np.count_nonzero(counts_array)
@@ -695,7 +685,11 @@ def build_indices_matches(
             index=left_index, counts=counts_array, length=total
         )
         right = janitor_rs.index_ends_only_keep_last(
-            index=right_index, ends=ends, matches=matches, length=total
+            index=right_index,
+            ends=ends,
+            counts=counts_array,
+            matches=matches,
+            length=total,
         )
     elif (keep == "last") and (starts is not None) and (ends is not None):
         total = np.count_nonzero(counts_array)

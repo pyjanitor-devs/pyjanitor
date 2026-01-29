@@ -285,9 +285,9 @@ def pivot_longer(
         3  Houston    Texas      Orange  Vodka      10    20.0
         4   Austin    Texas      Orange  Vodka       8    33.0
         5   Hoover  Alabama      Orange  Vodka      14    18.0
-        6  Houston    Texas  Watermelon   None      40     NaN
-        7   Austin    Texas  Watermelon   None      99     NaN
-        8   Hoover  Alabama  Watermelon   None      43     NaN
+        6  Houston    Texas  Watermelon    NaN      40     NaN
+        7   Austin    Texas  Watermelon    NaN      99     NaN
+        8   Hoover  Alabama  Watermelon    NaN      43     NaN
 
         Replicate the above transformation with a nested dictionary passed to `names_pattern`
         - the outer keys in the `names_pattern` dictionary are passed to `names_to`,
@@ -307,9 +307,9 @@ def pivot_longer(
         3  Houston    Texas      Orange  Vodka      10    20.0
         4   Austin    Texas      Orange  Vodka       8    33.0
         5   Hoover  Alabama      Orange  Vodka      14    18.0
-        6  Houston    Texas  Watermelon   None      40     NaN
-        7   Austin    Texas  Watermelon   None      99     NaN
-        8   Hoover  Alabama  Watermelon   None      43     NaN
+        6  Houston    Texas  Watermelon    NaN      40     NaN
+        7   Austin    Texas  Watermelon    NaN      99     NaN
+        8   Hoover  Alabama  Watermelon    NaN      43     NaN
 
     !!! abstract "Version Changed"
 

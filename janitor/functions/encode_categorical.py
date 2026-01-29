@@ -95,7 +95,7 @@ def encode_categorical(
         bar       int64
         dtype: object
         >>> enc_df["foo"].cat.categories
-        Index(['b', 'a', 'c'], dtype='object')
+        Index(['b', 'a', 'c'], dtype='str')
         >>> enc_df["foo"].cat.ordered
         True
 

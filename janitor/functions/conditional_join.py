@@ -1316,6 +1316,7 @@ def get_join_indices(
     use_numba: bool = False,
     force: bool = False,
     return_building_blocks: bool = False,
+    join_algorithm: str = "default",
 ) -> dict:
     """Convenience function to return the matching indices from an inner join.
 
@@ -1332,6 +1333,7 @@ def get_join_indices(
             - `use_numba` deprecated.
         - 0.34.0
             - Added experimental `return_building_blocks` parameter.
+            - Add join_algorithm parameter.
 
     Args:
         df: A pandas DataFrame.
@@ -1352,6 +1354,8 @@ def get_join_indices(
         return_building_blocks: Return a possibly more extensive dictionary,
             containing data that will be used to build the indices.
             !!! warning "This feature is experimental and may change without warning."
+        join_algorithm: Determines what algorithm to use for multiple non-equi joins.
+            Currently limited to `default` and `regions`.
 
     Returns:
         A dictionary of indices for the rows in the dataframes that match.
@@ -1372,6 +1376,7 @@ def get_join_indices(
         include_join_positions=False,
         return_building_blocks=return_building_blocks,
         reverse=False,
+        join_algorithm=join_algorithm,
     )
 
 
@@ -1383,6 +1388,7 @@ def join_agg(
     aggfunc: list[tuple],
     force: bool = False,
     reverse: bool = False,
+    join_algorithm: str = "default",
 ) -> pd.DataFrame:
     """
     Compute an aggregation after the successful execution of a join;
@@ -1477,6 +1483,8 @@ def join_agg(
         reverse: If `True`, compute the aggregation on the columns
             of the left dataframe; if `False`, which is the default,
             compute the aggregation on the columns of the right dataframe.
+        join_algorithm: Determines what algorithm to use for multiple non-equi joins.
+            Currently limited to `default` and `regions`.
 
     Returns:
         A pandas DataFrame.
@@ -1495,6 +1503,7 @@ def join_agg(
         return_matching_indices=False,
         aggfunc=aggfunc,
         reverse=reverse,
+        join_algorithm=join_algorithm,
     )
 
 

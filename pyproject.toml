@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyjanitor"
-version = "0.32.8"
+dynamic = ["version"]
 description = "Tools for cleaning pandas DataFrames"
 requires-python = ">=3.6"
 license = {text = "MIT"}
@@ -32,8 +32,8 @@ classifiers = [
 dependencies = [
     "natsort>=8.4.0,<9",
     "pandas-flavor>=0.8.1,<0.9",
-    "multipledispatch>=1.0.0,<2",
-    "scipy>=1.17.0,<2", "janitor-rs>=0.6.1,<0.7", "mkdocs", "polars", "mkdocs-material", "mkdocstrings", "mkdocstrings-python", "ipython", "biopython", "tqdm", "unyt", "pyspark", "pip-tools", "pre-commit", "isort", "black", "darglint", "flake8", "pytest-cov", "pytest-xdist", "pytest", "hypothesis", "interrogate", "pandas-vet", "py"]
+    "multipledispatch",
+    "scipy", "janitor-rs>=0.6.1,<0.7"]
 
 [project.optional-dependencies]
 dev = [
@@ -126,8 +126,8 @@ pyjanitor = { path = ".", editable = true }
 
 [tool.pixi.dependencies]
 python = ">=3.10"
-pandas = ">=3.0.0,<4"
-numpy = ">=2.3.5,<3"
+pandas = "*"
+numpy = "*"
 jupyter = ">=1.1.1,<2"
 ipython = ">=9.9.0,<10"
 ipykernel = ">=7.1.0,<8"

@@ -217,9 +217,7 @@ def test_equi_only(dummy):
     """
     Raise ValueError if only an equi-join is present.
     """
-    with pytest.raises(
-        ValueError, match="Equality only joins are supported only if aggfunc.+"
-    ):
+    with pytest.raises(ValueError, match="Equality only joins are not supported."):
         dummy.conditional_join(
             dummy.rename(columns={"S": "Strings"}), ("S", "Strings", "==")
         )
@@ -248,23 +246,6 @@ def test_check_how_value(dummy, series):
     """
     with pytest.raises(ValueError, match="'how' should be one of.+"):
         dummy.conditional_join(series, ("id", "B", "<"), how="INNER")
-
-
-def test_df_columns(dummy):
-    """
-    Raise TypeError if `df_columns`is a dictionary,
-    and the columns is a MultiIndex.
-    """
-    with pytest.raises(
-        ValueError,
-        match="Column renaming with a dictionary is not supported.+",
-    ):
-        dummy.columns = [list("ABC"), list("FGH")]
-        dummy.conditional_join(
-            dummy,
-            (("A", "F"), ("A", "F"), ">="),
-            df_columns={("A", "F"): ("C", "D")},
-        )
 
 
 def test_check_use_numba_type(dummy, series):
@@ -301,7 +282,7 @@ def test_check_aggfunc_ne(dummy, series):
     """
     with pytest.raises(
         NotImplementedError,
-        match="aggfunc is not supported when all the join conditions.+",
+        match="aggfunc is not supported when all the join operators.+",
     ):
         dummy.join_agg(series, ("id", "B", "!="), aggfunc=[("B", "sum")])
 

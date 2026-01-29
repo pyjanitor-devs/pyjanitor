@@ -261,6 +261,7 @@ def conditional_join(
             - `use_numba` deprecated.
         - 0.34.0
             - Added `include_join_positions` parameter.
+            - Added `join_algorithm` parameter.
 
     Args:
         df: A pandas DataFrame.
@@ -383,14 +384,6 @@ def _conditional_join_preliminary_checks(
             f"from the right dataframe is {right.columns.nlevels}."
         )
 
-    # Check MultiIndex dictionary renaming before column existence checks
-    if (df.columns.nlevels > 1) and (
-        isinstance(df_columns, dict) or isinstance(right_columns, dict)
-    ):
-        raise ValueError(
-            "Column renaming with a dictionary is not supported for MultiIndex columns."
-        )
-
     if not conditions:
         raise ValueError("Kindly provide at least one join condition.")
 
@@ -421,7 +414,7 @@ def _conditional_join_preliminary_checks(
     if keep not in {"all", "first", "last"}:
         raise ValueError("'keep' should be one of 'all', 'first', 'last'.")
 
-    # deprecate in a future version
+    # TODO: deprecate in a future version
     check("use_numba", use_numba, [bool])
 
     if use_numba:
@@ -437,18 +430,8 @@ def _conditional_join_preliminary_checks(
         check("aggfunc", aggfunc, [list])
         if all((op == _JoinOperator.NOT_EQUAL.value for *_, op in conditions)):
             raise NotImplementedError(
-                "aggfunc is not supported when all the join conditions are !="
+                "aggfunc is not supported when all the join operators are !="
             )
-        for entry in aggfunc:
-            check("entry in aggfunc", entry, [tuple])
-            if len(entry) != 2:
-                raise ValueError(
-                    "The tuple in an aggfunc should be 2 elements; "
-                    "The first element in the tuple should be the column name "
-                    "in the right dataframe, while the second element "
-                    "in the tuple should be an aggregation function"
-                )
-        aggs = {"sum", "min", "max", "size", "prod"}
         if reverse:
             cols = df.columns
             frame = df
@@ -457,6 +440,16 @@ def _conditional_join_preliminary_checks(
             cols = right.columns
             frame = right
             replacement = "right"
+        for entry in aggfunc:
+            check("entry in aggfunc", entry, [tuple])
+            if len(entry) != 2:
+                raise ValueError(
+                    "The tuple in an aggfunc should be 2 elements; "
+                    "The first element in the tuple should be a column name "
+                    f"in the {replacement} dataframe, while the second element "
+                    "in the tuple should be a supported aggregation function"
+                )
+        aggs = {"sum", "min", "max", "size", "prod"}
         for column_name, agg in aggfunc:
             if column_name not in cols:
                 raise KeyError(
@@ -474,17 +467,11 @@ def _conditional_join_preliminary_checks(
             ):
                 raise ValueError(f"{agg} is supported only for numeric columns")
     if all((op == _JoinOperator.STRICTLY_EQUAL.value for *_, op in conditions)):
-        if not (return_matching_indices or (aggfunc is not None)):
-            raise ValueError(
-                "Equality only joins are supported only "
-                "if aggfunc is provided, "
-                "or only indices are to be returned."
-            )
+        if not (return_matching_indices or aggfunc):
+            raise ValueError("Equality only joins are not supported.")
         if return_matching_indices and use_numba:
             raise ValueError(
-                "Equality only joins are supported only "
-                "if indices are to be returned, "
-                "and use_numba is False."
+                "Equality only joins are supported only if use_numba is False."
             )
 
     check("include_join_positions", include_join_positions, [bool])

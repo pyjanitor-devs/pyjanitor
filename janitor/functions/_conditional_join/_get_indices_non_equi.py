@@ -17,7 +17,6 @@ def _get_indices(
     right: pd.DataFrame,
     conditions: list,
     keep: str,
-    return_matching_indices: bool,
 ) -> tuple:
     """
     Get indices, or aggregates, for multiple conditions,
@@ -187,8 +186,8 @@ def _get_indices(
         )
 
     # is range join
-    (_, r1_col, _) = mapping["le_lt"]
-    (_, r2_col, _) = mapping["ge_gt"]
+    (_, r1_col, _) = mapping["ge_gt"]
+    (_, r2_col, _) = mapping["le_lt"]
     others = (
         mapping["le_or_ge"],
         mapping["equals"],
@@ -230,7 +229,6 @@ def _get_indices(
                 ends=outcome["ends"],
                 keep=keep,
                 right_is_sorted=right_is_sorted,
-                return_matching_indices=return_matching_indices,
             )
         out = _helpers._get_positive_matches_conditions(
             df=df,

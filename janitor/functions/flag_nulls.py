@@ -36,13 +36,13 @@ def flag_nulls(
               a    b  null_flag
         0     w  5.0          0
         1     x  NaN          1
-        2  None  7.0          1
+        2   NaN  7.0          1
         3     z  8.0          0
         >>> df.flag_nulls(columns="b")
               a    b  null_flag
         0     w  5.0          0
         1     x  NaN          1
-        2  None  7.0          0
+        2   NaN  7.0          0
         3     z  8.0          0
 
     Args:

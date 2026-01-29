@@ -423,7 +423,7 @@ def test_fill_value_scalar(taxonomy_df):
         .unstack(fill_value=0)
         .stack(future_stack=True)
         .reset_index()
-        .astype({"Taxon": "object"})
+        .astype({"Taxon": str})
         .sort_values("Taxon", ignore_index=True)
     )
 

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyjanitor"
-version = "0.32.9"
+version = "0.32.8"
 description = "Tools for cleaning pandas DataFrames"
 requires-python = ">=3.6"
 license = {text = "MIT"}
@@ -33,9 +33,7 @@ dependencies = [
     "natsort",
     "pandas-flavor==0.8.1",
     "multipledispatch",
-    "scipy",
-    "janitor-rs>=0.3.0,<0.4"
-]
+    "scipy", "janitor-rs>=0.4.0,<0.5"]
 
 [project.optional-dependencies]
 dev = [
@@ -121,15 +119,20 @@ namespaces = false
 
 [tool.pixi.workspace]
 channels = ["https://prefix.dev/conda-forge"]
-platforms = ["osx-arm64", "linux-64"]
+platforms = ["osx-arm64", "linux-64", "win-64"]
 
 [tool.pixi.pypi-dependencies]
 pyjanitor = { path = ".", editable = true }
 
 [tool.pixi.dependencies]
-python = ">=3.6"
+python = ">=3.10"
 pandas = "*"
 numpy = "*"
+jupyter = ">=1.1.1,<2"
+ipython = ">=9.8.0,<10"
+ipykernel = ">=7.1.0,<8"
+pixi-kernel = ">=0.7.1,<0.8"
+jupyterlab = ">=4.5.1,<5"
 
 [tool.pixi.feature.tests.dependencies]
 pytest = "*"

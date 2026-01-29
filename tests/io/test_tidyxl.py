@@ -115,7 +115,7 @@ def test_default_values_blank_cells_true():
     """
     Test output for default values if include_blank_cells.
     """
-    assert None in io.xlsx_cells(filename, "pivot-notes")["value"].tolist()
+    assert io.xlsx_cells(filename, "pivot-notes")["value"].isna().any()
 
 
 def test_default_values_blank_cells_false():

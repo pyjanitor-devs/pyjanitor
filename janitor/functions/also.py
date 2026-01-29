@@ -27,7 +27,7 @@ def also(df: pd.DataFrame, func: Callable, *args: Any, **kwargs: Any) -> pd.Data
         ...     .also(lambda df: print(f"Columns: {df.columns}"))
         ... )
         DataFrame shape is: (2, 2)
-        Columns: Index(['a_new', 'b'], dtype='object')
+        Columns: Index(['a_new', 'b'], dtype='str')
 
     Args:
         df: A pandas DataFrame.

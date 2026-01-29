@@ -20,26 +20,17 @@ def _get_indices(
         first_condition=mapping["ge_gt"],
         second_condition=mapping["le_lt"],
     )
-    return outcome
     empty_array = np.array([], dtype=np.intp)
     if outcome is None:
         return {
             "left_index": empty_array,
             "right_index": empty_array,
         }
-    others = (
-        mapping["le_or_ge"],
-        mapping["equals"],
-        mapping["not_equals"],
-    )
     rest = []
-    for entry in others:
-        if not entry:
-            continue
-        if isinstance(entry, tuple):
-            rest.append(entry)
-        else:
-            rest.extend(entry)
+    rest.extend(mapping["le_or_ge"])
+    rest.extend(mapping["equals"])
+    rest.extend(mapping["not_equals"])
+    rest = [entry for entry in rest if entry]
     if return_matching_indices and not rest:
         starts, ends = _dual_non_equi._build_starts_and_ends(
             counts=outcome["counts_array"]

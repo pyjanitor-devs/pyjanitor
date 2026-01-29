@@ -4,11 +4,7 @@ import janitor_rs
 import numpy as np
 import pandas as pd
 
-from janitor.functions._conditional_join import (
-    _helpers,
-    _range_indices,
-    _binary_search
-)
+from janitor.functions._conditional_join import _binary_search, _helpers, _range_indices
 
 
 def _get_indices(
@@ -24,20 +20,12 @@ def _get_indices(
     """
     empty_array = np.array([], dtype=np.intp)
     mapping = _helpers._separate_conditions_based_on_op(conditions=conditions)
-    _columns = (
-        mapping["le_or_ge"],
-        mapping["le_lt"],
-        mapping["ge_gt"],
-        mapping["equals"],
-    )
     columns = []
-    for entry in _columns:
-        if not entry:
-            continue
-        if isinstance(entry, tuple):
-            columns.append(entry)
-        else:
-            columns.extend(entry)
+    columns.extend(mapping["le_or_ge"])
+    columns.append(mapping["le_lt"])
+    columns.append(mapping["ge_gt"])
+    columns.extend(mapping["equals"])
+    columns = filter(None, columns)
     left_columns = set()
     right_columns = set()
     for left_col, right_col, _ in columns:
@@ -149,7 +137,7 @@ def _get_indices(
                 right=right,
                 mapping=mapping,
                 keep=keep,
-                return_matching_indices=return_matching_indices
+                return_matching_indices=return_matching_indices,
             )
         if mapping["le_or_ge"]:
             return _get_indices_le_or_ge_and_not_range_join(
@@ -617,7 +605,7 @@ def _get_indices_equi_join_only(
         return {
             "left_index": np.array([], dtype=np.intp),
             "right_index": np.array([], dtype=np.intp),
-        } 
+        }
     indexers, starts, ends = outcome
     booleans = indexers == -1
     if booleans.all():

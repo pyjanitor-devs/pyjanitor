@@ -26,20 +26,12 @@ def _get_indices(
     """
     empty_array = np.array([], dtype=np.intp)
     mapping = _helpers._separate_conditions_based_on_op(conditions=conditions)
-    _columns = (
-        mapping["le_or_ge"],
-        mapping["le_lt"],
-        mapping["ge_gt"],
-        mapping["equals"],
-    )
     columns = []
-    for entry in _columns:
-        if not entry:
-            continue
-        if isinstance(entry, tuple):
-            columns.append(entry)
-        else:
-            columns.extend(entry)
+    columns.extend(mapping["le_or_ge"])
+    columns.append(mapping["le_lt"])
+    columns.append(mapping["ge_gt"])
+    columns.extend(mapping["equals"])
+    columns = filter(None, columns)
     left_columns = set()
     right_columns = set()
     for left_col, right_col, _ in columns:

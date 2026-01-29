@@ -14,19 +14,11 @@ def _get_indices(
     empty_array = np.array([], dtype=np.intp)
     (_, r1_col, _) = mapping["ge_gt"]
     (_, r2_col, _) = mapping["le_lt"]
-    others = (
-        mapping["le_or_ge"],
-        mapping["equals"],
-        mapping["not_equals"],
-    )
     rest = []
-    for entry in others:
-        if not entry:
-            continue
-        if isinstance(entry, tuple):
-            rest.append(entry)
-        else:
-            rest.extend(entry)
+    rest.extend(mapping["le_or_ge"])
+    rest.extend(mapping["equals"])
+    rest.extend(mapping["not_equals"])
+    rest = [entry for entry in rest if entry]
     right_is_sorted = right[r1_col].is_monotonic_increasing
     if not right_is_sorted:
         # defensive approach,

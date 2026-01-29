@@ -661,7 +661,6 @@ def _conditional_join_compute(
             keep=keep,
             return_matching_indices=return_building_blocks or aggfunc,
         )
-    return indices
     if aggfunc and reverse:
         return _get_join_aggs._agg_join_left(
             df=df,

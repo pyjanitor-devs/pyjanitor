@@ -14,22 +14,16 @@ def _get_indices(
     return_matching_indices: bool,
     keep: str,
 ):
-    first_condition, second_condition, *rest_ = mapping["le_or_ge"]
-    others = (rest_, mapping["equals"], mapping["not_equals"])
+    first_condition, second_condition, *rest = mapping["le_or_ge"]
     outcome = _dual_non_equi._get_indices(
         df=df,
         right=right,
         first_condition=first_condition,
         second_condition=second_condition,
     )
-    rest = []
-    for entry in others:
-        if not entry:
-            continue
-        if isinstance(entry, tuple):
-            rest.append(entry)
-        else:
-            rest.extend(entry)
+    rest.extend(mapping["equals"])
+    rest.extend(mapping["not_equals"])
+    rest = [entry for entry in rest if entry]
     empty_array = np.array([], dtype=np.intp)
     if outcome is None:
         return {

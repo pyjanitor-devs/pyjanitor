@@ -1,11 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from janitor.functions._conditional_join import (
-    _greater_than_indices,
-    _helpers,
-    _less_than_indices,
-)
+from janitor.functions._conditional_join import _binary_search, _helpers
 
 
 def _get_indices(
@@ -21,27 +17,30 @@ def _get_indices(
     if not right[right_on].is_monotonic_increasing:
         right = right.sort_values(right_on, ignore_index=False, kind="stable")
     right_col = right[right_on]
-    lt_or_le_check = op in _helpers.less_than_join_types
-    if lt_or_le_check:
-        outcome = _less_than_indices._le_lt_indices(
-            left=left_col._values,
-            left_index=left_col.index._values,
-            right=right_col._values,
-            strict=op == "<",
+    left_array = _helpers._convert_array_to_numpy(array=left_col._values)
+    right_array = _helpers._convert_array_to_numpy(array=right_col._values)
+    if op == "<":
+        outcome = _binary_search._binary_search_lt_first(
+            left=left_array, right=right_array, left_index=left_col.index._values
+        )
+    elif op == "<=":
+        outcome = _binary_search._binary_search_le_first(
+            left=left_array, right=right_array, left_index=left_col.index._values
+        )
+    elif op == ">":
+        outcome = _binary_search._binary_search_gt_first(
+            left=left_array, right=right_array, left_index=left_col.index._values
         )
     else:
-        outcome = _greater_than_indices._ge_gt_indices(
-            left=left_col._values,
-            left_index=left_col.index._values,
-            right=right_col._values,
-            strict=op == ">",
+        outcome = _binary_search._binary_search_ge_first(
+            left=left_array, right=right_array, left_index=left_col.index._values
         )
     if outcome is None:
         return {
             "left_index": empty_array,
             "right_index": empty_array,
         }
-    if lt_or_le_check:
+    if op in _helpers.less_than_join_types:
         left_index, starts = outcome
         ends = None
     else:
@@ -49,6 +48,7 @@ def _get_indices(
         starts = None
     rest.extend(mapping["equals"])
     rest.extend(mapping["not_equals"])
+    rest = [entry for entry in rest if entry]
     outcome = _helpers._get_positive_matches_conditions(
         df=df,
         right=right,

@@ -2,16 +2,12 @@
 import numpy as np
 import pandas as pd
 
-from janitor.functions._conditional_join._greater_than_indices import (
-    _ge_gt_indices,
-)
+from janitor.functions._conditional_join import _binary_search
 from janitor.functions._conditional_join._helpers import (
+    _convert_array_to_numpy,
     _keep_output,
     _null_checks_cond_join,
     _sort_if_not_monotonic,
-)
-from janitor.functions._conditional_join._less_than_indices import (
-    _le_lt_indices,
 )
 
 
@@ -79,22 +75,18 @@ def _not_equal_indices(
         right, _ = check2
         right, _ = _sort_if_not_monotonic(series=right)
         right_index = right.index._values
-        outcome = _le_lt_indices(
-            left=left.array,
-            left_index=left.index._values,
-            right=right.array,
-            strict=True,
+        left_array = _convert_array_to_numpy(array=left._values)
+        right_array = _convert_array_to_numpy(array=right._values)
+        outcome = _binary_search._binary_search_lt_first(
+            left=left_array, right=right_array, left_index=left.index._values
         )
         if outcome is not None:
             len_right = right.size
             lt_left, search_indices = outcome
             lt_right = [right_index[ind:len_right] for ind in search_indices]
             lt_left = [lt_left.repeat(len_right - search_indices)]
-        outcome = _ge_gt_indices(
-            left=left.array,
-            right=right.array,
-            left_index=left.index._values,
-            strict=True,
+        outcome = _binary_search._binary_search_gt_first(
+            left=left_array, right=right_array, left_index=left.index._values
         )
         if outcome is not None:
             gt_left, search_indices = outcome

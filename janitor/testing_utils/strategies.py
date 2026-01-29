@@ -71,13 +71,16 @@ def names_strategy():
     return st.lists(elements=st.sampled_from(names))
 
 
-def conditional_df():
+def conditional_df(allow_nan: bool = True, allow_infinity=None):
     """Dataframe used in tests_conditional_join."""
     return data_frames(
         [
             column(name="A", dtype=int),
-            column(name="B", elements=st.floats(allow_nan=True)),
-            column(name="C", elements=st.text(max_size=10)),
+            column(
+                name="B",
+                elements=st.floats(allow_nan=allow_nan, allow_infinity=allow_infinity),
+            ),
+            column(name="C", elements=st.text(max_size=10), dtype=object),
             column(name="D", dtype=bool),
             column(name="E", dtype="datetime64[ns]"),
         ],
@@ -90,14 +93,17 @@ def conditional_series():
     return series(dtype=int, index=range_indexes(min_size=1, max_size=10))
 
 
-def conditional_right():
+def conditional_right(allow_nan: bool = True, allow_infinity=None):
     """Dataframe used in tests_conditional_join."""
     return data_frames(
         [
             column(name="Integers", dtype=int),
-            column(name="Numeric", elements=st.floats(allow_nan=True)),
+            column(
+                name="Numeric",
+                elements=st.floats(allow_nan=allow_nan, allow_infinity=allow_infinity),
+            ),
             column(name="Floats", elements=st.floats(max_value=10)),
-            column(name="Strings", dtype=str),
+            column(name="Strings", dtype=object),
             column(name="Booleans", dtype=np.bool_),
             column(name="Dates", dtype="datetime64[ns]"),
             column(name="Dates_Right", dtype="datetime64[ns]"),

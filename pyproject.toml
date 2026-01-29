@@ -125,7 +125,7 @@ platforms = ["osx-arm64", "linux-64", "win-64"]
 pyjanitor = { path = ".", editable = true }
 
 [tool.pixi.dependencies]
-python = ">=3.6"
+python = ">=3.10"
 pandas = "*"
 numpy = "*"
 jupyter = ">=1.1.1,<2"

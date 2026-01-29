@@ -242,7 +242,7 @@ target-version = ['py36', 'py37', 'py38']
 
 [tool.interrogate]
 exclude = ["docs"]
-fail-under = 0
+fail-under = 55
 ignore-init-method = true
 ignore-init-module = true
 ignore-module = false

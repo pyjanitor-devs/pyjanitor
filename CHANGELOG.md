@@ -3,6 +3,8 @@
 ## [Unreleased]
 -   [ENH] Add `include_join_positions` parameter to `conditional_join`; added limited support for join aggregations via the `join_agg` function. - Issue #1497 @samukweku
 
+-   [ENH] Added `rle_id` function for run-length encoding IDs - Issue #1435 @emmanuel-ferdman
+
 ## [v0.32.3] - 2025-12-11
 
 -   [ENH] Undeprecate `select_columns` and `select_rows` - Issue #1514 @samukweku

@@ -16,7 +16,7 @@ def test_ecdf(s):
         assert len(x) == len(y)
 
 
-@given(s=series(dtype=str))
+@given(s=series(dtype=object))
 def test_ecdf_string(s):
     """Test that type enforcement is in place."""
     with pytest.raises(TypeError):

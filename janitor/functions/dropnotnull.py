@@ -22,7 +22,7 @@ def dropnotnull(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
         >>> df = pd.DataFrame({"a": [1.0, np.nan, 3.0], "b": [None, "y", "z"]})
         >>> df
              a     b
-        0  1.0  None
+        0  1.0   NaN
         1  NaN     y
         2  3.0     z
         >>> df.dropnotnull("a")
@@ -30,7 +30,7 @@ def dropnotnull(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
         1 NaN  y
         >>> df.dropnotnull("b")
              a     b
-        0  1.0  None
+        0  1.0   NaN
 
     Args:
         df: A pandas DataFrame.

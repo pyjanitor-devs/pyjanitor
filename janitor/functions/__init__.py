@@ -78,6 +78,7 @@ from .remove_columns import remove_columns
 from .remove_empty import remove_empty
 from .rename_columns import rename_column, rename_columns
 from .reorder_columns import reorder_columns
+from .rle_id import rle_id
 from .round_to_fraction import round_to_fraction
 from .row_to_names import row_to_names
 from .select import (
@@ -171,6 +172,7 @@ __all__ = [
     "rename_column",
     "rename_columns",
     "reorder_columns",
+    "rle_id",
     "round_to_fraction",
     "row_to_names",
     "select_columns",

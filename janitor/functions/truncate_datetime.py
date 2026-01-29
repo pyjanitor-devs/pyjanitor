@@ -22,7 +22,7 @@ def truncate_datetime_dataframe(
         >>> df = pd.DataFrame(
         ...     {
         ...         "foo": ["xxxx", "yyyy", "zzzz"],
-        ...         "dt": pd.date_range("2020-03-11", periods=3, freq="15H"),
+        ...         "dt": pd.date_range("2020-03-11", periods=3, freq="15h"),
         ...     }
         ... )
         >>> df

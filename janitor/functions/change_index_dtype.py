@@ -58,8 +58,8 @@ def change_index_dtype(
         qux   1.0     0.761038  0.121675
               2.0     0.443863  0.333674
         >>> outcome.index.dtypes
-        first     object
-        second    object
+        first     str
+        second    str
         dtype: object
         >>> outcome = df.change_index_dtype(dtype={"second": int})
         >>> outcome  # doctest: +NORMALIZE_WHITESPACE
@@ -74,7 +74,7 @@ def change_index_dtype(
         qux   1       0.761038  0.121675
               2       0.443863  0.333674
         >>> outcome.index.dtypes
-        first     object
+        first     str
         second     int64
         dtype: object
         >>> outcome = df.change_index_dtype(dtype={0: "category", 1: int})

@@ -68,6 +68,8 @@ ipython==8.10.0
     # via -r docs.in
 isort==5.10.1
     # via -r dev.in
+janitor-rs==0.5.0
+    # via -r base.in
 jedi==0.18.1
     # via ipython
 jinja2==3.1.6
@@ -132,12 +134,14 @@ packaging==24.0
     #   black
     #   mkdocs
     #   pytest
+    #   unyt
+    #   wheel
     #   xarray
 pandas==1.4.1
     # via
     #   pandas-flavor
     #   xarray
-pandas-flavor==0.8.1
+pandas-flavor==0.7.0
     # via -r base.in
 pandas-vet==0.2.3
     # via -r testing.in
@@ -250,17 +254,19 @@ traitlets==5.1.1
     # via
     #   ipython
     #   matplotlib-inline
-typing-extensions==4.9.0
-    # via black
-unyt==2.8.0
+typing-extensions==4.15.0
+    # via
+    #   black
+    #   virtualenv
+unyt==3.0.4
     # via -r engineering.in
-virtualenv==20.26.6
+virtualenv==20.36.1
     # via pre-commit
 watchdog==2.1.6
     # via mkdocs
 wcwidth==0.2.5
     # via prompt-toolkit
-wheel==0.38.1
+wheel==0.46.2
     # via pip-tools
 xarray==2022.3.0
     # via pandas-flavor

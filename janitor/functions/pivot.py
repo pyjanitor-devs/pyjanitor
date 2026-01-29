@@ -162,7 +162,7 @@ def pivot_longer(
         ... )
         >>> result.dtypes  # doctest: +NORMALIZE_WHITESPACE
         id           int64
-        diagnosis   object
+        diagnosis      str
         gender    category
         age          int64
         value        int64

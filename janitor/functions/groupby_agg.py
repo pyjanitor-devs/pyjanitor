@@ -86,7 +86,7 @@ def groupby_agg(
               x  y  y_count
         0     a  9        2
         1     a  9        2
-        2  None  9        1
+        2   NaN  9        1
         3     b  9        1
 
     Args:

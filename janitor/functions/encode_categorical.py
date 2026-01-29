@@ -62,7 +62,7 @@ def encode_categorical(
         3   c    7
         4   b    8
         >>> df.dtypes
-        foo    object
+        foo    str
         bar     int64
         dtype: object
         >>> enc_df = df.encode_categorical(column_names="foo")
@@ -86,7 +86,7 @@ def encode_categorical(
         ...     }
         ... )
         >>> df.dtypes
-        foo    object
+        foo    str
         bar     int64
         dtype: object
         >>> enc_df = df.encode_categorical(foo="appearance")

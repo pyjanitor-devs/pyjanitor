@@ -51,6 +51,7 @@
         - remove_empty
         - rename_columns
         - reorder_columns
+        - rle_id
         - round_to_fraction
         - row_to_names
         - select

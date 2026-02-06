@@ -234,7 +234,7 @@ def summarise(
                 name = (*entry.name, *patch)
                 entry.name = name
         contents_.append(entry)
-    return pd.concat(contents_, axis=1, copy=False, sort=False)
+    return pd.concat(contents_, axis=1,  sort=False)
 
 
 @singledispatch

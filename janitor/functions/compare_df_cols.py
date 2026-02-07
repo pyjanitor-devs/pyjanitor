@@ -88,7 +88,7 @@ def compare_df_cols(
         0           A  int64  float64
         1           B  object  object
         2           C    NaN     bool
-        >>> janitor.compare_df_cols(train=df1, test=df2, return="mismatch")
+        >>> janitor.compare_df_cols(train=df1, test=df2, return_="mismatch")
           column_name  train    test
         0           A  int64  float64
 

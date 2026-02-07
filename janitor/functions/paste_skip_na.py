@@ -41,6 +41,17 @@ def paste_skip_na(*args, sep: str = " ", collapse: str | None = None):
     Returns:
         A scalar string/None or a list of strings/None values.
     """
+    force_list = any(is_list_like(arg) and not is_scalar(arg) for arg in args)
+    return _paste_skip_na(args, sep=sep, collapse=collapse, force_list=force_list)
+
+
+def _paste_skip_na(
+    args: tuple,
+    *,
+    sep: str,
+    collapse: str | None,
+    force_list: bool,
+):
     if len(args) == 0:
         return ""
 
@@ -52,7 +63,7 @@ def paste_skip_na(*args, sep: str = " ", collapse: str | None = None):
             non_missing = [str(value) for value in values if not pd.isna(value)]
             return collapse.join(non_missing)
 
-        if is_list_like(args[0]) and not is_scalar(args[0]):
+        if force_list:
             return [value if pd.isna(value) else str(value) for value in values]
         return values[0] if pd.isna(values[0]) else str(values[0])
 
@@ -82,5 +93,10 @@ def paste_skip_na(*args, sep: str = " ", collapse: str | None = None):
         else:
             first_two.append(value1)
 
-    new_args = [first_two, *args[2:]]
-    return paste_skip_na(*new_args, sep=sep, collapse=collapse)
+    new_args = (first_two, *args[2:])
+    return _paste_skip_na(
+        new_args,
+        sep=sep,
+        collapse=collapse,
+        force_list=force_list,
+    )

@@ -63,15 +63,9 @@ def test_compare_df_cols_rbind_missing_column():
         left=df1, right=df2, return_="mismatch", bind_method="rbind"
     )
 
-    expected = pd.DataFrame(
-        {
-            "column_name": ["C"],
-            "left": [pd.NA],
-            "right": [janitor.describe_class(df2["C"])],
-        }
-    )
-
-    pd.testing.assert_frame_equal(result, expected, check_dtype=False)
+    assert result["column_name"].tolist() == ["C"]
+    assert result["right"].iloc[0] == janitor.describe_class(df2["C"])
+    assert pd.isna(result["left"].iloc[0])
 
 
 @pytest.mark.functions

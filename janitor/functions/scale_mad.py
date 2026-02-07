@@ -25,9 +25,7 @@ def _median_absolute_deviation(series: pd.Series) -> float:
 
 def _normalize_columns(
     df: pd.DataFrame,
-    columns: Iterable[Hashable]
-    | Callable[[pd.DataFrame], Iterable[Hashable]]
-    | None,
+    columns: Iterable[Hashable] | Callable[[pd.DataFrame], Iterable[Hashable]] | None,
 ) -> list[Hashable]:
     """Normalize columns input into a list of column labels."""
     if columns is None:
@@ -72,11 +70,11 @@ def scale_mad(
         >>> import janitor
         >>> df = pd.DataFrame({"x": [1, 2, 3, 4], "y": [10, 10, 10, 10]})
         >>> df.scale_mad().round(3)
-               x     y
-        0 -1.012  10.0
-        1 -0.337  10.0
-        2  0.337  10.0
-        3  1.012  10.0
+               x   y
+        0 -1.012  10
+        1 -0.337  10
+        2  0.337  10
+        3  1.012  10
 
         Create a new column and clip the results.
 
@@ -120,9 +118,7 @@ def scale_mad(
     check("zero_mad", zero_mad, [str])
     zero_mad = zero_mad.lower()
     if zero_mad not in ZERO_MAD_STRATEGIES:
-        raise ValueError(
-            "zero_mad must be one of 'skip', 'center', 'one', or 'raise'."
-        )
+        raise ValueError("zero_mad must be one of 'skip', 'center', 'one', or 'raise'.")
     if zero_mad == "one":
         zero_mad = "center"
 

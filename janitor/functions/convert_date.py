@@ -50,7 +50,8 @@ def _apply_timezone(timestamp: pd.Timestamp, tz: str | None) -> pd.Timestamp:
 
 
 def _excel_numeric_to_timestamp(value: float) -> pd.Timestamp:
-    return pd.to_datetime(value, unit="D", origin="1899-12-30")
+    timestamp = pd.to_datetime(value, unit="D", origin="1899-12-30")
+    return timestamp.round("s")
 
 
 def _looks_like_time(value: str) -> bool:

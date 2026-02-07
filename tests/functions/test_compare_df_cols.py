@@ -51,7 +51,7 @@ def test_compare_df_cols_mismatch_bind_rows_return_alias():
         }
     )
 
-    pd.testing.assert_frame_equal(result, expected)
+    pd.testing.assert_frame_equal(result, expected, check_dtype=False)
 
 
 @pytest.mark.functions

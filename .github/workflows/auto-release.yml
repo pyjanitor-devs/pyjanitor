@@ -101,11 +101,11 @@ jobs:
 
       - name: Dry run uv version bump
         if: steps.check_release.outputs.already_released == 'false'
-        run: uv version --bump ${{ env.VERSION_NAME }} --dry-run
+        run: uv version --bump ${{ env.VERSION_NAME }} --dry-run --short
 
       - name: Store new version number
         if: steps.check_release.outputs.already_released == 'false'
-        run: echo "version_number=$(uv version --bump ${{ env.VERSION_NAME }} --dry-run | tr -d ' \n')" >> $GITHUB_ENV
+        run: echo "version_number=$(uv version --bump ${{ env.VERSION_NAME }} --dry-run --short | tr -d ' \n')" >> $GITHUB_ENV
 
       - name: Display new version number
         if: steps.check_release.outputs.already_released == 'false'

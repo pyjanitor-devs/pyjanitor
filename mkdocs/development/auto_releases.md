@@ -37,7 +37,7 @@ When code is merged to the `dev` branch, the following sequence occurs:
    when the workflow's own version bump commits trigger another test run.
 
 4. **Version bump**: If no tag exists,
-   `bump2version` increments the patch version
+   `uv version --bump patch` updates the version in `pyproject.toml`
    (e.g., 0.32.3 becomes 0.32.4).
 
 5. **Release notes generation**: The `llamabot` CLI generates release notes
@@ -180,7 +180,7 @@ If you need to correct a version:
    (PyPI doesn't allow this)
 2. Instead, create a new patch release with the fix
 3. If the version number itself is wrong,
-   update `.bumpversion.cfg` and `pyproject.toml` manually,
+   update `version` in `pyproject.toml` manually (or run `uv version <new_version>`),
    commit, and trigger a new release
 
 ### How to skip a release for a specific merge

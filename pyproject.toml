@@ -4,9 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyjanitor"
-dynamic = ["version"]
+version = "0.32.9"
 description = "Tools for cleaning pandas DataFrames"
-requires-python = ">=3.6"
+requires-python = ">=3.8"
 license = {text = "MIT"}
 authors = [
     {name = "pyjanitor devs", email = "ericmajinglong@gmail.com"}
@@ -21,8 +21,6 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.6",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
@@ -238,7 +236,7 @@ exclude = '''
 '''
 include = '\.pyi?$'
 line-length = 79
-target-version = ['py36', 'py37', 'py38']
+target-version = ['py38', 'py39', 'py310']
 
 [tool.interrogate]
 exclude = ["docs"]
@@ -307,8 +305,8 @@ exclude = [
 ]
 
 
-# Assume Python 3.10
-target-version = "py310"
+# Assume Python 3.8 (minimum supported)
+target-version = "py38"
 
 [tool.ruff.format]
 indent-style = "space"

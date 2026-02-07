@@ -228,7 +228,9 @@ def _normalize_1(obj: pd.Index | pd.Series) -> pd.Index | pd.Series:
         (r"[ /:,?()\.-]", "_"),
         (r"['’]", ""),
         (r"[\xa0]", "_"),
-        (r"(?<=\w)@(?=\w)", "_"),
+        # Use capturing groups instead of lookbehind/lookahead
+        # for compatibility with pyarrow's RE2 engine (pandas 3.0+).
+        (r"(\w)@(\w)", r"\1_\2"),
     ]
     for search, replace in FIXES:
         obj = obj.str.replace(pat=search, repl=replace, regex=True)

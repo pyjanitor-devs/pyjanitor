@@ -116,7 +116,10 @@ where = ["."]
 namespaces = false
 
 [tool.pixi.workspace]
-channels = ["https://prefix.dev/conda-forge"]
+channels = [
+    "https://prefix.dev/conda-forge",
+    "https://conda.anaconda.org/conda-forge/label/pandas_rc",
+]
 platforms = ["osx-arm64", "linux-64", "win-64"]
 
 [tool.pixi.pypi-dependencies]
@@ -177,6 +180,7 @@ python = "3.12.*"
 
 [tool.pixi.feature.py313.dependencies]
 python = "3.13.*"
+pandas = ">=3.0.0"
 
 [tool.pixi.tasks]
 start = "pre-commit install"

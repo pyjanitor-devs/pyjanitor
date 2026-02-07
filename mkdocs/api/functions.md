@@ -54,6 +54,7 @@
         - rle_id
         - round_to_fraction
         - row_to_names
+        - scale_mad
         - select
         - shuffle
         - sort_column_value_order

@@ -81,6 +81,7 @@ from .reorder_columns import reorder_columns
 from .rle_id import rle_id
 from .round_to_fraction import round_to_fraction
 from .row_to_names import row_to_names
+from .scale_mad import scale_mad
 from .select import (
     DropLabel,
     get_columns,
@@ -175,6 +176,7 @@ __all__ = [
     "rle_id",
     "round_to_fraction",
     "row_to_names",
+    "scale_mad",
     "select_columns",
     "select_rows",
     "select",

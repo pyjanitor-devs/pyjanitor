@@ -30,7 +30,7 @@ def fill_missing_timestamps(
         >>> import janitor.timeseries
         >>> df = janitor.timeseries.fill_missing_timestamps(
         ...     df=pd.DataFrame(...),
-        ...     frequency="1H",
+        ...     frequency="1h",
         ... )  # doctest: +SKIP
 
         Method chaining example:
@@ -38,7 +38,7 @@ def fill_missing_timestamps(
         >>> import pandas as pd
         >>> import janitor.timeseries
         >>> df = pd.DataFrame(...).fill_missing_timestamps(
-        ...     frequency="1H"
+        ...     frequency="1h"
         ... )  # doctest: +SKIP
 
     Args:

@@ -534,6 +534,13 @@ consistent formatting and catch issues like long lines.
 **Recommendation**: After editing any markdown file, run `markdownlint <file>`.
 If not installed, use `pixi global install markdownlint-cli`.
 
+### [2026-02-07] Open PRs with GitHub CLI
+
+**Context**: User requested opening a PR after pushing changes.
+**Learning**: Use `gh pr create` to open PRs when requested.
+**Recommendation**: After pushing to the branch, create the PR using the GitHub
+CLI.
+
 ---
 
 ## Version History

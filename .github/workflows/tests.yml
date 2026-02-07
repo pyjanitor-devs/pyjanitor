@@ -9,6 +9,7 @@ on:
       - "janitor/**"
       - "tests/**"
       - "pyproject.toml"
+      - "pixi.lock"
       - ".github/workflows/tests.yml"
   pull_request:
     branches:
@@ -17,6 +18,7 @@ on:
       - "janitor/**"
       - "tests/**"
       - "pyproject.toml"
+      - "pixi.lock"
       - ".github/workflows/tests.yml"
 
 concurrency:

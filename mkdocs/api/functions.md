@@ -15,6 +15,7 @@
         - clean_names
         - coalesce
         - collapse_levels
+        - compare_df_cols
         - complete
         - concatenate_columns
         - conditional_join

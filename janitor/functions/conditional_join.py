@@ -257,9 +257,9 @@ def conditional_join(
             - Added support for timedelta dtype.
         - 0.28.0
             - `col` class deprecated.
-        - 0.33.0
+        - 0.32.9
             - `use_numba` deprecated.
-        - 0.34.0
+        - 0.32.10
             - Added `include_join_positions` parameter.
             - Added `join_algorithm` parameter.
 
@@ -1316,9 +1316,9 @@ def get_join_indices(
         - 0.32.0
             - ragged array indices deprecated.
             - return indices as a dictionary.
-        - 0.33.0
+        - 0.32.9
             - `use_numba` deprecated.
-        - 0.34.0
+        - 0.32.10
             - Added experimental `return_building_blocks` parameter.
             - Add join_algorithm parameter.
 
@@ -1400,7 +1400,7 @@ def join_agg(
     represent the positions of the rows from the right dataframe
     that have matches in the left dataframe.
 
-    !!! info "New in version 0.34.0"
+    !!! info "New in version 0.32.10"
 
     Examples:
         >>> import pandas as pd

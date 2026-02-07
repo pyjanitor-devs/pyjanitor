@@ -73,11 +73,25 @@ def compare_df_cols(
     Examples:
         >>> import pandas as pd
         >>> import janitor
-        >>> df1 = pd.DataFrame({"A": [1, 2], "B": ["x", "y"]})
-        >>> df2 = pd.DataFrame(
-        ...     {"A": [3.0, 4.0], "B": ["z", "w"], "C": [True, False]}
+        >>> df1 = pd.DataFrame(
+        ...     {
+        ...         "A": [1, 2],
+        ...         "B": pd.Series(["x", "y"], dtype="object"),
+        ...     }
         ... )
-        >>> df3 = pd.DataFrame({"A": ["a", "b"], "B": ["c", "d"]})
+        >>> df2 = pd.DataFrame(
+        ...     {
+        ...         "A": [3.0, 4.0],
+        ...         "B": pd.Series(["z", "w"], dtype="object"),
+        ...         "C": [True, False],
+        ...     }
+        ... )
+        >>> df3 = pd.DataFrame(
+        ...     {
+        ...         "A": pd.Series(["a", "b"], dtype="object"),
+        ...         "B": pd.Series(["c", "d"], dtype="object"),
+        ...     }
+        ... )
         >>> janitor.compare_df_cols(df1, df2, df3)
           column_name    df1     df2     df3
         0           A   int64  float64  object
@@ -194,7 +208,7 @@ def compare_df_cols_same(
         >>> import janitor
         >>> df1 = pd.DataFrame({"A": [1, 2]})
         >>> df2 = pd.DataFrame({"A": [3.0, 4.0]})
-        >>> janitor.compare_df_cols_same(df1, df2)
+        >>> janitor.compare_df_cols_same(df1, df2, verbose=False)
         False
 
     Args:

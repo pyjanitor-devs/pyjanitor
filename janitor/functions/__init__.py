@@ -34,6 +34,7 @@ from .statistical_tests import chisq_test, fisher_test
 from .clean_names import clean_names
 from .coalesce import coalesce
 from .collapse_levels import collapse_levels
+from .compare_df_cols import compare_df_cols, compare_df_cols_same, describe_class
 from .complete import complete
 from .concatenate_columns import concatenate_columns
 from .conditional_join import conditional_join, get_join_indices, join_agg
@@ -134,6 +135,8 @@ __all__ = [
     "clean_names",
     "coalesce",
     "collapse_levels",
+    "compare_df_cols",
+    "compare_df_cols_same",
     "complete",
     "concatenate_columns",
     "conditional_join",
@@ -147,6 +150,7 @@ __all__ = [
     "count_cumulative_unique",
     "currency_column_to_numeric",
     "deconcatenate_column",
+    "describe_class",
     "drop_constant_columns",
     "drop_duplicate_columns",
     "dropnotnull",

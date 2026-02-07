@@ -57,6 +57,7 @@ from .filter import filter_column_isin, filter_date, filter_on, filter_string
 from .find_replace import find_replace
 from .flag_nulls import flag_nulls
 from .get_dupes import get_dupes
+from .get_one_to_one import get_one_to_one
 from .groupby_agg import groupby_agg
 from .groupby_topk import groupby_topk
 from .impute import impute
@@ -67,6 +68,7 @@ from .limit_column_characters import limit_column_characters
 from .min_max_scale import min_max_scale
 from .move import move
 from .mutate import mutate
+from .paste_skip_na import paste_skip_na
 from .pivot import (
     pivot_longer,
     pivot_longer_spec,
@@ -79,6 +81,7 @@ from .remove_empty import remove_empty
 from .rename_columns import rename_column, rename_columns
 from .reorder_columns import reorder_columns
 from .rle_id import rle_id
+from .round_half_up import round_half_up, signif_half_up
 from .round_to_fraction import round_to_fraction
 from .row_to_names import row_to_names
 from .select import (
@@ -90,6 +93,7 @@ from .select import (
     select_rows,
 )
 from .shuffle import shuffle
+from .single_value import single_value
 from .sort_column_value_order import sort_column_value_order
 from .sort_naturally import sort_naturally
 from .summarise import summarise
@@ -98,6 +102,7 @@ from .take_first import take_first
 from .then import then
 from .to_datetime import to_datetime
 from .toset import toset
+from .top_levels import top_levels
 from .transform_columns import transform_column, transform_columns
 from .truncate_datetime import truncate_datetime_dataframe
 from .update_where import update_where
@@ -150,6 +155,7 @@ __all__ = [
     "find_replace",
     "flag_nulls",
     "get_dupes",
+    "get_one_to_one",
     "get_join_indices",
     "groupby_agg",
     "groupby_topk",
@@ -162,6 +168,7 @@ __all__ = [
     "min_max_scale",
     "move",
     "mutate",
+    "paste_skip_na",
     "pivot_longer",
     "pivot_longer_spec",
     "pivot_wider",
@@ -173,12 +180,15 @@ __all__ = [
     "rename_columns",
     "reorder_columns",
     "rle_id",
+    "round_half_up",
     "round_to_fraction",
     "row_to_names",
     "select_columns",
     "select_rows",
     "select",
     "shuffle",
+    "signif_half_up",
+    "single_value",
     "sort_column_value_order",
     "sort_naturally",
     "summarise",
@@ -187,6 +197,7 @@ __all__ = [
     "then",
     "to_datetime",
     "toset",
+    "top_levels",
     "transform_column",
     "transform_columns",
     "truncate_datetime_dataframe",

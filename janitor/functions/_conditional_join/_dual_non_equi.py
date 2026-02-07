@@ -3,9 +3,8 @@ import numpy as np
 import pandas as pd
 
 from janitor.functions._conditional_join import (
-    _greater_than_indices,
+    _binary_search,
     _helpers,
-    _less_than_indices,
 )
 
 # description below is based on multiple non-equi joins (>/>=/</<=)
@@ -200,10 +199,10 @@ def _get_indices(
         l1_region = l1_region[::-1]
         l_index = l_index[::-1]
         l2_region = l2_region[::-1]
-    # due to our approach above,
+    # due to the approach in _build_regions and _align_regions,
     # r1_region is guaranteed to be sorted
     search_indices = r1_region.searchsorted(l1_region)
-    # we keep only rows where
+    # keep only rows where
     # l_region <= r_region
     booleans = search_indices == r1_region.size
     if booleans.all():
@@ -213,22 +212,28 @@ def _get_indices(
         l_index = l_index[booleans]
         l2_region = l2_region[booleans]
         search_indices = search_indices[booleans]
-    # exclude l2_region > r2_region's max
+    # no point searching if l2_region > r2_region
     max_region = r2_region.max()
     booleans = l2_region > max_region
     if booleans.all():
         return None
+    # keep only rows where
+    # l_region <= r_region
     if booleans.any():
         booleans = ~booleans
         l_index = l_index[booleans]
         l2_region = l2_region[booleans]
         search_indices = search_indices[booleans]
-    positions, counts_array, total = janitor_rs.get_positions_where_left_le_right(
+    # at this point there cant be any -1s
+    # this is the base stage
+    counts_array, positions, total = janitor_rs.get_positions_where_left_le_right(
         left=l2_region,
         right=r2_region,
         starts=search_indices,
         max_right=max_region,
     )
+    if not total:
+        return None
     return {
         "left_index": l_index,
         "right_index": r_index,
@@ -241,32 +246,34 @@ def _get_indices(
 def _build_regions(left: pd.Series, right: pd.Series, op: str) -> tuple:
     """Compute regions"""
     right, _ = _helpers._sort_if_not_monotonic(series=right)
-    lt_or_le_check = op in _helpers.less_than_join_types
-    if lt_or_le_check:
-        outcome = _less_than_indices._le_lt_indices(
-            left=left._values,
-            left_index=left.index._values,
-            right=right._values,
-            strict=op == "<",
+    left_array = _helpers._convert_array_to_numpy(array=left._values)
+    right_array = _helpers._convert_array_to_numpy(array=right._values)
+    if op == "<":
+        outcome = _binary_search._binary_search_lt_first(
+            left=left_array, right=right_array, left_index=left.index._values
+        )
+    elif op == "<=":
+        outcome = _binary_search._binary_search_le_first(
+            left=left_array, right=right_array, left_index=left.index._values
+        )
+    elif op == ">":
+        outcome = _binary_search._binary_search_gt_regions(
+            left=left_array, right=right_array, left_index=left.index._values
         )
     else:
-        outcome = _greater_than_indices._ge_gt_indices(
-            left=left._values,
-            left_index=left.index._values,
-            right=right._values,
-            strict=op == ">",
+        outcome = _binary_search._binary_search_ge_regions(
+            left=left_array, right=right_array, left_index=left.index._values
         )
     if outcome is None:
         return None
+    # computation here is to ensure alignment
+    # since right should be in descending order
+    # for >/>=
+    if op in _helpers.greater_than_join_types:
+        right_index = right.index._values[::-1]
+    else:
+        right_index = right.index._values
     left_index, search_indices = outcome
-    right_index = right.index._values
-    if not lt_or_le_check:
-        # computation here is to ensure alignment
-        # since right should be in descending order
-        # for >/>=
-        search_indices = right_index.size - search_indices
-        right_index = right_index[::-1]
-
     right_region = np.zeros(right_index.size, dtype=np.int64)
     right_region[search_indices] = 1
     right_region[0] -= 1
@@ -303,50 +310,9 @@ def _align_regions(
     return left_index, left_region, right_region
 
 
-def _build_indices(
-    left_index: np.ndarray,
-    right_index: np.ndarray,
-    starts: np.ndarray,
-    ends: np.ndarray,
-    positions: np.ndarray,
-    counts_array: np.ndarray,
-    total: int,
-    keep: str,
-):
-    """
-    Build indices for a dual join
-    """
-    if keep == "all":
-        left_index = janitor_rs.repeat_index(
-            index=left_index, counts=counts_array, length=total
-        )
-        right_index = janitor_rs.build_positional_index(
-            index=right_index, positions=positions, length=total
-        )
-    elif keep == "first":
-        total = np.count_nonzero(counts_array)
-        left_index = janitor_rs.trim_index(
-            index=left_index, counts=counts_array, length=total
-        )
-        right_index = janitor_rs.build_positional_index_first(
-            index=right_index,
-            starts=starts,
-            ends=ends,
-            counts=counts_array,
-            positions=positions,
-            length=total,
-        )
-    else:
-        total = np.count_nonzero(counts_array)
-        left_index = janitor_rs.trim_index(
-            index=left_index, counts=counts_array, length=total
-        )
-        right_index = janitor_rs.build_positional_index_last(
-            index=right_index,
-            starts=starts,
-            ends=ends,
-            counts=counts_array,
-            positions=positions,
-            length=total,
-        )
-    return {"left_index": left_index, "right_index": right_index}
+def _build_starts_and_ends(counts: np.ndarray) -> tuple:
+    ends = counts.cumsum()
+    starts = np.empty(counts.size, dtype=np.int64)
+    starts[0] = 0
+    starts[1:] = ends[:-1]
+    return starts, ends

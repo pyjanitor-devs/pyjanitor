@@ -85,7 +85,6 @@ def read_csvs(
             list(dfs_dict.values()),
             ignore_index=True,
             sort=False,  # noqa: PD011
-            copy=False,
         )
     return dfs_dict
 

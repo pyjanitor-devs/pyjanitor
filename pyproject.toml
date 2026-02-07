@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyjanitor"
-version = "0.32.8"
+dynamic = ["version"]
 description = "Tools for cleaning pandas DataFrames"
 requires-python = ">=3.6"
 license = {text = "MIT"}
@@ -30,10 +30,10 @@ classifiers = [
     "Topic :: Scientific/Engineering",
 ]
 dependencies = [
-    "natsort",
-    "pandas-flavor==0.8.1",
+    "natsort>=8.4.0,<9",
+    "pandas-flavor>=0.8.1,<0.9",
     "multipledispatch",
-    "scipy", "janitor-rs>=0.4.0,<0.5"]
+    "scipy", "janitor-rs>=0.6.1,<0.7"]
 
 [project.optional-dependencies]
 dev = [
@@ -129,47 +129,47 @@ python = ">=3.10"
 pandas = "*"
 numpy = "*"
 jupyter = ">=1.1.1,<2"
-ipython = ">=9.8.0,<10"
+ipython = ">=9.9.0,<10"
 ipykernel = ">=7.1.0,<8"
 pixi-kernel = ">=0.7.1,<0.8"
-jupyterlab = ">=4.5.1,<5"
+jupyterlab = ">=4.5.3,<5"
 
 [tool.pixi.feature.tests.dependencies]
-pytest = "*"
-pytest-cov = "*"
-pytest-xdist = "*"
-hypothesis = "*"
-interrogate = "*"
-pandas-vet = "*"
-polars = "*"
-py = "*"
-unyt = "*"
-matplotlib = "*"
-openpyxl = "*"
-rdkit = "*"
-requests = "*"
-numba = "*"
-pyspark = "*"
+pytest = ">=9.0.2,<10"
+pytest-cov = ">=7.0.0,<8"
+pytest-xdist = ">=3.8.0,<4"
+hypothesis = ">=6.151.2,<7"
+interrogate = ">=1.7.0,<2"
+pandas-vet = ">=2023.8.2,<2024"
+polars = ">=1.37.1,<2"
+py = ">=1.11.0,<2"
+unyt = ">=3.1.0,<4"
+matplotlib = ">=3.10.8,<4"
+openpyxl = ">=3.1.5,<4"
+rdkit = ">=2025.9.4,<2026"
+requests = ">=2.32.5,<3"
+numba = ">=0.63.1,<0.64"
+pyspark = ">=4.1.1,<5"
 
 [tool.pixi.feature.docs.dependencies]
-mkdocs = "*"
-mkdocs-material = "*"
-mkdocstrings = "*"
-mkdocstrings-python = "*"
-mknotebooks = "*"
-ipython = "*"
+mkdocs = ">=1.6.1,<2"
+mkdocs-material = ">=9.7.1,<10"
+mkdocstrings = ">=1.0.2,<2"
+mkdocstrings-python = ">=2.0.1,<3"
+mknotebooks = ">=0.8.0,<0.9"
+ipython = ">=9.9.0,<10"
 
 [tool.pixi.feature.biology.dependencies]
-biopython = "*"
+biopython = ">=1.86,<2"
 
 [tool.pixi.feature.chemistry.dependencies]
-tqdm = "*"
+tqdm = ">=4.67.1,<5"
 
 [tool.pixi.feature.engineering.dependencies]
-unyt = "*"
+unyt = ">=3.1.0,<4"
 
 [tool.pixi.feature.spark.dependencies]
-pyspark = "*"
+pyspark = ">=4.1.1,<5"
 
 [tool.pixi.feature.py311.dependencies]
 python = "3.11.*"

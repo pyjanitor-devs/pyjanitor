@@ -22,7 +22,8 @@ def _single_join(
     right: pd.DataFrame,
     condition: tuple,
     keep: str,
-) -> dict | None:
+    return_matching_indices: bool,
+) -> dict:
     """
     Compute indices for a single join
     """
@@ -33,6 +34,7 @@ def _single_join(
             right=right[right_on],
             strict=op == "<",
             keep=keep,
+            return_matching_indices=return_matching_indices,
         )
     if op in greater_than_join_types:
         return _greater_than_indices(
@@ -40,6 +42,7 @@ def _single_join(
             right=right[right_on],
             strict=op == ">",
             keep=keep,
+            return_matching_indices=return_matching_indices,
         )
     if op == "!=":
         return _not_equal_indices(

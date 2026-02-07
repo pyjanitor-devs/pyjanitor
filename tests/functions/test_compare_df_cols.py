@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 import pytest
 
@@ -17,8 +16,16 @@ def test_compare_df_cols_named_args():
     expected = pd.DataFrame(
         {
             "column_name": ["A", "B", "C"],
-            "train": ["int64", "object", np.nan],
-            "test": ["float64", "object", "bool"],
+            "train": [
+                janitor.describe_class(df1["A"]),
+                janitor.describe_class(df1["B"]),
+                pd.NA,
+            ],
+            "test": [
+                janitor.describe_class(df2["A"]),
+                janitor.describe_class(df2["B"]),
+                janitor.describe_class(df2["C"]),
+            ],
         }
     )
 
@@ -39,8 +46,8 @@ def test_compare_df_cols_mismatch_bind_rows_return_alias():
     expected = pd.DataFrame(
         {
             "column_name": ["A"],
-            "train": ["int64"],
-            "test": ["float64"],
+            "train": [janitor.describe_class(df1["A"])],
+            "test": [janitor.describe_class(df2["A"])],
         }
     )
 
@@ -59,8 +66,8 @@ def test_compare_df_cols_rbind_missing_column():
     expected = pd.DataFrame(
         {
             "column_name": ["C"],
-            "left": [np.nan],
-            "right": ["int64"],
+            "left": [pd.NA],
+            "right": [janitor.describe_class(df2["C"])],
         }
     )
 
@@ -77,8 +84,8 @@ def test_compare_df_cols_list_input():
     expected = pd.DataFrame(
         {
             "column_name": ["A"],
-            "group_1": ["int64"],
-            "group_2": ["float64"],
+            "group_1": [janitor.describe_class(df1["A"])],
+            "group_2": [janitor.describe_class(df2["A"])],
         }
     )
 

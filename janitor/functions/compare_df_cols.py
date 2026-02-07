@@ -2,15 +2,14 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
 import inspect
 import json
 import warnings
+from collections.abc import Mapping, Sequence
 from types import FrameType
 from typing import Any, Iterable
 
 import pandas as pd
-
 
 _VALID_RETURN_VALUES = {"all", "match", "mismatch"}
 _VALID_BIND_METHODS = {"bind_rows", "rbind"}
@@ -134,8 +133,7 @@ def compare_df_cols(
         )
     if bind_method not in _VALID_BIND_METHODS:
         raise ValueError(
-            "bind_method must be 'bind_rows' or 'rbind'. "
-            f"Received '{bind_method}'."
+            f"bind_method must be 'bind_rows' or 'rbind'. Received '{bind_method}'."
         )
 
     if not dfs and not named_dfs:
@@ -143,9 +141,7 @@ def compare_df_cols(
 
     inferred_names = _infer_arg_names(dfs)
     entries: list[tuple[str, pd.DataFrame]] = []
-    for idx, (arg, inferred_name) in enumerate(
-        zip(dfs, inferred_names, strict=True)
-    ):
+    for idx, (arg, inferred_name) in enumerate(zip(dfs, inferred_names, strict=True)):
         default_name = inferred_name or f"df{idx + 1}"
         entries.extend(_expand_input(arg, default_name))
     for name, arg in named_dfs.items():
@@ -156,9 +152,7 @@ def compare_df_cols(
 
     for name, _ in entries:
         if name == "column_name":
-            raise ValueError(
-                "None of the input names may be 'column_name'."
-            )
+            raise ValueError("None of the input names may be 'column_name'.")
 
     frames: list[pd.DataFrame] = []
     dataframes: list[pd.DataFrame] = []
@@ -166,18 +160,13 @@ def compare_df_cols(
         frames.append(_describe_dataframe(df, name, strict_description))
         dataframes.append(df)
 
-    result = frames[0]
-    for frame in frames[1:]:
-        result = result.merge(frame, on="column_name", how="outer", sort=False)
+    indexed = [f.set_index("column_name") for f in frames]
+    result = pd.concat(indexed, axis=1, sort=False).reset_index()
 
     if result["column_name"].is_unique:
         column_order = _column_order(dataframes)
         if column_order:
-            result = (
-                result.set_index("column_name")
-                .reindex(column_order)
-                .reset_index()
-            )
+            result = result.set_index("column_name").reindex(column_order).reset_index()
 
     if return_ == "all" or result.shape[1] <= 2:
         if return_ != "all":

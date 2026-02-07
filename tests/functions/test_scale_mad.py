@@ -1,29 +1,67 @@
-import numpy as np, pandas as pd, pytest
-from janitor.functions.scale_mad import scale_mad
+import numpy as np
+import pandas as pd
+import pytest
+from pandas.testing import assert_series_equal
 
-def test_scales_numeric_columns_default():
-    df = pd.DataFrame({"x":[1,2,3,4], "y":[10,10,10,10]})
-    res = scale_mad(df)
-    assert set(res.columns) == {"x","y"}
-    assert (res["y"] == 10).all()
-    assert abs(res["x"].median()) < 1e-9
+import janitor  # noqa: F401
 
-def test_zero_mad_center_only():
-    df = pd.DataFrame({"y":[10,10,10,10]})
-    res = scale_mad(df, zero_mad="one")
-    assert np.isclose(res["y"].mean(), 0.0)
 
-def test_suffix_and_clip():
-    df = pd.DataFrame({"x":[1,2,3,100]})
-    res = scale_mad(df, columns=["x"], clip=3, suffix="_mad")
-    assert "x_mad" in res.columns and (res["x_mad"].abs() <= 3).all()
+@pytest.mark.functions
+def test_scale_mad_scales_numeric_columns_default():
+    df = pd.DataFrame(
+        {
+            "x": [1, 2, 3, 4],
+            "y": [10, 10, 10, 10],
+            "label": ["a", "b", "c", "d"],
+        }
+    )
+    original = df.copy()
 
-def test_callable_column_selector():
-    df = pd.DataFrame({"a":[1,2,3], "b":["x","y","z"]})
-    res = scale_mad(df, columns=lambda d: d.select_dtypes("number").columns, suffix="_mad")
-    assert "a_mad" in res.columns
+    result = df.scale_mad()
 
-def test_zero_mad_raise():
-    df = pd.DataFrame({"y":[1,1,1]})
-    with pytest.raises(ValueError):
-        scale_mad(df, columns=["y"], zero_mad="raise")
+    assert np.isclose(result["x"].median(), 0.0)
+    assert_series_equal(result["y"], df["y"])
+    assert_series_equal(result["label"], df["label"])
+    assert result is not df
+    assert df.equals(original)
+
+
+@pytest.mark.functions
+def test_scale_mad_zero_mad_center():
+    df = pd.DataFrame({"y": [10, 10, 10, 10]})
+
+    result = df.scale_mad(zero_mad="center")
+
+    assert (result["y"] == 0).all()
+
+
+@pytest.mark.functions
+def test_scale_mad_suffix_and_clip():
+    df = pd.DataFrame({"x": [1, 2, 3, 100]})
+
+    result = df.scale_mad(columns=["x"], clip=3, suffix="_mad")
+
+    assert "x_mad" in result.columns
+    assert "x" in result.columns
+    assert (result["x_mad"].abs() <= 3).all()
+
+
+@pytest.mark.functions
+def test_scale_mad_callable_column_selector():
+    df = pd.DataFrame({"a": [1, 2, 3], "b": ["x", "y", "z"]})
+
+    result = df.scale_mad(
+        columns=lambda d: d.select_dtypes(include=["number"]).columns,
+        suffix="_mad",
+    )
+
+    assert "a_mad" in result.columns
+    assert "b" in result.columns
+
+
+@pytest.mark.functions
+def test_scale_mad_zero_mad_raise():
+    df = pd.DataFrame({"y": [1, 1, 1]})
+
+    with pytest.raises(ValueError, match="MAD is zero"):
+        df.scale_mad(columns=["y"], zero_mad="raise")

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyjanitor"
-version = "0.32.15"
+version = "0.32.16"
 description = "Tools for cleaning pandas DataFrames"
 requires-python = ">=3.8"
 license = {text = "MIT"}

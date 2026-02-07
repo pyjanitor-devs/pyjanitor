@@ -545,7 +545,7 @@ def sas_numeric_to_date(
         >>> import janitor as jn
         >>> jn.sas_numeric_to_date(date_num=15639)
         datetime.date(2002, 10, 26)
-        >>> jn.sas_numeric_to_date(datetime_num=1217083532, tz="UTC")
+        >>> jn.sas_numeric_to_date(datetime_num=1217083532, tz="UTC")  # doctest: +ELLIPSIS
         datetime.datetime(1998, 7, 26, 14, 45, 32, tzinfo=...)
         >>> jn.sas_numeric_to_date(time_num=3600)
         datetime.time(1, 0)

@@ -30,6 +30,7 @@ from .bin_numeric import bin_numeric
 from .case_when import case_when
 from .change_index_dtype import change_index_dtype
 from .change_type import change_type
+from .statistical_tests import chisq_test, fisher_test
 from .clean_names import clean_names
 from .coalesce import coalesce
 from .collapse_levels import collapse_levels
@@ -120,6 +121,7 @@ __all__ = [
     "case_when",
     "change_type",
     "change_index_dtype",
+    "chisq_test",
     "clean_names",
     "coalesce",
     "collapse_levels",
@@ -141,6 +143,7 @@ __all__ = [
     "expand_grid",
     "explode_index",
     "factorize_columns",
+    "fisher_test",
     "fill_direction",
     "fill_empty",
     "filter_date",

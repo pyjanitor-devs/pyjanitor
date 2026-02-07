@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Iterable, Sequence
 import warnings
 
+import numpy as np
 import pandas as pd
 from pandas.api.types import is_list_like, is_scalar
 
@@ -57,9 +58,9 @@ def single_value(
     if isinstance(x, pd.Series):
         series = x.copy()
     elif is_list_like(x) and not is_scalar(x):
-        series = pd.Series(list(x))
+        series = pd.Series(list(x), dtype="object")
     else:
-        series = pd.Series([x])
+        series = pd.Series([x], dtype="object")
 
     missing_values = _normalize_missing(missing)
     contains_na = any(pd.isna(value) for value in missing_values)
@@ -83,7 +84,10 @@ def single_value(
     if len(found_values) == 0:
         return missing_values[0] if missing_values else None
     if len(found_values) == 1:
-        return found_values[0]
+        value = found_values[0]
+        if isinstance(value, np.generic):
+            return value.item()
+        return value
 
     values_str = ", ".join(map(str, found_values))
     message = f"More than one ({len(found_values)}) value found ({values_str})"

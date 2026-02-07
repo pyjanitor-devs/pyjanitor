@@ -26,7 +26,7 @@ def _prepare_numeric_input(
 
     def wrap(result: np.ndarray):
         if is_scalar:
-            return result[0]
+            return result[0].item()
         return result
 
     return arr, wrap

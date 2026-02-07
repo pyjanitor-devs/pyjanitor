@@ -46,10 +46,10 @@ def top_levels(
         >>> import janitor
         >>> s = pd.Categorical(["A", "B", "C", "D", "E", "A", "B", "C"])
         >>> janitor.top_levels(s, n=2)
-            level  n  percent
-        0    A, B  4     0.50
-        1  C  ...     ...  # doctest: +SKIP
-        2    D, E  3     0.375
+          level  n  percent
+        0  A, B  4     0.50
+        1     C  2     0.25
+        2  D, E  2     0.25
 
     Args:
         input_vec: A pandas Categorical or Series with categorical dtype.

@@ -12,11 +12,11 @@ from pandas.errors import OutOfBoundsDatetime
 from janitor.utils import deprecated_alias, find_stack_level, refactored_function
 
 _EXCEL_EPOCH = datetime(1899, 12, 30)
-_EXCEL_DATE_PATTERN = re.compile(r"^[0-9]{5}(?:\\.[0-9]*)?$")
-_TIME_NUMBER_PATTERN = re.compile(r"^0(?:\\.[0-9]*)?$")
+_EXCEL_DATE_PATTERN = re.compile(r"^[0-9]{5}(?:\.[0-9]*)?$")
+_TIME_NUMBER_PATTERN = re.compile(r"^0(?:\.[0-9]*)?$")
 _TIME_SCI_NUMBER_PATTERN = re.compile(r"^[1-9](?:\\.[0-9]*)?E-[0-9]+$", re.IGNORECASE)
 _TIME_12HR_PATTERN = re.compile(
-    r"^([0]?[1-9]|1[0-2]):([0-5][0-9])(?::([0-5][0-9]))?\\s*([AP]M)$",
+    r"^([0]?[1-9]|1[0-2]):([0-5][0-9])(?::([0-5][0-9]))?\s*([AP]M)$",
     re.IGNORECASE,
 )
 _TIME_24HR_PATTERN = re.compile(

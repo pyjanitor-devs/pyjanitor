@@ -12,6 +12,7 @@ from pandas.core.common import apply_if_callable
 from pandas.core.groupby.generic import DataFrameGroupBy
 
 from janitor.functions.select import get_index_labels
+from janitor.utils import refactored_function
 
 
 @pf.register_dataframe_groupby_method

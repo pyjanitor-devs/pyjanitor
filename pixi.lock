@@ -22014,8 +22014,8 @@ packages:
   timestamp: 1750615908735
 - pypi: ./
   name: pyjanitor
-  version: 0.32.12
-  sha256: 689b666b2743d12124d670a578296a0f313292e88a872e4d0c76bf336b5c9f1e
+  version: 0.32.13
+  sha256: e1094f8efd03d8c5e1c3fb5f7a13f2552c2de058e8b1dd7d6a64eba2af5ce74a
   requires_dist:
   - natsort>=8.4.0,<9
   - pandas-flavor>=0.8.1,<0.9

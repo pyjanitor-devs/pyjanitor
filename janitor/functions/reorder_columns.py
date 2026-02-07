@@ -38,8 +38,7 @@ def reorder_columns(
 
         Notice that the column order of `df` is now `col3`, `col1`, `col2`.
 
-    Internally, this function uses `DataFrame.reindex` with `copy=False`
-    to avoid unnecessary data duplication.
+    Internally, this function uses `DataFrame.reindex`.
 
     Args:
         df: `DataFrame` to reorder
@@ -65,5 +64,4 @@ def reorder_columns(
 
     return df.reindex(
         columns=(column_order + [col for col in df.columns if col not in column_order]),
-        copy=False,
     )

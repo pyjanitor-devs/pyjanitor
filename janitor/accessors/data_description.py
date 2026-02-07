@@ -13,9 +13,23 @@ class DataDescription:
     This is a custom data accessor.
     """
 
+    # Key used to store descriptions in DataFrame.attrs, which persists
+    # across accessor instantiations (pandas 3.0+ no longer caches
+    # accessor instances).
+    _ATTRS_KEY = "_data_description_desc"
+
     def __init__(self, data):
         self._data = data
-        self._desc = {}
+
+    @property
+    def _desc(self) -> dict:
+        """Get descriptions from DataFrame.attrs for persistence."""
+        return self._data.attrs.get(self._ATTRS_KEY, {})
+
+    @_desc.setter
+    def _desc(self, value: dict):
+        """Store descriptions in DataFrame.attrs for persistence."""
+        self._data.attrs[self._ATTRS_KEY] = value
 
     def _get_data_df(self) -> pd.DataFrame:
         """Get a table of descriptive information in a DataFrame format.

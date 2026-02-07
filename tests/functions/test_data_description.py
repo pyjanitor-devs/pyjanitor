@@ -11,7 +11,6 @@ def test_no_descriptions(dataframe):
     assert (df["pct_missing"] == 0).all()
 
 
-@pytest.mark.xfail(reason="Pending fix for accessor caching issue")
 @pytest.mark.functions
 def test_description_list(dataframe):
     desc = ["A", "B", "C", "D", "E"]
@@ -28,7 +27,6 @@ def test_description_list(dataframe):
         dataframe.data_description.set_description(desc[0:3])
 
 
-@pytest.mark.xfail(reason="Pending fix for accessor caching issue")
 @pytest.mark.functions
 def test_description_full_dict(dataframe):
     desc = {
@@ -48,7 +46,6 @@ def test_description_full_dict(dataframe):
         assert df.loc[k]["description"] == v
 
 
-@pytest.mark.xfail(reason="Pending fix for accessor caching issue")
 @pytest.mark.functions
 def test_description_partial_dict(dataframe):
     desc = {"a": "First", "decorated-elephant": "Third", "cities": "Fifth"}

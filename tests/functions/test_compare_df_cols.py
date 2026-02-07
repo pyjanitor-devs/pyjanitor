@@ -33,7 +33,7 @@ def test_compare_df_cols_mismatch_bind_rows_return_alias():
     )
 
     result = janitor.compare_df_cols(
-        train=df1, test=df2, return="mismatch"
+        train=df1, test=df2, return_="mismatch"
     )
 
     expected = pd.DataFrame(
@@ -53,7 +53,7 @@ def test_compare_df_cols_rbind_missing_column():
     df2 = pd.DataFrame({"A": [5, 6], "B": [7, 8], "C": [9, 10]})
 
     result = janitor.compare_df_cols(
-        left=df1, right=df2, return="mismatch", bind_method="rbind"
+        left=df1, right=df2, return_="mismatch", bind_method="rbind"
     )
 
     expected = pd.DataFrame(

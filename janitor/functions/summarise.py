@@ -16,6 +16,12 @@ from janitor.functions.select import get_index_labels
 
 @pf.register_dataframe_groupby_method
 @pf.register_dataframe_method
+@refactored_function(
+    message=(
+        "This function is deprecated. "
+        "Please use `pd.DataFrame.agg` instead."
+    )
+)
 def summarise(
     df: pd.DataFrame | DataFrameGroupBy,
     *args: tuple[dict | tuple],

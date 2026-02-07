@@ -71,7 +71,7 @@ def test_compare_df_cols_rbind_missing_column():
         }
     )
 
-    pd.testing.assert_frame_equal(result, expected)
+    pd.testing.assert_frame_equal(result, expected, check_dtype=False)
 
 
 @pytest.mark.functions

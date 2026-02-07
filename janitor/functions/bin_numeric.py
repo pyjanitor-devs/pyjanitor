@@ -64,9 +64,8 @@ def bin_numeric(
     Returns:
         A pandas DataFrame.
     """
-    if "retbins" in kwargs:
+    if kwargs.get("retbins"):
         raise ValueError("`retbins` is not an acceptable keyword argument.")
-
     check("from_column_name", from_column_name, [str])
     check("to_column_name", to_column_name, [str])
     check_column(df, from_column_name)
@@ -80,11 +79,5 @@ def bin_numeric(
             f"Column '{from_column_name}' must be numeric for binning. "
             f"Original error: {e}"
         ) from e
-
-    df = df.assign(
-        **{
-            to_column_name: pd.cut(numeric_col, bins=bins, **kwargs),
-        }
-    )
-
-    return df
+    numeric_col = pd.cut(numeric_col, bins=bins, **kwargs)
+    return df.assign(**{to_column_name: numeric_col})

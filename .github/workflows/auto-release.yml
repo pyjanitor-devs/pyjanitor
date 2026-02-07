@@ -89,27 +89,23 @@ jobs:
 
       - name: Setup Pixi Environment
         if: steps.check_release.outputs.already_released == 'false'
-        uses: prefix-dev/setup-pixi@v0.9.3
+        uses: prefix-dev/setup-pixi@v0.9.4
         with:
           pixi-version: latest
           cache: true
           cache-write: true
 
-      - name: Set up Python tools
-        if: steps.check_release.outputs.already_released == 'false'
-        run: uv tool install bump2version
-
       - name: Set version name
         if: steps.check_release.outputs.already_released == 'false'
         run: echo "VERSION_NAME=${{ github.event.inputs.version_name || env.DEFAULT_VERSION_NAME }}" >> $GITHUB_ENV
 
-      - name: Dry run bump2version
+      - name: Dry run uv version bump
         if: steps.check_release.outputs.already_released == 'false'
-        run: bump2version --dry-run ${{ env.VERSION_NAME }} --allow-dirty --verbose
+        run: uv version --bump ${{ env.VERSION_NAME }} --dry-run
 
       - name: Store new version number
         if: steps.check_release.outputs.already_released == 'false'
-        run: echo "version_number=$(bump2version --dry-run --list ${{ env.VERSION_NAME }} | grep new_version | sed -r 's/^.*=//')" >> $GITHUB_ENV
+        run: echo "version_number=$(uv version --bump ${{ env.VERSION_NAME }} --dry-run | tr -d ' \n')" >> $GITHUB_ENV
 
       - name: Display new version number
         if: steps.check_release.outputs.already_released == 'false'
@@ -127,9 +123,16 @@ jobs:
           git config user.name github-actions
           git config user.email github-actions@github.com
 
-      - name: Run bump2version
+      - name: Run uv version bump
         if: steps.check_release.outputs.already_released == 'false'
-        run: bump2version ${{ env.VERSION_NAME }} --verbose
+        run: uv version --bump ${{ env.VERSION_NAME }} --frozen
+
+      - name: Commit version bump and create tag
+        if: steps.check_release.outputs.already_released == 'false'
+        run: |
+          git add pyproject.toml
+          git commit -m "Bump version to ${{ env.version_number }}"
+          git tag v${{ env.version_number }}
 
       - name: Ensure tag creation
         if: steps.check_release.outputs.already_released == 'false'

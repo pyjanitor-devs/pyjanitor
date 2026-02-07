@@ -1,9 +1,5 @@
-
-
-import numpy as np
 import janitor_rs
-
-
+import numpy as np
 
 
 def _binary_search_lt(
@@ -24,8 +20,8 @@ def _binary_search_lt(
         "uint32": janitor_rs.binary_search_lt_uint32,
         "uint16": janitor_rs.binary_search_lt_uint16,
         "uint8": janitor_rs.binary_search_lt_uint8,
-        "float64": janitor_rs.binary_search_lt_float64,
-        "float32": janitor_rs.binary_search_lt_float32,
+        "float64": janitor_rs.binary_search_lt_f64,
+        "float32": janitor_rs.binary_search_lt_f32,
     }
     dtype_name = left.dtype.name
     try:
@@ -53,8 +49,8 @@ def _binary_search_le(
         "uint32": janitor_rs.binary_search_le_uint32,
         "uint16": janitor_rs.binary_search_le_uint16,
         "uint8": janitor_rs.binary_search_le_uint8,
-        "float64": janitor_rs.binary_search_le_float64,
-        "float32": janitor_rs.binary_search_le_float32,
+        "float64": janitor_rs.binary_search_le_f64,
+        "float32": janitor_rs.binary_search_le_f32,
     }
     dtype_name = left.dtype.name
     try:
@@ -82,8 +78,8 @@ def _binary_search_gt(
         "uint32": janitor_rs.binary_search_gt_uint32,
         "uint16": janitor_rs.binary_search_gt_uint16,
         "uint8": janitor_rs.binary_search_gt_uint8,
-        "float64": janitor_rs.binary_search_gt_float64,
-        "float32": janitor_rs.binary_search_gt_float32,
+        "float64": janitor_rs.binary_search_gt_f64,
+        "float32": janitor_rs.binary_search_gt_f32,
     }
     dtype_name = left.dtype.name
     try:
@@ -111,8 +107,8 @@ def _binary_search_ge(
         "uint32": janitor_rs.binary_search_ge_uint32,
         "uint16": janitor_rs.binary_search_ge_uint16,
         "uint8": janitor_rs.binary_search_ge_uint8,
-        "float64": janitor_rs.binary_search_ge_float64,
-        "float32": janitor_rs.binary_search_ge_float32,
+        "float64": janitor_rs.binary_search_ge_f64,
+        "float32": janitor_rs.binary_search_ge_f32,
     }
     dtype_name = left.dtype.name
     try:
@@ -120,3 +116,179 @@ def _binary_search_ge(
     except KeyError:
         raise KeyError(f"Unsupported data type -> {dtype_name}")
     return func(left, right, starts, ends)
+
+
+def _binary_search_lt_first(
+    left: np.ndarray,
+    right: np.ndarray,
+    left_index: np.ndarray,
+) -> tuple:
+    """
+    Get starts for < joins
+    """
+    mapping = {
+        "int64": janitor_rs.binary_search_lt_first_int64,
+        "int32": janitor_rs.binary_search_lt_first_int32,
+        "int16": janitor_rs.binary_search_lt_first_int16,
+        "int8": janitor_rs.binary_search_lt_first_int8,
+        "uint64": janitor_rs.binary_search_lt_first_uint64,
+        "uint32": janitor_rs.binary_search_lt_first_uint32,
+        "uint16": janitor_rs.binary_search_lt_first_uint16,
+        "uint8": janitor_rs.binary_search_lt_first_uint8,
+        "float64": janitor_rs.binary_search_lt_first_f64,
+        "float32": janitor_rs.binary_search_lt_first_f32,
+    }
+    dtype_name = left.dtype.name
+    try:
+        func = mapping[dtype_name]
+    except KeyError:
+        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    search_indices, left_index, total = func(left, right, left_index)
+    if not total:
+        return None
+    return left_index, search_indices
+
+
+def _binary_search_le_first(
+    left: np.ndarray, right: np.ndarray, left_index: np.ndarray
+) -> tuple:
+    """
+    Get starts for <= joins
+    """
+    mapping = {
+        "int64": janitor_rs.binary_search_le_first_int64,
+        "int32": janitor_rs.binary_search_le_first_int32,
+        "int16": janitor_rs.binary_search_le_first_int16,
+        "int8": janitor_rs.binary_search_le_first_int8,
+        "uint64": janitor_rs.binary_search_le_first_uint64,
+        "uint32": janitor_rs.binary_search_le_first_uint32,
+        "uint16": janitor_rs.binary_search_le_first_uint16,
+        "uint8": janitor_rs.binary_search_le_first_uint8,
+        "float64": janitor_rs.binary_search_le_first_f64,
+        "float32": janitor_rs.binary_search_le_first_f32,
+    }
+    dtype_name = left.dtype.name
+    try:
+        func = mapping[dtype_name]
+    except KeyError:
+        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    search_indices, left_index, total = func(left, right, left_index)
+    if not total:
+        return None
+    return left_index, search_indices
+
+
+def _binary_search_gt_first(
+    left: np.ndarray, right: np.ndarray, left_index: np.ndarray
+) -> tuple:
+    """
+    Get ends for > joins
+    """
+    mapping = {
+        "int64": janitor_rs.binary_search_gt_first_int64,
+        "int32": janitor_rs.binary_search_gt_first_int32,
+        "int16": janitor_rs.binary_search_gt_first_int16,
+        "int8": janitor_rs.binary_search_gt_first_int8,
+        "uint64": janitor_rs.binary_search_gt_first_uint64,
+        "uint32": janitor_rs.binary_search_gt_first_uint32,
+        "uint16": janitor_rs.binary_search_gt_first_uint16,
+        "uint8": janitor_rs.binary_search_gt_first_uint8,
+        "float64": janitor_rs.binary_search_gt_first_f64,
+        "float32": janitor_rs.binary_search_gt_first_f32,
+    }
+    dtype_name = left.dtype.name
+    try:
+        func = mapping[dtype_name]
+    except KeyError:
+        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    search_indices, left_index, total = func(left, right, left_index)
+    if not total:
+        return None
+    return left_index, search_indices
+
+
+def _binary_search_ge_first(
+    left: np.ndarray, right: np.ndarray, left_index: np.ndarray
+) -> tuple:
+    """
+    Get ends for >= joins
+    """
+    mapping = {
+        "int64": janitor_rs.binary_search_ge_first_int64,
+        "int32": janitor_rs.binary_search_ge_first_int32,
+        "int16": janitor_rs.binary_search_ge_first_int16,
+        "int8": janitor_rs.binary_search_ge_first_int8,
+        "uint64": janitor_rs.binary_search_ge_first_uint64,
+        "uint32": janitor_rs.binary_search_ge_first_uint32,
+        "uint16": janitor_rs.binary_search_ge_first_uint16,
+        "uint8": janitor_rs.binary_search_ge_first_uint8,
+        "float64": janitor_rs.binary_search_ge_first_f64,
+        "float32": janitor_rs.binary_search_ge_first_f32,
+    }
+    dtype_name = left.dtype.name
+    try:
+        func = mapping[dtype_name]
+    except KeyError:
+        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    search_indices, left_index, total = func(left, right, left_index)
+    if not total:
+        return None
+    return left_index, search_indices
+
+
+def _binary_search_gt_regions(
+    left: np.ndarray, right: np.ndarray, left_index: np.ndarray
+) -> tuple:
+    """
+    Get ends for > joins
+    """
+    mapping = {
+        "int64": janitor_rs.binary_search_gt_regions_int64,
+        "int32": janitor_rs.binary_search_gt_regions_int32,
+        "int16": janitor_rs.binary_search_gt_regions_int16,
+        "int8": janitor_rs.binary_search_gt_regions_int8,
+        "uint64": janitor_rs.binary_search_gt_regions_uint64,
+        "uint32": janitor_rs.binary_search_gt_regions_uint32,
+        "uint16": janitor_rs.binary_search_gt_regions_uint16,
+        "uint8": janitor_rs.binary_search_gt_regions_uint8,
+        "float64": janitor_rs.binary_search_gt_regions_f64,
+        "float32": janitor_rs.binary_search_gt_regions_f32,
+    }
+    dtype_name = left.dtype.name
+    try:
+        func = mapping[dtype_name]
+    except KeyError:
+        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    search_indices, left_index, total = func(left, right, left_index)
+    if not total:
+        return None
+    return left_index, search_indices
+
+
+def _binary_search_ge_regions(
+    left: np.ndarray, right: np.ndarray, left_index: np.ndarray
+) -> tuple:
+    """
+    Get ends for >= joins
+    """
+    mapping = {
+        "int64": janitor_rs.binary_search_ge_regions_int64,
+        "int32": janitor_rs.binary_search_ge_regions_int32,
+        "int16": janitor_rs.binary_search_ge_regions_int16,
+        "int8": janitor_rs.binary_search_ge_regions_int8,
+        "uint64": janitor_rs.binary_search_ge_regions_uint64,
+        "uint32": janitor_rs.binary_search_ge_regions_uint32,
+        "uint16": janitor_rs.binary_search_ge_regions_uint16,
+        "uint8": janitor_rs.binary_search_ge_regions_uint8,
+        "float64": janitor_rs.binary_search_ge_regions_f64,
+        "float32": janitor_rs.binary_search_ge_regions_f32,
+    }
+    dtype_name = left.dtype.name
+    try:
+        func = mapping[dtype_name]
+    except KeyError:
+        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    search_indices, left_index, total = func(left, right, left_index)
+    if not total:
+        return None
+    return left_index, search_indices

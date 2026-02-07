@@ -581,6 +581,15 @@ def _select_regex(index, arg, source="regex"):
     try:
         if source == "fnmatch":
             arg, regex = arg
+            # fnmatch.translate() produces patterns like (?s:col.*)\Z
+            # (or \z on Python 3.12+) which use inline flags (?s:)
+            # and \Z/\z anchors not supported by pyarrow's RE2 regex
+            # engine (used in pandas 3.0+ with the default
+            # string[pyarrow] dtype).
+            # Convert to RE2-compatible: strip (?s:...) wrapper and
+            # replace \Z/\z with $.
+            regex = re.sub(r'^\(\?s:', '', regex)
+            regex = re.sub(r'\)\\[zZ]$', '$', regex)
             bools = index.str.match(regex, na=False)
         else:
             bools = index.str.contains(arg, na=False, regex=True)

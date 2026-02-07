@@ -40,7 +40,11 @@ from .conditional_join import conditional_join, get_join_indices, join_agg
 from .convert_date import (
     convert_excel_date,
     convert_matlab_date,
+    convert_to_date,
+    convert_to_datetime,
     convert_unix_date,
+    excel_time_to_numeric,
+    sas_numeric_to_date,
 )
 from .count_cumulative_unique import count_cumulative_unique
 from .currency_column_to_numeric import currency_column_to_numeric
@@ -135,7 +139,11 @@ __all__ = [
     "conditional_join",
     "convert_excel_date",
     "convert_matlab_date",
+    "convert_to_date",
+    "convert_to_datetime",
     "convert_unix_date",
+    "excel_time_to_numeric",
+    "sas_numeric_to_date",
     "count_cumulative_unique",
     "currency_column_to_numeric",
     "deconcatenate_column",

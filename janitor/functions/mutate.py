@@ -92,6 +92,8 @@ def ungroup(
 ) -> pd.DataFrame:
     """
 
+    !!!warning "This function is deprecated. Use `jn.get_columns` instead."
+
     !!! info "New in version 0.32.0"
 
     Ungroups a GroupBy object into a DataFrame.
@@ -138,11 +140,16 @@ def ungroup(
 
 @pf.register_dataframe_groupby_method
 @pf.register_dataframe_method
+@refactored_function(
+    message=("This function is deprecated. Please use `pd.DataFrame.assign` instead.")
+)
 def mutate(
     df: pd.DataFrame | DataFrameGroupBy,
     *args: tuple[dict | tuple],
 ) -> pd.DataFrame | DataFrameGroupBy:
     """
+
+    !!!warning "This function is deprecated. Use `pd.DataFrame.assign` instead."
 
     !!! info "New in version 0.31.0"
 

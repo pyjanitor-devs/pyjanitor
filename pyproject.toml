@@ -31,7 +31,7 @@ dependencies = [
     "natsort>=8.4.0,<9",
     "pandas-flavor>=0.8.1,<0.9",
     "multipledispatch",
-    "scipy", "janitor-rs>=0.6.1,<0.7"]
+    "scipy", "janitor-rs>=0.6.1,<0.7", "pre-commit>=4.5.1,<5"]
 
 [project.optional-dependencies]
 dev = [

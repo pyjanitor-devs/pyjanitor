@@ -8,36 +8,35 @@ from functools import singledispatch
 
 import pandas as pd
 import pandas_flavor as pf
+from pandas.core.col import Expression
 from pandas.core.common import apply_if_callable
 from pandas.core.groupby.generic import DataFrameGroupBy
-from pandas.core.col import Expression
+
 from janitor.functions.select import get_index_labels
 from janitor.utils import find_stack_level, refactored_function
 
 
-
-
 @pf.register_dataframe_groupby_method
-def assign(
-    df: DataFrameGroupBy, **kwargs
-) -> DataFrameGroupBy:
+def assign(df: DataFrameGroupBy, **kwargs) -> DataFrameGroupBy:
     """
 
     !!! info "New in version 0.32.17"
 
     Assigns new columns to a GroupBy object.
 
-    Returns a new object with all original columns in addition to new ones. 
+    Returns a new object with all original columns in addition to new ones.
 
     Existing columns that are re-assigned will be overwritten.
 
     Examples:
         >>> import pandas as pd
         >>> import janitor
-        >>> data = {'a': [1, 1, 0, 1, 0],
-        ...         'b': [1, 0, 0, 1, 0],
-        ...         'c': [10, 5, 1, 5, 10],
-        ...         'd': [3, 1, 2, 1, 2]}
+        >>> data = {
+        ...     "a": [1, 1, 0, 1, 0],
+        ...     "b": [1, 0, 0, 1, 0],
+        ...     "c": [10, 5, 1, 5, 10],
+        ...     "d": [3, 1, 2, 1, 2],
+        ... }
         >>> df = pd.DataFrame(data)
         >>> df
            a  b   c  d
@@ -46,15 +45,15 @@ def assign(
         2  0  0   1  2
         3  1  1   5  1
         4  0  0  10  2
-        >>> grp=df.groupby(['a','b'])
-        >>> grp.assign(e=pd.col('c') * pd.col('d')).get_columns("*")
+        >>> grp = df.groupby(["a", "b"])
+        >>> grp.assign(e=pd.col("c") * pd.col("d")).get_columns("*")
            a  b   c  d   e
         0  1  1  10  3  30
         1  1  0   5  1   5
         2  0  0   1  2   2
         3  1  1   5  1   5
         4  0  0  10  2  20
-        >>> grp.assign(e=grp['d'].transform('sum')).get_columns("*")
+        >>> grp.assign(e=grp["d"].transform("sum")).get_columns("*")
            a  b   c  d  e
         0  1  1  10  3  4
         1  1  0   5  1  1
@@ -64,9 +63,9 @@ def assign(
 
     Args:
         df: A pandas DataFrameGroupBy object.
-        **kwargs: The column names are keywords. 
+        **kwargs: The column names are keywords.
             If the value is an Expression,
-            the Expression is evaluated on the underlying DataFrame, 
+            the Expression is evaluated on the underlying DataFrame,
             otherwise it is evaluated on the grouped object.
 
     Returns:
@@ -80,23 +79,8 @@ def assign(
             outcome = apply_if_callable(v, df.obj)
         else:
             outcome = apply_if_callable(v, df)
-        df.obj[k] = outcome          
+        df.obj[k] = outcome
     return df
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 @pf.register_dataframe_groupby_method

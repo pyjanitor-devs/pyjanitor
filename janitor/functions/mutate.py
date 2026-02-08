@@ -70,6 +70,12 @@ def ungroup(
 
 @pf.register_dataframe_groupby_method
 @pf.register_dataframe_method
+@refactored_function(
+    message=(
+        "This function is deprecated. "
+        "Please use `pd.DataFrame.assign` instead."
+    )
+)
 def mutate(
     df: pd.DataFrame | DataFrameGroupBy,
     *args: tuple[dict | tuple],

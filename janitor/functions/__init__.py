@@ -73,7 +73,7 @@ from .label_encode import label_encode
 from .limit_column_characters import limit_column_characters
 from .min_max_scale import min_max_scale
 from .move import move
-from .mutate import mutate
+from .mutate import mutate, assign
 from .paste_skip_na import paste_skip_na
 from .pivot import (
     pivot_longer,
@@ -127,6 +127,7 @@ __all__ = [
     "adorn_totals",
     "alias",
     "also",
+    "assign",
     "bin_numeric",
     "cartesian_product",
     "case_when",

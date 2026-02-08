@@ -17,6 +17,7 @@ def _():
     import re
 
     import pandas as pd
+
     return pd, re
 
 
@@ -57,6 +58,7 @@ def _(df, re):
 @app.cell
 def _():
     import marimo as mo
+
     return (mo,)
 
 

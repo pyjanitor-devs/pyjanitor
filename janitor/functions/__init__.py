@@ -30,7 +30,6 @@ from .bin_numeric import bin_numeric
 from .case_when import case_when
 from .change_index_dtype import change_index_dtype
 from .change_type import change_type
-from .statistical_tests import chisq_test, fisher_test
 from .clean_names import clean_names
 from .coalesce import coalesce
 from .collapse_levels import collapse_levels
@@ -73,7 +72,7 @@ from .label_encode import label_encode
 from .limit_column_characters import limit_column_characters
 from .min_max_scale import min_max_scale
 from .move import move
-from .mutate import mutate, assign
+from .mutate import assign, mutate
 from .paste_skip_na import paste_skip_na
 from .pivot import (
     pivot_longer,
@@ -103,13 +102,14 @@ from .shuffle import shuffle
 from .single_value import single_value
 from .sort_column_value_order import sort_column_value_order
 from .sort_naturally import sort_naturally
+from .statistical_tests import chisq_test, fisher_test
 from .summarise import summarise
 from .tabyl import tabyl
 from .take_first import take_first
 from .then import then
 from .to_datetime import to_datetime
-from .toset import toset
 from .top_levels import top_levels
+from .toset import toset
 from .transform_columns import transform_column, transform_columns
 from .truncate_datetime import truncate_datetime_dataframe
 from .update_where import update_where

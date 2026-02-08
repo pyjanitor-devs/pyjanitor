@@ -15,6 +15,7 @@ def _(mo):
 @app.cell
 def _():
     import pandas as pd
+
     return (pd,)
 
 
@@ -80,7 +81,7 @@ def _(mo):
 @app.cell
 def _(df):
     new_year_values_1 = lambda year: range(year.min(), year.max() + 1)  # noqa: E731
-    df.complete({'Year': new_year_values_1}, 'Taxon')
+    df.complete({"Year": new_year_values_1}, "Taxon")
     return
 
 
@@ -95,7 +96,13 @@ def _(mo):
 @app.cell
 def _(pd):
     # https://stackoverflow.com/q/62266057/7175713
-    df_1 = {'Name': ('Bob', 'Bob', 'Emma'), 'Age': (23, 23, 78), 'Gender': ('Male', 'Male', 'Female'), 'Item': ('house', 'car', 'house'), 'Value': (5, 1, 3)}
+    df_1 = {
+        "Name": ("Bob", "Bob", "Emma"),
+        "Age": (23, 23, 78),
+        "Gender": ("Male", "Male", "Female"),
+        "Item": ("house", "car", "house"),
+        "Value": (5, 1, 3),
+    }
     df_1 = pd.DataFrame(df_1)
     df_1
     return (df_1,)
@@ -111,7 +118,7 @@ def _(mo):
 
 @app.cell
 def _(df_1):
-    df_1.complete(('Name', 'Age', 'Gender'), 'Item')
+    df_1.complete(("Name", "Age", "Gender"), "Item")
     return
 
 
@@ -125,7 +132,13 @@ def _(mo):
 
 @app.cell
 def _(pd):
-    df_2 = pd.DataFrame({'state': ['CA', 'CA', 'HI', 'HI', 'HI', 'NY', 'NY'], 'year': [2010, 2013, 2010, 2012, 2016, 2009, 2013], 'value': [1, 3, 1, 2, 3, 2, 5]})
+    df_2 = pd.DataFrame(
+        {
+            "state": ["CA", "CA", "HI", "HI", "HI", "NY", "NY"],
+            "year": [2010, 2013, 2010, 2012, 2016, 2009, 2013],
+            "value": [1, 3, 1, 2, 3, 2, 5],
+        }
+    )
     df_2
     return (df_2,)
 
@@ -141,7 +154,7 @@ def _(mo):
 @app.cell
 def _(df_2):
     new_year_values_2 = lambda year: range(year.min(), year.max() + 1)  # noqa: E731
-    df_2.complete({'year': new_year_values_2}, by='state')
+    df_2.complete({"year": new_year_values_2}, by="state")
     return (new_year_values_2,)
 
 
@@ -155,13 +168,14 @@ def _(mo):
 
 @app.cell
 def _(df_2, new_year_values_2):
-    df_2.complete({'year': new_year_values_2}, by='state', fill_value=0)
+    df_2.complete({"year": new_year_values_2}, by="state", fill_value=0)
     return
 
 
 @app.cell
 def _():
     import marimo as mo
+
     return (mo,)
 
 

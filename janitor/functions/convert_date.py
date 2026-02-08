@@ -251,9 +251,7 @@ def excel_time_to_numeric(time_value: Any, round_seconds: bool = True) -> Any:
 
         if isinstance(value, str):
             text = value.strip()
-            if _TIME_NUMBER_PATTERN.match(text) or _TIME_SCI_NUMBER_PATTERN.match(
-                text
-            ):
+            if _TIME_NUMBER_PATTERN.match(text) or _TIME_SCI_NUMBER_PATTERN.match(text):
                 numeric_value = float(text)
                 if not (0 <= numeric_value < 1):
                     raise ValueError(
@@ -266,9 +264,7 @@ def excel_time_to_numeric(time_value: Any, round_seconds: bool = True) -> Any:
                 hours = match.group(1) or "0"
                 minutes = match.group(2) or "0"
                 seconds = match.group(3) or "0"
-                seconds = (
-                    int(hours) * 3600 + int(minutes) * 60 + int(seconds)
-                )
+                seconds = int(hours) * 3600 + int(minutes) * 60 + int(seconds)
             elif _TIME_12HR_PATTERN.match(text):
                 match = _TIME_12HR_PATTERN.match(text)
                 hours = int(match.group(1))
@@ -308,9 +304,7 @@ def excel_time_to_numeric(time_value: Any, round_seconds: bool = True) -> Any:
     return finalize(results)
 
 
-def _coerce_character_result(
-    value: Any, out_class: str
-) -> date | pd.Timestamp:
+def _coerce_character_result(value: Any, out_class: str) -> date | pd.Timestamp:
     if out_class == "date":
         if isinstance(value, pd.Timestamp):
             return value.date()
@@ -545,7 +539,9 @@ def sas_numeric_to_date(
         >>> import janitor as jn
         >>> jn.sas_numeric_to_date(date_num=15639)
         datetime.date(2002, 10, 26)
-        >>> jn.sas_numeric_to_date(datetime_num=1217083532, tz="UTC")  # doctest: +ELLIPSIS
+        >>> jn.sas_numeric_to_date(
+        ...     datetime_num=1217083532, tz="UTC"
+        ... )  # doctest: +ELLIPSIS
         datetime.datetime(1998, 7, 26, 14, 45, 32, tzinfo=...)
         >>> jn.sas_numeric_to_date(time_num=3600)
         datetime.time(1, 0)
@@ -627,9 +623,7 @@ def sas_numeric_to_date(
                     time_series.index, fill_value=date_series.iloc[0]
                 )
             else:
-                raise ValueError(
-                    "`date_num` and `time_num` must be the same length."
-                )
+                raise ValueError("`date_num` and `time_num` must be the same length.")
 
         if not (date_series.isna() == time_series.isna()).all():
             raise ValueError(
@@ -644,9 +638,7 @@ def sas_numeric_to_date(
             )
 
         datetime_series = date_series * 86400 + time_series
-        timestamps = pd.to_datetime(
-            datetime_series, unit="s", origin="1960-01-01"
-        )
+        timestamps = pd.to_datetime(datetime_series, unit="s", origin="1960-01-01")
         results = [
             None
             if pd.isna(ts)
@@ -655,9 +647,7 @@ def sas_numeric_to_date(
         ]
     elif has_datetime:
         datetime_series = _numeric_series(datetime_num, "datetime_num")
-        timestamps = pd.to_datetime(
-            datetime_series, unit="s", origin="1960-01-01"
-        )
+        timestamps = pd.to_datetime(datetime_series, unit="s", origin="1960-01-01")
         results = [
             None
             if pd.isna(ts)
@@ -668,8 +658,7 @@ def sas_numeric_to_date(
         date_series = _numeric_series(date_num, "date_num")
         timestamps = pd.to_datetime(date_series, unit="D", origin="1960-01-01")
         results = [
-            None if pd.isna(ts) else pd.Timestamp(ts).date()
-            for ts in timestamps
+            None if pd.isna(ts) else pd.Timestamp(ts).date() for ts in timestamps
         ]
     else:
         time_series = _numeric_series(time_num, "time_num")

@@ -49,6 +49,7 @@ def _():
     # load modules
     import numpy as np
     import pandas as pd
+
     return np, pd
 
 
@@ -103,7 +104,9 @@ def _(mo):
 
 @app.cell
 def _(df):
-    df_1 = df.groupby_agg(by='item', agg='mean', agg_column_name='MRP', new_column_name='Avg_MRP')
+    df_1 = df.groupby_agg(
+        by="item", agg="mean", agg_column_name="MRP", new_column_name="Avg_MRP"
+    )
     df_1
     return
 
@@ -129,14 +132,25 @@ def _(mo):
 
 @app.cell
 def _(pd):
-    df_2 = pd.DataFrame({'date': pd.date_range('2021-01-12', periods=5, freq='W'), 'item': ['sneaker', 'boots', 'sneaker', 'bag', 'bag'], 'MRP': [230, 450, 300, 200, 305]})
+    df_2 = pd.DataFrame(
+        {
+            "date": pd.date_range("2021-01-12", periods=5, freq="W"),
+            "item": ["sneaker", "boots", "sneaker", "bag", "bag"],
+            "MRP": [230, 450, 300, 200, 305],
+        }
+    )
     df_2
     return (df_2,)
 
 
 @app.cell
 def _(df_2):
-    df_3 = df_2.groupby_agg(by=['item', df_2['date'].dt.month], agg='mean', agg_column_name='MRP', new_column_name='Avg_MRP_by_item_month')
+    df_3 = df_2.groupby_agg(
+        by=["item", df_2["date"].dt.month],
+        agg="mean",
+        agg_column_name="MRP",
+        new_column_name="Avg_MRP_by_item_month",
+    )
     df_3
     return
 
@@ -162,7 +176,14 @@ def _(mo):
 
 @app.cell
 def _(np, pd):
-    df_4 = pd.DataFrame({'name': ('black', 'black', 'black', 'red', 'red'), 'type': ('chair', 'chair', 'sofa', 'sofa', 'plate'), 'num': (4, 5, 12, 4, 3), 'nulls': (1, 1, np.nan, np.nan, 3)})
+    df_4 = pd.DataFrame(
+        {
+            "name": ("black", "black", "black", "red", "red"),
+            "type": ("chair", "chair", "sofa", "sofa", "plate"),
+            "num": (4, 5, 12, 4, 3),
+            "nulls": (1, 1, np.nan, np.nan, 3),
+        }
+    )
     df_4
     return (df_4,)
 
@@ -178,11 +199,23 @@ def _(mo):
 
 @app.cell
 def _(df_4, display):
-    print('With dropna=True (default)')
-    _filtered_df = df_4.groupby_agg(by=['nulls'], agg='size', agg_column_name='type', new_column_name='counter', dropna=True)
+    print("With dropna=True (default)")
+    _filtered_df = df_4.groupby_agg(
+        by=["nulls"],
+        agg="size",
+        agg_column_name="type",
+        new_column_name="counter",
+        dropna=True,
+    )
     display(_filtered_df)
-    print('With dropna=False')
-    _filtered_df = df_4.groupby_agg(by=['nulls'], agg='size', agg_column_name='type', new_column_name='counter', dropna=False)
+    print("With dropna=False")
+    _filtered_df = df_4.groupby_agg(
+        by=["nulls"],
+        agg="size",
+        agg_column_name="type",
+        new_column_name="counter",
+        dropna=False,
+    )
     display(_filtered_df)
     return
 
@@ -206,8 +239,20 @@ def _(mo):
 
 @app.cell
 def _(np, pd):
-    df_5 = pd.DataFrame({'name': ('black', 'black', 'black', 'red', 'red'), 'type': ('chair', 'chair', 'sofa', 'sofa', 'plate'), 'num': (4, 5, 12, 4, 3), 'nulls': (1, 1, np.nan, np.nan, 3)})
-    _filtered_df = df_5.groupby_agg(by=['name', 'type'], agg='size', agg_column_name='type', new_column_name='counter').query('counter > 1')
+    df_5 = pd.DataFrame(
+        {
+            "name": ("black", "black", "black", "red", "red"),
+            "type": ("chair", "chair", "sofa", "sofa", "plate"),
+            "num": (4, 5, 12, 4, 3),
+            "nulls": (1, 1, np.nan, np.nan, 3),
+        }
+    )
+    _filtered_df = df_5.groupby_agg(
+        by=["name", "type"],
+        agg="size",
+        agg_column_name="type",
+        new_column_name="counter",
+    ).query("counter > 1")
     _filtered_df
     return
 
@@ -215,6 +260,7 @@ def _(np, pd):
 @app.cell
 def _():
     import marimo as mo
+
     return (mo,)
 
 

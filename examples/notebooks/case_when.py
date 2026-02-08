@@ -15,6 +15,7 @@ def _(mo):
 @app.cell
 def _():
     import pandas as pd
+
     return (pd,)
 
 
@@ -80,15 +81,20 @@ def _(mo):
 @app.cell
 def _(pd):
     # https://stackoverflow.com/q/43391591/7175713
-    raw_data = {'age1': [23, 45, 21], 'age2': [10, 20, 50]}
-    df_1 = pd.DataFrame(raw_data, columns=['age1', 'age2'])
+    raw_data = {"age1": [23, 45, 21], "age2": [10, 20, 50]}
+    df_1 = pd.DataFrame(raw_data, columns=["age1", "age2"])
     df_1
     return (df_1,)
 
 
 @app.cell
 def _(df_1):
-    df_1.case_when(lambda df: df.age1 - df.age2 > 0, lambda df: df.age1 - df.age2, lambda df: df.age2 - df.age1, column_name='diff')  # condition  # value if True  # default if False
+    df_1.case_when(
+        lambda df: df.age1 - df.age2 > 0,
+        lambda df: df.age1 - df.age2,
+        lambda df: df.age2 - df.age1,
+        column_name="diff",
+    )  # condition  # value if True  # default if False
     return
 
 
@@ -102,14 +108,19 @@ def _(mo):
 
 @app.cell
 def _(df_1):
-    df_2 = df_1.astype('Int64')
+    df_2 = df_1.astype("Int64")
     df_2.dtypes
     return (df_2,)
 
 
 @app.cell
 def _(df_2):
-    result = df_2.case_when(lambda df: df.age1 - df.age2 > 0, lambda df: df.age1 - df.age2, lambda df: df.age2 - df.age1, column_name='diff')
+    result = df_2.case_when(
+        lambda df: df.age1 - df.age2 > 0,
+        lambda df: df.age1 - df.age2,
+        lambda df: df.age2 - df.age1,
+        column_name="diff",
+    )
     result
     return (result,)
 
@@ -131,15 +142,31 @@ def _(mo):
 @app.cell
 def _(pd):
     # https://stackoverflow.com/q/54653356/7175713
-    data = {'name': ['Jason', 'Molly', 'Tina', 'Jake', 'Amy'], 'age': [42, 52, 36, 24, 73], 'preTestScore': [4, 24, 31, 2, 3], 'postTestScore': [25, 94, 57, 62, 70]}
-    df_3 = pd.DataFrame(data, columns=['name', 'age', 'preTestScore', 'postTestScore'])
+    data = {
+        "name": ["Jason", "Molly", "Tina", "Jake", "Amy"],
+        "age": [42, 52, 36, 24, 73],
+        "preTestScore": [4, 24, 31, 2, 3],
+        "postTestScore": [25, 94, 57, 62, 70],
+    }
+    df_3 = pd.DataFrame(data, columns=["name", "age", "preTestScore", "postTestScore"])
     df_3
     return (df_3,)
 
 
 @app.cell
 def _(df_3):
-    df_3.case_when('age < 10', 'baby', '10 <= age < 20', 'kid', '20 <= age < 30', 'young', '30 <= age < 50', 'mature', 'grandpa', column_name='elderly')
+    df_3.case_when(
+        "age < 10",
+        "baby",
+        "10 <= age < 20",
+        "kid",
+        "20 <= age < 30",
+        "young",
+        "30 <= age < 50",
+        "mature",
+        "grandpa",
+        column_name="elderly",
+    )
     return
 
 
@@ -154,14 +181,19 @@ def _(mo):
 @app.cell
 def _(pd):
     df_4 = range(3, 30, 3)
-    df_4 = pd.DataFrame(df_4, columns=['odd'])
+    df_4 = pd.DataFrame(df_4, columns=["odd"])
     df_4
     return (df_4,)
 
 
 @app.cell
 def _(df_4):
-    df_4.case_when(df_4.odd % 9 == 0, 'divisible by 9', 'divisible by 3', column_name='div_by_3_or_9')
+    df_4.case_when(
+        df_4.odd % 9 == 0,
+        "divisible by 9",
+        "divisible by 3",
+        column_name="div_by_3_or_9",
+    )
     return
 
 
@@ -183,13 +215,16 @@ def _(mo):
 
 @app.cell
 def _(df_4):
-    df_4.case_when(df_4.odd % 9 == 0, 'divisible by 9', 'divisible by 3', column_name='odd')
+    df_4.case_when(
+        df_4.odd % 9 == 0, "divisible by 9", "divisible by 3", column_name="odd"
+    )
     return
 
 
 @app.cell
 def _():
     import marimo as mo
+
     return (mo,)
 
 

@@ -41,6 +41,7 @@ def _(mo):
 @app.cell
 def _():
     import pandas as pd
+
     return (pd,)
 
 
@@ -196,6 +197,7 @@ def _(clean_birds):
 @app.cell
 def _():
     import marimo as mo
+
     return (mo,)
 
 

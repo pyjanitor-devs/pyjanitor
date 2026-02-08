@@ -49,6 +49,7 @@ def _():
     # Import pyjanitor and pandas
     import pandas as pd
     import pandas_flavor as pf
+
     return pd, pf
 
 
@@ -71,13 +72,13 @@ def _(mo):
 
 @app.cell
 def _(pd, pf):
-    _filename = 'https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-04-23/raw_anime.csv'
+    _filename = "https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-04-23/raw_anime.csv"
     df = pd.read_csv(_filename)
 
     @pf.register_dataframe_method
     def _str_remove(df, column_name: str, pat: str, *args, **kwargs):
         """Wrapper around df.str.replace"""
-        df[column_name] = df[column_name].str.replace(pat, '', *args, **kwargs)
+        df[column_name] = df[column_name].str.replace(pat, "", *args, **kwargs)
         return df
 
     @pf.register_dataframe_method
@@ -92,21 +93,39 @@ def _(pd, pf):
         For rows with a list of values, this function will create new
         rows for each value in the list
         """
-        df['id'] = df.index
-        wdf = pd.DataFrame(df[column_name].str.split(sep).fillna('').tolist()).stack().reset_index()
-        wdf.columns = ['id', 'depth', column_name]
-        wdf.drop('depth', axis=1, inplace=True)
-        return pd.merge(df, wdf, on='id', suffixes=('_drop', '')).drop(columns=['id', column_name + '_drop'])
+        df["id"] = df.index
+        wdf = (
+            pd.DataFrame(df[column_name].str.split(sep).fillna("").tolist())
+            .stack()
+            .reset_index()
+        )
+        wdf.columns = ["id", "depth", column_name]
+        wdf.drop("depth", axis=1, inplace=True)
+        return pd.merge(df, wdf, on="id", suffixes=("_drop", "")).drop(
+            columns=["id", column_name + "_drop"]
+        )
 
     @pf.register_dataframe_method
-    def _str_word(df, column_name: str, start: int=None, stop: int=None, pat: str=' ', *args, **kwargs):
+    def _str_word(
+        df,
+        column_name: str,
+        start: int = None,
+        stop: int = None,
+        pat: str = " ",
+        *args,
+        **kwargs,
+    ):
         """
         Wrapper around `df.str.split`
         with additional `start` and `end` arguments
         to select a slice of the list of words.
         """  # exploded_column = column_name
-        df[column_name] = df[column_name].str.split(pat).str[start:stop]  # plural form to singular form
-        return df  # wdf[column_name] = wdf[column_name].apply(lambda x: x.strip())  # trim
+        df[column_name] = (
+            df[column_name].str.split(pat).str[start:stop]
+        )  # plural form to singular form
+        return (
+            df  # wdf[column_name] = wdf[column_name].apply(lambda x: x.strip())  # trim
+        )
 
     @pf.register_dataframe_method
     def _str_join(df, column_name: str, sep: str, *args, **kwargs):
@@ -118,13 +137,44 @@ def _(pd, pf):
         return df
 
     @pf.register_dataframe_method
-    def _str_slice(df, column_name: str, start: int=None, stop: int=None, *args, **kwargs):
+    def _str_slice(
+        df, column_name: str, start: int = None, stop: int = None, *args, **kwargs
+    ):
         """
         Wrapper around `df.str.slice
         """
         df[column_name] = df[column_name].str[start:stop]
         return df
-    clean_df = df.str_remove(column_name='producers', pat='\\[|\\]').explode(column_name='producers', sep=',').str_remove(column_name='producers', pat="'").str_trim('producers').str_remove(column_name='genre', pat='\\[|\\]').explode(column_name='genre', sep=',').str_remove(column_name='genre', pat="'").str_trim(column_name='genre').str_remove(column_name='studio', pat='\\[|\\]').explode(column_name='studio', sep=',').str_remove(column_name='studio', pat="'").str_trim(column_name='studio').str_remove(column_name='aired', pat="\\{|\\}|'from':\\s*|'to':\\s*").str_word(column_name='aired', start=0, stop=2, pat=',').str_join(column_name='aired', sep=',').deconcatenate_column(column_name='aired', new_column_names=['start_date', 'end_date'], sep=',').remove_columns(column_names=['aired']).str_remove(column_name='start_date', pat="'").str_slice(column_name='start_date', start=0, stop=10).str_remove(column_name='end_date', pat="'").str_slice(column_name='end_date', start=0, stop=11).to_datetime('start_date', format='%Y-%m-%d', errors='coerce').to_datetime('end_date', format='%Y-%m-%d', errors='coerce').fill_empty(columns=['rank', 'popularity'], value=0).filter_on('rank != 0 & popularity != 0')
+
+    clean_df = (
+        df.str_remove(column_name="producers", pat="\\[|\\]")
+        .explode(column_name="producers", sep=",")
+        .str_remove(column_name="producers", pat="'")
+        .str_trim("producers")
+        .str_remove(column_name="genre", pat="\\[|\\]")
+        .explode(column_name="genre", sep=",")
+        .str_remove(column_name="genre", pat="'")
+        .str_trim(column_name="genre")
+        .str_remove(column_name="studio", pat="\\[|\\]")
+        .explode(column_name="studio", sep=",")
+        .str_remove(column_name="studio", pat="'")
+        .str_trim(column_name="studio")
+        .str_remove(column_name="aired", pat="\\{|\\}|'from':\\s*|'to':\\s*")
+        .str_word(column_name="aired", start=0, stop=2, pat=",")
+        .str_join(column_name="aired", sep=",")
+        .deconcatenate_column(
+            column_name="aired", new_column_names=["start_date", "end_date"], sep=","
+        )
+        .remove_columns(column_names=["aired"])
+        .str_remove(column_name="start_date", pat="'")
+        .str_slice(column_name="start_date", start=0, stop=10)
+        .str_remove(column_name="end_date", pat="'")
+        .str_slice(column_name="end_date", start=0, stop=11)
+        .to_datetime("start_date", format="%Y-%m-%d", errors="coerce")
+        .to_datetime("end_date", format="%Y-%m-%d", errors="coerce")
+        .fill_empty(columns=["rank", "popularity"], value=0)
+        .filter_on("rank != 0 & popularity != 0")
+    )
     return (clean_df,)
 
 
@@ -193,7 +243,7 @@ def _(mo):
 
 @app.cell
 def _(pd):
-    _filename = 'https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-04-23/raw_anime.csv'
+    _filename = "https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-04-23/raw_anime.csv"
     df_1 = pd.read_csv(_filename)
     return (df_1,)
 
@@ -242,7 +292,7 @@ def _(mo):
 @app.cell
 def _(df_1):
     # Let's see what we trying to remove
-    df_1.loc[df_1['producers'].str.contains('\\[', na=False), 'producers'].head()
+    df_1.loc[df_1["producers"].str.contains("\\[", na=False), "producers"].head()
     return
 
 
@@ -269,15 +319,18 @@ def _(pf):
         :param pat: A regex pattern to match and remove.
         """
         if not isinstance(pat, str):
-            raise TypeError(f'Pattern should be a valid regex pattern. Received pattern: {pat} with dtype: {type(pat)}')
-        df[column_name] = df[column_name].str.replace(pat, '', *args, **kwargs)
+            raise TypeError(
+                f"Pattern should be a valid regex pattern. Received pattern: {pat} with dtype: {type(pat)}"
+            )
+        df[column_name] = df[column_name].str.replace(pat, "", *args, **kwargs)
         return df
+
     return
 
 
 @app.cell
 def _(df_1):
-    clean_df_1 = df_1.str_remove(column_name='producers', pat='\\[|\\]')
+    clean_df_1 = df_1.str_remove(column_name="producers", pat="\\[|\\]")
     return (clean_df_1,)
 
 
@@ -291,7 +344,7 @@ def _(mo):
 
 @app.cell
 def _(clean_df_1):
-    clean_df_1['producers'].head()
+    clean_df_1["producers"].head()
     return
 
 
@@ -323,17 +376,26 @@ def _(pd, pf):
         :param sep: The delimiter.
             Example delimiters include `|`, `, `, `,` etc.
         """
-        df['id'] = df.index
-        wdf = pd.DataFrame(df[column_name].str.split(sep).fillna('').tolist()).stack().reset_index()
-        wdf.columns = ['id', 'depth', column_name]
-        wdf.drop('depth', axis=1, inplace=True)
-        return pd.merge(df, wdf, on='id', suffixes=('_drop', '')).drop(columns=['id', column_name + '_drop'])  # exploded_column = column_name  # plural form to singular form  # wdf[column_name] = wdf[column_name].apply(lambda x: x.strip())  # trim
+        df["id"] = df.index
+        wdf = (
+            pd.DataFrame(df[column_name].str.split(sep).fillna("").tolist())
+            .stack()
+            .reset_index()
+        )
+        wdf.columns = ["id", "depth", column_name]
+        wdf.drop("depth", axis=1, inplace=True)
+        return pd.merge(
+            df, wdf, on="id", suffixes=("_drop", "")
+        ).drop(
+            columns=["id", column_name + "_drop"]
+        )  # exploded_column = column_name  # plural form to singular form  # wdf[column_name] = wdf[column_name].apply(lambda x: x.strip())  # trim
+
     return
 
 
 @app.cell
 def _(clean_df_1):
-    clean_df_2 = clean_df_1.explode(column_name='producers', sep=',')
+    clean_df_2 = clean_df_1.explode(column_name="producers", sep=",")
     return (clean_df_2,)
 
 
@@ -347,7 +409,7 @@ def _(mo):
 
 @app.cell
 def _(clean_df_2):
-    clean_df_2['producers'].head()
+    clean_df_2["producers"].head()
     return
 
 
@@ -366,7 +428,7 @@ def _(mo):
 
 @app.cell
 def _(clean_df_2):
-    clean_df_3 = clean_df_2.str_remove(column_name='producers', pat="'")
+    clean_df_3 = clean_df_2.str_remove(column_name="producers", pat="'")
     return (clean_df_3,)
 
 
@@ -385,12 +447,13 @@ def _(pf):
         """Remove trailing and leading characters, in a given column"""
         df[column_name] = df[column_name].str.strip(*args, **kwargs)
         return df
+
     return
 
 
 @app.cell
 def _(clean_df_3):
-    clean_df_4 = clean_df_3.str_trim('producers')
+    clean_df_4 = clean_df_3.str_trim("producers")
     return (clean_df_4,)
 
 
@@ -404,7 +467,7 @@ def _(mo):
 
 @app.cell
 def _(clean_df_4):
-    clean_df_4['producers'].head()
+    clean_df_4["producers"].head()
     return
 
 
@@ -443,7 +506,16 @@ def _(mo):
 
 @app.cell
 def _(clean_df_4):
-    clean_df_5 = clean_df_4.str_remove(column_name='genre', pat='\\[|\\]').explode(column_name='genre', sep=',').str_remove(column_name='genre', pat="'").str_trim(column_name='genre').str_remove(column_name='studio', pat='\\[|\\]').explode(column_name='studio', sep=',').str_remove(column_name='studio', pat="'").str_trim(column_name='studio')  # Perform operation for genre.  # Now do it for studio
+    clean_df_5 = (
+        clean_df_4.str_remove(column_name="genre", pat="\\[|\\]")
+        .explode(column_name="genre", sep=",")
+        .str_remove(column_name="genre", pat="'")
+        .str_trim(column_name="genre")
+        .str_remove(column_name="studio", pat="\\[|\\]")
+        .explode(column_name="studio", sep=",")
+        .str_remove(column_name="studio", pat="'")
+        .str_trim(column_name="studio")
+    )  # Perform operation for genre.  # Now do it for studio
     return (clean_df_5,)
 
 
@@ -457,7 +529,7 @@ def _(mo):
 
 @app.cell
 def _(clean_df_5):
-    clean_df_5[['genre', 'studio']].head()
+    clean_df_5[["genre", "studio"]].head()
     return
 
 
@@ -504,14 +576,22 @@ def _(mo):
 @app.cell
 def _(clean_df_5):
     # Currently looks like this
-    clean_df_5['aired'].head()
+    clean_df_5["aired"].head()
     return
 
 
 @app.cell
 def _(pf):
     @pf.register_dataframe_method
-    def _str_word(df, column_name: str, start: int=None, stop: int=None, pat: str=' ', *args, **kwargs):  # noqa: F811
+    def _str_word(
+        df,
+        column_name: str,
+        start: int = None,
+        stop: int = None,
+        pat: str = " ",
+        *args,
+        **kwargs,
+    ):  # noqa: F811
         """
         Wrapper around `df.str.split`,
         with additional `start` and `end` arguments
@@ -545,7 +625,9 @@ def _(pf):
         return df
 
     @pf.register_dataframe_method
-    def _str_slice(df, column_name: str, start: int=None, stop: int=None, *args, **kwargs):
+    def _str_slice(
+        df, column_name: str, start: int = None, stop: int = None, *args, **kwargs
+    ):
         """
         Wrapper around `df.str.slice
         Slices strings.
@@ -558,19 +640,34 @@ def _(pf):
         """  # noqa: F811
         df[column_name] = df[column_name].str[start:stop]
         return df  # noqa: F811
+
     return
 
 
 @app.cell
 def _(clean_df_5):
-    clean_df_6 = clean_df_5.str_remove(column_name='aired', pat="\\{|\\}|'from':\\s*|'to':\\s*").str_word(column_name='aired', start=0, stop=2, pat=',').str_join(column_name='aired', sep=',').deconcatenate_column(column_name='aired', new_column_names=['start_date', 'end_date'], sep=',').remove_columns(column_names=['aired']).str_remove(column_name='start_date', pat="'").str_slice(column_name='start_date', start=0, stop=10).str_remove(column_name='end_date', pat="'").str_slice(column_name='end_date', start=0, stop=11).to_datetime('start_date', format='%Y-%m-%d', errors='coerce').to_datetime('end_date', format='%Y-%m-%d', errors='coerce')  # .add_columns({'start_date': clean_df['aired'][0]})
+    clean_df_6 = (
+        clean_df_5.str_remove(column_name="aired", pat="\\{|\\}|'from':\\s*|'to':\\s*")
+        .str_word(column_name="aired", start=0, stop=2, pat=",")
+        .str_join(column_name="aired", sep=",")
+        .deconcatenate_column(
+            column_name="aired", new_column_names=["start_date", "end_date"], sep=","
+        )
+        .remove_columns(column_names=["aired"])
+        .str_remove(column_name="start_date", pat="'")
+        .str_slice(column_name="start_date", start=0, stop=10)
+        .str_remove(column_name="end_date", pat="'")
+        .str_slice(column_name="end_date", start=0, stop=11)
+        .to_datetime("start_date", format="%Y-%m-%d", errors="coerce")
+        .to_datetime("end_date", format="%Y-%m-%d", errors="coerce")
+    )  # .add_columns({'start_date': clean_df['aired'][0]})
     return (clean_df_6,)
 
 
 @app.cell
 def _(clean_df_6):
     # Resulting 'start_date' and 'end_date' columns with 'aired' column removed
-    clean_df_6[['start_date', 'end_date']].head()
+    clean_df_6[["start_date", "end_date"]].head()
     return
 
 
@@ -593,7 +690,9 @@ def _(mo):
 @app.cell
 def _(clean_df_6):
     # First fill any NA values with 0 and then filter != 0
-    clean_df_7 = clean_df_6.fill_empty(column_names=['rank', 'popularity'], value=0).filter_on('rank != 0 & popularity != 0')
+    clean_df_7 = clean_df_6.fill_empty(
+        column_names=["rank", "popularity"], value=0
+    ).filter_on("rank != 0 & popularity != 0")
     return (clean_df_7,)
 
 
@@ -614,6 +713,7 @@ def _(clean_df_7):
 @app.cell
 def _():
     import marimo as mo
+
     return (mo,)
 
 

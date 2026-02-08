@@ -33,6 +33,7 @@ def _():
     from io import StringIO
 
     import pandas as pd
+
     return StringIO, pd
 
 
@@ -72,7 +73,7 @@ def _(temp):
     temp.columns = temp.iloc[2, :]
     temp.columns = temp.columns.str.strip()
     temp_1 = temp.drop(2, axis=0)
-    temp_1 = temp_1.rename_axis(None, axis='columns')
+    temp_1 = temp_1.rename_axis(None, axis="columns")
     temp_1
     return
 
@@ -98,6 +99,7 @@ def _(StringIO, data, pd):
 @app.cell
 def _():
     import marimo as mo
+
     return (mo,)
 
 

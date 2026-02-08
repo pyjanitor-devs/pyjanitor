@@ -174,7 +174,9 @@ def test_mutate_tuple_by_grouped_object(df_mutate):
 
 def test_assign_by(df_mutate):
     """Test output"""
-    actual = df_mutate.groupby("combine_id").assign(avg_run=lambda df: df.avg_run.transform('sum'))
+    actual = df_mutate.groupby("combine_id").assign(
+        avg_run=lambda df: df.avg_run.transform("sum")
+    )
     expected = df_mutate.assign(
         avg_run=df_mutate.groupby("combine_id")["avg_run"].transform("sum")
     )
@@ -183,6 +185,6 @@ def test_assign_by(df_mutate):
 
 def test_assign_expressions_by(df_mutate):
     """Test output"""
-    actual = df_mutate.groupby("combine_id").assign(total=pd.col('avg_run').mul(2))
-    expected = df_mutate.assign(total=pd.col('avg_run').mul(2))
+    actual = df_mutate.groupby("combine_id").assign(total=pd.col("avg_run").mul(2))
+    expected = df_mutate.assign(total=pd.col("avg_run").mul(2))
     assert_frame_equal(actual.get_columns("*"), expected)

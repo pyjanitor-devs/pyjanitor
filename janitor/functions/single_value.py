@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Iterable, Sequence
 import warnings
+from typing import Iterable, Sequence
 
 import numpy as np
 import pandas as pd

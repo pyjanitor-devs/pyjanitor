@@ -588,8 +588,8 @@ def _select_regex(index, arg, source="regex"):
             # string[pyarrow] dtype).
             # Convert to RE2-compatible: strip (?s:...) wrapper and
             # replace \Z/\z with $.
-            regex = re.sub(r'^\(\?s:', '', regex)
-            regex = re.sub(r'\)\\[zZ]$', '$', regex)
+            regex = re.sub(r"^\(\?s:", "", regex)
+            regex = re.sub(r"\)\\[zZ]$", "$", regex)
             bools = index.str.match(regex, na=False)
         else:
             bools = index.str.contains(arg, na=False, regex=True)

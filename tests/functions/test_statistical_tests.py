@@ -30,9 +30,7 @@ def test_chisq_test_basic_tabyl_results(simple_df):
     assert result.dof == expected.dof
     assert result.pvalue == pytest.approx(expected.pvalue)
 
-    expected_table = pd.DataFrame(
-        {"row": ["A", "B"], "X": [1.0, 1.0], "Y": [1.0, 1.0]}
-    )
+    expected_table = pd.DataFrame({"row": ["A", "B"], "X": [1.0, 1.0], "Y": [1.0, 1.0]})
     pd.testing.assert_frame_equal(result.expected, expected_table)
     pd.testing.assert_frame_equal(result.observed, tabyl_df)
     assert np.allclose(result.residuals[["X", "Y"]].to_numpy(), 0.0)

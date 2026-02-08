@@ -15,6 +15,7 @@ def _(mo):
 @app.cell
 def _():
     import pandas as pd
+
     return (pd,)
 
 
@@ -34,7 +35,6 @@ def _(pd):
         {"name": "Carla", "variable": "wk3", "value": 39},
         {"name": "Carla", "variable": "wk4", "value": 40},
     ]
-
 
     df = pd.DataFrame(df)
 
@@ -66,7 +66,11 @@ def _(mo):
 
 @app.cell
 def _(pd):
-    df_1 = [{'name': 1, 'n': 10.0, 'pct': 0.1}, {'name': 2, 'n': 20.0, 'pct': 0.2}, {'name': 3, 'n': 30.0, 'pct': 0.3}]
+    df_1 = [
+        {"name": 1, "n": 10.0, "pct": 0.1},
+        {"name": 2, "n": 20.0, "pct": 0.2},
+        {"name": 3, "n": 30.0, "pct": 0.3},
+    ]
     df_1 = pd.DataFrame(df_1)
     df_1
     return (df_1,)
@@ -74,7 +78,9 @@ def _(pd):
 
 @app.cell
 def _(df_1):
-    df_1.assign(num=0).pivot_wider(index='num', names_from='name', values_from=['n', 'pct'], names_sep='_')
+    df_1.assign(num=0).pivot_wider(
+        index="num", names_from="name", values_from=["n", "pct"], names_sep="_"
+    )
     return
 
 
@@ -88,7 +94,12 @@ def _(mo):
 
 @app.cell
 def _(pd):
-    df_2 = [{'dep': 5.5, 'step': 1, 'a': 20, 'b': 30}, {'dep': 5.5, 'step': 2, 'a': 25, 'b': 37}, {'dep': 6.1, 'step': 1, 'a': 22, 'b': 19}, {'dep': 6.1, 'step': 2, 'a': 18, 'b': 29}]
+    df_2 = [
+        {"dep": 5.5, "step": 1, "a": 20, "b": 30},
+        {"dep": 5.5, "step": 2, "a": 25, "b": 37},
+        {"dep": 6.1, "step": 1, "a": 22, "b": 19},
+        {"dep": 6.1, "step": 2, "a": 18, "b": 29},
+    ]
     df_2 = pd.DataFrame(df_2)
     df_2
     return (df_2,)
@@ -96,7 +107,7 @@ def _(pd):
 
 @app.cell
 def _(df_2):
-    df_2.pivot_wider(index='dep', names_from='step', flatten_levels=False)
+    df_2.pivot_wider(index="dep", names_from="step", flatten_levels=False)
     return
 
 
@@ -110,19 +121,26 @@ def _(mo):
 
 @app.cell
 def _(df_2):
-    df_2.pivot_wider(index='dep', names_from='step', flatten_levels=False, levels_order=['step', None])
+    df_2.pivot_wider(
+        index="dep",
+        names_from="step",
+        flatten_levels=False,
+        levels_order=["step", None],
+    )
     return
 
 
 @app.cell
 def _(df_2):
-    df_2.pivot_wider(index='dep', names_from='step', flatten_levels=True)
+    df_2.pivot_wider(index="dep", names_from="step", flatten_levels=True)
     return
 
 
 @app.cell
 def _(df_2):
-    df_2.pivot_wider(index='dep', names_from='step', flatten_levels=True, levels_order=['step', None])
+    df_2.pivot_wider(
+        index="dep", names_from="step", flatten_levels=True, levels_order=["step", None]
+    )
     return
 
 
@@ -137,13 +155,13 @@ def _(mo):
 @app.cell
 def _(df_2):
     # default value of names_sep is '_'
-    df_2.pivot_wider(index='dep', names_from='step')
+    df_2.pivot_wider(index="dep", names_from="step")
     return
 
 
 @app.cell
 def _(df_2):
-    df_2.pivot_wider(index='dep', names_from='step', names_sep='')
+    df_2.pivot_wider(index="dep", names_from="step", names_sep="")
     return
 
 
@@ -158,14 +176,21 @@ def _(mo):
 @app.cell
 def _(df_2):
     # replicate `names_sep`
-    df_2.pivot_wider(index='dep', names_from='step', names_sep=None, names_glue='_'.join)
+    df_2.pivot_wider(
+        index="dep", names_from="step", names_sep=None, names_glue="_".join
+    )
     return
 
 
 @app.cell
 def _(df_2):
     # going beyond names_sep
-    df_2.pivot_wider(index='dep', names_from='step', names_sep=None, names_glue=lambda col: f'{col[0]}_step{col[1]}')
+    df_2.pivot_wider(
+        index="dep",
+        names_from="step",
+        names_sep=None,
+        names_glue=lambda col: f"{col[0]}_step{col[1]}",
+    )
     return
 
 
@@ -179,7 +204,12 @@ def _(mo):
 
 @app.cell
 def _(pd):
-    df_3 = [{'Salesman': 'Knut', 'Height': 6, 'product': 'bat', 'price': 5}, {'Salesman': 'Knut', 'Height': 6, 'product': 'ball', 'price': 1}, {'Salesman': 'Knut', 'Height': 6, 'product': 'wand', 'price': 3}, {'Salesman': 'Steve', 'Height': 5, 'product': 'pen', 'price': 2}]
+    df_3 = [
+        {"Salesman": "Knut", "Height": 6, "product": "bat", "price": 5},
+        {"Salesman": "Knut", "Height": 6, "product": "ball", "price": 1},
+        {"Salesman": "Knut", "Height": 6, "product": "wand", "price": 3},
+        {"Salesman": "Steve", "Height": 5, "product": "pen", "price": 2},
+    ]
     df_3 = pd.DataFrame(df_3)
     df_3
     return (df_3,)
@@ -187,8 +217,8 @@ def _(pd):
 
 @app.cell
 def _(df_3):
-    idx = df_3.groupby(['Salesman', 'Height']).cumcount().add(1)
-    df_3.assign(idx=idx).pivot_wider(index=['Salesman', 'Height'], names_from='idx')
+    idx = df_3.groupby(["Salesman", "Height"]).cumcount().add(1)
+    df_3.assign(idx=idx).pivot_wider(index=["Salesman", "Height"], names_from="idx")
     return (idx,)
 
 
@@ -202,20 +232,37 @@ def _(mo):
 
 @app.cell
 def _(df_3, idx):
-    df_3.assign(idx=idx).pivot_wider(index=['Salesman', 'Height'], names_from='idx', flatten_levels=False).sort_index(level='idx', axis='columns', sort_remaining=False).collapse_levels().reset_index()
+    df_3.assign(idx=idx).pivot_wider(
+        index=["Salesman", "Height"], names_from="idx", flatten_levels=False
+    ).sort_index(
+        level="idx", axis="columns", sort_remaining=False
+    ).collapse_levels().reset_index()
     return
 
 
 @app.cell
 def _(pd):
-    df_4 = pd.DataFrame({'geoid': [1, 1, 13, 13], 'name': ['Alabama', 'Alabama', 'Georgia', 'Georgia'], 'variable': ['pop_renter', 'median_rent', 'pop_renter', 'median_rent'], 'estimate': [1434765, 747, 3592422, 927], 'error': [16736, 3, 33385, 3]})
+    df_4 = pd.DataFrame(
+        {
+            "geoid": [1, 1, 13, 13],
+            "name": ["Alabama", "Alabama", "Georgia", "Georgia"],
+            "variable": ["pop_renter", "median_rent", "pop_renter", "median_rent"],
+            "estimate": [1434765, 747, 3592422, 927],
+            "error": [16736, 3, 33385, 3],
+        }
+    )
     df_4
     return (df_4,)
 
 
 @app.cell
 def _(df_4):
-    df_4.pivot_wider(index=['geoid', 'name'], names_from='variable', values_from=['estimate', 'error'], levels_order=['variable', None])
+    df_4.pivot_wider(
+        index=["geoid", "name"],
+        names_from="variable",
+        values_from=["estimate", "error"],
+        levels_order=["variable", None],
+    )
     return
 
 
@@ -229,13 +276,19 @@ def _(mo):
 
 @app.cell
 def _(df_4):
-    df_4.encode_categorical(variable=(None, 'appearance')).pivot_wider(index=['geoid', 'name'], names_from='variable', values_from=['estimate', 'error'], levels_order=['variable', None])
+    df_4.encode_categorical(variable=(None, "appearance")).pivot_wider(
+        index=["geoid", "name"],
+        names_from="variable",
+        values_from=["estimate", "error"],
+        levels_order=["variable", None],
+    )
     return
 
 
 @app.cell
 def _():
     import marimo as mo
+
     return (mo,)
 
 

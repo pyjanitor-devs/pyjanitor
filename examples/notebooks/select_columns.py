@@ -22,6 +22,7 @@ def _():
     from pandas.api.types import is_datetime64_dtype
 
     from janitor import patterns
+
     return datetime, is_datetime64_dtype, np, patterns, pd, re
 
 
@@ -184,6 +185,7 @@ def _(df):
 @app.cell
 def _():
     import marimo as mo
+
     return (mo,)
 
 

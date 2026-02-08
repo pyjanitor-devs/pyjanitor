@@ -60,6 +60,7 @@ def _():
 
     import pandas as pd
     import pandas_flavor as pf
+
     return List, pd, pf
 
 
@@ -123,8 +124,8 @@ def _(mo):
 def _(pf):
     # pandas-flavor helper functions
     @pf.register_dataframe_method
-    def str_remove(df, column_name: str, pattern: str=''):
-    # [pandas-flavor]
+    def str_remove(df, column_name: str, pattern: str = ""):
+        # [pandas-flavor]
         """Remove string pattern from a column
 
         Wrapper around df.str.replace()
@@ -143,7 +144,7 @@ def _(pf):
         df: pd.Dataframe
 
         """
-        df[_column_name] = df[_column_name].str.replace(pattern, '')
+        df[_column_name] = df[_column_name].str.replace(pattern, "")
         return df
 
     @pf.register_dataframe_method
@@ -168,7 +169,7 @@ def _(pf):
         return df
 
     @pf.register_dataframe_method
-    def str_slice(df, column_name: str, start: int=0, stop: int=-1):
+    def str_slice(df, column_name: str, start: int = 0, stop: int = -1):
         """Slice a column of strings by indexes
 
         Parameters
@@ -189,6 +190,7 @@ def _(pf):
         """
         df[_column_name] = df[_column_name].str[start:stop]
         return df
+
     return
 
 
@@ -229,8 +231,14 @@ def _(mo):
 
 @app.cell
 def _(df_dirty):
-    _column_name = 'total_revenue'
-    df_clean_money = df_dirty.str_remove(_column_name, pattern='est.').str_trim(_column_name).str_remove(_column_name, pattern='\\$').str_slice(_column_name, start=0, stop=2).change_type(_column_name, float)
+    _column_name = "total_revenue"
+    df_clean_money = (
+        df_dirty.str_remove(_column_name, pattern="est.")
+        .str_trim(_column_name)
+        .str_remove(_column_name, pattern="\\$")
+        .str_slice(_column_name, start=0, stop=2)
+        .change_type(_column_name, float)
+    )
     df_clean_money.head(3)  # [pandas-flavor]  # [pyjanitor]
     return (df_clean_money,)
 
@@ -257,8 +265,8 @@ def _(mo):
 def _(List, pd, pf):
     # pandas-flavor helper functions
     @pf.register_dataframe_method
-    def separate_rows(df, column_name: str, sep: str=''):
-    # [pandas-flavor]
+    def separate_rows(df, column_name: str, sep: str = ""):
+        # [pandas-flavor]
         """Split each cell of a column that contains a list of items
         (separated by `sep`) into separate rows
 
@@ -277,31 +285,36 @@ def _(List, pd, pf):
 
         """
         columns_original = list(df.columns)
-        df['id'] = df.index
-        wdf = pd.DataFrame(df[_column_name].str.split(sep).tolist()).stack().reset_index()  # Preserve an id field for later merge
-        wdf.rename(columns={'level_0': 'id', 0: 'revenue_items'}, inplace=True)
-        wdf.drop(columns=['level_1'], inplace=True)
-        return pd.merge(df, wdf, on='id', suffixes=('_drop', '')).drop(columns=['id', _column_name + '_drop'])[columns_original]
-      # Preserve the same id field for merge
+        df["id"] = df.index
+        wdf = (
+            pd.DataFrame(df[_column_name].str.split(sep).tolist()).stack().reset_index()
+        )  # Preserve an id field for later merge
+        wdf.rename(columns={"level_0": "id", 0: "revenue_items"}, inplace=True)
+        wdf.drop(columns=["level_1"], inplace=True)
+        return pd.merge(df, wdf, on="id", suffixes=("_drop", "")).drop(
+            columns=["id", _column_name + "_drop"]
+        )[columns_original]
+
+    # Preserve the same id field for merge
     @pf.register_dataframe_method
-    def separate(df, column_name: str, into: List[str]=None, sep: str=''):
+    def separate(df, column_name: str, into: List[str] = None, sep: str = ""):
         """Split a column into separate columns at separator specified by `sep`  # Merge and preserve original order
 
-        Parameters
-        -----------
-        df: pd.Dataframe
-            Input dataframe to be modified
-    # [pyjanitor + pandas-flavor]
-        column_name: str
-            Name of the column to be operated on
-        into: List[str], default to None
-            New column names for the split columns
-        sep: str, default to ''
-            Separator at which to split the column
+            Parameters
+            -----------
+            df: pd.Dataframe
+                Input dataframe to be modified
+        # [pyjanitor + pandas-flavor]
+            column_name: str
+                Name of the column to be operated on
+            into: List[str], default to None
+                New column names for the split columns
+            sep: str, default to ''
+                Separator at which to split the column
 
-        Returns
-        --------
-        df: pd.Dataframe
+            Returns
+            --------
+            df: pd.Dataframe
 
         """
         index_original = list(df.columns).index(_column_name)
@@ -309,16 +322,28 @@ def _(List, pd, pf):
         cols.remove(_column_name)
         for i, col in enumerate(into):
             cols.insert(index_original + i, col)
-        return df.deconcatenate_column(_column_name, new_column_names=into, sep=sep).drop(columns=_column_name)[cols]
+        return df.deconcatenate_column(
+            _column_name, new_column_names=into, sep=sep
+        ).drop(columns=_column_name)[cols]
+
     return
 
 
 @app.cell
 def _(df_clean_money):
     # Generate `df_clean_category` on top of `df_clean_money`
-    _column_name = 'revenue_items'
-    df_clean_category = df_clean_money.separate_rows(_column_name, sep='\\[').filter_string(_column_name, 'illion').separate(_column_name, into=['revenue_category', 'revenue'], sep='\\$').str_remove('revenue_category', pattern=' – ').str_remove('revenue_category', pattern='.*\\]').str_remove('revenue_category', pattern='\n')
-    df_clean_category.head(3)  # [pandas-flavor]  # [pyjanitor]  # [pyjanitor + pandas-flavor]  # [pandas-flavor]
+    _column_name = "revenue_items"
+    df_clean_category = (
+        df_clean_money.separate_rows(_column_name, sep="\\[")
+        .filter_string(_column_name, "illion")
+        .separate(_column_name, into=["revenue_category", "revenue"], sep="\\$")
+        .str_remove("revenue_category", pattern=" – ")
+        .str_remove("revenue_category", pattern=".*\\]")
+        .str_remove("revenue_category", pattern="\n")
+    )
+    df_clean_category.head(
+        3
+    )  # [pandas-flavor]  # [pyjanitor]  # [pyjanitor + pandas-flavor]  # [pandas-flavor]
     return (df_clean_category,)
 
 
@@ -347,8 +372,8 @@ def _(mo):
 def _(pf):
     # pandas-flavor helper functions
     @pf.register_dataframe_method
-    def fuzzy_match_replace(df, column_name: str, mapper: dict=None):
-    # [pyjanitor + pandas-flavor]
+    def fuzzy_match_replace(df, column_name: str, mapper: dict = None):
+        # [pyjanitor + pandas-flavor]
         """Value remapping for specific column with fuzzy matching and replacement
         of strings
 
@@ -370,14 +395,27 @@ def _(pf):
             condition = df[_column_name].str.contains(k)
             df = df.update_where(condition, _column_name, v)
         return df  # [pyjanitor] update_where: update value when condition is True
+
     return
 
 
 @app.cell
 def _(df_clean_category):
-    value_mapper = {'box office': 'Box Office', 'dvd|blu|vhs|home video|video rentals|video sales|streaming|home entertainment': 'Home Video/Entertainment', 'video game|computer game|mobile game|console|game|pachinko|pet|card': 'Video Games/Games', 'comic|manga': 'Comic or Manga', 'music|soundtrac': 'Music', 'tv': 'TV', 'merchandise|licens|mall|stage|retail': 'Merchandise, Licensing & Retail'}
-    _column_name = 'revenue_category'
-    df_clean_category_1 = df_clean_category.transform_column(_column_name, str.lower).transform_column(_column_name, str.strip).fuzzy_match_replace(_column_name, mapper=value_mapper)
+    value_mapper = {
+        "box office": "Box Office",
+        "dvd|blu|vhs|home video|video rentals|video sales|streaming|home entertainment": "Home Video/Entertainment",
+        "video game|computer game|mobile game|console|game|pachinko|pet|card": "Video Games/Games",
+        "comic|manga": "Comic or Manga",
+        "music|soundtrac": "Music",
+        "tv": "TV",
+        "merchandise|licens|mall|stage|retail": "Merchandise, Licensing & Retail",
+    }
+    _column_name = "revenue_category"
+    df_clean_category_1 = (
+        df_clean_category.transform_column(_column_name, str.lower)
+        .transform_column(_column_name, str.strip)
+        .fuzzy_match_replace(_column_name, mapper=value_mapper)
+    )
     df_clean_category_1.head(3)
     return df_clean_category_1, value_mapper
 
@@ -408,8 +446,8 @@ def _(mo):
 def _(pd, pf):
     # pandas-flavor helper functions
     @pf.register_dataframe_method
-    def str_replace(df, column_name: str, old: str='', new: str=''):
-    # [pandas-flavor]
+    def str_replace(df, column_name: str, old: str = "", new: str = ""):
+        # [pandas-flavor]
         """Match and replace strings from a dataframe column.
         Wrapper around df.str.replace
 
@@ -469,13 +507,22 @@ def _(pd, pf):
 
         """
         return pd.DataFrame(df.to_records())
+
     return
 
 
 @app.cell
 def _(df_clean_category_1):
-    _column_name = 'revenue'
-    df_clean = df_clean_category_1.str_remove(_column_name, 'illion').str_trim(_column_name).str_remove(_column_name, ' ').str_replace(_column_name, '\\s*b', '').str_replace(_column_name, '\\s*m', 'e-3').parse_number().str_remove('original_media', '\\[.+')
+    _column_name = "revenue"
+    df_clean = (
+        df_clean_category_1.str_remove(_column_name, "illion")
+        .str_trim(_column_name)
+        .str_remove(_column_name, " ")
+        .str_replace(_column_name, "\\s*b", "")
+        .str_replace(_column_name, "\\s*m", "e-3")
+        .parse_number()
+        .str_remove("original_media", "\\[.+")
+    )
     df_clean.head(3)
     return
 
@@ -492,7 +539,35 @@ def _(mo):
 
 @app.cell
 def _(colnames, df_raw, fileurl, pd, value_mapper):
-    df_clean_1 = pd.read_csv(fileurl).rename(columns={col_old: col_new for col_old, col_new in zip(df_raw.columns, colnames)}).str_remove('total_revenue', pattern='est.').str_trim('total_revenue').str_remove('total_revenue', pattern='\\$').str_slice('total_revenue', start=0, stop=2).change_type('total_revenue', float).separate_rows('revenue_items', sep='\\[').filter_string('revenue_items', 'illion').separate('revenue_items', into=['revenue_category', 'revenue'], sep='\\$').str_remove('revenue_category', pattern=' – ').str_remove('revenue_category', pattern='.*\\]').str_remove('revenue_category', pattern='\n').transform_column('revenue_category', str.lower).transform_column('revenue_category', str.strip).fuzzy_match_replace('revenue_category', mapper=value_mapper).str_remove('revenue', 'illion').str_trim('revenue').str_remove('revenue', ' ').str_replace('revenue', '\\s*b', '').str_replace('revenue', '\\s*m', 'e-3').parse_number().str_remove('original_media', '\\[.+')  # [pandas-flavor]  # [pyjanitor]  # [pandas-flavor]  # [pyjanitor]  # [pyjanitor + pandas-flavor]  # [pandas-flavor]  # [pyjanitor] convert to lower case  # [pyjanitor] strip leading/trailing white space  # [pyjanitor + pandas_flavor]  # [pandas-flavor]
+    df_clean_1 = (
+        pd.read_csv(fileurl)
+        .rename(
+            columns={
+                col_old: col_new for col_old, col_new in zip(df_raw.columns, colnames)
+            }
+        )
+        .str_remove("total_revenue", pattern="est.")
+        .str_trim("total_revenue")
+        .str_remove("total_revenue", pattern="\\$")
+        .str_slice("total_revenue", start=0, stop=2)
+        .change_type("total_revenue", float)
+        .separate_rows("revenue_items", sep="\\[")
+        .filter_string("revenue_items", "illion")
+        .separate("revenue_items", into=["revenue_category", "revenue"], sep="\\$")
+        .str_remove("revenue_category", pattern=" – ")
+        .str_remove("revenue_category", pattern=".*\\]")
+        .str_remove("revenue_category", pattern="\n")
+        .transform_column("revenue_category", str.lower)
+        .transform_column("revenue_category", str.strip)
+        .fuzzy_match_replace("revenue_category", mapper=value_mapper)
+        .str_remove("revenue", "illion")
+        .str_trim("revenue")
+        .str_remove("revenue", " ")
+        .str_replace("revenue", "\\s*b", "")
+        .str_replace("revenue", "\\s*m", "e-3")
+        .parse_number()
+        .str_remove("original_media", "\\[.+")
+    )  # [pandas-flavor]  # [pyjanitor]  # [pandas-flavor]  # [pyjanitor]  # [pyjanitor + pandas-flavor]  # [pandas-flavor]  # [pyjanitor] convert to lower case  # [pyjanitor] strip leading/trailing white space  # [pyjanitor + pandas_flavor]  # [pandas-flavor]
     return (df_clean_1,)
 
 
@@ -523,14 +598,18 @@ def _(mo):
 
 @app.cell
 def _(df_clean_1):
-    df_sum = df_clean_1.groupby(['franchise', 'revenue_category']).sum().flatten_multiindex()
+    df_sum = (
+        df_clean_1.groupby(["franchise", "revenue_category"]).sum().flatten_multiindex()
+    )
     df_sum.head(3)
     return (df_sum,)
 
 
 @app.cell
 def _(df_clean_1):
-    df_metadata = df_clean_1[['franchise', 'revenue_category', 'original_media', 'creators']]
+    df_metadata = df_clean_1[
+        ["franchise", "revenue_category", "original_media", "creators"]
+    ]
     df_metadata.head(3)
     return (df_metadata,)
 
@@ -559,6 +638,7 @@ def _(df_metadata, df_sum, pd):
 @app.cell
 def _():
     import marimo as mo
+
     return (mo,)
 
 

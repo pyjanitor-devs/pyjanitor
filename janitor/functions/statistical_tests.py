@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import warnings
+from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
@@ -123,9 +123,7 @@ def chisq_test(df: pd.DataFrame, tabyl_results: bool = True) -> ChiSqTestResult:
     Examples:
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame(
-        ...     {"gear": [3, 3, 4, 4], "cyl": [4, 6, 4, 6]}
-        ... )
+        >>> df = pd.DataFrame({"gear": [3, 3, 4, 4], "cyl": [4, 6, 4, 6]})
         >>> result = df.tabyl("gear", "cyl").chisq_test()
         >>> result.statistic  # doctest: +SKIP
         0.0
@@ -154,9 +152,7 @@ def chisq_test(df: pd.DataFrame, tabyl_results: bool = True) -> ChiSqTestResult:
     observed_values = counts_df[col_labels].to_numpy(dtype=float)
     total = observed_values.sum()
     if total == 0:
-        raise ValueError(
-            "`chisq_test` requires counts that sum to a positive value."
-        )
+        raise ValueError("`chisq_test` requires counts that sum to a positive value.")
     result = stats.chi2_contingency(observed_values)
     expected = getattr(result, "expected_freq", None)
     if expected is None:
@@ -204,9 +200,7 @@ def fisher_test(df: pd.DataFrame) -> FisherTestResult:
     Examples:
         >>> import pandas as pd
         >>> import janitor
-        >>> df = pd.DataFrame(
-        ...     {"gear": [3, 3, 4, 4], "cyl": [4, 6, 4, 6]}
-        ... )
+        >>> df = pd.DataFrame({"gear": [3, 3, 4, 4], "cyl": [4, 6, 4, 6]})
         >>> result = df.tabyl("gear", "cyl").fisher_test()
         >>> result.pvalue  # doctest: +SKIP
         1.0
@@ -228,9 +222,7 @@ def fisher_test(df: pd.DataFrame) -> FisherTestResult:
 
     observed_values = counts_df.iloc[:, 1:].to_numpy()
     if observed_values.sum() == 0:
-        raise ValueError(
-            "`fisher_test` requires counts that sum to a positive value."
-        )
+        raise ValueError("`fisher_test` requires counts that sum to a positive value.")
     result = stats.fisher_exact(observed_values)
     statistic = result.statistic if hasattr(result, "statistic") else result[0]
     pvalue = result.pvalue if hasattr(result, "pvalue") else result[1]

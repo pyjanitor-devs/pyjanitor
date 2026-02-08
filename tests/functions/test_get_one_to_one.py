@@ -14,9 +14,7 @@ def test_get_one_to_one_basic():
             "Person": ["Sam", "Bill", "Sam"],
         }
     )
-    assert janitor.get_one_to_one(df) == [
-        ["Lab_Test_Long", "Lab_Test_Short", "LOINC"]
-    ]
+    assert janitor.get_one_to_one(df) == [["Lab_Test_Long", "Lab_Test_Short", "LOINC"]]
 
 
 @pytest.mark.functions

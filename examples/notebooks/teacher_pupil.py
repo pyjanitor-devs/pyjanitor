@@ -91,20 +91,17 @@ def _(pf):
         df[column_name] = df[column_name].str.replace(pat, "", *args, **kwargs)
         return df
 
-
     @pf.register_dataframe_method
     def str_trim(df, column_name: str, *args, **kwargs):
         """Remove trailing and leading characters, in a given column"""
         df[column_name] = df[column_name].str.strip(*args, **kwargs)
         return df
 
-
     @pf.register_dataframe_method
     def str_title(df, column_name: str, *args, **kwargs):
         """Make the first letter in each word upper case"""
         df[column_name] = df[column_name].str.title(*args, **kwargs)
         return df
-
 
     @pf.register_dataframe_method
     def drop_duplicated_column(df, column_name: str, column_order: int = 0):
@@ -123,6 +120,7 @@ def _(pf):
         # get the column indexes without column that is being removed
         filtered_cols = [c_i for c_i, c_v in enumerate(cols) if c_i != removed_col_idx]
         return df.iloc[:, filtered_cols]
+
     return
 
 
@@ -170,6 +168,7 @@ def _(pd, py_clean_df):
 @app.cell
 def _():
     import marimo as mo
+
     return (mo,)
 
 

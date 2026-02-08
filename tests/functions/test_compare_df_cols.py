@@ -7,9 +7,7 @@ import janitor
 @pytest.mark.functions
 def test_compare_df_cols_named_args():
     df1 = pd.DataFrame({"A": [1, 2], "B": ["x", "y"]})
-    df2 = pd.DataFrame(
-        {"A": [3.0, 4.0], "B": ["z", "w"], "C": [True, False]}
-    )
+    df2 = pd.DataFrame({"A": [3.0, 4.0], "B": ["z", "w"], "C": [True, False]})
 
     result = janitor.compare_df_cols(train=df1, test=df2)
 
@@ -35,13 +33,9 @@ def test_compare_df_cols_named_args():
 @pytest.mark.functions
 def test_compare_df_cols_mismatch_bind_rows_return_alias():
     df1 = pd.DataFrame({"A": [1, 2], "B": ["x", "y"]})
-    df2 = pd.DataFrame(
-        {"A": [3.0, 4.0], "B": ["z", "w"], "C": [True, False]}
-    )
+    df2 = pd.DataFrame({"A": [3.0, 4.0], "B": ["z", "w"], "C": [True, False]})
 
-    result = janitor.compare_df_cols(
-        train=df1, test=df2, return_="mismatch"
-    )
+    result = janitor.compare_df_cols(train=df1, test=df2, return_="mismatch")
 
     expected = pd.DataFrame(
         {
@@ -103,9 +97,5 @@ def test_compare_df_cols_same_verbose(capsys):
 def test_describe_class_categorical():
     series = pd.Series(pd.Categorical(["a", "b", "a"]))
 
-    assert (
-        janitor.describe_class(series) == 'category(levels=["a", "b"])'
-    )
-    assert (
-        janitor.describe_class(series, strict_description=False) == "category"
-    )
+    assert janitor.describe_class(series) == 'category(levels=["a", "b"])'
+    assert janitor.describe_class(series, strict_description=False) == "category"

@@ -56,7 +56,7 @@ def _(mo):
 
 @app.cell
 def _(cars_df):
-    cars_df_1 = cars_df.rename_column('disp', 'disp_cc')
+    cars_df_1 = cars_df.rename_column("disp", "disp_cc")
     return (cars_df_1,)
 
 
@@ -94,8 +94,8 @@ def _(mo):
 
 @app.cell
 def _(cars_df_1, sns):
-    cars_df_2 = cars_df_1.sort_values('mpg', ascending=False)
-    sns.barplot(y='model', x='mpg', data=cars_df_2, color='b', orient='h')
+    cars_df_2 = cars_df_1.sort_values("mpg", ascending=False)
+    sns.barplot(y="model", x="mpg", data=cars_df_2, color="b", orient="h")
     return (cars_df_2,)
 
 
@@ -109,8 +109,8 @@ def _(mo):
 
 @app.cell
 def _(cars_df_2, sns):
-    cars_df_3 = cars_df_2.sort_values('disp_cc', ascending=False)
-    sns.barplot(y='model', x='disp_cc', data=cars_df_3, color='b', orient='h')
+    cars_df_3 = cars_df_2.sort_values("disp_cc", ascending=False)
+    sns.barplot(y="model", x="disp_cc", data=cars_df_3, color="b", orient="h")
     return (cars_df_3,)
 
 
@@ -124,8 +124,8 @@ def _(mo):
 
 @app.cell
 def _(cars_df_3, sns):
-    cars_df_4 = cars_df_3.sort_values('hp', ascending=False)
-    sns.barplot(y='model', x='hp', data=cars_df_4, color='b', orient='h')
+    cars_df_4 = cars_df_3.sort_values("hp", ascending=False)
+    sns.barplot(y="model", x="hp", data=cars_df_4, color="b", orient="h")
     return (cars_df_4,)
 
 
@@ -141,7 +141,9 @@ def _(mo):
 
 @app.cell
 def _(cars_df_4):
-    cars_df_4.min_max_scale(col_name='mpg', new_max=1, new_min=0).min_max_scale(col_name='disp_cc', new_max=1, new_min=0).min_max_scale(col_name='hp', new_max=1, new_min=0)
+    cars_df_4.min_max_scale(col_name="mpg", new_max=1, new_min=0).min_max_scale(
+        col_name="disp_cc", new_max=1, new_min=0
+    ).min_max_scale(col_name="hp", new_max=1, new_min=0)
     return
 
 
@@ -163,8 +165,8 @@ def _(mo):
 
 @app.cell
 def _(cars_df_4, sns):
-    cars_df_5 = cars_df_4.sort_values('mpg', ascending=False)
-    sns.barplot(y='model', x='mpg', data=cars_df_5, color='b', orient='h')
+    cars_df_5 = cars_df_4.sort_values("mpg", ascending=False)
+    sns.barplot(y="model", x="mpg", data=cars_df_5, color="b", orient="h")
     return (cars_df_5,)
 
 
@@ -178,8 +180,8 @@ def _(mo):
 
 @app.cell
 def _(cars_df_5, sns):
-    cars_df_6 = cars_df_5.sort_values('disp_cc', ascending=False)
-    sns.barplot(y='model', x='disp_cc', data=cars_df_6, color='b', orient='h')
+    cars_df_6 = cars_df_5.sort_values("disp_cc", ascending=False)
+    sns.barplot(y="model", x="disp_cc", data=cars_df_6, color="b", orient="h")
     return (cars_df_6,)
 
 
@@ -193,8 +195,8 @@ def _(mo):
 
 @app.cell
 def _(cars_df_6, sns):
-    cars_df_7 = cars_df_6.sort_values('hp', ascending=False)
-    sns.barplot(y='model', x='hp', data=cars_df_7, color='b', orient='h')
+    cars_df_7 = cars_df_6.sort_values("hp", ascending=False)
+    sns.barplot(y="model", x="hp", data=cars_df_7, color="b", orient="h")
     return (cars_df_7,)
 
 
@@ -212,7 +214,9 @@ def _(mo):
 
 @app.cell
 def _(cars_df_7):
-    cars_df_7.transform_columns(['mpg', 'disp_cc', 'hp'], lambda x: (x - x.mean()) / x.std(), elementwise=False)
+    cars_df_7.transform_columns(
+        ["mpg", "disp_cc", "hp"], lambda x: (x - x.mean()) / x.std(), elementwise=False
+    )
     return
 
 
@@ -226,8 +230,8 @@ def _(mo):
 
 @app.cell
 def _(cars_df_7, sns):
-    cars_df_8 = cars_df_7.sort_values('mpg', ascending=False)
-    sns.barplot(y='model', x='mpg', data=cars_df_8, color='b', orient='h')
+    cars_df_8 = cars_df_7.sort_values("mpg", ascending=False)
+    sns.barplot(y="model", x="mpg", data=cars_df_8, color="b", orient="h")
     return (cars_df_8,)
 
 
@@ -241,8 +245,8 @@ def _(mo):
 
 @app.cell
 def _(cars_df_8, sns):
-    cars_df_9 = cars_df_8.sort_values('disp_cc', ascending=False)
-    sns.barplot(y='model', x='disp_cc', data=cars_df_9, color='b', orient='h')
+    cars_df_9 = cars_df_8.sort_values("disp_cc", ascending=False)
+    sns.barplot(y="model", x="disp_cc", data=cars_df_9, color="b", orient="h")
     return (cars_df_9,)
 
 
@@ -256,14 +260,15 @@ def _(mo):
 
 @app.cell
 def _(cars_df_9, sns):
-    cars_df_10 = cars_df_9.sort_values('hp', ascending=False)
-    sns.barplot(y='model', x='hp', data=cars_df_10, color='b', orient='h')
+    cars_df_10 = cars_df_9.sort_values("hp", ascending=False)
+    sns.barplot(y="model", x="hp", data=cars_df_10, color="b", orient="h")
     return
 
 
 @app.cell
 def _():
     import marimo as mo
+
     return (mo,)
 
 

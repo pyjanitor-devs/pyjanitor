@@ -18,10 +18,7 @@ from janitor.utils import refactored_function
 @pf.register_dataframe_groupby_method
 @pf.register_dataframe_method
 @refactored_function(
-    message=(
-        "This function is deprecated. "
-        "Please use `pd.DataFrame.agg` instead."
-    )
+    message=("This function is deprecated. Please use `pd.DataFrame.agg` instead.")
 )
 def summarise(
     df: pd.DataFrame | DataFrameGroupBy,
@@ -241,7 +238,7 @@ def summarise(
                 name = (*entry.name, *patch)
                 entry.name = name
         contents_.append(entry)
-    return pd.concat(contents_, axis=1,  sort=False)
+    return pd.concat(contents_, axis=1, sort=False)
 
 
 @singledispatch

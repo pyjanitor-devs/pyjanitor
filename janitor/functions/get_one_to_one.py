@@ -25,7 +25,11 @@ def get_one_to_one(df: pd.DataFrame) -> List[List[str]]:
         >>> import janitor
         >>> df = pd.DataFrame(
         ...     {
-        ...         "Lab_Test_Long": ["Cholesterol, LDL", "Cholesterol, LDL", "Glucose"],
+        ...         "Lab_Test_Long": [
+        ...             "Cholesterol, LDL",
+        ...             "Cholesterol, LDL",
+        ...             "Glucose",
+        ...         ],
         ...         "Lab_Test_Short": ["CLDL", "CLDL", "GLUC"],
         ...         "LOINC": [12345, 12345, 54321],
         ...         "Person": ["Sam", "Bill", "Sam"],

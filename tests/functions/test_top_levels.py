@@ -55,12 +55,8 @@ def test_top_levels_na_handling(fac):
 
     result = janitor.top_levels(fac_na, show_na=True)
     assert result["n"].tolist() == [2, 2, 2, 1]
-    assert result["percent"].tolist() == pytest.approx(
-        [2 / 7, 2 / 7, 2 / 7, 1 / 7]
-    )
-    assert result["valid_percent"].iloc[:3].tolist() == pytest.approx(
-        [1 / 3] * 3
-    )
+    assert result["percent"].tolist() == pytest.approx([2 / 7, 2 / 7, 2 / 7, 1 / 7])
+    assert result["valid_percent"].iloc[:3].tolist() == pytest.approx([1 / 3] * 3)
     assert pd.isna(result["valid_percent"].iloc[3])
 
 

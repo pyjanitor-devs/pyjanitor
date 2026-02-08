@@ -31,12 +31,13 @@ def _():
     import pandas as pd
 
     from janitor import expand_grid
+
     return expand_grid, np, pd
 
 
 @app.cell
 def _(expand_grid):
-    _data = {'x': [1, 2, 3], 'y': [1, 2]}
+    _data = {"x": [1, 2, 3], "y": [1, 2]}
     result = expand_grid(others=_data)
     result
     return
@@ -45,7 +46,7 @@ def _(expand_grid):
 @app.cell
 def _(expand_grid):
     # combination of letters
-    _data = {'l1': list('abcde'), 'l2': list('ABCDE')}
+    _data = {"l1": list("abcde"), "l2": list("ABCDE")}
     letters = expand_grid(others=_data)
     letters.head(10)
     return
@@ -53,7 +54,7 @@ def _(expand_grid):
 
 @app.cell
 def _(expand_grid):
-    _data = {'height': [60, 70], 'weight': [100, 140, 180], 'sex': ['Male', 'Female']}
+    _data = {"height": [60, 70], "weight": [100, 140, 180], "sex": ["Male", "Female"]}
     measurements = expand_grid(others=_data)
     measurements
     return (measurements,)
@@ -61,7 +62,7 @@ def _(expand_grid):
 
 @app.cell
 def _(expand_grid, np):
-    _data = {'x1': np.array([[1, 3], [2, 4]]), 'x2': np.array([[5, 7], [6, 8]])}
+    _data = {"x1": np.array([[1, 3], [2, 4]]), "x2": np.array([[5, 7], [6, 8]])}
     result_1 = expand_grid(others=_data)
     result_1
     return
@@ -69,19 +70,19 @@ def _(expand_grid, np):
 
 @app.cell
 def _(pd):
-    df = pd.DataFrame({'x': [1, 2], 'y': [2, 1]})
-    _data = {'z': [1, 2, 3]}
-    result_2 = df.expand_grid(df_key='df', others=_data)
+    df = pd.DataFrame({"x": [1, 2], "y": [2, 1]})
+    _data = {"z": [1, 2, 3]}
+    result_2 = df.expand_grid(df_key="df", others=_data)
     result_2
     return
 
 
 @app.cell
 def _(expand_grid, pd):
-    df1 = pd.DataFrame({('x', 'y'): range(1, 3), ('y', 'x'): [2, 1]})
-    df2 = pd.DataFrame({'x': [1, 2, 3], 'y': [3, 2, 1]})
-    df3 = pd.DataFrame({'x': [2, 3], 'y': ['a', 'b']})
-    _data = {'df1': df1, 'df2': df2, 'df3': df3}
+    df1 = pd.DataFrame({("x", "y"): range(1, 3), ("y", "x"): [2, 1]})
+    df2 = pd.DataFrame({"x": [1, 2, 3], "y": [3, 2, 1]})
+    df3 = pd.DataFrame({"x": [2, 3], "y": ["a", "b"]})
+    _data = {"df1": df1, "df2": df2, "df3": df3}
     result_3 = expand_grid(others=_data)
     result_3
     return (result_3,)
@@ -118,6 +119,7 @@ def _(measurements):
 @app.cell
 def _():
     import marimo as mo
+
     return (mo,)
 
 

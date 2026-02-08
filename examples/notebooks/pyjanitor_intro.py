@@ -149,6 +149,7 @@ def _(mo):
 def _():
     import numpy as np
     import pandas as pd
+
     return np, pd
 
 
@@ -229,7 +230,7 @@ def _(mo):
 
 @app.cell
 def _(pd):
-    df_1 = pd.read_excel('dirty_data.xlsx', engine='openpyxl')
+    df_1 = pd.read_excel("dirty_data.xlsx", engine="openpyxl")
     df_1
     return (df_1,)
 
@@ -274,7 +275,9 @@ def _(mo):
 
 @app.cell
 def _(df_3):
-    df_4 = df_3.rename_column('%_allocated', 'percent_allocated').rename_column('full_time_', 'full_time')
+    df_4 = df_3.rename_column("%_allocated", "percent_allocated").rename_column(
+        "full_time_", "full_time"
+    )
     df_4
     return (df_4,)
 
@@ -289,7 +292,7 @@ def _(mo):
 
 @app.cell
 def _(df_4):
-    df_5 = df_4.coalesce(['certification', 'certification_1'], 'certification')
+    df_5 = df_4.coalesce(["certification", "certification_1"], "certification")
     df_5
     return (df_5,)
 
@@ -310,7 +313,7 @@ def _(df_5):
 
 @app.cell
 def _(df_5):
-    df_5.encode_categorical(['subject', 'employee_status', 'full_time'])
+    df_5.encode_categorical(["subject", "employee_status", "full_time"])
     df_5.dtypes
     return
 
@@ -325,7 +328,7 @@ def _(mo):
 
 @app.cell
 def _(df_5):
-    df_5.convert_excel_date('hire_date')
+    df_5.convert_excel_date("hire_date")
     df_5
     return
 
@@ -382,6 +385,7 @@ def _(data_df):
 @app.cell
 def _():
     import marimo as mo
+
     return (mo,)
 
 

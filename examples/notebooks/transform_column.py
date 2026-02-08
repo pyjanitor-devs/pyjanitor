@@ -28,6 +28,7 @@ def _(mo):
 def _():
     import numpy as np
     import pandas as pd
+
     return np, pd
 
 
@@ -113,10 +114,8 @@ def _(mo):
 def _(pd):
     from random import choice
 
-
     def make_strings(length: int):
         return "".join(choice("ABCDEFGHIJKLMNOPQRSTUVWXYZ") for _ in range(length))
-
 
     strings = (make_strings(30) for _ in range(1_000_000))
 
@@ -206,6 +205,7 @@ def _(stringdf):
 @app.cell
 def _():
     import marimo as mo
+
     return (mo,)
 
 

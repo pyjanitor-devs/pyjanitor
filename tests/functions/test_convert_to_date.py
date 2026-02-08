@@ -1,7 +1,8 @@
 import datetime as dt
 
-import janitor as jn
 import pytest
+
+import janitor as jn
 
 
 @pytest.mark.functions
@@ -28,9 +29,7 @@ def test_convert_to_date_string_failure_error():
 @pytest.mark.functions
 def test_convert_to_date_string_failure_warning():
     with pytest.warns(UserWarning, match="Not all character strings converted"):
-        result = jn.convert_to_date(
-            ["not-a-date"], string_conversion_failure="warning"
-        )
+        result = jn.convert_to_date(["not-a-date"], string_conversion_failure="warning")
     assert result == [None]
 
 
@@ -87,9 +86,7 @@ def test_sas_numeric_to_date_examples():
 
     datetime_value = jn.sas_numeric_to_date(datetime_num=1217083532, tz="UTC")
     assert datetime_value.utcoffset() == dt.timedelta(0)
-    assert datetime_value.replace(tzinfo=None) == dt.datetime(
-        1998, 7, 26, 14, 45, 32
-    )
+    assert datetime_value.replace(tzinfo=None) == dt.datetime(1998, 7, 26, 14, 45, 32)
 
     assert jn.sas_numeric_to_date(time_num=3600) == dt.time(1, 0, 0)
 

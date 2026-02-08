@@ -16,6 +16,7 @@ def _(mo):
 def _():
     import pandas as pd
     from numpy import nan
+
     return nan, pd
 
 
@@ -25,7 +26,13 @@ def _(nan, pd):
         {
             "col1": [2.0, 1.0, 3.0, 1.0, nan],
             "col2": ["a", "b", "c", "d", "a"],
-            "col3": ["2020-01-01", "2020-01-02", "2020-01-03", "2020-01-04", "2020-01-05"],
+            "col3": [
+                "2020-01-01",
+                "2020-01-02",
+                "2020-01-03",
+                "2020-01-04",
+                "2020-01-05",
+            ],
         }
     )
 
@@ -83,19 +90,21 @@ def _(mo):
 
 @app.cell
 def _(df):
-    cat_1 = df.encode_categorical(col1=([3, 2, 1, 4], 'appearance'), col2=(['a', 'd', 'c', 'b'], 'sort'))
+    cat_1 = df.encode_categorical(
+        col1=([3, 2, 1, 4], "appearance"), col2=(["a", "d", "c", "b"], "sort")
+    )
     return (cat_1,)
 
 
 @app.cell
 def _(cat_1):
-    cat_1['col1']
+    cat_1["col1"]
     return
 
 
 @app.cell
 def _(cat_1):
-    cat_1['col2']
+    cat_1["col2"]
     return
 
 
@@ -117,19 +126,20 @@ def _(mo):
 
 @app.cell
 def _(df):
-    cat_2 = df.encode_categorical(col1=([4, 5, 6], 'appearance'))
+    cat_2 = df.encode_categorical(col1=([4, 5, 6], "appearance"))
     return (cat_2,)
 
 
 @app.cell
 def _(cat_2):
-    cat_2['col1']
+    cat_2["col1"]
     return
 
 
 @app.cell
 def _():
     import marimo as mo
+
     return (mo,)
 
 

@@ -51,20 +51,21 @@ def _(mo):
 @app.cell
 def _():
     import pandas as pd
+
     return (pd,)
 
 
 @app.cell
 def _(pd):
-    url = (
-        "https://www.ers.usda.gov/webdocs/DataFiles/50606/nominal_expenditures.csv?v=9289.4"
-    )
+    url = "https://www.ers.usda.gov/webdocs/DataFiles/50606/nominal_expenditures.csv?v=9289.4"
     # 1) Read in the data from .csv file
     # 2) Clean up the column names
     # 3) Remove any empty rows or columns
     # 4) Melt the dataframe (from wide to long) to obtain "tidy" format
     data = (
-        pd.read_csv(url, usecols=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9], nrows=22, thousands=",")
+        pd.read_csv(
+            url, usecols=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9], nrows=22, thousands=","
+        )
         .clean_names()
         .remove_empty()
         .melt(id_vars=["year"], var_name="store_type", value_name="expenditure")
@@ -147,6 +148,7 @@ def _(mo):
 @app.cell
 def _():
     import marimo as mo
+
     return (mo,)
 
 

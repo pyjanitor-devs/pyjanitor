@@ -18,6 +18,7 @@ def _():
 
     import numpy as np
     import pandas as pd
+
     return np, pd, re
 
 
@@ -97,14 +98,13 @@ def _(df):
         sort_by_appearance=True,
     ).drop(columns=["date", "num"])
 
-
     result
     return (result,)
 
 
 @app.cell
 def _(df1, result):
-    _columns = ['id', 'cod', 'start', 'end']
+    _columns = ["id", "cod", "start", "end"]
     df1_1 = df1.sort_values(_columns, ignore_index=True)
     result_1 = result.sort_values(_columns, ignore_index=True)
     df1_1.equals(result_1)
@@ -131,15 +131,23 @@ def _(mo):
 
 @app.cell
 def _(pd):
-    index = pd.MultiIndex.from_tuples([('person', 'A'), ('person', 'B')])
-    df_1 = pd.DataFrame({'first': ['John', 'Mary'], 'last': ['Doe', 'Bo'], 'height': [5.5, 6.0], 'weight': [130, 150]}, index=index)
+    index = pd.MultiIndex.from_tuples([("person", "A"), ("person", "B")])
+    df_1 = pd.DataFrame(
+        {
+            "first": ["John", "Mary"],
+            "last": ["Doe", "Bo"],
+            "height": [5.5, 6.0],
+            "weight": [130, 150],
+        },
+        index=index,
+    )
     df_1
     return (df_1,)
 
 
 @app.cell
 def _(df_1):
-    df_1.pivot_longer(index=['first', 'last'])
+    df_1.pivot_longer(index=["first", "last"])
     return
 
 
@@ -153,7 +161,7 @@ def _(mo):
 
 @app.cell
 def _(df_1):
-    df_1.pivot_longer(index=['first', 'last'], sort_by_appearance=True)
+    df_1.pivot_longer(index=["first", "last"], sort_by_appearance=True)
     return
 
 
@@ -167,7 +175,7 @@ def _(mo):
 
 @app.cell
 def _(df_1):
-    df_1.pivot_longer(index=['first', 'last'], ignore_index=False)
+    df_1.pivot_longer(index=["first", "last"], ignore_index=False)
     return
 
 
@@ -183,21 +191,27 @@ def _(mo):
 
 @app.cell
 def _(pd):
-    df_2 = pd.DataFrame({'A': {0: 'a', 1: 'b', 2: 'c'}, 'B': {0: 1, 1: 3, 2: 5}, 'C': {0: 2, 1: 4, 2: 6}})
-    df_2.columns = [list('ABC'), list('DEF')]
+    df_2 = pd.DataFrame(
+        {
+            "A": {0: "a", 1: "b", 2: "c"},
+            "B": {0: 1, 1: 3, 2: 5},
+            "C": {0: 2, 1: 4, 2: 6},
+        }
+    )
+    df_2.columns = [list("ABC"), list("DEF")]
     df_2
     return (df_2,)
 
 
 @app.cell
 def _(df_2):
-    df_2.pivot_longer(index=[('A', 'D')], values_to='num')
+    df_2.pivot_longer(index=[("A", "D")], values_to="num")
     return
 
 
 @app.cell
 def _(df_2):
-    df_2.pivot_longer(index=[('A', 'D')], column_names=[('B', 'E')])
+    df_2.pivot_longer(index=[("A", "D")], column_names=[("B", "E")])
     return
 
 
@@ -211,7 +225,7 @@ def _(mo):
 
 @app.cell
 def _(df_2):
-    df_2.pivot_longer(index='A', column_names='B', column_level=0)
+    df_2.pivot_longer(index="A", column_names="B", column_level=0)
     return
 
 
@@ -236,7 +250,9 @@ def _(mo):
 
 @app.cell
 def _(pd):
-    url = 'https://raw.githubusercontent.com/tidyverse/tidyr/main/data-raw/billboard.csv'
+    url = (
+        "https://raw.githubusercontent.com/tidyverse/tidyr/main/data-raw/billboard.csv"
+    )
     df_3 = pd.read_csv(url)
     df_3
     return (df_3,)
@@ -245,13 +261,13 @@ def _(pd):
 @app.cell
 def _(df_3, re):
     # unpivot all columns that start with 'wk'
-    df_3.pivot_longer(column_names=re.compile('^(wk)'), names_to='week')
+    df_3.pivot_longer(column_names=re.compile("^(wk)"), names_to="week")
     return
 
 
 @app.cell
 def _(df_3):
-    df_3.pivot_longer(column_names='wk*', names_to='week')
+    df_3.pivot_longer(column_names="wk*", names_to="week")
     return
 
 
@@ -265,7 +281,14 @@ def _(mo):
 
 @app.cell
 def _(pd):
-    df_4 = pd.DataFrame({'famid': [1, 1, 1, 2, 2, 2, 3, 3, 3], 'birth': [1, 2, 3, 1, 2, 3, 1, 2, 3], 'ht1': [2.8, 2.9, 2.2, 2, 1.8, 1.9, 2.2, 2.3, 2.1], 'ht2': [3.4, 3.8, 2.9, 3.2, 2.8, 2.4, 3.3, 3.4, 2.9]})
+    df_4 = pd.DataFrame(
+        {
+            "famid": [1, 1, 1, 2, 2, 2, 3, 3, 3],
+            "birth": [1, 2, 3, 1, 2, 3, 1, 2, 3],
+            "ht1": [2.8, 2.9, 2.2, 2, 1.8, 1.9, 2.2, 2.3, 2.1],
+            "ht2": [3.4, 3.8, 2.9, 3.2, 2.8, 2.4, 3.3, 3.4, 2.9],
+        }
+    )
     df_4
     return (df_4,)
 
@@ -280,7 +303,7 @@ def _(mo):
 
 @app.cell
 def _(df_4, pd):
-    pd.wide_to_long(df_4, stubnames='ht', i=['famid', 'birth'], j='age')
+    pd.wide_to_long(df_4, stubnames="ht", i=["famid", "birth"], j="age")
     return
 
 
@@ -294,7 +317,9 @@ def _(mo):
 
 @app.cell
 def _(df_4):
-    df_4.pivot_longer(index=['famid', 'birth'], names_to=('.value', 'age'), names_pattern='(.+)(.)')
+    df_4.pivot_longer(
+        index=["famid", "birth"], names_to=(".value", "age"), names_pattern="(.+)(.)"
+    )
     return
 
 
@@ -317,7 +342,12 @@ def _(mo):
 
 @app.cell
 def _(df_4):
-    df_4.pivot_longer(index=['famid', 'birth'], names_to=('.value', 'age'), names_pattern='(.+)(.)', sort_by_appearance=True)
+    df_4.pivot_longer(
+        index=["famid", "birth"],
+        names_to=(".value", "age"),
+        names_pattern="(.+)(.)",
+        sort_by_appearance=True,
+    )
     return
 
 
@@ -339,7 +369,44 @@ def _(mo):
 
 @app.cell
 def _(pd):
-    df_5 = pd.DataFrame({'off_loc': ['A', 'B', 'C', 'D', 'E', 'F'], 'pt_loc': ['G', 'H', 'I', 'J', 'K', 'L'], 'pt_lat': [100.07548220000001, 75.191326, 122.65134479999999, 124.13553329999999, 124.13553329999999, 124.01028909999998], 'off_lat': [121.271083, 75.93845266, 135.043791, 134.51128400000002, 134.484374, 137.962195], 'pt_long': [4.472089953, -144.387785, -40.45611048, -46.07156181, -46.07156181, -46.01594293], 'off_long': [-7.188632000000001, -143.2288569, 21.242563, 40.937416999999996, 40.78472, 22.905889000000002]})
+    df_5 = pd.DataFrame(
+        {
+            "off_loc": ["A", "B", "C", "D", "E", "F"],
+            "pt_loc": ["G", "H", "I", "J", "K", "L"],
+            "pt_lat": [
+                100.07548220000001,
+                75.191326,
+                122.65134479999999,
+                124.13553329999999,
+                124.13553329999999,
+                124.01028909999998,
+            ],
+            "off_lat": [
+                121.271083,
+                75.93845266,
+                135.043791,
+                134.51128400000002,
+                134.484374,
+                137.962195,
+            ],
+            "pt_long": [
+                4.472089953,
+                -144.387785,
+                -40.45611048,
+                -46.07156181,
+                -46.07156181,
+                -46.01594293,
+            ],
+            "off_long": [
+                -7.188632000000001,
+                -143.2288569,
+                21.242563,
+                40.937416999999996,
+                40.78472,
+                22.905889000000002,
+            ],
+        }
+    )
     df_5
     return (df_5,)
 
@@ -355,7 +422,7 @@ def _(mo):
 @app.cell
 def _(df_5):
     df1_2 = df_5.copy()
-    df1_2.columns = df1_2.columns.str.split('_').str[::-1].str.join('_')
+    df1_2.columns = df1_2.columns.str.split("_").str[::-1].str.join("_")
     df1_2
     return (df1_2,)
 
@@ -370,7 +437,14 @@ def _(mo):
 
 @app.cell
 def _(df1_2, pd):
-    pd.wide_to_long(df1_2.reset_index(), stubnames=['loc', 'lat', 'long'], sep='_', i='index', j='set', suffix='.+')
+    pd.wide_to_long(
+        df1_2.reset_index(),
+        stubnames=["loc", "lat", "long"],
+        sep="_",
+        i="index",
+        j="set",
+        suffix=".+",
+    )
     return
 
 
@@ -384,7 +458,7 @@ def _(mo):
 
 @app.cell
 def _(df_5):
-    df_5.pivot_longer(names_to=['set', '.value'], names_pattern='(.+)_(.+)')
+    df_5.pivot_longer(names_to=["set", ".value"], names_pattern="(.+)_(.+)")
     return
 
 
@@ -413,7 +487,12 @@ def _(mo):
 
 @app.cell
 def _(df_5):
-    df_5.pivot_longer(names_to=['set', '.value'], names_sep='_', ignore_index=False, sort_by_appearance=True)
+    df_5.pivot_longer(
+        names_to=["set", ".value"],
+        names_sep="_",
+        ignore_index=False,
+        sort_by_appearance=True,
+    )
     return
 
 
@@ -427,7 +506,9 @@ def _(mo):
 
 @app.cell
 def _(pd):
-    df_6 = pd.DataFrame([{'a_1': 2, 'ab_1': 3, 'ac_1': 4, 'a_2': 5, 'ab_2': 6, 'ac_2': 7}])
+    df_6 = pd.DataFrame(
+        [{"a_1": 2, "ab_1": 3, "ac_1": 4, "a_2": 5, "ab_2": 6, "ac_2": 7}]
+    )
     df_6
     return (df_6,)
 
@@ -443,8 +524,8 @@ def _(mo):
 @app.cell
 def _(df_6, pd):
     df1_3 = df_6.copy()
-    df1_3['id'] = df1_3.index
-    pd.wide_to_long(df1_3, ['a', 'ab', 'ac'], i='id', j='num', sep='_')
+    df1_3["id"] = df1_3.index
+    pd.wide_to_long(df1_3, ["a", "ab", "ac"], i="id", j="num", sep="_")
     return
 
 
@@ -458,7 +539,7 @@ def _(mo):
 
 @app.cell
 def _(df_6):
-    df_6.pivot_longer(names_to=('.value', 'num'), names_sep='_')
+    df_6.pivot_longer(names_to=(".value", "num"), names_sep="_")
     return
 
 
@@ -474,14 +555,17 @@ def _(mo):
 
 @app.cell
 def _(pd):
-    df_7 = pd.DataFrame([[1, 1, 2, 3, 4, 5, 6], [2, 7, 8, 9, 10, 11, 12]], columns=['id', 'ax', 'ay', 'az', 'bx', 'by', 'bz'])
+    df_7 = pd.DataFrame(
+        [[1, 1, 2, 3, 4, 5, 6], [2, 7, 8, 9, 10, 11, 12]],
+        columns=["id", "ax", "ay", "az", "bx", "by", "bz"],
+    )
     df_7
     return (df_7,)
 
 
 @app.cell
 def _(df_7):
-    df_7.pivot_longer(index='id', names_to=('name', '.value'), names_pattern='(.)(.)')
+    df_7.pivot_longer(index="id", names_to=("name", ".value"), names_pattern="(.)(.)")
     return
 
 
@@ -505,14 +589,16 @@ def _(mo):
 
 @app.cell
 def _(pd):
-    df_8 = pd.DataFrame([{'id': 1, 'A1g_hi': 2, 'A2g_hi': 3, 'A3g_hi': 4, 'A4g_hi': 5}])
+    df_8 = pd.DataFrame([{"id": 1, "A1g_hi": 2, "A2g_hi": 3, "A3g_hi": 4, "A4g_hi": 5}])
     df_8
     return (df_8,)
 
 
 @app.cell
 def _(df_8):
-    df_8.pivot_longer(index='id', names_to=['time', '.value'], names_pattern='A(.)g_(.+)')
+    df_8.pivot_longer(
+        index="id", names_to=["time", ".value"], names_pattern="A(.)g_(.+)"
+    )
     return
 
 
@@ -526,7 +612,19 @@ def _(mo):
 
 @app.cell
 def _(pd):
-    df_9 = pd.DataFrame({'Sony | TV | Model | value': {0: 'A222', 1: 'A234', 2: 'A4345'}, 'Sony | TV | Quantity | value': {0: 5, 1: 5, 2: 4}, 'Sony | TV | Max-quant | value': {0: 10, 1: 9, 2: 9}, 'Panasonic | TV | Model | value': {0: 'T232', 1: 'S3424', 2: 'X3421'}, 'Panasonic | TV | Quantity | value': {0: 1, 1: 5, 2: 1}, 'Panasonic | TV | Max-quant | value': {0: 10, 1: 12, 2: 11}, 'Sanyo | Radio | Model | value': {0: 'S111', 1: 'S1s1', 2: 'S1s2'}, 'Sanyo | Radio | Quantity | value': {0: 4, 1: 2, 2: 4}, 'Sanyo | Radio | Max-quant | value': {0: 9, 1: 9, 2: 10}})
+    df_9 = pd.DataFrame(
+        {
+            "Sony | TV | Model | value": {0: "A222", 1: "A234", 2: "A4345"},
+            "Sony | TV | Quantity | value": {0: 5, 1: 5, 2: 4},
+            "Sony | TV | Max-quant | value": {0: 10, 1: 9, 2: 9},
+            "Panasonic | TV | Model | value": {0: "T232", 1: "S3424", 2: "X3421"},
+            "Panasonic | TV | Quantity | value": {0: 1, 1: 5, 2: 1},
+            "Panasonic | TV | Max-quant | value": {0: 10, 1: 12, 2: 11},
+            "Sanyo | Radio | Model | value": {0: "S111", 1: "S1s1", 2: "S1s2"},
+            "Sanyo | Radio | Quantity | value": {0: 4, 1: 2, 2: 4},
+            "Sanyo | Radio | Max-quant | value": {0: 9, 1: 9, 2: 10},
+        }
+    )
     df_9
     return (df_9,)
 
@@ -545,10 +643,16 @@ def _(mo):
 def _(df_9, pd):
     df1_4 = df_9.copy()
     # Create a multiIndex column header
-    df1_4.columns = pd.MultiIndex.from_arrays(zip(*df1_4.columns.str.split('\\s?\\|\\s?')))
+    df1_4.columns = pd.MultiIndex.from_arrays(
+        zip(*df1_4.columns.str.split("\\s?\\|\\s?"))
+    )
     # Reshape the dataframe using
     # `set_index`, `droplevel`, and `stack`
-    df1_4.stack([0, 1], future_stack=True).droplevel(1, axis=1).set_index('Model', append=True).rename_axis([None, 'Manufacturer', 'Device', 'Model']).sort_index(level=[1, 2, 3]).reset_index().drop('level_0', axis=1)
+    df1_4.stack([0, 1], future_stack=True).droplevel(1, axis=1).set_index(
+        "Model", append=True
+    ).rename_axis([None, "Manufacturer", "Device", "Model"]).sort_index(
+        level=[1, 2, 3]
+    ).reset_index().drop("level_0", axis=1)
     return
 
 
@@ -562,7 +666,10 @@ def _(mo):
 
 @app.cell
 def _(df_9):
-    df_9.pivot_longer(names_to=('Manufacturer', 'Device', '.value'), names_pattern='(.+)\\|(.+)\\|(.+)\\|.*')
+    df_9.pivot_longer(
+        names_to=("Manufacturer", "Device", ".value"),
+        names_pattern="(.+)\\|(.+)\\|(.+)\\|.*",
+    )
     return
 
 
@@ -578,7 +685,42 @@ def _(mo):
 
 @app.cell
 def _(pd):
-    df_10 = pd.DataFrame({'time': [1, 2, 3], 'factor': ['a', 'a', 'b'], 'variable1': [0, 0, 0], 'variable2': [0, 0, 1], 'variable3': [0, 2, 0], 'variable4': [2, 0, 1], 'variable5': [1, 0, 1], 'variable6': [0, 1, 1], 'O1V1': [0, 0.2, -0.3], 'O1V2': [0, 0.4, -0.9], 'O1V3': [0.5, 0.2, -0.6], 'O1V4': [0.5, 0.2, -0.6], 'O1V5': [0, 0.2, -0.3], 'O1V6': [0, 0.4, -0.9], 'O1V7': [0.5, 0.2, -0.6], 'O1V8': [0.5, 0.2, -0.6], 'O2V1': [0, 0.5, 0.3], 'O2V2': [0, 0.2, 0.9], 'O2V3': [0.6, 0.1, -0.3], 'O2V4': [0.5, 0.2, -0.6], 'O2V5': [0, 0.5, 0.3], 'O2V6': [0, 0.2, 0.9], 'O2V7': [0.6, 0.1, -0.3], 'O2V8': [0.5, 0.2, -0.6], 'O3V1': [0, 0.7, 0.4], 'O3V2': [0.9, 0.2, -0.3], 'O3V3': [0.5, 0.2, -0.7], 'O3V4': [0.5, 0.2, -0.6], 'O3V5': [0, 0.7, 0.4], 'O3V6': [0.9, 0.2, -0.3], 'O3V7': [0.5, 0.2, -0.7], 'O3V8': [0.5, 0.2, -0.6]})
+    df_10 = pd.DataFrame(
+        {
+            "time": [1, 2, 3],
+            "factor": ["a", "a", "b"],
+            "variable1": [0, 0, 0],
+            "variable2": [0, 0, 1],
+            "variable3": [0, 2, 0],
+            "variable4": [2, 0, 1],
+            "variable5": [1, 0, 1],
+            "variable6": [0, 1, 1],
+            "O1V1": [0, 0.2, -0.3],
+            "O1V2": [0, 0.4, -0.9],
+            "O1V3": [0.5, 0.2, -0.6],
+            "O1V4": [0.5, 0.2, -0.6],
+            "O1V5": [0, 0.2, -0.3],
+            "O1V6": [0, 0.4, -0.9],
+            "O1V7": [0.5, 0.2, -0.6],
+            "O1V8": [0.5, 0.2, -0.6],
+            "O2V1": [0, 0.5, 0.3],
+            "O2V2": [0, 0.2, 0.9],
+            "O2V3": [0.6, 0.1, -0.3],
+            "O2V4": [0.5, 0.2, -0.6],
+            "O2V5": [0, 0.5, 0.3],
+            "O2V6": [0, 0.2, 0.9],
+            "O2V7": [0.6, 0.1, -0.3],
+            "O2V8": [0.5, 0.2, -0.6],
+            "O3V1": [0, 0.7, 0.4],
+            "O3V2": [0.9, 0.2, -0.3],
+            "O3V3": [0.5, 0.2, -0.7],
+            "O3V4": [0.5, 0.2, -0.6],
+            "O3V5": [0, 0.7, 0.4],
+            "O3V6": [0.9, 0.2, -0.3],
+            "O3V7": [0.5, 0.2, -0.7],
+            "O3V8": [0.5, 0.2, -0.6],
+        }
+    )
     df_10
     return (df_10,)
 
@@ -603,9 +745,21 @@ def _(mo):
 
 @app.cell
 def _(df_10, pd):
-    df1_5 = df_10.rename(columns={x: x[2:] + x[1:2] for x in df_10.columns[df_10.columns.str.startswith('O')]})
-    df1_5 = pd.wide_to_long(df1_5, i=['time', 'factor'] + [f'variable{i}' for i in range(1, 7)], j='id', stubnames=[f'V{i}' for i in range(1, 9)], suffix='.*')
-    df1_5 = df1_5.reset_index().drop(columns=[f'V{i}' for i in range(5, 9)] + [f'variable{i}' for i in range(3, 7)])
+    df1_5 = df_10.rename(
+        columns={
+            x: x[2:] + x[1:2] for x in df_10.columns[df_10.columns.str.startswith("O")]
+        }
+    )
+    df1_5 = pd.wide_to_long(
+        df1_5,
+        i=["time", "factor"] + [f"variable{i}" for i in range(1, 7)],
+        j="id",
+        stubnames=[f"V{i}" for i in range(1, 9)],
+        suffix=".*",
+    )
+    df1_5 = df1_5.reset_index().drop(
+        columns=[f"V{i}" for i in range(5, 9)] + [f"variable{i}" for i in range(3, 7)]
+    )
     df1_5
     return
 
@@ -620,7 +774,13 @@ def _(mo):
 
 @app.cell
 def _(df_10, re):
-    df_10.pivot_longer(index=slice('time', 'variable2'), column_names=re.compile('.+V[1-4]$'), names_to=('id', '.value'), names_pattern='.(.)(.+)$', sort_by_appearance=True)
+    df_10.pivot_longer(
+        index=slice("time", "variable2"),
+        column_names=re.compile(".+V[1-4]$"),
+        names_to=("id", ".value"),
+        names_pattern=".(.)(.+)$",
+        sort_by_appearance=True,
+    )
     return
 
 
@@ -636,14 +796,14 @@ def _(mo):
 
 @app.cell
 def _(pd):
-    df_11 = pd.DataFrame({'id': [1, 2], 'A_value': [50, 33], 'D_value': [60, 45]})
+    df_11 = pd.DataFrame({"id": [1, 2], "A_value": [50, 33], "D_value": [60, 45]})
     df_11
     return (df_11,)
 
 
 @app.cell
 def _(df_11):
-    df_11.pivot_longer(index='id', names_to=('value_type', '.value'), names_sep='_')
+    df_11.pivot_longer(index="id", names_to=("value_type", ".value"), names_sep="_")
     return
 
 
@@ -659,7 +819,16 @@ def _(mo):
 
 @app.cell
 def _(pd):
-    df_12 = pd.DataFrame({'subject': [1, 2], 'A_target_word_gd': [1, 11], 'A_target_word_fd': [2, 12], 'B_target_word_gd': [3, 13], 'B_target_word_fd': [4, 14], 'subject_type': ['mild', 'moderate']})
+    df_12 = pd.DataFrame(
+        {
+            "subject": [1, 2],
+            "A_target_word_gd": [1, 11],
+            "A_target_word_fd": [2, 12],
+            "B_target_word_gd": [3, 13],
+            "B_target_word_fd": [4, 14],
+            "subject_type": ["mild", "moderate"],
+        }
+    )
     df_12
     return (df_12,)
 
@@ -674,9 +843,11 @@ def _(mo):
 
 @app.cell
 def _(df_12, pd):
-    new_df = pd.melt(df_12, id_vars=['subject_type', 'subject'], var_name='abc').sort_values(by=['subject', 'subject_type'])
-    new_df['cond'] = new_df['abc'].apply(lambda x: x.split('_')[0])
-    new_df['value_type'] = new_df.pop('abc').apply(lambda x: x.split('_')[-1])
+    new_df = pd.melt(
+        df_12, id_vars=["subject_type", "subject"], var_name="abc"
+    ).sort_values(by=["subject", "subject_type"])
+    new_df["cond"] = new_df["abc"].apply(lambda x: x.split("_")[0])
+    new_df["value_type"] = new_df.pop("abc").apply(lambda x: x.split("_")[-1])
     new_df
     return
 
@@ -691,7 +862,11 @@ def _(mo):
 
 @app.cell
 def _(df_12):
-    df_12.pivot_longer(index=['subject', 'subject_type'], names_to=('cond', 'value_type'), names_pattern='([A-Z]).*(gd|fd)')
+    df_12.pivot_longer(
+        index=["subject", "subject_type"],
+        names_to=("cond", "value_type"),
+        names_pattern="([A-Z]).*(gd|fd)",
+    )
     return
 
 
@@ -707,7 +882,11 @@ def _(mo):
 
 @app.cell
 def _(df_12):
-    df_12.pivot_longer(index=['subject', 'subject_type'], names_to=('cond', 'value_type'), names_sep='_target_word_')
+    df_12.pivot_longer(
+        index=["subject", "subject_type"],
+        names_to=("cond", "value_type"),
+        names_sep="_target_word_",
+    )
     return
 
 
@@ -726,7 +905,19 @@ def _(mo):
 
 @app.cell
 def _(pd):
-    df_13 = pd.DataFrame({'country': ['United States', 'Russia', 'China'], 'vault_2012_f': [48.132, 46.366, 44.266], 'vault_2012_m': [46.632, 46.866, 48.316], 'vault_2016_f': [46.866, 45.733, 44.332], 'vault_2016_m': [45.865, 46.033, 45.0], 'floor_2012_f': [45.366, 41.599, 40.833], 'floor_2012_m': [45.266, 45.308, 45.133], 'floor_2016_f': [45.999, 42.032, 42.066], 'floor_2016_m': [43.757, 44.766, 43.799]})
+    df_13 = pd.DataFrame(
+        {
+            "country": ["United States", "Russia", "China"],
+            "vault_2012_f": [48.132, 46.366, 44.266],
+            "vault_2012_m": [46.632, 46.866, 48.316],
+            "vault_2016_f": [46.866, 45.733, 44.332],
+            "vault_2016_m": [45.865, 46.033, 45.0],
+            "floor_2012_f": [45.366, 41.599, 40.833],
+            "floor_2012_m": [45.266, 45.308, 45.133],
+            "floor_2016_f": [45.999, 42.032, 42.066],
+            "floor_2016_m": [43.757, 44.766, 43.799],
+        }
+    )
     df_13
     return (df_13,)
 
@@ -741,11 +932,13 @@ def _(mo):
 
 @app.cell
 def _(df_13):
-    reshape = df_13.set_index('country')
-    reshape.columns = reshape.columns.str.split('_', expand=True)
-    _columns = ['event', 'year', 'gender']
+    reshape = df_13.set_index("country")
+    reshape.columns = reshape.columns.str.split("_", expand=True)
+    _columns = ["event", "year", "gender"]
     reshape.columns.names = _columns
-    reshape.stack(level=_columns, future_stack=True).rename('score').reset_index(level=['country'] + _columns).reset_index(drop=True)
+    reshape.stack(level=_columns, future_stack=True).rename("score").reset_index(
+        level=["country"] + _columns
+    ).reset_index(drop=True)
     return
 
 
@@ -759,7 +952,12 @@ def _(mo):
 
 @app.cell
 def _(df_13):
-    df_13.pivot_longer(index='country', names_to=['event', 'year', 'gender'], names_sep='_', values_to='score')
+    df_13.pivot_longer(
+        index="country",
+        names_to=["event", "year", "gender"],
+        names_sep="_",
+        values_to="score",
+    )
     return
 
 
@@ -773,7 +971,13 @@ def _(mo):
 
 @app.cell
 def _(df_13):
-    df_13.pivot_longer(index='country', names_to=['event', 'year', 'gender'], names_sep='_', values_to='score', sort_by_appearance=True)
+    df_13.pivot_longer(
+        index="country",
+        names_to=["event", "year", "gender"],
+        names_sep="_",
+        values_to="score",
+        sort_by_appearance=True,
+    )
     return
 
 
@@ -789,7 +993,64 @@ def _(mo):
 
 @app.cell
 def _(pd):
-    df_14 = pd.DataFrame([{'title': 'Avatar', 'actor_1': 'CCH_Pound…', 'actor_2': 'Joel_Davi…', 'actor_3': 'Wes_Studi', 'actor_1_FB_likes': 1000, 'actor_2_FB_likes': 936, 'actor_3_FB_likes': 855}, {'title': 'Pirates_of_the_Car…', 'actor_1': 'Johnny_De…', 'actor_2': 'Orlando_B…', 'actor_3': 'Jack_Daven…', 'actor_1_FB_likes': 40000, 'actor_2_FB_likes': 5000, 'actor_3_FB_likes': 1000}, {'title': 'The_Dark_Knight_Ri…', 'actor_1': 'Tom_Hardy', 'actor_2': 'Christian…', 'actor_3': 'Joseph_Gor…', 'actor_1_FB_likes': 27000, 'actor_2_FB_likes': 23000, 'actor_3_FB_likes': 23000}, {'title': 'John_Carter', 'actor_1': 'Daryl_Sab…', 'actor_2': 'Samantha_…', 'actor_3': 'Polly_Walk…', 'actor_1_FB_likes': 640, 'actor_2_FB_likes': 632, 'actor_3_FB_likes': 530}, {'title': 'Spider-Man_3', 'actor_1': 'J.K._Simm…', 'actor_2': 'James_Fra…', 'actor_3': 'Kirsten_Du…', 'actor_1_FB_likes': 24000, 'actor_2_FB_likes': 11000, 'actor_3_FB_likes': 4000}, {'title': 'Tangled', 'actor_1': 'Brad_Garr…', 'actor_2': 'Donna_Mur…', 'actor_3': 'M.C._Gainey', 'actor_1_FB_likes': 799, 'actor_2_FB_likes': 553, 'actor_3_FB_likes': 284}])
+    df_14 = pd.DataFrame(
+        [
+            {
+                "title": "Avatar",
+                "actor_1": "CCH_Pound…",
+                "actor_2": "Joel_Davi…",
+                "actor_3": "Wes_Studi",
+                "actor_1_FB_likes": 1000,
+                "actor_2_FB_likes": 936,
+                "actor_3_FB_likes": 855,
+            },
+            {
+                "title": "Pirates_of_the_Car…",
+                "actor_1": "Johnny_De…",
+                "actor_2": "Orlando_B…",
+                "actor_3": "Jack_Daven…",
+                "actor_1_FB_likes": 40000,
+                "actor_2_FB_likes": 5000,
+                "actor_3_FB_likes": 1000,
+            },
+            {
+                "title": "The_Dark_Knight_Ri…",
+                "actor_1": "Tom_Hardy",
+                "actor_2": "Christian…",
+                "actor_3": "Joseph_Gor…",
+                "actor_1_FB_likes": 27000,
+                "actor_2_FB_likes": 23000,
+                "actor_3_FB_likes": 23000,
+            },
+            {
+                "title": "John_Carter",
+                "actor_1": "Daryl_Sab…",
+                "actor_2": "Samantha_…",
+                "actor_3": "Polly_Walk…",
+                "actor_1_FB_likes": 640,
+                "actor_2_FB_likes": 632,
+                "actor_3_FB_likes": 530,
+            },
+            {
+                "title": "Spider-Man_3",
+                "actor_1": "J.K._Simm…",
+                "actor_2": "James_Fra…",
+                "actor_3": "Kirsten_Du…",
+                "actor_1_FB_likes": 24000,
+                "actor_2_FB_likes": 11000,
+                "actor_3_FB_likes": 4000,
+            },
+            {
+                "title": "Tangled",
+                "actor_1": "Brad_Garr…",
+                "actor_2": "Donna_Mur…",
+                "actor_3": "M.C._Gainey",
+                "actor_1_FB_likes": 799,
+                "actor_2_FB_likes": 553,
+                "actor_3_FB_likes": 284,
+            },
+        ]
+    )
     df_14
     return (df_14,)
 
@@ -806,9 +1067,9 @@ def _(mo):
 
 @app.cell
 def _(df_14, re):
-    df1_6 = df_14.set_index('title')
-    _header = [re.split('(_?\\d)', column) for column in df1_6]
-    df1_6.columns = [f'{first}{last}{middle}' for first, middle, last in _header]
+    df1_6 = df_14.set_index("title")
+    _header = [re.split("(_?\\d)", column) for column in df1_6]
+    df1_6.columns = [f"{first}{last}{middle}" for first, middle, last in _header]
     df1_6
     return (df1_6,)
 
@@ -823,7 +1084,13 @@ def _(mo):
 
 @app.cell
 def _(df1_6, pd):
-    pd.wide_to_long(df1_6.reset_index(), stubnames=['actor', 'actor_FB_likes'], i='title', j='group', sep='_').rename(columns={'actor_FB_likes': 'num_likes'})
+    pd.wide_to_long(
+        df1_6.reset_index(),
+        stubnames=["actor", "actor_FB_likes"],
+        i="title",
+        j="group",
+        sep="_",
+    ).rename(columns={"actor_FB_likes": "num_likes"})
     return
 
 
@@ -837,7 +1104,9 @@ def _(mo):
 
 @app.cell
 def _(df_14):
-    df_14.pivot_longer(index='title', names_to=('.value', '.value'), names_pattern='(.+)_\\d(.*)').rename(columns={'actor_FB_likes': 'num_likes'})
+    df_14.pivot_longer(
+        index="title", names_to=(".value", ".value"), names_pattern="(.+)_\\d(.*)"
+    ).rename(columns={"actor_FB_likes": "num_likes"})
     return
 
 
@@ -851,7 +1120,9 @@ def _(mo):
 
 @app.cell
 def _(df_14):
-    df_14.pivot_longer(index='title', names_to=('actor', 'num_likes'), names_pattern=('\\d$', 'likes$'))
+    df_14.pivot_longer(
+        index="title", names_to=("actor", "num_likes"), names_pattern=("\\d$", "likes$")
+    )
     return
 
 
@@ -873,7 +1144,18 @@ def _(mo):
 
 @app.cell
 def _(np, pd):
-    df_15 = pd.DataFrame({'id': [0, 1], 'Name': ['ABC', 'XYZ'], 'code': [1, 2], 'code1': [4, np.nan], 'code2': ['8', 5], 'type': ['S', 'R'], 'type1': ['E', np.nan], 'type2': ['T', 'U']})
+    df_15 = pd.DataFrame(
+        {
+            "id": [0, 1],
+            "Name": ["ABC", "XYZ"],
+            "code": [1, 2],
+            "code1": [4, np.nan],
+            "code2": ["8", 5],
+            "type": ["S", "R"],
+            "type1": ["E", np.nan],
+            "type2": ["T", "U"],
+        }
+    )
     df_15
     return (df_15,)
 
@@ -888,7 +1170,11 @@ def _(mo):
 
 @app.cell
 def _(df_15):
-    df_15.pivot_longer(index=['id', 'Name'], names_to=('code_all', 'type_all'), names_pattern=('^code', '^type'))
+    df_15.pivot_longer(
+        index=["id", "Name"],
+        names_to=("code_all", "type_all"),
+        names_pattern=("^code", "^type"),
+    )
     return
 
 
@@ -904,7 +1190,22 @@ def _(mo):
 
 @app.cell
 def _(pd):
-    df_16 = pd.DataFrame([{'ID': 1, 'DateRange1Start': '1/1/90', 'DateRange1End': '3/1/90', 'Value1': 4.4, 'DateRange2Start': '4/5/91', 'DateRange2End': '6/7/91', 'Value2': 6.2, 'DateRange3Start': '5/5/95', 'DateRange3End': '6/6/96', 'Value3': 3.3}])
+    df_16 = pd.DataFrame(
+        [
+            {
+                "ID": 1,
+                "DateRange1Start": "1/1/90",
+                "DateRange1End": "3/1/90",
+                "Value1": 4.4,
+                "DateRange2Start": "4/5/91",
+                "DateRange2End": "6/7/91",
+                "Value2": 6.2,
+                "DateRange3Start": "5/5/95",
+                "DateRange3End": "6/6/96",
+                "Value3": 3.3,
+            }
+        ]
+    )
     df_16
     return (df_16,)
 
@@ -919,9 +1220,9 @@ def _(mo):
 
 @app.cell
 def _(df_16, re):
-    df1_7 = df_16.set_index('ID')
-    _header = [re.split('(\\d)', column) for column in df1_7]
-    df1_7.columns = [f'{first}{last}{middle}' for first, middle, last in _header]
+    df1_7 = df_16.set_index("ID")
+    _header = [re.split("(\\d)", column) for column in df1_7]
+    df1_7.columns = [f"{first}{last}{middle}" for first, middle, last in _header]
     df1_7
     return (df1_7,)
 
@@ -936,7 +1237,12 @@ def _(mo):
 
 @app.cell
 def _(df1_7, pd):
-    pd.wide_to_long(df1_7.reset_index(), stubnames=['DateRangeStart', 'DateRangeEnd', 'Value'], i='ID', j='num')
+    pd.wide_to_long(
+        df1_7.reset_index(),
+        stubnames=["DateRangeStart", "DateRangeEnd", "Value"],
+        i="ID",
+        j="num",
+    )
     return
 
 
@@ -950,7 +1256,11 @@ def _(mo):
 
 @app.cell
 def _(df_16):
-    df_16.pivot_longer(index='ID', names_to=('DateRangeStart', 'DateRangeEnd', 'Value'), names_pattern=('Start$', 'End$', '^Value'))
+    df_16.pivot_longer(
+        index="ID",
+        names_to=("DateRangeStart", "DateRangeEnd", "Value"),
+        names_pattern=("Start$", "End$", "^Value"),
+    )
     return
 
 
@@ -972,7 +1282,7 @@ def _(mo):
 
 @app.cell
 def _(df_16):
-    df_16.pivot_longer('ID', names_to=('.value', '.value'), names_pattern='(.+)\\d(.*)')
+    df_16.pivot_longer("ID", names_to=(".value", ".value"), names_pattern="(.+)\\d(.*)")
     return
 
 
@@ -986,7 +1296,18 @@ def _(mo):
 
 @app.cell
 def _(pd):
-    df_17 = pd.DataFrame({'Activity': ['P1', 'P2'], 'General': ['AA', 'BB'], 'm1': ['A1', 'B1'], 't1': ['TA1', 'TB1'], 'm2': ['A2', 'B2'], 't2': ['TA2', 'TB2'], 'm3': ['A3', 'B3'], 't3': ['TA3', 'TB3']})
+    df_17 = pd.DataFrame(
+        {
+            "Activity": ["P1", "P2"],
+            "General": ["AA", "BB"],
+            "m1": ["A1", "B1"],
+            "t1": ["TA1", "TB1"],
+            "m2": ["A2", "B2"],
+            "t2": ["TA2", "TB2"],
+            "m3": ["A3", "B3"],
+            "t3": ["TA3", "TB3"],
+        }
+    )
     df_17
     return (df_17,)
 
@@ -1001,7 +1322,9 @@ def _(mo):
 
 @app.cell
 def _(df_17, pd):
-    pd.wide_to_long(df_17, i=['Activity', 'General'], stubnames=['t', 'm'], j='number').set_axis(['Task', 'M'], axis='columns').droplevel(-1).reset_index()
+    pd.wide_to_long(
+        df_17, i=["Activity", "General"], stubnames=["t", "m"], j="number"
+    ).set_axis(["Task", "M"], axis="columns").droplevel(-1).reset_index()
     return
 
 
@@ -1015,7 +1338,11 @@ def _(mo):
 
 @app.cell
 def _(df_17):
-    df_17.pivot_longer(index=['Activity', 'General'], names_pattern=['^m', '^t'], names_to=['M', 'Task'])
+    df_17.pivot_longer(
+        index=["Activity", "General"],
+        names_pattern=["^m", "^t"],
+        names_to=["M", "Task"],
+    )
     return
 
 
@@ -1032,7 +1359,17 @@ def _(mo):
 
 @app.cell
 def _(pd):
-    df_18 = pd.DataFrame({'Name': ['John', 'Chris', 'Alex'], 'activity1': ['Birthday', 'Sleep Over', 'Track Race'], 'number_activity_1': [1, 2, 4], 'attendees1': [14, 18, 100], 'activity2': ['Sleep Over', 'Painting', 'Birthday'], 'number_activity_2': [4, 5, 1], 'attendees2': [10, 8, 5]})
+    df_18 = pd.DataFrame(
+        {
+            "Name": ["John", "Chris", "Alex"],
+            "activity1": ["Birthday", "Sleep Over", "Track Race"],
+            "number_activity_1": [1, 2, 4],
+            "attendees1": [14, 18, 100],
+            "activity2": ["Sleep Over", "Painting", "Birthday"],
+            "number_activity_2": [4, 5, 1],
+            "attendees2": [10, 8, 5],
+        }
+    )
     df_18
     return (df_18,)
 
@@ -1049,7 +1386,11 @@ def _(mo):
 
 @app.cell
 def _(df_18):
-    df_18.pivot_longer(index='Name', names_to=('activity', 'number_activity', 'attendees'), names_pattern=('^activity', '^number_activity', '^attendees'))
+    df_18.pivot_longer(
+        index="Name",
+        names_to=("activity", "number_activity", "attendees"),
+        names_pattern=("^activity", "^number_activity", "^attendees"),
+    )
     return
 
 
@@ -1066,14 +1407,27 @@ def _(mo):
 
 @app.cell
 def _(pd):
-    df_19 = pd.DataFrame({'Location': ['Madrid', 'Madrid', 'Rome', 'Rome'], 'Account': ['ABC', 'XYX', 'ABC', 'XYX'], 'Y2019:MTD:January:Expense': [4354, 769867, 434654, 632556456], 'Y2019:MTD:January:Income': [56456, 32556456, 5214, 46724423], 'Y2019:MTD:February:Expense': [235423, 6785423, 235423, 46588]})
+    df_19 = pd.DataFrame(
+        {
+            "Location": ["Madrid", "Madrid", "Rome", "Rome"],
+            "Account": ["ABC", "XYX", "ABC", "XYX"],
+            "Y2019:MTD:January:Expense": [4354, 769867, 434654, 632556456],
+            "Y2019:MTD:January:Income": [56456, 32556456, 5214, 46724423],
+            "Y2019:MTD:February:Expense": [235423, 6785423, 235423, 46588],
+        }
+    )
     df_19
     return (df_19,)
 
 
 @app.cell
 def _(df_19):
-    df_19.pivot_longer(index=['Location', 'Account'], names_to=('year', 'month', '.value'), names_pattern='Y(.+):MTD:(.{3}).+(Income|Expense)', sort_by_appearance=True)
+    df_19.pivot_longer(
+        index=["Location", "Account"],
+        names_to=("year", "month", ".value"),
+        names_pattern="Y(.+):MTD:(.{3}).+(Income|Expense)",
+        sort_by_appearance=True,
+    )
     return
 
 
@@ -1088,6 +1442,7 @@ def _(mo):
 @app.cell
 def _():
     import marimo as mo
+
     return (mo,)
 
 

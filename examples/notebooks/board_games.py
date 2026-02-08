@@ -33,6 +33,7 @@ def _(mo):
 @app.cell
 def _():
     import pandas as pd
+
     return (pd,)
 
 
@@ -128,7 +129,7 @@ def _(mo):
 
 @app.cell
 def _(df_2):
-    len(df_2[df_2['min_playtime'] != df_2['max_playtime']])
+    len(df_2[df_2["min_playtime"] != df_2["max_playtime"]])
     return
 
 
@@ -142,7 +143,7 @@ def _(mo):
 
 @app.cell
 def _(df_2):
-    len(df_2[df_2['compilation'].notnull()]) / len(df_2)
+    len(df_2[df_2["compilation"].notnull()]) / len(df_2)
     return
 
 
@@ -158,7 +159,7 @@ def _(mo):
 
 @app.cell
 def _(df_2):
-    df_3 = df_2.drop(columns=['image', 'thumbnail', 'compilation', 'game_id'])
+    df_3 = df_2.drop(columns=["image", "thumbnail", "compilation", "game_id"])
     df_3.head(3)
     return (df_3,)
 
@@ -176,6 +177,7 @@ def _():
     # allow plots to appear directly in the notebook
     # '%matplotlib inline' command supported automatically in marimo
     import seaborn as sns
+
     return (sns,)
 
 
@@ -189,7 +191,7 @@ def _(mo):
 
 @app.cell
 def _(df_3):
-    df_3['category'].value_counts().head(10)
+    df_3["category"].value_counts().head(10)
     return
 
 
@@ -203,7 +205,13 @@ def _(mo):
 
 @app.cell
 def _(df_3, sns):
-    sns.pairplot(df_3, x_vars=['min_age', 'min_players', 'min_playtime'], y_vars='users_rated', height=7, aspect=0.7)
+    sns.pairplot(
+        df_3,
+        x_vars=["min_age", "min_players", "min_playtime"],
+        y_vars="users_rated",
+        height=7,
+        aspect=0.7,
+    )
     return
 
 
@@ -219,6 +227,7 @@ def _(mo):
 @app.cell
 def _():
     import marimo as mo
+
     return (mo,)
 
 

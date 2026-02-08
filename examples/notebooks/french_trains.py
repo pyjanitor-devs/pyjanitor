@@ -64,7 +64,8 @@ def _(pd):
         .drop(columns=["service", "delay_cause", "delayed_number"])
         # add 2 new columns with a calculation
         .join_apply(
-            lambda df: df.num_departing_late / df.total_num_trips, "prop_late_departures"
+            lambda df: df.num_departing_late / df.total_num_trips,
+            "prop_late_departures",
         )
         .join_apply(
             lambda df: df.num_arriving_late / df.total_num_trips, "prop_late_arrivals"
@@ -129,7 +130,7 @@ def _(mo):
 
 @app.cell
 def _(df_1):
-    df_2 = df_1.rename_column('num_late_at_departure', 'num_departing_late')
+    df_2 = df_1.rename_column("num_late_at_departure", "num_departing_late")
     df_2.columns
     return (df_2,)
 
@@ -167,7 +168,7 @@ def _(mo):
 
 @app.cell
 def _(df_3):
-    df_4 = df_3.drop(columns=['service', 'delay_cause', 'delayed_number'])
+    df_4 = df_3.drop(columns=["service", "delay_cause", "delayed_number"])
     return (df_4,)
 
 
@@ -180,7 +181,7 @@ def _(df_4):
 @app.cell
 def _(Counter, df_4):
     # gives us the top ten departure stations from that column
-    Counter(df_4['departure_station']).most_common(10)
+    Counter(df_4["departure_station"]).most_common(10)
     return
 
 
@@ -194,7 +195,13 @@ def _(mo):
 
 @app.cell
 def _(df_4, sns):
-    sns.pairplot(df_4, x_vars=['num_departing_late', 'num_arriving_late'], y_vars='total_num_trips', height=7, aspect=0.7)
+    sns.pairplot(
+        df_4,
+        x_vars=["num_departing_late", "num_arriving_late"],
+        y_vars="total_num_trips",
+        height=7,
+        aspect=0.7,
+    )
     return
 
 
@@ -211,7 +218,10 @@ def _(mo):
 
 @app.cell
 def _(df_4):
-    df_prop = df_4.add_columns(prop_late_departures=df_4.num_departing_late / df_4.total_num_trips, prop_late_arrivals=df_4.num_arriving_late / df_4.total_num_trips)
+    df_prop = df_4.add_columns(
+        prop_late_departures=df_4.num_departing_late / df_4.total_num_trips,
+        prop_late_arrivals=df_4.num_arriving_late / df_4.total_num_trips,
+    )
     df_prop.head(3)
     return
 
@@ -219,6 +229,7 @@ def _(df_4):
 @app.cell
 def _():
     import marimo as mo
+
     return (mo,)
 
 

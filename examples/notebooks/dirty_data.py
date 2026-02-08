@@ -35,6 +35,7 @@ def _(mo):
 @app.cell
 def _():
     import pandas as pd
+
     return (pd,)
 
 
@@ -113,7 +114,12 @@ def _(mo):
 
 @app.cell
 def _(df):
-    df_clean_2 = df.clean_names().remove_empty().rename_column('%_allocated', 'percent_allocated').rename_column('full_time_', 'full_time')
+    df_clean_2 = (
+        df.clean_names()
+        .remove_empty()
+        .rename_column("%_allocated", "percent_allocated")
+        .rename_column("full_time_", "full_time")
+    )
     df_clean_2.head(5)
     return (df_clean_2,)
 
@@ -138,7 +144,7 @@ def _(mo):
 
 @app.cell
 def _(df_clean_2):
-    df_clean_2[['certification', 'certification_1']]
+    df_clean_2[["certification", "certification_1"]]
     return
 
 
@@ -152,7 +158,13 @@ def _(mo):
 
 @app.cell
 def _(df):
-    df_clean_3 = df.clean_names().remove_empty().rename_column('%_allocated', 'percent_allocated').rename_column('full_time_', 'full_time').coalesce('certification', 'certification_1', new_column_name='certification')
+    df_clean_3 = (
+        df.clean_names()
+        .remove_empty()
+        .rename_column("%_allocated", "percent_allocated")
+        .rename_column("full_time_", "full_time")
+        .coalesce("certification", "certification_1", new_column_name="certification")
+    )
     df_clean_3
     return
 
@@ -178,7 +190,16 @@ def _(mo):
 
 @app.cell
 def _(df):
-    df_clean_4 = df.clean_names().remove_empty().rename_column('%_allocated', 'percent_allocated').rename_column('full_time_', 'full_time').coalesce('certification', 'certification_1', target_column_name='certification').convert_excel_date('hire_date')
+    df_clean_4 = (
+        df.clean_names()
+        .remove_empty()
+        .rename_column("%_allocated", "percent_allocated")
+        .rename_column("full_time_", "full_time")
+        .coalesce(
+            "certification", "certification_1", target_column_name="certification"
+        )
+        .convert_excel_date("hire_date")
+    )
     df_clean_4
     return
 
@@ -194,6 +215,7 @@ def _(mo):
 @app.cell
 def _():
     import marimo as mo
+
     return (mo,)
 
 

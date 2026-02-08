@@ -16,6 +16,7 @@ def _(mo):
 def _():
     import numpy as np
     import pandas as pd
+
     return np, pd
 
 
@@ -57,20 +58,21 @@ def _(mo):
 
 @app.cell
 def _(np, pd):
-    df_1 = pd.DataFrame({'s1': [np.nan, np.nan, 6, 9, 9], 's2': [np.nan, 8, 7, 9, 9]})
+    df_1 = pd.DataFrame({"s1": [np.nan, np.nan, 6, 9, 9], "s2": [np.nan, 8, 7, 9, 9]})
     df_1
     return (df_1,)
 
 
 @app.cell
 def _(df_1):
-    df_1.coalesce('s1', 's2', target_column_name='s3', default_value=0)
+    df_1.coalesce("s1", "s2", target_column_name="s3", default_value=0)
     return
 
 
 @app.cell
 def _():
     import marimo as mo
+
     return (mo,)
 
 

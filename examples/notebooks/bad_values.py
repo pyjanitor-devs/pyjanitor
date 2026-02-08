@@ -22,6 +22,7 @@ def _(mo):
 def _():
     import numpy as np
     import pandas as pd
+
     return np, pd
 
 
@@ -161,8 +162,10 @@ def _(np, wind):
             (wind["p_year"] < 1887) | (wind["p_year"] > 2018), "p_year", np.nan
         )
         .update_where((wind["t_hh"] <= 0) | (wind["t_hh"] >= 1000), "t_hh", np.nan)
-        .update_where((wind["xlong"] < -161.76) | (wind["xlong"] > -68.01), "xlong", np.nan)
-    );
+        .update_where(
+            (wind["xlong"] < -161.76) | (wind["xlong"] > -68.01), "xlong", np.nan
+        )
+    )
     return
 
 
@@ -183,6 +186,7 @@ def _(wind):
 @app.cell
 def _():
     import marimo as mo
+
     return (mo,)
 
 

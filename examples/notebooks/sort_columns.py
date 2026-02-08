@@ -16,6 +16,7 @@ def _(mo):
 def _():
     import pandas as pd
     from numpy import nan
+
     return nan, pd
 
 
@@ -52,6 +53,7 @@ def _(df):
 @app.cell
 def _():
     import marimo as mo
+
     return (mo,)
 
 

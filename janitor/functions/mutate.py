@@ -26,6 +26,8 @@ def ungroup(
 
     !!! info "New in version 0.32.0"
 
+    !!! warning "This function is deprecated. Use `jn.get_columns` instead."
+
     Ungroups a GroupBy object into a DataFrame.
 
     Examples:
@@ -83,6 +85,8 @@ def mutate(
     """
 
     !!! info "New in version 0.31.0"
+
+    !!! warning "This function is deprecated. Use `pd.DataFrame.assign` instead."
 
     !!!note
 

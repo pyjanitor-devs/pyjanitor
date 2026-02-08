@@ -84,9 +84,9 @@ def mutate(
 ) -> pd.DataFrame | DataFrameGroupBy:
     """
 
-    !!! info "New in version 0.31.0"
-
     !!!warning "This function is deprecated. Use `pd.DataFrame.assign` instead."
+    
+    !!! info "New in version 0.31.0"
 
     !!!note
 

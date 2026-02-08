@@ -24,9 +24,9 @@ def ungroup(
 ) -> pd.DataFrame:
     """
 
-    !!! info "New in version 0.32.0"
-
     !!!warning "This function is deprecated. Use `jn.get_columns` instead."
+    
+    !!! info "New in version 0.32.0"
 
     Ungroups a GroupBy object into a DataFrame.
 
@@ -85,7 +85,7 @@ def mutate(
     """
 
     !!!warning "This function is deprecated. Use `pd.DataFrame.assign` instead."
-    
+
     !!! info "New in version 0.31.0"
 
     !!!note

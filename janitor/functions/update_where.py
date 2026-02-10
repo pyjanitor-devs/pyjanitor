@@ -5,6 +5,8 @@ from typing import Any, Hashable
 import pandas as pd
 import pandas_flavor as pf
 from pandas.api.types import is_bool_dtype
+from pandas.core.col import Expression
+from pandas.core.common import apply_if_callable
 
 from janitor.utils import deprecated_alias
 
@@ -76,7 +78,8 @@ def update_where(
     # use query mode if a string expression is passed
     if isinstance(conditions, str):
         conditions = df.eval(conditions)
-
+    elif isinstance(conditions, Expression):
+        conditions = apply_if_callable(maybe_callable=conditions, obj=df)
     if not is_bool_dtype(conditions):
         raise ValueError(
             """

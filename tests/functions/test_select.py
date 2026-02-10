@@ -151,3 +151,31 @@ def test_select_rows_and_columns(dataframe):
     )
     expected = dataframe.loc[["bar", "baz", "qux"], ["col1"]]
     assert_frame_equal(actual, expected)
+
+
+def test_select_rows_and_columns_expr(dataframe):
+    """Test output for both rows and columns"""
+    actual = dataframe.select(
+        index=~(pd.col("col1") == 2),
+        columns=DropLabel(slice("col2", None)),
+    )
+    expected = dataframe.loc[~(pd.col("col1") == 2), ["col1"]]
+    assert_frame_equal(actual, expected)
+
+
+def test_expr_index_error(dataframe):
+    """Raise if boolean from expression has wrong length"""
+    with pytest.raises(
+        IndexError, match="The boolean array output from the Expression.+"
+    ):
+        dataframe.select(columns=pd.col("col1") == 2)
+
+
+def test_expr_boolean_error(dataframe):
+    """Raise if expression does not evaluate to a boolean"""
+    with pytest.raises(
+        ValueError, match="The output of the Expression should be a 1-D boolean array."
+    ):
+        dataframe.select(
+            columns=pd.col("col1") * 2,
+        )

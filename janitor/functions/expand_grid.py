@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 import pandas_flavor as pf
 from pandas.api.types import is_scalar
+from pandas.core.col import Expression
 from pandas.core.common import apply_if_callable
 from pandas.core.dtypes.concat import concat_compat
 
@@ -385,7 +386,7 @@ def _build_pandas_objects_for_expand(df: pd.DataFrame, columns: tuple) -> list:
                 contents.append(arr)
         elif isinstance(column, (pd.Series, pd.Index, pd.DataFrame)):
             contents.append(column)
-        elif callable(column):
+        elif callable(column) or isinstance(column, Expression):
             arr = apply_if_callable(maybe_callable=column, obj=df)
             contents.append(arr)
         else:

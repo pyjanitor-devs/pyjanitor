@@ -17,7 +17,8 @@ from pandas.api.types import (
     is_list_like,
     is_scalar,
 )
-from pandas.core.common import is_bool_indexer
+from pandas.core.col import Expression
+from pandas.core.common import apply_if_callable, is_bool_indexer
 from pandas.core.groupby.generic import DataFrameGroupBy, SeriesGroupBy
 
 from janitor.functions.utils import _is_str_or_cat
@@ -748,6 +749,28 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
         return np.asanyarray(bools)
 
     return _select_callable(df, arg, axis)
+
+
+@_select_index.register(Expression)  # noqa: F811
+def _index_dispatch(arg, df, axis):  # noqa: F811
+    """
+    Base function for selection on a Pandas Index object.
+    Applies only to pandas Expression.
+
+    Returns an array.
+    """
+    bools = apply_if_callable(arg, df)
+    bools = np.asanyarray(bools)
+    if not is_bool_dtype(bools):
+        raise ValueError("The output of the Expression should be a 1-D boolean array.")
+    index = getattr(df, axis)
+    if len(bools) != len(index):
+        raise IndexError(
+            f"The boolean array output from the Expression {arg} "
+            f"has wrong length: "
+            f"{len(bools)} instead of {len(index)}"
+        )
+    return bools
 
 
 @_select_index.register(dict)  # noqa: F811

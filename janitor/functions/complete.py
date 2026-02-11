@@ -1,17 +1,22 @@
 from __future__ import annotations
 
+import warnings
 from typing import Any
 
 import pandas as pd
 import pandas_flavor as pf
 from pandas.api.types import is_scalar
+from pandas.core.groupby.generic import DataFrameGroupBy
 
-from janitor.utils import check, check_column
+from janitor.utils import check, check_column, find_stack_level
+
+warnings.simplefilter("always", DeprecationWarning)
 
 
+@pf.register_dataframe_groupby_method
 @pf.register_dataframe_method
 def complete(
-    df: pd.DataFrame,
+    df: pd.DataFrame | DataFrameGroupBy,
     *columns: Any,
     sort: bool = False,
     by: str | list = None,
@@ -45,6 +50,10 @@ def complete(
 
     User should ensure that the pandas object is unique and/or sorted
     - no checks are done to ensure uniqueness and/or sortedness.
+
+    !!! warning
+
+        The `by` argument is deprecated.
 
     If `by` is present, the DataFrame is *completed* per group.
     `by` should be a column name, or a list of column names.
@@ -192,8 +201,8 @@ def complete(
         ...     return pd.RangeIndex(
         ...         start=df.year.min(), stop=df.year.max() + 1, name="year"
         ...     )
-        >>> df.complete(
-        ...     new_year_values, by="state", sort=True
+        >>> df.groupby("state").complete(
+        ...     new_year_values, sort=True
         ... )  # doctest: +NORMALIZE_WHITESPACE
             state  year  value
         0     CA  2010    1.0
@@ -213,8 +222,15 @@ def complete(
         14    NY  2012    NaN
         15    NY  2013    5.0
 
+
+    !!! abstract "Version Changed"
+
+        - 0.32.20
+            - `by` deprecated.
+
+
     Args:
-        df: A pandas DataFrame.
+        df: A pandas DataFrame or DataFrameGroupBy object.
         *columns: This refers to the columns to be completed.
             It could be a column name,
             a list of column names,
@@ -232,6 +248,7 @@ def complete(
         sort: Sort DataFrame based on *columns.
         by: Label or list of labels to group by.
             The explicit missing rows are returned per group.
+            !!! warning "Deprecated in 0.32.20"
         fill_value: Scalar value to use instead of NaN
             for missing combinations. A dictionary, mapping columns names
             to a scalar value is also accepted.
@@ -250,7 +267,7 @@ def complete(
 
 
 def _computations_complete(
-    df: pd.DataFrame,
+    df: pd.DataFrame | DataFrameGroupBy,
     columns: list | tuple | dict | str,
     sort: bool,
     by: list | str,
@@ -274,14 +291,21 @@ def _computations_complete(
         for column_name, value in fill_value.items():
             if not is_scalar(value):
                 raise ValueError(f"The value for {column_name} should be a scalar.")
-
     uniques = df.expand(*columns, by=by, sort=sort)
-    if by is None:
+    if (by is None) and isinstance(df, pd.DataFrame):
         merge_columns = uniques.columns.tolist()
     else:
+        warnings.warn(
+            "The `by` argument is deprecated. "
+            "Call the `complete` function "
+            "on the grouped object instead.",
+            DeprecationWarning,
+            stacklevel=find_stack_level(),
+        )
         merge_columns = [*uniques.index.names]
         merge_columns.extend(uniques.columns.tolist())
-
+    if not isinstance(df, pd.DataFrame):
+        df = df.obj
     columns = df.columns
     if (fill_value is not None) and not explicit:
         # to get a name that does not exist in the columns

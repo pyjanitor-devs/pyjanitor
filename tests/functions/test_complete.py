@@ -542,6 +542,32 @@ def test_complete_groupby():
     assert_frame_equal(result, expected)
 
 
+def test_complete_groupby2():
+    """Test output in the presence of a groupby."""
+    df = pd.DataFrame(
+        {
+            "state": ["CA", "CA", "HI", "HI", "HI", "NY", "NY"],
+            "year": [2010, 2013, 2010, 2012, 2016, 2009, 2013],
+            "value": [1, 3, 1, 2, 3, 2, 5],
+        }
+    )
+
+    result = df.groupby("state").complete(
+        {"year": lambda x: pd.Series(range(x.year.min(), x.year.max() + 1))},
+        sort=True,
+    )
+
+    expected = (
+        df.set_index("year")
+        .groupby("state")
+        .value.apply(lambda x: x.reindex(range(x.index.min(), x.index.max() + 1)))
+        .drop(columns="state")
+        .reset_index()
+    )
+
+    assert_frame_equal(result, expected)
+
+
 def test_explicit_scalar(fill_df):
     """Test output if fill_value is a scalar, and explicit is False."""
     result = fill_df.complete(
@@ -689,6 +715,58 @@ def test_groupby_tuple():
     df = pd.DataFrame.from_dict(data_dict)
     expected = (
         df.complete("Date", "Site", by="Grid Cell")
+        .sort_values(["Grid Cell", "Site", "Date"], ignore_index=True)
+        .loc[:, ["Grid Cell", "Site", "Date", "Value"]]
+    )
+
+    # https://stackoverflow.com/a/77123963/7175713
+    data = [
+        {"Grid Cell": 1, "Site": "A", "Date": "1999-01-01", "Value": -2.45},
+        {"Grid Cell": 1, "Site": "A", "Date": "1999-02-01", "Value": -3.72},
+        {"Grid Cell": 1, "Site": "A", "Date": "1999-03-01", "Value": 1.34},
+        {"Grid Cell": 1, "Site": "A", "Date": "1999-04-01", "Value": 4.56},
+        {"Grid Cell": 1, "Site": "B", "Date": "1999-01-01", "Value": 0.23},
+        {"Grid Cell": 1, "Site": "B", "Date": "1999-02-01", "Value": 3.26},
+        {"Grid Cell": 1, "Site": "B", "Date": "1999-03-01", "Value": 6.76},
+        {"Grid Cell": 1, "Site": "B", "Date": "1999-04-01", "Value": np.nan},
+        {"Grid Cell": 2, "Site": "C", "Date": "2000-01-01", "Value": -7.45},
+        {"Grid Cell": 2, "Site": "C", "Date": "2000-02-01", "Value": -6.43},
+        {"Grid Cell": 2, "Site": "C", "Date": "2000-03-01", "Value": -2.18},
+        {"Grid Cell": 2, "Site": "C", "Date": "2000-04-01", "Value": np.nan},
+        {"Grid Cell": 2, "Site": "D", "Date": "2000-01-01", "Value": -10.72},
+        {"Grid Cell": 2, "Site": "D", "Date": "2000-02-01", "Value": -8.97},
+        {"Grid Cell": 2, "Site": "D", "Date": "2000-03-01", "Value": -5.32},
+        {"Grid Cell": 2, "Site": "D", "Date": "2000-04-01", "Value": -1.73},
+    ]
+
+    actual = pd.DataFrame(data)
+
+    assert_frame_equal(expected, actual)
+
+
+def test_complete_groupby3():
+    """Test output for groupby on a tuple of columns."""
+    # https://stackoverflow.com/q/77123843/7175713
+    data_dict = [
+        {"Grid Cell": 1, "Site": "A", "Date": "1999-01-01", "Value": -2.45},
+        {"Grid Cell": 1, "Site": "A", "Date": "1999-02-01", "Value": -3.72},
+        {"Grid Cell": 1, "Site": "A", "Date": "1999-03-01", "Value": 1.34},
+        {"Grid Cell": 1, "Site": "A", "Date": "1999-04-01", "Value": 4.56},
+        {"Grid Cell": 1, "Site": "B", "Date": "1999-01-01", "Value": 0.23},
+        {"Grid Cell": 1, "Site": "B", "Date": "1999-02-01", "Value": 3.26},
+        {"Grid Cell": 1, "Site": "B", "Date": "1999-03-01", "Value": 6.76},
+        {"Grid Cell": 2, "Site": "C", "Date": "2000-01-01", "Value": -7.45},
+        {"Grid Cell": 2, "Site": "C", "Date": "2000-02-01", "Value": -6.43},
+        {"Grid Cell": 2, "Site": "C", "Date": "2000-03-01", "Value": -2.18},
+        {"Grid Cell": 2, "Site": "D", "Date": "2000-01-01", "Value": -10.72},
+        {"Grid Cell": 2, "Site": "D", "Date": "2000-02-01", "Value": -8.97},
+        {"Grid Cell": 2, "Site": "D", "Date": "2000-03-01", "Value": -5.32},
+        {"Grid Cell": 2, "Site": "D", "Date": "2000-04-01", "Value": -1.73},
+    ]
+    df = pd.DataFrame.from_dict(data_dict)
+    expected = (
+        df.groupby("Grid Cell")
+        .complete("Date", "Site")
         .sort_values(["Grid Cell", "Site", "Date"], ignore_index=True)
         .loc[:, ["Grid Cell", "Site", "Date", "Value"]]
     )

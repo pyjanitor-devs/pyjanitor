@@ -207,3 +207,112 @@ def test_expand_by():
         .reset_index()
     )
     assert_frame_equal(actual, expected)
+
+
+def test_expand_grouped():
+    """
+    Test `expand` with `DataFrameGroupBy`
+    """
+    # https://stackoverflow.com/a/44870793/7175713
+
+    output = [
+        {
+            "dealid": 1,
+            "acquirer": "FirmA",
+            "target": "FirmB",
+            "vendor": "FirmC",
+        },
+        {
+            "dealid": 1,
+            "acquirer": "FirmA",
+            "target": "FirmB",
+            "vendor": "FirmE",
+        },
+        {"dealid": 1, "acquirer": "FirmA", "target": None, "vendor": "FirmC"},
+        {"dealid": 1, "acquirer": "FirmA", "target": None, "vendor": "FirmE"},
+        {
+            "dealid": 1,
+            "acquirer": "FirmD",
+            "target": "FirmB",
+            "vendor": "FirmC",
+        },
+        {
+            "dealid": 1,
+            "acquirer": "FirmD",
+            "target": "FirmB",
+            "vendor": "FirmE",
+        },
+        {"dealid": 1, "acquirer": "FirmD", "target": None, "vendor": "FirmC"},
+        {"dealid": 1, "acquirer": "FirmD", "target": None, "vendor": "FirmE"},
+        {
+            "dealid": 2,
+            "acquirer": "FirmA",
+            "target": "FirmF",
+            "vendor": "FirmC",
+        },
+        {
+            "dealid": 2,
+            "acquirer": "FirmA",
+            "target": "FirmF",
+            "vendor": "FirmE",
+        },
+        {"dealid": 2, "acquirer": "FirmA", "target": None, "vendor": "FirmC"},
+        {"dealid": 2, "acquirer": "FirmA", "target": None, "vendor": "FirmE"},
+        {
+            "dealid": 2,
+            "acquirer": "FirmD",
+            "target": "FirmF",
+            "vendor": "FirmC",
+        },
+        {
+            "dealid": 2,
+            "acquirer": "FirmD",
+            "target": "FirmF",
+            "vendor": "FirmE",
+        },
+        {"dealid": 2, "acquirer": "FirmD", "target": None, "vendor": "FirmC"},
+        {"dealid": 2, "acquirer": "FirmD", "target": None, "vendor": "FirmE"},
+        {
+            "dealid": 2,
+            "acquirer": "FirmG",
+            "target": "FirmF",
+            "vendor": "FirmC",
+        },
+        {
+            "dealid": 2,
+            "acquirer": "FirmG",
+            "target": "FirmF",
+            "vendor": "FirmE",
+        },
+        {"dealid": 2, "acquirer": "FirmG", "target": None, "vendor": "FirmC"},
+        {"dealid": 2, "acquirer": "FirmG", "target": None, "vendor": "FirmE"},
+    ]
+    sorter = [*output[0].keys()]
+    expected = pd.DataFrame(output).sort_values(sorter)
+
+    input = [
+        {
+            "dealid": 1,
+            "acquirer": "FirmA",
+            "target": "FirmB",
+            "vendor": "FirmC",
+        },
+        {"dealid": 1, "acquirer": "FirmD", "target": None, "vendor": "FirmE"},
+        {"dealid": 2, "acquirer": "FirmA", "target": None, "vendor": "FirmC"},
+        {"dealid": 2, "acquirer": "FirmD", "target": None, "vendor": "FirmE"},
+        {
+            "dealid": 2,
+            "acquirer": "FirmG",
+            "target": "FirmF",
+            "vendor": "FirmE",
+        },
+    ]
+    df = pd.DataFrame(input)
+
+    actual = (
+        df.groupby("dealid")
+        .expand("acquirer", "target", "vendor")
+        .sort_values(sorter)
+        .reset_index()
+    )
+    assert_frame_equal(actual, expected)

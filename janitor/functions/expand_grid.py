@@ -305,7 +305,7 @@ def expand(
         16  orange  2010    M
         18  orange  2011    M
 
-        Expand within each group, using `by`:
+        Expand within each grouped object:
         >>> df.groupby("type").expand("year", "size")  # doctest: +NORMALIZE_WHITESPACE
                 year size
         type

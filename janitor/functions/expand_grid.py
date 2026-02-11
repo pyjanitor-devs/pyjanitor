@@ -38,7 +38,7 @@ def expand_grid(
     """
     Creates a DataFrame from a cartesian combination of all inputs.
 
-    !!!note
+    !!!warning
 
         This function will be deprecated in a 1.x release;
         use [`cartesian_product`][janitor.functions.expand_grid.cartesian_product]

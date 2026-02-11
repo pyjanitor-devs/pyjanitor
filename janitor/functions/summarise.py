@@ -26,6 +26,8 @@ def summarise(
 ) -> pd.DataFrame:
     """
 
+    !!!warning "This function is deprecated. Use `pd.DataFrame.agg` instead."
+
     !!! info "New in version 0.31.0"
 
     !!!note

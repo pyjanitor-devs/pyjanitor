@@ -318,6 +318,34 @@ def test_seq_column():
     assert_frame_equal(result, expected)
 
 
+def test_expression():
+    """Test `complete` output if an Expression is provided."""
+    df = pd.DataFrame(
+        {
+            "group": [2, 1, 1],
+            "item_id": [2, 1, 2],
+            "item_name": ["b", "a", "b"],
+            "value1": [2, 1, 3],
+            "value2": [5, 4, 6],
+        }
+    )
+
+    result = df.complete(
+        pd.col("group").drop_duplicates(), ["item_id", "item_name"], sort=True
+    )
+
+    columns = ["group", "item_id", "item_name"]
+    expected = (
+        df.set_index(columns)
+        .unstack("group")
+        .stack(future_stack=True)
+        .reset_index()
+        .reindex(columns=df.columns)
+        .sort_values(columns, ignore_index=True)
+    )
+    assert_frame_equal(result, expected)
+
+
 def test_pandas_dataframe():
     """Test `complete` output if a DataFrame is provided."""
     df = pd.DataFrame(

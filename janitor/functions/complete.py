@@ -226,7 +226,7 @@ def complete(
     !!! abstract "Version Changed"
 
         - 0.32.20
-            - `by` deprecated.
+            - `by` is deprecated.
 
 
     Args:

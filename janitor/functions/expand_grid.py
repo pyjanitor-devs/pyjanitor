@@ -324,7 +324,7 @@ def expand(
     !!! abstract "Version Changed"
 
         - 0.32.20
-            - `by` deprecated.
+            - `by` is deprecated.
 
     Args:
         df: A pandas DataFrame or GroupBy object.

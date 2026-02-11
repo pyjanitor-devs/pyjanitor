@@ -23,7 +23,14 @@ warnings.simplefilter("always", DeprecationWarning)
 def case_when(
     df: pd.DataFrame, *args: Any, default: Any = None, column_name: str
 ) -> pd.DataFrame:
-    """Create a column based on a condition or multiple conditions.
+    """
+
+    !!!warning
+
+        This function will be deprecated in a 1.x release;
+        use `pd.Series.case_when` instead.
+
+    Create a column based on a condition or multiple conditions.
 
     Similar to SQL and dplyr's case_when
     with inspiration from `pydatatable` if_else function.

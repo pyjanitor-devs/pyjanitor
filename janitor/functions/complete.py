@@ -53,7 +53,7 @@ def complete(
 
     !!! warning
 
-        The `by` argument is deprecated.
+        The `by` argument will be deprecated.
 
     If `by` is present, the DataFrame is *completed* per group.
     `by` should be a column name, or a list of column names.

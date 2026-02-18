@@ -251,14 +251,14 @@ def conditional_join(
             - Added `indicator` parameter.
         - 0.25.0
             - `col` class supported.
-            - Outer join supported. `sort_by_appearance` deprecated.
+            - Outer join supported. `sort_by_appearance` is deprecated.
             - Numba support for equi join
         - 0.27.0
             - Added support for timedelta dtype.
         - 0.28.0
-            - `col` class deprecated.
+            - `col` class is deprecated.
         - 0.32.9
-            - `use_numba` deprecated.
+            - `use_numba` is deprecated.
         - 0.32.10
             - Added `include_join_positions` parameter.
             - Added `join_algorithm` parameter.
@@ -1314,10 +1314,10 @@ def get_join_indices(
         - 0.29.0
             - Add support for ragged array indices.
         - 0.32.0
-            - ragged array indices deprecated.
+            - ragged array indices is deprecated.
             - return indices as a dictionary.
         - 0.32.9
-            - `use_numba` deprecated.
+            - `use_numba` is deprecated.
         - 0.32.10
             - Added experimental `return_building_blocks` parameter.
             - Add join_algorithm parameter.

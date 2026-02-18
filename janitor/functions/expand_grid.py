@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import warnings
 from collections import defaultdict
 from functools import singledispatch
 from typing import Optional, Union
@@ -13,9 +14,12 @@ from pandas.api.types import is_scalar
 from pandas.core.col import Expression
 from pandas.core.common import apply_if_callable
 from pandas.core.dtypes.concat import concat_compat
+from pandas.core.groupby.generic import DataFrameGroupBy
 
 from janitor.functions.utils import _computations_expand_grid
-from janitor.utils import check, check_column, refactored_function
+from janitor.utils import check, check_column, find_stack_level, refactored_function
+
+warnings.simplefilter("always", DeprecationWarning)
 
 
 @pf.register_dataframe_method
@@ -34,7 +38,7 @@ def expand_grid(
     """
     Creates a DataFrame from a cartesian combination of all inputs.
 
-    !!!note
+    !!!warning
 
         This function will be deprecated in a 1.x release;
         use [`cartesian_product`][janitor.functions.expand_grid.cartesian_product]
@@ -138,9 +142,10 @@ def expand_grid(
     return pd.DataFrame(others, copy=False)
 
 
+@pf.register_dataframe_groupby_method
 @pf.register_dataframe_method
 def expand(
-    df: pd.DataFrame,
+    df: pd.DataFrame | DataFrameGroupBy,
     *columns: tuple,
     sort: bool = False,
     by: str | list = None,
@@ -171,6 +176,10 @@ def expand(
     or a callable that evaluates to a
     1D array. The array should be unique;
     no check is done to verify this.
+
+    !!! warning
+
+        The `by` argument is deprecated.
 
     If `by` is present, the DataFrame is *expanded* per group.
     `by` should be a column name, or a list of column names.
@@ -280,8 +289,7 @@ def expand(
 
         Filter for missing observations:
         >>> combo = df.expand("type", "size", "year")
-        >>> anti_join = df.merge(combo, how="right", indicator=True)
-        >>> anti_join.query("_merge=='right_only'").drop(columns="_merge")
+        >>> df.merge(combo, how="right_anti")
               type  year size
         1    apple  2012   XS
         2    apple  2011   XS
@@ -297,8 +305,8 @@ def expand(
         16  orange  2010    M
         18  orange  2011    M
 
-        Expand within each group, using `by`:
-        >>> df.expand("year", "size", by="type")  # doctest: +NORMALIZE_WHITESPACE
+        Expand within each grouped object:
+        >>> df.groupby("type").expand("year", "size")  # doctest: +NORMALIZE_WHITESPACE
                 year size
         type
         apple   2010   XS
@@ -312,8 +320,13 @@ def expand(
         orange  2012    S
         orange  2012    M
 
+    !!! abstract "Version Changed"
+
+        - 0.32.20
+            - `by` is deprecated.
+
     Args:
-        df: A pandas DataFrame.
+        df: A pandas DataFrame or GroupBy object.
         columns: Specification of columns to expand.
             It could be column labels,
              a list/tuple of column labels,
@@ -332,13 +345,22 @@ def expand(
             no check is done to verify this.
         sort: If True, sort the DataFrame.
         by: Label or list of labels to group by.
+            !!! warning "Deprecated in 0.32.20"
 
     Returns:
         A pandas DataFrame.
     """  # noqa: E501
+    if isinstance(df, DataFrameGroupBy):
+        return _expand_groupby(grouped=df, columns=columns, sort=sort)
     if by is None:
         contents = _build_pandas_objects_for_expand(df=df, columns=columns)
         return cartesian_product(*contents, sort=sort)
+    warnings.warn(
+        "The `by` argument is deprecated. Call the `expand` function "
+        "on the grouped object instead.",
+        DeprecationWarning,
+        stacklevel=find_stack_level(),
+    )
     if not is_scalar(by) and not isinstance(by, list):
         raise TypeError(
             "The argument to the by parameter "
@@ -347,6 +369,11 @@ def expand(
         )
     check_column(df, column_names=by, present=True)
     grouped = df.groupby(by=by, sort=False, dropna=False, observed=True)
+    return _expand_groupby(grouped=grouped, columns=columns, sort=sort)
+
+
+def _expand_groupby(grouped: DataFrameGroupBy, columns: tuple, sort: bool):
+    """Compute expand on a grouped object"""
     index = grouped._grouper.result_index
     dictionary = defaultdict(list)
     lengths = []

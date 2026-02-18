@@ -118,7 +118,14 @@ def filter_on(
     criteria: str,
     complement: bool = False,
 ) -> pd.DataFrame:
-    """Return a dataframe filtered on a particular criteria.
+    """
+
+    !!!warning
+
+        This function will be deprecated in a 1.x release;
+        use `pd.DataFrame.query` instead.
+
+    Return a dataframe filtered on a particular criteria.
 
     This method does not mutate the original DataFrame.
 
@@ -313,7 +320,14 @@ def filter_column_isin(
     iterable: Iterable,
     complement: bool = False,
 ) -> pd.DataFrame:
-    """Filter a dataframe for values in a column that exist in the given iterable.
+    """
+
+    !!!warning
+
+        This function will be deprecated in a 1.x release;
+        use `pd.DataFrame.query` or `pd.DataFrame.isin` instead.
+
+    Filter a dataframe for values in a column that exist in the given iterable.
 
     This method does not mutate the original DataFrame.
 

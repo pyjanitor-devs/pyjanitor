@@ -1890,7 +1890,7 @@ def _remove_nulls_from_df(
     """Remove nulls from the dataframe"""
     if nulls is None:
         return df
-    df = df.iloc[~nulls]
+    df = df.loc[~nulls]
     if ignore_index:
         df.index = range(len(df))
     return df

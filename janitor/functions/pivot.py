@@ -575,7 +575,7 @@ def _data_checks_pivot_longer(
     """
     # checks here are only on the columns
     # Use copy() to preserve MultiIndex structure
-    df = df.copy()
+    df = df.copy(deep=False)
 
     # Check MultiIndex with names_sep/names_pattern BEFORE any column selection
     # This must happen before column_level processing to catch the error early
@@ -947,7 +947,6 @@ def _computations_pivot_longer(
         sort_by_appearance,
         ignore_index,
     ) = checks
-
     if all((names_pattern is None, names_sep is None)):
         spec = df.columns
         others = spec.names

@@ -31,7 +31,7 @@ dependencies = [
     "natsort>=8.4.0,<9",
     "pandas-flavor>=0.8.1,<0.9",
     "multipledispatch",
-    "scipy", "janitor-rs @ file:///Users/sam/github/janitor-rs/target/wheels/janitor_rs-0.7.0-cp310-abi3-macosx_11_0_arm64.whl"]
+    "scipy", "janitor-rs>=0.6.1,<0.7"]
 
 [project.optional-dependencies]
 dev = [

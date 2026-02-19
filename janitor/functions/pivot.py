@@ -3,9 +3,7 @@ from __future__ import annotations
 import operator
 import re
 import warnings
-from collections import defaultdict
 from functools import reduce
-from itertools import zip_longest
 from typing import Any, Callable, Pattern
 
 import numpy as np
@@ -13,6 +11,7 @@ import pandas as pd
 import pandas_flavor as pf
 from pandas.api.types import is_extension_array_dtype
 from pandas.core.dtypes.concat import concat_compat
+from pandas.core.groupby.generic import DataFrameGroupBy
 
 from janitor.functions.select import (
     _index_converter,
@@ -519,7 +518,6 @@ def pivot_longer_spec(
         )
     if not spec[".name"].is_unique:
         raise ValueError("The labels in the `.name` column should be unique.")
-
     exclude = df.columns.intersection(spec.columns)
     if not exclude.empty:
         raise ValueError(
@@ -528,15 +526,12 @@ def pivot_longer_spec(
             "Kindly ensure the spec DataFrame's columns "
             "are not present in the source DataFrame."
         )
-
     check("dropna", dropna, [bool])
     check("sort_by_appearance", sort_by_appearance, [bool])
     check("ignore_index", ignore_index, [bool])
     check("df_columns_is_unique", df_columns_is_unique, [bool])
-
     index = df.columns.difference(spec[".name"], sort=False)
     index = {name: df[name]._values for name in index}
-
     df = df.loc[:, spec[".name"]]
     if not df_columns_is_unique:
         spec = pd.DataFrame({".name": df.columns}).merge(spec, on=".name", how="inner")
@@ -1057,7 +1052,7 @@ def _pivot_longer_values_to_sequence(
     values = values[booleans]
     columns = columns[booleans]
     # the aim is to ensure that values_to and names_to
-    # ultimately have the same number of entries
+    # are properly paired
     # let's take an example from SO
     # https://stackoverflow.com/q/51519101/7175713
     # In [6]: multiple_values_to
@@ -1082,7 +1077,7 @@ def _pivot_longer_values_to_sequence(
     # ounces->drink->[gin, vodka]
     # there are only two columns for ounces, drink
     # compared to three columns for pounds, fruit
-    # we need to get ounces,drink to have three entries
+    # we need to properly pair these entries
     # in the final spec DataFrame
     # to match pounds, fruit
     # that is what the code below covers
@@ -1098,41 +1093,22 @@ def _pivot_longer_values_to_sequence(
     # 2  Pounds  Watermelon   None
     # 3  Ounces       Mango    Gin
     # 4  Ounces      Orange  Vodka
-    # 5  Ounces  Watermelon   None
-    data = defaultdict(list)
-    headers = defaultdict(int)
-    for value, col, cols in zip(values, columns, df.columns):
-        data[col].append(cols)
-        headers[value] += 1
-    keys = list(headers.keys())
-    max_size = max(headers.values())
-    headers = np.repeat(keys, max_size)
-    keys = data.keys()
-    data = data.values()
-    data = zip_longest(*data)
-    data = zip(*data)
-    data = map(np.array, data)
-    data = dict(zip(keys, data))
-    length = len(keys)
-    shape = (max_size, length)
-    indexer = np.empty(shape=shape, dtype=np.intp)
-    arr = np.arange(max_size).reshape((max_size, 1))
-    indexer[:] = arr
-    indexer = indexer.ravel(order="F")
-    spec = {".value": headers}
-    for key, value in data.items():
-        value = value[indexer]
-        spec[key] = value
-    spec = pd.DataFrame(spec, copy=False)
-    others = list(keys)
+
+    spec = pd.DataFrame({".value": values, "others": columns, ".name": df.columns})
+    grouped = spec.groupby("others", sort=False, observed=True, dropna=False)
+    spec.index = grouped.cumcount()
+    selection = grouped[".name"]
+    selection = [arr.rename(key) for key, arr in selection]
+    selection = pd.concat(selection, axis=1, sort=False)
+    spec = spec.join(selection, how="left").loc[:, [".value", *names_to]]
     if names_transform is not None:
         spec = _names_transform(
-            spec=spec, others=others, names_transform=names_transform
+            spec=spec, others=[*names_to], names_transform=names_transform
         )
     return _pivot_longer_dot_value(
         df=df,
         index=index,
-        others=others,
+        others=[*names_to],
         sort_by_appearance=sort_by_appearance,
         ignore_index=ignore_index,
         dropna=dropna,
@@ -1302,60 +1278,25 @@ def _pivot_longer_dot_value(
     Returns a DataFrame.
     """
     if not others:
-        contents, reps = _stack_dot_value_only(
+        return _stack_dot_value_only(
             spec=spec,
-            df=df,
-            sort_by_appearance=sort_by_appearance,
-        )
-        # When others is empty, spec has columns like ['dim', '.value']
-        # We need to pass the non-'.value' columns to _stack_non_dot_value
-        # so it can create the "dim" column in the correct order
-        spec_for_non_dot = None
-        if spec is not None and len(spec.columns) > 1:
-            # Extract columns that are not '.value'
-            non_value_cols = [col for col in spec.columns if col != ".value"]
-            if non_value_cols:
-                spec_for_non_dot = {col: spec[col]._values for col in non_value_cols}
-        index, _, df_index = _stack_non_dot_value(
-            spec=spec_for_non_dot,
-            reps=reps,
             df=df,
             index=index,
             ignore_index=ignore_index,
             sort_by_appearance=sort_by_appearance,
+            dropna=dropna,
         )
-        df = {**index, **contents}
-        df = pd.DataFrame(data=df, index=df_index, copy=False)
-        if dropna:
-            df = _pivot_longer_dropna(
-                df=df, contents=contents, ignore_index=ignore_index
-            )
-        return df
-
     if spec.duplicated().any(axis=None):
         raise ValueError("spec contains duplicate entries, cannot reshape.")
-
-    spec, contents = _stack_dot_value(
+    return _stack_dot_value(
         spec=spec,
         others=others,
-        df=df,
-        sort_by_appearance=sort_by_appearance,
-    )
-
-    index, spec, df_index = _stack_non_dot_value(
-        spec=spec,
-        reps=len(spec),
         df=df,
         index=index,
         ignore_index=ignore_index,
         sort_by_appearance=sort_by_appearance,
+        dropna=dropna,
     )
-
-    df = {**index, **spec, **contents}
-    df = pd.DataFrame(data=df, index=df_index, copy=False)
-    if dropna:
-        df = _pivot_longer_dropna(df=df, contents=contents, ignore_index=ignore_index)
-    return df
 
 
 def _dot_value_extra_checks(
@@ -1378,20 +1319,18 @@ def _dot_value_extra_checks(
         spec[".value"] = arr
     else:
         spec.columns = names_to
-
-    dot_value = spec[".value"]
-    exclude = {
-        word for word in dot_value.array if (word in names_to) and (word != ".value")
-    }
-    if exclude:
-        raise ValueError(
-            f"Labels {(*exclude,)} in names_to already exist "
-            "in the new dataframe's columns. "
-            "Kindly provide unique label(s)."
-        )
-
+    dot_value = spec[".value"].array
+    checks = set(names_to) - {".value"}
+    for word in checks:
+        boolean = dot_value == word
+        if boolean.any():
+            raise ValueError(
+                f"Label '{word}' in names_to already exists "
+                "in the new dataframe's columns. "
+                "Kindly provide unique label(s)."
+            )
     if index:
-        exclude = set(index).intersection(dot_value.array)
+        exclude = set(index).intersection(dot_value)
         if exclude:
             raise ValueError(
                 f"Labels {(*exclude,)} already exist "
@@ -1405,17 +1344,32 @@ def _stack_dot_value_only(
     spec: pd.DataFrame,
     df: pd.DataFrame,
     sort_by_appearance: bool,
+    index: dict,
+    ignore_index: bool,
+    dropna: bool,
 ) -> tuple:
     """
     Flip the .value into long form.
     Applicable when only .value column exists in spec
     """
-    if spec.nunique().item() == 1:
+    grouped = spec.groupby(".value", sort=False, observed=True, dropna=False)
+    ngroups = grouped.ngroups
+    if ngroups == 1:
         return _stack_dot_value_only_single_label(
-            spec=spec, df=df, sort_by_appearance=sort_by_appearance
+            spec=spec,
+            df=df,
+            sort_by_appearance=sort_by_appearance,
+            index=index,
+            ignore_index=ignore_index,
+            dropna=dropna,
         )
     return _stack_dot_value_only_multiple_labels(
-        spec=spec, df=df, sort_by_appearance=sort_by_appearance
+        grouped=grouped,
+        index=index,
+        ignore_index=ignore_index,
+        df=df,
+        sort_by_appearance=sort_by_appearance,
+        dropna=dropna,
     )
 
 
@@ -1423,6 +1377,9 @@ def _stack_dot_value_only_single_label(
     spec: pd.DataFrame,
     df: pd.DataFrame,
     sort_by_appearance: bool,
+    index: dict,
+    ignore_index: bool,
+    dropna: bool,
 ) -> tuple:
     """
     Flip the .value into long form.
@@ -1430,29 +1387,47 @@ def _stack_dot_value_only_single_label(
     and .value.unique==1
     """
     reps = len(spec)
-    if df.dtypes.map(is_extension_array_dtype).any(axis=None):
-        contents = [arr._values for _, arr in df.items()]
-        contents = concat_compat(contents)
-        if sort_by_appearance:
-            length = contents.size
-            indexer = np.arange(length)
-            indexer = indexer.reshape((reps, -1))
-            indexer = indexer.ravel(order="F")
-            contents = contents[indexer]
-    else:
-        if sort_by_appearance:
-            contents = df._values.ravel()
-        else:
-            contents = df._values.ravel(order="F")
+    any_extension_array = df.dtypes.map(is_extension_array_dtype).any(axis=None)
+    indexer = _build_indexer_appearance_contents(
+        length=len(df),
+        reps=reps,
+        sort_by_appearance=sort_by_appearance,
+    )
+    contents = _build_content(
+        any_extension_array=any_extension_array,
+        frame=df,
+        indexer=indexer,
+        sort_by_appearance=sort_by_appearance,
+    )
     key = spec[".value"]._values[0]
     contents = {key: contents}
-    return contents, reps
+    nulls = _build_nulls(contents=contents, dropna=dropna)
+    index = _build_index(
+        index=index,
+        len_df=len(df),
+        reps=reps,
+        sort_by_appearance=sort_by_appearance,
+    )
+    df_index = _build_df_index(
+        index=df.index,
+        len_df=len(df),
+        reps=reps,
+        sort_by_appearance=sort_by_appearance,
+        ignore_index=ignore_index,
+    )
+    contents = {**index, **contents}
+    df = _build_df(contents=contents, df_index=df_index)
+    df = _remove_nulls_from_df(df=df, nulls=nulls, ignore_index=ignore_index)
+    return df
 
 
 def _stack_dot_value_only_multiple_labels(
-    spec: pd.DataFrame,
+    grouped: DataFrameGroupBy,
     df: pd.DataFrame,
     sort_by_appearance: bool,
+    index: dict,
+    ignore_index: bool,
+    dropna: bool,
 ) -> tuple:
     """
     Flip the .value into long form.
@@ -1500,36 +1475,51 @@ def _stack_dot_value_only_multiple_labels(
     # then x2 will pair with y1 and x1 will pair with y2
     # this is because `others` does not exist here -
     # `others` would have acted as a guard/combiner
-    grouped = spec.groupby(".value", sort=False, dropna=False, observed=True)
-    grouping = grouped.size()
-    reps = grouping.max()
-    missing = grouping[grouping != reps]
-    if not missing.empty:
-        null_array = np.full(shape=len(df), fill_value=np.nan)
+    counts = grouped.size()
+    reps = counts.max()
+    headers = grouped.ngroup()._values
+    if reps != counts.min():
+        orig_index = [headers, grouped.cumcount()._values]
+        orig_index = pd.MultiIndex.from_arrays(orig_index)
+        df.columns = orig_index
+        _headers, _columns = orig_index.levels
+        new_index = pd.MultiIndex.from_product([_headers, _columns])
+        df = df.reindex(columns=new_index)
+        df.columns = df.columns.get_level_values(0)
     else:
-        null_array = None
-    mapp = defaultdict(list)
-    df.columns = range(df.columns.size)
-    for header, pos in zip(spec[".value"], df.columns):
-        mapp[header].append(pos)
-    zipped = zip_longest(*mapp.values())
-    zipped = zip(*zipped)
-    zipped = zip(mapp, zipped)
-    contents = defaultdict(list)
-    for label, positions in zipped:
-        for position in positions:
-            arr = df.get(position, null_array)
-            if isinstance(arr, pd.Series):
-                arr = arr._values
-            contents[label].append(arr)
-    contents = {label: concat_compat(arr) for label, arr in contents.items()}
-    if sort_by_appearance:
-        length = contents[grouping.index[0]].size
-        indexer = np.arange(length)
-        indexer = indexer.reshape((reps, -1))
-        indexer = indexer.ravel(order="F")
-        contents = {label: arr[indexer] for label, arr in contents.items()}
-    return contents, reps
+        df.columns = headers
+    uniqs = counts.index
+    any_extension_array = df.dtypes.map(is_extension_array_dtype).any(axis=None).item()
+    indexer = _build_indexer_appearance_contents(
+        length=len(df),
+        reps=reps,
+        sort_by_appearance=sort_by_appearance,
+    )
+    contents = _build_contents(
+        labels=uniqs,
+        df=df,
+        any_extension_array=any_extension_array,
+        indexer=indexer,
+        sort_by_appearance=sort_by_appearance,
+    )
+    nulls = _build_nulls(contents=contents, dropna=dropna)
+    index = _build_index(
+        index=index,
+        len_df=len(df),
+        reps=reps,
+        sort_by_appearance=sort_by_appearance,
+    )
+    df_index = _build_df_index(
+        index=df.index,
+        len_df=len(df),
+        reps=reps,
+        sort_by_appearance=sort_by_appearance,
+        ignore_index=ignore_index,
+    )
+    contents = {**index, **contents}
+    df = _build_df(contents=contents, df_index=df_index)
+    df = _remove_nulls_from_df(df=df, nulls=nulls, ignore_index=ignore_index)
+    return df
 
 
 def _stack_dot_value(
@@ -1537,16 +1527,33 @@ def _stack_dot_value(
     others: list,
     df: pd.DataFrame,
     sort_by_appearance: bool,
+    index: dict,
+    ignore_index: bool,
+    dropna: bool,
 ) -> dict:
     """
     Flip the .value into long form.
     """
-    if spec[".value"].nunique() == 1:
+    grouped = spec.groupby(".value", sort=False, observed=True, dropna=False)
+    if grouped.ngroups == 1:
         return _stack_dot_value_single_label(
-            spec=spec, sort_by_appearance=sort_by_appearance, df=df
+            spec=spec.drop(columns=".value"),
+            index=index,
+            ignore_index=ignore_index,
+            sort_by_appearance=sort_by_appearance,
+            df=df,
+            key=spec[".value"]._values[0],
+            dropna=dropna,
         )
     return _stack_dot_value_multiple_labels(
-        spec=spec, df=df, others=others, sort_by_appearance=sort_by_appearance
+        spec=spec,
+        grouped=grouped,
+        df=df,
+        others=others,
+        sort_by_appearance=sort_by_appearance,
+        index=index,
+        ignore_index=ignore_index,
+        dropna=dropna,
     )
 
 
@@ -1554,37 +1561,62 @@ def _stack_dot_value_single_label(
     spec: pd.DataFrame,
     df: pd.DataFrame,
     sort_by_appearance: bool,
+    index: dict,
+    ignore_index: bool,
+    key: Any,
+    dropna: bool,
 ) -> dict:
     """
     Flip the .value into long form.
     Applicable where .value.nunique == 1
     """
-    _value = spec.pop(".value")
-    key = _value._values[0]
     reps = len(spec)
-    if df.dtypes.map(is_extension_array_dtype).any(axis=None):
-        contents = [arr._values for _, arr in df.items()]
-        contents = concat_compat(contents)
-        if sort_by_appearance:
-            length = contents.size
-            indexer = np.arange(length)
-            indexer = indexer.reshape((reps, -1))
-            indexer = indexer.ravel(order="F")
-            contents = contents[indexer]
-    else:
-        if sort_by_appearance:
-            contents = df._values.ravel()
-        else:
-            contents = df._values.ravel(order="F")
+    any_extension_array = df.dtypes.map(is_extension_array_dtype).any(axis=None)
+    indexer = _build_indexer_appearance_contents(
+        length=len(df),
+        reps=reps,
+        sort_by_appearance=sort_by_appearance,
+    )
+    contents = _build_content(
+        any_extension_array=any_extension_array,
+        frame=df,
+        indexer=indexer,
+        sort_by_appearance=sort_by_appearance,
+    )
     contents = {key: contents}
-    return spec, contents
+    nulls = _build_nulls(contents=contents, dropna=dropna)
+    index = _build_index(
+        index=index,
+        len_df=len(df),
+        reps=reps,
+        sort_by_appearance=sort_by_appearance,
+    )
+    df_index = _build_df_index(
+        index=df.index,
+        len_df=len(df),
+        reps=reps,
+        sort_by_appearance=sort_by_appearance,
+        ignore_index=ignore_index,
+    )
+    indexer = _build_indexer_for_spec(
+        len_df=len(df), reps=reps, sort_by_appearance=sort_by_appearance
+    )
+    spec = {key: arr._values[indexer] for key, arr in spec.items()}
+    contents = {**index, **spec, **contents}
+    df = _build_df(contents=contents, df_index=df_index)
+    df = _remove_nulls_from_df(df=df, nulls=nulls, ignore_index=ignore_index)
+    return df
 
 
 def _stack_dot_value_multiple_labels(
     spec: pd.DataFrame,
+    grouped: DataFrameGroupBy,
     others: list,
     df: pd.DataFrame,
     sort_by_appearance: bool,
+    index: dict,
+    ignore_index: bool,
+    dropna: bool,
 ) -> dict:
     """
     Flip the .value into long form.
@@ -1668,136 +1700,195 @@ def _stack_dot_value_multiple_labels(
     # since pandas supports duplicate columns
     # also the combination of .value and others should be unique
     # identification per label in other should be clear/distinct
-    _value = spec.pop(".value")
+    positions = grouped.ngroup()
+    _value = grouped._grouper.result_index
     grouped = spec.groupby(others, sort=False, observed=True, dropna=False)
-    mapp = defaultdict(dict)
-    df.columns = range(df.columns.size)
-    for pos, header, _pos in zip(grouped.ngroup(), _value, df.columns):
-        dictionary = {header: _pos}
-        mapp[pos].update(dictionary)
-    uniqs = _value.unique()
-    _uniqs = set(uniqs)
-    missing = (_uniqs.difference(header) for _, header in mapp.items())
-    if any(missing):
-        null_array = np.full(shape=len(df), fill_value=np.nan)
-    else:
-        null_array = None
-    mapping = defaultdict(list)
-    for _, dictionary in mapp.items():
-        for label in uniqs:
-            column_position = dictionary.get(label)
-            mapping[label].append(column_position)
-    contents = defaultdict(list)
-    for label, list_of_positions in mapping.items():
-        for position in list_of_positions:
-            arr = df.get(position, null_array)
-            if isinstance(arr, pd.Series):
-                arr = arr._values
-            contents[label].append(arr)
-    contents = {label: concat_compat(arr) for label, arr in contents.items()}
-    if sort_by_appearance:
-        length = contents[uniqs[0]].size
-        indexer = np.arange(length)
-        indexer = indexer.reshape((grouped.ngroups, -1))
-        indexer = indexer.ravel(order="F")
-        contents = {label: arr[indexer] for label, arr in contents.items()}
-    return spec.drop_duplicates(), contents
-
-
-def _stack_non_dot_value(
-    spec, df, reps, index, ignore_index, sort_by_appearance
-) -> tuple:
-    """
-    Flip components that are not .value
-    into long form.
-    """
-    if sort_by_appearance:
-        return _stack_non_dot_value_sort(
-            spec=spec, df=df, reps=reps, index=index, ignore_index=ignore_index
-        )
-
-    return _stack_non_dot_value_do_not_sort(
-        spec=spec, df=df, reps=reps, index=index, ignore_index=ignore_index
+    orig_index = [positions, grouped.ngroup()]
+    orig_index = pd.MultiIndex.from_arrays(orig_index)
+    df.columns = orig_index
+    _headers, _others = orig_index.levels
+    reps = _others.size
+    max_count = _headers.size * reps
+    # check if a reindex is needed -
+    # all entries in others must be accounted for per group/header
+    if orig_index.size != max_count:
+        reindexer = pd.MultiIndex.from_product([_headers, _others])
+        df = df.reindex(columns=reindexer)
+    # ensure proper positions before final dataframe is created
+    if not df.columns.is_monotonic_increasing:
+        df = df.sort_index(axis=1)
+    contents = {}
+    any_extension_array = df.dtypes.map(is_extension_array_dtype).any(axis=None).item()
+    indexer = _build_indexer_appearance_contents(
+        length=len(df),
+        reps=reps,
+        sort_by_appearance=sort_by_appearance,
     )
+    contents = _build_contents(
+        labels=_value,
+        df=df,
+        any_extension_array=any_extension_array,
+        sort_by_appearance=sort_by_appearance,
+        indexer=indexer,
+    )
+    nulls = _build_nulls(contents=contents, dropna=dropna)
+    index = _build_index(
+        index=index,
+        len_df=len(df),
+        reps=reps,
+        sort_by_appearance=sort_by_appearance,
+    )
+    df_index = _build_df_index(
+        index=df.index,
+        len_df=len(df),
+        reps=reps,
+        sort_by_appearance=sort_by_appearance,
+        ignore_index=ignore_index,
+    )
+    indexer = _build_indexer_for_spec(
+        len_df=len(df), reps=reps, sort_by_appearance=sort_by_appearance
+    )
+    spec = grouped._grouper.result_index
+    spec = {key: spec.get_level_values(key) for key in spec.names}
+    spec = {key: arr._values for key, arr in spec.items()}
+    spec = {key: arr[indexer] for key, arr in spec.items()}
+    contents = {**index, **spec, **contents}
+    df = _build_df(contents=contents, df_index=df_index)
+    df = _remove_nulls_from_df(df=df, nulls=nulls, ignore_index=ignore_index)
+    return df
 
 
-def _stack_non_dot_value_sort(spec, df, reps, index, ignore_index) -> tuple:
-    """
-    Flip components that are not .value
-    into long form.
-    """
-    len_df = len(df)
-    # taking a long route (instead of np.repeat/np.tile)
-    # to get a bit more performance
-    # in some cases perf has been 3x faster
-    if spec is not None:
-        shape = (len_df, reps)
-        indexer = np.empty(shape=shape, dtype=np.intp)
-        arr = np.arange(reps).reshape((1, reps))
-        indexer[:] = arr
-        indexer = indexer.ravel()
-        spec = {label: arr._values for label, arr in spec.items()}
-        spec = {label: arr[indexer] for label, arr in spec.items()}
-
-    if index or not ignore_index:
-        shape = (len_df, reps)
-        indexer = np.empty(shape=shape, dtype=np.intp)
-        arr = np.arange(len_df).reshape((len_df, 1))
-        indexer[:] = arr
-        indexer = indexer.ravel()
-        if index:
-            index = {label: arr[indexer] for label, arr in index.items()}
-    if ignore_index:
-        length = len_df * reps
-        df_index = range(length)
+def _build_indexer_for_spec(
+    len_df: int, reps: int, sort_by_appearance: bool
+) -> np.ndarray:
+    """Build indexer for reordering arrays in spec"""
+    indexer = np.arange(reps)
+    if sort_by_appearance:
+        indexer = np.tile(indexer, len_df)
     else:
-        df_index = df.index[indexer]
-    return index, spec, df_index
+        indexer = indexer.repeat(len_df)
+    return indexer
 
 
-def _stack_non_dot_value_do_not_sort(spec, df, reps, index, ignore_index) -> tuple:
-    """
-    Flip components that are not .value
-    into long form.
-    """
-    len_df = len(df)
-    # taking a long route (instead of np.repeat/np.tile)
-    # to get a bit more performance
-    # in some cases perf has been 3x faster
-    if spec is not None:
-        shape = (reps, len_df)
-        indexer = np.empty(shape=shape, dtype=np.intp)
-        arr = np.arange(reps).reshape((reps, 1))
-        indexer[:] = arr
-        indexer = indexer.ravel()
-        spec = {label: arr._values for label, arr in spec.items()}
-        spec = {label: arr[indexer] for label, arr in spec.items()}
+def _build_indexer_appearance_contents(
+    length: int, reps: int, sort_by_appearance: bool
+) -> np.ndarray | None:
+    """Build indexer for reordering arrays in contents"""
+    if not sort_by_appearance:
+        return None
+    indexer = np.arange(length * reps)
+    indexer = indexer.reshape((reps, -1))
+    indexer = indexer.ravel(order="F")
+    return indexer
 
-    if index or not ignore_index:
-        shape = (reps, len_df)
-        indexer = np.empty(shape=shape, dtype=np.intp)
-        arr = np.arange(len_df).reshape((1, len_df))
-        indexer[:] = arr
-        indexer = indexer.ravel()
-        if index:
-            index = {label: arr[indexer] for label, arr in index.items()}
-    if ignore_index:
-        length = len_df * reps
-        df_index = range(length)
+
+def _build_contents(
+    labels: pd.array,
+    df: pd.DataFrame,
+    any_extension_array: bool,
+    indexer: np.ndarray | None,
+    sort_by_appearance: bool,
+) -> dict:
+    """Build contents dictionary"""
+    contents = {}
+    for number in range(labels.size):
+        frame = df[number]
+        frame = _build_content(
+            any_extension_array=any_extension_array,
+            frame=frame,
+            indexer=indexer,
+            sort_by_appearance=sort_by_appearance,
+        )
+        contents[labels[number]] = frame
+    return contents
+
+
+def _build_content(
+    any_extension_array: bool,
+    frame: pd.DataFrame,
+    indexer: np.ndarray | None,
+    sort_by_appearance: bool,
+) -> np.ndarray:
+    """Build content array"""
+    if any_extension_array:
+        frame = [arr._values for _, arr in frame.items()]
+        frame = concat_compat(frame)
+        if indexer is not None:
+            frame = frame[indexer]
+    elif sort_by_appearance:
+        frame = frame._values.ravel()
     else:
-        df_index = df.index[indexer]
-    return index, spec, df_index
+        frame = frame._values.ravel(order="F")
+    return frame
 
 
-def _pivot_longer_dropna(
-    df: pd.DataFrame, contents: dict, ignore_index: bool
-) -> pd.DataFrame:
-    """
-    Drop nulls from long form
-    """
+def _build_index(index: dict, len_df: int, reps: int, sort_by_appearance: bool) -> dict:
+    """Build index dictionary"""
+    if not index:
+        return index
+    index_ = {}
+    any_extension_array = (is_extension_array_dtype(arr) for _, arr in index.items())
+    any_extension_array = any(any_extension_array)
+    if any_extension_array and sort_by_appearance:
+        indexer = np.arange(len_df)
+        indexer = indexer.repeat(reps)
+    else:
+        indexer = None
+    for arr_name, arr in index.items():
+        if is_extension_array_dtype(arr) and sort_by_appearance:
+            arr = arr[indexer]
+        elif is_extension_array_dtype(arr):
+            arr = [arr] * reps
+            arr = concat_compat(arr)
+        elif sort_by_appearance:
+            arr = arr.repeat(reps)
+        else:
+            arr = np.tile(arr, reps)
+        index_[arr_name] = arr
+    return index_
+
+
+def _build_df_index(
+    index: pd.Index,
+    len_df: int,
+    reps: int,
+    sort_by_appearance: bool,
+    ignore_index: bool,
+) -> pd.Index:
+    """Rebuild the dataframe's index, if required"""
+    if ignore_index:
+        return None
+    indexer = np.arange(len_df)
+    if sort_by_appearance:
+        indexer = indexer.repeat(reps)
+    else:
+        indexer = np.tile(indexer, reps)
+    return index[indexer]
+
+
+def _build_nulls(contents: dict, dropna: bool) -> dict:
+    """Build nulls array"""
+    if not dropna:
+        return None
     nulls = [pd.isna(arr) for _, arr in contents.items()]
     nulls = np.logical_and.reduce(nulls)
     if not nulls.any():
+        return None
+    return nulls
+
+
+def _build_df(contents: dict, df_index: pd.Index | None) -> pd.DataFrame:
+    """Build the dataframe"""
+    if df_index is None:
+        return pd.DataFrame(data=contents, copy=False)
+    return pd.DataFrame(data=contents, index=df_index, copy=False)
+
+
+def _remove_nulls_from_df(
+    df: pd.DataFrame, nulls: np.ndarray, ignore_index: bool
+) -> pd.DataFrame:
+    """Remove nulls from the dataframe"""
+    if nulls is None:
         return df
     df = df.iloc[~nulls]
     if ignore_index:

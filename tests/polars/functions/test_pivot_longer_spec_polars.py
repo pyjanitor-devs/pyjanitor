@@ -1,5 +1,6 @@
 import polars as pl
 import pytest
+from polars.exceptions import ColumnNotFoundError, ComputeError, InvalidOperationError
 from polars.testing import assert_frame_equal
 
 from janitor.polars import pivot_longer_spec
@@ -34,8 +35,8 @@ def test_spec_is_a_dataframe(df_checks):
 def test_spec_columns_has_dot_name(df_checks):
     """Raise KeyError if '.name' not in spec's columns."""
     with pytest.raises(
-        KeyError,
-        match="Kindly ensure the spec DataFrame has a `.name` column.",
+        ColumnNotFoundError,
+        match='unable to find column ".name".+',
     ):
         df_checks.pipe(
             pivot_longer_spec,
@@ -46,8 +47,8 @@ def test_spec_columns_has_dot_name(df_checks):
 def test_spec_columns_has_dot_value(df_checks):
     """Raise KeyError if '.value' not in spec's columns."""
     with pytest.raises(
-        KeyError,
-        match="Kindly ensure the spec DataFrame has a `.value` column.",
+        ColumnNotFoundError,
+        match='unable to find column ".value".+',
     ):
         df_checks.pipe(
             pivot_longer_spec,
@@ -57,9 +58,7 @@ def test_spec_columns_has_dot_value(df_checks):
 
 def test_spec_columns_dot_name_unique(df_checks):
     """Raise ValueError if '.name' column is not unique."""
-    with pytest.raises(
-        ValueError, match="The labels in the `.name` column should be unique.+"
-    ):
+    with pytest.raises(ComputeError, match="join keys did not fulfill 1:1 validation"):
         df_checks.pipe(
             pivot_longer_spec,
             spec=spec.with_columns(pl.Series(".name", ["ht2", "ht2"])),
@@ -69,8 +68,8 @@ def test_spec_columns_dot_name_unique(df_checks):
 def test_spec_columns_index(df_checks):
     """Raise ValueError if the columns in spec already exist in the dataframe."""
     with pytest.raises(
-        ValueError,
-        match=r"Labels \('birth',\) in the spec dataframe already exist.+",
+        InvalidOperationError,
+        match=r"`explode` operation not supported for dtype `str`",
     ):
         df_checks.pipe(
             pivot_longer_spec,

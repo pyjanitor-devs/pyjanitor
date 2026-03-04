@@ -8,6 +8,7 @@ from .polars_flavor import register_dataframe_method, register_lazyframe_method
 
 try:
     import polars as pl
+    import polars.selectors as cs
     from polars._typing import ColumnNameOrSelector
 except ImportError:
     import_message(
@@ -43,7 +44,7 @@ def pivot_longer_spec(
     !!! info "New in version 0.28.0"
 
     Examples:
-        >>> import pandas as pd
+        >>> import polars as pl
         >>> from janitor.polars import pivot_longer_spec
         >>> df = pl.DataFrame(
         ...     {
@@ -113,8 +114,7 @@ def pivot_longer_spec(
             corresponding to columns pivoted from the wide format.
             Note that these additional columns should not already exist
             in the source DataFrame.
-            If there are additional columns, the combination of these columns
-            and the `.value` column must be unique.
+            The spec DataFrame should be unique.
 
     Raises:
         KeyError: If `.name` or `.value` is missing from the spec's columns.
@@ -124,55 +124,35 @@ def pivot_longer_spec(
         A polars DataFrame/LazyFrame.
     """
     check("spec", spec, [pl.DataFrame])
-    spec_columns = spec.collect_schema().names()
-    if ".name" not in spec_columns:
-        raise KeyError("Kindly ensure the spec DataFrame has a `.name` column.")
-    if ".value" not in spec_columns:
-        raise KeyError("Kindly ensure the spec DataFrame has a `.value` column.")
-    if spec.get_column(".name").is_duplicated().any():
-        raise ValueError("The labels in the `.name` column should be unique.")
-    df_columns = df.collect_schema().names()
-    exclude = set(df_columns).intersection(spec_columns)
-    if exclude:
-        raise ValueError(
-            f"Labels {(*exclude,)} in the spec dataframe already exist "
-            "as column labels in the source dataframe. "
-            "Kindly ensure the spec DataFrame's columns "
-            "are not present in the source DataFrame."
-        )
-
-    index = [label for label in df_columns if label not in spec.get_column(".name")]
-    others = [label for label in spec_columns if label not in {".name", ".value"}]
-    if others:
-        if (len(others) == 1) & (spec.get_column(others[0]).dtype == pl.String):
-            # shortcut that avoids the implode/explode approach - and is faster
-            # if the requirements are met
-            # inspired by https://github.com/pola-rs/polars/pull/18519#issue-2500860927
-            return _pivot_longer_dot_value_string(
-                df=df,
-                index=index,
-                spec=spec,
-                variable_name=others[0],
-            )
-        variable_name = "".join(df_columns + spec_columns)
-        variable_name = f"{variable_name}_"
-        dot_value_only = False
-        expression = pl.struct(others).alias(variable_name)
-        spec = spec.select(".name", ".value", expression)
-    else:
-        variable_name = "".join(df_columns + spec_columns)
-        variable_name = f"{variable_name}_"
-        dot_value_only = True
-        expression = pl.cum_count(".value").over(".value").alias(variable_name)
-        spec = spec.with_columns(expression)
-    return _pivot_longer_dot_value(
-        df=df,
-        index=index,
-        spec=spec,
-        variable_name=variable_name,
-        dot_value_only=dot_value_only,
-        names_transform=None,
+    spec_columns = spec.columns
+    _columns = spec.select(".name").to_series(0).to_list()
+    _index = cs.exclude(_columns)
+    others = [col for col in spec_columns if col not in {".name", ".value"}]
+    df = df.select(pl.implode("*"))
+    df = df.unpivot(
+        index=_index, on=_columns, variable_name=".name", value_name=".value."
     )
+    if isinstance(df, pl.LazyFrame):
+        df = df.join(spec.lazy(), on=".name", how="left", validate="1:1")
+    else:
+        df = df.join(spec, on=".name", how="left", validate="1:1")
+    df = df.select(cs.exclude(".name"))
+    columns_ = spec.select(pl.col(".value").unique()).to_series(0).to_list()
+    index_ = cs.exclude(".value.", ".value")
+    # this will fail if the combination of index and on columns is not unique
+    df = df.pivot(on=".value", values=".value.", on_columns=columns_, index=index_)
+    where_clause = []
+    for column in columns_:
+        replacement = pl.lit(None).repeat_by(pl.col(column).list.len().max())
+        expression = pl.col(column).fill_null(replacement).alias(column)
+        where_clause.append(expression)
+    df = df.with_columns(*where_clause)
+    # this can raise if a column in spec
+    # already exists in df
+    # - all columns should be of list datatype;
+    # this is caught in the tests
+    df = df.explode(cs.exclude(others))
+    return df
 
 
 @register_lazyframe_method

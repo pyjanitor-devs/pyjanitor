@@ -575,7 +575,7 @@ def _data_checks_pivot_longer(
     """
     # checks here are only on the columns
     # Use copy() to preserve MultiIndex structure
-    df = df.copy(deep=False)
+    # df = df.copy(deep=False)
 
     # Check MultiIndex with names_sep/names_pattern BEFORE any column selection
     # This must happen before column_level processing to catch the error early
@@ -588,7 +588,12 @@ def _data_checks_pivot_longer(
 
     if column_level is not None:
         check("column_level", column_level, [int, str])
-        df.columns = df.columns.get_level_values(column_level)
+        # approach below is more performant than using
+        # df.columns = df.columns.get_level_values(column_level)
+        new_columns = df.columns.get_level_values(column_level)
+        df = [arr._values for _, arr in df.items()]
+        df = {name: arr for name, arr in zip(new_columns, df)}
+        df = pd.DataFrame(df)
 
     if (index is None) and (column_names is None):
         column_names = slice(None)
@@ -1844,8 +1849,9 @@ def _build_index(index: dict, len_df: int, reps: int, sort_by_appearance: bool) 
                 indexer = indexer.repeat(reps)
             arr = arr[indexer]
         elif is_extension_array_dtype(arr):
-            arr = [arr] * reps
-            arr = concat_compat(arr)
+            indexer = np.arange(len_df)
+            indexer = np.tile(indexer, reps)
+            arr = arr[indexer]
         elif sort_by_appearance:
             arr = arr.repeat(reps)
         else:

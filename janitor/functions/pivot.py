@@ -573,12 +573,6 @@ def _data_checks_pivot_longer(
     Type annotations are not provided because this function is where type
     checking happens.
     """
-    # checks here are only on the columns
-    # Use copy() to preserve MultiIndex structure
-    # df = df.copy(deep=False)
-
-    # Check MultiIndex with names_sep/names_pattern BEFORE any column selection
-    # This must happen before column_level processing to catch the error early
     if any((names_sep, names_pattern)) and (isinstance(df.columns, pd.MultiIndex)):
         raise ValueError(
             "Unpivoting a MultiIndex column dataframe "

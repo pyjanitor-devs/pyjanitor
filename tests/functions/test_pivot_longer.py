@@ -407,7 +407,7 @@ def test_dot_value_names_to_columns_intersect(df_checks):
     """
     with pytest.raises(
         ValueError,
-        match=r".+in names_to already exist in the new dataframe\'s columns.+",
+        match=r".+in names_to already exists in the new dataframe\'s columns.+",
     ):
         df_checks.pivot_longer(
             index="famid", names_to=(".value", "ht"), names_pattern="(.+)(.)"

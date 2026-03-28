@@ -1301,7 +1301,7 @@ def _dot_value_extra_checks(
     index: dict,
     names_to: list,
     spec: pd.DataFrame,
-):
+) -> tuple:
     """
     Extra checks if '.value' is present
     in names_to.
@@ -1345,7 +1345,7 @@ def _stack_dot_value_only(
     index: dict,
     ignore_index: bool,
     dropna: bool,
-) -> tuple:
+) -> pd.DataFrame:
     """
     Flip the .value into long form.
     Applicable when only .value column exists in spec
@@ -1379,7 +1379,7 @@ def _stack_dot_value_only_single_label(
     index: dict,
     ignore_index: bool,
     dropna: bool,
-) -> tuple:
+) -> pd.DataFrame:
     """
     Flip the .value into long form.
     Applicable when only .value column exists in spec,
@@ -1431,7 +1431,7 @@ def _stack_dot_value_only_multiple_labels(
     index: dict,
     ignore_index: bool,
     dropna: bool,
-) -> tuple:
+) -> pd.DataFrame:
     """
     Flip the .value into long form.
     Applicable when only .value column exists in spec
@@ -1551,7 +1551,7 @@ def _stack_dot_value(
     index: dict,
     ignore_index: bool,
     dropna: bool,
-) -> dict:
+) -> pd.DataFrame:
     """
     Flip the .value into long form.
     """
@@ -1584,7 +1584,7 @@ def _stack_dot_value_single_label(
     index: dict,
     ignore_index: bool,
     dropna: bool,
-) -> dict:
+) -> pd.DataFrame:
     """
     Flip the .value into long form.
     Applicable where .value.nunique == 1
@@ -1641,7 +1641,7 @@ def _stack_dot_value_multiple_labels(
     index: dict,
     ignore_index: bool,
     dropna: bool,
-) -> dict:
+) -> pd.DataFrame:
     """
     Flip the .value into long form.
     Applicable where .value.nunique > 1
@@ -1805,7 +1805,7 @@ def _build_indexer_for_spec(
     return indexer.repeat(len_df)
 
 
-def _build_indexer_reorder_contents(length: int, reps: int) -> np.ndarray | None:
+def _build_indexer_reorder_contents(length: int, reps: int) -> np.ndarray:
     """Build indexer for reordering arrays in contents"""
     indexer = np.arange(length * reps)
     indexer = indexer.reshape((reps, -1))
@@ -1872,7 +1872,7 @@ def _build_df_index(
     return index[indexer]
 
 
-def _build_nulls(contents: dict, dropna: bool) -> dict:
+def _build_nulls(contents: dict, dropna: bool) -> np.ndarray | None:
     """Build nulls array"""
     if not dropna:
         return None
@@ -2278,7 +2278,7 @@ def _data_checks_pivot_wider(
     reset_index,
     names_expand,
     index_expand,
-):
+) -> tuple:
     """
     This function raises errors if the arguments have the wrong
     python type, or if the column does not exist in the dataframe.

@@ -187,7 +187,7 @@ pycodestyle==2.8.0
     # via flake8
 pyflakes==2.4.0
     # via flake8
-pygments==2.15.0
+pygments==2.20.0
     # via
     #   ipython
     #   mkdocs-material

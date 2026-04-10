@@ -28,10 +28,13 @@ classifiers = [
     "Topic :: Scientific/Engineering",
 ]
 dependencies = [
+    "pandas>=3.0.0",
     "natsort>=8.4.0,<9",
     "pandas-flavor>=0.8.1,<0.9",
     "multipledispatch",
-    "scipy", "janitor-rs>=0.6.1,<0.7"]
+    "scipy",
+    "janitor-rs>=0.6.1,<0.7"
+]
 
 [project.optional-dependencies]
 dev = [
@@ -181,7 +184,6 @@ python = "3.12.*"
 
 [tool.pixi.feature.py313.dependencies]
 python = "3.13.*"
-pandas = ">=3.0.0"
 
 [tool.pixi.tasks]
 start = "pre-commit install"

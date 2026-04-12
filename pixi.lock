@@ -22420,8 +22420,9 @@ packages:
 - pypi: ./
   name: pyjanitor
   version: 0.32.23
-  sha256: 3e56a26943d487a5060047b2e99990cb045fd54dfc232227288af00ad1b5690b
+  sha256: 39f5ed9e180f3fd91b9940becfeb0788c89c26d9c2f38209f62247d7ba44f11d
   requires_dist:
+  - pandas>=3.0.0
   - natsort>=8.4.0,<9
   - pandas-flavor>=0.8.1,<0.9
   - multipledispatch
@@ -22433,6 +22434,7 @@ packages:
   - black>=19.3b0 ; extra == 'dev'
   - darglint ; extra == 'dev'
   - flake8 ; extra == 'dev'
+  - pixi ; extra == 'dev'
   - mkdocs ; extra == 'docs'
   - polars ; extra == 'docs'
   - mkdocs-material ; extra == 'docs'
@@ -22478,7 +22480,7 @@ packages:
   - interrogate ; extra == 'all'
   - pandas-vet ; extra == 'all'
   - py>=1.10.0 ; extra == 'all'
-  requires_python: '>=3.8'
+  requires_python: '>=3.11'
 - conda: https://prefix.dev/conda-forge/noarch/pymdown-extensions-10.21.1-pyhd8ed1ab_0.conda
   sha256: 405e0a5e43ccf7c1cd084932e97291c3cf934036e8569e9cc0ccc91371aae93b
   md5: d08476fd9134bf9a37edb06c4d65f441

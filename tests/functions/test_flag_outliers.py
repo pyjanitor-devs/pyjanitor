@@ -11,8 +11,8 @@ def test_iqr_flags_outlier():
     df = pd.DataFrame({"values": [10, 12, 11, 13, 100, 9, 11]})
     result = df.flag_outliers(column_name="values")
     assert "values_outlier_flag" in result.columns
-    assert result["values_outlier_flag"].iloc[4] is True
-    assert result["values_outlier_flag"].iloc[0] is False
+    assert result["values_outlier_flag"].iloc[4]
+    assert not result["values_outlier_flag"].iloc[0]
 
 
 @pytest.mark.functions
@@ -21,7 +21,7 @@ def test_zscore_flags_outlier():
     df = pd.DataFrame({"values": [10, 12, 11, 13, 100, 9, 11]})
     result = df.flag_outliers(column_name="values", method="zscore", threshold=2.0)
     assert "values_outlier_flag" in result.columns
-    assert result["values_outlier_flag"].iloc[4] is True
+    assert result["values_outlier_flag"].iloc[4]
 
 
 @pytest.mark.functions

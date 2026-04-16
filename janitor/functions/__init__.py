@@ -61,6 +61,7 @@ from .fill import fill_direction, fill_empty
 from .filter import filter_column_isin, filter_date, filter_on, filter_string
 from .find_replace import find_replace
 from .flag_nulls import flag_nulls
+from .flag_outliers import flag_outliers
 from .get_dupes import get_dupes
 from .get_one_to_one import get_one_to_one
 from .groupby_agg import groupby_agg
@@ -171,6 +172,7 @@ __all__ = [
     "filter_string",
     "find_replace",
     "flag_nulls",
+    "flag_outliers",
     "get_dupes",
     "get_one_to_one",
     "get_join_indices",

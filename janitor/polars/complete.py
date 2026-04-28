@@ -578,15 +578,20 @@ def _expand(
 
     check("sort", sort, [bool])
     _columns = []
+    columns_to_explode = []
     for column in columns:
         if isinstance(column, str):
             col = pl.col(column).unique()
+            _name = column
         elif cs.is_selector(column):
             col = column.as_expr().unique()
+            _name = column.as_expr().meta.output_name()
         elif isinstance(column, pl.Expr):
             col = column.unique()
+            _name = column.meta.output_name()
         elif isinstance(column, pl.Series):
             col = column.unique()
+            _name = column.name
         else:
             raise TypeError(
                 f"The argument passed to the columns parameter "
@@ -596,21 +601,18 @@ def _expand(
             )
         if sort:
             col = col.sort()
+        columns_to_explode.append(_name)
         _columns.append(col)
     by_does_not_exist = by is None
     if by_does_not_exist:
         _columns = [column.implode() for column in _columns]
         uniques = df.select(_columns)
-        uniques_schema = uniques.collect_schema()
-        _columns = uniques_schema.names()
     else:
+        # implicit implode, as the group_by-agg will return lists
         uniques = df.group_by(by, maintain_order=sort).agg(_columns)
-        uniques_schema = uniques.collect_schema()
-        _columns = cs.expand_selector(uniques_schema, cs.exclude(by), strict=False)
-    for column in _columns:
+    for column in columns_to_explode:
         uniques = uniques.explode(column)
-
-    return uniques, uniques_schema
+    return uniques, columns_to_explode
 
 
 def _complete(
@@ -628,7 +630,7 @@ def _complete(
     """
     check("explicit", explicit, [bool])
     uniques, uniques_schema = _expand(df=df, columns=columns, sort=sort, by=by)
-
+    return uniques, uniques_schema
     df_columns = df.collect_schema()
     columns_to_fill = df_columns.keys() ^ uniques_schema.keys()
     if (fill_value is None) or not columns_to_fill:

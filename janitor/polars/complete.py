@@ -280,7 +280,7 @@ def complete(
     fill_value: dict | Any | pl.Expr = None,
     explicit: bool = True,
     sort: bool = False,
-    by: ColumnNameOrSelector = None,
+    by: str | list[str] = None,
 ) -> pl.DataFrame | pl.LazyFrame:
     """
     Turns implicit missing values into explicit missing values
@@ -546,7 +546,7 @@ def complete(
             (`True`). `explicit` is applicable only
             if `fill_value` is not `None`.
         sort: Sort the DataFrame based on *columns.
-        by: Column(s) to group by.
+        by: Column(s) to group by. Accepts a string or a list of strings.
             The explicit missing rows are returned per group.
 
     Returns:
@@ -554,12 +554,18 @@ def complete(
     """  # noqa: E501
     if not columns:
         return df
+    check("explicit", explicit, [bool])
+    if by is not None:
+        check("by", by, [str, list])
+        if isinstance(by, list):
+            for column in by:
+                check("by", column, [str])
     return _complete(
         df=df,
         columns=columns,
         fill_value=fill_value,
-        explicit=explicit,
         sort=sort,
+        explicit=explicit,
         by=by,
     )
 
@@ -619,50 +625,54 @@ def _complete(
     df: pl.DataFrame | pl.LazyFrame,
     columns: tuple[ColumnNameOrSelector],
     fill_value: dict | Any | pl.Expr,
-    explicit: bool,
     sort: bool,
-    by: ColumnNameOrSelector,
+    explicit: bool,
+    by: str | list[str] = None,
 ) -> pl.DataFrame | pl.LazyFrame:
     """
     This function computes the final output for the `complete` function.
 
     A DataFrame, with rows of missing values, if any, is returned.
     """
-    check("explicit", explicit, [bool])
-    uniques, uniques_schema = _expand(df=df, columns=columns, sort=sort, by=by)
-    return uniques, uniques_schema
-    df_columns = df.collect_schema()
-    columns_to_fill = df_columns.keys() ^ uniques_schema.keys()
-    if (fill_value is None) or not columns_to_fill:
-        return uniques.join(df, on=uniques_schema.names(), how="left", coalesce=True)
-    idx = None
-    columns_to_select = df_columns.names()
-    if not explicit:
-        idx = "".join(columns_to_select)
-        idx = f"{idx}_"
-        df = df.with_row_index(name=idx)
-    df = uniques.join(df, on=uniques_schema.names(), how="left", coalesce=True)
-    # exclude columns that were not used
-    # to generate the combinations
-    exclude_columns = uniques_schema.names()
-    if idx:
-        exclude_columns.append(idx)
-    _columns = set(columns_to_select).difference(exclude_columns)
-
-    if isinstance(fill_value, dict):
-        _columns = _columns.intersection(fill_value)
-        fill_value = [
-            pl.col(column_name).fill_null(value=fill_value[column_name])
-            for column_name in _columns
-        ]
+    uniques, _columns = _expand(df=df, columns=columns, sort=sort, by=by)
+    if isinstance(by, str):
+        _columns.append(by)
+    elif isinstance(by, list):
+        _columns.extend(by)
+    if fill_value is None:
+        return uniques.join(df, on=_columns, how="left", coalesce=True)
+    if explicit is False:
+        df = df.with_row_index(name="__index__")
+    df = uniques.join(df, on=_columns, how="left", coalesce=True)
+    if explicit is False:
+        _columns.append("__index__")
+    columns_to_fill = cs.all().exclude(_columns)
+    expression = pl.col("__index__").is_null()
+    if isinstance(fill_value, dict) and explicit:
+        replacement = []
+        for column_name, value in fill_value.items():
+            base_expression = pl.col(column_name).fill_null(value)
+            replacement.append(base_expression)
+    elif isinstance(fill_value, dict):
+        replacement = []
+        for column_name, value in fill_value.items():
+            base_expression = pl.col(column_name).fill_null(value)
+            case_expression = (
+                pl.when(expression).then(base_expression).otherwise(pl.col(column_name))
+            )
+            replacement.append(case_expression)
+    # assume it is a scalar value
+    elif not isinstance(fill_value, pl.Expr) and explicit:
+        replacement = columns_to_fill.as_expr().fill_null(fill_value)
+    elif not isinstance(fill_value, pl.Expr):
+        columns_to_fill = columns_to_fill.as_expr()
+        base_expression = columns_to_fill.fill_null(fill_value)
+        replacement = (
+            pl.when(expression).then(base_expression).otherwise(columns_to_fill)
+        )
     else:
-        fill_value = [pl.col(column).fill_null(value=fill_value) for column in _columns]
-    if not explicit:
-        condition = pl.col(idx).is_null()
-        fill_value = [
-            pl.when(condition).then(_fill_value).otherwise(pl.col(column_name))
-            for column_name, _fill_value in zip(_columns, fill_value)
-        ]
-    df = df.with_columns(fill_value)
-
-    return df.select(columns_to_select)
+        replacement = fill_value
+    df = df.with_columns(replacement)
+    if explicit is False:
+        df = df.drop("__index__")
+    return df

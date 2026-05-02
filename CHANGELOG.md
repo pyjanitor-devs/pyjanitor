@@ -7,6 +7,8 @@
 -   [ENH] `summarise` deprecated. - Issue #1045 @samukweku
 -   [ENH] Add `assign` method to groupby object. - Issue #1467 @samukweku
 -   [ENH] Add `pd.col` support - Issue #1590 @samukweku
+-   [ENH] Improve `polars.complete` and `polars.expand`, avoiding the potentially expensive schema computation on lazy
+frames. @samukweku
 
 ## [v0.32.3] - 2025-12-11
 

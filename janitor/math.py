@@ -229,9 +229,13 @@ def normal_cdf(s: "Series") -> "Series":
     # ``scipy.special.ndtr`` is the bare CDF kernel that
     # ``scipy.stats.norm.cdf`` ultimately calls. Going direct skips the
     # frozen-distribution wrapper (and its argument validation), which is
-    # measurably faster on large Series and produces identical output.
-    # See issue #1468.
-    return pd.Series(ndtr(s), index=s.index)
+    # measurably faster on large Series and produces bit-identical
+    # output. We feed ``s.to_numpy()`` rather than ``s`` itself so the
+    # return value is an ``ndarray`` (matching ``norm.cdf``'s old
+    # behaviour) rather than a Series — otherwise ndtr would propagate
+    # ``s.name`` into the wrapped result and break the repr-based
+    # docstring assertion below. See issue #1468.
+    return pd.Series(ndtr(s.to_numpy()), index=s.index)
 
 
 @pf.register_series_method

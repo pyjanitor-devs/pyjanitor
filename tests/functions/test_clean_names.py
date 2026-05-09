@@ -262,3 +262,34 @@ def test_clean_names_normalization_cases():
     ]
     result = df.clean_names()
     assert result.columns.tolist() == expected_columns
+
+
+def test_clean_names_strips_leading_trailing_whitespace():
+    """Edge whitespace becomes underscores without an explicit strip step.
+
+    Pre-#1385, a column named ``" foo "`` was rewritten to ``"_foo_"`` by
+    the space-to-underscore rule in ``_normalize_1``, surprising users who
+    expected ``"foo"``. ``clean_names`` now strips edge whitespace before
+    normalisation, so leading/trailing spaces (regular and tab) drop
+    cleanly.
+    """
+    df = pd.DataFrame(
+        {
+            "  hello  ": [1],
+            "\tworld\t": [2],
+            " mixed Case ": [3],
+            "no_strip_needed": [4],
+        }
+    )
+    expected = ["hello", "world", "mixed_case", "no_strip_needed"]
+    assert df.clean_names().columns.tolist() == expected
+
+
+def test_clean_names_preserves_internal_whitespace_as_underscore():
+    """Sanity: stripping at the edges must not change the internal rule.
+
+    Internal whitespace still gets the existing space-to-underscore
+    treatment from ``_normalize_1`` (#1385 only changes edge whitespace).
+    """
+    df = pd.DataFrame({"  foo bar baz  ": [1]})
+    assert df.clean_names().columns.tolist() == ["foo_bar_baz"]

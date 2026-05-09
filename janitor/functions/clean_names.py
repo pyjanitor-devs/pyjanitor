@@ -181,6 +181,11 @@ def _clean_names(
     """
     if enforce_string and not _is_str_or_cat(obj):
         obj = obj.astype(str)
+    # Strip leading/trailing whitespace before normalisation: otherwise
+    # ``" foo "`` would become ``"_foo_"`` once the space-to-underscore
+    # rewrite in ``_normalize_1`` runs, surprising downstream users who
+    # expected a clean ``"foo"``. See issue #1385.
+    obj = obj.str.strip()
     obj = _change_case(obj=obj, case_type=case_type)
     obj = _normalize_1(obj=obj)
     if remove_special:

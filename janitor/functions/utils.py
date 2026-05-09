@@ -77,7 +77,10 @@ def unionize_dataframe_categories(
 
     Args:
         *dataframes: The dataframes you wish to unionize the categorical
-            objects for.
+            objects for. As a convenience, you may also pass a single
+            list/tuple of dataframes (``unionize_dataframe_categories(dfs)``
+            instead of ``unionize_dataframe_categories(*dfs)``). See
+            issue #637.
         column_names: If supplied, only unionize this subset of columns.
 
     Raises:
@@ -87,6 +90,19 @@ def unionize_dataframe_categories(
         A list of the category-unioned dataframes in the same order they
             were provided.
     """
+
+    # Convenience: if the caller passed a single list/tuple of dataframes
+    # rather than splatting (``unionize_dataframe_categories(dfs)`` instead
+    # of ``unionize_dataframe_categories(*dfs)``), unwrap it. We only do
+    # this when there is exactly one positional argument and it is a
+    # non-DataFrame collection — passing a single DataFrame stays valid
+    # and is unaffected. See issue #637.
+    if (
+        len(dataframes) == 1
+        and not isinstance(dataframes[0], pd.DataFrame)
+        and isinstance(dataframes[0], (list, tuple))
+    ):
+        dataframes = tuple(dataframes[0])
 
     if any(not isinstance(df, pd.DataFrame) for df in dataframes):
         raise TypeError("Inputs must all be dataframes.")

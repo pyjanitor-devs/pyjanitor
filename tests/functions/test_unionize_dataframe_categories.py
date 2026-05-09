@@ -107,6 +107,39 @@ def test_unionize_dataframe_categories_original_preservation(
     )
 
 
+def test_unionize_dataframe_categories_accepts_list(
+    uniontest_df1, uniontest_df2, uniontest_df3
+):
+    """A single list of dataframes is unwrapped automatically.
+
+    Pre-#637, ``unionize_dataframe_categories([df1, df2, df3])`` raised
+    ``TypeError("Inputs must all be dataframes.")`` because the leading
+    positional argument was the list itself, not a DataFrame. With the
+    convenience-unwrap, passing the list and splatting it produce the
+    same output.
+    """
+    dfs = [uniontest_df1, uniontest_df2, uniontest_df3]
+    udf1_list, udf2_list, udf3_list = janitor.unionize_dataframe_categories(dfs)
+    udf1_splat, udf2_splat, udf3_splat = janitor.unionize_dataframe_categories(*dfs)
+
+    for left, right in zip(
+        (udf1_list, udf2_list, udf3_list),
+        (udf1_splat, udf2_splat, udf3_splat),
+    ):
+        assert_frame_equal(left, right)
+
+
+def test_unionize_dataframe_categories_accepts_tuple(
+    uniontest_df1, uniontest_df2, uniontest_df3
+):
+    """The same convenience-unwrap covers tuples (not just lists)."""
+    dfs = (uniontest_df1, uniontest_df2, uniontest_df3)
+    udf1, udf2, udf3 = janitor.unionize_dataframe_categories(dfs)
+    assert isinstance(udf1, pd.DataFrame)
+    assert isinstance(udf2, pd.DataFrame)
+    assert isinstance(udf3, pd.DataFrame)
+
+
 def test_unionize_dataframe_categories_single(
     uniontest_df1, uniontest_df2, uniontest_df3
 ):

@@ -28,6 +28,12 @@ classifiers = [
     "Topic :: Scientific/Engineering",
 ]
 dependencies = [
+    # pandas >=3 is a hard runtime requirement: pyjanitor uses APIs that
+    # only exist in pandas 3 (e.g. ``pd.col``), so a fresh
+    # ``pip install pyjanitor`` against a pandas-2.x environment must
+    # upgrade pandas rather than silently leaving an unusable install.
+    # See issue #1597.
+    "pandas>=3.0.0",
     "natsort>=8.4.0,<9",
     "pandas-flavor>=0.8.1,<0.9",
     "multipledispatch",

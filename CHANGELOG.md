@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+-   [INF] Declare `pandas>=3.0.0` as a runtime dependency in `pyproject.toml` so `pip install pyjanitor` no longer leaves environments with an unsupported pandas. - Issue #1597 @jbbqqf
 -   [ENH] Add `include_join_positions` parameter to `conditional_join`; added limited support for join aggregations via the `join_agg` function. - Issue #1497 @samukweku
 -   [ENH] Added `rle_id` function for run-length encoding IDs - Issue #1435 @emmanuel-ferdman
 -   [ENH] Add `scale_mad` for robust median/MAD scaling. - PR #1530 @ShachiMistry

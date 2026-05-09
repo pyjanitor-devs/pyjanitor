@@ -224,9 +224,14 @@ def normal_cdf(s: "Series") -> "Series":
         Transformed Series.
     """
     import pandas as pd
-    import scipy
+    from scipy.special import ndtr
 
-    return pd.Series(scipy.stats.norm.cdf(s), index=s.index)
+    # ``scipy.special.ndtr`` is the bare CDF kernel that
+    # ``scipy.stats.norm.cdf`` ultimately calls. Going direct skips the
+    # frozen-distribution wrapper (and its argument validation), which is
+    # measurably faster on large Series and produces identical output.
+    # See issue #1468.
+    return pd.Series(ndtr(s), index=s.index)
 
 
 @pf.register_series_method

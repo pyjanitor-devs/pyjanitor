@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+-   [ENH] `normal_cdf` now calls `scipy.special.ndtr` directly instead of `scipy.stats.norm.cdf`, yielding ~2.5x speedup on large Series with bit-identical output. - Issue #1468 @jbbqqf
 -   [ENH] Add `include_join_positions` parameter to `conditional_join`; added limited support for join aggregations via the `join_agg` function. - Issue #1497 @samukweku
 -   [ENH] Added `rle_id` function for run-length encoding IDs - Issue #1435 @emmanuel-ferdman
 -   [ENH] Add `scale_mad` for robust median/MAD scaling. - PR #1530 @ShachiMistry

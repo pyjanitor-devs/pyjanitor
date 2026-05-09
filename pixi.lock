@@ -22422,6 +22422,7 @@ packages:
   version: 0.32.23
   sha256: 3e56a26943d487a5060047b2e99990cb045fd54dfc232227288af00ad1b5690b
   requires_dist:
+  - pandas>=3.0.0
   - natsort>=8.4.0,<9
   - pandas-flavor>=0.8.1,<0.9
   - multipledispatch

@@ -34,7 +34,6 @@ dependencies = [
     "multipledispatch",
     "scipy",
     "janitor-rs>=0.6.1,<0.7",
-    "pixi>=1.0.1",
 ]
 
 [project.optional-dependencies]
@@ -44,8 +43,7 @@ dev = [
     "isort>=4.3.18",
     "black>=19.3b0",
     "darglint",
-    "flake8",
-    "pixi"
+    "flake8"
 ]
 docs = [
     "mkdocs",

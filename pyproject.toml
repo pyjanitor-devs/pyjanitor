@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "pyjanitor"
 version = "0.32.23"
 description = "Tools for cleaning pandas DataFrames"
-requires-python = ">=3.8"
+requires-python = ">=3.11"
 license = {text = "MIT"}
 authors = [
     {name = "pyjanitor devs", email = "ericmajinglong@gmail.com"}
@@ -28,10 +28,13 @@ classifiers = [
     "Topic :: Scientific/Engineering",
 ]
 dependencies = [
+    "pandas>=3.0.0",
     "natsort>=8.4.0,<9",
     "pandas-flavor>=0.8.1,<0.9",
     "multipledispatch",
-    "scipy", "janitor-rs>=0.6.1,<0.7"]
+    "scipy",
+    "janitor-rs>=0.6.1,<0.7",
+]
 
 [project.optional-dependencies]
 dev = [
@@ -40,7 +43,7 @@ dev = [
     "isort>=4.3.18",
     "black>=19.3b0",
     "darglint",
-    "flake8",
+    "flake8"
 ]
 docs = [
     "mkdocs",
@@ -181,7 +184,6 @@ python = "3.12.*"
 
 [tool.pixi.feature.py313.dependencies]
 python = "3.13.*"
-pandas = ">=3.0.0"
 
 [tool.pixi.tasks]
 start = "pre-commit install"

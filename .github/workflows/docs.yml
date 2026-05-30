@@ -59,4 +59,3 @@ jobs:
         with:
           source-dir: ./site
           preview-branch: gh-pages
-          token: ${{ secrets.GITHUB_TOKEN }}

@@ -187,6 +187,48 @@ def test_clean_names_truncate_limit(dataframe):
 
 
 @pytest.mark.functions
+def test_clean_names_whitespace():
+    """Tests clean_names removes leading/trailing whitespace from column names."""
+    df = pd.DataFrame(
+        {
+            "  Hello World  ": [1, 2],
+            "\tFoo Bar\t": [3, 4],
+            "\nBaz Qux\n": [5, 6],
+        }
+    )
+    result = df.clean_names(strip_underscores=True, case_type="lower")
+
+    assert result.columns.tolist() == [
+        "hello_world",
+        "foo_bar",
+        "baz_qux",
+    ]
+
+
+@pytest.mark.functions
+def test_clean_names_does_not_mutate_dataframe(dataframe):
+    """Tests clean_names returns a new DataFrame and does not mutate input."""
+    original = dataframe.copy()
+    result = original.clean_names(remove_special=True)
+
+    assert result is not original
+    assert list(original.columns) == [
+        "a",
+        "Bell__Chart",
+        "decorated-elephant",
+        "animals@#$%^",
+        "cities",
+    ]
+    assert list(result.columns) == [
+        "a",
+        "bell_chart",
+        "decorated_elephant",
+        "animals",
+        "cities",
+    ]
+
+
+@pytest.mark.functions
 def test_charac():
     """Ensure non standard characters and spaces have been cleaned up."""
 

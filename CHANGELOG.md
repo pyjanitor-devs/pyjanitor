@@ -9,6 +9,7 @@
 -   [ENH] Add `pd.col` support - Issue #1590 @samukweku
 -   [ENH] Improve `polars.complete` and `polars.expand`, avoiding the potentially expensive schema computation on lazy
 frames. @samukweku
+-   [ENH] Add `strip_whitespace` to `clean_names` function. - Issue #1385
 
 ## [v0.32.3] - 2025-12-11
 

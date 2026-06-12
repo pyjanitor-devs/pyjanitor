@@ -21,6 +21,7 @@ def clean_names(
     axis: str = "columns",
     column_names: str | list = None,
     strip_underscores: str | bool = None,
+    strip_whitespace: bool = True,
     case_type: str = "lower",
     remove_special: bool = False,
     strip_accents: bool = True,
@@ -79,6 +80,8 @@ def clean_names(
             Values can be either 'left', 'right' or 'both'
             or the respective shorthand 'l',
             'r' and True.
+        strip_whitespace: Whether or not to strip whitespace from the ends of
+            column names/values. Default True.
         case_type: Whether to make columns lower or uppercase.
             Current case may be preserved with 'preserve',
             while snake case conversion (from CamelCase or camelCase only)
@@ -113,7 +116,7 @@ def clean_names(
         column_names = get_index_labels(arg=column_names, df=df, axis="columns")
         if is_scalar(column_names):
             column_names = [column_names]
-        df = df.copy()
+        df = df[:]
         for column_name in column_names:
             df[column_name] = _clean_names(
                 obj=df[column_name],
@@ -123,11 +126,12 @@ def clean_names(
                 strip_accents=strip_accents,
                 strip_underscores=strip_underscores,
                 truncate_limit=truncate_limit,
+                strip_whitespace=strip_whitespace,
             )
         return df
 
     assert axis in {"index", "columns"}
-    df = df.copy()
+    df = df[:]
     target_axis = getattr(df, axis)
     if isinstance(target_axis, pd.MultiIndex):
         target_axis = [
@@ -143,6 +147,7 @@ def clean_names(
                 strip_accents=strip_accents,
                 strip_underscores=strip_underscores,
                 truncate_limit=truncate_limit,
+                strip_whitespace=strip_whitespace,
             )
             for obj in target_axis
         ]
@@ -159,6 +164,7 @@ def clean_names(
             strip_accents=strip_accents,
             strip_underscores=strip_underscores,
             truncate_limit=truncate_limit,
+            strip_whitespace=strip_whitespace,
         )
     # Store the original column names, if enabled by user
     if preserve_original_labels:
@@ -170,6 +176,7 @@ def clean_names(
 def _clean_names(
     obj: pd.Index | pd.Series,
     strip_underscores: str | bool,
+    strip_whitespace: bool,
     case_type: str,
     remove_special: bool,
     strip_accents: bool,
@@ -181,6 +188,8 @@ def _clean_names(
     """
     if enforce_string and not _is_str_or_cat(obj):
         obj = obj.astype(str)
+    if strip_whitespace:
+        obj = obj.str.strip()
     obj = _change_case(obj=obj, case_type=case_type)
     obj = _normalize_1(obj=obj)
     if remove_special:

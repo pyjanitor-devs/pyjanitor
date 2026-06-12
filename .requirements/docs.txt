@@ -98,7 +98,7 @@ ptyprocess==0.7.0
     # via pexpect
 pure-eval==0.2.2
     # via stack-data
-py4j==0.10.9.5
+py4j==0.10.9.7
     # via pyspark
 pygments==2.20.0
     # via
@@ -108,7 +108,7 @@ pymdown-extensions==10.0
     # via
     #   mkdocs-material
     #   mkdocstrings
-pyspark==3.3.2
+pyspark==3.4.4
     # via -r spark.in
 python-dateutil==2.8.2
     # via ghp-import

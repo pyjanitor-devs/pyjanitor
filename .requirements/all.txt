@@ -181,7 +181,7 @@ py==1.11.0
     #   interrogate
     #   pytest
     #   pytest-forked
-py4j==0.10.9.5
+py4j==0.10.9.7
     # via pyspark
 pycodestyle==2.8.0
     # via flake8
@@ -195,7 +195,7 @@ pymdown-extensions==10.0
     # via
     #   mkdocs-material
     #   mkdocstrings
-pyspark==3.3.2
+pyspark==3.4.4
     # via -r spark.in
 pytest==7.0.1
     # via

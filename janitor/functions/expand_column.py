@@ -15,6 +15,7 @@ def expand_column(
     column_name: Hashable,
     sep: str = "|",
     concat: bool = True,
+    drop_first: bool = False,
 ) -> pd.DataFrame:
     """Expand a categorical column with multiple labels into dummy-coded columns.
 
@@ -69,11 +70,15 @@ def expand_column(
         concat: Whether to return the expanded column concatenated to
             the original dataframe (`concat=True`), or to return it standalone
             (`concat=False`).
+        drop_first: Whether to drop the first generated dummy column.
+            Defaults to `False`.
 
     Returns:
         A pandas DataFrame with an expanded column.
     """  # noqa: E501
     expanded_df = df[column_name].str.get_dummies(sep=sep)
+    if drop_first:
+        expanded_df = expanded_df.iloc[:, 1:]
     if concat:
         return df.join(expanded_df)
     return expanded_df

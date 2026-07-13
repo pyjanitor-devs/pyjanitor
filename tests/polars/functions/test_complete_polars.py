@@ -64,6 +64,12 @@ def test_type_explicit(fill_df):
         fill_df.complete("group", "item_id", explicit=11)
 
 
+def test_type_by(fill_df):
+    """Raise TypeError if `by` is not a string or list of strings."""
+    with pytest.raises(TypeError):
+        fill_df.complete("group", "item_id", by=1)
+
+
 def test_complete_1(fill_df):
     """
     Test output for janitor.complete.
@@ -223,6 +229,194 @@ def test_complete_2(fill_df):
         ]
     )
 
+    assert_frame_equal(result, expected)
+
+
+def test_complete_fill_value_dict_explicit_true(fill_df):
+    """Test fill_value dict with explicit=True."""
+    result = (
+        fill_df.select(
+            "group",
+            pl.struct("item_id", "item_name"),
+            "value1",
+            "value2",
+        )
+        .complete(
+            "group",
+            "item_id",
+            fill_value={"value1": 0, "value2": 99},
+            explicit=True,
+            sort=True,
+        )
+        .unnest("item_id")
+    )
+    expected = pl.DataFrame(
+        [
+            {
+                "group": 1,
+                "item_id": 1,
+                "item_name": "a",
+                "value1": 1,
+                "value2": 4,
+            },
+            {
+                "group": 1,
+                "item_id": 2,
+                "item_name": "a",
+                "value1": 0,
+                "value2": 99,
+            },
+            {
+                "group": 1,
+                "item_id": 2,
+                "item_name": "b",
+                "value1": 3,
+                "value2": 6,
+            },
+            {
+                "group": 1,
+                "item_id": 3,
+                "item_name": "b",
+                "value1": 0,
+                "value2": 99,
+            },
+            {
+                "group": 2,
+                "item_id": 1,
+                "item_name": "a",
+                "value1": 0,
+                "value2": 99,
+            },
+            {
+                "group": 2,
+                "item_id": 2,
+                "item_name": "a",
+                "value1": 0,
+                "value2": 5,
+            },
+            {
+                "group": 2,
+                "item_id": 2,
+                "item_name": "b",
+                "value1": 0,
+                "value2": 99,
+            },
+            {
+                "group": 2,
+                "item_id": 3,
+                "item_name": "b",
+                "value1": 4,
+                "value2": 7,
+            },
+        ]
+    )
+    assert_frame_equal(result, expected)
+
+
+def test_complete_fill_value_scalar_explicit_false(fill_df):
+    """Test scalar fill_value with explicit=False."""
+    result = (
+        fill_df.select(
+            "group",
+            pl.struct("item_id", "item_name"),
+            "value1",
+            "value2",
+        )
+        .complete(
+            "group",
+            "item_id",
+            fill_value=0,
+            explicit=False,
+            sort=True,
+        )
+        .unnest("item_id")
+    )
+    expected = pl.DataFrame(
+        [
+            {
+                "group": 1,
+                "item_id": 1,
+                "item_name": "a",
+                "value1": 1,
+                "value2": 4,
+            },
+            {
+                "group": 1,
+                "item_id": 2,
+                "item_name": "a",
+                "value1": 0,
+                "value2": 0,
+            },
+            {
+                "group": 1,
+                "item_id": 2,
+                "item_name": "b",
+                "value1": 3,
+                "value2": 6,
+            },
+            {
+                "group": 1,
+                "item_id": 3,
+                "item_name": "b",
+                "value1": 0,
+                "value2": 0,
+            },
+            {
+                "group": 2,
+                "item_id": 1,
+                "item_name": "a",
+                "value1": 0,
+                "value2": 0,
+            },
+            {
+                "group": 2,
+                "item_id": 2,
+                "item_name": "a",
+                "value1": None,
+                "value2": 5,
+            },
+            {
+                "group": 2,
+                "item_id": 2,
+                "item_name": "b",
+                "value1": 0,
+                "value2": 0,
+            },
+            {
+                "group": 2,
+                "item_id": 3,
+                "item_name": "b",
+                "value1": 4,
+                "value2": 7,
+            },
+        ]
+    )
+    assert_frame_equal(result, expected)
+
+
+def test_complete_with_expression_column(taxonomy_df):
+    """Test `complete` with an expression column."""
+    result = (
+        taxonomy_df.lazy()
+        .complete(pl.int_range(1999, 2005).alias("Year"), "Taxon", sort=True)
+        .collect()
+    )
+    expected = pl.DataFrame(
+        [
+            {"Year": 1999, "Taxon": "Agarum", "Abundance": 1},
+            {"Year": 1999, "Taxon": "Saccharina", "Abundance": 4},
+            {"Year": 2000, "Taxon": "Agarum", "Abundance": None},
+            {"Year": 2000, "Taxon": "Saccharina", "Abundance": 5},
+            {"Year": 2001, "Taxon": "Agarum", "Abundance": None},
+            {"Year": 2001, "Taxon": "Saccharina", "Abundance": None},
+            {"Year": 2002, "Taxon": "Agarum", "Abundance": None},
+            {"Year": 2002, "Taxon": "Saccharina", "Abundance": None},
+            {"Year": 2003, "Taxon": "Agarum", "Abundance": None},
+            {"Year": 2003, "Taxon": "Saccharina", "Abundance": None},
+            {"Year": 2004, "Taxon": "Agarum", "Abundance": 8},
+            {"Year": 2004, "Taxon": "Saccharina", "Abundance": 2},
+        ]
+    )
     assert_frame_equal(result, expected)
 
 

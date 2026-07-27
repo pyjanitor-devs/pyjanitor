@@ -1,11 +1,21 @@
 """Tests for from_scipy_sparse."""
 
+import importlib
+
 import numpy as np
 import pytest
 import scipy.sparse
 import xarray as xr
+from helpers import running_on_ci
 
 import janitor  # noqa: F401
+
+# Skip all tests if the `sparse` package is not installed
+pytestmark = pytest.mark.skipif(
+    (importlib.util.find_spec("sparse") is None) & ~running_on_ci(),
+    reason="Sparse-conversion tests relying on the `sparse` package "
+    "only required for CI",
+)
 
 
 @pytest.mark.xarray

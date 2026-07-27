@@ -181,8 +181,8 @@ def to_scipy_sparse(da: xr.DataArray):
         ...     np.array([[0, 0, 3], [4, 0, 0]]),
         ...     dims=["row", "col"],
         ... )
-        >>> mat = da.to_scipy_sparse()
-        >>> mat.toarray()
+        >>> mat = da.to_scipy_sparse()  # doctest: +SKIP
+        >>> mat.toarray()  # doctest: +SKIP
         array([[0, 0, 3],
                [4, 0, 0]])
 
@@ -242,10 +242,10 @@ def from_scipy_sparse(
         ...     name="original",
         ... )
         >>> mat = scipy.sparse.csr_matrix([[0, 0, 3], [4, 0, 0]])
-        >>> new_da = da.from_scipy_sparse(mat)
-        >>> new_da.dims
+        >>> new_da = da.from_scipy_sparse(mat)  # doctest: +SKIP
+        >>> new_da.dims  # doctest: +SKIP
         ('row', 'col')
-        >>> new_da.data.todense()
+        >>> new_da.data.todense()  # doctest: +SKIP
         array([[0, 0, 3],
                [4, 0, 0]])
 

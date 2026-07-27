@@ -144,7 +144,8 @@ def import_message(
 
     Generic message for indicating to the user when a function relies on an
     optional module / package that is not currently installed. Includes
-    installation instructions. Used in `chemistry.py` and `biology.py`.
+    installation instructions. Used in `chemistry.py`, `biology.py`, and
+    `xarray/functions.py`.
 
     Args:
         submodule: `pyjanitor` submodule that needs an external dependency.

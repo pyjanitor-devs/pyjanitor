@@ -541,6 +541,13 @@ If not installed, use `pixi global install markdownlint-cli`.
 **Recommendation**: After pushing to the branch, create the PR using the GitHub
 CLI.
 
+### [2026-08-06] Build Documentation in the Docs Environment
+
+**Context**: Validating a documentation-only change.
+**Learning**: `pixi run docs` selects the default environment, which does not
+include MkDocs. The documentation task is available in the `docs` environment.
+**Recommendation**: Run `pixi run -e docs build-docs` to build documentation.
+
 ---
 
 ## Version History

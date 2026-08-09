@@ -1,0 +1,20 @@
+scripts/update_contributors.py
+  s_908376b3dab5ff::t_8dfd434a96d666 155
+  s_908376b3dab5ff::t_27c171dc20275a 286
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "2b32bbbc2ca22539f431268a32d29de25628167d",
+  "prompts": {},
+  "sessions": {
+    "s_908376b3dab5ff": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0175a20c0ffeO4a5MBJnO7NpxD",
+        "model": "glm-5.2"
+      },
+      "human_author": "Eric Ma <ericmajinglong@gmail.com>"
+    }
+  }
+}

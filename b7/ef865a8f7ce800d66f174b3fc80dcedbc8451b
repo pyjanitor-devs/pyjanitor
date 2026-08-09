@@ -1,0 +1,52 @@
+CHANGELOG.md
+  s_908376b3dab5ff::t_24e5406d5c2f7a 15
+.github/pull_request_template.md
+  s_908376b3dab5ff::t_ed5b5c8bb7f3f4 41,43,45
+  s_908376b3dab5ff::t_3d8e4f501e6cd7 44
+mkdocs/index.md
+  s_908376b3dab5ff::t_b33c84386399b8 347,350-351,365,374,378,381,383-384,393,402,410,413,417,420,431,435,439,444,449,453,455-457,463-500
+scripts/update_contributors.py
+  s_908376b3dab5ff::t_e72432454e8df0 239-247
+  s_908376b3dab5ff::t_cfce2d8228a097 5-11
+  s_908376b3dab5ff::t_3c1a95bc92655e 163
+  s_908376b3dab5ff::t_6306550ad5c028 178-186
+  s_908376b3dab5ff::t_3c91d90880bb29 109-117
+  s_908376b3dab5ff::t_749f22cf516995 192
+  s_908376b3dab5ff::t_95af5eaaa9e909 209-213
+  s_908376b3dab5ff::t_14a58c1b5bdcee 12-16
+  s_908376b3dab5ff::t_e54123c87f8141 48
+  s_908376b3dab5ff::t_c856d494d9eec7 41
+  s_908376b3dab5ff::t_bb190ae6e5bc8d 78-82
+  s_908376b3dab5ff::t_c8869d7e850b8b 135-142
+  s_908376b3dab5ff::t_445ae5c3b30765 222,228-232
+  s_908376b3dab5ff::t_d59f6204527db0 108,120-121,123,126
+  s_908376b3dab5ff::t_82e37c29228575 155-157,165
+  s_908376b3dab5ff::t_d85b38069dd9fb 152
+  s_908376b3dab5ff::t_ae9f04847df454 87-95
+  s_908376b3dab5ff::t_220615617c48c8 96-103,128-130,214-217
+  s_908376b3dab5ff::t_e9efacc274eede 1-4,17-40,42-47,49-77,83-86,104-107,118-119,122,124-125,127,131-134,143-151,153-154,158-162,164,166-177,187-191,193-208,218-221,223-227,233-238,248-291
+.all-contributorsrc
+  s_908376b3dab5ff::t_cca4f0f8d43cf8 1156,1158-1168
+  s_908376b3dab5ff::t_9158bffe7f255a 40,70,81,173,239,278,289,309,320,384,451,506,535,556,585,669,689,728,757,805,825,845,856,867,898-1155,1157
+mkdocs/devguide.md
+  s_908376b3dab5ff::t_0c7fdb73c26584 282-320
+.github/workflows/update-contributors.yml
+  s_908376b3dab5ff::t_8e2577ccadc4e4 1-55,60-65
+  s_908376b3dab5ff::t_c5b8068714c6e7 56-59
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "b7ef865a8f7ce800d66f174b3fc80dcedbc8451b",
+  "prompts": {},
+  "sessions": {
+    "s_908376b3dab5ff": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0175a20c0ffeO4a5MBJnO7NpxD",
+        "model": "glm-5.2"
+      },
+      "human_author": "Eric Ma <ericmajinglong@gmail.com>"
+    }
+  }
+}

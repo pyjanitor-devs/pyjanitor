@@ -11,6 +11,7 @@
 -   [ENH] Improve `polars.complete` and `polars.expand`, avoiding the potentially expensive schema computation on lazy
 frames. @samukweku
 -   [ENH] Add `strip_whitespace` to `clean_names` function. - Issue #1385
+-   [ENH] Added `flag_in_range` function to flag values outside a given range. - Issue #708 @naseem173
 
 ## [v0.32.3] - 2025-12-11
 

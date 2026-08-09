@@ -279,3 +279,42 @@ If you encounter issues or have questions:
 - Reach out to maintainers on GitHub
 
 We're here to help make your contribution experience smooth and educational!
+
+## Contributor Recognition
+
+pyjanitor uses the [all-contributors][ac] specification to recognize everyone
+who contributes, not just those who write code. The contributors table in
+[`README.md`](README.md) is generated from
+[`.all-contributorsrc`](.all-contributorsrc).
+
+[ac]: https://github.com/all-contributors/all-contributors
+
+### For contributors
+
+You do **not** need to add yourself anywhere. Commit authors are recognized
+automatically by the `update-contributors` GitHub Actions workflow, which
+runs weekly and on demand. Your first merged pull request will add you to
+the contributors table on the next run.
+
+### For maintainers
+
+To credit a contribution that the workflow does not detect automatically
+(for example: reviews, design, ideas, answering questions, or filing bug
+reports), edit `.all-contributorsrc` and regenerate the table:
+
+```bash
+# Add the contributor's login and contribution type(s) to .all-contributorsrc,
+# then regenerate the README table:
+npx all-contributors-cli@latest generate
+```
+
+The list of contribution types and their emoji is defined by the
+[all-contributors specification][ac-key]
+(for example: `code`, `doc`, `bug`, `review`, `ideas`, `question`).
+
+[ac-key]: https://allcontributors.org/docs/en/emoji-key
+
+You can also trigger the workflow manually from the
+**Actions → Update contributors → Run workflow** page to pick up new commit
+authors immediately. To additionally credit issue authors with the `bug`
+type, set `INCLUDE_ISSUES` to `1` in the workflow file before running.

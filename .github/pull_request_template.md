@@ -38,10 +38,11 @@ Please ensure that you have done the following:
 
 1. [ ] PR in from a fork off your branch. Do not PR from `<your_username>`:`dev`, but rather from `<your_username>`:`<feature-branch_name>`.
 <!-- Doing this helps us keep the commit history much cleaner than it would otherwise be. -->
-2. [ ] If you're not on the contributors list, add yourself to `AUTHORS.md`.
-<!-- We'd like to acknowledge your contributions! -->
-3. [ ] Add a line to `CHANGELOG.md` under the latest version header (i.e. the one that is "on deck") describing the contribution.
+2. [ ] Add a line to `CHANGELOG.md` under the latest version header (i.e. the one that is "on deck") describing the contribution.
     - Do use some discretion here; if there are multiple PRs that are related, keep them in a single line.
+<!-- Contributor recognition is automatic: the `update-contributors` workflow scans
+     commit authors and updates the all-contributors table in README.md, so you
+     do NOT need to add yourself anywhere. See CONTRIBUTING.md for details. -->
 
 ## Automatic checks
 

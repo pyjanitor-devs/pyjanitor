@@ -152,7 +152,7 @@ class GitHub:
             items.extend(body)
             page += 1
             next_url = self._next_link(link)
-        if next_url:
+        if page >= MAX_PAGES and next_url:
             print(
                 f"  {label}: WARNING — truncated at {MAX_PAGES} pages, "
                 "more pages remain",
@@ -283,7 +283,7 @@ def save_config(config: dict) -> None:
     Args:
         config: The all-contributors config to serialize.
     """
-    tmp = RC_PATH.with_suffix(".rc.tmp")
+    tmp = RC_PATH.parent / (RC_PATH.name + ".tmp")
     with tmp.open("w", encoding="utf-8") as fh:
         json.dump(config, fh, indent=2, ensure_ascii=False)
         fh.write("\n")

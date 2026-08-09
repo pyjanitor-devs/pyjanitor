@@ -1,0 +1,29 @@
+mkdocs/devguide.md
+  s_908376b3dab5ff::t_af57d4651e7235 287-288,290-291
+  s_908376b3dab5ff::t_e495888f6c4ac5 317
+.all-contributorsrc
+  s_908376b3dab5ff::t_fd98e013c1611f 1169-1177
+mkdocs/index.md
+  s_908376b3dab5ff::t_6b65790d3f5aba 501
+.github/workflows/update-contributors.yml
+  s_908376b3dab5ff::t_11f0130e401bec 50-51,54-61,66-69
+scripts/update_contributors.py
+  s_908376b3dab5ff::t_c4ebf4a6849d35 40,50-51,83-85,92,100-103,113-115,117-123,125-133,155-165,183-186,223-224,226-233,245-254,259,278-281,286-287,290,303-307,309-313,322
+  s_908376b3dab5ff::t_5fbf0f6f9f2105 116,124
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "9357eef25db21f31103995df4b732df2d5b7aa70",
+  "prompts": {},
+  "sessions": {
+    "s_908376b3dab5ff": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0175a20c0ffeO4a5MBJnO7NpxD",
+        "model": "glm-5.2"
+      },
+      "human_author": "Eric Ma <ericmajinglong@gmail.com>"
+    }
+  }
+}

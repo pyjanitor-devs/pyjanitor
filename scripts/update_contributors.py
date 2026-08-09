@@ -37,6 +37,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -46,6 +47,8 @@ API = "https://api.github.com"
 REPO = "pyjanitor-devs/pyjanitor"
 RC_PATH = Path(".all-contributorsrc")
 MAX_PAGES = 15
+REQUEST_TIMEOUT = 30
+MAX_RETRIES = 3
 
 # Accounts that commit/act via automation and should not be credited as people.
 BOT_DENYLIST = {
@@ -77,14 +80,16 @@ SOURCE_TO_TYPE = {
 class GitHub:
     """Minimal authenticated client for the GitHub REST API used by this script.
 
-    The ``token`` is sent as a bearer token on every request.
+    The ``token`` is sent as a bearer token on every request. Transient HTTP
+    errors (rate limits 403/429, 5xx) are retried with exponential backoff;
+    other non-2xx responses raise ``urllib.error.HTTPError``.
     """
 
     def __init__(self, token: str) -> None:
         self.token = token
 
     def _get(self, url: str) -> tuple[list | dict, str | None]:
-        """Issue an authenticated GET request and return (json, Link header).
+        """Issue an authenticated GET with timeout, retrying transient errors.
 
         Args:
             url: The full API URL to request.
@@ -92,6 +97,10 @@ class GitHub:
         Returns:
             A tuple of the decoded JSON body and the raw ``Link`` header
             value (``None`` if absent).
+
+        Raises:
+            urllib.error.HTTPError: For non-transient HTTP failures
+                (e.g. 401, 404) after retries are exhausted.
         """
         req = urllib.request.Request(
             url,
@@ -101,9 +110,27 @@ class GitHub:
                 "User-Agent": "pyjanitor-contributor-sync",
             },
         )
-        with urllib.request.urlopen(req) as resp:
-            body = json.loads(resp.read().decode("utf-8"))
-        return body, resp.headers.get("Link")
+        last_exc: urllib.error.HTTPError | None = None
+        for attempt in range(MAX_RETRIES):
+            try:
+                with urllib.request.urlopen(req, timeout=REQUEST_TIMEOUT) as resp:
+                    body = json.loads(resp.read().decode("utf-8"))
+                return body, resp.headers.get("Link")
+            except urllib.error.HTTPError as exc:
+                last_exc = exc
+                transient = exc.code in (403, 429) or 500 <= exc.code < 600
+                if not transient or attempt == MAX_RETRIES - 1:
+                    raise
+                wait = 2**attempt
+                label = "rate-limited" if exc.code in (403, 429) else f"HTTP {exc.code}"
+                print(
+                    f"  {label}; retrying in {wait}s "
+                    f"(attempt {attempt + 1}/{MAX_RETRIES})",
+                    file=sys.stderr,
+                )
+                time.sleep(wait)
+        assert last_exc is not None
+        raise last_exc
 
     def _paginate(self, url: str, label: str) -> list:
         """Follow the ``rel="next"`` Link header, up to ``MAX_PAGES`` pages.
@@ -125,9 +152,17 @@ class GitHub:
             items.extend(body)
             page += 1
             next_url = self._next_link(link)
-        print(
-            f"  {label}: fetched {len(items)} items ({page} page(s))", file=sys.stderr
-        )
+        if next_url:
+            print(
+                f"  {label}: WARNING — truncated at {MAX_PAGES} pages, "
+                "more pages remain",
+                file=sys.stderr,
+            )
+        else:
+            print(
+                f"  {label}: fetched {len(items)} items ({page} page(s))",
+                file=sys.stderr,
+            )
         return items
 
     @staticmethod
@@ -145,7 +180,10 @@ class GitHub:
         for part in link.split(","):
             seg = part.strip()
             if 'rel="next"' in seg:
-                return seg[seg.find("<") + 1 : seg.find(">")]
+                start = seg.find("<")
+                end = seg.find(">")
+                if start != -1 and end != -1 and end > start:
+                    return seg[start + 1 : end]
         return None
 
     def contributors(self) -> list[str]:
@@ -182,9 +220,17 @@ class GitHub:
 
         Returns:
             The user object (``name``, ``avatar_url``, ``html_url``, ...),
-            or an empty dict if the lookup fails.
+            or an empty dict if the lookup fails (e.g. the account was
+            deleted or renamed).
         """
-        body, _ = self._get(f"{API}/users/{urllib.parse.quote(login)}")
+        try:
+            body, _ = self._get(f"{API}/users/{urllib.parse.quote(login)}")
+        except urllib.error.HTTPError as exc:
+            print(
+                f"  warning: user lookup for {login} failed: {exc.code}",
+                file=sys.stderr,
+            )
+            return {}
         return body if isinstance(body, dict) else {}
 
 
@@ -196,17 +242,21 @@ def is_denied(login: str) -> bool:
     return low in BOT_DENYLIST
 
 
-def discover() -> dict[str, set[str]]:
-    """Return {login: {contribution_types}} for all recognized sources."""
-    token = os.environ.get("GITHUB_TOKEN")
-    if not token:
-        sys.exit("GITHUB_TOKEN env var is required.")
-    gh = GitHub(token)
+def discover(gh: GitHub) -> dict[str, set[str]]:
+    """Return ``{login: {contribution_types}}`` for all recognized sources.
+
+    Args:
+        gh: An authenticated ``GitHub`` client.
+
+    Returns:
+        A mapping from contributor login to the set of contribution types
+        discovered for them this run.
+    """
     found: dict[str, set[str]] = {}
     for login in gh.contributors():
         if not is_denied(login):
             found.setdefault(login, set()).add(SOURCE_TO_TYPE["commits"])
-    if os.environ.get("INCLUDE_ISSUES"):
+    if os.environ.get("INCLUDE_ISSUES") == "1":
         for login in gh.issue_authors():
             if not is_denied(login):
                 found.setdefault(login, set()).add(SOURCE_TO_TYPE["issues"])
@@ -225,14 +275,19 @@ def load_config() -> dict:
 
 
 def save_config(config: dict) -> None:
-    """Write the config dict back to ``.all-contributorsrc`` (2-space indent).
+    """Atomically write the config to ``.all-contributorsrc`` (2-space indent).
+
+    Writes to a sibling temp file then ``os.replace``s it into place, so a
+    crash mid-write cannot corrupt the existing config.
 
     Args:
         config: The all-contributors config to serialize.
     """
-    with RC_PATH.open("w", encoding="utf-8") as fh:
+    tmp = RC_PATH.with_suffix(".rc.tmp")
+    with tmp.open("w", encoding="utf-8") as fh:
         json.dump(config, fh, indent=2, ensure_ascii=False)
         fh.write("\n")
+    os.replace(tmp, RC_PATH)
 
 
 def main() -> int:
@@ -245,9 +300,17 @@ def main() -> int:
     Returns:
         ``0`` on success.
     """
-    discovered = discover()
+    token = os.environ.get("GITHUB_TOKEN")
+    if not token:
+        sys.exit("GITHUB_TOKEN env var is required.")
+    gh = GitHub(token)
+    discovered = discover(gh)
     config = load_config()
-    existing = {c["login"]: c for c in config.get("contributors", [])}
+    existing = {
+        c["login"]: c
+        for c in config.get("contributors", [])
+        if isinstance(c, dict) and c.get("login")
+    }
     existing_lower = {k.lower(): k for k in existing}
 
     added: list[str] = []
@@ -256,7 +319,7 @@ def main() -> int:
     for login, types in discovered.items():
         key = existing_lower.get(login.lower())
         if key is None:
-            profile = GitHub(os.environ["GITHUB_TOKEN"]).user(login)
+            profile = gh.user(login)
             existing[login] = {
                 "login": login,
                 "name": profile.get("name") or login,

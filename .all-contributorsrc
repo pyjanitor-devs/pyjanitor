@@ -1166,6 +1166,15 @@
         "bug",
         "question"
       ]
+    },
+    {
+      "login": "mjsr84",
+      "name": "Matt Jenkins",
+      "avatar_url": "https://avatars.githubusercontent.com/u/143112238?v=4",
+      "profile": "https://github.com/mjsr84",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "badgeTemplate": "<img alt=\"All Contributors: {{contributorCount}}\" src=\"https://img.shields.io/github/all-contributors/{{projectOwner}}/{{projectName}}?color=ee8449&style=flat-square\">",

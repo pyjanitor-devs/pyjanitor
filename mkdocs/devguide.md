@@ -284,9 +284,11 @@ We're here to help make your contribution experience smooth and educational!
 
 pyjanitor uses the [all-contributors][ac] specification to recognize everyone
 who contributes, not just those who write code. The contributors table in
-[`README.md`](README.md) is generated from
-[`.all-contributorsrc`](.all-contributorsrc).
+[`README.md`][readme] is generated from
+[`.all-contributorsrc`][rc].
 
+[readme]: https://github.com/pyjanitor-devs/pyjanitor/blob/dev/README.md
+[rc]: https://github.com/pyjanitor-devs/pyjanitor/blob/dev/.all-contributorsrc
 [ac]: https://github.com/all-contributors/all-contributors
 
 ### For contributors
@@ -312,7 +314,7 @@ The list of contribution types and their emoji is defined by the
 [all-contributors specification][ac-key]
 (for example: `code`, `doc`, `bug`, `review`, `ideas`, `question`).
 
-[ac-key]: https://allcontributors.org/docs/en/emoji-key
+[ac-key]: https://github.com/all-contributors/all-contributors/blob/master/README.md#emoji-key
 
 You can also trigger the workflow manually from the
 **Actions → Update contributors → Run workflow** page to pick up new commit

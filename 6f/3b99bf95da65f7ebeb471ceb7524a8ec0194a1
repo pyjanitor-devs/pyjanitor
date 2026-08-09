@@ -1,0 +1,19 @@
+CHANGELOG.md
+  s_908376b3dab5ff::t_8efacac878ce56 14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "6f3b99bf95da65f7ebeb471ceb7524a8ec0194a1",
+  "prompts": {},
+  "sessions": {
+    "s_908376b3dab5ff": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0175a20c0ffeO4a5MBJnO7NpxD",
+        "model": "glm-5.2"
+      },
+      "human_author": "Eric Ma <ericmajinglong@gmail.com>"
+    }
+  }
+}

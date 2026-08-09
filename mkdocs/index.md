@@ -498,6 +498,7 @@ Thanks goes to these wonderful people who have contributed to pyjanitor:
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/gregdcunha"><img src="https://avatars.githubusercontent.com/u/3931348?v=4?s=100" width="100px;" alt="Greg D"/><br /><sub><b>Greg D</b></sub></a><br /><a href="https://github.com/pyjanitor-devs/pyjanitor/commits?author=gregdcunha" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/nicksspirit"><img src="https://avatars.githubusercontent.com/u/14257815?v=4?s=100" width="100px;" alt="Nick Muoh"/><br /><sub><b>Nick Muoh</b></sub></a><br /><a href="https://github.com/pyjanitor-devs/pyjanitor/commits?author=nicksspirit" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/BaritoneBeard"><img src="https://github.com/identicons/BaritoneBeard.png?s=100" width="100px;" alt="BaritoneBeard"/><br /><sub><b>BaritoneBeard</b></sub></a><br /><a href="https://github.com/pyjanitor-devs/pyjanitor/issues?q=author%3ABaritoneBeard" title="Bug reports">🐛</a> <a href="#question-BaritoneBeard" title="Answering Questions">💬</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/mjsr84"><img src="https://avatars.githubusercontent.com/u/143112238?v=4?s=100" width="100px;" alt="Matt Jenkins"/><br /><sub><b>Matt Jenkins</b></sub></a><br /><a href="https://github.com/pyjanitor-devs/pyjanitor/commits?author=mjsr84" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>

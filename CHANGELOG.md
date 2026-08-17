@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+-   [ENH] Replace `.apply()` with `.map()` in `find_replace` for ~6x performance improvement. - Issue #1422 @Anupam2400
 -   [ENH] Add `drop_first` parameter to `expand_column`. - Issue #368 @manav252
 -   [ENH] Add `include_join_positions` parameter to `conditional_join`; added limited support for join aggregations via the `join_agg` function. - Issue #1497 @samukweku
 -   [ENH] Added `rle_id` function for run-length encoding IDs - Issue #1435 @emmanuel-ferdman

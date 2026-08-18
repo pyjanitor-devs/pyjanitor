@@ -360,21 +360,8 @@ def _column_order(dataframes: Iterable[pd.DataFrame]) -> list[Any]:
 def _match_rows(result: pd.DataFrame, bind_method: str) -> pd.Series:
     data = result.iloc[:, 1:]
     if bind_method == "rbind":
-        return data.apply(_row_matches_rbind, axis=1)
-    return data.apply(_row_matches_bind_rows, axis=1)
-
-
-def _row_matches_rbind(row: pd.Series) -> bool:
-    values = row.to_list()
-    first = values[0]
-    if pd.isna(first):
-        return False
-    return all(value == first for value in values[1:])
-
-
-def _row_matches_bind_rows(row: pd.Series) -> bool:
-    values = [value for value in row.to_list() if not pd.isna(value)]
-    if len(values) <= 1:
-        return True
-    first = values[0]
-    return all(value == first for value in values[1:])
+        first_col = data.iloc[:, 0]
+        return first_col.notna() & data.eq(first_col, axis=0).all(axis=1)
+    notna_mask = data.notna()
+    first_valid = data.bfill(axis=1).iloc[:, 0]
+    return data.eq(first_valid, axis=0).where(notna_mask, True).all(axis=1)

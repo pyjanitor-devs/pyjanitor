@@ -284,7 +284,7 @@ def conditional_join(
         - 0.32.10
             - Added `include_join_positions` parameter.
             - Added `join_algorithm` parameter.
-        - 0.33.0
+        - 0.32.25
             - Added `left_anti` and `right_anti` joins.
 
     Args:

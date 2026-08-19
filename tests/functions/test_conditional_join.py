@@ -1,3 +1,5 @@
+import operator
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -469,6 +471,44 @@ def test_dtype_different_non_equi():
         left = pd.DataFrame({"A": [1, 2, 3]}, dtype="int64")
         right = pd.DataFrame({"B": [1, 2, 3]}, dtype="int8")
         left.conditional_join(right, ("A", "B", "<"))
+
+
+@pytest.mark.parametrize("op", ["<", "<=", ">", ">="])
+@pytest.mark.parametrize("keep", ["first", "last"])
+def test_single_inequality_unsorted_right_keep(op, keep):
+    """Keep uses original right-row order when the join key is unsorted."""
+    left = pd.DataFrame({"left": [1.0, 3.0, 5.0, 7.0]})
+    right = pd.DataFrame(
+        {
+            "right": [5.0, np.nan, 1.0, 7.0, 3.0],
+            "right_row": ["zero", "null", "two", "three", "four"],
+        }
+    )
+    compare = {
+        "<": operator.lt,
+        "<=": operator.le,
+        ">": operator.gt,
+        ">=": operator.ge,
+    }[op]
+
+    expected = []
+    for left_value in left["left"]:
+        matches = []
+        for right_position, right_value in enumerate(right["right"]):
+            if pd.notna(right_value) and compare(left_value, right_value):
+                matches.append(right_position)
+        if matches:
+            position = min(matches) if keep == "first" else max(matches)
+            expected.append((left_value, right.loc[position, "right_row"]))
+
+    actual = left.conditional_join(
+        right,
+        ("left", "right", op),
+        keep=keep,
+    )
+    assert list(actual[["left", "right_row"]].itertuples(index=False, name=None)) == (
+        expected
+    )
 
 
 @pytest.mark.turtle

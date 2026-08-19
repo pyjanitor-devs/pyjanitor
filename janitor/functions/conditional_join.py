@@ -43,7 +43,9 @@ def conditional_join(
     df: pd.DataFrame,
     right: pd.DataFrame | pd.Series,
     *conditions: tuple,
-    how: Literal["inner", "left", "right", "outer"] = "inner",
+    how: Literal[
+        "inner", "left", "right", "outer", "left_anti", "right_anti"
+    ] = "inner",
     df_columns: Optional[Any] = slice(None),
     right_columns: Optional[Any] = slice(None),
     keep: Literal["first", "last", "all"] = "all",
@@ -93,6 +95,14 @@ def conditional_join(
     For multiple conditions, the and(`&`)
     operator is used to combine the results of the individual conditions.
 
+    !!! info "ELI5"
+
+        Imagine comparing every row on the left with rows on the right using
+        the rules you provide. An inner join keeps successful pairs. Left and
+        right joins also keep unmatched rows from their named side. A
+        `left_anti` join keeps only left rows that never found a successful
+        partner; `right_anti` does the same for right rows.
+
     In some scenarios there might be performance gains if the less than join,
     or the greater than join condition, or the range condition
     is executed before the equi join - pass `force=True` to force this.
@@ -107,7 +117,8 @@ def conditional_join(
 
     For non-equi joins, only numeric, timedelta and date columns are supported.
 
-    `inner`, `left`, `right` and `outer` joins are supported.
+    `inner`, `left`, `right`, `outer`, `left_anti` and `right_anti`
+    joins are supported.
 
     If the columns from `df` and `right` have nothing in common,
     a single index column is returned; else, a MultiIndex column
@@ -243,6 +254,17 @@ def conditional_join(
         9       NaN      12.0      15.0  right_only
         10      NaN       0.0       1.0  right_only
 
+        Return rows from the left dataframe that have no match:
+        >>> df1.conditional_join(
+        ...     df2,
+        ...     ("value_1", "value_2A", ">"),
+        ...     ("value_1", "value_2B", "<"),
+        ...     how="left_anti",
+        ... )
+           value_1  value_2A  value_2B
+        0        7       NaN       NaN
+        1        1       NaN       NaN
+
     !!! abstract "Version Changed"
 
         - 0.24.0
@@ -262,6 +284,8 @@ def conditional_join(
         - 0.32.10
             - Added `include_join_positions` parameter.
             - Added `join_algorithm` parameter.
+        - 0.33.0
+            - Added `left_anti` and `right_anti` joins.
 
     Args:
         df: A pandas DataFrame.
@@ -275,7 +299,10 @@ def conditional_join(
             the and(`&`) operator is used to combine the results
             of the individual conditions.
         how: Indicates the type of join to be performed.
-            It can be one of `inner`, `left`, `right` or `outer`.
+            It can be one of `inner`, `left`, `right`, `outer`,
+            `left_anti` or `right_anti`.
+            `df_columns` cannot be `None` for a `left_anti` join,
+            and `right_columns` cannot be `None` for a `right_anti` join.
         df_columns: Columns to select from `df` in the final output dataframe.
             Column selection is based on the
             [`select_columns`][janitor.functions.select.select_columns] syntax.
@@ -403,8 +430,16 @@ def _conditional_join_preliminary_checks(
 
     check("how", how, [str])
 
-    if how not in {"inner", "left", "right", "outer"}:
-        raise ValueError("'how' should be one of 'inner', 'left', 'right' or 'outer'.")
+    join_types = {"inner", "left", "right", "outer", "left_anti", "right_anti"}
+    if how not in join_types:
+        raise ValueError(
+            "'how' should be one of 'inner', 'left', 'right', 'outer', "
+            "'left_anti' or 'right_anti'."
+        )
+    if (how == "left_anti") and (df_columns is None):
+        raise ValueError("df_columns cannot be None for a left_anti join.")
+    if (how == "right_anti") and (right_columns is None):
+        raise ValueError("right_columns cannot be None for a right_anti join.")
 
     check("keep", keep, [str])
 
@@ -597,12 +632,13 @@ def _conditional_join_compute(
         # return every requested payload column with its original dtype.
         matching_df = df.loc(axis=1)[condition_left_columns]
         matching_right = right.loc(axis=1)[condition_right_columns]
+    match_keep = "all" if how in {"left_anti", "right_anti"} else keep
     if eq_check:
         indices = _multiple_conditional_join_eq(
             df=matching_df,
             right=matching_right,
             conditions=conditions,
-            keep=keep,
+            keep=match_keep,
             use_numba=use_numba,
             force=force,
             return_matching_indices=return_building_blocks or aggfunc,
@@ -613,7 +649,7 @@ def _conditional_join_compute(
             df=matching_df,
             right=matching_right,
             conditions=conditions,
-            keep=keep,
+            keep=match_keep,
             use_numba=use_numba,
             return_matching_indices=return_building_blocks or aggfunc,
             join_algorithm=join_algorithm,
@@ -623,14 +659,14 @@ def _conditional_join_compute(
             df=matching_df,
             right=matching_right,
             conditions=conditions,
-            keep=keep,
+            keep=match_keep,
         )
     else:
         indices = _get_indices_single_join._single_join(
             df=df,
             right=right,
             condition=conditions[0],
-            keep=keep,
+            keep=match_keep,
             return_matching_indices=return_building_blocks or aggfunc,
         )
     # Internally, join discovery may remain compact until aggregation. A
@@ -1006,6 +1042,13 @@ def _create_multiindex_column(df: pd.DataFrame, right: pd.DataFrame) -> tuple:
     return df, right
 
 
+def _get_unmatched_indices(matched_indices: np.ndarray, size: int) -> np.ndarray:
+    """Return row positions that are absent from the matched positions."""
+    unmatched = np.ones(size, dtype=bool)
+    unmatched[matched_indices] = False
+    return unmatched.nonzero()[0]
+
+
 def _create_frame(
     df: pd.DataFrame,
     right: pd.DataFrame,
@@ -1020,6 +1063,8 @@ def _create_frame(
     """
     Create final dataframe
     """
+    df_length = len(df)
+    right_length = len(right)
     # TODO: deprecate df_columns and right_columns
     # user can handle column renaming before the join
     if (df_columns is None) and (right_columns is None):
@@ -1130,9 +1175,7 @@ def _create_frame(
             include_join_positions=include_join_positions,
         )
     if how == "left":
-        indexer = pd.unique(left_index)
-        indexer = pd.Index(indexer).get_indexer(range(len(df)))
-        indexer = (indexer < 0).nonzero()[0]
+        indexer = _get_unmatched_indices(left_index, len(df))
         length = indexer.size
         if not length:
             return _inner(
@@ -1176,9 +1219,7 @@ def _create_frame(
         return pd.DataFrame(dictionary, copy=False)
 
     if how == "right":
-        indexer = pd.unique(right_index)
-        indexer = pd.Index(indexer).get_indexer(range(len(right)))
-        indexer = (indexer < 0).nonzero()[0]
+        indexer = _get_unmatched_indices(right_index, len(right))
         length = indexer.size
         if not length:
             return _inner(
@@ -1220,13 +1261,43 @@ def _create_frame(
             value = concat_compat([arr1, arr2])
             dictionary[name] = value
         return pd.DataFrame(dictionary, copy=False)
+    if how in {"left_anti", "right_anti"}:
+        if how == "left_anti":
+            indexer = _get_unmatched_indices(left_index, df_length)
+        else:
+            indexer = _get_unmatched_indices(right_index, right_length)
+        length = indexer.size
+        dictionary = {}
+        for key, value in df.items():
+            array = value._values
+            if how == "left_anti":
+                value = array[indexer]
+            else:
+                value = construct_1d_array_from_inferred_fill_value(
+                    value=array[:1], length=length
+                )
+            dictionary[key] = value
+        for key, value in right.items():
+            array = value._values
+            if how == "right_anti":
+                value = array[indexer]
+            else:
+                value = construct_1d_array_from_inferred_fill_value(
+                    value=array[:1], length=length
+                )
+            dictionary[key] = value
+        if indicator:
+            name, arr = _add_indicator(
+                indicator=indicator,
+                how="left" if how == "left_anti" else "right",
+                column_length=length,
+                columns=df.columns.union(right.columns),
+            )
+            dictionary[name] = arr
+        return pd.DataFrame(dictionary, copy=False)
     # how == 'outer'
-    left_indexer = pd.unique(left_index)
-    left_indexer = pd.Index(left_indexer).get_indexer(range(len(df)))
-    left_indexer = (left_indexer < 0).nonzero()[0]
-    right_indexer = pd.unique(right_index)
-    right_indexer = pd.Index(right_indexer).get_indexer(range(len(right)))
-    right_indexer = (right_indexer < 0).nonzero()[0]
+    left_indexer = _get_unmatched_indices(left_index, len(df))
+    right_indexer = _get_unmatched_indices(right_index, len(right))
 
     df_nulls_length = left_indexer.size
     right_nulls_length = right_indexer.size

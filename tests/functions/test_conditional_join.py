@@ -52,6 +52,25 @@ def test_conditional_join():
     )
 
 
+def test_conditional_join_does_not_mutate_inputs():
+    """Index and column metadata remain unchanged after a join."""
+    left = pd.DataFrame(
+        {"value": [1, 2, 3], "payload": list("abc")},
+        index=pd.Index([10, 20, 30], name="left_index"),
+    )
+    right = pd.DataFrame(
+        {"value": [2, 3, 4], "payload": list("xyz")},
+        index=pd.Index([40, 50, 60], name="right_index"),
+    )
+    expected_left = left.copy()
+    expected_right = right.copy()
+
+    left.conditional_join(right, ("value", "value", "<"), how="outer")
+
+    assert_frame_equal(left, expected_left)
+    assert_frame_equal(right, expected_right)
+
+
 def test_df_columns_right_columns_both_None(dummy, series):
     """Raise if both df_columns and right_columns is None"""
     with pytest.raises(

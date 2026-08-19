@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+-   [ENH] Avoid copying column data during `conditional_join` input
+    validation.
 -   [ENH] Replace `axis=1` `.apply()` with vectorized operations in `compare_df_cols` for 4-7x performance improvement. - Issue #1630 @Anupam2400
 -   [ENH] Replace `.apply()` with `.map()` in `find_replace` for ~6x performance improvement. - Issue #1422 @Anupam2400
 -   [ENH] Add `drop_first` parameter to `expand_column`. - Issue #368 @manav252

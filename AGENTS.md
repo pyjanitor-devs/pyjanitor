@@ -567,6 +567,19 @@ mental model in the code documentation as well as technical API details.
 nearby documentation. Do not add redundant ELI5 comments to straightforward
 helpers.
 
+### [2026-08-19] Derive API Documentation Versions from the Release Sequence
+
+**Context**: Adding a `Version Changed` entry for a feature while other
+docstrings referenced a future minor release for deprecation.
+**Learning**: An unrelated deprecation target is not evidence for the version
+that will introduce a new feature. The package version and active release
+sequence determine the annotation.
+**Recommendation**: Before adding `Version Added`, `Version Changed`, or
+deprecation metadata, check the current version in `pyproject.toml` and recent
+release commits. Use the next patch version for ordinary unreleased changes
+unless a maintainer or release plan specifies a minor or major release. If the
+release target remains ambiguous, ask rather than copying another annotation.
+
 ---
 
 ## Version History

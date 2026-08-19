@@ -267,6 +267,124 @@ def test_check_how_value(dummy, series):
         dummy.conditional_join(series, ("id", "B", "<"), how="INNER")
 
 
+def test_left_anti_range_join():
+    """Return left rows that do not match all range conditions."""
+    events = pd.DataFrame({"time": [1, 5, 10]})
+    windows = pd.DataFrame({"start": [0, 6], "end": [2, 8]})
+
+    actual = events.conditional_join(
+        windows,
+        ("time", "start", ">="),
+        ("time", "end", "<="),
+        how="left_anti",
+        indicator=True,
+    )
+
+    expected = pd.DataFrame(
+        {
+            "time": [5, 10],
+            "start": [np.nan, np.nan],
+            "end": [np.nan, np.nan],
+            "_merge": pd.Categorical(
+                ["left_only", "left_only"],
+                categories=["left_only", "right_only", "both"],
+            ),
+        }
+    )
+    assert_frame_equal(expected, actual)
+
+
+def test_right_anti_range_join():
+    """Return right rows that do not match all range conditions."""
+    events = pd.DataFrame({"time": [1, 5, 10]})
+    windows = pd.DataFrame({"start": [0, 6], "end": [2, 8]})
+
+    actual = events.conditional_join(
+        windows,
+        ("time", "start", ">="),
+        ("time", "end", "<="),
+        how="right_anti",
+        indicator="source",
+    )
+
+    expected = pd.DataFrame(
+        {
+            "time": [np.nan],
+            "start": [6],
+            "end": [8],
+            "source": pd.Categorical(
+                ["right_only"], categories=["left_only", "right_only", "both"]
+            ),
+        }
+    )
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.parametrize("how", ["left_anti", "right_anti"])
+def test_anti_join_all_rows_match(how):
+    """Return an empty frame with stable columns when every row matches."""
+    left = pd.DataFrame({"left": [1, 2]})
+    right = pd.DataFrame({"right": [2]})
+
+    actual = left.conditional_join(right, ("left", "right", "<="), how=how)
+
+    assert actual.empty
+    assert actual.columns.tolist() == ["left", "right"]
+
+
+def test_left_anti_equi_and_non_equi_join():
+    """Support anti joins with combined equi and non-equi conditions."""
+    left = pd.DataFrame({"group": [1, 1, 2], "value": [1, 5, 3]})
+    right = pd.DataFrame({"group": [1, 2], "limit": [2, 4]})
+
+    actual = left.conditional_join(
+        right,
+        ("group", "group", "=="),
+        ("value", "limit", "<"),
+        how="left_anti",
+        df_columns=["group", "value"],
+        right_columns=None,
+    )
+
+    expected = left.iloc[[1]].reset_index(drop=True)
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.parametrize("keep", ["first", "last"])
+def test_right_anti_ignores_keep(keep):
+    """Consider every matching right row when filtering a right anti join."""
+    left = pd.DataFrame({"left": [0]})
+    right = pd.DataFrame({"right": [1, 2]})
+
+    actual = left.conditional_join(
+        right, ("left", "right", "<"), how="right_anti", keep=keep
+    )
+
+    assert actual.empty
+
+
+@pytest.mark.parametrize(
+    ("how", "df_columns", "right_columns", "match"),
+    [
+        ("left_anti", None, slice(None), "df_columns cannot be None"),
+        ("right_anti", slice(None), None, "right_columns cannot be None"),
+    ],
+)
+def test_anti_join_preserved_columns_required(how, df_columns, right_columns, match):
+    """Require output columns from the side preserved by an anti join."""
+    left = pd.DataFrame({"left": [1]})
+    right = pd.DataFrame({"right": [0]})
+
+    with pytest.raises(ValueError, match=match):
+        left.conditional_join(
+            right,
+            ("left", "right", "<"),
+            how=how,
+            df_columns=df_columns,
+            right_columns=right_columns,
+        )
+
+
 def test_check_use_numba_type(dummy, series):
     """
     Raise TypeError if `use_numba` is not a boolean.

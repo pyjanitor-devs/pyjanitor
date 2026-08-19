@@ -100,6 +100,30 @@ def test_spec_columns_index(df_checks):
         df_checks.pipe(pivot_longer_spec, spec=spec.assign(birth=["ht2", "ht2"]))
 
 
+def test_dot_value_collides_with_identifier_column():
+    """Raise ValueError if '.value' collides with an identifier column."""
+    df = pd.DataFrame({"id": [1, 2], "a": [10, 20]})
+    specs = pd.DataFrame({".name": ["a"], ".value": ["id"]})
+
+    with pytest.raises(
+        ValueError,
+        match="Labels \\('id',\\) already exist as column labels.+",
+    ):
+        pivot_longer_spec(df=df, spec=specs)
+
+
+def test_dot_value_collides_with_spec_metadata_column():
+    """Raise ValueError if '.value' collides with a spec metadata column."""
+    df = pd.DataFrame({"a": [10, 20]})
+    specs = pd.DataFrame({".name": ["a"], ".value": ["part"], "part": ["first"]})
+
+    with pytest.raises(
+        ValueError,
+        match="Label 'part' in the spec's `.value` column already exists.+",
+    ):
+        pivot_longer_spec(df=df, spec=specs)
+
+
 def test_sort_by_appearance(df_checks):
     """Raise error if sort_by_appearance is not boolean."""
     with pytest.raises(TypeError, match="sort_by_appearance should be one of.+"):

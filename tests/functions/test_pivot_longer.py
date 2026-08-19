@@ -586,6 +586,36 @@ def test_multiindex_column_level(df_multi):
     assert_frame_equal(result, expected_output)
 
 
+def test_multiindex_column_level_duplicate_labels():
+    """Retain columns with duplicate labels in the selected level."""
+    df = pd.DataFrame(
+        [[1, 2], [3, 4]],
+        columns=pd.MultiIndex.from_tuples([("x", "a"), ("x", "b")]),
+    )
+
+    result = df.pivot_longer(column_level=0)
+
+    expected = pd.DataFrame({"variable": ["x"] * 4, "value": [1, 3, 2, 4]})
+    assert_frame_equal(result, expected)
+
+
+def test_multiindex_column_level_preserves_index():
+    """Retain the original index when a column level is selected."""
+    df = pd.DataFrame(
+        [[1, 2], [3, 4]],
+        columns=pd.MultiIndex.from_tuples([("x", "a"), ("y", "b")]),
+        index=pd.Index([10, 20], name="row"),
+    )
+
+    result = df.pivot_longer(column_level=0, ignore_index=False)
+
+    expected = pd.DataFrame(
+        {"variable": ["x", "x", "y", "y"], "value": [1, 3, 2, 4]},
+        index=pd.Index([10, 20, 10, 20], name="row"),
+    )
+    assert_frame_equal(result, expected)
+
+
 def test_multiindex(df_multi):
     """
     Test output from MultiIndex column,

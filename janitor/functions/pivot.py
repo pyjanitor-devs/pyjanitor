@@ -582,12 +582,9 @@ def _data_checks_pivot_longer(
 
     if column_level is not None:
         check("column_level", column_level, [int, str])
-        # approach below is more performant than using
-        # df.columns = df.columns.get_level_values(column_level)
         new_columns = df.columns.get_level_values(column_level)
-        df = [arr._values for _, arr in df.items()]
-        df = {name: arr for name, arr in zip(new_columns, df)}
-        df = pd.DataFrame(df)
+        df = df.copy(deep=False)
+        df.columns = new_columns
 
     if (index is None) and (column_names is None):
         column_names = slice(None)
@@ -1284,8 +1281,6 @@ def _pivot_longer_dot_value(
             sort_by_appearance=sort_by_appearance,
             dropna=dropna,
         )
-    if spec.duplicated().any(axis=None):
-        raise ValueError("spec contains duplicate entries, cannot reshape.")
     return _stack_dot_value(
         spec=spec,
         others=others,
@@ -1565,6 +1560,8 @@ def _stack_dot_value(
             df=df,
             dropna=dropna,
         )
+    if spec.duplicated().any(axis=None):
+        raise ValueError("spec contains duplicate entries, cannot reshape.")
     return _stack_dot_value_multiple_labels(
         spec=spec,
         grouped=grouped,

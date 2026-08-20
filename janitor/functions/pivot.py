@@ -1862,14 +1862,13 @@ def _build_index(index: dict, len_df: int, reps: int, sort_by_appearance: bool) 
     index_ = {}
     indexer = None
     for arr_name, arr in index.items():
-        if is_extension_array_dtype(arr) and sort_by_appearance:
+        if is_extension_array_dtype(arr):
             if indexer is None:
                 indexer = np.arange(len_df)
-                indexer = indexer.repeat(reps)
-            arr = arr[indexer]
-        elif is_extension_array_dtype(arr):
-            indexer = np.arange(len_df)
-            indexer = np.tile(indexer, reps)
+                if sort_by_appearance:
+                    indexer = indexer.repeat(reps)
+                else:
+                    indexer = np.tile(indexer, reps)
             arr = arr[indexer]
         elif sort_by_appearance:
             arr = arr.repeat(reps)
@@ -1901,8 +1900,11 @@ def _build_nulls(contents: dict, dropna: bool) -> np.ndarray | None:
     """Build nulls array"""
     if not dropna:
         return None
-    nulls = [pd.isna(arr) for _, arr in contents.items()]
-    nulls = np.logical_and.reduce(nulls)
+    arrays = iter(contents.values())
+    # Own the first mask because subsequent reductions mutate it in place.
+    nulls = pd.isna(next(arrays)).copy()
+    for arr in arrays:
+        np.logical_and(nulls, pd.isna(arr), out=nulls)
     if not nulls.any():
         return None
     return nulls

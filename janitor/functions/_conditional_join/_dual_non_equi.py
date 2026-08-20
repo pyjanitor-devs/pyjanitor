@@ -8,8 +8,13 @@ from janitor.functions._conditional_join import (
 )
 
 # description below is based on multiple non-equi joins (>/>=/</<=)
-# implementation is based on the algorithm described in this paper -
-# https://www.scitepress.org/papers/2018/68268/68268.pdf
+# implementation is based on the two-comparison "region number" algorithm
+# described in:
+#   Dathan, B. and Trausan-Matu, S., 2018. Algorithms for Computing
+#   Inequality Joins. DATA 2018 - 7th International Conference on Data
+#   Science, Technology and Applications, pp.357-364.
+#   DOI: 10.5220/0006826803570364
+#   https://www.scitepress.org/papers/2018/68268/68268.pdf
 
 # summary:
 # get regions for first and second conditions in the pair

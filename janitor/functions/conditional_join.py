@@ -83,6 +83,15 @@ def conditional_join(
     if both join columns from the right dataframe
     are monotonically increasing.
 
+    !!! note "Algorithm reference"
+
+        The `join_algorithm="regions"` path (and range joins more generally)
+        implements the two-comparison "region number" algorithm from Dathan,
+        B. and Trausan-Matu, S., 2018. *Algorithms for Computing Inequality
+        Joins*. DATA 2018 - 7th International Conference on Data Science,
+        Technology and Applications, pp.357-364.
+        DOI: [10.5220/0006826803570364](https://doi.org/10.5220/0006826803570364).
+
     This function returns rows, if any, where values from `df` meet the
     condition(s) for values from `right`. The conditions are passed in
     as a variable argument of tuples, where the tuple is of

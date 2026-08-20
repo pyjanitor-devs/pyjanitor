@@ -498,7 +498,9 @@ def pivot_longer_spec(
     Raises:
         KeyError: If '.name' or '.value' is missing from the spec's columns.
         ValueError: If the spec's columns is not unique,
-            or the labels in spec['.name'] is not unique.
+            the labels in spec['.name'] is not unique,
+            or a label in spec['.value'] collides with an identifier
+            or additional spec column.
 
     Returns:
         A pandas DataFrame.
@@ -532,10 +534,16 @@ def pivot_longer_spec(
     check("df_columns_is_unique", df_columns_is_unique, [bool])
     index = df.columns.difference(spec[".name"], sort=False)
     index = {name: df[name]._values for name in index}
+    others = [label for label in spec if label not in {".name", ".value"}]
+    _check_dot_value_collisions(
+        dot_value=spec[".value"].array,
+        index=index,
+        others=others,
+        source="spec",
+    )
     df = df.loc[:, spec[".name"]]
     if not df_columns_is_unique:
         spec = pd.DataFrame({".name": df.columns}).merge(spec, on=".name", how="inner")
-    others = [label for label in spec if label not in {".name", ".value"}]
     return _pivot_longer_dot_value(
         df=df,
         spec=spec.drop(columns=".name"),
@@ -1313,10 +1321,31 @@ def _dot_value_extra_checks(
     else:
         spec.columns = names_to
     dot_value = spec[".value"].array
-    checks = set(names_to) - {".value"}
-    for word in checks:
+    _check_dot_value_collisions(
+        dot_value=dot_value,
+        index=index,
+        others=others,
+        source="names_to",
+    )
+    return spec, index, others
+
+
+def _check_dot_value_collisions(
+    dot_value: Any,
+    index: dict,
+    others: list,
+    source: str,
+) -> None:
+    """Raise if output value labels collide with other output columns."""
+    for word in others:
         boolean = dot_value == word
         if boolean.any():
+            if source == "spec":
+                raise ValueError(
+                    f"Label '{word}' in the spec's `.value` column already "
+                    "exists as another column label in the spec DataFrame. "
+                    "Kindly provide unique label(s)."
+                )
             raise ValueError(
                 f"Label '{word}' in names_to already exists "
                 "in the new dataframe's columns. "
@@ -1330,7 +1359,6 @@ def _dot_value_extra_checks(
                 "as column labels assigned to the dataframe's "
                 "index parameter. Kindly provide unique label(s)."
             )
-    return spec, index, others
 
 
 def _stack_dot_value_only(

@@ -38,6 +38,13 @@ these into the main sections.
 - **Test-Driven**: Always run tests after making code changes.
 - **Document**: Keep docstrings up-to-date using Google-style format.
 - **Lint Markdown**: Always run `markdownlint` on markdown files after editing.
+- **Adversarial Review**: Before treating a PR as done, get a fresh-context
+  review of the diff (e.g. a subagent with no memory of how the change was
+  built) to actively try to refute correctness claims, not just check style.
+  Implementer bias won't catch what an independent read will - this repo's
+  join/merge code in particular has subtle correctness invariants (dtype,
+  null, and extension-array semantics; output ordering guarantees) that are
+  easy to assume rather than verify.
 
 ---
 
@@ -548,9 +555,24 @@ CLI.
 include MkDocs. The documentation task is available in the `docs` environment.
 **Recommendation**: Run `pixi run -e docs build-docs` to build documentation.
 
+### [2026-08-21] Adversarially Review Every PR Before It's Done
+
+**Context**: After implementing and opening PR #1658 (issue #1641), the user
+asked for every PR to be adversarially reviewed. A fresh-context review
+subagent, prompted to actively try to refute the correctness claims (not
+just check style), stress-tested the change well beyond the author's own
+tests and either confirms the work or surfaces gaps before merge.
+**Learning**: An implementing agent is biased toward confirming its own
+work; a reviewer with no memory of how the change was built evaluates it
+on its own terms and catches what self-review misses.
+**Recommendation**: Before treating any PR as done, spawn a fresh-context
+review pass over the diff. See the "Adversarial Review" Core Principle
+above.
+
 ---
 
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol
 - **2025-12-19**: Added markdownlint requirement and fixed line length issues
+- **2026-08-21**: Added mandatory adversarial review before every PR

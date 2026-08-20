@@ -580,9 +580,18 @@ release commits. Use the next patch version for ordinary unreleased changes
 unless a maintainer or release plan specifies a minor or major release. If the
 release target remains ambiguous, ask rather than copying another annotation.
 
+### [2026-08-19] Target the Integration Branch for Pull Requests
+
+**Context**: Preparing a stacked pull request and its post-merge handoff.
+**Learning**: pyjanitor uses `dev`, rather than `main`, as its integration branch.
+**Recommendation**: Target ordinary pull requests to `dev`. For a stacked pull
+request, target the dependency branch while it is open, then retarget or rebase
+onto `dev` after the dependency merges.
+
 ---
 
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol
 - **2025-12-19**: Added markdownlint requirement and fixed line length issues
+- **2026-08-19**: Documented the `dev` integration-branch convention

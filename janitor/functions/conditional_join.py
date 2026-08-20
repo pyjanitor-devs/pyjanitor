@@ -9,6 +9,7 @@ from typing import Any, Hashable, Literal, Optional
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
+from pandas.api.extensions import take
 from pandas.api.types import (
     is_datetime64_dtype,
     is_dtype_equal,
@@ -1136,10 +1137,12 @@ def _create_frame(
             indicator=indicator,
             include_join_positions=include_join_positions,
         )
+    # ELI5: turn every join into two synchronized row-number lists. A -1 means
+    # "this side has no row here", and pandas supplies that column's proper
+    # missing value while retaining extension dtypes such as Int64 or category.
     if how == "left":
-        indexer = _get_unmatched_indices(left_index, len(df))
-        length = indexer.size
-        if not length:
+        unmatched = _get_unmatched_indices(left_index, df_length)
+        if not unmatched.size:
             return _inner(
                 df=df,
                 right=right,
@@ -1147,43 +1150,14 @@ def _create_frame(
                 right_index=right_index,
                 indicator=indicator,
             )
-        dictionary = {}
-        for key, value in df.items():
-            array = value._values
-            top = array[left_index]
-            bottom = array[indexer]
-            value = concat_compat([top, bottom])
-            dictionary[key] = value
-        for key, value in right.items():
-            array = value._values
-            value = array[right_index]
-            other = construct_1d_array_from_inferred_fill_value(
-                value=array[:1], length=length
-            )
-            value = concat_compat([value, other])
-            dictionary[key] = value
-        if indicator:
-            columns = df.columns.union(right.columns)
-            name, arr1 = _add_indicator(
-                indicator=indicator,
-                how="inner",
-                column_length=right_index.size,
-                columns=columns,
-            )
-            name, arr2 = _add_indicator(
-                indicator=indicator,
-                how="left",
-                column_length=length,
-                columns=columns,
-            )
-            value = concat_compat([arr1, arr2])
-            dictionary[name] = value
-        return pd.DataFrame(dictionary, copy=False)
-
-    if how == "right":
-        indexer = _get_unmatched_indices(right_index, len(right))
-        length = indexer.size
-        if not length:
+        left_row_indexer = np.concatenate([left_index, unmatched])
+        right_row_indexer = np.concatenate(
+            [right_index, np.full(unmatched.size, -1, dtype=np.intp)]
+        )
+        indicator_parts = [("inner", left_index.size), ("left", unmatched.size)]
+    elif how == "right":
+        unmatched = _get_unmatched_indices(right_index, right_length)
+        if not unmatched.size:
             return _inner(
                 df=df,
                 right=right,
@@ -1191,144 +1165,96 @@ def _create_frame(
                 right_index=right_index,
                 indicator=indicator,
             )
-        dictionary = {}
-        for key, value in df.items():
-            array = value._values
-            value = array[left_index]
-            other = construct_1d_array_from_inferred_fill_value(
-                value=array[:1], length=length
-            )
-            value = concat_compat([value, other])
-            dictionary[key] = value
-        for key, value in right.items():
-            array = value._values
-            top = array[right_index]
-            bottom = array[indexer]
-            value = concat_compat([top, bottom])
-            dictionary[key] = value
-        if indicator:
-            columns = df.columns.union(right.columns)
-            name, arr1 = _add_indicator(
+        left_row_indexer = np.concatenate(
+            [left_index, np.full(unmatched.size, -1, dtype=np.intp)]
+        )
+        right_row_indexer = np.concatenate([right_index, unmatched])
+        indicator_parts = [
+            ("inner", right_index.size),
+            ("right", unmatched.size),
+        ]
+    elif how == "left_anti":
+        left_row_indexer = _get_unmatched_indices(left_index, df_length)
+        right_row_indexer = np.full(left_row_indexer.size, -1, dtype=np.intp)
+        indicator_parts = [("left", left_row_indexer.size)]
+    elif how == "right_anti":
+        right_row_indexer = _get_unmatched_indices(right_index, right_length)
+        left_row_indexer = np.full(right_row_indexer.size, -1, dtype=np.intp)
+        indicator_parts = [("right", right_row_indexer.size)]
+    else:  # how == "outer"
+        left_unmatched = _get_unmatched_indices(left_index, df_length)
+        right_unmatched = _get_unmatched_indices(right_index, right_length)
+        if not (left_unmatched.size or right_unmatched.size):
+            return _inner(
+                df=df,
+                right=right,
+                left_index=left_index,
+                right_index=right_index,
                 indicator=indicator,
-                how="inner",
-                column_length=left_index.size,
-                columns=columns,
             )
-            name, arr2 = _add_indicator(
-                indicator=indicator,
-                how="right",
-                column_length=length,
-                columns=columns,
-            )
-            value = concat_compat([arr1, arr2])
-            dictionary[name] = value
-        return pd.DataFrame(dictionary, copy=False)
-    if how in {"left_anti", "right_anti"}:
-        if how == "left_anti":
-            indexer = _get_unmatched_indices(left_index, df_length)
-        else:
-            indexer = _get_unmatched_indices(right_index, right_length)
-        length = indexer.size
-        dictionary = {}
-        for key, value in df.items():
-            array = value._values
-            if how == "left_anti":
-                value = array[indexer]
-            else:
-                value = construct_1d_array_from_inferred_fill_value(
-                    value=array[:1], length=length
-                )
-            dictionary[key] = value
-        for key, value in right.items():
-            array = value._values
-            if how == "right_anti":
-                value = array[indexer]
-            else:
-                value = construct_1d_array_from_inferred_fill_value(
-                    value=array[:1], length=length
-                )
-            dictionary[key] = value
-        if indicator:
-            name, arr = _add_indicator(
-                indicator=indicator,
-                how="left" if how == "left_anti" else "right",
-                column_length=length,
-                columns=df.columns.union(right.columns),
-            )
-            dictionary[name] = arr
-        return pd.DataFrame(dictionary, copy=False)
-    # how == 'outer'
-    left_indexer = _get_unmatched_indices(left_index, len(df))
-    right_indexer = _get_unmatched_indices(right_index, len(right))
+        left_row_indexer = np.concatenate(
+            [
+                left_index,
+                left_unmatched,
+                np.full(right_unmatched.size, -1, dtype=np.intp),
+            ]
+        )
+        right_row_indexer = np.concatenate(
+            [
+                right_index,
+                np.full(left_unmatched.size, -1, dtype=np.intp),
+                right_unmatched,
+            ]
+        )
+        indicator_parts = [
+            ("inner", left_index.size),
+            ("left", left_unmatched.size),
+            ("right", right_unmatched.size),
+        ]
 
-    df_nulls_length = left_indexer.size
-    right_nulls_length = right_indexer.size
     dictionary = {}
+    left_has_missing = (left_row_indexer == -1).any()
     for key, value in df.items():
         array = value._values
-        top = array[left_index]
-        top = [top]
-        if df_nulls_length:
-            middle = array[left_indexer]
-            top.append(middle)
-        if right_nulls_length:
-            bottom = construct_1d_array_from_inferred_fill_value(
-                value=array[:1], length=right_nulls_length
-            )
-            top.append(bottom)
-        if len(top) == 1:
-            top = top[0]
+        if left_has_missing:
+            array = take(array, left_row_indexer, allow_fill=True)
         else:
-            top = concat_compat(top)
-        dictionary[key] = top
+            array = array[left_row_indexer]
+        dictionary[key] = array
+    # Do not retain a potentially large indexer while building the other side.
+    del left_row_indexer
+    right_has_missing = (right_row_indexer == -1).any()
     for key, value in right.items():
         array = value._values
-        top = array[right_index]
-        top = [top]
-        if df_nulls_length:
-            middle = construct_1d_array_from_inferred_fill_value(
-                value=array[:1], length=df_nulls_length
-            )
-            top.append(middle)
-        if right_nulls_length:
-            bottom = array[right_indexer]
-            top.append(bottom)
-        if len(top) == 1:
-            top = top[0]
+        if right_has_missing:
+            array = take(array, right_row_indexer, allow_fill=True)
         else:
-            top = concat_compat(top)
-        dictionary[key] = top
+            array = array[right_row_indexer]
+        dictionary[key] = array
+    del right_row_indexer
     if indicator:
         columns = df.columns.union(right.columns)
-        name, arr1 = _add_indicator(
-            indicator=indicator,
-            how="inner",
-            column_length=right_index.size,
-            columns=columns,
-        )
-        arr1 = [arr1]
-        if df_nulls_length:
-            name, arr2 = _add_indicator(
+        arrays = []
+        for source, length in indicator_parts:
+            if not length:
+                continue
+            name, array = _add_indicator(
                 indicator=indicator,
-                how="left",
-                column_length=df_nulls_length,
+                how=source,
+                column_length=length,
                 columns=columns,
             )
-            arr1.append(arr2)
-        if right_nulls_length:
-            name, arr3 = _add_indicator(
-                indicator=indicator,
-                how="right",
-                column_length=right_nulls_length,
-                columns=columns,
-            )
-            arr1.append(arr3)
-        if len(arr1) == 1:
-            arr1 = arr1[0]
+            arrays.append(array)
+        if arrays:
+            dictionary[name] = arrays[0] if len(arrays) == 1 else concat_compat(arrays)
         else:
-            arr1 = concat_compat(arr1)
-        dictionary[name] = arr1
-
+            name, array = _add_indicator(
+                indicator=indicator,
+                how="inner",
+                column_length=0,
+                columns=columns,
+            )
+            dictionary[name] = array
     return pd.DataFrame(dictionary, copy=False)
 
 
@@ -1530,23 +1456,6 @@ def join_agg(
         reverse=reverse,
         join_algorithm=join_algorithm,
     )
-
-
-# copied from pandas/core/dtypes/missing.py
-# seems function was introduced in 2.2.2
-# we should support lesser versions - at least 2.0.0
-def construct_1d_array_from_inferred_fill_value(
-    value: object, length: int
-) -> np.ndarray:
-    # Find our empty_value dtype by constructing an array
-    #  from our value and doing a .take on it
-    from pandas.core.algorithms import take_nd
-    from pandas.core.construction import sanitize_array
-    from pandas.core.indexes.base import Index
-
-    arr = sanitize_array(value, Index(range(1)), copy=False)
-    taker = -1 * np.ones(length, dtype=np.intp)
-    return take_nd(arr, taker)
 
 
 # TODO: deprecate this function - numba not supported

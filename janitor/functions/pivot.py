@@ -498,7 +498,9 @@ def pivot_longer_spec(
     Raises:
         KeyError: If '.name' or '.value' is missing from the spec's columns.
         ValueError: If the spec's columns is not unique,
-            or the labels in spec['.name'] is not unique.
+            the labels in spec['.name'] is not unique,
+            or a label in spec['.value'] collides with an identifier
+            or additional spec column.
 
     Returns:
         A pandas DataFrame.
@@ -532,10 +534,16 @@ def pivot_longer_spec(
     check("df_columns_is_unique", df_columns_is_unique, [bool])
     index = df.columns.difference(spec[".name"], sort=False)
     index = {name: df[name]._values for name in index}
+    others = [label for label in spec if label not in {".name", ".value"}]
+    _check_dot_value_collisions(
+        dot_value=spec[".value"].array,
+        index=index,
+        others=others,
+        source="spec",
+    )
     df = df.loc[:, spec[".name"]]
     if not df_columns_is_unique:
         spec = pd.DataFrame({".name": df.columns}).merge(spec, on=".name", how="inner")
-    others = [label for label in spec if label not in {".name", ".value"}]
     return _pivot_longer_dot_value(
         df=df,
         spec=spec.drop(columns=".name"),
@@ -582,12 +590,9 @@ def _data_checks_pivot_longer(
 
     if column_level is not None:
         check("column_level", column_level, [int, str])
-        # approach below is more performant than using
-        # df.columns = df.columns.get_level_values(column_level)
         new_columns = df.columns.get_level_values(column_level)
-        df = [arr._values for _, arr in df.items()]
-        df = {name: arr for name, arr in zip(new_columns, df)}
-        df = pd.DataFrame(df)
+        df = df.copy(deep=False)
+        df.columns = new_columns
 
     if (index is None) and (column_names is None):
         column_names = slice(None)
@@ -1284,8 +1289,6 @@ def _pivot_longer_dot_value(
             sort_by_appearance=sort_by_appearance,
             dropna=dropna,
         )
-    if spec.duplicated().any(axis=None):
-        raise ValueError("spec contains duplicate entries, cannot reshape.")
     return _stack_dot_value(
         spec=spec,
         others=others,
@@ -1318,10 +1321,31 @@ def _dot_value_extra_checks(
     else:
         spec.columns = names_to
     dot_value = spec[".value"].array
-    checks = set(names_to) - {".value"}
-    for word in checks:
+    _check_dot_value_collisions(
+        dot_value=dot_value,
+        index=index,
+        others=others,
+        source="names_to",
+    )
+    return spec, index, others
+
+
+def _check_dot_value_collisions(
+    dot_value: Any,
+    index: dict,
+    others: list,
+    source: str,
+) -> None:
+    """Raise if output value labels collide with other output columns."""
+    for word in others:
         boolean = dot_value == word
         if boolean.any():
+            if source == "spec":
+                raise ValueError(
+                    f"Label '{word}' in the spec's `.value` column already "
+                    "exists as another column label in the spec DataFrame. "
+                    "Kindly provide unique label(s)."
+                )
             raise ValueError(
                 f"Label '{word}' in names_to already exists "
                 "in the new dataframe's columns. "
@@ -1335,7 +1359,6 @@ def _dot_value_extra_checks(
                 "as column labels assigned to the dataframe's "
                 "index parameter. Kindly provide unique label(s)."
             )
-    return spec, index, others
 
 
 def _stack_dot_value_only(
@@ -1565,6 +1588,8 @@ def _stack_dot_value(
             df=df,
             dropna=dropna,
         )
+    if spec.duplicated().any(axis=None):
+        raise ValueError("spec contains duplicate entries, cannot reshape.")
     return _stack_dot_value_multiple_labels(
         spec=spec,
         grouped=grouped,
@@ -1837,14 +1862,13 @@ def _build_index(index: dict, len_df: int, reps: int, sort_by_appearance: bool) 
     index_ = {}
     indexer = None
     for arr_name, arr in index.items():
-        if is_extension_array_dtype(arr) and sort_by_appearance:
+        if is_extension_array_dtype(arr):
             if indexer is None:
                 indexer = np.arange(len_df)
-                indexer = indexer.repeat(reps)
-            arr = arr[indexer]
-        elif is_extension_array_dtype(arr):
-            indexer = np.arange(len_df)
-            indexer = np.tile(indexer, reps)
+                if sort_by_appearance:
+                    indexer = indexer.repeat(reps)
+                else:
+                    indexer = np.tile(indexer, reps)
             arr = arr[indexer]
         elif sort_by_appearance:
             arr = arr.repeat(reps)
@@ -1876,8 +1900,11 @@ def _build_nulls(contents: dict, dropna: bool) -> np.ndarray | None:
     """Build nulls array"""
     if not dropna:
         return None
-    nulls = [pd.isna(arr) for _, arr in contents.items()]
-    nulls = np.logical_and.reduce(nulls)
+    arrays = iter(contents.values())
+    # Own the first mask because subsequent reductions mutate it in place.
+    nulls = pd.isna(next(arrays)).copy()
+    for arr in arrays:
+        np.logical_and(nulls, pd.isna(arr), out=nulls)
     if not nulls.any():
         return None
     return nulls

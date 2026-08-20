@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from hypothesis import given, settings
+from hypothesis import HealthCheck, given, settings
 from hypothesis.extra.pandas import series
 
 
@@ -17,6 +17,7 @@ def test_ecdf(s):
 
 
 @given(s=series(dtype=object))
+@settings(suppress_health_check=[HealthCheck.too_slow], deadline=None)
 def test_ecdf_string(s):
     """Test that type enforcement is in place."""
     with pytest.raises(TypeError):

@@ -49,3 +49,14 @@ def test_find_replace_regex(df_orders):
 def test_find_replace_regex_match_raises_error(df_orders):
     with pytest.raises(ValueError):
         df_orders.find_replace(order={"lemonade": "orange juice"}, match="bla")
+
+
+@pytest.mark.functions
+def test_find_replace_exact_preserves_unmapped_values(df_orders):
+    """Test that values not in the mapper are preserved, not converted to NaN."""
+    df_orders.find_replace(
+        order={"ice coffee": "latte", "regular coffee": "latte"}, match="exact"
+    )
+    assert df_orders["order"].iloc[0] == "latte"
+    assert df_orders["order"].iloc[1] == "lemonade"  # unmapped value preserved
+    assert df_orders["order"].iloc[2] == "latte"

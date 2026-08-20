@@ -586,6 +586,36 @@ def test_multiindex_column_level(df_multi):
     assert_frame_equal(result, expected_output)
 
 
+def test_multiindex_column_level_duplicate_labels():
+    """Retain columns with duplicate labels in the selected level."""
+    df = pd.DataFrame(
+        [[1, 2], [3, 4]],
+        columns=pd.MultiIndex.from_tuples([("x", "a"), ("x", "b")]),
+    )
+
+    result = df.pivot_longer(column_level=0)
+
+    expected = pd.DataFrame({"variable": ["x"] * 4, "value": [1, 3, 2, 4]})
+    assert_frame_equal(result, expected)
+
+
+def test_multiindex_column_level_preserves_index():
+    """Retain the original index when a column level is selected."""
+    df = pd.DataFrame(
+        [[1, 2], [3, 4]],
+        columns=pd.MultiIndex.from_tuples([("x", "a"), ("y", "b")]),
+        index=pd.Index([10, 20], name="row"),
+    )
+
+    result = df.pivot_longer(column_level=0, ignore_index=False)
+
+    expected = pd.DataFrame(
+        {"variable": ["x", "x", "y", "y"], "value": [1, 3, 2, 4]},
+        index=pd.Index([10, 20, 10, 20], name="row"),
+    )
+    assert_frame_equal(result, expected)
+
+
 def test_multiindex(df_multi):
     """
     Test output from MultiIndex column,
@@ -1631,6 +1661,58 @@ def test_preserve_extension_types():
     )
 
     assert_frame_equal(expected, actual)
+
+
+@pytest.mark.parametrize("sort_by_appearance", [False, True])
+def test_multiple_extension_index_columns(sort_by_appearance):
+    """Preserve multiple extension-typed identifier columns and row order."""
+    df = pd.DataFrame(
+        {
+            "integer": pd.array([1, 2], dtype="Int64"),
+            "string": pd.array(["a", "b"], dtype="string"),
+            "category": pd.Categorical(["x", "y"]),
+            "first": [10, 20],
+            "second": [30, 40],
+        }
+    )
+    index = ["integer", "string", "category"]
+    expected = df.melt(id_vars=index)
+    if sort_by_appearance:
+        expected = expected.iloc[[0, 2, 1, 3]].reset_index(drop=True)
+
+    actual = df.pivot_longer(index=index, sort_by_appearance=sort_by_appearance)
+
+    assert_frame_equal(actual, expected)
+
+
+def test_dropna_multiple_extension_value_columns():
+    """Drop rows only when every extension-typed value column is null."""
+    df = pd.DataFrame(
+        {
+            "id": [1, 2, 3],
+            "x_1": pd.array([1, pd.NA, pd.NA], dtype="Int64"),
+            "y_1": pd.array([pd.NA, 2, pd.NA], dtype="Int64"),
+            "x_2": pd.array([3, pd.NA, pd.NA], dtype="Int64"),
+            "y_2": pd.array([4, pd.NA, pd.NA], dtype="Int64"),
+        }
+    )
+    expected = pd.DataFrame(
+        {
+            "id": [1, 2, 1],
+            "set": ["1", "1", "2"],
+            "x": pd.array([1, pd.NA, 3], dtype="Int64"),
+            "y": pd.array([pd.NA, 2, 4], dtype="Int64"),
+        }
+    )
+
+    actual = df.pivot_longer(
+        index="id",
+        names_to=[".value", "set"],
+        names_sep="_",
+        dropna=True,
+    )
+
+    assert_frame_equal(actual, expected)
 
 
 def test_dropna_sort_by_appearance():

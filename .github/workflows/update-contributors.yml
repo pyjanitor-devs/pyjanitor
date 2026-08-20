@@ -1,0 +1,75 @@
+name: Update contributors
+
+# Automatically discovers new contributors from the GitHub API, adds them to
+# .all-contributorsrc, regenerates the contributors table in README.md, and
+# commits the result. Commit-author discovery is on by default; set
+# INCLUDE_ISSUES to '1' below to also credit issue authors with the "bug"
+# contribution type.
+#
+# See scripts/update_contributors.py for the discovery logic and
+# CONTRIBUTING.md for the maintainer workflow.
+
+on:
+  schedule:
+    # Every Monday at 09:00 UTC.
+    - cron: "0 9 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-contributors
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+
+      - name: Discover new contributors
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Set to '1' to also credit issue authors with the "bug" type.
+          INCLUDE_ISSUES: ""
+        run: python scripts/update_contributors.py
+
+      - name: Regenerate contributors table
+        # README.md is a symlink to mkdocs/index.md. The CLI writes through
+        # the symlink; the next step asserts the symlink survived.
+        run: npx --yes all-contributors-cli@latest generate
+
+      - name: Verify README.md symlink intact
+        run: |
+          test -L README.md || {
+            echo "README.md symlink was clobbered into a regular file; aborting.";
+            git status;
+            exit 1;
+          }
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # README.md -> mkdocs/index.md, so the real change lands there; the
+          # symlink itself must not be staged. Explicit paths avoid sweeping in
+          # unrelated modifications.
+          git add .all-contributorsrc mkdocs/index.md
+          if git diff --cached --quiet; then
+            echo "No contributor changes to commit."
+          else
+            git commit -m "[INF] Refresh all-contributors list [skip ci]"
+            git push
+          fi

@@ -366,9 +366,6 @@ def _conditional_join_preliminary_checks(
 
     check("right", right, [pd.DataFrame, pd.Series])
 
-    df = df.copy()
-    right = right.copy()
-
     if isinstance(right, pd.Series):
         if not right.name:
             raise ValueError("Unnamed Series are not supported for conditional_join.")
@@ -485,23 +482,9 @@ def _conditional_join_preliminary_checks(
             f"instead got {join_algorithm}"
         )
 
-    return (
-        df,
-        right,
-        conditions,
-        how,
-        df_columns,
-        right_columns,
-        keep,
-        use_numba,
-        indicator,
-        force,
-        aggfunc,
-        include_join_positions,
-        return_building_blocks,
-        reverse,
-        join_algorithm,
-    )
+    # Only index and column metadata are reassigned downstream. Shallow copies
+    # protect the caller's frames without duplicating every column buffer.
+    return df.copy(deep=False), right.copy(deep=False)
 
 
 def _conditional_join_type_check(
@@ -562,23 +545,7 @@ def _conditional_join_compute(
     This is where the actual computation
     for the conditional join takes place.
     """
-    (
-        df,
-        right,
-        conditions,
-        how,
-        df_columns,
-        right_columns,
-        keep,
-        use_numba,
-        indicator,
-        force,
-        aggfunc,
-        include_join_positions,
-        return_building_blocks,
-        reverse,
-        join_algorithm,
-    ) = _conditional_join_preliminary_checks(
+    df, right = _conditional_join_preliminary_checks(
         df=df,
         right=right,
         conditions=conditions,

@@ -64,7 +64,9 @@ def _select_anchor(candidates: list, df: pd.DataFrame, right: pd.DataFrame):
     regardless of anchor choice, so evaluation stops at the first such
     candidate.
     """
-    best = None
+    best_cost = None
+    best_pos = None
+    best_result = None
     for pos, candidate in enumerate(candidates):
         result = _evaluate_le_ge_candidate(candidate, df, right)
         if result is None:
@@ -74,9 +76,11 @@ def _select_anchor(candidates: list, df: pd.DataFrame, right: pd.DataFrame):
             cost = (len(sorted_right) - starts).sum()
         else:
             cost = ends.sum()
-        if best is None or cost < best[0]:
-            best = (cost, pos, left_index, starts, ends, sorted_right)
-    _, best_pos, left_index, starts, ends, sorted_right = best
+        if best_cost is None or cost < best_cost:
+            best_cost = cost
+            best_pos = pos
+            best_result = (left_index, starts, ends, sorted_right)
+    left_index, starts, ends, sorted_right = best_result
     return best_pos, left_index, starts, ends, sorted_right
 
 
@@ -87,6 +91,9 @@ def _get_indices(
     return_matching_indices: bool,
     keep: str,
 ):
+    """
+    Get indices for one or more `>/>=`/`</<=` conditions, no range join.
+    """
     empty_array = np.array([], dtype=np.intp)
     candidates = mapping["le_or_ge"]
     if keep == "all" or len(candidates) == 1:

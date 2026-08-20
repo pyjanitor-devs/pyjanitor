@@ -1901,6 +1901,7 @@ def _build_nulls(contents: dict, dropna: bool) -> np.ndarray | None:
     if not dropna:
         return None
     arrays = iter(contents.values())
+    # Own the first mask because subsequent reductions mutate it in place.
     nulls = pd.isna(next(arrays)).copy()
     for arr in arrays:
         np.logical_and(nulls, pd.isna(arr), out=nulls)

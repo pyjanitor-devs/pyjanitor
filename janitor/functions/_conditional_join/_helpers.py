@@ -82,6 +82,13 @@ def _keep_output(keep: str, left: np.ndarray, right: np.ndarray):
     return grouped.index, grouped._values
 
 
+def _accumulate_keep_positions(index: np.ndarray, keep: str) -> np.ndarray:
+    """Return the running first or last original row position."""
+    if keep == "first":
+        return np.minimum.accumulate(index)
+    return np.maximum.accumulate(index)
+
+
 def _separate_conditions_based_on_op(conditions: Sequence):
     """
     Create separate blocks (`equals`, `not_equals`, `le_or_ge`)

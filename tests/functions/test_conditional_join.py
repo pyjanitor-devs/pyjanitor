@@ -1,3 +1,4 @@
+from itertools import permutations
 from unittest import mock
 
 import numpy as np
@@ -4471,6 +4472,46 @@ def test_dual_le_ge_anchor_order_invariant_extension_array(keep):
         right, selective_cond, broad_cond, keep=keep, how="inner"
     )
     assert_frame_equal(bad_order, good_order)
+
+
+def _triple_le_ge_frames(seed, n=300):
+    """Three integer columns with different selectivity profiles, for
+    order-invariance coverage with 3+ candidates (not just 2)."""
+    rng = np.random.default_rng(seed)
+    df = pd.DataFrame(
+        {
+            "l_a": rng.integers(0, 5, size=n),
+            "l_b": rng.integers(0, 500, size=n),
+            "l_c": rng.integers(n - 50, n, size=n),
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "r_a": rng.integers(0, n, size=n),
+            "r_b": rng.integers(0, 500, size=n),
+            "r_c": rng.integers(0, n, size=n),
+        }
+    )
+    return df, right
+
+
+@pytest.mark.parametrize("keep", ["first", "last"])
+def test_triple_le_ge_anchor_order_invariant(keep):
+    """Order-invariance must hold with 3+ le/ge predicates, not just 2 -
+    `_select_anchor` picks among every candidate, not just a pair."""
+    df, right = _triple_le_ge_frames(seed=4)
+    conditions = [
+        ("l_a", "r_a", "<"),
+        ("l_b", "r_b", "<="),
+        ("l_c", "r_c", "<"),
+    ]
+
+    results = [
+        df.conditional_join(right, *perm, keep=keep, how="inner")
+        for perm in permutations(conditions)
+    ]
+    for result in results[1:]:
+        assert_frame_equal(results[0], result)
 
 
 def test_dual_le_ge_anchor_selection_skipped_for_keep_all():

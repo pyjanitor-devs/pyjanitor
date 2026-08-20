@@ -3,8 +3,6 @@ import pandas as pd
 
 from janitor.functions._conditional_join import _binary_search, _helpers
 
-_EMPTY_ARRAY = np.array([], dtype=np.intp)
-
 
 def _evaluate_le_ge_candidate(candidate: tuple, df: pd.DataFrame, right: pd.DataFrame):
     """
@@ -89,17 +87,18 @@ def _get_indices(
     return_matching_indices: bool,
     keep: str,
 ):
+    empty_array = np.array([], dtype=np.intp)
     candidates = mapping["le_or_ge"]
     if keep == "all" or len(candidates) == 1:
         anchor, *rest = candidates
         result = _evaluate_le_ge_candidate(anchor, df, right)
         if result is None:
-            return {"left_index": _EMPTY_ARRAY, "right_index": _EMPTY_ARRAY}
+            return {"left_index": empty_array, "right_index": empty_array}
         left_index, starts, ends, right = result
     else:
         result = _select_anchor(candidates, df, right)
         if result is None:
-            return {"left_index": _EMPTY_ARRAY, "right_index": _EMPTY_ARRAY}
+            return {"left_index": empty_array, "right_index": empty_array}
         best_pos, left_index, starts, ends, right = result
         rest = [*candidates[:best_pos], *candidates[best_pos + 1 :]]
     rest.extend(mapping["equals"])
@@ -114,7 +113,7 @@ def _get_indices(
         ends=ends,
     )
     if outcome is None:
-        return {"left_index": _EMPTY_ARRAY, "right_index": _EMPTY_ARRAY}
+        return {"left_index": empty_array, "right_index": empty_array}
     if return_matching_indices:
         outcome["left_index"] = left_index
         outcome["right_index"] = right.index._values

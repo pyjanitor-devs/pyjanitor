@@ -5,6 +5,7 @@ import pandas as pd
 
 from janitor.functions._conditional_join import _binary_search
 from janitor.functions._conditional_join._helpers import (
+    _accumulate_keep_positions,
     _convert_array_to_numpy,
     _null_checks_cond_join,
     _sort_if_not_monotonic,
@@ -71,14 +72,14 @@ def _less_than_indices(
         }
     if right_is_sorted & (keep == "first"):
         return {"left_index": left_index, "right_index": search_indices}
-    if keep == "first":
-        right = [right_index[ind:len_right] for ind in search_indices]
-        right = [arr.min() for arr in right]
-        return {"left_index": left_index, "right_index": right}
-    if keep == "last":
-        right = [right_index[ind:len_right] for ind in search_indices]
-        right = [arr.max() for arr in right]
-        return {"left_index": left_index, "right_index": right}
+    if keep in {"first", "last"}:
+        # ELI5: each match is a suffix of this array. Walking backwards once
+        # remembers the earliest/latest original row for every suffix.
+        right = _accumulate_keep_positions(right_index[::-1], keep)[::-1]
+        return {
+            "left_index": left_index,
+            "right_index": right[search_indices],
+        }
     if return_matching_indices:
         return dict(
             left_index=left_index,

@@ -1753,3 +1753,52 @@ def test_dropna_sort_by_appearance():
     )
 
     assert_frame_equal(actual, expected)
+
+
+def test_build_indexer_reorder_contents_zero_length():
+    """Test _build_indexer_reorder_contents with zero length."""
+    from janitor.functions.pivot import _build_indexer_reorder_contents
+    result = _build_indexer_reorder_contents(0, 5)
+    assert len(result) == 0
+
+
+def test_build_indexer_reorder_contents_single_rep():
+    """Test _build_indexer_reorder_contents with single repetition."""
+    from janitor.functions.pivot import _build_indexer_reorder_contents
+    result = _build_indexer_reorder_contents(5, 1)
+    assert np.array_equal(result, [0, 1, 2, 3, 4])
+
+
+def test_build_indexer_reorder_contents_single_length():
+    """Test _build_indexer_reorder_contents with single length."""
+    from janitor.functions.pivot import _build_indexer_reorder_contents
+    result = _build_indexer_reorder_contents(1, 5)
+    assert np.array_equal(result, [0, 1, 2, 3, 4])
+
+
+def test_build_indexer_reorder_contents_row_heavy():
+    """Test _build_indexer_reorder_contents with many rows, few reps."""
+    from janitor.functions.pivot import _build_indexer_reorder_contents
+    result = _build_indexer_reorder_contents(1000, 2)
+    expected = np.arange(1000 * 2).reshape((2, -1)).ravel(order="F")
+    assert np.array_equal(result, expected)
+
+
+def test_build_indexer_reorder_contents_column_heavy():
+    """Test _build_indexer_reorder_contents with few rows, many reps."""
+    from janitor.functions.pivot import _build_indexer_reorder_contents
+    result = _build_indexer_reorder_contents(2, 1000)
+    expected = np.arange(2 * 1000).reshape((1000, -1)).ravel(order="F")
+    assert np.array_equal(result, expected)
+
+
+def test_build_indexer_reorder_contents_peak_memory():
+    """Test _build_indexer_reorder_contents uses less peak memory."""
+    import tracemalloc
+    from janitor.functions.pivot import _build_indexer_reorder_contents
+    tracemalloc.start()
+    _build_indexer_reorder_contents(1_000_000, 8)
+    _, peak = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
+    # New implementation should use less than 70 MiB (old was ~122 MiB)
+    assert peak / 1024 / 1024 < 70, f"Peak memory too high: {peak/1024/1024:.1f} MiB"

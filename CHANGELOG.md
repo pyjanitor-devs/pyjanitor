@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+-   [PERF] Reduce peak memory in `_build_indexer_reorder_contents` by ~44% using single NumPy allocation. - Issue #1655 @Anupam2400
 -   [ENH] Avoid copying column data during `conditional_join` input
     validation. - Issue #1645, PR #1642 @samukweku
 -   [ENH] Speed up `conditional_join` with an unsorted right join key and

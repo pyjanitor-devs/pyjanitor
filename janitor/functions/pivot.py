@@ -1832,9 +1832,9 @@ def _build_indexer_for_spec(
 
 def _build_indexer_reorder_contents(length: int, reps: int) -> np.ndarray:
     """Build indexer for reordering arrays in contents"""
-    indexer = np.arange(length * reps)
-    indexer = indexer.reshape((reps, -1))
-    indexer = indexer.ravel(order="F")
+    rows = np.arange(length)[:, None]
+    columns = np.arange(reps) * length
+    indexer = np.add(rows, columns).ravel()
     return indexer
 
 

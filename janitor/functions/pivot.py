@@ -1772,27 +1772,45 @@ def _stack_dot_value_multiple_labels(
         df = df.sort_index(axis=1)
     contents = {}
     indexer = None
-    for label in range(_value.size):
-        frame = df.loc[:, [label]]
-        any_extension_array = (
-            frame.dtypes.map(is_extension_array_dtype).any(axis=None).item()
-        )
-        if sort_by_appearance and any_extension_array:
-            frame = _build_content_extension_array(df=frame)
-            if indexer is None:
-                indexer = _build_indexer_reorder_contents(
-                    length=len_df,
-                    reps=reps,
-                )
-            frame = frame.take(indexer)
-        elif any_extension_array:
-            frame = _build_content_extension_array(df=frame)
-        elif sort_by_appearance:
-            frame = frame._values.ravel(order="C")
-        else:
-            frame = frame._values.ravel(order="F")
-        label = _value[label]
-        contents[label] = frame
+    balanced = _index.size == max_count
+    # A balanced single-block NumPy frame is already laid out in contiguous
+    # value groups, so positional slices avoid repeated DataFrame selection
+    # and dtype inspection. Keep fragmented and extension-backed frames on
+    # the dtype-preserving path below.
+    manager = df._mgr
+    homogeneous_numpy = balanced and manager.is_single_block
+    homogeneous_numpy = homogeneous_numpy and not is_extension_array_dtype(
+        manager.blocks[0].dtype
+    )
+    if homogeneous_numpy:
+        values = df._values
+        order = "C" if sort_by_appearance else "F"
+        for position, label in enumerate(_value):
+            start = position * reps
+            stop = start + reps
+            contents[label] = values[:, start:stop].ravel(order=order)
+    else:
+        for label in range(_value.size):
+            frame = df.loc[:, [label]]
+            any_extension_array = (
+                frame.dtypes.map(is_extension_array_dtype).any(axis=None).item()
+            )
+            if sort_by_appearance and any_extension_array:
+                frame = _build_content_extension_array(df=frame)
+                if indexer is None:
+                    indexer = _build_indexer_reorder_contents(
+                        length=len_df,
+                        reps=reps,
+                    )
+                frame = frame.take(indexer)
+            elif any_extension_array:
+                frame = _build_content_extension_array(df=frame)
+            elif sort_by_appearance:
+                frame = frame._values.ravel(order="C")
+            else:
+                frame = frame._values.ravel(order="F")
+            label = _value[label]
+            contents[label] = frame
     nulls = _build_nulls(contents=contents, dropna=dropna)
     index = _build_index(
         index=index,

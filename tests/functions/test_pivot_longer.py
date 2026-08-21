@@ -1753,3 +1753,42 @@ def test_dropna_sort_by_appearance():
     )
 
     assert_frame_equal(actual, expected)
+
+
+@pytest.mark.parametrize(
+    "dtype",
+    ["int64", "float64", "bool", "datetime64[ns]", "timedelta64[ns]"],
+)
+@pytest.mark.parametrize("sort_by_appearance", [False, True])
+def test_balanced_homogeneous_numpy_multiple_values(dtype, sort_by_appearance):
+    """Preserve order and dtype for balanced homogeneous NumPy values."""
+    values = np.arange(12).reshape(3, 4)
+    if dtype == "bool":
+        values = values % 2 == 0
+    elif dtype == "datetime64[ns]":
+        values = values.astype("timedelta64[D]") + np.datetime64("2020-01-01")
+    else:
+        values = values.astype(dtype)
+    df = pd.DataFrame(values, columns=["x_1", "x_2", "y_1", "y_2"])
+
+    actual = df.pivot_longer(
+        names_to=(".value", "position"),
+        names_sep="_",
+        sort_by_appearance=sort_by_appearance,
+    )
+
+    order = "C" if sort_by_appearance else "F"
+    positions = np.array(["1", "2"])
+    if sort_by_appearance:
+        positions = np.tile(positions, len(df))
+    else:
+        positions = positions.repeat(len(df))
+    expected = pd.DataFrame(
+        {
+            "position": positions,
+            "x": df.loc[:, ["x_1", "x_2"]]._values.ravel(order=order),
+            "y": df.loc[:, ["y_1", "y_2"]]._values.ravel(order=order),
+        }
+    )
+
+    assert_frame_equal(actual, expected)

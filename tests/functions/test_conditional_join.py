@@ -4573,19 +4573,74 @@ def test_triple_le_ge_anchor_order_invariant(keep):
         assert_frame_equal(results[0], result)
 
 
-def test_dual_le_ge_anchor_selection_skipped_for_keep_all():
-    """`_select_anchor` must never be invoked for keep='all' - anchor
-    choice changes output row order for that case, so it has to stay on
-    the untouched first-supplied-predicate path."""
+def test_dual_le_ge_anchor_selection_used_for_keep_all():
+    """`_select_anchor` must be invoked for `keep='all'` too (issue #1657) -
+    row content is invariant to anchor choice regardless of `keep`, so
+    there's no correctness reason to leave `keep='all'` on the unselective
+    first-supplied-predicate path."""
     df, right = _dual_le_ge_frames(seed=3, n=50)
     broad_cond = ("l_broad", "r_broad", "<")
     selective_cond = ("l_selective", "r_selective", "<=")
 
     with mock.patch(
-        "janitor.functions._conditional_join._le_ge_1_or_more._select_anchor"
+        "janitor.functions._conditional_join._le_ge_1_or_more._select_anchor",
+        wraps=_le_ge_1_or_more._select_anchor,
     ) as patched:
         df.conditional_join(right, broad_cond, selective_cond, keep="all", how="inner")
-        patched.assert_not_called()
+        patched.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "broad_op, selective_op",
+    [("<", "<"), ("<=", "<="), (">", ">"), (">=", ">=")],
+)
+def test_dual_le_ge_anchor_content_invariant_keep_all(broad_op, selective_op):
+    """For `keep='all'`, the *set* of matched rows must not depend on
+    argument order, even though row order is no longer guaranteed to
+    match between orders (see #1657) - so compare sorted, the same way
+    the pre-existing `keep='all'` tests elsewhere in this file do."""
+    df, right = _skewed_broad_selective_frames(seed=11)
+    broad_cond = ("l_broad", "r_broad", broad_op)
+    selective_cond = ("l_selective", "r_selective", selective_op)
+    columns = ["l_broad", "l_selective", "r_broad", "r_selective"]
+
+    bad_order = df.conditional_join(
+        right, broad_cond, selective_cond, keep="all", how="inner"
+    ).sort_values(columns, ignore_index=True)
+    good_order = df.conditional_join(
+        right, selective_cond, broad_cond, keep="all", how="inner"
+    ).sort_values(columns, ignore_index=True)
+    assert_frame_equal(bad_order, good_order)
+
+
+def test_dual_le_ge_anchor_row_order_can_differ_for_keep_all_on_tie():
+    """Documents the actual trade-off #1657 accepts: for `keep='all'`,
+    which predicate anchors determines which column `right` gets sorted
+    by, so unsorted row order can differ between argument orders - but
+    only found this to actually happen when both candidates' sampled
+    costs tie (verified empirically: 0/30 seeds of genuinely-skewed,
+    clearly-one-more-selective data from `_skewed_broad_selective_frames`
+    produced a row-order difference, since `_select_anchor` reliably
+    picks the same logical predicate regardless of argument order in
+    that case - it's the earliest-wins tie-break that reintroduces
+    position-dependence, not a general property of anchor selection).
+    Content stays identical either way (see the test above); this test
+    exists to make the tie-break trade-off visible, not to pin a specific
+    order."""
+    df = pd.DataFrame({"l_a": [0, 0], "l_b": [0, 0]})
+    right = pd.DataFrame({"r_a": [30, 10, 20], "r_b": [1, 3, 2]})
+    cond_a = ("l_a", "r_a", "<")
+    cond_b = ("l_b", "r_b", "<")
+
+    a_first = df.conditional_join(right, cond_a, cond_b, keep="all", how="inner")
+    b_first = df.conditional_join(right, cond_b, cond_a, keep="all", how="inner")
+
+    columns = list(a_first.columns)
+    assert_frame_equal(
+        a_first.sort_values(columns, ignore_index=True),
+        b_first.sort_values(columns, ignore_index=True),
+    )
+    assert not a_first.reset_index(drop=True).equals(b_first.reset_index(drop=True))
 
 
 @pytest.mark.turtle

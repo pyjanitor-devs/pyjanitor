@@ -68,9 +68,12 @@ def _sample_candidate_cost(candidate: tuple, df: pd.DataFrame, right: pd.DataFra
 
     Used by `_select_anchor` to pick which single candidate to fully
     evaluate, instead of fully evaluating every candidate. Being wrong
-    only costs performance, never correctness: for `keep='first'`/`'last'`,
-    output is provably invariant to anchor choice (see issue #1641), so a
-    suboptimal sample-based pick is never a correctness risk.
+    only costs performance, never correctness: the matched row *content*
+    is provably invariant to anchor choice for every `keep` mode (see
+    issue #1641) - for `keep='all'`, a suboptimal pick can still affect
+    output *row order* (see issue #1657), but never which rows appear or
+    their values, so a suboptimal sample-based pick is never a
+    correctness risk.
 
     Uses a freshly-seeded RNG on every call (not a shared/module-level
     one), so the same inputs always produce the same estimate - a shared
@@ -118,11 +121,17 @@ def _select_anchor(candidates: list, df: pd.DataFrame, right: pd.DataFrame):
     evaluate only the one with the smallest estimate, instead of fully
     evaluating every candidate.
 
-    Only called when there are 2+ candidates and `keep` is `'first'` or
-    `'last'`: for those, the final output is provably invariant to which
-    predicate is chosen as anchor (see issue #1641), so a suboptimal
-    sample-based pick only affects performance, never correctness. Ties
-    are broken toward the earliest candidate in the original order, so an
+    Only called when there are 2+ candidates. The set of matched rows and
+    their values are provably invariant to which predicate is chosen as
+    anchor, for every `keep` mode (see issue #1641), so a suboptimal
+    sample-based pick can never change *what* the output is. For
+    `keep='first'`/`'last'`, output is invariant *entirely* - anchor
+    choice only affects performance. For `keep='all'`, anchor choice can
+    still affect output *row order* (which column `right` gets sorted by
+    before scanning) - never row content - see issue #1657, which
+    extended anchor selection to `keep='all'` on the basis that row order
+    was never documented or guaranteed here to begin with. Ties are
+    broken toward the earliest candidate in the original order, so an
     already-optimal ordering is left untouched.
 
     Returns `(best_pos, left_index, starts, ends, right)` for the chosen
@@ -168,7 +177,7 @@ def _get_indices(
     """
     empty_array = np.array([], dtype=np.intp)
     candidates = mapping["le_or_ge"]
-    if keep == "all" or len(candidates) == 1:
+    if len(candidates) == 1:
         anchor, *rest = candidates
         result = _evaluate_le_ge_candidate(anchor, df, right)
         if result is None:

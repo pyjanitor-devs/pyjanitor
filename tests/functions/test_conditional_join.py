@@ -4784,6 +4784,178 @@ def test_select_anchor_can_miss_a_rare_selective_feature_but_stays_correct():
     assert_frame_equal(bad_order, good_order)
 
 
+# --- issue #1659: le_lt/ge_gt selection for range joins ---
+#
+# `_separate_conditions_based_on_op` picks one `<`/`<=`-type predicate for
+# `le_lt` and one `>`/`>=`-type predicate for `ge_gt`. When there are 2+
+# eligible candidates of either type, `_maybe_select_better_range_bounds`
+# (in `_get_indices_non_equi.py`) swaps in the more selective one, reusing
+# `_le_ge_1_or_more._sample_candidate_cost`. Same invariance guarantee as
+# #1641/#1658: the matched row set is unaffected either way, for every
+# `keep` mode and both `join_algorithm` values - only performance (and,
+# for `keep='all'`, row order) can change.
+
+
+def _skewed_range_frames(seed, n=3000):
+    """A range join (`a > lo`, `a < hi_narrow`) plus a second, much less
+    selective `<`-type candidate (`hi_broad`) on the same right rows -
+    deliberately skewed so which one is genuinely more selective is
+    unambiguous, the same way `_skewed_broad_selective_frames` is for the
+    same-direction case."""
+    rng = np.random.default_rng(seed)
+    df = pd.DataFrame({"a": rng.integers(0, n, size=n)})
+    lo = rng.integers(0, n, size=n)
+    right = pd.DataFrame(
+        {
+            "lo": lo,
+            "hi_narrow": lo + rng.integers(1, 5, size=n),
+            "hi_broad": lo + rng.integers(1, n, size=n),
+        }
+    )
+    return df, right
+
+
+def test_select_range_bound_picks_the_selective_candidate():
+    """When there are 2+ eligible `<`-type candidates, the selective one
+    must be chosen for `le_lt`, not just the first-supplied one. Tests
+    `_maybe_select_better_range_bounds` directly, which is upstream of
+    (and shared by) both `join_algorithm` values."""
+    df, right = _skewed_range_frames(seed=0)
+    ge_gt = ("a", "lo", ">")
+    narrow = ("a", "hi_narrow", "<")
+    broad = ("a", "hi_broad", "<")
+
+    from janitor.functions._conditional_join import _get_indices_non_equi as m
+
+    mapping = {
+        "is_range_join": True,
+        "le_lt": broad,
+        "ge_gt": ge_gt,
+        "le_lt_candidates": [broad, narrow],
+        "ge_gt_candidates": [ge_gt],
+        "le_or_ge": [narrow],
+    }
+    result = m._maybe_select_better_range_bounds(mapping, df, right)
+    assert result["le_lt"] == narrow
+    assert broad in result["le_or_ge"]
+    assert narrow not in result["le_or_ge"]
+
+
+@pytest.mark.parametrize("join_algorithm", ["default", "regions"])
+@pytest.mark.parametrize("keep", ["first", "last"])
+def test_range_join_le_lt_order_invariant(join_algorithm, keep):
+    """Output must not depend on which order the two `<`-type candidates
+    are supplied in, for both `join_algorithm` values."""
+    df, right = _skewed_range_frames(seed=1)
+    ge_gt = ("a", "lo", ">")
+    narrow = ("a", "hi_narrow", "<")
+    broad = ("a", "hi_broad", "<")
+
+    bad_order = df.conditional_join(
+        right,
+        ge_gt,
+        broad,
+        narrow,
+        keep=keep,
+        how="inner",
+        join_algorithm=join_algorithm,
+    )
+    good_order = df.conditional_join(
+        right,
+        ge_gt,
+        narrow,
+        broad,
+        keep=keep,
+        how="inner",
+        join_algorithm=join_algorithm,
+    )
+    assert_frame_equal(bad_order, good_order)
+
+
+@pytest.mark.parametrize("join_algorithm", ["default", "regions"])
+@pytest.mark.parametrize("keep", ["first", "last"])
+def test_range_join_ge_gt_order_invariant(join_algorithm, keep):
+    """Symmetric to the `le_lt` case above: output must not depend on
+    which order two eligible `>`-type candidates are supplied in."""
+    rng = np.random.default_rng(2)
+    n = 3000
+    df = pd.DataFrame({"a": rng.integers(0, n, size=n)})
+    hi = rng.integers(0, n, size=n)
+    right = pd.DataFrame(
+        {
+            "hi": hi,
+            "lo_narrow": hi - rng.integers(1, 5, size=n),
+            "lo_broad": hi - rng.integers(1, n, size=n),
+        }
+    )
+    le_lt = ("a", "hi", "<")
+    narrow = ("a", "lo_narrow", ">")
+    broad = ("a", "lo_broad", ">")
+
+    bad_order = df.conditional_join(
+        right,
+        le_lt,
+        broad,
+        narrow,
+        keep=keep,
+        how="inner",
+        join_algorithm=join_algorithm,
+    )
+    good_order = df.conditional_join(
+        right,
+        le_lt,
+        narrow,
+        broad,
+        keep=keep,
+        how="inner",
+        join_algorithm=join_algorithm,
+    )
+    assert_frame_equal(bad_order, good_order)
+
+
+def test_range_join_bound_selection_skipped_for_keep_all():
+    """`_maybe_select_better_range_bounds` must never run for `keep='all'`
+    - mirrors #1658's original scoping (row order, not content, is what's
+    at stake there); #1657-style extension to `keep='all'` is out of
+    scope for this fix."""
+    df, right = _skewed_range_frames(seed=2, n=50)
+    ge_gt = ("a", "lo", ">")
+    narrow = ("a", "hi_narrow", "<")
+    broad = ("a", "hi_broad", "<")
+
+    with mock.patch(
+        "janitor.functions._conditional_join._get_indices_non_equi."
+        "_maybe_select_better_range_bounds"
+    ) as patched:
+        df.conditional_join(right, ge_gt, broad, narrow, keep="all", how="inner")
+        patched.assert_not_called()
+
+
+def test_range_join_bound_selection_noop_with_single_candidate():
+    """With only one eligible candidate per bound (the common case),
+    `_maybe_select_better_range_bounds` must be a no-op - covered
+    implicitly by every other range-join test in this file continuing to
+    pass, but asserted directly here too."""
+    df, right = _skewed_range_frames(seed=3, n=50)
+    ge_gt = ("a", "lo", ">")
+    narrow = ("a", "hi_narrow", "<")
+
+    from janitor.functions._conditional_join import _get_indices_non_equi as m
+
+    mapping = {
+        "is_range_join": True,
+        "le_lt": narrow,
+        "ge_gt": ge_gt,
+        "le_lt_candidates": [narrow],
+        "ge_gt_candidates": [ge_gt],
+        "le_or_ge": [],
+    }
+    result = m._maybe_select_better_range_bounds(mapping, df, right)
+    assert result["le_lt"] == narrow
+    assert result["ge_gt"] == ge_gt
+    assert result["le_or_ge"] == []
+
+
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())

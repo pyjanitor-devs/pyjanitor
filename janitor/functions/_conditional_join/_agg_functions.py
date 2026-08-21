@@ -1,6 +1,28 @@
 import janitor_rs
 import numpy as np
 
+_INTEGER_DTYPE_NAMES = frozenset(
+    {"int64", "int32", "int16", "int8", "uint64", "uint32", "uint16", "uint8"}
+)
+
+
+def _int64_prefix_sums(arr: np.ndarray, booleans: np.ndarray) -> np.ndarray:
+    """
+    Running total of `arr` widened to int64, null positions zeroed,
+    with a leading zero so `prefix[i]` is the sum of `arr[:i]`.
+
+    ELI5: write the running total once; any `[start:end)` range sum is
+    then just `prefix[end] - prefix[start]` -- two lookups and a
+    subtraction, instead of re-adding every element in the range again.
+    """
+    widened = arr.astype(np.int64)
+    if booleans.any():
+        widened[booleans] = 0
+    prefix = np.empty(widened.size + 1, dtype=np.int64)
+    prefix[0] = 0
+    np.cumsum(widened, out=prefix[1:])
+    return prefix
+
 
 def _sum_starts(
     arr: np.ndarray,
@@ -10,19 +32,14 @@ def _sum_starts(
     """
     Compute sum
     """
+    dtype_name = arr.dtype.name
+    if dtype_name in _INTEGER_DTYPE_NAMES:
+        prefix = _int64_prefix_sums(arr=arr, booleans=booleans)
+        return prefix[-1] - prefix[starts]
     mapping = {
-        "int64": janitor_rs.compute_sum_start_int64,
-        "int32": janitor_rs.compute_sum_start_int32,
-        "int16": janitor_rs.compute_sum_start_int16,
-        "int8": janitor_rs.compute_sum_start_int8,
-        "uint64": janitor_rs.compute_sum_start_uint64,
-        "uint32": janitor_rs.compute_sum_start_uint32,
-        "uint16": janitor_rs.compute_sum_start_uint16,
-        "uint8": janitor_rs.compute_sum_start_uint8,
         "float64": janitor_rs.compute_sum_start_f64,
         "float32": janitor_rs.compute_sum_start_f32,
     }
-    dtype_name = arr.dtype.name
     try:
         func = mapping[dtype_name]
     except KeyError:
@@ -38,19 +55,14 @@ def _sum_ends(
     """
     Compute sum
     """
+    dtype_name = arr.dtype.name
+    if dtype_name in _INTEGER_DTYPE_NAMES:
+        prefix = _int64_prefix_sums(arr=arr, booleans=booleans)
+        return prefix[ends]
     mapping = {
-        "int64": janitor_rs.compute_sum_end_int64,
-        "int32": janitor_rs.compute_sum_end_int32,
-        "int16": janitor_rs.compute_sum_end_int16,
-        "int8": janitor_rs.compute_sum_end_int8,
-        "uint64": janitor_rs.compute_sum_end_uint64,
-        "uint32": janitor_rs.compute_sum_end_uint32,
-        "uint16": janitor_rs.compute_sum_end_uint16,
-        "uint8": janitor_rs.compute_sum_end_uint8,
         "float64": janitor_rs.compute_sum_end_f64,
         "float32": janitor_rs.compute_sum_end_f32,
     }
-    dtype_name = arr.dtype.name
     try:
         func = mapping[dtype_name]
     except KeyError:
@@ -799,19 +811,21 @@ def _sum_starts_ends(
     """
     Compute sum
     """
+    dtype_name = arr.dtype.name
+    if dtype_name in _INTEGER_DTYPE_NAMES:
+        prefix = _int64_prefix_sums(arr=arr, booleans=booleans)
+        result = prefix[ends] - prefix[starts]
+        # an empty (or inverted) range contributes nothing, matching the
+        # Rust `for nn in start_..end_` loop, which never iterates when
+        # start_ >= end_
+        empty_range = starts >= ends
+        if empty_range.any():
+            result[empty_range] = 0
+        return result
     mapping = {
-        "int64": janitor_rs.compute_sum_start_end_int64,
-        "int32": janitor_rs.compute_sum_start_end_int32,
-        "int16": janitor_rs.compute_sum_start_end_int16,
-        "int8": janitor_rs.compute_sum_start_end_int8,
-        "uint64": janitor_rs.compute_sum_start_end_uint64,
-        "uint32": janitor_rs.compute_sum_start_end_uint32,
-        "uint16": janitor_rs.compute_sum_start_end_uint16,
-        "uint8": janitor_rs.compute_sum_start_end_uint8,
         "float64": janitor_rs.compute_sum_start_end_f64,
         "float32": janitor_rs.compute_sum_start_end_f32,
     }
-    dtype_name = arr.dtype.name
     try:
         func = mapping[dtype_name]
     except KeyError:
@@ -884,35 +898,6 @@ def _prod_starts_ends_matches(
         matches=matches,
         booleans=booleans,
     )
-
-
-def _sum_starts_ends(
-    arr: np.ndarray,
-    starts: np.ndarray,
-    ends: np.ndarray,
-    booleans: np.ndarray,
-) -> tuple:
-    """
-    Compute sum
-    """
-    mapping = {
-        "int64": janitor_rs.compute_sum_start_end_int64,
-        "int32": janitor_rs.compute_sum_start_end_int32,
-        "int16": janitor_rs.compute_sum_start_end_int16,
-        "int8": janitor_rs.compute_sum_start_end_int8,
-        "uint64": janitor_rs.compute_sum_start_end_uint64,
-        "uint32": janitor_rs.compute_sum_start_end_uint32,
-        "uint16": janitor_rs.compute_sum_start_end_uint16,
-        "uint8": janitor_rs.compute_sum_start_end_uint8,
-        "float64": janitor_rs.compute_sum_start_end_f64,
-        "float32": janitor_rs.compute_sum_start_end_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
-    return func(arr=arr, starts=starts, ends=ends, booleans=booleans)
 
 
 def _sum_starts_ends_matches(

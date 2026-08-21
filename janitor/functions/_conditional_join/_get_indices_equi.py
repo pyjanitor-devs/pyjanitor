@@ -70,19 +70,23 @@ def _maybe_select_better_equi_predicates(
             best = _select_best_candidate(candidates, df, right)
             if best == current:
                 continue
-            mapping["le_or_ge"] = [
-                current,
-                *[c for c in mapping["le_or_ge"] if c != best],
-            ]
+            # `best` is a le_or_ge member being promoted to `bound_key`;
+            # `current` demotes into its slot. Order within le_or_ge
+            # doesn't matter - it's always applied as an unordered set of
+            # independent post-filters - so an in-place swap is enough.
+            mapping["le_or_ge"][mapping["le_or_ge"].index(best)] = current
             mapping[bound_key] = best
         return mapping
-    # _equi_not_range_join.py picks the first le_or_ge entry as anchor.
+    # _equi_not_range_join.py picks the first le_or_ge entry as anchor,
+    # so unlike the range-join case above, position 0 matters here - swap
+    # the winner into it (mutates mapping["le_or_ge"] in place).
     candidates = mapping["le_or_ge"]
     if len(candidates) < 2:
         return mapping
     best = _select_best_candidate(candidates, df, right)
     if best != candidates[0]:
-        mapping["le_or_ge"] = [best, *[c for c in candidates if c != best]]
+        best_pos = candidates.index(best)
+        candidates[0], candidates[best_pos] = candidates[best_pos], candidates[0]
     return mapping
 
 

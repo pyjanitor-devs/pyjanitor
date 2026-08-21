@@ -1,7 +1,8 @@
 # Changelog
 
 ## [Unreleased]
--   [ENH] `conditional_join` now picks the most selective `<`/`<=`/`>`/`>=` predicate as its binary-search anchor (instead of the first one supplied) when `keep` is `'first'` or `'last'`, fixing pathological slowdowns from unfavorable predicate ordering; the choice is estimated from a fixed-size sample so the selection cost no longer scales with input size; `keep='all'` output is unaffected. - Issue #1641 @samukweku
+-   [ENH] `conditional_join` now applies the same selective-anchor selection to `keep='all'` too, fixing the same class of pathological slowdown there (measured: an unbounded, still-growing gap reaching ~800x at 100k rows on unfavorable predicate ordering, worse than the `keep='first'`/`'last'` case this superseded); row order for `keep='all'` was never documented or guaranteed, and content (which rows appear, their values) is provably unaffected regardless of anchor choice. - Issue #1657 @samukweku
+-   [ENH] `conditional_join` now picks the most selective `<`/`<=`/`>`/`>=` predicate as its binary-search anchor (instead of the first one supplied) when `keep` is `'first'` or `'last'`, fixing pathological slowdowns from unfavorable predicate ordering; the choice is estimated from a fixed-size sample so the selection cost no longer scales with input size. - Issue #1641 @samukweku
 -   [BUG] Fix `conditional_join` crash for `keep='last'` joins with a single `<`/`<=` window and multiple non-equi conditions - a missing `counts` argument to the Rust `index_starts_only_keep_last` call. - Issue #1641 @samukweku
 -   [ENH] Avoid copying column data during `conditional_join` input
     validation. - Issue #1645, PR #1642 @samukweku

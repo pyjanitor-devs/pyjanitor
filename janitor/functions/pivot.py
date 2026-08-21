@@ -1833,12 +1833,23 @@ def _build_indexer_for_spec(
 def _build_indexer_reorder_contents(length: int, reps: int) -> np.ndarray:
     """Build indexer for reordering arrays in contents.
 
-    Returns an empty array if reps == 0, rather than raising.
+    Raises ValueError if reps <= 0, matching the original
+    implementation's error contract (see Issue #1655 - this PR is
+    performance-only and must not silently change error behavior).
+
+    For degenerate shapes (length <= 1 or reps == 1), builds the
+    index directly via arange rather than broadcasting. Broadcasting
+    would otherwise double peak memory in these cases, since one of
+    the two "ruler" arrays (rows or columns) is already as large as
+    the final output.
     """
+    if reps <= 0:
+        raise ValueError(f"reps must be a positive integer, got {reps}.")
+    if length <= 1 or reps == 1:
+        return np.arange(length * reps)
     rows = np.arange(length)[:, None]
     columns = np.arange(reps) * length
-    indexer = np.add(rows, columns).ravel()
-    return indexer
+    return np.add(rows, columns).ravel()
 
 
 def _build_content_extension_array(df: pd.DataFrame) -> np.ndarray:

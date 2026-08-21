@@ -1765,17 +1765,50 @@ def test_build_indexer_reorder_contents_zero_length():
     assert len(result) == 0
 
 
-def test_build_indexer_reorder_contents_zero_reps():
-    """Test _build_indexer_reorder_contents with zero repetitions.
+def test_build_indexer_reorder_contents_reps_zero_raises():
+    """Test _build_indexer_reorder_contents raises for reps=0.
 
-    Unlike the old implementation (which raised ValueError trying to
-    reshape a zero-size array), this returns an empty array instead.
-    Not reachable via the public API today - all current call sites
-    guarantee reps >= 1 - but tested directly for defensive coverage
-    in case that invariant changes later.
+    Matches the original helper's error contract - Issue #1655 asks
+    to preserve error behavior since this is a performance-only PR.
     """
-    result = _build_indexer_reorder_contents(5, 0)
-    assert len(result) == 0
+    with pytest.raises(ValueError):
+        _build_indexer_reorder_contents(5, 0)
+
+
+def test_build_indexer_reorder_contents_reps_negative_raises():
+    """Test _build_indexer_reorder_contents raises for negative reps."""
+    with pytest.raises(ValueError):
+        _build_indexer_reorder_contents(5, -1)
+
+
+@pytest.mark.parametrize(
+    "length, reps",
+    [
+        (1, 2_000_000),  # single row, very wide
+        (2_000_000, 1),  # single column, very tall
+        (0, 2_000_000),  # empty, wide
+    ],
+)
+def test_build_indexer_reorder_contents_degenerate_shapes_peak_memory(length, reps):
+    """
+    Memory test for degenerate shapes (single row/column, or zero length).
+
+    These shapes previously doubled peak memory relative to the
+    output size, since broadcasting duplicated an already
+    materialized ruler array. After the fast-path fix, peak memory
+    should track the output size closely rather than ~2x it.
+    """
+    tracemalloc.start()
+    result = _build_indexer_reorder_contents(length, reps)
+    _, peak = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
+
+    output_mib = result.nbytes / 1024 / 1024
+    peak_mib = peak / 1024 / 1024
+    assert peak_mib < output_mib * 2 + 5, (
+        f"Peak memory too high for length={length}, reps={reps}: "
+        f"{peak_mib:.1f} MiB (output size {output_mib:.1f} MiB)"
+    )
 
 
 def test_build_indexer_reorder_contents_single_rep():

@@ -4369,14 +4369,17 @@ def test_multiple_non_equii_col_syntax(df, right):
 
 # --- issue #1641: anchor predicate selection for multi le/ge conditions ---
 #
-# For `keep='first'`/`keep='last'` with 2+ `<`/`<=`/`>`/`>=` predicates,
-# `conditional_join` internally picks one predicate as an anchor to narrow
-# candidate pairs via binary search before checking the rest. Output must
-# be identical no matter which predicate is chosen, so it must also be
-# identical no matter what order the predicates are supplied in. `keep='all'`
-# is excluded: which predicate anchors changes `right`'s sort order, which
-# changes the row order of the output (not its content), so anchor choice
-# must remain fixed (first-supplied) for that case.
+# For 2+ `<`/`<=`/`>`/`>=` predicates, `conditional_join` internally picks
+# one predicate as an anchor to narrow candidate pairs via binary search
+# before checking the rest. Which rows appear in the output, and their
+# values, is identical no matter which predicate is chosen - so it's also
+# identical no matter what order the predicates are supplied in - for
+# every `keep` mode. For `keep='first'`/`'last'`, output is invariant
+# *entirely*: anchor choice only affects performance. For `keep='all'`
+# (see issue #1657), anchor choice can still affect output *row order*
+# (which column `right` gets sorted by before scanning), since that order
+# was never documented or guaranteed to begin with - content never
+# changes, only the order those same rows come back in.
 
 _METHOD_NAME = {"<": "lt", "<=": "le", ">": "gt", ">=": "ge"}
 

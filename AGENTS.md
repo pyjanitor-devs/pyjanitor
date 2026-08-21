@@ -390,6 +390,15 @@ Issue body shape:
 
 See PR #1644 and issues #1641/#1660 for real examples of this shape.
 
+For any `Benchmark`/`Measured impact` section, extend the row-count range
+far enough to show whether the effect shrinks away or plateaus at scale
+(e.g. out to 10M-50M rows for join/row-wise operations), not just a few
+thousand rows. A regression or speedup that looks small at 10k rows can
+look very different at 50M - #1660's table is a real example: a ratio
+that looked like it might fade out below 30k rows instead held flat at
+~1.8-1.9x all the way to 50M, which is the number that actually matters
+for deciding whether it's worth fixing.
+
 ### Code Style Rules
 
 - **Line length**: 88 characters (ruff default)
@@ -623,4 +632,5 @@ above.
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol
 - **2025-12-19**: Added markdownlint requirement and fixed line length issues
 - **2026-08-21**: Added mandatory adversarial review before every PR
-- **2026-08-21**: Added PR/issue writing convention (ELI5 section for non-obvious changes)
+- **2026-08-21**: Added PR/issue writing convention (ELI5 for non-obvious changes)
+- **2026-08-21**: Added convention to extend benchmarks to scale (10M-50M rows)

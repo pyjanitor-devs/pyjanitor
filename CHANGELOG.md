@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+-   [PERF] Simplify the `conditional_join` Python/Rust boundary: removed a duplicate `_sum_starts_ends` definition, replaced ~87 repeated per-call dtype-dispatch dicts with one cached dispatcher, and switched `repeat_index` calls to `np.repeat`. - Issue #1649 @samukweku
 -   [ENH] Avoid copying column data during `conditional_join` input
     validation. - Issue #1645, PR #1642 @samukweku
 -   [ENH] Speed up `conditional_join` with an unsorted right join key and

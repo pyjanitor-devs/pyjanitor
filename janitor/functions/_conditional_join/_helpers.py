@@ -560,9 +560,7 @@ def _build_indices_positions(
     Build indices for multiple joins
     """
     if keep == "all":
-        left_index = janitor_rs.repeat_index(
-            index=left_index, counts=counts_array, length=total
-        )
+        left_index = np.repeat(left_index, counts_array)
         right_index = janitor_rs.build_positional_index(
             index=right_index, positions=positions, length=total
         )
@@ -609,29 +607,17 @@ def build_indices_matches(
     Build indices for multiple joins, where `matches` exist
     """
     if (keep == "all") and (starts is not None) and (ends is None):
-        left = janitor_rs.repeat_index(
-            index=left_index,
-            counts=counts_array,
-            length=total,
-        )
+        left = np.repeat(left_index, counts_array)
         right = janitor_rs.index_starts_only(
             index=right_index, starts=starts, matches=matches, length=total
         )
     elif (keep == "all") and (starts is None) and (ends is not None):
-        left = janitor_rs.repeat_index(
-            index=left_index,
-            counts=counts_array,
-            length=total,
-        )
+        left = np.repeat(left_index, counts_array)
         right = janitor_rs.index_ends_only(
             index=right_index, ends=ends, matches=matches, length=total
         )
     elif (keep == "all") and (starts is not None) and (ends is not None):
-        left = janitor_rs.repeat_index(
-            index=left_index,
-            counts=counts_array,
-            length=total,
-        )
+        left = np.repeat(left_index, counts_array)
         right = janitor_rs.index_starts_and_ends(
             index=right_index,
             starts=starts,

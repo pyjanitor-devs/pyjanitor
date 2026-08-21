@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import janitor_rs
 import numpy as np
 import pandas as pd
 
@@ -105,9 +104,5 @@ def _build_indices(
         return {"left_index": left_index, "right_index": right}
     right = [right_index[start:end] for start, end in zip(starts, ends)]
     right = np.concatenate(right)
-    left = janitor_rs.repeat_index(
-        index=left_index,
-        counts=counts,
-        length=counts.sum(),
-    )
+    left = np.repeat(left_index, counts)
     return {"left_index": left, "right_index": right}

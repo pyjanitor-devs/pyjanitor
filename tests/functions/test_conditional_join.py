@@ -4588,6 +4588,62 @@ def test_dual_le_ge_anchor_selection_skipped_for_keep_all():
 
 
 @pytest.mark.turtle
+@pytest.mark.parametrize("keep", ["first", "last"])
+def test_dual_le_ge_anchor_order_invariant_above_sample_size(keep):
+    """Order-invariance must hold once `n` exceeds `_select_anchor`'s fixed
+    sample size (1024), where anchor choice is driven by a genuine subsample
+    rather than the full column."""
+    df, right = _dual_le_ge_frames(seed=5, n=2000)
+    broad_cond = ("l_broad", "r_broad", "<")
+    selective_cond = ("l_selective", "r_selective", "<=")
+
+    bad_order = df.conditional_join(
+        right, broad_cond, selective_cond, keep=keep, how="inner"
+    )
+    good_order = df.conditional_join(
+        right, selective_cond, broad_cond, keep=keep, how="inner"
+    )
+    assert_frame_equal(bad_order, good_order)
+
+
+@pytest.mark.parametrize("keep", ["first", "last"])
+def test_dual_le_ge_anchor_order_invariant_duplicate_right_index(keep):
+    """Order-invariance must hold when `right` has a non-default, duplicate
+    index - `_select_anchor` must not assume `right`'s index is unique or a
+    contiguous RangeIndex."""
+    df, right = _dual_le_ge_frames(seed=6, n=40)
+    right.index = np.repeat(np.arange(len(right) // 2), 2)
+    broad_cond = ("l_broad", "r_broad", "<")
+    selective_cond = ("l_selective", "r_selective", "<=")
+
+    bad_order = df.conditional_join(
+        right, broad_cond, selective_cond, keep=keep, how="inner"
+    )
+    good_order = df.conditional_join(
+        right, selective_cond, broad_cond, keep=keep, how="inner"
+    )
+    assert_frame_equal(bad_order, good_order)
+
+
+def test_dual_le_ge_anchor_selection_is_deterministic():
+    """Repeated calls with identical inputs must pick the same anchor and
+    produce byte-identical output - `_select_anchor`'s sampling must not
+    rely on any RNG state that persists or drifts across calls."""
+    df, right = _dual_le_ge_frames(seed=7, n=3000)
+    broad_cond = ("l_broad", "r_broad", "<")
+    selective_cond = ("l_selective", "r_selective", "<=")
+
+    results = [
+        df.conditional_join(
+            right, broad_cond, selective_cond, keep="first", how="inner"
+        )
+        for _ in range(5)
+    ]
+    for result in results[1:]:
+        assert_frame_equal(results[0], result)
+
+
+@pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())
 def test_multiple_non_eqi(df, right):

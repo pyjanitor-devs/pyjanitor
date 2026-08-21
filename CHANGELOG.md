@@ -1,7 +1,7 @@
 # Changelog
 
 ## [Unreleased]
--   [ENH] `conditional_join` now picks the most selective `<`/`<=`/`>`/`>=` predicate as its binary-search anchor (instead of the first one supplied) when `keep` is `'first'` or `'last'`, fixing pathological slowdowns from unfavorable predicate ordering; `keep='all'` output is unaffected. - Issue #1641 @samukweku
+-   [ENH] `conditional_join` now picks the most selective `<`/`<=`/`>`/`>=` predicate as its binary-search anchor (instead of the first one supplied) when `keep` is `'first'` or `'last'`, fixing pathological slowdowns from unfavorable predicate ordering; the choice is estimated from a fixed-size sample so the selection cost no longer scales with input size; `keep='all'` output is unaffected. - Issue #1641 @samukweku
 -   [BUG] Fix `conditional_join` crash for `keep='last'` joins with a single `<`/`<=` window and multiple non-equi conditions - a missing `counts` argument to the Rust `index_starts_only_keep_last` call. - Issue #1641 @samukweku
 -   [ENH] Avoid copying column data during `conditional_join` input
     validation. - Issue #1645, PR #1642 @samukweku

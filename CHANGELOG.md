@@ -4,7 +4,7 @@
 -   [PERF] Use an O(n + m) NumPy prefix-sum for integer `conditional_join`
     range-sum aggregations (`join_agg(..., aggfunc=[(col, "sum")])`),
     replacing the O(sum of interval widths) Rust kernels for the `<`-only,
-    `>`-only, and arbitrary-interval dispatch paths. - Issue #1648 @samukweku
+    `>`-only, and arbitrary-interval dispatch paths. - Issue #1648, PR #1673 @samukweku
 -   [ENH] Avoid copying column data during `conditional_join` input
     validation. - Issue #1645, PR #1642 @samukweku
 -   [ENH] Speed up `conditional_join` with an unsorted right join key and

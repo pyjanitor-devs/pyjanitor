@@ -4956,6 +4956,127 @@ def test_range_join_bound_selection_noop_with_single_candidate():
     assert result["le_or_ge"] == []
 
 
+# --- issue #1664: selective predicate selection for equi + non-equi joins ---
+#
+# `_get_indices_equi.py` (joins combining an `==` predicate with non-equi
+# predicates) consumes the same `mapping["le_or_ge"]`/["le_lt"]/["ge_gt"]
+# as the pure non-equi dispatch tree, but #1658/#1663's fixes never
+# reached it. `_maybe_select_better_equi_predicates` mirrors both: the
+# single-anchor case (for `_equi_not_range_join.py`) and the two-bound
+# case (for `_equi_range_join.py`). `_equi_uniq_join.py` needs no fix -
+# it flattens every non-equi predicate into one unordered post-filter
+# set regardless of which mapping key it came from.
+
+
+def _skewed_equi_broad_selective_frames(seed, n=3000, n_groups=20):
+    """Like `_skewed_broad_selective_frames`, plus an equi column - for
+    the `_equi_not_range_join.py` dispatch path."""
+    rng = np.random.default_rng(seed)
+    df = pd.DataFrame(
+        {
+            "grp": rng.integers(0, n_groups, size=n),
+            "l_broad": rng.integers(0, 10, size=n),
+            "l_selective": rng.integers(n - 10, n, size=n),
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "grp": rng.integers(0, n_groups, size=n),
+            "r_broad": rng.integers(0, n, size=n),
+            "r_selective": rng.integers(0, n, size=n),
+        }
+    )
+    return df, right
+
+
+def _skewed_equi_range_frames(seed, n=3000, n_groups=20):
+    """Like `_skewed_range_frames`, plus an equi column - for the
+    `_equi_range_join.py` dispatch path."""
+    rng = np.random.default_rng(seed)
+    df = pd.DataFrame(
+        {"grp": rng.integers(0, n_groups, size=n), "a": rng.integers(0, n, size=n)}
+    )
+    lo = rng.integers(0, n, size=n)
+    right = pd.DataFrame(
+        {
+            "grp": rng.integers(0, n_groups, size=n),
+            "lo": lo,
+            "hi_narrow": lo + rng.integers(1, 5, size=n),
+            "hi_broad": lo + rng.integers(1, n, size=n),
+        }
+    )
+    return df, right
+
+
+@pytest.mark.parametrize("keep", ["first", "last"])
+def test_equi_non_range_predicate_order_invariant(keep):
+    """Output for an equi join combined with 2+ non-equi predicates must
+    not depend on which order the non-equi predicates are supplied in -
+    exercises `_equi_not_range_join.py` via `_maybe_select_better_equi_
+    predicates`."""
+    df, right = _skewed_equi_broad_selective_frames(seed=0)
+    grp = ("grp", "grp", "==")
+    broad = ("l_broad", "r_broad", "<")
+    selective = ("l_selective", "r_selective", "<=")
+
+    bad_order = df.conditional_join(
+        right, grp, broad, selective, keep=keep, how="inner"
+    )
+    good_order = df.conditional_join(
+        right, grp, selective, broad, keep=keep, how="inner"
+    )
+    assert_frame_equal(bad_order, good_order)
+
+
+@pytest.mark.parametrize("keep", ["first", "last"])
+def test_equi_range_join_predicate_order_invariant(keep):
+    """Output for an equi join combined with a range join (2 eligible
+    `<`-type candidates for the upper bound) must not depend on argument
+    order - exercises `_equi_range_join.py`."""
+    df, right = _skewed_equi_range_frames(seed=1)
+    grp = ("grp", "grp", "==")
+    ge_gt = ("a", "lo", ">")
+    narrow = ("a", "hi_narrow", "<")
+    broad = ("a", "hi_broad", "<")
+
+    bad_order = df.conditional_join(
+        right, grp, ge_gt, broad, narrow, keep=keep, how="inner"
+    )
+    good_order = df.conditional_join(
+        right, grp, ge_gt, narrow, broad, keep=keep, how="inner"
+    )
+    assert_frame_equal(bad_order, good_order)
+
+
+def test_equi_predicate_selection_skipped_for_keep_all():
+    """`_maybe_select_better_equi_predicates` must never run for
+    `keep='all'` - mirrors #1658/#1663's scoping."""
+    df, right = _skewed_equi_broad_selective_frames(seed=2, n=50)
+    grp = ("grp", "grp", "==")
+    broad = ("l_broad", "r_broad", "<")
+    selective = ("l_selective", "r_selective", "<=")
+
+    with mock.patch(
+        "janitor.functions._conditional_join._get_indices_equi."
+        "_maybe_select_better_equi_predicates"
+    ) as patched:
+        df.conditional_join(right, grp, broad, selective, keep="all", how="inner")
+        patched.assert_not_called()
+
+
+def test_equi_predicate_selection_noop_with_single_candidate():
+    """With a single non-equi candidate (the common case), the selection
+    step must be a no-op."""
+    from janitor.functions._conditional_join import _get_indices_equi as m
+
+    df, right = _skewed_equi_broad_selective_frames(seed=3, n=50)
+    narrow = ("l_selective", "r_selective", "<=")
+
+    mapping = {"is_range_join": False, "le_or_ge": [narrow]}
+    result = m._maybe_select_better_equi_predicates(mapping, df, right)
+    assert result["le_or_ge"] == [narrow]
+
+
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())

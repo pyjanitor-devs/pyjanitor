@@ -3,6 +3,16 @@ import pandas as pd
 
 from janitor.functions._conditional_join import _binary_search, _helpers
 
+# ELI5: to guess which predicate is more selective, we don't need to look
+# at every row - a few hundred is plenty to tell "almost everything matches"
+# apart from "almost nothing matches". 1024 is a round, comfortably-large
+# sample: big enough that the guess is reliable in practice (a real
+# selectivity gap - the kind that actually causes slow joins - shows up
+# clearly at this sample size, not just for edge-of-coin-flip cases), small
+# enough to cost about nothing even when the real data has millions of
+# rows. It's a reasonable default, not a value tuned against a benchmark
+# sweep - see _sample_candidate_cost's docstring for the one known way a
+# fixed sample this size can be fooled (a rare feature it never samples).
 _SAMPLE_SIZE = 1024
 
 

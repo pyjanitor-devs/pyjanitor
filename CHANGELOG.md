@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+-   [ENH] `conditional_join` calls that combine an `==` predicate with 2+ non-equi predicates (same-direction or a range join) now get the same selective-predicate selection as the pure non-equi path, when `keep` is `'first'` or `'last'` - fixing the same class of pathological slowdown Issue #1641/#1659 fixed elsewhere, for this dispatch path too. - Issue #1664 @samukweku
 -   [ENH] Range joins (a `<`/`<=` predicate combined with a `>`/`>=` predicate) in `conditional_join` now pick the most selective candidate independently for each bound, when there are 2+ eligible predicates of either type and `keep` is `'first'` or `'last'` - fixing the same class of pathological slowdown from unfavorable predicate ordering as Issue #1641, for both `join_algorithm='default'` and `'regions'`. - Issue #1659 @samukweku
 -   [ENH] `conditional_join` now picks the most selective `<`/`<=`/`>`/`>=` predicate as its binary-search anchor (instead of the first one supplied) when `keep` is `'first'` or `'last'`, fixing pathological slowdowns from unfavorable predicate ordering; the choice is estimated from a fixed-size sample so the selection cost no longer scales with input size; `keep='all'` output is unaffected. - Issue #1641 @samukweku
 -   [BUG] Fix `conditional_join` crash for `keep='last'` joins with a single `<`/`<=` window and multiple non-equi conditions - a missing `counts` argument to the Rust `index_starts_only_keep_last` call. - Issue #1641 @samukweku

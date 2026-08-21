@@ -157,14 +157,15 @@ pixi run pytest tests/functions/test_clean_names.py::test_clean_names_method_cha
 
 ### Documentation Commands
 
-```bash
-# Build docs
-pixi run docs
+`pixi run docs` uses the `default` environment, which doesn't include
+MkDocs - use the `docs` environment for anything that actually builds
+documentation.
 
+```bash
 # Serve docs with live reload
 pixi run serve-docs
 
-# Build docs in specific environment
+# Build docs (in the docs environment - MkDocs isn't in default)
 pixi run -e docs build-docs
 ```
 
@@ -476,17 +477,13 @@ pixi run pytest -m "not turtle" -v
 
 ## Common Anti-Patterns to Avoid
 
+Pixi usage, notebook conversion, and markdown linting have their own
+canonical rules already (Core Principles, Development Environment,
+Notebook Commands, Markdown Linting) - not repeated here.
+
 ### ❌ DON'T
 
-1. **Don't run Python/pytest without pixi**
-
-   ```bash
-   # Wrong
-   python script.py
-   pytest tests/
-   ```
-
-2. **Don't mutate input DataFrames**
+1. **Don't mutate input DataFrames**
 
    ```python
    # Wrong
@@ -495,32 +492,15 @@ pixi run pytest -m "not turtle" -v
        return df
    ```
 
-3. **Don't manually convert notebooks**
-
-   ```bash
-   # Wrong - don't write custom conversion scripts
-   python convert_notebook.py
-   ```
-
-4. **Don't forget to add tests**
+2. **Don't forget to add tests**
    - Every new function needs corresponding tests
 
-5. **Don't skip docstrings**
+3. **Don't skip docstrings**
    - Interrogate enforces >55% docstring coverage
-
-6. **Don't forget to lint markdown**
-   - Always run `markdownlint` on markdown files after editing
 
 ### ✅ DO
 
-1. **Always use pixi run**
-
-   ```bash
-   pixi run pytest tests/
-   pixi run python script.py
-   ```
-
-2. **Work on copies**
+1. **Work on copies**
 
    ```python
    def my_func(df):
@@ -529,22 +509,9 @@ pixi run pytest -m "not turtle" -v
        return df
    ```
 
-3. **Use uvx marimo for notebooks**
+2. **Write tests alongside code**
 
-   ```bash
-   uvx marimo convert notebook.ipynb -o notebook.py
-   ```
-
-4. **Write tests alongside code**
-
-5. **Write Google-style docstrings with examples**
-
-6. **Run markdownlint on markdown files**
-
-   ```bash
-   markdownlint AGENTS.md
-   # Install if not on PATH: pixi global install markdownlint-cli
-   ```
+3. **Write Google-style docstrings with examples**
 
 ---
 
@@ -589,14 +556,6 @@ Add entries in the format:
 **Recommendation**: How to apply this learning
 -->
 
-### [2025-12-19] Always Run markdownlint
-
-**Context**: Editing AGENTS.md file
-**Learning**: Markdown files should be linted with `markdownlint` to ensure
-consistent formatting and catch issues like long lines.
-**Recommendation**: After editing any markdown file, run `markdownlint <file>`.
-If not installed, use `pixi global install markdownlint-cli`.
-
 ### [2026-02-07] Open PRs with GitHub CLI
 
 **Context**: User requested opening a PR after pushing changes.
@@ -604,26 +563,13 @@ If not installed, use `pixi global install markdownlint-cli`.
 **Recommendation**: After pushing to the branch, create the PR using the GitHub
 CLI.
 
-### [2026-08-06] Build Documentation in the Docs Environment
-
-**Context**: Validating a documentation-only change.
-**Learning**: `pixi run docs` selects the default environment, which does not
-include MkDocs. The documentation task is available in the `docs` environment.
-**Recommendation**: Run `pixi run -e docs build-docs` to build documentation.
-
-### [2026-08-21] Adversarially Review Every PR Before It's Done
-
-**Context**: After implementing and opening PR #1658 (issue #1641), the user
-asked for every PR to be adversarially reviewed. A fresh-context review
-subagent, prompted to actively try to refute the correctness claims (not
-just check style), stress-tested the change well beyond the author's own
-tests and either confirms the work or surfaces gaps before merge.
-**Learning**: An implementing agent is biased toward confirming its own
-work; a reviewer with no memory of how the change was built evaluates it
-on its own terms and catches what self-review misses.
-**Recommendation**: Before treating any PR as done, spawn a fresh-context
-review pass over the diff. See the "Adversarial Review" Core Principle
-above.
+<!--
+[2025-12-19] Always Run markdownlint, [2026-08-06] Build Documentation in
+the Docs Environment, and [2026-08-21] Adversarially Review Every PR
+Before It's Done were integrated into Core Principles, Documentation
+Commands, and Core Principles respectively during a 2026-08-21 cleanup
+pass, and removed from here to avoid restating the same rule twice.
+-->
 
 ---
 
@@ -634,3 +580,6 @@ above.
 - **2026-08-21**: Added mandatory adversarial review before every PR
 - **2026-08-21**: Added PR/issue writing convention (ELI5 for non-obvious changes)
 - **2026-08-21**: Added convention to extend benchmarks to scale (10M-50M rows)
+- **2026-08-21**: Cleanup pass - removed 5x-duplicated markdownlint rule, 3x
+  -duplicated pixi/notebook rules, and Learned Patterns entries already
+  integrated into main sections

@@ -135,6 +135,17 @@ def _select_anchor(candidates: list, df: pd.DataFrame, right: pd.DataFrame):
     best_pos = None
     for pos, candidate in enumerate(candidates):
         cost = _sample_candidate_cost(candidate, df, right)
+        # `cost < best_cost` relies on `cost` never being NaN: a NaN
+        # comparison is always False, so a NaN cost would silently lose
+        # every comparison and leave candidate 0 selected regardless of
+        # what later candidates look like - wrong anchor, not wrong
+        # output, but worth knowing about. `_sample_candidate_cost` can't
+        # produce NaN today because its inputs are guaranteed non-null
+        # (nulls are stripped upstream in `_get_indices_non_equi.py`
+        # before this function ever runs) and non-empty (an empty `df`/
+        # `right` returns early before dispatch reaches here). If either
+        # of those upstream guarantees ever changes, this stops being
+        # unreachable.
         if best_cost is None or cost < best_cost:
             best_cost = cost
             best_pos = pos

@@ -343,6 +343,53 @@ def test_my_function_error():
         df.my_function("invalid")
 ```
 
+### Writing PRs and Issues
+
+For changes that involve non-obvious algorithmic or performance reasoning
+(not every PR/issue - a typo fix or a one-line dependency bump doesn't need
+this), include a plain-language **ELI5** section explaining the change
+without jargon: what was wrong, why, and what changed - in terms someone
+unfamiliar with the internals could follow. Place it right after the
+technical summary/background, before any benchmark numbers or detailed
+analysis.
+
+PR body shape:
+
+```markdown
+## Summary
+<technical summary of the change and why>
+
+## ELI5
+<plain-language explanation - only if the change needs one>
+
+## Benchmark
+<before/after numbers, if performance-related>
+
+## Test plan
+<what was run to verify it>
+```
+
+Issue body shape:
+
+```markdown
+## Background
+<what's wrong and why, technically>
+
+## ELI5
+<plain-language explanation - only if the issue needs one>
+
+## Measured impact
+<numbers, if applicable>
+
+## Ask
+<what the fix should do>
+
+## Related
+<links to parent/sibling issues>
+```
+
+See PR #1644 and issues #1641/#1660 for real examples of this shape.
+
 ### Code Style Rules
 
 - **Line length**: 88 characters (ruff default)
@@ -576,3 +623,4 @@ above.
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol
 - **2025-12-19**: Added markdownlint requirement and fixed line length issues
 - **2026-08-21**: Added mandatory adversarial review before every PR
+- **2026-08-21**: Added PR/issue writing convention (ELI5 section for non-obvious changes)

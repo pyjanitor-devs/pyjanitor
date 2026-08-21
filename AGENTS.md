@@ -400,6 +400,24 @@ that looked like it might fade out below 30k rows instead held flat at
 ~1.8-1.9x all the way to 50M, which is the number that actually matters
 for deciding whether it's worth fixing.
 
+### Conditional-Join Performance Research
+
+When investigating current or future `conditional_join` performance work,
+include the region-number algorithms from Dathan and Trausan-Matu,
+*Algorithms for Computing Inequality Joins* (DATA 2018), among the design
+options considered: <https://doi.org/10.5220/0006826803570364>.
+
+The paper's two-comparison algorithm underlies the existing `regions` path.
+Its Section 3.2 also describes a distinct multi-comparison strategy that
+computes regions for every predicate and dynamically chooses the driving
+field. Consider both the existing implementation and the paper's fuller
+algorithm when researching predicate selection, field-role assignment,
+relation orientation, candidate materialization, or other inequality-join
+optimizations. Treat the paper as an option to evaluate, not an automatic
+implementation mandate: preserve pyjanitor's ordering, dtype, null, index,
+and extension-array behavior, and validate performance claims against
+representative real inputs and the large-scale benchmark guidance above.
+
 ### Code Style Rules
 
 - **Line length**: 88 characters (ruff default)
@@ -580,6 +598,8 @@ pass, and removed from here to avoid restating the same rule twice.
 - **2026-08-21**: Added mandatory adversarial review before every PR
 - **2026-08-21**: Added PR/issue writing convention (ELI5 for non-obvious changes)
 - **2026-08-21**: Added convention to extend benchmarks to scale (10M-50M rows)
+- **2026-08-21**: Added the inequality-joins paper as a design reference for
+  current and future `conditional_join` performance work
 - **2026-08-21**: Cleanup pass - removed 5x-duplicated markdownlint rule, 3x
   -duplicated pixi/notebook rules, and Learned Patterns entries already
   integrated into main sections

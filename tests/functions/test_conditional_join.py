@@ -10,6 +10,7 @@ from pandas import Timedelta
 from pandas.testing import assert_frame_equal
 
 import janitor as jn
+from janitor.functions._conditional_join import _le_ge_1_or_more
 from janitor.testing_utils.strategies import (
     conditional_df,
     conditional_right,
@@ -4590,9 +4591,11 @@ def test_dual_le_ge_anchor_selection_skipped_for_keep_all():
 @pytest.mark.turtle
 @pytest.mark.parametrize("keep", ["first", "last"])
 def test_dual_le_ge_anchor_order_invariant_above_sample_size(keep):
-    """Order-invariance must hold once `n` exceeds `_select_anchor`'s fixed
-    sample size (1024), where anchor choice is driven by a genuine subsample
-    rather than the full column."""
+    """Output stays correct once `n` exceeds `_select_anchor`'s fixed sample
+    size (1024), where anchor choice is driven by a genuine subsample rather
+    than the full column. This only exercises the code path, not whether
+    the sample actually favors the selective predicate - see
+    `test_select_anchor_picks_the_selective_candidate` for that."""
     df, right = _dual_le_ge_frames(seed=5, n=2000)
     broad_cond = ("l_broad", "r_broad", "<")
     selective_cond = ("l_selective", "r_selective", "<=")
@@ -4626,9 +4629,11 @@ def test_dual_le_ge_anchor_order_invariant_duplicate_right_index(keep):
 
 
 def test_dual_le_ge_anchor_selection_is_deterministic():
-    """Repeated calls with identical inputs must pick the same anchor and
-    produce byte-identical output - `_select_anchor`'s sampling must not
-    rely on any RNG state that persists or drifts across calls."""
+    """Repeated calls with identical inputs must produce byte-identical
+    output. This alone doesn't prove the same anchor was picked each time -
+    output is invariant to anchor choice by construction - see
+    `test_select_anchor_choice_is_deterministic` for a test that inspects
+    the actual choice made."""
     df, right = _dual_le_ge_frames(seed=7, n=3000)
     broad_cond = ("l_broad", "r_broad", "<")
     selective_cond = ("l_selective", "r_selective", "<=")
@@ -4641,6 +4646,142 @@ def test_dual_le_ge_anchor_selection_is_deterministic():
     ]
     for result in results[1:]:
         assert_frame_equal(results[0], result)
+
+
+def _skewed_broad_selective_frames(seed, n=3000):
+    """Deliberately skewed, unlike `_dual_le_ge_frames`: `l_broad` sits near
+    the bottom of `r_broad`'s range (matches almost every right row) and
+    `l_selective` sits near the top of `r_selective`'s range (matches
+    almost none). `_dual_le_ge_frames` draws both sides of each column from
+    similar-scale ranges - fine for output-invariance tests, which don't
+    care which candidate wins, but not a reliable basis for asserting
+    *which* candidate `_select_anchor` should favor - see the discussion on
+    PR #1658 (which candidate is genuinely selective is otherwise close to
+    a coin flip per seed)."""
+    rng = np.random.default_rng(seed)
+    df = pd.DataFrame(
+        {
+            "l_broad": rng.integers(0, 10, size=n),
+            "l_selective": rng.integers(n - 10, n, size=n),
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "r_broad": rng.integers(0, n, size=n),
+            "r_selective": rng.integers(0, n, size=n),
+        }
+    )
+    return df, right
+
+
+def test_select_anchor_picks_the_selective_candidate():
+    """`_select_anchor` must actually favor the more selective predicate,
+    not merely leave output correct regardless of its choice (which output
+    -equality tests alone can't distinguish from a coin flip)."""
+    df, right = _skewed_broad_selective_frames(seed=8)
+    broad_cond = ("l_broad", "r_broad", "<")
+    selective_cond = ("l_selective", "r_selective", "<=")
+
+    best_pos, *_ = _le_ge_1_or_more._select_anchor(
+        [broad_cond, selective_cond], df, right
+    )
+    assert best_pos == 1
+
+
+def test_select_anchor_picks_same_predicate_regardless_of_order():
+    """The same logical predicate must be selected as anchor whichever
+    position it's supplied in - not merely "whichever position happens to
+    win"."""
+    df, right = _skewed_broad_selective_frames(seed=9)
+    broad_cond = ("l_broad", "r_broad", "<")
+    selective_cond = ("l_selective", "r_selective", "<=")
+
+    best_pos_a, *_ = _le_ge_1_or_more._select_anchor(
+        [broad_cond, selective_cond], df, right
+    )
+    best_pos_b, *_ = _le_ge_1_or_more._select_anchor(
+        [selective_cond, broad_cond], df, right
+    )
+    assert [broad_cond, selective_cond][best_pos_a] == selective_cond
+    assert [selective_cond, broad_cond][best_pos_b] == selective_cond
+
+
+def test_select_anchor_choice_is_deterministic():
+    """Repeated calls with identical inputs must pick the *same* candidate
+    position every time - inspects the choice directly, rather than relying
+    on output equality (which holds regardless of choice)."""
+    df, right = _dual_le_ge_frames(seed=10, n=3000)
+    broad_cond = ("l_broad", "r_broad", "<")
+    selective_cond = ("l_selective", "r_selective", "<=")
+
+    positions = [
+        _le_ge_1_or_more._select_anchor([broad_cond, selective_cond], df, right)[0]
+        for _ in range(5)
+    ]
+    assert len(set(positions)) == 1
+
+
+@pytest.mark.parametrize(
+    "op, expected_cost",
+    [("<", 4.0), ("<=", 5.0), (">", 5.0), (">=", 6.0)],
+)
+def test_sample_candidate_cost_matches_expected_for_each_operator(op, expected_cost):
+    """`_sample_candidate_cost` must compute the correct window size for
+    each operator. Uses fewer rows than the sample size (1024), so the
+    "sample" is the full population and the expected cost is exact, not
+    approximate."""
+    df = pd.DataFrame({"l": [5, 5, 5]})
+    right = pd.DataFrame({"r": list(range(10))})  # 0..9, already sorted
+
+    cost = _le_ge_1_or_more._sample_candidate_cost(("l", "r", op), df, right)
+    assert cost == expected_cost
+
+
+def test_select_anchor_can_miss_a_rare_selective_feature_but_stays_correct():
+    """Documents a known limitation: a fixed 1024-row sample can miss a
+    rare-but-decisive feature. For a feature present in only 0.1% of rows,
+    the probability a uniform sample of 1024 misses it entirely is
+    `0.999**1024` ~= 36%. Because `_sample_candidate_cost` seeds its RNG
+    deterministically (see its docstring), whether a *specific* rare
+    feature is captured is fixed by the column length, not re-rolled per
+    call - so this constructs a case, by direct inspection of the sampled
+    positions, where the rare feature is guaranteed to be missed, and
+    confirms output is still correct regardless (only anchor-choice
+    quality is ever at risk, per `_select_anchor`'s invariance guarantee)."""
+    n = 5000
+    # a condition that matches almost nothing, except for a rare block of
+    # rows placed at the very end - outside where the fixed-seed sample
+    # (drawn from `np.random.default_rng(0).choice(n, ...)`) is likely to
+    # land, since the sampled positions are an arbitrary, seed-fixed subset
+    # unrelated to where this block sits.
+    rare_block = n - 5  # last 5 rows are the rare, highly-selective feature
+    l_broad = np.zeros(n, dtype=int)
+    l_broad[rare_block:] = 10**9  # unmatched by any r_broad below
+    r_broad = np.arange(n)
+
+    l_selective = np.full(n, 10**9, dtype=int)  # unmatched by default
+    l_selective[rare_block:] = 0  # only the rare block is selective here
+    r_selective = np.arange(n)
+
+    df = pd.DataFrame({"l_broad": l_broad, "l_selective": l_selective})
+    right = pd.DataFrame({"r_broad": r_broad, "r_selective": r_selective})
+    broad_cond = ("l_broad", "r_broad", "<")
+    selective_cond = ("l_selective", "r_selective", "<")
+
+    rng = np.random.default_rng(0)
+    sampled_positions = set(rng.choice(n, size=min(n, 1024), replace=False).tolist())
+    assert not sampled_positions & set(range(rare_block, n)), (
+        "test assumption violated: the fixed-seed sample now reaches the "
+        "rare block, so this no longer demonstrates a miss"
+    )
+
+    bad_order = df.conditional_join(
+        right, broad_cond, selective_cond, keep="first", how="inner"
+    )
+    good_order = df.conditional_join(
+        right, selective_cond, broad_cond, keep="first", how="inner"
+    )
+    assert_frame_equal(bad_order, good_order)
 
 
 @pytest.mark.turtle

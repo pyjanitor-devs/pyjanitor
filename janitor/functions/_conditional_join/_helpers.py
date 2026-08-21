@@ -109,19 +109,17 @@ def _separate_conditions_based_on_op(conditions: Sequence):
             equals.append(condition)
         else:
             le_or_ge.append(condition)
-    # check for possibility of a range join
-    # keep the first match for le_lt or ge_gt
-    le_lt = None
-    ge_gt = None
-    for condition in conditions:
-        left_on, right_on, op = condition
-        if le_lt and ge_gt:
-            break
-        if (op in less_than_join_types) and not le_lt:
-            le_lt = (left_on, right_on, op)
-        elif (op in greater_than_join_types) and not ge_gt:
-            ge_gt = (left_on, right_on, op)
-    is_range_join = all((le_lt, ge_gt))
+    # a range join needs one le/lt-type and one ge/gt-type predicate;
+    # every eligible candidate of each type is kept (not just the first),
+    # so the caller can pick the most selective one instead of always the
+    # first-supplied - see _select_range_bound in _get_indices_non_equi.py.
+    # `le_or_ge` preserves `conditions`' original order, so taking [0]
+    # below still defaults to "first supplied", same as before.
+    le_lt_candidates = [c for c in le_or_ge if c[2] in less_than_join_types]
+    ge_gt_candidates = [c for c in le_or_ge if c[2] in greater_than_join_types]
+    le_lt = le_lt_candidates[0] if le_lt_candidates else None
+    ge_gt = ge_gt_candidates[0] if ge_gt_candidates else None
+    is_range_join = bool(le_lt) and bool(ge_gt)
     if is_range_join:
         le_or_ge = [
             condition for condition in le_or_ge if condition not in (ge_gt, le_lt)
@@ -134,6 +132,8 @@ def _separate_conditions_based_on_op(conditions: Sequence):
         "not_equals": not_equals,
         "le_lt": le_lt,
         "ge_gt": ge_gt,
+        "le_lt_candidates": le_lt_candidates if is_range_join else [],
+        "ge_gt_candidates": ge_gt_candidates if is_range_join else [],
         "le_or_ge": le_or_ge,
     }
 

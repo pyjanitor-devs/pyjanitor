@@ -1,8 +1,12 @@
+import tracemalloc
+
 import numpy as np
 import pandas as pd
 import pytest
 from pandas import NA
 from pandas.testing import assert_frame_equal
+
+from janitor.functions.pivot import _build_indexer_reorder_contents
 
 df = [1, 2, 3]
 
@@ -1757,28 +1761,37 @@ def test_dropna_sort_by_appearance():
 
 def test_build_indexer_reorder_contents_zero_length():
     """Test _build_indexer_reorder_contents with zero length."""
-    from janitor.functions.pivot import _build_indexer_reorder_contents
     result = _build_indexer_reorder_contents(0, 5)
+    assert len(result) == 0
+
+
+def test_build_indexer_reorder_contents_zero_reps():
+    """Test _build_indexer_reorder_contents with zero repetitions.
+
+    Unlike the old implementation (which raised ValueError trying to
+    reshape a zero-size array), this returns an empty array instead.
+    Not reachable via the public API today - all current call sites
+    guarantee reps >= 1 - but tested directly for defensive coverage
+    in case that invariant changes later.
+    """
+    result = _build_indexer_reorder_contents(5, 0)
     assert len(result) == 0
 
 
 def test_build_indexer_reorder_contents_single_rep():
     """Test _build_indexer_reorder_contents with single repetition."""
-    from janitor.functions.pivot import _build_indexer_reorder_contents
     result = _build_indexer_reorder_contents(5, 1)
     assert np.array_equal(result, [0, 1, 2, 3, 4])
 
 
 def test_build_indexer_reorder_contents_single_length():
     """Test _build_indexer_reorder_contents with single length."""
-    from janitor.functions.pivot import _build_indexer_reorder_contents
     result = _build_indexer_reorder_contents(1, 5)
     assert np.array_equal(result, [0, 1, 2, 3, 4])
 
 
 def test_build_indexer_reorder_contents_row_heavy():
     """Test _build_indexer_reorder_contents with many rows, few reps."""
-    from janitor.functions.pivot import _build_indexer_reorder_contents
     result = _build_indexer_reorder_contents(1000, 2)
     expected = np.arange(1000 * 2).reshape((2, -1)).ravel(order="F")
     assert np.array_equal(result, expected)
@@ -1786,7 +1799,6 @@ def test_build_indexer_reorder_contents_row_heavy():
 
 def test_build_indexer_reorder_contents_column_heavy():
     """Test _build_indexer_reorder_contents with few rows, many reps."""
-    from janitor.functions.pivot import _build_indexer_reorder_contents
     result = _build_indexer_reorder_contents(2, 1000)
     expected = np.arange(2 * 1000).reshape((1000, -1)).ravel(order="F")
     assert np.array_equal(result, expected)
@@ -1794,11 +1806,59 @@ def test_build_indexer_reorder_contents_column_heavy():
 
 def test_build_indexer_reorder_contents_peak_memory():
     """Test _build_indexer_reorder_contents uses less peak memory."""
-    import tracemalloc
-    from janitor.functions.pivot import _build_indexer_reorder_contents
     tracemalloc.start()
     _build_indexer_reorder_contents(1_000_000, 8)
     _, peak = tracemalloc.get_traced_memory()
     tracemalloc.stop()
     # New implementation should use less than 70 MiB (old was ~122 MiB)
-    assert peak / 1024 / 1024 < 70, f"Peak memory too high: {peak/1024/1024:.1f} MiB"
+    peak_mib = peak / 1024 / 1024
+    assert peak_mib < 70, f"Peak memory too high: {peak_mib:.1f} MiB"
+
+
+def test_reorder_contents_preserves_dtypes_sort_by_appearance():
+    """
+    Ensure reordering via _build_indexer_reorder_contents preserves
+    dtype and values for extension arrays when sort_by_appearance=True.
+    """
+    df = pd.DataFrame(
+        {
+            "id": [1, 2, 3],
+            "int_2020": pd.array([10, 20, pd.NA], dtype="Int64"),
+            "int_2021": pd.array([11, 21, 31], dtype="Int64"),
+            "str_2020": pd.array(["a", "b", "c"], dtype="string"),
+            "str_2021": pd.array(["x", "y", "z"], dtype="string"),
+            "cat_2020": pd.Categorical(["low", "med", "high"]),
+            "cat_2021": pd.Categorical(["high", "low", "med"]),
+            "date_2020": pd.to_datetime(["2020-01-01", "2020-02-01", "2020-03-01"]),
+            "date_2021": pd.to_datetime(["2021-01-01", "2021-02-01", "2021-03-01"]),
+        }
+    )
+
+    result = df.pivot_longer(
+        index="id",
+        names_to=(".value", "year"),
+        names_pattern=r"(int|str|cat|date)_(\d+)",
+        sort_by_appearance=True,
+    )
+
+    expected = pd.DataFrame(
+        {
+            "id": [1, 1, 2, 2, 3, 3],
+            "year": ["2020", "2021", "2020", "2021", "2020", "2021"],
+            "int": pd.array([10, 11, 20, 21, pd.NA, 31], dtype="Int64"),
+            "str": pd.array(["a", "x", "b", "y", "c", "z"], dtype="string"),
+            "cat": pd.Categorical(["low", "high", "med", "low", "high", "med"]),
+            "date": pd.to_datetime(
+                [
+                    "2020-01-01",
+                    "2021-01-01",
+                    "2020-02-01",
+                    "2021-02-01",
+                    "2020-03-01",
+                    "2021-03-01",
+                ]
+            ),
+        }
+    )
+
+    assert_frame_equal(result, expected)

@@ -1831,7 +1831,10 @@ def _build_indexer_for_spec(
 
 
 def _build_indexer_reorder_contents(length: int, reps: int) -> np.ndarray:
-    """Build indexer for reordering arrays in contents"""
+    """Build indexer for reordering arrays in contents.
+
+    Returns an empty array if reps == 0, rather than raising.
+    """
     rows = np.arange(length)[:, None]
     columns = np.arange(reps) * length
     indexer = np.add(rows, columns).ravel()

@@ -43,11 +43,17 @@ def _maybe_select_better_range_bounds(
     both range-join algorithms always process `ge_gt` first and `le_lt`
     second regardless of which candidate either one is).
 
-    Mutates and returns `mapping`. The matched row set is unaffected
-    either way (see #1641's invariance proof, which this reuses); only
-    performance and, for `keep='all'`, row order can change - so this is
-    only worth calling when there's an actual choice to make and
-    `keep in ('first', 'last')`, mirroring #1658's own original scoping.
+    Mutates and returns `mapping`. The matched row set and its values are
+    unaffected either way, for every `keep` mode (see #1641's invariance
+    proof, which this reuses). For `keep='first'`/`'last'`, output is
+    invariant entirely. For `keep='all'`, bound choice can still affect
+    output row order (which column `right` gets sorted by) - never row
+    content - see issue #1666, which extended this to `keep='all'` on
+    the same basis #1657 already established for the same-direction
+    path: that row order was never documented or guaranteed here to
+    begin with, and the pre-#1666 pathology for `keep='all'` on this
+    path was severe (unbounded, not the mild ~2-9x `keep='first'`/`'last'`
+    saw) - see #1666 for the numbers.
     """
     for bound_key, candidates_key in (
         ("le_lt", "le_lt_candidates"),
@@ -60,7 +66,11 @@ def _maybe_select_better_range_bounds(
         best = _select_range_bound(candidates, df, right)
         if best == current:
             continue
-        mapping["le_or_ge"] = [current, *[c for c in mapping["le_or_ge"] if c != best]]
+        # `best` is a le_or_ge member being promoted to `bound_key`;
+        # `current` demotes into its slot. Order within le_or_ge doesn't
+        # matter - it's always applied as an unordered set of independent
+        # post-filters - so an in-place swap is enough.
+        mapping["le_or_ge"][mapping["le_or_ge"].index(best)] = current
         mapping[bound_key] = best
     return mapping
 
@@ -102,7 +112,7 @@ def _get_indices(
             "left_index": empty_array,
             "right_index": empty_array,
         }
-    if mapping["is_range_join"] and keep in ("first", "last"):
+    if mapping["is_range_join"]:
         mapping = _maybe_select_better_range_bounds(mapping=mapping, df=df, right=right)
     if not mapping["is_range_join"]:
         if (len(mapping["le_or_ge"]) == 1) or (join_algorithm == "default"):

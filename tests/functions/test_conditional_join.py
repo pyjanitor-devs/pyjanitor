@@ -4913,22 +4913,97 @@ def test_range_join_ge_gt_order_invariant(join_algorithm, keep):
     assert_frame_equal(bad_order, good_order)
 
 
-def test_range_join_bound_selection_skipped_for_keep_all():
-    """`_maybe_select_better_range_bounds` must never run for `keep='all'`
-    - mirrors #1658's original scoping (row order, not content, is what's
-    at stake there); #1657-style extension to `keep='all'` is out of
-    scope for this fix."""
+def test_range_join_bound_selection_used_for_keep_all():
+    """`_maybe_select_better_range_bounds` must be invoked for `keep='all'`
+    too (issue #1666, extending #1659 the same way #1657 extended #1658
+    for the same-direction case) - bound choice never changes matched row
+    content, only (for `keep='all'`) the order those rows come back in,
+    so there's no correctness reason to leave `keep='all'` on the
+    unselective first-supplied-bound path."""
     df, right = _skewed_range_frames(seed=2, n=50)
     ge_gt = ("a", "lo", ">")
     narrow = ("a", "hi_narrow", "<")
     broad = ("a", "hi_broad", "<")
 
+    from janitor.functions._conditional_join import _get_indices_non_equi as m
+
     with mock.patch(
         "janitor.functions._conditional_join._get_indices_non_equi."
-        "_maybe_select_better_range_bounds"
+        "_maybe_select_better_range_bounds",
+        wraps=m._maybe_select_better_range_bounds,
     ) as patched:
         df.conditional_join(right, ge_gt, broad, narrow, keep="all", how="inner")
-        patched.assert_not_called()
+        patched.assert_called_once()
+
+
+@pytest.mark.parametrize("join_algorithm", ["default", "regions"])
+def test_range_join_le_lt_content_invariant_keep_all(join_algorithm):
+    """For `keep='all'`, the *set* of matched rows (and their values) must
+    not depend on which order the two `<`-type candidates are supplied
+    in, even though row order is no longer guaranteed to match between
+    orders (see #1666) - compare sorted, mirroring the pre-existing
+    `keep='all'` tests elsewhere in this file."""
+    df, right = _skewed_range_frames(seed=4)
+    ge_gt = ("a", "lo", ">")
+    narrow = ("a", "hi_narrow", "<")
+    broad = ("a", "hi_broad", "<")
+    columns = ["a", "lo", "hi_narrow", "hi_broad"]
+
+    bad_order = df.conditional_join(
+        right,
+        ge_gt,
+        broad,
+        narrow,
+        keep="all",
+        how="inner",
+        join_algorithm=join_algorithm,
+    ).sort_values(columns, ignore_index=True)
+    good_order = df.conditional_join(
+        right,
+        ge_gt,
+        narrow,
+        broad,
+        keep="all",
+        how="inner",
+        join_algorithm=join_algorithm,
+    ).sort_values(columns, ignore_index=True)
+    assert_frame_equal(bad_order, good_order)
+
+
+def test_range_join_row_order_can_differ_for_keep_all_on_tie():
+    """Documents the actual trade-off #1666 accepts, mirroring #1657 for
+    the same-direction case: for `keep='all'`, which candidate is picked
+    for `le_lt` is the secondary sort key `right` is ordered by whenever
+    `ge_gt`'s right column isn't already strictly sorted - so ties there
+    let bound choice affect row order. Verified empirically: this needs
+    an actual tie in the `ge_gt` column that also isn't already
+    monotonic (a constant `ge_gt` column, e.g., never triggers a real
+    sort at all, so never reproduces this) - once both hold, the two
+    argument orders produce the same content in a different order.
+    Content stays identical either way (see the content-invariance test
+    above); this test exists to make the trade-off visible, not to pin a
+    specific order."""
+    df = pd.DataFrame({"a": [0]})
+    right = pd.DataFrame(
+        {
+            "lo": [5, -100, -100, -100],
+            "hi_x": [999, 130, 110, 120],
+            "hi_y": [999, 101, 103, 102],
+        }
+    )
+    ge_gt = ("a", "lo", ">")
+    cond_x = ("a", "hi_x", "<")
+    cond_y = ("a", "hi_y", "<")
+
+    x_first = df.conditional_join(right, ge_gt, cond_x, cond_y, keep="all", how="inner")
+    y_first = df.conditional_join(right, ge_gt, cond_y, cond_x, keep="all", how="inner")
+
+    columns = list(x_first.columns)
+    assert_frame_equal(
+        x_first.sort_values(columns, ignore_index=True),
+        y_first.sort_values(columns, ignore_index=True),
+    )
+    assert not x_first.reset_index(drop=True).equals(y_first.reset_index(drop=True))
 
 
 def test_range_join_bound_selection_noop_with_single_candidate():

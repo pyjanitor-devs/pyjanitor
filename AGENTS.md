@@ -400,6 +400,12 @@ that looked like it might fade out below 30k rows instead held flat at
 ~1.8-1.9x all the way to 50M, which is the number that actually matters
 for deciding whether it's worth fixing.
 
+### Conditional-Join Performance Research
+
+Detailed guidance for `conditional_join` internals, behavioral invariants,
+performance research, the inequality-joins paper, benchmarks, and verification
+lives in `janitor/functions/_conditional_join/AGENTS.md`.
+
 ### Code Style Rules
 
 - **Line length**: 88 characters (ruff default)
@@ -580,6 +586,10 @@ pass, and removed from here to avoid restating the same rule twice.
 - **2026-08-21**: Added mandatory adversarial review before every PR
 - **2026-08-21**: Added PR/issue writing convention (ELI5 for non-obvious changes)
 - **2026-08-21**: Added convention to extend benchmarks to scale (10M-50M rows)
+- **2026-08-21**: Added the inequality-joins paper as a design reference for
+  current and future `conditional_join` performance work
+- **2026-08-21**: Moved detailed conditional-join guidance into the scoped
+  `_conditional_join/AGENTS.md`
 - **2026-08-21**: Cleanup pass - removed 5x-duplicated markdownlint rule, 3x
   -duplicated pixi/notebook rules, and Learned Patterns entries already
   integrated into main sections

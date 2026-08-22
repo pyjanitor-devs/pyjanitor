@@ -391,6 +391,87 @@ def test_adorn_percentages_numeric_first_column(numeric_first_col_df):
     assert np.isclose(result.iloc[0]["count2"], 5 / 15)
 
 
+@pytest.mark.functions
+def test_adorn_pct_formatting_numeric_first_column(numeric_first_col_df):
+    """Test adorn_pct_formatting with numeric first column.
+
+    The first column is always treated as a row identifier (consistent with
+    R janitor tabyl behavior), so it is not formatted as a percentage.
+    """
+    result = numeric_first_col_df.adorn_percentages("row").adorn_pct_formatting()
+    # First column is treated as row identifier, left as-is
+    assert result["id"].tolist() == [1, 2, 3]
+    # The data columns are still formatted
+    assert result.iloc[0]["count1"] == "66.7%"
+    assert result.iloc[0]["count2"] == "33.3%"
+
+
+@pytest.mark.functions
+def test_adorn_ns_numeric_first_column(numeric_first_col_df):
+    """Test adorn_ns with numeric first column.
+
+    The first column is always treated as a row identifier (consistent with
+    R janitor tabyl behavior), so no N count is appended to it.
+    """
+    result = (
+        numeric_first_col_df.adorn_percentages("row").adorn_pct_formatting().adorn_ns()
+    )
+    # First column is treated as row identifier, no count appended
+    assert result["id"].tolist() == [1, 2, 3]
+    # The data columns still get their counts
+    assert result.iloc[0]["count1"] == "66.7% (10)"
+    assert result.iloc[0]["count2"] == "33.3% (5)"
+
+
+@pytest.mark.functions
+def test_adorn_ns_numeric_first_column_custom_ns(numeric_first_col_df):
+    """Test adorn_ns leaves the row identifier alone with an explicit `ns`."""
+    custom_ns = pd.DataFrame(
+        {
+            "id": [1, 2, 3],
+            "count1": [100, 200, 300],
+            "count2": [50, 150, 250],
+        }
+    )
+    result = (
+        numeric_first_col_df.adorn_percentages("row")
+        .adorn_pct_formatting()
+        .adorn_ns(ns=custom_ns)
+    )
+    assert result["id"].tolist() == [1, 2, 3]
+    assert result.iloc[0]["count1"] == "66.7% (100)"
+
+
+@pytest.mark.functions
+def test_adorn_rounding_numeric_first_column(numeric_first_col_df):
+    """Test adorn_rounding with numeric first column.
+
+    The first column is always treated as a row identifier (consistent with
+    R janitor tabyl behavior), so it is not rounded and keeps its dtype.
+    """
+    result = numeric_first_col_df.adorn_percentages("row").adorn_rounding(digits=2)
+    # First column is treated as row identifier, values and dtype preserved
+    assert result["id"].tolist() == [1, 2, 3]
+    assert result["id"].dtype == numeric_first_col_df["id"].dtype
+    # The data columns are still rounded
+    assert result.iloc[0]["count1"] == 0.67
+    assert result.iloc[0]["count2"] == 0.33
+
+
+@pytest.mark.functions
+def test_adorn_pipeline_numeric_first_column_from_tabyl():
+    """Test the tabyl pipeline keeps a numeric grouping variable readable."""
+    df = pd.DataFrame(
+        {
+            "cyl": [4, 6, 8, 4, 6, 8, 4, 6],
+            "gear": [3, 3, 3, 4, 4, 4, 5, 5],
+        }
+    )
+    result = df.tabyl("cyl", "gear").adorn_percentages("row").adorn_pct_formatting()
+    # The grouping variable stays a readable row identifier
+    assert result["cyl"].tolist() == [4, 6, 8]
+
+
 # Tests for adorn_ns with custom ns DataFrame
 
 

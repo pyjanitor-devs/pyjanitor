@@ -294,6 +294,32 @@ def test_dense_ranges_use_numpy(monkeypatch, func_name, rust_name, indexers, exp
     assert (actual == expected).all()
 
 
+@pytest.mark.parametrize(
+    "func_name,indexer_name,indexer_value",
+    [
+        ("_min_starts", "starts", 0),
+        ("_min_ends", "ends", 100),
+        ("_max_starts", "starts", 0),
+        ("_max_ends", "ends", 100),
+    ],
+)
+@pytest.mark.parametrize("query_count", [1, 200])
+def test_unsupported_dtype_error_does_not_depend_on_density(
+    func_name, indexer_name, indexer_value, query_count
+):
+    """The performance gate must not silently expand supported dtypes."""
+    arr = np.ones(100, dtype=bool)
+    booleans = np.zeros(100, dtype=bool)
+    indexers = np.full(query_count, indexer_value, dtype=np.int64)
+
+    with pytest.raises(KeyError, match="Unsupported data type -> bool"):
+        getattr(_agg_functions, func_name)(
+            arr=arr,
+            booleans=booleans,
+            **{indexer_name: indexers},
+        )
+
+
 @pytest.mark.parametrize("is_max", [True, False])
 def test_suffix_uses_min_or_max_accumulate_semantics(is_max):
     """Sanity check that _max_* actually picks the maximum, not the

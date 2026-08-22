@@ -7,7 +7,8 @@
     of interval widths) Rust kernels once query density crosses a
     benchmarked work-factor threshold; sparse queries stay on the Rust
     kernels. Preserves exact first-occurrence tie-breaking, null-skipping,
-    and the existing float NaN-comparison quirk. - Issue #1653 @samukweku
+    and the existing float NaN-comparison quirk. - Issue #1653, PR #1674
+    @samukweku
 -   [ENH] Avoid copying column data during `conditional_join` input
     validation. - Issue #1645, PR #1642 @samukweku
 -   [ENH] Speed up `conditional_join` with an unsorted right join key and

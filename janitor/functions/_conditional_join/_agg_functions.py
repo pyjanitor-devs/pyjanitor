@@ -2,6 +2,20 @@ import janitor_rs
 import numpy as np
 
 _ARGEXT_WORK_FACTOR = 20
+_ARGEXT_DTYPE_NAMES = frozenset(
+    {
+        "int64",
+        "int32",
+        "int16",
+        "int8",
+        "uint64",
+        "uint32",
+        "uint16",
+        "uint8",
+        "float64",
+        "float32",
+    }
+)
 
 
 def _use_argext(arr_size: int, total_width: int) -> bool:
@@ -322,7 +336,8 @@ def _min_starts(
     directly. For lots of wide/overlapping ranges, it's cheaper to walk
     the whole array once (`_suffix_argext`) and look up every row's answer.
     """
-    if starts.size > _ARGEXT_WORK_FACTOR:
+    dtype_name = arr.dtype.name
+    if dtype_name in _ARGEXT_DTYPE_NAMES and starts.size > _ARGEXT_WORK_FACTOR:
         total_width = (arr.size * starts.size) - starts.sum(dtype=np.int64)
         if _use_argext(arr_size=arr.size, total_width=total_width):
             return _suffix_argext(arr=arr, booleans=booleans, is_max=False)[starts]
@@ -338,7 +353,6 @@ def _min_starts(
         "float64": janitor_rs.compute_min_start_f64,
         "float32": janitor_rs.compute_min_start_f32,
     }
-    dtype_name = arr.dtype.name
     try:
         func = mapping[dtype_name]
     except KeyError:
@@ -358,7 +372,8 @@ def _min_ends(
     for a few narrow ranges, `_prefix_argext`'s one-pass precompute once
     there are enough wide/overlapping ones to make it worth it.
     """
-    if ends.size > _ARGEXT_WORK_FACTOR:
+    dtype_name = arr.dtype.name
+    if dtype_name in _ARGEXT_DTYPE_NAMES and ends.size > _ARGEXT_WORK_FACTOR:
         total_width = int(ends.sum(dtype=np.int64))
         if _use_argext(arr_size=arr.size, total_width=total_width):
             return _prefix_argext(arr=arr, booleans=booleans, is_max=False)[ends]
@@ -374,7 +389,6 @@ def _min_ends(
         "float64": janitor_rs.compute_min_end_f64,
         "float32": janitor_rs.compute_min_end_f32,
     }
-    dtype_name = arr.dtype.name
     try:
         func = mapping[dtype_name]
     except KeyError:
@@ -393,7 +407,8 @@ def _max_starts(
     ELI5: same trade-off as `_min_starts`, just tracking the running
     maximum instead of the minimum.
     """
-    if starts.size > _ARGEXT_WORK_FACTOR:
+    dtype_name = arr.dtype.name
+    if dtype_name in _ARGEXT_DTYPE_NAMES and starts.size > _ARGEXT_WORK_FACTOR:
         total_width = (arr.size * starts.size) - starts.sum(dtype=np.int64)
         if _use_argext(arr_size=arr.size, total_width=total_width):
             return _suffix_argext(arr=arr, booleans=booleans, is_max=True)[starts]
@@ -409,7 +424,6 @@ def _max_starts(
         "float64": janitor_rs.compute_max_start_f64,
         "float32": janitor_rs.compute_max_start_f32,
     }
-    dtype_name = arr.dtype.name
     try:
         func = mapping[dtype_name]
     except KeyError:
@@ -428,7 +442,8 @@ def _max_ends(
     ELI5: same trade-off as `_min_ends`, just tracking the running
     maximum instead of the minimum.
     """
-    if ends.size > _ARGEXT_WORK_FACTOR:
+    dtype_name = arr.dtype.name
+    if dtype_name in _ARGEXT_DTYPE_NAMES and ends.size > _ARGEXT_WORK_FACTOR:
         total_width = int(ends.sum(dtype=np.int64))
         if _use_argext(arr_size=arr.size, total_width=total_width):
             return _prefix_argext(arr=arr, booleans=booleans, is_max=True)[ends]
@@ -444,7 +459,6 @@ def _max_ends(
         "float64": janitor_rs.compute_max_end_f64,
         "float32": janitor_rs.compute_max_end_f32,
     }
-    dtype_name = arr.dtype.name
     try:
         func = mapping[dtype_name]
     except KeyError:

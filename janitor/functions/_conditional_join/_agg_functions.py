@@ -316,7 +316,11 @@ def _min_starts(
     booleans: np.ndarray,
 ) -> tuple:
     """
-    Compute min
+    Compute min.
+
+    ELI5: for a handful of narrow ranges, just ask Rust to scan each one
+    directly. For lots of wide/overlapping ranges, it's cheaper to walk
+    the whole array once (`_suffix_argext`) and look up every row's answer.
     """
     if starts.size > _ARGEXT_WORK_FACTOR:
         total_width = (arr.size * starts.size) - starts.sum(dtype=np.int64)
@@ -348,7 +352,11 @@ def _min_ends(
     booleans: np.ndarray,
 ) -> tuple:
     """
-    Compute min
+    Compute min.
+
+    ELI5: same trade-off as `_min_starts`, mirrored for prefixes -- Rust
+    for a few narrow ranges, `_prefix_argext`'s one-pass precompute once
+    there are enough wide/overlapping ones to make it worth it.
     """
     if ends.size > _ARGEXT_WORK_FACTOR:
         total_width = int(ends.sum(dtype=np.int64))
@@ -380,7 +388,10 @@ def _max_starts(
     booleans: np.ndarray,
 ) -> tuple:
     """
-    Compute max
+    Compute max.
+
+    ELI5: same trade-off as `_min_starts`, just tracking the running
+    maximum instead of the minimum.
     """
     if starts.size > _ARGEXT_WORK_FACTOR:
         total_width = (arr.size * starts.size) - starts.sum(dtype=np.int64)
@@ -412,7 +423,10 @@ def _max_ends(
     booleans: np.ndarray,
 ) -> tuple:
     """
-    Compute max
+    Compute max.
+
+    ELI5: same trade-off as `_min_ends`, just tracking the running
+    maximum instead of the minimum.
     """
     if ends.size > _ARGEXT_WORK_FACTOR:
         total_width = int(ends.sum(dtype=np.int64))

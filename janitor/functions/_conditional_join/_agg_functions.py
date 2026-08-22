@@ -2,6 +2,13 @@ import janitor_rs
 import numpy as np
 
 _ARGEXT_WORK_FACTOR = 20
+# ELI5: the NumPy path (`_prefix_argext`/`_suffix_argext`) doesn't check
+# dtype itself -- it just runs generic NumPy ops that would happily
+# "succeed" on a dtype the Rust kernels don't actually support (e.g.
+# bool), silently skipping the `KeyError` the mapping dict below is
+# supposed to raise. Gating the NumPy path on this set first means an
+# unsupported dtype always falls through to the mapping dict and its
+# error, no matter how many/wide the requested ranges are.
 _ARGEXT_DTYPE_NAMES = frozenset(
     {
         "int64",
@@ -48,17 +55,41 @@ def _running_argext_compact(vals: np.ndarray, is_max: bool, strict: bool) -> np.
     ends up keeping the smaller/earlier original index).
     """
     m = vals.size
+    # ELI5: `running_val[i]` = the best value seen anywhere in vals[:i+1].
+    # `fmax`/`fmin` are the same as `maximum`/`minimum` for these already-
+    # cleaned values, computed once for the whole array in one call
+    # (that's the "O(n) instead of O(n) per row" trick).
     running_val = (np.fmax if is_max else np.fmin).accumulate(vals)
+
+    # ELI5: a position is a "new record" exactly when it's the reason
+    # `running_val` changed (or didn't change but ties count -- see
+    # `strict` below). Index 0 is always a record: there's nothing
+    # before it to compare against, so it's automatically the best seen
+    # so far.
     is_new_record = np.empty(m, dtype=bool)
     is_new_record[0] = True
     if strict:
+        # Prefix rule: only a STRICT improvement counts as a new record,
+        # so an earlier tie keeps its spot -- `running_val` only changes
+        # on a genuine improvement, so comparing consecutive running
+        # values directly tells us exactly where that happened.
         is_new_record[1:] = (
             (running_val[1:] > running_val[:-1])
             if is_max
             else (running_val[1:] < running_val[:-1])
         )
     else:
+        # Suffix rule: a TIE also counts as a new record (see the
+        # `strict=False` note above -- this scans a reversed array, so
+        # "record on tie" is what makes the earlier original index win).
+        # `vals[i] == running_val[i]` is true both when vals[i] set a new
+        # best AND when it merely matched the existing best.
         is_new_record[1:] = vals[1:] == running_val[1:]
+
+    # ELI5: turn "is this position a record?" into "what's the latest
+    # record position seen so far?" -- put each record's own index at
+    # its position, -1 everywhere else, then let `maximum.accumulate`
+    # carry the largest (i.e. most recent) index forward over the -1s.
     candidate = np.where(is_new_record, np.arange(m), -1)
     return np.maximum.accumulate(candidate)
 
@@ -90,24 +121,49 @@ def _prefix_argext(arr: np.ndarray, booleans: np.ndarray, is_max: bool) -> np.nd
     other hand, is just silently never selected, exactly like a null.
     """
     n = arr.size
+    # result[e] is the answer for range [0, e); -1 is "no valid element
+    # yet" (covers e == 0, and the whole array being null).
     result = np.full(n + 1, -1, dtype=np.int64)
     if n == 0:
         return result
     not_null = ~booleans
     if not not_null.any():
-        return result
+        return result  # every position is null -> every answer is -1
+
+    # ELI5: the very first non-null element is special -- it's the one
+    # every row's scan eventually reaches first (see the docstring: all
+    # prefixes share the same walk from index 0). `np.argmax` on a bool
+    # array returns the index of the first True.
     first_valid = int(np.argmax(not_null))
     isnan = _isnan_if_float(arr)
 
     if isnan[first_valid]:
+        # Frozen case: nothing can ever beat/tie a NaN anchor (IEEE754),
+        # so every `end` that reaches past `first_valid` is stuck
+        # reporting that NaN's position; every `end` before it hasn't
+        # found any real value yet, so it's still -1 (already the
+        # default fill above).
         result[first_valid + 1 :] = first_valid
         return result
 
+    # Anchor is real: NaN can now never win (it can't beat a real value,
+    # and a real value can't lose to one either), so treat NaN exactly
+    # like a null for the rest of this scan and compact both away.
     extended_null = booleans | isnan
+    # original positions of the real, non-null values
     valid_idx = np.flatnonzero(~extended_null)
-    valid_vals = arr[valid_idx]
+    valid_vals = arr[valid_idx]  # ...and their values, same order
+    # Run the O(m) compact scan (m = count of real values), then map its
+    # answers (positions *within* `valid_vals`) back to real array
+    # positions via `valid_idx`.
     running_pos = valid_idx[_running_argext_compact(valid_vals, is_max, strict=True)]
 
+    # ELI5: `result[e]` should reuse the compact scan's answer for
+    # whichever real value was the LAST one inside [0, e). Count how
+    # many real values exist in [0, e) (that's `valid_count_prefix[e]`,
+    # a running count with a leading 0 so index 0 means "none yet"), and
+    # that count doubles as a 1-indexed position into `running_pos` --
+    # subtract 1 to make it a normal 0-indexed lookup.
     valid_count_prefix = np.concatenate(([0], np.cumsum(~extended_null)))
     has_any = valid_count_prefix > 0
     k = np.clip(valid_count_prefix - 1, 0, max(running_pos.size - 1, 0))
@@ -131,24 +187,52 @@ def _suffix_argext(arr: np.ndarray, booleans: np.ndarray, is_max: bool) -> np.nd
     backward scan that skips nulls and NaNs alike.
     """
     n = arr.size
+    # result[s] is the answer for range [s, n); -1 is "no valid element
+    # from s onward" (also serves as the s == n empty-range answer).
     result = np.full(n + 1, -1, dtype=np.int64)
     if n == 0:
         return result
     idx = np.arange(n)
     isnan = _isnan_if_float(arr)
 
+    # ELI5: `next_valid[s]` = the smallest index >= s that isn't null,
+    # or n if there isn't one. Built with a classic "fill backward" trick:
+    # put each non-null position's own index in `raw`, n (a value larger
+    # than any real index) everywhere else, then `minimum.accumulate` on
+    # the REVERSED array carries the smallest real index found so far
+    # back toward the front; reversing again undoes the flip so `raw[s]`
+    # lines up with position s again. This is the "each row re-anchors
+    # at its own start" position from the docstring, found for every s
+    # at once.
     raw = np.where(~booleans, idx, n)
     next_valid = np.minimum.accumulate(raw[::-1])[::-1]
 
+    # Once we know a row's anchor isn't a NaN (checked below via
+    # `next_valid`), NaN behaves exactly like null for the rest of that
+    # row's scan -- so compact both away together, same as the prefix
+    # case, just scanning right-to-left.
     extended_null = booleans | isnan
+    # original positions of the real, non-null values
     valid_idx = np.flatnonzero(~extended_null)
     if valid_idx.size:
         valid_vals = arr[valid_idx]
+        # Reverse both arrays so "left to right on the reversed array"
+        # is the same walk as "right to left on the real array" --
+        # `_running_argext_compact(..., strict=False)` then applies the
+        # tie-keeps-the-later-record rule, which (because everything is
+        # reversed) works out to "ties keep the smaller original index".
         rev_pos_in_compact = _running_argext_compact(
             valid_vals[::-1], is_max, strict=False
         )
+        # Map compact-array positions back to real array positions, in
+        # the same reversed order used above.
         running_pos_rev = valid_idx[::-1][rev_pos_in_compact]
 
+        # Same "count real values, use the count as a lookup index"
+        # trick as the prefix case, mirrored: count real values from s
+        # to the end (a running count from the right, with a trailing 0
+        # so index n means "none"), then look that many entries into the
+        # *reversed* running-position array.
         valid_count_suffix = np.concatenate(
             (np.cumsum((~extended_null)[::-1])[::-1], [0])
         )
@@ -158,6 +242,12 @@ def _suffix_argext(arr: np.ndarray, booleans: np.ndarray, is_max: bool) -> np.nd
     else:
         clean_suffix = np.full(n, -1, dtype=np.int64)
 
+    # ELI5: now decide, per row, which answer actually applies.
+    # `frozen_mask[s]` = "does [s, n) contain any non-null value at
+    # all?" (next_valid[s] < n). If so, check whether THAT row's own
+    # anchor (its first non-null value) happens to be NaN -- if it is,
+    # the frozen-NaN answer wins; otherwise fall back to the shared
+    # "clean" scan computed above.
     frozen_mask = next_valid < n
     anchor_isnan = np.zeros(n, dtype=bool)
     if np.issubdtype(arr.dtype, np.floating):
@@ -338,6 +428,9 @@ def _min_starts(
     """
     dtype_name = arr.dtype.name
     if dtype_name in _ARGEXT_DTYPE_NAMES and starts.size > _ARGEXT_WORK_FACTOR:
+        # Each row's Rust scan covers (arr.size - start) elements; sum
+        # that over every row without a Python loop by distributing:
+        # sum(n - start) == n*len(starts) - sum(starts).
         total_width = (arr.size * starts.size) - starts.sum(dtype=np.int64)
         if _use_argext(arr_size=arr.size, total_width=total_width):
             return _suffix_argext(arr=arr, booleans=booleans, is_max=False)[starts]
@@ -374,6 +467,8 @@ def _min_ends(
     """
     dtype_name = arr.dtype.name
     if dtype_name in _ARGEXT_DTYPE_NAMES and ends.size > _ARGEXT_WORK_FACTOR:
+        # Each row's Rust scan covers `end` elements (range [0, end)),
+        # so the total is just the sum of all the requested ends.
         total_width = int(ends.sum(dtype=np.int64))
         if _use_argext(arr_size=arr.size, total_width=total_width):
             return _prefix_argext(arr=arr, booleans=booleans, is_max=False)[ends]
@@ -409,6 +504,7 @@ def _max_starts(
     """
     dtype_name = arr.dtype.name
     if dtype_name in _ARGEXT_DTYPE_NAMES and starts.size > _ARGEXT_WORK_FACTOR:
+        # sum(n - start) == n*len(starts) - sum(starts); see _min_starts.
         total_width = (arr.size * starts.size) - starts.sum(dtype=np.int64)
         if _use_argext(arr_size=arr.size, total_width=total_width):
             return _suffix_argext(arr=arr, booleans=booleans, is_max=True)[starts]
@@ -444,6 +540,7 @@ def _max_ends(
     """
     dtype_name = arr.dtype.name
     if dtype_name in _ARGEXT_DTYPE_NAMES and ends.size > _ARGEXT_WORK_FACTOR:
+        # sum of the requested ends; see _min_ends.
         total_width = int(ends.sum(dtype=np.int64))
         if _use_argext(arr_size=arr.size, total_width=total_width):
             return _prefix_argext(arr=arr, booleans=booleans, is_max=True)[ends]

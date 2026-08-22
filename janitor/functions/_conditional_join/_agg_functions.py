@@ -2,27 +2,6 @@ import janitor_rs
 import numpy as np
 
 _ARGEXT_WORK_FACTOR = 20
-# ELI5: the NumPy path (`_prefix_argext`/`_suffix_argext`) doesn't check
-# dtype itself -- it just runs generic NumPy ops that would happily
-# "succeed" on a dtype the Rust kernels don't actually support (e.g.
-# bool), silently skipping the `KeyError` the mapping dict below is
-# supposed to raise. Gating the NumPy path on this set first means an
-# unsupported dtype always falls through to the mapping dict and its
-# error, no matter how many/wide the requested ranges are.
-_ARGEXT_DTYPE_NAMES = frozenset(
-    {
-        "int64",
-        "int32",
-        "int16",
-        "int8",
-        "uint64",
-        "uint32",
-        "uint16",
-        "uint8",
-        "float64",
-        "float32",
-    }
-)
 
 
 def _use_argext(arr_size: int, total_width: int) -> bool:
@@ -266,6 +245,43 @@ def _suffix_argext(arr: np.ndarray, booleans: np.ndarray, is_max: bool) -> np.nd
     return result
 
 
+def _argext_dispatch(
+    arr: np.ndarray,
+    booleans: np.ndarray,
+    indexer: np.ndarray,
+    is_starts: bool,
+    is_max: bool,
+    mapping: dict,
+) -> np.ndarray | None:
+    """
+    Try the O(n) NumPy prefix/suffix path shared by _min_starts/_min_ends/
+    _max_starts/_max_ends; return None to signal "fall through to the
+    Rust `mapping` dict instead".
+
+    ELI5: one shared decision point instead of four near-identical
+    copies. A dtype is eligible exactly when it's a key in `mapping` --
+    so there's no second, separately-maintained list of supported
+    dtypes that could drift out of sync with it -- and the NumPy
+    precompute only pays off once there's enough total query width (see
+    `_use_argext`). `is_starts=True` means `indexer` is `starts`
+    (suffix scans via `_suffix_argext`); `is_starts=False` means
+    `indexer` is `ends` (prefix scans via `_prefix_argext`).
+    """
+    dtype_name = arr.dtype.name
+    if dtype_name not in mapping or indexer.size <= _ARGEXT_WORK_FACTOR:
+        return None
+    if is_starts:
+        # sum(n - start) == n*len(indexer) - sum(indexer)
+        total_width = (arr.size * indexer.size) - indexer.sum(dtype=np.int64)
+    else:
+        # each row's Rust scan covers `end` elements (range [0, end))
+        total_width = int(indexer.sum(dtype=np.int64))
+    if not _use_argext(arr_size=arr.size, total_width=total_width):
+        return None
+    argext = _suffix_argext if is_starts else _prefix_argext
+    return argext(arr=arr, booleans=booleans, is_max=is_max)[indexer]
+
+
 def _sum_starts(
     arr: np.ndarray,
     starts: np.ndarray,
@@ -431,15 +447,8 @@ def _min_starts(
     ELI5: for a handful of narrow ranges, just ask Rust to scan each one
     directly. For lots of wide/overlapping ranges, it's cheaper to walk
     the whole array once (`_suffix_argext`) and look up every row's answer.
+    See `_argext_dispatch` for the shared decision logic.
     """
-    dtype_name = arr.dtype.name
-    if dtype_name in _ARGEXT_DTYPE_NAMES and starts.size > _ARGEXT_WORK_FACTOR:
-        # Each row's Rust scan covers (arr.size - start) elements; sum
-        # that over every row without a Python loop by distributing:
-        # sum(n - start) == n*len(starts) - sum(starts).
-        total_width = (arr.size * starts.size) - starts.sum(dtype=np.int64)
-        if _use_argext(arr_size=arr.size, total_width=total_width):
-            return _suffix_argext(arr=arr, booleans=booleans, is_max=False)[starts]
     mapping = {
         "int64": janitor_rs.compute_min_start_int64,
         "int32": janitor_rs.compute_min_start_int32,
@@ -452,6 +461,17 @@ def _min_starts(
         "float64": janitor_rs.compute_min_start_f64,
         "float32": janitor_rs.compute_min_start_f32,
     }
+    result = _argext_dispatch(
+        arr=arr,
+        booleans=booleans,
+        indexer=starts,
+        is_starts=True,
+        is_max=False,
+        mapping=mapping,
+    )
+    if result is not None:
+        return result
+    dtype_name = arr.dtype.name
     try:
         func = mapping[dtype_name]
     except KeyError:
@@ -469,15 +489,9 @@ def _min_ends(
 
     ELI5: same trade-off as `_min_starts`, mirrored for prefixes -- Rust
     for a few narrow ranges, `_prefix_argext`'s one-pass precompute once
-    there are enough wide/overlapping ones to make it worth it.
+    there are enough wide/overlapping ones to make it worth it. See
+    `_argext_dispatch` for the shared decision logic.
     """
-    dtype_name = arr.dtype.name
-    if dtype_name in _ARGEXT_DTYPE_NAMES and ends.size > _ARGEXT_WORK_FACTOR:
-        # Each row's Rust scan covers `end` elements (range [0, end)),
-        # so the total is just the sum of all the requested ends.
-        total_width = int(ends.sum(dtype=np.int64))
-        if _use_argext(arr_size=arr.size, total_width=total_width):
-            return _prefix_argext(arr=arr, booleans=booleans, is_max=False)[ends]
     mapping = {
         "int64": janitor_rs.compute_min_end_int64,
         "int32": janitor_rs.compute_min_end_int32,
@@ -490,6 +504,17 @@ def _min_ends(
         "float64": janitor_rs.compute_min_end_f64,
         "float32": janitor_rs.compute_min_end_f32,
     }
+    result = _argext_dispatch(
+        arr=arr,
+        booleans=booleans,
+        indexer=ends,
+        is_starts=False,
+        is_max=False,
+        mapping=mapping,
+    )
+    if result is not None:
+        return result
+    dtype_name = arr.dtype.name
     try:
         func = mapping[dtype_name]
     except KeyError:
@@ -506,14 +531,9 @@ def _max_starts(
     Compute max.
 
     ELI5: same trade-off as `_min_starts`, just tracking the running
-    maximum instead of the minimum.
+    maximum instead of the minimum. See `_argext_dispatch` for the
+    shared decision logic.
     """
-    dtype_name = arr.dtype.name
-    if dtype_name in _ARGEXT_DTYPE_NAMES and starts.size > _ARGEXT_WORK_FACTOR:
-        # sum(n - start) == n*len(starts) - sum(starts); see _min_starts.
-        total_width = (arr.size * starts.size) - starts.sum(dtype=np.int64)
-        if _use_argext(arr_size=arr.size, total_width=total_width):
-            return _suffix_argext(arr=arr, booleans=booleans, is_max=True)[starts]
     mapping = {
         "int64": janitor_rs.compute_max_start_int64,
         "int32": janitor_rs.compute_max_start_int32,
@@ -526,6 +546,17 @@ def _max_starts(
         "float64": janitor_rs.compute_max_start_f64,
         "float32": janitor_rs.compute_max_start_f32,
     }
+    result = _argext_dispatch(
+        arr=arr,
+        booleans=booleans,
+        indexer=starts,
+        is_starts=True,
+        is_max=True,
+        mapping=mapping,
+    )
+    if result is not None:
+        return result
+    dtype_name = arr.dtype.name
     try:
         func = mapping[dtype_name]
     except KeyError:
@@ -542,14 +573,9 @@ def _max_ends(
     Compute max.
 
     ELI5: same trade-off as `_min_ends`, just tracking the running
-    maximum instead of the minimum.
+    maximum instead of the minimum. See `_argext_dispatch` for the
+    shared decision logic.
     """
-    dtype_name = arr.dtype.name
-    if dtype_name in _ARGEXT_DTYPE_NAMES and ends.size > _ARGEXT_WORK_FACTOR:
-        # sum of the requested ends; see _min_ends.
-        total_width = int(ends.sum(dtype=np.int64))
-        if _use_argext(arr_size=arr.size, total_width=total_width):
-            return _prefix_argext(arr=arr, booleans=booleans, is_max=True)[ends]
     mapping = {
         "int64": janitor_rs.compute_max_end_int64,
         "int32": janitor_rs.compute_max_end_int32,
@@ -562,6 +588,17 @@ def _max_ends(
         "float64": janitor_rs.compute_max_end_f64,
         "float32": janitor_rs.compute_max_end_f32,
     }
+    result = _argext_dispatch(
+        arr=arr,
+        booleans=booleans,
+        indexer=ends,
+        is_starts=False,
+        is_max=True,
+        mapping=mapping,
+    )
+    if result is not None:
+        return result
+    dtype_name = arr.dtype.name
     try:
         func = mapping[dtype_name]
     except KeyError:

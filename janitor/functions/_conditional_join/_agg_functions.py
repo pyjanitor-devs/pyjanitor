@@ -164,7 +164,12 @@ def _prefix_argext(arr: np.ndarray, booleans: np.ndarray, is_max: bool) -> np.nd
     # a running count with a leading 0 so index 0 means "none yet"), and
     # that count doubles as a 1-indexed position into `running_pos` --
     # subtract 1 to make it a normal 0-indexed lookup.
-    valid_count_prefix = np.concatenate(([0], np.cumsum(~extended_null)))
+    # dtype=np.int64 pins the accumulator explicitly -- np.cumsum's
+    # platform-default int (int32 on 64-bit Windows) would silently
+    # overflow past ~2.1 billion elements otherwise.
+    valid_count_prefix = np.concatenate(
+        ([0], np.cumsum(~extended_null, dtype=np.int64))
+    )
     has_any = valid_count_prefix > 0
     k = np.clip(valid_count_prefix - 1, 0, max(running_pos.size - 1, 0))
     result[:] = np.where(has_any, running_pos[k], -1)
@@ -233,8 +238,9 @@ def _suffix_argext(arr: np.ndarray, booleans: np.ndarray, is_max: bool) -> np.nd
         # to the end (a running count from the right, with a trailing 0
         # so index n means "none"), then look that many entries into the
         # *reversed* running-position array.
+        # dtype=np.int64: see the matching comment in _prefix_argext.
         valid_count_suffix = np.concatenate(
-            (np.cumsum((~extended_null)[::-1])[::-1], [0])
+            (np.cumsum((~extended_null)[::-1], dtype=np.int64)[::-1], [0])
         )
         has_any = valid_count_suffix[:n] > 0
         k = np.clip(valid_count_suffix[:n] - 1, 0, max(running_pos_rev.size - 1, 0))

@@ -4,6 +4,21 @@ import numpy as np
 _INTEGER_DTYPE_NAMES = frozenset(
     {"int64", "int32", "int16", "int8", "uint64", "uint32", "uint16", "uint8"}
 )
+_PREFIX_SUM_WORK_FACTOR = 3
+# This many or fewer valid ranges cannot exceed the work threshold, because
+# each range is at most ``arr.size`` elements wide.
+
+
+def _use_prefix_sums(arr_size: int, total_width: int) -> bool:
+    """
+    Use a prefix sum only when repeated range scans cost more.
+
+    ELI5: Rust rereads every requested section. NumPy writes down one running
+    total for the whole array. Make that extra list only when rereading the
+    requested sections would mean walking the whole array more than three
+    times.
+    """
+    return total_width > (_PREFIX_SUM_WORK_FACTOR * arr_size)
 
 
 def _int64_prefix_sums(arr: np.ndarray, booleans: np.ndarray) -> np.ndarray:
@@ -33,10 +48,20 @@ def _sum_starts(
     Compute sum
     """
     dtype_name = arr.dtype.name
-    if dtype_name in _INTEGER_DTYPE_NAMES:
-        prefix = _int64_prefix_sums(arr=arr, booleans=booleans)
-        return prefix[-1] - prefix[starts]
+    if dtype_name in _INTEGER_DTYPE_NAMES and starts.size > _PREFIX_SUM_WORK_FACTOR:
+        total_width = (arr.size * starts.size) - starts.sum(dtype=np.int64)
+        if _use_prefix_sums(arr_size=arr.size, total_width=total_width):
+            prefix = _int64_prefix_sums(arr=arr, booleans=booleans)
+            return prefix[-1] - prefix[starts]
     mapping = {
+        "int64": janitor_rs.compute_sum_start_int64,
+        "int32": janitor_rs.compute_sum_start_int32,
+        "int16": janitor_rs.compute_sum_start_int16,
+        "int8": janitor_rs.compute_sum_start_int8,
+        "uint64": janitor_rs.compute_sum_start_uint64,
+        "uint32": janitor_rs.compute_sum_start_uint32,
+        "uint16": janitor_rs.compute_sum_start_uint16,
+        "uint8": janitor_rs.compute_sum_start_uint8,
         "float64": janitor_rs.compute_sum_start_f64,
         "float32": janitor_rs.compute_sum_start_f32,
     }
@@ -56,10 +81,20 @@ def _sum_ends(
     Compute sum
     """
     dtype_name = arr.dtype.name
-    if dtype_name in _INTEGER_DTYPE_NAMES:
-        prefix = _int64_prefix_sums(arr=arr, booleans=booleans)
-        return prefix[ends]
+    if dtype_name in _INTEGER_DTYPE_NAMES and ends.size > _PREFIX_SUM_WORK_FACTOR:
+        total_width = ends.sum(dtype=np.int64)
+        if _use_prefix_sums(arr_size=arr.size, total_width=total_width):
+            prefix = _int64_prefix_sums(arr=arr, booleans=booleans)
+            return prefix[ends]
     mapping = {
+        "int64": janitor_rs.compute_sum_end_int64,
+        "int32": janitor_rs.compute_sum_end_int32,
+        "int16": janitor_rs.compute_sum_end_int16,
+        "int8": janitor_rs.compute_sum_end_int8,
+        "uint64": janitor_rs.compute_sum_end_uint64,
+        "uint32": janitor_rs.compute_sum_end_uint32,
+        "uint16": janitor_rs.compute_sum_end_uint16,
+        "uint8": janitor_rs.compute_sum_end_uint8,
         "float64": janitor_rs.compute_sum_end_f64,
         "float32": janitor_rs.compute_sum_end_f32,
     }
@@ -812,17 +847,28 @@ def _sum_starts_ends(
     Compute sum
     """
     dtype_name = arr.dtype.name
-    if dtype_name in _INTEGER_DTYPE_NAMES:
-        prefix = _int64_prefix_sums(arr=arr, booleans=booleans)
-        result = prefix[ends] - prefix[starts]
-        # an empty (or inverted) range contributes nothing, matching the
-        # Rust `for nn in start_..end_` loop, which never iterates when
-        # start_ >= end_
-        empty_range = starts >= ends
-        if empty_range.any():
-            result[empty_range] = 0
-        return result
+    if dtype_name in _INTEGER_DTYPE_NAMES and starts.size > _PREFIX_SUM_WORK_FACTOR:
+        widths = np.maximum(ends - starts, 0)
+        total_width = widths.sum(dtype=np.int64)
+        if _use_prefix_sums(arr_size=arr.size, total_width=total_width):
+            prefix = _int64_prefix_sums(arr=arr, booleans=booleans)
+            result = prefix[ends] - prefix[starts]
+            # an empty (or inverted) range contributes nothing, matching the
+            # Rust `for nn in start_..end_` loop, which never iterates when
+            # start_ >= end_
+            empty_range = starts >= ends
+            if empty_range.any():
+                result[empty_range] = 0
+            return result
     mapping = {
+        "int64": janitor_rs.compute_sum_start_end_int64,
+        "int32": janitor_rs.compute_sum_start_end_int32,
+        "int16": janitor_rs.compute_sum_start_end_int16,
+        "int8": janitor_rs.compute_sum_start_end_int8,
+        "uint64": janitor_rs.compute_sum_start_end_uint64,
+        "uint32": janitor_rs.compute_sum_start_end_uint32,
+        "uint16": janitor_rs.compute_sum_start_end_uint16,
+        "uint8": janitor_rs.compute_sum_start_end_uint8,
         "float64": janitor_rs.compute_sum_start_end_f64,
         "float32": janitor_rs.compute_sum_start_end_f32,
     }

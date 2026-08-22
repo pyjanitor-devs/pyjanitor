@@ -2,9 +2,9 @@
 
 Covers `_int64_prefix_sums`, `_sum_starts`, `_sum_ends`, and
 `_sum_starts_ends` in `janitor.functions._conditional_join._agg_functions`
-(Issue #1648) -- the O(n + m) NumPy replacements for the Rust
-`compute_sum_start*`, `compute_sum_end*`, and `compute_sum_start_end*`
-kernels, for integer dtypes only.
+(Issue #1648) -- the O(n + m) NumPy path for dense integer ranges; sparse
+ranges continue to use the Rust `compute_sum_start*`, `compute_sum_end*`, and
+`compute_sum_start_end*` kernels.
 """
 
 import numpy as np
@@ -183,3 +183,68 @@ def test_starts_beyond_ends_is_empty_range():
         arr=arr, starts=starts, ends=ends, booleans=booleans
     )
     assert result[0] == 0
+
+
+@pytest.mark.parametrize(
+    "func_name,rust_name,indexers",
+    [
+        ("_sum_starts", "compute_sum_start_int64", {"starts": [99]}),
+        ("_sum_ends", "compute_sum_end_int64", {"ends": [1]}),
+        (
+            "_sum_starts_ends",
+            "compute_sum_start_end_int64",
+            {"starts": [50], "ends": [51]},
+        ),
+    ],
+)
+def test_sparse_ranges_use_rust(monkeypatch, func_name, rust_name, indexers):
+    """Selective ranges should not pay to scan and copy the full array."""
+    expected = np.array([123], dtype=np.int64)
+
+    def fake_rust(**kwargs):
+        return expected
+
+    monkeypatch.setattr(_agg_functions.janitor_rs, rust_name, fake_rust)
+    monkeypatch.setattr(
+        _agg_functions,
+        "_int64_prefix_sums",
+        lambda **kwargs: pytest.fail("sparse ranges should stay in Rust"),
+    )
+    actual = getattr(_agg_functions, func_name)(
+        arr=np.ones(100, dtype=np.int64),
+        booleans=np.zeros(100, dtype=bool),
+        **{name: np.array(values, dtype=np.int64) for name, values in indexers.items()},
+    )
+
+    np.testing.assert_array_equal(actual, expected)
+
+
+@pytest.mark.parametrize(
+    "func_name,rust_family,indexers",
+    [
+        ("_sum_starts", "compute_sum_start", {"starts": [0, 0, 0, 0]}),
+        ("_sum_ends", "compute_sum_end", {"ends": [100, 100, 100, 100]}),
+        (
+            "_sum_starts_ends",
+            "compute_sum_start_end",
+            {"starts": [0, 0, 0, 0], "ends": [100, 100, 100, 100]},
+        ),
+    ],
+)
+@pytest.mark.parametrize("dtype", INTEGER_DTYPES)
+def test_dense_ranges_use_prefix_sums(
+    monkeypatch, func_name, rust_family, indexers, dtype
+):
+    """Heavily overlapping ranges should use one shared running total."""
+
+    def fail_rust(**kwargs):
+        pytest.fail("dense ranges should use prefix sums")
+
+    monkeypatch.setattr(_agg_functions.janitor_rs, f"{rust_family}_{dtype}", fail_rust)
+    actual = getattr(_agg_functions, func_name)(
+        arr=np.ones(100, dtype=dtype),
+        booleans=np.zeros(100, dtype=bool),
+        **{name: np.array(values, dtype=np.int64) for name, values in indexers.items()},
+    )
+
+    np.testing.assert_array_equal(actual, np.full(4, 100, dtype=np.int64))

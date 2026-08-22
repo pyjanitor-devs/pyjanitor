@@ -211,6 +211,8 @@ def adorn_pct_formatting(
 
     This function formats numeric columns (assumed to be proportions between
     0 and 1) as percentage strings with the specified number of decimal places.
+    The first column is treated as a row identifier and is left untouched,
+    consistent with `adorn_totals` and `adorn_percentages`.
 
     Examples:
         Format percentages with default settings.
@@ -263,8 +265,14 @@ def adorn_pct_formatting(
     # Preserve original counts if they exist
     original_counts = df.attrs.get("_original_counts")
 
-    # Identify numeric columns
-    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    # Identify numeric columns, excluding the first column which is treated
+    # as a row identifier (consistent with R janitor's tabyl behavior)
+    first_col = df.columns[0]
+    numeric_cols = [
+        col
+        for col in df.select_dtypes(include=[np.number]).columns.tolist()
+        if col != first_col
+    ]
 
     rounding_mode = ROUND_HALF_EVEN if rounding == "half to even" else ROUND_HALF_UP
     quantize_str = f"0.{'0' * digits}" if digits > 0 else "0"
@@ -305,7 +313,9 @@ def adorn_ns(
     This function adds the original counts (N) to cells that have been
     converted to percentages. It requires either the original counts to be
     stored in the DataFrame's attrs (via prior use of adorn_percentages)
-    or to be passed via the `ns` parameter.
+    or to be passed via the `ns` parameter. The first column of the counts
+    is treated as a row identifier and is left untouched, consistent with
+    `adorn_totals` and `adorn_percentages`.
 
     Examples:
         Add counts to formatted percentages.
@@ -366,8 +376,15 @@ def adorn_ns(
 
         format_func = _default_format_func
 
-    # Get numeric columns from the original counts
-    numeric_cols = ns.select_dtypes(include=[np.number]).columns.tolist()
+    # Get numeric columns from the original counts, excluding the first
+    # column which is treated as a row identifier (consistent with R
+    # janitor's tabyl behavior)
+    first_col = ns.columns[0]
+    numeric_cols = [
+        col
+        for col in ns.select_dtypes(include=[np.number]).columns.tolist()
+        if col != first_col
+    ]
 
     # Apply to matching columns
     # Use positional indexing to handle cases where df has more rows than ns
@@ -470,8 +487,10 @@ def adorn_rounding(
 ) -> pd.DataFrame:
     """Round numeric columns with configurable rounding method.
 
-    This function rounds all numeric columns to the specified number of
-    decimal places using the specified rounding method.
+    This function rounds numeric columns to the specified number of
+    decimal places using the specified rounding method. The first column is
+    treated as a row identifier and is left untouched, consistent with
+    `adorn_totals` and `adorn_percentages`.
 
     Examples:
         Round numeric columns.
@@ -523,8 +542,14 @@ def adorn_rounding(
     # Preserve original counts if they exist
     original_counts = df.attrs.get("_original_counts")
 
-    # Identify numeric columns
-    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    # Identify numeric columns, excluding the first column which is treated
+    # as a row identifier (consistent with R janitor's tabyl behavior)
+    first_col = df.columns[0]
+    numeric_cols = [
+        col
+        for col in df.select_dtypes(include=[np.number]).columns.tolist()
+        if col != first_col
+    ]
 
     rounding_mode = ROUND_HALF_EVEN if rounding == "half to even" else ROUND_HALF_UP
     quantize_str = f"0.{'0' * digits}" if digits > 0 else "0"

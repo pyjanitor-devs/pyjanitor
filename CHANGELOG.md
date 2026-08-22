@@ -156,6 +156,7 @@
 -   [ENH] Avoid copying column data during `conditional_join` input validation. - Issue #1645, PR #1642 @samukweku
 -   [ENH] Limit `conditional_join` matching work to columns referenced by join conditions. - Issue #1646, PR #1647 @samukweku
 -   [ENH] Speed up `conditional_join` with an unsorted right join key and `keep="first"` or `keep="last"`. - Issue #1125, PR #1644 @samukweku
+-   [BUG] `adorn_pct_formatting`, `adorn_ns` and `adorn_rounding` no longer treat a numeric first column as data. The first column is a row identifier, matching `adorn_totals` and `adorn_percentages`. @dylanpulver
 -   [ENH] Replace `axis=1` `.apply()` with vectorized operations in `compare_df_cols` for 4-7x performance improvement. - Issue #1630 @Anupam2400
 -   [DOC] Add documentation explaining when cumulative-event aggregation is preferable to range join aggregations. - Issue #1702 @sumangouda
 -   [INF] Automate contributor recognition: weekly workflow discovers new commit authors and regenerates the all-contributors table; backfilled 30 missing contributors. - Issue #1623

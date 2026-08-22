@@ -548,6 +548,24 @@ CLI.
 include MkDocs. The documentation task is available in the `docs` environment.
 **Recommendation**: Run `pixi run -e docs build-docs` to build documentation.
 
+### [2026-08-22] Always Use a New Worktree for a New Issue/Branch
+
+**Context**: Working on issue #1653 in the shared `~/github/pyjanitor` clone
+while another concurrent session had issue #1648 checked out in a sibling
+worktree (`~/github/pyjanitor-1648`); the shared clone's HEAD ended up
+detached mid-session from that other work, which was only caught by
+inspecting `git status`/`git reflog` before committing.
+**Learning**: The shared main clone directory gets reused across sessions
+and branches, so starting a new issue there risks colliding with another
+in-progress checkout, or committing on top of the wrong branch/detached
+HEAD.
+**Recommendation**: For every new issue or branch, create a dedicated
+`git worktree add ~/github/pyjanitor-<issue> -b <branch> origin/dev`
+(or the equivalent for the current base branch) instead of checking out a
+new branch in the shared clone. Never leave uncommitted work or run
+destructive git operations in the shared clone without first checking
+`git status`/`git branch --show-current` for signs of concurrent use.
+
 ---
 
 ## Version History

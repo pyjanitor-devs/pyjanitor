@@ -1,6 +1,160 @@
 import janitor_rs
 import numpy as np
 
+_ARGEXT_WORK_FACTOR = 20
+
+
+def _use_argext(arr_size: int, total_width: int) -> bool:
+    """
+    Use the O(n) prefix/suffix precompute only when repeated Rust range
+    scans would cost more.
+
+    ELI5: same idea as the prefix-sum work-factor check for range sums --
+    only pay for building the running-best array once the Rust kernel
+    would otherwise re-scan the array more than `_ARGEXT_WORK_FACTOR`
+    times over. Benchmarked empirically (see PR description): this
+    kernel does more per-element work than a plain running sum, so its
+    break-even point is higher.
+    """
+    return total_width > (_ARGEXT_WORK_FACTOR * arr_size)
+
+
+def _running_argext_compact(vals: np.ndarray, is_max: bool, strict: bool) -> np.ndarray:
+    """
+    Positions (into `vals`) of the running best value, scanning `vals`
+    left to right. `vals` must already have every null/NaN entry removed
+    -- that's what makes this safe to vectorize with no sentinel value:
+    there's nothing to accidentally collide with a real data point at a
+    narrow dtype's extreme (e.g. 255 for uint8).
+
+    ELI5: walk once, remembering the position of the best value seen so
+    far. `strict=True` means a tie does NOT replace the earlier record
+    (used for prefixes); `strict=False` means a tie DOES replace it
+    (used for suffixes, scanning a reversed array, so "replace on tie"
+    ends up keeping the smaller/earlier original index).
+    """
+    m = vals.size
+    running_val = (np.fmax if is_max else np.fmin).accumulate(vals)
+    is_new_record = np.empty(m, dtype=bool)
+    is_new_record[0] = True
+    if strict:
+        is_new_record[1:] = (
+            (running_val[1:] > running_val[:-1])
+            if is_max
+            else (running_val[1:] < running_val[:-1])
+        )
+    else:
+        is_new_record[1:] = vals[1:] == running_val[1:]
+    candidate = np.where(is_new_record, np.arange(m), -1)
+    return np.maximum.accumulate(candidate)
+
+
+def _isnan_if_float(arr: np.ndarray) -> np.ndarray:
+    """`np.isnan` raises on integer dtypes, which never have NaN anyway."""
+    if np.issubdtype(arr.dtype, np.floating):
+        return np.isnan(arr)
+    return np.zeros(arr.shape, dtype=bool)
+
+
+def _prefix_argext(arr: np.ndarray, booleans: np.ndarray, is_max: bool) -> np.ndarray:
+    """
+    result[e] = the Rust `compute_{min,max}_end_*` answer for that `e`,
+    for every e in 0..n, computed once in O(n) instead of once per row.
+
+    ELI5: the Rust kernel restarts its scan from index 0 every single
+    time, no matter what `end` is, so every row is just a different-length
+    prefix of the *same* walk. Walk it once and remember the running best
+    position; every row can then just read off the answer for its own
+    `end`.
+
+    Floats get one extra wrinkle: the Rust kernel's `<`/`>` comparisons
+    are IEEE754, where anything compared with NaN is always false. So
+    once the scan's very first non-null value is a NaN, nothing --
+    real or NaN -- can ever replace it (`0 < NaN` and `NaN < 0` are both
+    false), and that NaN's position "freezes" as the answer for every
+    later `end` too. A NaN encountered *after* a real anchor, on the
+    other hand, is just silently never selected, exactly like a null.
+    """
+    n = arr.size
+    result = np.full(n + 1, -1, dtype=np.int64)
+    if n == 0:
+        return result
+    not_null = ~booleans
+    if not not_null.any():
+        return result
+    first_valid = int(np.argmax(not_null))
+    isnan = _isnan_if_float(arr)
+
+    if isnan[first_valid]:
+        result[first_valid + 1 :] = first_valid
+        return result
+
+    extended_null = booleans | isnan
+    valid_idx = np.flatnonzero(~extended_null)
+    valid_vals = arr[valid_idx]
+    running_pos = valid_idx[_running_argext_compact(valid_vals, is_max, strict=True)]
+
+    valid_count_prefix = np.concatenate(([0], np.cumsum(~extended_null)))
+    has_any = valid_count_prefix > 0
+    k = np.clip(valid_count_prefix - 1, 0, max(running_pos.size - 1, 0))
+    result[:] = np.where(has_any, running_pos[k], -1)
+    return result
+
+
+def _suffix_argext(arr: np.ndarray, booleans: np.ndarray, is_max: bool) -> np.ndarray:
+    """
+    result[s] = the Rust `compute_{min,max}_start_*` answer for that `s`,
+    for every s in 0..n, computed once in O(n) instead of once per row.
+
+    ELI5: unlike the prefix case, each row's `start` restarts its own
+    scan from a different position, so which value gets "frozen" by the
+    NaN quirk (see `_prefix_argext`) can differ row to row -- a single
+    shared backward scan over the whole array isn't enough on its own.
+    So this splits the work: `next_valid` finds each `s`'s own anchor
+    position in O(n); if that anchor is a NaN the answer is just that
+    position (frozen); otherwise NaN behaves like null for the rest of
+    that row's range, and the answer comes from one shared "clean"
+    backward scan that skips nulls and NaNs alike.
+    """
+    n = arr.size
+    result = np.full(n + 1, -1, dtype=np.int64)
+    if n == 0:
+        return result
+    idx = np.arange(n)
+    isnan = _isnan_if_float(arr)
+
+    raw = np.where(~booleans, idx, n)
+    next_valid = np.minimum.accumulate(raw[::-1])[::-1]
+
+    extended_null = booleans | isnan
+    valid_idx = np.flatnonzero(~extended_null)
+    if valid_idx.size:
+        valid_vals = arr[valid_idx]
+        rev_pos_in_compact = _running_argext_compact(
+            valid_vals[::-1], is_max, strict=False
+        )
+        running_pos_rev = valid_idx[::-1][rev_pos_in_compact]
+
+        valid_count_suffix = np.concatenate(
+            (np.cumsum((~extended_null)[::-1])[::-1], [0])
+        )
+        has_any = valid_count_suffix[:n] > 0
+        k = np.clip(valid_count_suffix[:n] - 1, 0, max(running_pos_rev.size - 1, 0))
+        clean_suffix = np.where(has_any, running_pos_rev[k], -1)
+    else:
+        clean_suffix = np.full(n, -1, dtype=np.int64)
+
+    frozen_mask = next_valid < n
+    anchor_isnan = np.zeros(n, dtype=bool)
+    if np.issubdtype(arr.dtype, np.floating):
+        valid_next = next_valid[frozen_mask]
+        anchor_isnan[frozen_mask] = np.isnan(arr[valid_next])
+
+    result[:n] = np.where(
+        ~frozen_mask, -1, np.where(anchor_isnan, next_valid, clean_suffix)
+    )
+    return result
+
 
 def _sum_starts(
     arr: np.ndarray,
@@ -164,6 +318,10 @@ def _min_starts(
     """
     Compute min
     """
+    if starts.size > _ARGEXT_WORK_FACTOR:
+        total_width = (arr.size * starts.size) - starts.sum(dtype=np.int64)
+        if _use_argext(arr_size=arr.size, total_width=total_width):
+            return _suffix_argext(arr=arr, booleans=booleans, is_max=False)[starts]
     mapping = {
         "int64": janitor_rs.compute_min_start_int64,
         "int32": janitor_rs.compute_min_start_int32,
@@ -192,6 +350,10 @@ def _min_ends(
     """
     Compute min
     """
+    if ends.size > _ARGEXT_WORK_FACTOR:
+        total_width = int(ends.sum(dtype=np.int64))
+        if _use_argext(arr_size=arr.size, total_width=total_width):
+            return _prefix_argext(arr=arr, booleans=booleans, is_max=False)[ends]
     mapping = {
         "int64": janitor_rs.compute_min_end_int64,
         "int32": janitor_rs.compute_min_end_int32,
@@ -220,6 +382,10 @@ def _max_starts(
     """
     Compute max
     """
+    if starts.size > _ARGEXT_WORK_FACTOR:
+        total_width = (arr.size * starts.size) - starts.sum(dtype=np.int64)
+        if _use_argext(arr_size=arr.size, total_width=total_width):
+            return _suffix_argext(arr=arr, booleans=booleans, is_max=True)[starts]
     mapping = {
         "int64": janitor_rs.compute_max_start_int64,
         "int32": janitor_rs.compute_max_start_int32,
@@ -248,6 +414,10 @@ def _max_ends(
     """
     Compute max
     """
+    if ends.size > _ARGEXT_WORK_FACTOR:
+        total_width = int(ends.sum(dtype=np.int64))
+        if _use_argext(arr_size=arr.size, total_width=total_width):
+            return _prefix_argext(arr=arr, booleans=booleans, is_max=True)[ends]
     mapping = {
         "int64": janitor_rs.compute_max_end_int64,
         "int32": janitor_rs.compute_max_end_int32,

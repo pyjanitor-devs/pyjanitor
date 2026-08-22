@@ -161,7 +161,13 @@ def _sum_starts(
     booleans: np.ndarray,
 ) -> tuple:
     """
-    Compute sum
+    Sum each suffix selected by `starts`.
+
+    ELI5: a suffix is "everything from here onward." For every
+    `starts[i]`, this computes `arr[starts[i]:]`, skipping nulls. When many
+    suffixes overlap, the compensated prefix lets us subtract the saved
+    total before `start` from the saved total at the end instead of adding
+    the same tail repeatedly.
     """
     dtype_name = arr.dtype.name
     if dtype_name in _FLOAT_PREFIX_DTYPES:
@@ -198,7 +204,12 @@ def _sum_ends(
     booleans: np.ndarray,
 ) -> tuple:
     """
-    Compute sum
+    Sum each prefix selected by `ends`.
+
+    ELI5: a prefix is "everything from the beginning up to here." For
+    every `ends[i]`, this computes `arr[:ends[i]]`, skipping nulls. A
+    compensated prefix has already saved exactly that running total, so a
+    dense workload can answer each query with a lookup.
     """
     dtype_name = arr.dtype.name
     if dtype_name in _FLOAT_PREFIX_DTYPES:
@@ -966,7 +977,11 @@ def _sum_starts_ends(
     booleans: np.ndarray,
 ) -> tuple:
     """
-    Compute sum
+    Sum each arbitrary interval selected by `starts` and `ends`.
+
+    ELI5: `[start:end)` means "begin at `start`, stop just before `end`."
+    Subtracting the saved prefix at `start` from the saved prefix at `end`
+    removes everything before the interval and leaves only its sum.
     """
     dtype_name = arr.dtype.name
     if dtype_name in _FLOAT_PREFIX_DTYPES:

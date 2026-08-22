@@ -8,7 +8,7 @@
     otherwise, or when the whole array can't be trusted for prefix
     subtraction (a real +/-inf, an overflowing partial sum, or extreme
     within-array dynamic range), falls back to the existing Rust kernel.
-    - Issue #1671 @samukweku
+    - Issue #1671, PR #1675 @samukweku
 -   [ENH] Avoid copying column data during `conditional_join` input
     validation. - Issue #1645, PR #1642 @samukweku
 -   [ENH] Speed up `conditional_join` with an unsorted right join key and

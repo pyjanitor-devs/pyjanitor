@@ -9,12 +9,15 @@ native scan is cheaper overall.
 
 Numerical-correctness tests below exercise the compensated-prefix math
 directly via `_prefix_range_sum` (bypassing the performance heuristic,
-which is orthogonal to correctness) against `janitor_rs`'s own kernels -
-not exact equality, since Rust computes a fresh Kahan sum per range while
-this is a prefix-subtraction, but the agreed relative-error tolerance
-(1e-9). Separate tests cover the heuristic itself and full `join_agg`
+which is orthogonal to correctness) against `math.fsum` as a high-precision
+reference. The error budget scales with the sum of the input magnitudes,
+not the possibly near-zero result: cancellation makes result-relative error
+ill-conditioned and can make two accurate summation methods look arbitrarily
+far apart. Separate tests cover the heuristic itself and full `join_agg`
 integration at a scale where the fast path is actually selected.
 """
+
+import math
 
 import janitor_rs
 import numpy as np
@@ -25,7 +28,10 @@ from pandas.testing import assert_frame_equal
 import janitor  # noqa: F401 - registers the join_agg DataFrame accessor
 from janitor.functions._conditional_join import _agg_functions as af
 
-RELATIVE_TOLERANCE = 1e-9
+ROUNDING_ERROR_FACTOR = 8
+# Compensated sums should stay within a small multiple of machine epsilon
+# times sum(abs(inputs)); eight leaves headroom for prefix construction plus
+# range subtraction while still catching a lost contribution.
 
 RUST_SUM_STARTS = {
     "float64": janitor_rs.compute_sum_start_f64,
@@ -41,9 +47,21 @@ RUST_SUM_STARTS_ENDS = {
 }
 
 
-def _relative_error(actual: float, expected: float) -> float:
-    denom = max(abs(expected), 1e-300)
-    return abs(actual - expected) / denom
+def _assert_accurate(actual, arr, booleans, start, end):
+    """Compare with a high-precision sum using a cancellation-safe budget."""
+    values = arr[start:end]
+    mask = booleans[start:end]
+    values = values[~mask]
+    exact = math.fsum(float(value) for value in values)
+    scale = math.fsum(abs(float(value)) for value in values)
+    error_bound = ROUNDING_ERROR_FACTOR * np.finfo(np.float64).eps * scale
+    assert abs(float(actual) - exact) <= error_bound, (
+        actual,
+        exact,
+        error_bound,
+        start,
+        end,
+    )
 
 
 def _prefix_range_sum(arr, booleans, starts, ends):
@@ -62,7 +80,7 @@ def _prefix_range_sum(arr, booleans, starts, ends):
 
 
 @pytest.mark.parametrize("dtype", ["float64", "float32"])
-def test_sum_starts_ends_within_tolerance_of_rust(dtype):
+def test_sum_starts_ends_matches_high_precision_reference(dtype):
     """Randomized, mixed-magnitude ranges stay within the accuracy contract."""
     rng = np.random.default_rng(20260822)
     rust_fn = RUST_SUM_STARTS_ENDS[dtype]
@@ -81,21 +99,15 @@ def test_sum_starts_ends_within_tolerance_of_rust(dtype):
             actual = _prefix_range_sum(arr, booleans, starts, ends)
             if actual is None:
                 continue  # safety guard legitimately rejected this draw
-            expected = rust_fn(arr=arr, starts=starts, ends=ends, booleans=booleans)[0]
-            assert _relative_error(actual[0], expected) <= RELATIVE_TOLERANCE, (
-                dtype,
-                n,
-                start,
-                end,
-                expected,
-                actual[0],
-            )
+            baseline = rust_fn(arr=arr, starts=starts, ends=ends, booleans=booleans)[0]
+            _assert_accurate(actual[0], arr, booleans, start, end)
+            _assert_accurate(baseline, arr, booleans, start, end)
             checked += 1
     assert checked > 0
 
 
 @pytest.mark.parametrize("dtype", ["float64", "float32"])
-def test_sum_starts_within_tolerance_of_rust(dtype):
+def test_sum_starts_matches_high_precision_reference(dtype):
     """Suffix sums (single '<' join) stay within the accuracy contract."""
     rng = np.random.default_rng(20260823)
     rust_fn = RUST_SUM_STARTS[dtype]
@@ -111,15 +123,16 @@ def test_sum_starts_within_tolerance_of_rust(dtype):
             actual = _prefix_range_sum(arr, booleans, starts, arr.size)
             if actual is None:
                 continue
-            expected = rust_fn(arr=arr, starts=starts, booleans=booleans)
-            for e, a in zip(expected, actual):
-                assert _relative_error(a, e) <= RELATIVE_TOLERANCE
+            baseline = rust_fn(arr=arr, starts=starts, booleans=booleans)
+            for start, value, rust_value in zip(starts, actual, baseline):
+                _assert_accurate(value, arr, booleans, int(start), arr.size)
+                _assert_accurate(rust_value, arr, booleans, int(start), arr.size)
             checked += 1
     assert checked > 0
 
 
 @pytest.mark.parametrize("dtype", ["float64", "float32"])
-def test_sum_ends_within_tolerance_of_rust(dtype):
+def test_sum_ends_matches_high_precision_reference(dtype):
     """Prefix sums (single '>' join) stay within the accuracy contract."""
     rng = np.random.default_rng(20260824)
     rust_fn = RUST_SUM_ENDS[dtype]
@@ -135,9 +148,10 @@ def test_sum_ends_within_tolerance_of_rust(dtype):
             actual = _prefix_range_sum(arr, booleans, 0, ends)
             if actual is None:
                 continue
-            expected = rust_fn(arr=arr, ends=ends, booleans=booleans)
-            for e, a in zip(expected, actual):
-                assert _relative_error(a, e) <= RELATIVE_TOLERANCE
+            baseline = rust_fn(arr=arr, ends=ends, booleans=booleans)
+            for end, value, rust_value in zip(ends, actual, baseline):
+                _assert_accurate(value, arr, booleans, 0, int(end))
+                _assert_accurate(rust_value, arr, booleans, 0, int(end))
             checked += 1
     assert checked > 0
 
@@ -173,6 +187,31 @@ def test_well_scaled_arrays_match_rust_exactly(dtype):
     )
     actual = _prefix_range_sum(arr, booleans, starts, ends)
     np.testing.assert_array_equal(actual, expected)
+
+
+def test_query_multiplicity_preserves_accuracy_across_dispatch_paths():
+    """Adding duplicate queries may select the prefix path, but both paths
+    must remain accurate even when cancellation makes their rounded results
+    differ. This guards the case found during review: Rust's per-range Kahan
+    sum returns -0.0999755859375, while the prefix path returns the more
+    accurate -0.1 once enough duplicate ranges cross the work threshold."""
+    right = pd.DataFrame({"key": [0.0, 1.0, 2.0], "value": [-0.1, -1e12, 1e12]})
+    one = pd.DataFrame({"key": [-1.0]})
+    many = pd.DataFrame({"key": np.full(151, -1.0)})
+
+    direct = one.join_agg(right, ("key", "key", "<"), aggfunc=[("value", "sum")]).iloc[
+        0, 0
+    ]
+    prefix = many.join_agg(right, ("key", "key", "<"), aggfunc=[("value", "sum")]).iloc[
+        0, 0
+    ]
+
+    arr = right["value"].to_numpy()
+    booleans = np.zeros(arr.size, dtype=np.bool_)
+    assert not af._prefix_sum_is_worthwhile(arr.size, arr.size)
+    assert af._prefix_sum_is_worthwhile(arr.size, 151 * arr.size)
+    _assert_accurate(direct, arr, booleans, 0, arr.size)
+    _assert_accurate(prefix, arr, booleans, 0, arr.size)
 
 
 @pytest.mark.parametrize("dtype", [np.float64, np.float32])
@@ -421,11 +460,8 @@ def test_join_agg_large_overlapping_ranges_uses_fast_path():
     booleans = np.zeros(n_right, dtype=np.bool_)
     for l_idx, l_key in left["key"].items():
         start = int(np.searchsorted(right["key"].to_numpy(), l_key, side="right"))
-        expected = RUST_SUM_STARTS["float64"](
-            arr=arr, starts=np.array([start], dtype=np.int64), booleans=booleans
-        )[0]
         if l_idx in actual.index:
             got = actual.loc[l_idx, ("value", "sum")]
-            assert _relative_error(got, expected) <= RELATIVE_TOLERANCE
+            _assert_accurate(got, arr, booleans, start, n_right)
         else:
             assert start == n_right  # no matches for this row

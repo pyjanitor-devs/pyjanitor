@@ -67,10 +67,11 @@ def _range_sum_from_prefix(
 # excursion followed by another huge, opposite-signed excursion followed
 # by tiny values can silently lose 100% of a small window's true value,
 # well before the running total itself ever overflows. Random dynamic
-# range alone stays safe (worst observed relative error ~5e-14) up to
-# about 1e20-1e25 and only starts genuinely degrading around 1e30,
-# becoming catastrophic by 1e40 - 1e15 leaves several orders of magnitude
-# of margin below where trouble starts.
+# range alone stays safe under the scale-aware accuracy contract exercised
+# against `math.fsum` in the tests. A result-relative error is deliberately
+# not used: cancellation can make the true result arbitrarily close to zero
+# even when both summation methods are accurate. The 1e15 cutoff remains
+# several orders of magnitude below the observed catastrophic regime.
 _MAX_SAFE_DYNAMIC_RANGE = 1e15
 
 

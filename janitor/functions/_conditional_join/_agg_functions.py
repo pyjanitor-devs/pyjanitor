@@ -56,6 +56,18 @@ def _range_sum_from_prefix(
 ) -> np.ndarray:
     """
     Answer [start, end) range-sum queries from a compensated prefix.
+
+    ELI5: each prefix position has a main total (`hi`) and a leftovers
+    total (`lo`). Subtract both ledgers at `start` from both at `end`, then
+    combine what remains to recover the requested slice.
+
+    This need not be bit-for-bit equal to Rust summing the slice afresh:
+    Kahan summation and compensated-prefix subtraction can round
+    cancellation differently. Correctness is instead bounded against a
+    high-precision `math.fsum` reference by a small multiple of float64
+    epsilon times `sum(abs(inputs))`. Scaling by the input magnitudes is
+    intentional; dividing only by a cancellation-heavy, near-zero answer
+    would make two accurate results appear arbitrarily far apart.
     """
     return (hi[ends] - hi[starts]) + (lo[ends] - lo[starts])
 
@@ -78,6 +90,10 @@ _MAX_SAFE_DYNAMIC_RANGE = 1e15
 def _has_safe_dynamic_range(arr: np.ndarray, booleans: np.ndarray) -> bool:
     """
     Whether the non-null magnitudes in `arr` are too spread out to trust.
+
+    ELI5: the leftover ledger is also a float. If the biggest value is far
+    too large compared with the smallest, that ledger can lose the small
+    correction it was created to protect, so the caller uses Rust instead.
     """
     non_null = arr if not booleans.any() else arr[~booleans]
     magnitudes = np.abs(non_null.astype(np.float64, copy=False))
@@ -108,6 +124,10 @@ def _build_prefix_if_safe(
        value(s) produces `inf - inf = NaN`. Checked by requiring every
        `hi` entry beyond the leading zero to be finite.
     2. Extreme dynamic range within `arr` - see `_MAX_SAFE_DYNAMIC_RANGE`.
+
+    Passing these guards means the prefix satisfies the scale-aware
+    accuracy contract described in `_range_sum_from_prefix`; it does not
+    promise identical rounding to Rust's per-range Kahan implementation.
     """
     if not _has_safe_dynamic_range(arr=arr, booleans=booleans):
         return None

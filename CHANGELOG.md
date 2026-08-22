@@ -1,6 +1,14 @@
 # Changelog
 
 ## [Unreleased]
+-   [PERF] Replace the forward `float32`/`float64` range-`sum` kernels behind
+    `join_agg` (suffix, prefix, and arbitrary-interval ranges) with a
+    Neumaier-compensated prefix sum when the total queried width is large
+    enough relative to the array for the one-time O(n) build to pay off;
+    otherwise, or when the whole array can't be trusted for prefix
+    subtraction (a real +/-inf, an overflowing partial sum, or extreme
+    within-array dynamic range), falls back to the existing Rust kernel.
+    - Issue #1671 @samukweku
 -   [ENH] Avoid copying column data during `conditional_join` input
     validation. - Issue #1645, PR #1642 @samukweku
 -   [ENH] Speed up `conditional_join` with an unsorted right join key and

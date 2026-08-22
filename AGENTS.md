@@ -37,7 +37,14 @@ these into the main sections.
   task.
 - **Test-Driven**: Always run tests after making code changes.
 - **Document**: Keep docstrings up-to-date using Google-style format.
-- **Lint Markdown**: Always run `markdownlint` on markdown files after editing.
+- **ELI5 Comments**: Use ELI5-style explanations generously in new or
+  modified code -- comments and docstrings should explain the mechanism
+  (why it works, what trade-off it makes), not just restate what the code
+  does.
+
+The `pixi run`, `markdownlint`, and `uvx marimo convert` rules are each
+stated once, in their own section below (Package Manager, Markdown
+Linting, Notebook Commands) -- not repeated throughout this file.
 
 ---
 
@@ -413,17 +420,13 @@ pixi run pytest -m "not turtle" -v
 
 ## Common Anti-Patterns to Avoid
 
+The `pixi run`, notebook-conversion, and markdownlint rules live in their
+own sections above (Package Manager, Notebook Commands, Markdown Linting)
+-- not repeated here. This list covers anti-patterns with no other home.
+
 ### ❌ DON'T
 
-1. **Don't run Python/pytest without pixi**
-
-   ```bash
-   # Wrong
-   python script.py
-   pytest tests/
-   ```
-
-2. **Don't mutate input DataFrames**
+1. **Don't mutate input DataFrames**
 
    ```python
    # Wrong
@@ -432,32 +435,15 @@ pixi run pytest -m "not turtle" -v
        return df
    ```
 
-3. **Don't manually convert notebooks**
-
-   ```bash
-   # Wrong - don't write custom conversion scripts
-   python convert_notebook.py
-   ```
-
-4. **Don't forget to add tests**
+2. **Don't forget to add tests**
    - Every new function needs corresponding tests
 
-5. **Don't skip docstrings**
+3. **Don't skip docstrings**
    - Interrogate enforces >55% docstring coverage
-
-6. **Don't forget to lint markdown**
-   - Always run `markdownlint` on markdown files after editing
 
 ### ✅ DO
 
-1. **Always use pixi run**
-
-   ```bash
-   pixi run pytest tests/
-   pixi run python script.py
-   ```
-
-2. **Work on copies**
+1. **Work on copies**
 
    ```python
    def my_func(df):
@@ -466,22 +452,9 @@ pixi run pytest -m "not turtle" -v
        return df
    ```
 
-3. **Use uvx marimo for notebooks**
+2. **Write tests alongside code**
 
-   ```bash
-   uvx marimo convert notebook.ipynb -o notebook.py
-   ```
-
-4. **Write tests alongside code**
-
-5. **Write Google-style docstrings with examples**
-
-6. **Run markdownlint on markdown files**
-
-   ```bash
-   markdownlint AGENTS.md
-   # Install if not on PATH: pixi global install markdownlint-cli
-   ```
+3. **Write Google-style docstrings with examples**
 
 ---
 
@@ -526,14 +499,6 @@ Add entries in the format:
 **Recommendation**: How to apply this learning
 -->
 
-### [2025-12-19] Always Run markdownlint
-
-**Context**: Editing AGENTS.md file
-**Learning**: Markdown files should be linted with `markdownlint` to ensure
-consistent formatting and catch issues like long lines.
-**Recommendation**: After editing any markdown file, run `markdownlint <file>`.
-If not installed, use `pixi global install markdownlint-cli`.
-
 ### [2026-02-07] Open PRs with GitHub CLI
 
 **Context**: User requested opening a PR after pushing changes.
@@ -547,6 +512,41 @@ CLI.
 **Learning**: `pixi run docs` selects the default environment, which does not
 include MkDocs. The documentation task is available in the `docs` environment.
 **Recommendation**: Run `pixi run -e docs build-docs` to build documentation.
+
+### [2026-08-22] Always Use a New Worktree for a New Issue/Branch
+
+**Context**: Working on issue #1653 in the shared `~/github/pyjanitor` clone
+while another concurrent session had issue #1648 checked out in a sibling
+worktree (`~/github/pyjanitor-1648`); the shared clone's HEAD ended up
+detached mid-session from that other work, which was only caught by
+inspecting `git status`/`git reflog` before committing.
+**Learning**: The shared main clone directory gets reused across sessions
+and branches, so starting a new issue there risks colliding with another
+in-progress checkout, or committing on top of the wrong branch/detached
+HEAD.
+**Recommendation**: For every new issue or branch, create a dedicated
+`git worktree add ~/github/pyjanitor-<issue> -b <branch> origin/dev`
+(or the equivalent for the current base branch) instead of checking out a
+new branch in the shared clone. Never leave uncommitted work or run
+destructive git operations in the shared clone without first checking
+`git status`/`git branch --show-current` for signs of concurrent use.
+
+### [2026-08-22] Use ELI5 Comments Generously
+
+**Context**: Requested while adding new NumPy kernels to
+`_agg_functions.py` (Issue #1653) with a non-obvious tie/null/NaN
+contract to preserve.
+**Learning**: Terse docstrings (e.g. the file's existing "Compute min")
+are fine for simple pass-throughs, but new or non-obvious logic --
+especially anything with a subtle invariant, a workaround, or a
+trade-off a reader wouldn't guess -- benefits from an explicit ELI5
+explanation of the mechanism, not just a restatement of what the code
+does.
+**Recommendation**: When writing or substantially modifying a function,
+default to adding a short ELI5 paragraph explaining *why* it works that
+way, particularly for dispatch/threshold logic, non-obvious algorithms,
+and anything replicating an existing implementation's exact quirky
+behavior.
 
 ---
 

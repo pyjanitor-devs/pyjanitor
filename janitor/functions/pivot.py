@@ -1831,11 +1831,39 @@ def _build_indexer_for_spec(
 
 
 def _build_indexer_reorder_contents(length: int, reps: int) -> np.ndarray:
-    """Build indexer for reordering arrays in contents"""
-    indexer = np.arange(length * reps)
-    indexer = indexer.reshape((reps, -1))
-    indexer = indexer.ravel(order="F")
-    return indexer
+    """Build indexer for reordering arrays in contents.
+
+    Raises ValueError if reps <= 0, matching the original
+    implementation's error contract (see Issue #1655 - this PR is
+    performance-only and must not silently change error behavior).
+
+    For degenerate shapes (length < 1 or reps == 1), builds the
+    index directly via arange rather than broadcasting.
+
+    For wide frames (reps >= 8), uses a broadcast formulation that
+    constructs the row-by-column offsets directly with a single
+    output allocation, reducing peak memory relative to the
+    reshape/Fortran-ravel path which temporarily holds roughly
+    twice the output size.
+
+    For tall frames with few repetitions (reps < 8), retains the
+    original reshape/Fortran-ravel path which is faster in this
+    regime since building and broadcasting the tall rows ruler
+    costs more than the temporary copy.
+    """
+    if reps <= 0:
+        raise ValueError(f"reps must be a positive integer, got {reps}.")
+    if length < 1 or reps == 1:
+        return np.arange(length * reps)
+    if reps < 8:
+        # Tall frames with few reps: reshape path is faster here
+        indexer = np.arange(length * reps)
+        indexer = indexer.reshape((reps, -1))
+        return indexer.ravel(order="F")
+    # Wide frames (reps >= 8): single allocation reduces peak memory
+    rows = np.arange(length)[:, None]
+    columns = np.arange(reps) * length
+    return np.add(rows, columns).ravel()
 
 
 def _build_content_extension_array(df: pd.DataFrame) -> np.ndarray:

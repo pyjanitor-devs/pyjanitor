@@ -1848,6 +1848,20 @@ def test_build_indexer_reorder_contents_peak_memory():
     assert peak_mib < 70, f"Peak memory too high: {peak_mib:.1f} MiB"
 
 
+def test_build_indexer_reorder_contents_reps_below_threshold_uses_old_path():
+    """reps just below the broadcast threshold should match old-path output."""
+    result = _build_indexer_reorder_contents(10_000, 7)
+    expected = np.arange(10_000 * 7).reshape((7, -1)).ravel(order="F")
+    assert np.array_equal(result, expected)
+
+
+def test_build_indexer_reorder_contents_reps_at_threshold_uses_new_path():
+    """reps at the broadcast threshold should still be correct."""
+    result = _build_indexer_reorder_contents(10_000, 8)
+    expected = np.arange(10_000 * 8).reshape((8, -1)).ravel(order="F")
+    assert np.array_equal(result, expected)
+
+
 def test_reorder_contents_preserves_dtypes_sort_by_appearance():
     """
     Ensure reordering via _build_indexer_reorder_contents preserves

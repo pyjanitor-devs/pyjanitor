@@ -1838,15 +1838,29 @@ def _build_indexer_reorder_contents(length: int, reps: int) -> np.ndarray:
     performance-only and must not silently change error behavior).
 
     For degenerate shapes (length <= 1 or reps == 1), builds the
-    index directly via arange rather than broadcasting. Broadcasting
-    would otherwise double peak memory in these cases, since one of
-    the two "ruler" arrays (rows or columns) is already as large as
-    the final output.
+    index directly via arange rather than broadcasting.
+
+    For wide frames (reps >= 8), uses a broadcast formulation that
+    constructs the row-by-column offsets directly with a single
+    output allocation, reducing peak memory relative to the
+    reshape/Fortran-ravel path which temporarily holds roughly
+    twice the output size.
+
+    For tall frames with few repetitions (reps < 8), retains the
+    original reshape/Fortran-ravel path which is faster in this
+    regime since building and broadcasting the tall rows ruler
+    costs more than the temporary copy.
     """
     if reps <= 0:
         raise ValueError(f"reps must be a positive integer, got {reps}.")
     if length <= 1 or reps == 1:
         return np.arange(length * reps)
+    if reps < 8:
+        # Tall frames with few reps: reshape path is faster here
+        indexer = np.arange(length * reps)
+        indexer = indexer.reshape((reps, -1))
+        return indexer.ravel(order="F")
+    # Wide frames (reps >= 8): single allocation reduces peak memory
     rows = np.arange(length)[:, None]
     columns = np.arange(reps) * length
     return np.add(rows, columns).ravel()

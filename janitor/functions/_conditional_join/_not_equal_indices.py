@@ -195,6 +195,4 @@ def _not_equal_left_order(left: pd.Series, right: pd.Series) -> np.ndarray:
     if right_nulls.any():
         order.append(left.index[~seen].to_numpy(copy=False))
 
-    if not order:
-        return np.array([], dtype=np.intp)
     return np.concatenate(order)

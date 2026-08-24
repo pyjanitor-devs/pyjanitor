@@ -1837,7 +1837,7 @@ def _build_indexer_reorder_contents(length: int, reps: int) -> np.ndarray:
     implementation's error contract (see Issue #1655 - this PR is
     performance-only and must not silently change error behavior).
 
-    For degenerate shapes (length <= 1 or reps == 1), builds the
+    For degenerate shapes (length < 1 or reps == 1), builds the
     index directly via arange rather than broadcasting.
 
     For wide frames (reps >= 8), uses a broadcast formulation that
@@ -1853,7 +1853,7 @@ def _build_indexer_reorder_contents(length: int, reps: int) -> np.ndarray:
     """
     if reps <= 0:
         raise ValueError(f"reps must be a positive integer, got {reps}.")
-    if length <= 1 or reps == 1:
+    if length < 1 or reps == 1:
         return np.arange(length * reps)
     if reps < 8:
         # Tall frames with few reps: reshape path is faster here

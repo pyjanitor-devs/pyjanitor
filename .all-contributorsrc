@@ -1175,6 +1175,15 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "Anupam2400",
+      "name": "ANUPAM MISHRA",
+      "avatar_url": "https://avatars.githubusercontent.com/u/122140108?v=4",
+      "profile": "https://github.com/Anupam2400",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "badgeTemplate": "<img alt=\"All Contributors: {{contributorCount}}\" src=\"https://img.shields.io/github/all-contributors/{{projectOwner}}/{{projectName}}?color=ee8449&style=flat-square\">",

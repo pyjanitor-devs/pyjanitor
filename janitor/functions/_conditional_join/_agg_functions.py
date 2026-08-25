@@ -1356,7 +1356,6 @@ def _min_rev_starts_matches(
     index: np.ndarray,
     matches: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute min
@@ -1385,7 +1384,6 @@ def _min_rev_starts_matches(
         index=index,
         matches=matches,
         booleans=booleans,
-        length=length,
     )
 
 

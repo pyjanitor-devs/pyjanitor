@@ -68,16 +68,6 @@ def _sum_ends(
     return func(arr=arr, ends=ends, booleans=booleans)
 
 
-def _call_rev_starts_matches(func, kwargs, length: int) -> tuple:
-    """Call a starts+matches kernel across old and new janitor-rs releases."""
-    try:
-        return func(**kwargs)
-    except TypeError as exc:
-        if "missing 1 required positional argument: 'length'" not in str(exc):
-            raise
-        return func(**kwargs, length=length)
-
-
 def _size_rev_starts(
     starts: np.ndarray,
     index: np.ndarray,

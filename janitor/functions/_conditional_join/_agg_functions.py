@@ -2,6 +2,16 @@ import janitor_rs
 import numpy as np
 
 
+def _call_rev_starts_matches(func, kwargs, length: int) -> tuple:
+    """Call a starts+matches kernel across old and new janitor-rs releases."""
+    try:
+        return func(**kwargs)
+    except TypeError as exc:
+        if "missing 1 required positional argument: 'length'" not in str(exc):
+            raise
+        return func(**kwargs, length=length)
+
+
 def _sum_starts(
     arr: np.ndarray,
     starts: np.ndarray,
@@ -1106,7 +1116,6 @@ def _prod_rev_starts_matches(
     index: np.ndarray,
     matches: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute prod
@@ -1128,14 +1137,17 @@ def _prod_rev_starts_matches(
         func = mapping[dtype_name]
     except KeyError:
         raise KeyError(f"Unsupported data type -> {dtype_name}")
-    return func(
-        arr=arr,
-        starts=starts,
-        counts=counts,
-        index=index,
-        matches=matches,
-        booleans=booleans,
-        length=length,
+    return _call_rev_starts_matches(
+        func,
+        dict(
+            arr=arr,
+            starts=starts,
+            counts=counts,
+            index=index,
+            matches=matches,
+            booleans=booleans,
+        ),
+        index.size,
     )
 
 

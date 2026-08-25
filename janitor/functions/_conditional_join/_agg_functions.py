@@ -1628,7 +1628,6 @@ def _max_rev_starts_matches(
     index: np.ndarray,
     matches: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute max
@@ -1650,15 +1649,27 @@ def _max_rev_starts_matches(
         func = mapping[dtype_name]
     except KeyError:
         raise KeyError(f"Unsupported data type -> {dtype_name}")
-    return func(
-        arr=arr,
-        starts=starts,
-        counts=counts,
-        index=index,
-        matches=matches,
-        booleans=booleans,
-        length=length,
-    )
+    try:
+        return func(
+            arr=arr,
+            starts=starts,
+            counts=counts,
+            index=index,
+            matches=matches,
+            booleans=booleans,
+        )
+    except TypeError as exc:
+        if "missing 1 required positional argument: 'length'" not in str(exc):
+            raise
+        return func(
+            arr=arr,
+            starts=starts,
+            counts=counts,
+            index=index,
+            matches=matches,
+            booleans=booleans,
+            length=index.size,
+        )
 
 
 def _max_rev_ends_matches(

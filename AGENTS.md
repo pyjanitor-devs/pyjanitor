@@ -556,8 +556,8 @@ in janitor-rs.
 record, not merely local investigation notes.
 **Recommendation**: Every performance PR and its tracking issue must include a
 properly formatted comparison with the old implementation, covering runtime
-and memory for the agreed tiny, large, very-large, and super-large cases and
-duplicate/unique label distributions. State benchmark limitations explicitly.
+and memory for tiny, large, very-large, and super-large cases with duplicate
+and unique label distributions. State benchmark limitations explicitly.
 
 ---
 

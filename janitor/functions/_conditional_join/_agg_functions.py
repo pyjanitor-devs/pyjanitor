@@ -58,6 +58,16 @@ def _sum_ends(
     return func(arr=arr, ends=ends, booleans=booleans)
 
 
+def _call_rev_starts_matches(func, kwargs, length: int) -> tuple:
+    """Call a starts+matches kernel across old and new janitor-rs releases."""
+    try:
+        return func(**kwargs)
+    except TypeError as exc:
+        if "missing 1 required positional argument: 'length'" not in str(exc):
+            raise
+        return func(**kwargs, length=length)
+
+
 def _size_rev_starts(
     starts: np.ndarray,
     index: np.ndarray,
@@ -1377,13 +1387,17 @@ def _min_rev_starts_matches(
         func = mapping[dtype_name]
     except KeyError:
         raise KeyError(f"Unsupported data type -> {dtype_name}")
-    return func(
-        arr=arr,
-        starts=starts,
-        counts=counts,
-        index=index,
-        matches=matches,
-        booleans=booleans,
+    return _call_rev_starts_matches(
+        func,
+        dict(
+            arr=arr,
+            starts=starts,
+            counts=counts,
+            index=index,
+            matches=matches,
+            booleans=booleans,
+        ),
+        index.size,
     )
 
 
@@ -2039,13 +2053,17 @@ def _sum_rev_starts_matches(
         func = mapping[dtype_name]
     except KeyError:
         raise KeyError(f"Unsupported data type -> {dtype_name}")
-    return func(
-        arr=arr,
-        starts=starts,
-        counts=counts,
-        index=index,
-        matches=matches,
-        booleans=booleans,
+    return _call_rev_starts_matches(
+        func,
+        dict(
+            arr=arr,
+            starts=starts,
+            counts=counts,
+            index=index,
+            matches=matches,
+            booleans=booleans,
+        ),
+        index.size,
     )
 
 

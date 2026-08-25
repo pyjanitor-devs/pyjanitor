@@ -180,15 +180,17 @@ def _agg_join_left(df: pd.DataFrame, aggfunc: list, indices: dict) -> pd.DataFra
                 booleans = pd.isna(arr)
                 arr = _helpers._convert_array_to_numpy(array=arr)
                 func = mapping[agg]
-                _index, out = func(
+                kwargs = dict(
                     arr=arr,
                     starts=indices["starts"],
                     index=indices["right_index"],
                     matches=indices["matches"],
                     counts=indices["counts_array"],
                     booleans=booleans,
-                    length=indices["right_index"].size,
                 )
+                if agg != "min":
+                    kwargs["length"] = indices["right_index"].size
+                _index, out = func(**kwargs)
                 if agg in {
                     "sum",
                     "prod",

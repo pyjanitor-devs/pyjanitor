@@ -73,6 +73,48 @@ def test_conditional_join_does_not_mutate_inputs():
     assert_frame_equal(right, expected_right)
 
 
+def test_multiple_conditions_preserve_non_condition_columns():
+    """Matching projects condition columns without narrowing the result."""
+    left = pd.DataFrame(
+        {
+            "lower": [1, 2, 3],
+            "upper": [5, 4, 3],
+            "left_payload": list("abc"),
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "minimum": [0, 2, 4],
+            "maximum": [6, 4, 2],
+            "right_payload": list("xyz"),
+        }
+    )
+    expected = left.merge(right, how="cross")
+    expected = expected.loc[
+        expected["lower"].gt(expected["minimum"])
+        & expected["upper"].lt(expected["maximum"])
+    ]
+    expected = expected.loc[
+        :,
+        [
+            "lower",
+            "upper",
+            "left_payload",
+            "minimum",
+            "maximum",
+            "right_payload",
+        ],
+    ].reset_index(drop=True)
+
+    actual = left.conditional_join(
+        right,
+        ("lower", "minimum", ">"),
+        ("upper", "maximum", "<"),
+    )
+
+    assert_frame_equal(actual, expected)
+
+
 def test_df_columns_right_columns_both_None(dummy, series):
     """Raise if both df_columns and right_columns is None"""
     with pytest.raises(

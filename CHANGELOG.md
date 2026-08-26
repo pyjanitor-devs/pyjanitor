@@ -4,6 +4,8 @@
 -   [PERF] Reduce peak memory in `_build_indexer_reorder_contents` for wide frames (reps >= 8) using single NumPy allocation; tall frames with few repetitions retain the original reshape path. - Issue #1655 @Anupam2400
 -   [ENH] Avoid copying column data during `conditional_join` input
     validation. - Issue #1645, PR #1642 @samukweku
+-   [ENH] Limit `conditional_join` matching work to columns referenced by join
+    conditions. - Issue #1646, PR #1647 @samukweku
 -   [ENH] Speed up `conditional_join` with an unsorted right join key and
     `keep="first"` or `keep="last"`. - Issue #1125, PR #1644 @samukweku
 -   [ENH] Replace `axis=1` `.apply()` with vectorized operations in `compare_df_cols` for 4-7x performance improvement. - Issue #1630 @Anupam2400

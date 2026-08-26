@@ -9,6 +9,8 @@
 -   [ENH] Replace `axis=1` `.apply()` with vectorized operations in `compare_df_cols` for 4-7x performance improvement. - Issue #1630 @Anupam2400
 -   [ENH] Replace `.apply()` with `.map()` in `find_replace` for ~6x performance improvement. - Issue #1422 @Anupam2400
 -   [ENH] Add `drop_first` parameter to `expand_column`. - Issue #368 @manav252
+-   [ENH] `conditional_join` now picks the most selective `<`/`<=`/`>`/`>=` predicate as its binary-search anchor (instead of the first one supplied) when `keep` is `'first'` or `'last'`, fixing pathological slowdowns from unfavorable predicate ordering; `keep='all'` output is unaffected. - Issue #1641 @samukweku
+-   [BUG] Fix `conditional_join` crash for `keep='last'` joins with a single `<`/`<=` window and multiple non-equi conditions - a missing `counts` argument to the Rust `index_starts_only_keep_last` call. - Issue #1641 @samukweku
 -   [ENH] Add `include_join_positions` parameter to `conditional_join`; added limited support for join aggregations via the `join_agg` function. - Issue #1497 @samukweku
 -   [ENH] Added `rle_id` function for run-length encoding IDs - Issue #1435 @emmanuel-ferdman
 -   [ENH] Add `scale_mad` for robust median/MAD scaling. - PR #1530 @ShachiMistry

@@ -555,6 +555,39 @@ def test_direct_selection_kernel_is_used_for_safe_range_rest(monkeypatch):
     assert list(actual[("right", "payload")]) == ["one"]
 
 
+def test_keep_all_retains_every_match_without_direct_selection(monkeypatch):
+    """The direct kernel must remain limited to first/last selection."""
+
+    def fail_if_called(*args, **kwargs):
+        raise AssertionError("keep='all' must use the matches-tape path")
+
+    monkeypatch.setattr(
+        _helpers.janitor_rs,
+        "select_start_end_direct_int64",
+        fail_if_called,
+        raising=False,
+    )
+    left = pd.DataFrame({"start": [2]})
+    right = pd.DataFrame(
+        {
+            "lower": [1, 2, 3],
+            "upper": [3, 3, 3],
+            "tag": [7, 7, 8],
+            "payload": ["zero", "one", "two"],
+        }
+    )
+
+    actual = left.conditional_join(
+        right,
+        ("start", "lower", ">="),
+        ("start", "upper", "<="),
+        ("start", "tag", "<="),
+        keep="all",
+    )
+
+    assert list(actual["payload"]) == ["zero", "one"]
+
+
 @pytest.mark.parametrize("op", ["<", "<=", ">", ">="])
 @pytest.mark.parametrize("keep", ["first", "last"])
 def test_single_inequality_unsorted_right_keep(op, keep):

@@ -121,11 +121,10 @@ def _not_equal_keep_one(
     if left.empty or right.empty:
         return {"left_index": dummy, "right_index": dummy}
 
-    # ELI5: for any value, the first unequal item is either the first item,
-    # or (when those values are equal) the first item different from it. The
-    # same observation works backwards for ``keep="last"``. We therefore only
-    # need two right-side candidates instead of constructing every unequal
-    # pair and discarding all but one.
+    # The first unequal item is either the first item or, when those values
+    # match, the first item with a different value. The same observation works
+    # backwards for ``keep="last"``, so only two right-side candidates are
+    # needed.
     reverse = keep == "last"
     first_offset = -1 if reverse else 0
     first_value = right.iloc[first_offset]

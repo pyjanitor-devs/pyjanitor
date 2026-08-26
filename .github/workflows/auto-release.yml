@@ -127,6 +127,12 @@ jobs:
         if: steps.check_release.outputs.already_released == 'false'
         run: uv version --bump ${{ env.VERSION_NAME }} --frozen
 
+      - name: Validate version metadata
+        if: steps.check_release.outputs.already_released == 'false'
+        run: |
+          pixi run pre-commit run --files pyproject.toml || \
+            pixi run pre-commit run --files pyproject.toml
+
       - name: Commit version bump and create tag
         if: steps.check_release.outputs.already_released == 'false'
         run: |
@@ -151,12 +157,24 @@ jobs:
           llamabot configure default-model --model-name="${{ secrets.DEFAULT_LANGUAGE_MODEL }}"
           llamabot git write-release-notes
 
+      - name: Validate generated release notes
+        if: steps.check_release.outputs.already_released == 'false'
+        run: |
+          RELEASE_NOTES="docs/releases/v${{ env.version_number }}.md"
+          test -f "$RELEASE_NOTES"
+          pixi run pre-commit run --files "$RELEASE_NOTES" || \
+            pixi run pre-commit run --files "$RELEASE_NOTES"
+
       - name: Commit release notes
         if: steps.check_release.outputs.already_released == 'false'
         run: |
-          pixi run pre-commit run --all-files || pixi run pre-commit run --all-files
-          git add .
-          git commit -m "Add release notes for ${{ env.version_number }}"
+          RELEASE_NOTES="docs/releases/v${{ env.version_number }}.md"
+          git add --force -- "$RELEASE_NOTES"
+          if git diff --cached --quiet -- "$RELEASE_NOTES"; then
+            echo "Release notes are unchanged; no release-notes commit is needed."
+          else
+            git commit -m "Add release notes for ${{ env.version_number }}"
+          fi
 
       - name: Build package
         if: steps.check_release.outputs.already_released == 'false'

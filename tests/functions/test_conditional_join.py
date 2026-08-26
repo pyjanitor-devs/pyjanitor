@@ -5764,6 +5764,29 @@ def test_single_condition_greater_than_dates_agg(df, right):
     assert_frame_equal(expected, actual)
 
 
+def test_join_agg_drops_equal_explicit_range_bounds():
+    """Rows with no candidates do not create an empty Rust range."""
+    left = pd.DataFrame({"value": [0, 10]})
+    right = pd.DataFrame({"value": [1, 2, 3], "payload": [4, 5, 6]})
+
+    actual = left.join_agg(
+        right,
+        ("value", "value", ">"),
+        aggfunc=[("payload", "sum"), ("payload", "size")],
+    )
+
+    expected = pd.DataFrame(
+        {
+            ("payload", "sum"): [15],
+            ("payload", "size"): [3],
+        },
+        index=pd.Index([1]),
+    )
+    expected.columns = pd.MultiIndex.from_tuples(expected.columns)
+
+    assert_frame_equal(actual, expected)
+
+
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())

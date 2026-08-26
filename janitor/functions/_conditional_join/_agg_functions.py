@@ -5,6 +5,8 @@ requires that tape to be non-empty and exactly as wide as the supplied ranges;
 the comparison stage owns the invariant that its values are 0 or 1.  A batch
 whose every range is zero-width is filtered before these adapters are called,
 so it produces the normal empty result without sending an empty tape to Rust.
+Integer reverse sum/product kernels use deterministic wrapping arithmetic;
+floating-point aggregation is unchanged.
 
 ELI5: Rust receives one long roll of candidate tickets, while ``starts`` and
 ``ends`` say which tickets belong to each row.  Python builds the roll and

@@ -706,3 +706,46 @@ def test_adorn_rounding_leaves_numeric_first_column_of_plain_dataframe():
 
     assert result["year"].tolist() == [2020.4, 2021.6]
     assert result["value"].tolist() == [1.2, 2.3]
+
+
+@pytest.mark.functions
+def test_adorn_ns_duplicate_labels_in_explicit_ns():
+    """Each repeat of a label reads its own count column.
+
+    A label keyed lookup keeps only one position per label, so every `yes`
+    column of `df` would read the first `yes` count and the second count
+    would be silently dropped.
+    """
+    df = pd.DataFrame(
+        [["A", "50.0%", "50.0%"]],
+        columns=["id", "yes", "yes"],
+    )
+    ns = pd.DataFrame([[10, 20]], columns=["yes", "yes"])
+
+    result = df.adorn_ns(ns=ns)
+
+    # Detector: the second `yes` reads the second count, not the first
+    assert result.iloc[0, 2] == "50.0% (20)"
+    # Pins
+    assert result.iloc[0, 1] == "50.0% (10)"
+    assert result.iloc[0, 0] == "A"
+
+
+@pytest.mark.functions
+def test_adorn_ns_duplicate_labels_in_stored_counts_pipeline():
+    """Stored counts are matched by position when they share the axis.
+
+    The counts frame kept by `adorn_percentages` is a copy of the frame it
+    was handed, identifier column and all. Matching it by label would let
+    the identifier stand in as a count for every data column.
+    """
+    df = pd.DataFrame([[100, 10, 20]], columns=["x", "x", "x"])
+
+    result = df.adorn_percentages("row").adorn_pct_formatting().adorn_ns()
+
+    # Detectors: each data column reads its own count, and neither reads
+    # the identifier in position 0.
+    assert result.iloc[0, 1] == "33.3% (10)"
+    assert result.iloc[0, 2] == "66.7% (20)"
+    # Pin: the identifier keeps its value and is not adorned
+    assert result.iloc[0, 0] == 100

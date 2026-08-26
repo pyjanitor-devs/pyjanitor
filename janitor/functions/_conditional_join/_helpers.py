@@ -684,7 +684,11 @@ def build_indices_matches(
             index=left_index, counts=counts_array, length=total
         )
         right = janitor_rs.index_starts_only_keep_last(
-            index=right_index, starts=starts, matches=matches, length=total
+            index=right_index,
+            starts=starts,
+            counts=counts_array,
+            matches=matches,
+            length=total,
         )
     elif (keep == "last") and (starts is None) and (ends is not None):
         total = np.count_nonzero(counts_array)

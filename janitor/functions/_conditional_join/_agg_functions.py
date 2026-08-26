@@ -1,9 +1,28 @@
+"""Conditional-join aggregation adapters.
+
+The reverse match kernels consume a flattened candidate tape.  The Rust API
+requires that tape to be non-empty and exactly as wide as the supplied ranges;
+the comparison stage owns the invariant that its values are 0 or 1.  A batch
+whose every range is zero-width is filtered before these adapters are called,
+so it produces the normal empty result without sending an empty tape to Rust.
+
+ELI5: Rust receives one long roll of candidate tickets, while ``starts`` and
+``ends`` say which tickets belong to each row.  Python builds the roll and
+checks its yes/no flags; Rust checks that the roll has the right shape.
+"""
+
 import janitor_rs
 import numpy as np
 
 
 def _call_rev_starts_matches(func, kwargs, length: int) -> tuple:
-    """Call a starts+matches kernel across old and new janitor-rs releases."""
+    """Call a starts+matches kernel across old and new janitor-rs releases.
+
+    New kernels derive their right-hand length from ``index`` and do not need
+    the legacy ``length`` argument.  Keeping this compatibility shim here
+    lets pyjanitor support an older installed wheel during the rollout without
+    weakening the new Rust input contract.
+    """
     try:
         return func(**kwargs)
     except TypeError as exc:

@@ -122,13 +122,14 @@ def _size_rev_starts_matches(
     starts: np.ndarray,
     index: np.ndarray,
     matches: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute size_rev
     """
-    return janitor_rs.compute_size_rev_start_matches(
-        starts=starts, index=index, matches=matches, length=length
+    return _call_rev_starts_matches(
+        janitor_rs.compute_size_rev_start_matches,
+        dict(starts=starts, index=index, matches=matches),
+        index.size,
     )
 
 

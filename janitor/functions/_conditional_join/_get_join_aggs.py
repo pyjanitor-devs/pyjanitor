@@ -172,7 +172,6 @@ def _agg_join_left(df: pd.DataFrame, aggfunc: list, indices: dict) -> pd.DataFra
                     starts=indices["starts"],
                     index=indices["right_index"],
                     matches=indices["matches"],
-                    length=indices["right_index"].size,
                 )
             else:
                 ser = df.loc[indices["left_index"], column_name]

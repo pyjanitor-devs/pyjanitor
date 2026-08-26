@@ -268,7 +268,6 @@ def _agg_join_left(df: pd.DataFrame, aggfunc: list, indices: dict) -> pd.DataFra
                     ends=indices["ends"],
                     positions=indices["positions"],
                     index=indices["right_index"],
-                    length=indices["right_index"].size,
                 )
             else:
                 ser = df.loc[indices["left_index"], column_name]
@@ -276,15 +275,17 @@ def _agg_join_left(df: pd.DataFrame, aggfunc: list, indices: dict) -> pd.DataFra
                 booleans = pd.isna(arr)
                 arr = _helpers._convert_array_to_numpy(array=arr)
                 func = mapping[agg]
-                _index, out = func(
-                    arr=arr,
-                    starts=indices["starts"],
-                    ends=indices["ends"],
-                    positions=indices["positions"],
-                    index=indices["right_index"],
-                    booleans=booleans,
-                    length=indices["right_index"].size,
-                )
+                kwargs = {
+                    "arr": arr,
+                    "starts": indices["starts"],
+                    "ends": indices["ends"],
+                    "positions": indices["positions"],
+                    "index": indices["right_index"],
+                    "booleans": booleans,
+                }
+                if agg not in {"sum", "min"}:
+                    kwargs["length"] = indices["right_index"].size
+                _index, out = func(**kwargs)
                 if agg in {
                     "sum",
                     "prod",

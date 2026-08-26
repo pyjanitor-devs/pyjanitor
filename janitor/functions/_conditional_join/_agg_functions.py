@@ -112,7 +112,6 @@ def _size_rev_positions(
     ends: np.ndarray,
     index: np.ndarray,
     positions: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute size_rev
@@ -122,7 +121,6 @@ def _size_rev_positions(
         ends=ends,
         index=index,
         positions=positions,
-        length=length,
     )
 
 
@@ -637,7 +635,6 @@ def _prod_rev_positions(
     index: np.ndarray,
     positions: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute prod
@@ -650,7 +647,6 @@ def _prod_rev_positions(
         index=index,
         positions=positions,
         booleans=booleans,
-        length=length,
     )
 
 
@@ -785,7 +781,6 @@ def _min_rev_positions(
     index: np.ndarray,
     positions: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute min
@@ -798,7 +793,6 @@ def _min_rev_positions(
         index=index,
         positions=positions,
         booleans=booleans,
-        length=length,
     )
 
 
@@ -933,7 +927,6 @@ def _max_rev_positions(
     index: np.ndarray,
     positions: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute max
@@ -946,7 +939,6 @@ def _max_rev_positions(
         index=index,
         positions=positions,
         booleans=booleans,
-        length=length,
     )
 
 
@@ -1161,7 +1153,6 @@ def _sum_rev_positions(
     index: np.ndarray,
     positions: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute sum
@@ -1174,7 +1165,6 @@ def _sum_rev_positions(
         index=index,
         positions=positions,
         booleans=booleans,
-        length=length,
     )
 
 

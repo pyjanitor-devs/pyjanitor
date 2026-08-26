@@ -588,3 +588,40 @@ def _compare_positions_ne(
         is_extension_array=is_extension_array,
         op=op,
     )
+
+
+def _select_start_end_direct(
+    left: list[np.ndarray],
+    right: list[np.ndarray],
+    left_index: np.ndarray,
+    right_index: np.ndarray,
+    starts: np.ndarray,
+    ends: np.ndarray,
+    ops: list[int],
+    first: bool,
+) -> tuple[np.ndarray, np.ndarray] | None:
+    """Select first/last complete matches without allocating a tape.
+
+    This is deliberately a capability probe: older janitor-rs wheels do not
+    expose the direct kernel yet, in which case callers retain the matches-
+    tape implementation.
+    """
+    mapping = {
+        "int64": "select_start_end_direct_int64",
+        "int32": "select_start_end_direct_int32",
+        "int16": "select_start_end_direct_int16",
+        "int8": "select_start_end_direct_int8",
+        "uint64": "select_start_end_direct_uint64",
+        "uint32": "select_start_end_direct_uint32",
+        "uint16": "select_start_end_direct_uint16",
+        "uint8": "select_start_end_direct_uint8",
+        "float64": "select_start_end_direct_f64",
+        "float32": "select_start_end_direct_f32",
+    }
+    dtype_name = left[0].dtype.name
+    try:
+        function_name = mapping[dtype_name]
+        func = getattr(janitor_rs, function_name)
+    except (KeyError, AttributeError):
+        return None
+    return func(left, right, left_index, right_index, starts, ends, ops, first)

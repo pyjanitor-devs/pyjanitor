@@ -53,6 +53,17 @@ def _get_indices(
             keep=keep,
             right_is_sorted=right_is_sorted,
         )
+    direct = _helpers._get_direct_indices_conditions(
+        df=df,
+        right=right,
+        conditions=rest,
+        left_index=outcome["left_index"],
+        starts=outcome["starts"],
+        ends=outcome["ends"],
+        keep=keep,
+    )
+    if direct is not None:
+        return direct
     out = _helpers._get_positive_matches_conditions(
         df=df,
         right=right,

@@ -6,6 +6,12 @@ import pandas as pd
 
 from janitor.functions._conditional_join import _binary_search, _helpers
 
+# ELI5: building the Rust tree costs roughly one pass over the right table,
+# while the existing Python path revisits every candidate interval. Require
+# more than eight right-table passes' worth of candidate work before paying
+# the tree-build and Python/Rust call overhead. This is a conservative,
+# benchmark-derived crossover heuristic, not a correctness or complexity
+# invariant; revisit it if end-to-end workloads change.
 _RANGE_RMQ_WORK_FACTOR = 8.0
 
 

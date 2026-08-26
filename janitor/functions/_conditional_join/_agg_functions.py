@@ -84,14 +84,11 @@ def _size_rev_starts_ends(
     starts: np.ndarray,
     ends: np.ndarray,
     index: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute size_rev
     """
-    return janitor_rs.compute_size_rev_start_end(
-        starts=starts, ends=ends, index=index, length=length
-    )
+    return janitor_rs.compute_size_rev_start_end(starts=starts, ends=ends, index=index)
 
 
 def _size_rev_ends_matches(
@@ -1215,7 +1212,6 @@ def _prod_rev_starts_ends(
     ends: np.ndarray,
     index: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute prod
@@ -1243,7 +1239,6 @@ def _prod_rev_starts_ends(
         ends=ends,
         index=index,
         booleans=booleans,
-        length=length,
     )
 
 
@@ -1475,7 +1470,6 @@ def _min_rev_starts_ends(
     ends: np.ndarray,
     index: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute min
@@ -1503,7 +1497,6 @@ def _min_rev_starts_ends(
         ends=ends,
         index=index,
         booleans=booleans,
-        length=length,
     )
 
 
@@ -1735,7 +1728,6 @@ def _max_rev_starts_ends(
     ends: np.ndarray,
     index: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute max
@@ -1763,7 +1755,6 @@ def _max_rev_starts_ends(
         ends=ends,
         index=index,
         booleans=booleans,
-        length=length,
     )
 
 
@@ -2139,7 +2130,6 @@ def _sum_rev_starts_ends(
     ends: np.ndarray,
     index: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute sum
@@ -2167,7 +2157,6 @@ def _sum_rev_starts_ends(
         ends=ends,
         index=index,
         booleans=booleans,
-        length=length,
     )
 
 

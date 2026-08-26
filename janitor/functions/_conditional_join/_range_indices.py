@@ -6,6 +6,49 @@ import pandas as pd
 
 from janitor.functions._conditional_join import _binary_search, _helpers
 
+_RANGE_RMQ_WORK_FACTOR = 8.0
+
+
+def _range_rmq(
+    right_index: np.ndarray,
+    starts: np.ndarray,
+    ends: np.ndarray,
+    keep: str,
+) -> np.ndarray | None:
+    """
+    Use the Rust range-query tree only when it is likely to amortize its build.
+
+    ELI5: the current Python path reopens every interval. The Rust tree walks
+    the right index once to prepare reusable block answers, so it is useful
+    only when the total interval width is several times the right-table size.
+    Returning ``None`` keeps all existing fast paths and dtype combinations
+    unchanged when the new extension is unavailable or unsuitable.
+    """
+    if (
+        right_index.dtype != np.dtype(np.int64)
+        or right_index.size < 32
+        or starts.size < 32
+    ):
+        return None
+    total_width = float(np.asarray(ends - starts, dtype=np.int64).sum(dtype=np.float64))
+    if total_width <= _RANGE_RMQ_WORK_FACTOR * right_index.size:
+        return None
+    function_name = (
+        "index_starts_and_ends_keep_first_direct"
+        if keep == "first"
+        else "index_starts_and_ends_keep_last_direct"
+    )
+    function = getattr(janitor_rs, function_name, None)
+    if function is None:
+        return None
+    return np.asarray(
+        function(
+            index=right_index,
+            starts=np.asarray(starts, dtype=np.int64),
+            ends=np.asarray(ends, dtype=np.int64),
+        )
+    )
+
 
 def _range_indices(
     df: pd.DataFrame, right: pd.DataFrame, ge_gt: tuple, le_lt: tuple, is_sorted: bool
@@ -96,10 +139,16 @@ def _build_indices(
     if (keep == "last") and right_is_sorted:
         return {"left_index": left_index, "right_index": right_index[ends - 1]}
     if keep == "first":
+        right_rmq = _range_rmq(right_index, starts, ends, keep)
+        if right_rmq is not None:
+            return {"left_index": left_index, "right_index": right_rmq}
         right = [right_index[start:end] for start, end in zip(starts, ends)]
         right = [arr.min() for arr in right]
         return {"left_index": left_index, "right_index": right}
     if keep == "last":
+        right_rmq = _range_rmq(right_index, starts, ends, keep)
+        if right_rmq is not None:
+            return {"left_index": left_index, "right_index": right_rmq}
         right = [right_index[start:end] for start, end in zip(starts, ends)]
         right = [arr.max() for arr in right]
         return {"left_index": left_index, "right_index": right}

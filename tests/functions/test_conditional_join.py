@@ -5333,6 +5333,30 @@ def test_gt_ne_agg(df, right):
     assert_frame_equal(expected, actual)
 
 
+def test_range_only_agg_rev_all_zero_width_ranges_skip_rust_tape():
+    """An all-zero-width batch returns no rows without calling Rust."""
+    left = pd.DataFrame({"value": [0], "payload": [3]})
+    right = pd.DataFrame({"value": [1, 2]})
+
+    actual = left.join_agg(
+        right,
+        ("value", "value", ">"),
+        ("value", "value", "<"),
+        aggfunc=[("payload", "sum"), ("payload", "size")],
+        reverse=True,
+    )
+
+    expected = pd.DataFrame(
+        {
+            ("payload", "sum"): pd.Series([], dtype="int64"),
+            ("payload", "size"): pd.Series([], dtype="int64"),
+        }
+    )
+    expected.columns = pd.MultiIndex.from_tuples(expected.columns)
+
+    assert_frame_equal(actual, expected)
+
+
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())

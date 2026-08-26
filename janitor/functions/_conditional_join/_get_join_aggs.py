@@ -187,8 +187,6 @@ def _agg_join_left(df: pd.DataFrame, aggfunc: list, indices: dict) -> pd.DataFra
                     counts=indices["counts_array"],
                     booleans=booleans,
                 )
-                if agg not in {"sum", "min", "max", "prod"}:
-                    kwargs["length"] = indices["right_index"].size
                 _index, out = func(**kwargs)
                 if agg in {
                     "sum",

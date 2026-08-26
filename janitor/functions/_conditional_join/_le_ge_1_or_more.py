@@ -3,6 +3,8 @@ import pandas as pd
 
 from janitor.functions._conditional_join import _binary_search, _helpers
 
+_SAMPLE_SIZE = 1024
+
 
 def _evaluate_le_ge_candidate(candidate: tuple, df: pd.DataFrame, right: pd.DataFrame):
     """
@@ -47,37 +49,80 @@ def _evaluate_le_ge_candidate(candidate: tuple, df: pd.DataFrame, right: pd.Data
     return left_index, starts, ends, right
 
 
+def _sample_candidate_cost(candidate: tuple, df: pd.DataFrame, right: pd.DataFrame):
+    """
+    Cheaply estimate one `le_or_ge` candidate's binary-search window cost
+    via a fixed-size random sample, so the estimate's cost is independent
+    of `len(df)`/`len(right)` - unlike a real binary search, it doesn't
+    grow with the size of the join.
+
+    Used by `_select_anchor` to pick which single candidate to fully
+    evaluate, instead of fully evaluating every candidate. Being wrong
+    only costs performance, never correctness: for `keep='first'`/`'last'`,
+    output is provably invariant to anchor choice (see issue #1641), so a
+    suboptimal sample-based pick is never a correctness risk.
+
+    Uses a freshly-seeded RNG on every call (not a shared/module-level
+    one), so the same inputs always produce the same estimate - a shared
+    RNG would make anchor choice, and therefore performance, silently vary
+    across otherwise-identical calls.
+    """
+    left_on, right_on, op = candidate
+    left_col = df[left_on]
+    right_col = right[right_on]
+    rng = np.random.default_rng(0)
+    left_count = min(len(left_col), _SAMPLE_SIZE)
+    right_count = min(len(right_col), _SAMPLE_SIZE)
+    left_positions = rng.choice(len(left_col), size=left_count, replace=False)
+    right_positions = rng.choice(len(right_col), size=right_count, replace=False)
+    left_array = _helpers._convert_array_to_numpy(
+        array=left_col._values[left_positions]
+    )
+    right_array = np.sort(
+        _helpers._convert_array_to_numpy(array=right_col._values[right_positions])
+    )
+    if op == "<":
+        window = right_count - np.searchsorted(right_array, left_array, side="right")
+    elif op == "<=":
+        window = right_count - np.searchsorted(right_array, left_array, side="left")
+    elif op == ">":
+        window = np.searchsorted(right_array, left_array, side="left")
+    else:
+        window = np.searchsorted(right_array, left_array, side="right")
+    return float(window.mean())
+
+
 def _select_anchor(candidates: list, df: pd.DataFrame, right: pd.DataFrame):
     """
-    Evaluate every `le_or_ge` candidate and pick the one whose binary-search
-    window is cheapest to use as the anchor.
+    Cheaply sample every `le_or_ge` candidate's window cost and fully
+    evaluate only the one with the smallest estimate, instead of fully
+    evaluating every candidate.
 
     Only called when there are 2+ candidates and `keep` is `'first'` or
     `'last'`: for those, the final output is provably invariant to which
-    predicate is chosen as anchor (see issue #1641), so this only affects
-    performance. Ties are broken toward the earliest candidate in the
-    original order, so an already-optimal ordering is left untouched.
+    predicate is chosen as anchor (see issue #1641), so a suboptimal
+    sample-based pick only affects performance, never correctness. Ties
+    are broken toward the earliest candidate in the original order, so an
+    already-optimal ordering is left untouched.
 
-    Returns `(best_pos, left_index, starts, ends, right)` for the winning
-    candidate, or `None` if any candidate has zero matches anywhere - since
-    a match must satisfy every predicate, that makes the whole join empty
-    regardless of anchor choice, so evaluation stops at the first such
-    candidate.
+    Returns `(best_pos, left_index, starts, ends, right)` for the chosen
+    candidate, or `None` if it has zero matches anywhere. (If some other,
+    non-chosen candidate is the one with zero matches, the whole join is
+    still correctly detected as empty downstream, once its predicate is
+    applied as a post-filter in `_get_indices`.)
     """
-    best = None
+    best_cost = None
+    best_pos = None
     for pos, candidate in enumerate(candidates):
-        result = _evaluate_le_ge_candidate(candidate, df, right)
-        if result is None:
-            return None
-        left_index, starts, ends, sorted_right = result
-        if starts is not None:
-            cost = (len(sorted_right) - starts).sum()
-        else:
-            cost = ends.sum()
-        if best is None or cost < best[0]:
-            best = (cost, pos, left_index, starts, ends, sorted_right)
-    _, best_pos, left_index, starts, ends, sorted_right = best
-    return best_pos, left_index, starts, ends, sorted_right
+        cost = _sample_candidate_cost(candidate, df, right)
+        if best_cost is None or cost < best_cost:
+            best_cost = cost
+            best_pos = pos
+    result = _evaluate_le_ge_candidate(candidates[best_pos], df, right)
+    if result is None:
+        return None
+    left_index, starts, ends, right = result
+    return best_pos, left_index, starts, ends, right
 
 
 def _get_indices(
@@ -87,6 +132,9 @@ def _get_indices(
     return_matching_indices: bool,
     keep: str,
 ):
+    """
+    Get indices for one or more `>/>=`/`</<=` conditions, no range join.
+    """
     empty_array = np.array([], dtype=np.intp)
     candidates = mapping["le_or_ge"]
     if keep == "all" or len(candidates) == 1:

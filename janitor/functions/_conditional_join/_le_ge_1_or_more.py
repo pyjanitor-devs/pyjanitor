@@ -66,6 +66,16 @@ def _sample_candidate_cost(candidate: tuple, df: pd.DataFrame, right: pd.DataFra
     one), so the same inputs always produce the same estimate - a shared
     RNG would make anchor choice, and therefore performance, silently vary
     across otherwise-identical calls.
+
+    Known limitation: a fixed `_SAMPLE_SIZE`-row sample can miss a rare but
+    decisive feature - for a feature present in only 0.1% of rows, the
+    probability that a uniform sample of `_SAMPLE_SIZE` rows contains none
+    of it is `0.999 ** _SAMPLE_SIZE` ~= 36%. Because the RNG is seeded
+    deterministically rather than freshly randomized per call, whether a
+    *specific* rare feature is captured is fixed by column length, not
+    re-rolled on retry - it either always lands in the sample or never
+    does, for a given input size. This can only lead to a suboptimal
+    anchor choice, never incorrect output.
     """
     left_on, right_on, op = candidate
     left_col = df[left_on]

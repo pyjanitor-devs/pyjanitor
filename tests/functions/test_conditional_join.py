@@ -118,6 +118,36 @@ def test_multiple_conditions_preserve_non_condition_columns():
     assert_frame_equal(actual, expected)
 
 
+def test_reverse_join_agg_handles_empty_and_non_empty_candidate_ranges():
+    """A zero-width candidate row must not corrupt the matches tape."""
+    left = pd.DataFrame({"value": [0, 10], "payload": [4, 6]})
+    right = pd.DataFrame(
+        {
+            "lower": [0, 2],
+            "upper": [5, 20],
+        }
+    )
+
+    actual = left.join_agg(
+        right,
+        ("value", "lower", ">"),
+        ("value", "upper", "<"),
+        reverse=True,
+        aggfunc=[("payload", "sum"), ("payload", "size")],
+    )
+
+    expected = pd.DataFrame(
+        {
+            ("payload", "sum"): [6],
+            ("payload", "size"): [1],
+        },
+        index=pd.Index([1]),
+    )
+    expected.columns = pd.MultiIndex.from_tuples(expected.columns)
+
+    assert_frame_equal(actual, expected)
+
+
 def test_df_columns_right_columns_both_None(dummy, series):
     """Raise if both df_columns and right_columns is None"""
     with pytest.raises(

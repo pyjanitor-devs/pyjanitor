@@ -362,9 +362,13 @@ def adorn_ns(
     column in position 0 of `df` that is left untouched, even when it holds
     numeric data. Every numeric column of `ns` is read as a count, because a
     counts frame supplied through `ns` need not repeat the identifier column.
-    Counts are matched to `df` by column label and to rows by position, so
-    rows of `df` beyond the end of `ns` (a totals row, for instance) are left
-    as they are.
+
+    Counts are matched to rows by position, so rows of `df` beyond the end of
+    `ns` (a totals row, for instance) are left as they are. Columns are
+    matched by position when `ns` shares the column axis of `df` -- the case
+    for counts stored by `adorn_percentages` -- and by label otherwise. A
+    label that repeats is matched occurrence by occurrence, so the k-th
+    column of `df` carrying a label reads the k-th count column carrying it.
 
     Examples:
         Add counts to formatted percentages.
@@ -428,16 +432,46 @@ def adorn_ns(
     # Every numeric column of the counts frame is a count. `ns` is not
     # required to carry a row identifier, so nothing is dropped from it;
     # the identifier is taken from `df` below.
-    ns_positions = {}
-    for pos in _numeric_positions(ns):
-        ns_positions.setdefault(ns.columns[pos], pos)
+    ns_numeric = _numeric_positions(ns)
+
+    # A counts frame that shares its column axis with `df` describes the very
+    # same columns, so it is matched straight across by position. This is the
+    # stored-counts path (`_original_counts` is a copy of the frame that
+    # `adorn_percentages` was handed), and matching it by label would be
+    # ambiguous the moment a label repeats.
+    aligned = df.columns.equals(ns.columns)
+    if aligned:
+        ns_numeric_set = set(ns_numeric)
+
+        def _count_position(pos: int, label) -> Optional[int]:
+            return pos if pos in ns_numeric_set else None
+
+    else:
+        # Otherwise counts are matched by label. A label that repeats in `ns`
+        # is consumed occurrence by occurrence, so the k-th column of `df`
+        # carrying a label reads the k-th count column carrying it, rather
+        # than every one of them re-reading the first.
+        ns_by_label: dict = {}
+        for ns_pos in ns_numeric:
+            ns_by_label.setdefault(ns.columns[ns_pos], []).append(ns_pos)
+        seen: dict = {}
+
+        def _count_position(pos: int, label) -> Optional[int]:
+            candidates = ns_by_label.get(label)
+            if candidates is None:
+                return None
+            occurrence = seen.get(label, 0)
+            seen[label] = occurrence + 1
+            if occurrence >= len(candidates):
+                return None
+            return candidates[occurrence]
 
     # Column position 0 of `df` is the row identifier and is skipped.
     # Rows are matched by position, so a `df` with more rows than `ns`
     # (e.g., after adorn_totals adds a totals row) leaves the extras alone.
     n_rows = min(len(df), len(ns))
     for pos in range(1, df.shape[1]):
-        ns_pos = ns_positions.get(df.columns[pos])
+        ns_pos = _count_position(pos, df.columns[pos])
         if ns_pos is None:
             continue
         values = list(df.iloc[:, pos])

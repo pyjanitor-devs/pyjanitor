@@ -9,9 +9,12 @@
     by column position across the whole `adorn_*` family, so a frame with
     duplicate column labels exempts only its first column; `adorn_ns` takes
     the identifier from the frame being adorned rather than from `ns`, so a
-    counts frame that carries no identifier column keeps every count; and a
-    DataFrame with no columns is returned unchanged instead of raising
-    `IndexError`. - Issue #1676 @dylanpulver
+    counts frame that carries no identifier column keeps every count; a
+    counts frame sharing the column axis of the frame being adorned is
+    matched across by position, and a repeated label is otherwise matched
+    occurrence by occurrence, so duplicate labels no longer all read the
+    first count; and a DataFrame with no columns is returned unchanged
+    instead of raising `IndexError`. - Issue #1676 @dylanpulver
 -   [ENH] Avoid copying column data during `conditional_join` input
     validation. - Issue #1645, PR #1642 @samukweku
 -   [ENH] Limit `conditional_join` matching work to columns referenced by join

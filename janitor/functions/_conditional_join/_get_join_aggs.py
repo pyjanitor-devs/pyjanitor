@@ -8,22 +8,42 @@ import pandas as pd
 from janitor.functions._conditional_join import _agg_functions, _helpers
 
 
+def _empty_agg_result(
+    dtypes: pd.Series, aggfunc: list[tuple[Hashable, str]]
+) -> pd.DataFrame:
+    """Build the typed empty result used when no candidate rows exist.
+
+    The Rust reverse match and positions kernels intentionally reject an
+    empty tape.  Python handles the valid user-facing no-candidate case here,
+    before dispatch, so an all-zero-width batch still returns an empty frame.
+    """
+    aggs = {}
+    for column_name, agg in aggfunc:
+        if agg == "size":
+            _dtype = "int64"
+        else:
+            _dtype = dtypes.loc[column_name]
+        out = pd.array([], dtype=_dtype, copy=False)
+        new_label = _build_agg_label(column_name=column_name, agg_name=agg)
+        aggs[new_label] = out
+    return pd.DataFrame(aggs, copy=False)
+
+
+def _has_empty_candidate_tape(indices: dict) -> bool:
+    """Return whether a strict Rust kernel would receive no tape entries."""
+    for name in ("matches", "positions"):
+        tape = indices.get(name)
+        if tape is not None and not tape.size:
+            return True
+    return False
+
+
 def _agg_join_left(df: pd.DataFrame, aggfunc: list, indices: dict) -> pd.DataFrame:
     """
     Compute aggregation for multiple joins
     """
-    if not indices["left_index"].size:
-        dtypes = df.dtypes
-        aggs = {}
-        for column_name, agg in aggfunc:
-            if agg == "size":
-                _dtype = "int64"
-            else:
-                _dtype = dtypes.loc[column_name]
-            out = pd.array([], dtype=_dtype, copy=False)
-            new_label = _build_agg_label(column_name=column_name, agg_name=agg)
-            aggs[new_label] = out
-        return pd.DataFrame(aggs, copy=False)
+    if not indices["left_index"].size or _has_empty_candidate_tape(indices):
+        return _empty_agg_result(df.dtypes, aggfunc)
     # single join - less than
     if (indices.get("starts") is not None) and isinstance(indices.get("ends"), int):
         aggs = {}
@@ -406,18 +426,8 @@ def _agg_join_right(right: pd.DataFrame, aggfunc: list, indices: dict) -> pd.Dat
     """
     Compute aggregation for multiple joins
     """
-    if not indices["left_index"].size:
-        dtypes = right.dtypes
-        aggs = {}
-        for column_name, agg in aggfunc:
-            if agg == "size":
-                _dtype = "int64"
-            else:
-                _dtype = dtypes.loc[column_name]
-            out = pd.array([], dtype=_dtype, copy=False)
-            new_label = _build_agg_label(column_name=column_name, agg_name=agg)
-            aggs[new_label] = out
-        return pd.DataFrame(aggs, copy=False)
+    if not indices["left_index"].size or _has_empty_candidate_tape(indices):
+        return _empty_agg_result(right.dtypes, aggfunc)
     # single join - less than
     if (indices.get("starts") is not None) and isinstance(indices.get("ends"), int):
         aggs = {}

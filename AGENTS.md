@@ -548,6 +548,23 @@ CLI.
 include MkDocs. The documentation task is available in the `docs` environment.
 **Recommendation**: Run `pixi run -e docs build-docs` to build documentation.
 
+### [2026-08-27] Document the Reverse Aggregation Boundary Contract
+
+**Context**: Coordinating pyjanitor with janitor-rs reverse aggregation kernels.
+**Learning**: Reverse match kernels consume a flattened candidate tape. Direct
+Rust callers must provide a non-empty tape with the expected shape. Pyjanitor
+owns the producer invariant that match values are 0 or 1. A batch whose every
+candidate range is zero-width is valid at the Python level, so pyjanitor must
+return the typed empty aggregation result before calling Rust. Individual
+zero-width rows remain valid when the overall tape is non-empty.
+**Recommendation**: Keep this contract documented and tested at both
+boundaries: Rust rejects malformed direct inputs, while pyjanitor short-circuits
+legitimate no-candidate batches. Treat `length` as a legacy compatibility
+argument only when supporting an older janitor-rs wheel.
+**ELI5**: Python builds one roll of candidate tickets and Rust checks its shape.
+If there are no tickets, Python returns the empty answer instead of handing an
+empty roll to Rust.
+
 ---
 
 ## Version History

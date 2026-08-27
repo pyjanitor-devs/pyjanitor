@@ -341,6 +341,11 @@ def _get_positive_matches(
 ):
     """
     Compute positive matches for left vs right
+
+    Once ``counts_array`` is present, ``matches`` is the survivor tape from
+    the preceding predicate. The Rust kernels filter that internally-owned,
+    writable array in place and return it again; callers must not pass a
+    read-only or externally shared mask through this branch.
     """
     if (starts is not None) and (ends is None) and (counts_array is None):
         if (left_booleans is None) and (right_booleans is None):

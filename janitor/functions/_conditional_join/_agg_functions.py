@@ -1126,7 +1126,6 @@ def _sum_rev_starts_matches(
         index=index,
         matches=matches,
         booleans=booleans,
-        length=length,
     )
 
 
@@ -1150,7 +1149,6 @@ def _sum_rev_ends_matches(
         counts=counts,
         matches=matches,
         booleans=booleans,
-        length=length,
     )
 
 

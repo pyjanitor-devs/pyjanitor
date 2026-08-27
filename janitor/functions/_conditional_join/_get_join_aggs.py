@@ -282,6 +282,10 @@ def _agg_join_left(df: pd.DataFrame, aggfunc: list, indices: dict) -> pd.DataFra
         for column_name, agg in aggfunc:
             if agg == "size":
                 func = mapping[agg]
+                # Legacy Rust wheels use length only as an output-slot upper
+                # bound. The right index is the tightest safe bound: there
+                # cannot be more distinct labels than right-index entries,
+                # while the positions tape may be much larger with repeats.
                 _index, out = func(
                     starts=indices["starts"],
                     ends=indices["ends"],

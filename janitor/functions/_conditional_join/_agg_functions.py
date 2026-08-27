@@ -1,3 +1,16 @@
+"""Adapters for conditional-join aggregation kernels.
+
+Reverse match kernels receive a flattened candidate tape. Rust intentionally
+rejects an empty tape, while pyjanitor pre-filters an all-zero-width batch and
+returns the normal typed empty result before dispatch. Individual zero-width
+ranges are valid when the overall tape is non-empty. The comparison stage
+owns the invariant that match values are 0 or 1; Rust validates tape shape.
+
+ELI5: Python builds one long roll of candidate tickets and Rust checks that
+the roll has the right shape. If there are no tickets at all, Python answers
+with an empty result instead of handing an empty roll to Rust.
+"""
+
 import inspect
 
 import janitor_rs

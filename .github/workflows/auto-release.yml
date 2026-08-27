@@ -160,14 +160,18 @@ jobs:
       - name: Validate generated release notes
         if: steps.check_release.outputs.already_released == 'false'
         run: |
+          set -euo pipefail
           RELEASE_NOTES="docs/releases/v${{ env.version_number }}.md"
-          test -f "$RELEASE_NOTES"
-          pixi run pre-commit run --files "$RELEASE_NOTES" || \
-            pixi run pre-commit run --files "$RELEASE_NOTES"
+          if [[ ! -f "$RELEASE_NOTES" ]]; then
+            echo "Release notes were not generated: $RELEASE_NOTES" >&2
+            exit 1
+          fi
+          pixi run pre-commit run --files "$RELEASE_NOTES"
 
       - name: Commit release notes
         if: steps.check_release.outputs.already_released == 'false'
         run: |
+          set -euo pipefail
           RELEASE_NOTES="docs/releases/v${{ env.version_number }}.md"
           git add --force -- "$RELEASE_NOTES"
           if git diff --cached --quiet -- "$RELEASE_NOTES"; then

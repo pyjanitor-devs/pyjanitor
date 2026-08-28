@@ -34,14 +34,12 @@ def _agg_join_left(df: pd.DataFrame, aggfunc: list, indices: dict) -> pd.DataFra
             "max": _agg_functions._max_rev_starts,
             "prod": _agg_functions._prod_rev_starts,
         }
-        length = indices["ends"] - indices["starts"].min()
         for column_name, agg in aggfunc:
             if agg == "size":
                 func = mapping[agg]
                 _index, out = func(
                     starts=indices["starts"],
                     index=indices["right_index"],
-                    length=length,
                 )
             else:
                 ser = df.loc[indices["left_index"], column_name]
@@ -54,7 +52,6 @@ def _agg_join_left(df: pd.DataFrame, aggfunc: list, indices: dict) -> pd.DataFra
                     starts=indices["starts"],
                     index=indices["right_index"],
                     booleans=booleans,
-                    length=length,
                 )
                 if agg in {
                     "sum",
@@ -80,14 +77,12 @@ def _agg_join_left(df: pd.DataFrame, aggfunc: list, indices: dict) -> pd.DataFra
             "max": _agg_functions._max_rev_ends,
             "prod": _agg_functions._prod_rev_ends,
         }
-        length = indices["ends"].max()
         for column_name, agg in aggfunc:
             if agg == "size":
                 func = mapping[agg]
                 _index, out = func(
                     ends=indices["ends"],
                     index=indices["right_index"],
-                    length=length,
                 )
             else:
                 ser = df.loc[indices["left_index"], column_name]
@@ -100,7 +95,6 @@ def _agg_join_left(df: pd.DataFrame, aggfunc: list, indices: dict) -> pd.DataFra
                     ends=indices["ends"],
                     index=indices["right_index"],
                     booleans=booleans,
-                    length=length,
                 )
                 if agg in {
                     "sum",
@@ -140,7 +134,6 @@ def _agg_join_left(df: pd.DataFrame, aggfunc: list, indices: dict) -> pd.DataFra
                     left_index=indices["left_index"],
                     right_index=indices["right_index"],
                     booleans=booleans,
-                    length=indices["right_index"].size,
                 )
                 if agg in {
                     "sum",
@@ -172,7 +165,6 @@ def _agg_join_left(df: pd.DataFrame, aggfunc: list, indices: dict) -> pd.DataFra
                     starts=indices["starts"],
                     index=indices["right_index"],
                     matches=indices["matches"],
-                    length=indices["right_index"].size,
                 )
             else:
                 ser = df.loc[indices["left_index"], column_name]
@@ -187,7 +179,6 @@ def _agg_join_left(df: pd.DataFrame, aggfunc: list, indices: dict) -> pd.DataFra
                     matches=indices["matches"],
                     counts=indices["counts_array"],
                     booleans=booleans,
-                    length=indices["right_index"].size,
                 )
                 if agg in {
                     "sum",
@@ -212,7 +203,6 @@ def _agg_join_left(df: pd.DataFrame, aggfunc: list, indices: dict) -> pd.DataFra
             "max": _agg_functions._max_rev_ends_matches,
             "prod": _agg_functions._prod_rev_ends_matches,
         }
-        length = indices["ends"].max()
         for column_name, agg in aggfunc:
             if agg == "size":
                 func = mapping[agg]
@@ -220,7 +210,6 @@ def _agg_join_left(df: pd.DataFrame, aggfunc: list, indices: dict) -> pd.DataFra
                     ends=indices["ends"],
                     index=indices["right_index"],
                     matches=indices["matches"],
-                    length=length,
                 )
             else:
                 ser = df.loc[indices["left_index"], column_name]
@@ -235,7 +224,6 @@ def _agg_join_left(df: pd.DataFrame, aggfunc: list, indices: dict) -> pd.DataFra
                     matches=indices["matches"],
                     counts=indices["counts_array"],
                     booleans=booleans,
-                    length=length,
                 )
                 if agg in {
                     "sum",
@@ -268,7 +256,6 @@ def _agg_join_left(df: pd.DataFrame, aggfunc: list, indices: dict) -> pd.DataFra
                     ends=indices["ends"],
                     positions=indices["positions"],
                     index=indices["right_index"],
-                    length=indices["right_index"].size,
                 )
             else:
                 ser = df.loc[indices["left_index"], column_name]
@@ -283,7 +270,6 @@ def _agg_join_left(df: pd.DataFrame, aggfunc: list, indices: dict) -> pd.DataFra
                     positions=indices["positions"],
                     index=indices["right_index"],
                     booleans=booleans,
-                    length=indices["right_index"].size,
                 )
                 if agg in {
                     "sum",
@@ -312,7 +298,6 @@ def _agg_join_left(df: pd.DataFrame, aggfunc: list, indices: dict) -> pd.DataFra
             "max": _agg_functions._max_rev_starts_ends,
             "prod": _agg_functions._prod_rev_starts_ends,
         }
-        length = indices["ends"].max() - indices["starts"].min()
         for column_name, agg in aggfunc:
             if agg == "size":
                 func = mapping[agg]
@@ -320,7 +305,6 @@ def _agg_join_left(df: pd.DataFrame, aggfunc: list, indices: dict) -> pd.DataFra
                     starts=indices["starts"],
                     ends=indices["ends"],
                     index=indices["right_index"],
-                    length=length,
                 )
             else:
                 ser = df.loc[indices["left_index"], column_name]
@@ -334,7 +318,6 @@ def _agg_join_left(df: pd.DataFrame, aggfunc: list, indices: dict) -> pd.DataFra
                     ends=indices["ends"],
                     index=indices["right_index"],
                     booleans=booleans,
-                    length=length,
                 )
                 if agg in {
                     "sum",
@@ -359,7 +342,6 @@ def _agg_join_left(df: pd.DataFrame, aggfunc: list, indices: dict) -> pd.DataFra
             "max": _agg_functions._max_rev_starts_ends_matches,
             "prod": _agg_functions._prod_rev_starts_ends_matches,
         }
-        length = indices["ends"].max() - indices["starts"].min()
         for column_name, agg in aggfunc:
             if agg == "size":
                 func = mapping[agg]
@@ -368,7 +350,6 @@ def _agg_join_left(df: pd.DataFrame, aggfunc: list, indices: dict) -> pd.DataFra
                     ends=indices["ends"],
                     index=indices["right_index"],
                     matches=indices["matches"],
-                    length=length,
                 )
             else:
                 ser = df.loc[indices["left_index"], column_name]
@@ -384,7 +365,6 @@ def _agg_join_left(df: pd.DataFrame, aggfunc: list, indices: dict) -> pd.DataFra
                     index=indices["right_index"],
                     counts=indices["counts_array"],
                     booleans=booleans,
-                    length=length,
                 )
                 if agg in {
                     "sum",

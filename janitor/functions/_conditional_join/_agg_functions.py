@@ -1,5 +1,64 @@
-import janitor_rs
+from functools import lru_cache
+from inspect import signature
+
+import janitor_rs as _janitor_rs
 import numpy as np
+
+
+@lru_cache(maxsize=None)
+def _reverse_kernel_requires_length(func) -> bool:
+    """Return whether an installed reverse kernel still has ``length``."""
+    try:
+        return "length" in signature(func).parameters
+    except (TypeError, ValueError):
+        # PyO3 exposes signatures on the supported janitor-rs wheels.  If a
+        # future binding does not expose one, prefer the new API rather than
+        # guessing a capacity hint that the kernel may no longer accept.
+        return False
+
+
+def _normalize_legacy_result(result, index):
+    """Restore input-label order for the legacy hash-map kernels."""
+    labels, values = result
+    positions = {}
+    for position, label in enumerate(index):
+        positions.setdefault(label, position)
+    seen = set()
+    order = []
+    for position, label in enumerate(labels):
+        if label in positions and label not in seen:
+            seen.add(label)
+            order.append(position)
+    order.sort(key=lambda position: positions[labels[position]])
+    order = np.asarray(order, dtype=np.intp)
+    return labels[order], values[order]
+
+
+class _JanitorRsCompat:
+    """Adapt released length-taking reverse kernels to the new call contract."""
+
+    def __getattr__(self, name):
+        func = getattr(_janitor_rs, name)
+        if "_rev_" not in name or not _reverse_kernel_requires_length(func):
+            return func
+
+        def call(**kwargs):
+            # The old parameter was only a capacity hint.  The right index is
+            # always large enough to provide a safe upper bound for it.
+            index = kwargs["index"] if "index" in kwargs else kwargs["right_index"]
+            if "starts" in kwargs and "ends" in kwargs:
+                length = int(kwargs["ends"].max() - kwargs["starts"].min())
+            elif "ends" in kwargs:
+                length = int(kwargs["ends"].max())
+            else:
+                length = index.size
+            kwargs["length"] = length
+            return _normalize_legacy_result(func(**kwargs), index)
+
+        return call
+
+
+janitor_rs = _JanitorRsCompat()
 
 
 def _sum_starts(

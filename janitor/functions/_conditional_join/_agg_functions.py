@@ -61,50 +61,44 @@ def _sum_ends(
 def _size_rev_starts(
     starts: np.ndarray,
     index: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute size_rev
     """
-    return janitor_rs.compute_size_rev_start(starts=starts, index=index, length=length)
+    return janitor_rs.compute_size_rev_start(starts=starts, index=index)
 
 
 def _size_rev_ends(
     ends: np.ndarray,
     index: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute size_rev
     """
-    return janitor_rs.compute_size_rev_end(ends=ends, index=index, length=length)
+    return janitor_rs.compute_size_rev_end(ends=ends, index=index)
 
 
 def _size_rev_starts_ends(
     starts: np.ndarray,
     ends: np.ndarray,
     index: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute size_rev
     """
-    return janitor_rs.compute_size_rev_start_end(
-        starts=starts, ends=ends, index=index, length=length
-    )
+    return janitor_rs.compute_size_rev_start_end(starts=starts, ends=ends, index=index)
 
 
 def _size_rev_ends_matches(
     ends: np.ndarray,
     index: np.ndarray,
     matches: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute size_rev
     """
     return janitor_rs.compute_size_rev_end_matches(
-        ends=ends, index=index, matches=matches, length=length
+        ends=ends, index=index, matches=matches
     )
 
 
@@ -112,13 +106,12 @@ def _size_rev_starts_matches(
     starts: np.ndarray,
     index: np.ndarray,
     matches: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute size_rev
     """
     return janitor_rs.compute_size_rev_start_matches(
-        starts=starts, index=index, matches=matches, length=length
+        starts=starts, index=index, matches=matches
     )
 
 
@@ -127,13 +120,12 @@ def _size_rev_starts_ends_matches(
     ends: np.ndarray,
     index: np.ndarray,
     matches: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute size_rev
     """
     return janitor_rs.compute_size_rev_start_end_matches(
-        starts=starts, ends=ends, index=index, matches=matches, length=length
+        starts=starts, ends=ends, index=index, matches=matches
     )
 
 
@@ -142,7 +134,6 @@ def _size_rev_positions(
     ends: np.ndarray,
     index: np.ndarray,
     positions: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute size_rev
@@ -152,7 +143,6 @@ def _size_rev_positions(
         ends=ends,
         index=index,
         positions=positions,
-        length=length,
     )
 
 
@@ -1034,7 +1024,6 @@ def _prod_rev_starts(
     starts: np.ndarray,
     index: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute prod
@@ -1056,7 +1045,7 @@ def _prod_rev_starts(
         func = mapping[dtype_name]
     except KeyError:
         raise KeyError(f"Unsupported data type -> {dtype_name}")
-    return func(arr=arr, starts=starts, index=index, booleans=booleans, length=length)
+    return func(arr=arr, starts=starts, index=index, booleans=booleans)
 
 
 def _prod_rev_ends(
@@ -1064,7 +1053,6 @@ def _prod_rev_ends(
     ends: np.ndarray,
     index: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute prod
@@ -1086,7 +1074,7 @@ def _prod_rev_ends(
         func = mapping[dtype_name]
     except KeyError:
         raise KeyError(f"Unsupported data type -> {dtype_name}")
-    return func(arr=arr, ends=ends, index=index, booleans=booleans, length=length)
+    return func(arr=arr, ends=ends, index=index, booleans=booleans)
 
 
 def _prod_rev_starts_matches(
@@ -1096,7 +1084,6 @@ def _prod_rev_starts_matches(
     index: np.ndarray,
     matches: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute prod
@@ -1125,7 +1112,6 @@ def _prod_rev_starts_matches(
         index=index,
         matches=matches,
         booleans=booleans,
-        length=length,
     )
 
 
@@ -1136,7 +1122,6 @@ def _prod_rev_ends_matches(
     counts: np.ndarray,
     matches: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute prod
@@ -1165,7 +1150,6 @@ def _prod_rev_ends_matches(
         counts=counts,
         matches=matches,
         booleans=booleans,
-        length=length,
     )
 
 
@@ -1176,7 +1160,6 @@ def _prod_rev_positions(
     index: np.ndarray,
     positions: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute prod
@@ -1205,7 +1188,6 @@ def _prod_rev_positions(
         index=index,
         positions=positions,
         booleans=booleans,
-        length=length,
     )
 
 
@@ -1215,7 +1197,6 @@ def _prod_rev_starts_ends(
     ends: np.ndarray,
     index: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute prod
@@ -1243,7 +1224,6 @@ def _prod_rev_starts_ends(
         ends=ends,
         index=index,
         booleans=booleans,
-        length=length,
     )
 
 
@@ -1255,7 +1235,6 @@ def _prod_rev_starts_ends_matches(
     counts: np.ndarray,
     matches: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute prod
@@ -1285,7 +1264,6 @@ def _prod_rev_starts_ends_matches(
         counts=counts,
         matches=matches,
         booleans=booleans,
-        length=length,
     )
 
 
@@ -1294,7 +1272,6 @@ def _min_rev_starts(
     starts: np.ndarray,
     index: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute min
@@ -1316,7 +1293,7 @@ def _min_rev_starts(
         func = mapping[dtype_name]
     except KeyError:
         raise KeyError(f"Unsupported data type -> {dtype_name}")
-    return func(arr=arr, starts=starts, index=index, booleans=booleans, length=length)
+    return func(arr=arr, starts=starts, index=index, booleans=booleans)
 
 
 def _min_rev_ends(
@@ -1324,7 +1301,6 @@ def _min_rev_ends(
     ends: np.ndarray,
     index: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute min
@@ -1346,7 +1322,7 @@ def _min_rev_ends(
         func = mapping[dtype_name]
     except KeyError:
         raise KeyError(f"Unsupported data type -> {dtype_name}")
-    return func(arr=arr, ends=ends, index=index, booleans=booleans, length=length)
+    return func(arr=arr, ends=ends, index=index, booleans=booleans)
 
 
 def _min_rev_starts_matches(
@@ -1356,7 +1332,6 @@ def _min_rev_starts_matches(
     index: np.ndarray,
     matches: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute min
@@ -1385,7 +1360,6 @@ def _min_rev_starts_matches(
         index=index,
         matches=matches,
         booleans=booleans,
-        length=length,
     )
 
 
@@ -1396,7 +1370,6 @@ def _min_rev_ends_matches(
     counts: np.ndarray,
     matches: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute min
@@ -1425,7 +1398,6 @@ def _min_rev_ends_matches(
         counts=counts,
         matches=matches,
         booleans=booleans,
-        length=length,
     )
 
 
@@ -1436,7 +1408,6 @@ def _min_rev_positions(
     index: np.ndarray,
     positions: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute min
@@ -1465,7 +1436,6 @@ def _min_rev_positions(
         index=index,
         positions=positions,
         booleans=booleans,
-        length=length,
     )
 
 
@@ -1475,7 +1445,6 @@ def _min_rev_starts_ends(
     ends: np.ndarray,
     index: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute min
@@ -1503,7 +1472,6 @@ def _min_rev_starts_ends(
         ends=ends,
         index=index,
         booleans=booleans,
-        length=length,
     )
 
 
@@ -1515,7 +1483,6 @@ def _min_rev_starts_ends_matches(
     counts: np.ndarray,
     matches: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute min
@@ -1545,7 +1512,6 @@ def _min_rev_starts_ends_matches(
         counts=counts,
         matches=matches,
         booleans=booleans,
-        length=length,
     )
 
 
@@ -1554,7 +1520,6 @@ def _max_rev_starts(
     starts: np.ndarray,
     index: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute max
@@ -1576,7 +1541,7 @@ def _max_rev_starts(
         func = mapping[dtype_name]
     except KeyError:
         raise KeyError(f"Unsupported data type -> {dtype_name}")
-    return func(arr=arr, starts=starts, index=index, booleans=booleans, length=length)
+    return func(arr=arr, starts=starts, index=index, booleans=booleans)
 
 
 def _max_rev_ends(
@@ -1584,7 +1549,6 @@ def _max_rev_ends(
     ends: np.ndarray,
     index: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute max
@@ -1606,7 +1570,7 @@ def _max_rev_ends(
         func = mapping[dtype_name]
     except KeyError:
         raise KeyError(f"Unsupported data type -> {dtype_name}")
-    return func(arr=arr, ends=ends, index=index, booleans=booleans, length=length)
+    return func(arr=arr, ends=ends, index=index, booleans=booleans)
 
 
 def _max_rev_starts_matches(
@@ -1616,7 +1580,6 @@ def _max_rev_starts_matches(
     index: np.ndarray,
     matches: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute max
@@ -1645,7 +1608,6 @@ def _max_rev_starts_matches(
         index=index,
         matches=matches,
         booleans=booleans,
-        length=length,
     )
 
 
@@ -1656,7 +1618,6 @@ def _max_rev_ends_matches(
     counts: np.ndarray,
     matches: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute max
@@ -1685,7 +1646,6 @@ def _max_rev_ends_matches(
         counts=counts,
         matches=matches,
         booleans=booleans,
-        length=length,
     )
 
 
@@ -1696,7 +1656,6 @@ def _max_rev_positions(
     index: np.ndarray,
     positions: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute max
@@ -1725,7 +1684,6 @@ def _max_rev_positions(
         index=index,
         positions=positions,
         booleans=booleans,
-        length=length,
     )
 
 
@@ -1735,7 +1693,6 @@ def _max_rev_starts_ends(
     ends: np.ndarray,
     index: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute max
@@ -1763,7 +1720,6 @@ def _max_rev_starts_ends(
         ends=ends,
         index=index,
         booleans=booleans,
-        length=length,
     )
 
 
@@ -1775,7 +1731,6 @@ def _max_rev_starts_ends_matches(
     counts: np.ndarray,
     matches: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute max
@@ -1805,7 +1760,6 @@ def _max_rev_starts_ends_matches(
         counts=counts,
         matches=matches,
         booleans=booleans,
-        length=length,
     )
 
 
@@ -1814,7 +1768,6 @@ def _prod_rev_no_ranges(
     left_index: np.ndarray,
     right_index: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute prod
@@ -1841,7 +1794,6 @@ def _prod_rev_no_ranges(
         left_index=left_index,
         right_index=right_index,
         booleans=booleans,
-        length=length,
     )
 
 
@@ -1850,7 +1802,6 @@ def _max_rev_no_ranges(
     left_index: np.ndarray,
     right_index: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute max
@@ -1877,7 +1828,6 @@ def _max_rev_no_ranges(
         left_index=left_index,
         right_index=right_index,
         booleans=booleans,
-        length=length,
     )
 
 
@@ -1886,7 +1836,6 @@ def _min_rev_no_ranges(
     left_index: np.ndarray,
     right_index: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute min
@@ -1913,7 +1862,6 @@ def _min_rev_no_ranges(
         left_index=left_index,
         right_index=right_index,
         booleans=booleans,
-        length=length,
     )
 
 
@@ -1922,7 +1870,6 @@ def _sum_rev_no_ranges(
     left_index: np.ndarray,
     right_index: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute sum
@@ -1949,7 +1896,6 @@ def _sum_rev_no_ranges(
         left_index=left_index,
         right_index=right_index,
         booleans=booleans,
-        length=length,
     )
 
 
@@ -1958,7 +1904,6 @@ def _sum_rev_starts(
     starts: np.ndarray,
     index: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute sum
@@ -1980,7 +1925,7 @@ def _sum_rev_starts(
         func = mapping[dtype_name]
     except KeyError:
         raise KeyError(f"Unsupported data type -> {dtype_name}")
-    return func(arr=arr, starts=starts, index=index, booleans=booleans, length=length)
+    return func(arr=arr, starts=starts, index=index, booleans=booleans)
 
 
 def _sum_rev_ends(
@@ -1988,7 +1933,6 @@ def _sum_rev_ends(
     ends: np.ndarray,
     index: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute sum
@@ -2010,7 +1954,7 @@ def _sum_rev_ends(
         func = mapping[dtype_name]
     except KeyError:
         raise KeyError(f"Unsupported data type -> {dtype_name}")
-    return func(arr=arr, ends=ends, index=index, booleans=booleans, length=length)
+    return func(arr=arr, ends=ends, index=index, booleans=booleans)
 
 
 def _sum_rev_starts_matches(
@@ -2020,7 +1964,6 @@ def _sum_rev_starts_matches(
     index: np.ndarray,
     matches: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute sum
@@ -2049,7 +1992,6 @@ def _sum_rev_starts_matches(
         index=index,
         matches=matches,
         booleans=booleans,
-        length=length,
     )
 
 
@@ -2060,7 +2002,6 @@ def _sum_rev_ends_matches(
     counts: np.ndarray,
     matches: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute sum
@@ -2089,7 +2030,6 @@ def _sum_rev_ends_matches(
         counts=counts,
         matches=matches,
         booleans=booleans,
-        length=length,
     )
 
 
@@ -2100,7 +2040,6 @@ def _sum_rev_positions(
     index: np.ndarray,
     positions: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute sum
@@ -2129,7 +2068,6 @@ def _sum_rev_positions(
         index=index,
         positions=positions,
         booleans=booleans,
-        length=length,
     )
 
 
@@ -2139,7 +2077,6 @@ def _sum_rev_starts_ends(
     ends: np.ndarray,
     index: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute sum
@@ -2167,7 +2104,6 @@ def _sum_rev_starts_ends(
         ends=ends,
         index=index,
         booleans=booleans,
-        length=length,
     )
 
 
@@ -2179,7 +2115,6 @@ def _sum_rev_starts_ends_matches(
     counts: np.ndarray,
     matches: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute sum
@@ -2209,5 +2144,4 @@ def _sum_rev_starts_ends_matches(
         counts=counts,
         matches=matches,
         booleans=booleans,
-        length=length,
     )

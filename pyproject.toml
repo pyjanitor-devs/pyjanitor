@@ -56,6 +56,7 @@ docs = [
     "tqdm",
     "unyt",
     "pyspark",
+    "sparse",
 ]
 test = [
     "pytest-cov",
@@ -79,6 +80,9 @@ engineering = [
 spark = [
     "pyspark",
 ]
+sparse = [
+    "sparse",
+]
 all = [
     "pip-tools",
     "pre-commit",
@@ -96,6 +100,7 @@ all = [
     "tqdm",
     "unyt",
     "pyspark",
+    "sparse",
     "pytest-cov",
     "pytest-xdist",
     "pytest>=3.4.2",
@@ -176,6 +181,9 @@ unyt = ">=3.1.0,<4"
 [tool.pixi.feature.spark.dependencies]
 pyspark = ">=4.1.1,<5"
 
+[tool.pixi.feature.sparse.dependencies]
+sparse = "*"
+
 [tool.pixi.feature.py311.dependencies]
 python = "3.11.*"
 
@@ -216,6 +224,7 @@ biology = { features = ["tests", "setup", "biology"] }
 chemistry = { features = ["tests", "setup", "chemistry"] }
 engineering = { features = ["tests", "setup", "engineering"] }
 spark = { features = ["tests", "setup", "spark"] }
+sparse = { features = ["tests", "setup", "sparse"] }
 py311 = { features = ["tests", "setup", "py311"] }
 py312 = { features = ["tests", "setup", "py312"] }
 py313 = { features = ["tests", "setup", "py313"] }

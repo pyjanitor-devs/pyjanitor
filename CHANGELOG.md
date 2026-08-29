@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+-   [ENH] Add `to_fasta` method to `janitor.biology` for exporting a DataFrame of sequences to a FASTA file. - Issue #646
 -   [PERF] Reduce peak memory in `_build_indexer_reorder_contents` for wide frames (reps >= 8) using single NumPy allocation; tall frames with few repetitions retain the original reshape path. - Issue #1655 @Anupam2400
 -   [ENH] `conditional_join` now picks the most selective `<`/`<=`/`>`/`>=` predicate as its binary-search anchor (instead of the first one supplied) when `keep` is `'first'` or `'last'`, fixing pathological slowdowns from unfavorable predicate ordering; the choice is estimated from a fixed-size sample so the selection cost no longer scales with input size; `keep='all'` output is unaffected. - Issue #1641 @samukweku
 -   [BUG] Fix `conditional_join` crash for `keep='last'` joins with a single `<`/`<=` window and multiple non-equi conditions - a missing `counts` argument to the Rust `index_starts_only_keep_last` call. - Issue #1641 @samukweku

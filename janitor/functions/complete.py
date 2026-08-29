@@ -9,7 +9,6 @@ from pandas.api.types import is_scalar
 from pandas.core.groupby.generic import DataFrameGroupBy
 
 from janitor.utils import check, check_column, find_stack_level
-from tests.functions.test_change_index_dtype import df
 
 warnings.simplefilter("always", DeprecationWarning)
 

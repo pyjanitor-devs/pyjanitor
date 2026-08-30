@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+-   [DOC] Add documentation comparing cumulative-event aggregation to join_agg/conditional_join range aggregations. - Issue #1702 @sumangouda
 -   [ENH] Fix `complete` function to support `DataFrameGroupBy` objects without `AttributeError` and properly validate/handle dictionary `fill_value` inputs. - Issue #1669
 -   [PERF] Reduce peak memory in `_build_indexer_reorder_contents` for wide frames (reps >= 8) using single NumPy allocation; tall frames with few repetitions retain the original reshape path. - Issue #1655 @Anupam2400
 -   [ENH] `conditional_join` now picks the most selective `<`/`<=`/`>`/`>=` predicate as its binary-search anchor (instead of the first one supplied) when `keep` is `'first'` or `'last'`, fixing pathological slowdowns from unfavorable predicate ordering; the choice is estimated from a fixed-size sample so the selection cost no longer scales with input size; `keep='all'` output is unaffected. - Issue #1641 @samukweku

@@ -528,6 +528,62 @@ def _get_positive_matches_conditions(
     return {"matches": matches, "counts_array": counts_array, "total": total}
 
 
+def _get_direct_indices_conditions(
+    df: pd.DataFrame,
+    right: pd.DataFrame,
+    conditions: list,
+    left_index: np.ndarray,
+    starts: np.ndarray,
+    ends: np.ndarray,
+    keep: str,
+):
+    """Try direct first/last selection for safe homogeneous inputs.
+
+    The direct janitor-rs kernel has one concrete dtype parameter for all
+    predicate columns. Mixed dtypes, null-bearing columns, and unavailable
+    extension exports deliberately return ``None`` so the caller can use the
+    established matches-tape path with identical pandas semantics.
+    """
+    if keep not in {"first", "last"}:
+        return None
+
+    left_arrays = []
+    right_arrays = []
+    ops = []
+    dtype_name = None
+    for left_on, right_on, op in conditions:
+        left_series = df.loc[left_index, left_on]
+        right_series = right[right_on]
+        if left_series.isna().any() or right_series.isna().any():
+            return None
+        left_array = _convert_array_to_numpy(array=left_series._values)
+        right_array = _convert_array_to_numpy(array=right_series._values)
+        if left_array.dtype != right_array.dtype:
+            return None
+        if dtype_name is None:
+            dtype_name = left_array.dtype.name
+        elif dtype_name != left_array.dtype.name:
+            return None
+        left_arrays.append(left_array)
+        right_arrays.append(right_array)
+        ops.append(operator_mapping[op])
+
+    result = _compare._select_start_end_direct(
+        left=left_arrays,
+        right=right_arrays,
+        left_index=left_index,
+        right_index=right.index._values,
+        starts=starts,
+        ends=ends,
+        ops=ops,
+        first=keep == "first",
+    )
+    if result is None:
+        return None
+    selected_left, selected_right = result
+    return {"left_index": selected_left, "right_index": selected_right}
+
+
 def _get_boolean_args_for_ne(
     op: str, left: np.ndarray | None, right: np.ndarray | None
 ) -> tuple:

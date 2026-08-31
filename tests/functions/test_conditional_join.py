@@ -10,7 +10,7 @@ from pandas import Timedelta
 from pandas.testing import assert_frame_equal
 
 import janitor as jn
-from janitor.functions._conditional_join import _le_ge_1_or_more
+from janitor.functions._conditional_join import _helpers, _le_ge_1_or_more
 from janitor.testing_utils.strategies import (
     conditional_df,
     conditional_right,
@@ -114,6 +114,36 @@ def test_multiple_conditions_preserve_non_condition_columns():
         ("lower", "minimum", ">"),
         ("upper", "maximum", "<"),
     )
+
+    assert_frame_equal(actual, expected)
+
+
+def test_reverse_join_agg_handles_empty_and_non_empty_candidate_ranges():
+    """A zero-width candidate row must not corrupt the matches tape."""
+    left = pd.DataFrame({"value": [0, 10], "payload": [4, 6]})
+    right = pd.DataFrame(
+        {
+            "lower": [0, 2],
+            "upper": [5, 20],
+        }
+    )
+
+    actual = left.join_agg(
+        right,
+        ("value", "lower", ">"),
+        ("value", "upper", "<"),
+        reverse=True,
+        aggfunc=[("payload", "sum"), ("payload", "size")],
+    )
+
+    expected = pd.DataFrame(
+        {
+            ("payload", "sum"): [6],
+            ("payload", "size"): [1],
+        },
+        index=pd.Index([1]),
+    )
+    expected.columns = pd.MultiIndex.from_tuples(expected.columns)
 
     assert_frame_equal(actual, expected)
 
@@ -516,6 +546,76 @@ def test_dtype_different_non_equi():
         left = pd.DataFrame({"A": [1, 2, 3]}, dtype="int64")
         right = pd.DataFrame({"B": [1, 2, 3]}, dtype="int8")
         left.conditional_join(right, ("A", "B", "<"))
+
+
+def test_direct_selection_kernel_is_used_for_safe_range_rest(monkeypatch):
+    """Use the tape-free kernel only for homogeneous, non-null inputs."""
+    calls = []
+
+    def fake_direct(left, right, left_index, right_index, starts, ends, ops, first):
+        calls.append((left, right, left_index, right_index, starts, ends, ops, first))
+        return np.array([0], dtype=np.int64), np.array([1], dtype=np.int64)
+
+    monkeypatch.setattr(
+        _helpers.janitor_rs,
+        "select_start_end_direct_int64",
+        fake_direct,
+        raising=False,
+    )
+    left = pd.DataFrame({"start": [2], "payload": ["left"]})
+    right = pd.DataFrame(
+        {
+            "lower": [1, 2, 3],
+            "upper": [3, 3, 3],
+            "tag": [7, 7, 8],
+            "payload": ["zero", "one", "two"],
+        }
+    )
+
+    actual = left.conditional_join(
+        right,
+        ("start", "lower", ">="),
+        ("start", "upper", "<="),
+        ("start", "tag", "<="),
+        keep="first",
+    )
+
+    assert len(calls) == 1
+    assert calls[0][-1] is True
+    assert list(actual[("right", "payload")]) == ["one"]
+
+
+def test_keep_all_retains_every_match_without_direct_selection(monkeypatch):
+    """The direct kernel must remain limited to first/last selection."""
+
+    def fail_if_called(*args, **kwargs):
+        raise AssertionError("keep='all' must use the matches-tape path")
+
+    monkeypatch.setattr(
+        _helpers.janitor_rs,
+        "select_start_end_direct_int64",
+        fail_if_called,
+        raising=False,
+    )
+    left = pd.DataFrame({"start": [2]})
+    right = pd.DataFrame(
+        {
+            "lower": [1, 2, 3],
+            "upper": [3, 3, 3],
+            "tag": [7, 7, 8],
+            "payload": ["zero", "one", "two"],
+        }
+    )
+
+    actual = left.conditional_join(
+        right,
+        ("start", "lower", ">="),
+        ("start", "upper", "<="),
+        ("start", "tag", "<="),
+        keep="all",
+    )
+
+    assert list(actual["payload"]) == ["zero", "one"]
 
 
 @pytest.mark.parametrize("op", ["<", "<=", ">", ">="])

@@ -1,5 +1,4 @@
 # helper functions for </<=
-import janitor_rs
 import numpy as np
 import pandas as pd
 
@@ -90,9 +89,5 @@ def _less_than_indices(
     right = [right_index[ind:len_right] for ind in search_indices]
     right = np.concatenate(right)
     counts = len_right - search_indices
-    left = janitor_rs.repeat_index(
-        index=left_index,
-        counts=counts,
-        length=counts.sum(),
-    )
+    left = np.repeat(left_index, counts)
     return {"left_index": left, "right_index": right}

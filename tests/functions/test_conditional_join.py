@@ -2,6 +2,7 @@ import operator
 from itertools import permutations
 from unittest import mock
 
+import janitor_rs
 import numpy as np
 import pandas as pd
 import pytest
@@ -11,6 +12,7 @@ from pandas.testing import assert_frame_equal
 
 import janitor as jn
 from janitor.functions._conditional_join import _le_ge_1_or_more
+from janitor.functions._conditional_join._dtype_dispatch import _rs_func
 from janitor.testing_utils.strategies import (
     conditional_df,
     conditional_right,
@@ -7053,3 +7055,38 @@ def test_equi_le_ge_ge_ne_agg_rev(df, right):
     ).sort_index()
     actual = actual.loc[expected.index]
     assert_frame_equal(expected, actual)
+
+
+def test_rs_func_dispatch_returns_correct_function():
+    """`_rs_func` resolves the right janitor_rs export for family/dtype."""
+    assert (
+        _rs_func("compute_sum_start_end", "int64")
+        is janitor_rs.compute_sum_start_end_int64
+    )
+    assert _rs_func("binary_search_lt", "float32") is janitor_rs.binary_search_lt_f32
+    assert _rs_func("binary_search_lt", "float64") is janitor_rs.binary_search_lt_f64
+
+
+def test_rs_func_unsupported_dtype_raises_keyerror():
+    """Unsupported dtypes raise the same KeyError message as before."""
+    with pytest.raises(KeyError, match="Unsupported data type -> bool"):
+        _rs_func("compute_sum_start_end", "bool")
+
+
+@pytest.mark.parametrize(
+    "index, counts",
+    [
+        (np.array([], dtype=np.int64), np.array([], dtype=np.int64)),
+        (np.array([1, 2, 3], dtype=np.int64), np.array([0, 0, 0], dtype=np.int64)),
+        (np.array([1, 2, 3], dtype=np.int64), np.array([2, 0, 3], dtype=np.int64)),
+        (np.arange(1000, dtype=np.int64), np.full(1000, 5, dtype=np.int64)),
+    ],
+)
+def test_np_repeat_matches_janitor_rs_repeat_index(index, counts):
+    """`np.repeat` is a drop-in replacement for `janitor_rs.repeat_index`."""
+    expected = janitor_rs.repeat_index(
+        index=index, counts=counts, length=int(counts.sum())
+    )
+    actual = np.repeat(index, counts)
+    np.testing.assert_array_equal(actual, expected)
+    assert actual.dtype == expected.dtype == np.int64

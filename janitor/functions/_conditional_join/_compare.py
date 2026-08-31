@@ -1,5 +1,6 @@
-import janitor_rs
 import numpy as np
+
+from ._dtype_dispatch import _rs_func
 
 
 def _compare_ne_no_ranges(
@@ -14,23 +15,7 @@ def _compare_ne_no_ranges(
     """
     Compute for no ranges (no starts/ends) for != operator
     """
-    mapping = {
-        "int64": janitor_rs.compare_no_range_ne_int64,
-        "int32": janitor_rs.compare_no_range_ne_int32,
-        "int16": janitor_rs.compare_no_range_ne_int16,
-        "int8": janitor_rs.compare_no_range_ne_int8,
-        "uint64": janitor_rs.compare_no_range_ne_uint64,
-        "uint32": janitor_rs.compare_no_range_ne_uint32,
-        "uint16": janitor_rs.compare_no_range_ne_uint16,
-        "uint8": janitor_rs.compare_no_range_ne_uint8,
-        "float64": janitor_rs.compare_no_range_ne_f64,
-        "float32": janitor_rs.compare_no_range_ne_f32,
-    }
-    dtype_name = left.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compare_no_range_ne", left.dtype.name)
     return func(
         left,
         right,
@@ -51,23 +36,7 @@ def _compare_no_ranges(
     """
     Compute for no ranges (no starts/ends)
     """
-    mapping = {
-        "int64": janitor_rs.compare_no_range_int64,
-        "int32": janitor_rs.compare_no_range_int32,
-        "int16": janitor_rs.compare_no_range_int16,
-        "int8": janitor_rs.compare_no_range_int8,
-        "uint64": janitor_rs.compare_no_range_uint64,
-        "uint32": janitor_rs.compare_no_range_uint32,
-        "uint16": janitor_rs.compare_no_range_uint16,
-        "uint8": janitor_rs.compare_no_range_uint8,
-        "float64": janitor_rs.compare_no_range_f64,
-        "float32": janitor_rs.compare_no_range_f32,
-    }
-    dtype_name = left.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compare_no_range", left.dtype.name)
     return func(
         left,
         right,
@@ -88,23 +57,7 @@ def _compare_ne_first_run_starts_only(
     """
     compute for first run
     """
-    mapping = {
-        "int64": janitor_rs.compare_start_ne_1st_int64,
-        "int32": janitor_rs.compare_start_ne_1st_int32,
-        "int16": janitor_rs.compare_start_ne_1st_int16,
-        "int8": janitor_rs.compare_start_ne_1st_int8,
-        "uint64": janitor_rs.compare_start_ne_1st_uint64,
-        "uint32": janitor_rs.compare_start_ne_1st_uint32,
-        "uint16": janitor_rs.compare_start_ne_1st_uint16,
-        "uint8": janitor_rs.compare_start_ne_1st_uint8,
-        "float64": janitor_rs.compare_start_ne_1st_f64,
-        "float32": janitor_rs.compare_start_ne_1st_f32,
-    }
-    dtype_name = left.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compare_start_ne_1st", left.dtype.name)
     return func(
         left,
         right,
@@ -130,23 +83,7 @@ def _compare_ne_starts_only(
     """
     compute for starts
     """
-    mapping = {
-        "int64": janitor_rs.compare_start_ne_int64,
-        "int32": janitor_rs.compare_start_ne_int32,
-        "int16": janitor_rs.compare_start_ne_int16,
-        "int8": janitor_rs.compare_start_ne_int8,
-        "uint64": janitor_rs.compare_start_ne_uint64,
-        "uint32": janitor_rs.compare_start_ne_uint32,
-        "uint16": janitor_rs.compare_start_ne_uint16,
-        "uint8": janitor_rs.compare_start_ne_uint8,
-        "float64": janitor_rs.compare_start_ne_f64,
-        "float32": janitor_rs.compare_start_ne_f32,
-    }
-    dtype_name = left.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compare_start_ne", left.dtype.name)
     return func(
         left,
         right,
@@ -172,23 +109,7 @@ def _compare_ne_first_run_ends_only(
     """
     compute for first run
     """
-    mapping = {
-        "int64": janitor_rs.compare_end_ne_1st_int64,
-        "int32": janitor_rs.compare_end_ne_1st_int32,
-        "int16": janitor_rs.compare_end_ne_1st_int16,
-        "int8": janitor_rs.compare_end_ne_1st_int8,
-        "uint64": janitor_rs.compare_end_ne_1st_uint64,
-        "uint32": janitor_rs.compare_end_ne_1st_uint32,
-        "uint16": janitor_rs.compare_end_ne_1st_uint16,
-        "uint8": janitor_rs.compare_end_ne_1st_uint8,
-        "float64": janitor_rs.compare_end_ne_1st_f64,
-        "float32": janitor_rs.compare_end_ne_1st_f32,
-    }
-    dtype_name = left.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compare_end_ne_1st", left.dtype.name)
     return func(
         left,
         right,
@@ -214,23 +135,7 @@ def _compare_ne_ends_only(
     """
     compute for ends
     """
-    mapping = {
-        "int64": janitor_rs.compare_end_ne_int64,
-        "int32": janitor_rs.compare_end_ne_int32,
-        "int16": janitor_rs.compare_end_ne_int16,
-        "int8": janitor_rs.compare_end_ne_int8,
-        "uint64": janitor_rs.compare_end_ne_uint64,
-        "uint32": janitor_rs.compare_end_ne_uint32,
-        "uint16": janitor_rs.compare_end_ne_uint16,
-        "uint8": janitor_rs.compare_end_ne_uint8,
-        "float64": janitor_rs.compare_end_ne_f64,
-        "float32": janitor_rs.compare_end_ne_f32,
-    }
-    dtype_name = left.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compare_end_ne", left.dtype.name)
     return func(
         left,
         right,
@@ -257,23 +162,7 @@ def _compare_ne_first_run_starts_ends(
     """
     compute for first run
     """
-    mapping = {
-        "int64": janitor_rs.compare_start_end_ne_1st_int64,
-        "int32": janitor_rs.compare_start_end_ne_1st_int32,
-        "int16": janitor_rs.compare_start_end_ne_1st_int16,
-        "int8": janitor_rs.compare_start_end_ne_1st_int8,
-        "uint64": janitor_rs.compare_start_end_ne_1st_uint64,
-        "uint32": janitor_rs.compare_start_end_ne_1st_uint32,
-        "uint16": janitor_rs.compare_start_end_ne_1st_uint16,
-        "uint8": janitor_rs.compare_start_end_ne_1st_uint8,
-        "float64": janitor_rs.compare_start_end_ne_1st_f64,
-        "float32": janitor_rs.compare_start_end_ne_1st_f32,
-    }
-    dtype_name = left.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compare_start_end_ne_1st", left.dtype.name)
     return func(
         left,
         right,
@@ -300,23 +189,7 @@ def _compare_ne_starts_ends(
     """
     compute for starts and ends
     """
-    mapping = {
-        "int64": janitor_rs.compare_start_end_ne_int64,
-        "int32": janitor_rs.compare_start_end_ne_int32,
-        "int16": janitor_rs.compare_start_end_ne_int16,
-        "int8": janitor_rs.compare_start_end_ne_int8,
-        "uint64": janitor_rs.compare_start_end_ne_uint64,
-        "uint32": janitor_rs.compare_start_end_ne_uint32,
-        "uint16": janitor_rs.compare_start_end_ne_uint16,
-        "uint8": janitor_rs.compare_start_end_ne_uint8,
-        "float64": janitor_rs.compare_start_end_ne_f64,
-        "float32": janitor_rs.compare_start_end_ne_f32,
-    }
-    dtype_name = left.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compare_start_end_ne", left.dtype.name)
     return func(
         left,
         right,
@@ -339,23 +212,7 @@ def _compare_first_run_starts_only(
     """
     compute for first run
     """
-    mapping = {
-        "int64": janitor_rs.compare_first_start_int64,
-        "int32": janitor_rs.compare_first_start_int32,
-        "int16": janitor_rs.compare_first_start_int16,
-        "int8": janitor_rs.compare_first_start_int8,
-        "uint64": janitor_rs.compare_first_start_uint64,
-        "uint32": janitor_rs.compare_first_start_uint32,
-        "uint16": janitor_rs.compare_first_start_uint16,
-        "uint8": janitor_rs.compare_first_start_uint8,
-        "float64": janitor_rs.compare_first_start_f64,
-        "float32": janitor_rs.compare_first_start_f32,
-    }
-    dtype_name = left.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compare_first_start", left.dtype.name)
     return func(left, right, starts, op)
 
 
@@ -370,23 +227,7 @@ def _compare_starts_only(
     """
     compute for starts
     """
-    mapping = {
-        "int64": janitor_rs.compare_start_int64,
-        "int32": janitor_rs.compare_start_int32,
-        "int16": janitor_rs.compare_start_int16,
-        "int8": janitor_rs.compare_start_int8,
-        "uint64": janitor_rs.compare_start_uint64,
-        "uint32": janitor_rs.compare_start_uint32,
-        "uint16": janitor_rs.compare_start_uint16,
-        "uint8": janitor_rs.compare_start_uint8,
-        "float64": janitor_rs.compare_start_f64,
-        "float32": janitor_rs.compare_start_f32,
-    }
-    dtype_name = left.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compare_start", left.dtype.name)
     return func(left, right, starts, counts_array, matches, op)
 
 
@@ -396,23 +237,7 @@ def _compare_first_run_ends_only(
     """
     compute for first run
     """
-    mapping = {
-        "int64": janitor_rs.compare_first_end_int64,
-        "int32": janitor_rs.compare_first_end_int32,
-        "int16": janitor_rs.compare_first_end_int16,
-        "int8": janitor_rs.compare_first_end_int8,
-        "uint64": janitor_rs.compare_first_end_uint64,
-        "uint32": janitor_rs.compare_first_end_uint32,
-        "uint16": janitor_rs.compare_first_end_uint16,
-        "uint8": janitor_rs.compare_first_end_uint8,
-        "float64": janitor_rs.compare_first_end_f64,
-        "float32": janitor_rs.compare_first_end_f32,
-    }
-    dtype_name = left.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compare_first_end", left.dtype.name)
     return func(left, right, ends, op)
 
 
@@ -427,23 +252,7 @@ def _compare_ends_only(
     """
     compute for ends
     """
-    mapping = {
-        "int64": janitor_rs.compare_end_int64,
-        "int32": janitor_rs.compare_end_int32,
-        "int16": janitor_rs.compare_end_int16,
-        "int8": janitor_rs.compare_end_int8,
-        "uint64": janitor_rs.compare_end_uint64,
-        "uint32": janitor_rs.compare_end_uint32,
-        "uint16": janitor_rs.compare_end_uint16,
-        "uint8": janitor_rs.compare_end_uint8,
-        "float64": janitor_rs.compare_end_f64,
-        "float32": janitor_rs.compare_end_f32,
-    }
-    dtype_name = left.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compare_end", left.dtype.name)
     return func(left, right, ends, counts_array, matches, op)
 
 
@@ -457,23 +266,7 @@ def _compare_first_run_starts_ends(
     """
     compute for first run
     """
-    mapping = {
-        "int64": janitor_rs.compare_first_start_end_int64,
-        "int32": janitor_rs.compare_first_start_end_int32,
-        "int16": janitor_rs.compare_first_start_end_int16,
-        "int8": janitor_rs.compare_first_start_end_int8,
-        "uint64": janitor_rs.compare_first_start_end_uint64,
-        "uint32": janitor_rs.compare_first_start_end_uint32,
-        "uint16": janitor_rs.compare_first_start_end_uint16,
-        "uint8": janitor_rs.compare_first_start_end_uint8,
-        "float64": janitor_rs.compare_first_start_end_f64,
-        "float32": janitor_rs.compare_first_start_end_f32,
-    }
-    dtype_name = left.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compare_first_start_end", left.dtype.name)
     return func(left, right, starts, ends, op)
 
 
@@ -488,23 +281,7 @@ def _compare_starts_ends(
     """
     compute for starts and ends
     """
-    mapping = {
-        "int64": janitor_rs.compare_start_end_int64,
-        "int32": janitor_rs.compare_start_end_int32,
-        "int16": janitor_rs.compare_start_end_int16,
-        "int8": janitor_rs.compare_start_end_int8,
-        "uint64": janitor_rs.compare_start_end_uint64,
-        "uint32": janitor_rs.compare_start_end_uint32,
-        "uint16": janitor_rs.compare_start_end_uint16,
-        "uint8": janitor_rs.compare_start_end_uint8,
-        "float64": janitor_rs.compare_start_end_f64,
-        "float32": janitor_rs.compare_start_end_f32,
-    }
-    dtype_name = left.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compare_start_end", left.dtype.name)
     return func(left, right, starts, ends, matches, op)
 
 
@@ -519,23 +296,7 @@ def _compare_positions(
     """
     compute for first run
     """
-    mapping = {
-        "int64": janitor_rs.compare_posns_int64,
-        "int32": janitor_rs.compare_posns_int32,
-        "int16": janitor_rs.compare_posns_int16,
-        "int8": janitor_rs.compare_posns_int8,
-        "uint64": janitor_rs.compare_posns_uint64,
-        "uint32": janitor_rs.compare_posns_uint32,
-        "uint16": janitor_rs.compare_posns_uint16,
-        "uint8": janitor_rs.compare_posns_uint8,
-        "float64": janitor_rs.compare_posns_f64,
-        "float32": janitor_rs.compare_posns_f32,
-    }
-    dtype_name = left.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compare_posns", left.dtype.name)
     return func(
         left=left,
         right=right,
@@ -560,23 +321,7 @@ def _compare_positions_ne(
     """
     compute for first run
     """
-    mapping = {
-        "int64": janitor_rs.compare_posns_ne_int64,
-        "int32": janitor_rs.compare_posns_ne_int32,
-        "int16": janitor_rs.compare_posns_ne_int16,
-        "int8": janitor_rs.compare_posns_ne_int8,
-        "uint64": janitor_rs.compare_posns_ne_uint64,
-        "uint32": janitor_rs.compare_posns_ne_uint32,
-        "uint16": janitor_rs.compare_posns_ne_uint16,
-        "uint8": janitor_rs.compare_posns_ne_uint8,
-        "float64": janitor_rs.compare_posns_ne_f64,
-        "float32": janitor_rs.compare_posns_ne_f32,
-    }
-    dtype_name = left.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compare_posns_ne", left.dtype.name)
     return func(
         left=left,
         right=right,

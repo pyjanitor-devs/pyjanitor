@@ -1,6 +1,8 @@
 import janitor_rs
 import numpy as np
 
+from ._dtype_dispatch import _rs_func
+
 
 def _sum_starts(
     arr: np.ndarray,
@@ -10,23 +12,7 @@ def _sum_starts(
     """
     Compute sum
     """
-    mapping = {
-        "int64": janitor_rs.compute_sum_start_int64,
-        "int32": janitor_rs.compute_sum_start_int32,
-        "int16": janitor_rs.compute_sum_start_int16,
-        "int8": janitor_rs.compute_sum_start_int8,
-        "uint64": janitor_rs.compute_sum_start_uint64,
-        "uint32": janitor_rs.compute_sum_start_uint32,
-        "uint16": janitor_rs.compute_sum_start_uint16,
-        "uint8": janitor_rs.compute_sum_start_uint8,
-        "float64": janitor_rs.compute_sum_start_f64,
-        "float32": janitor_rs.compute_sum_start_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_sum_start", arr.dtype.name)
     return func(arr=arr, starts=starts, booleans=booleans)
 
 
@@ -38,23 +24,7 @@ def _sum_ends(
     """
     Compute sum
     """
-    mapping = {
-        "int64": janitor_rs.compute_sum_end_int64,
-        "int32": janitor_rs.compute_sum_end_int32,
-        "int16": janitor_rs.compute_sum_end_int16,
-        "int8": janitor_rs.compute_sum_end_int8,
-        "uint64": janitor_rs.compute_sum_end_uint64,
-        "uint32": janitor_rs.compute_sum_end_uint32,
-        "uint16": janitor_rs.compute_sum_end_uint16,
-        "uint8": janitor_rs.compute_sum_end_uint8,
-        "float64": janitor_rs.compute_sum_end_f64,
-        "float32": janitor_rs.compute_sum_end_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_sum_end", arr.dtype.name)
     return func(arr=arr, ends=ends, booleans=booleans)
 
 
@@ -164,23 +134,7 @@ def _min_starts(
     """
     Compute min
     """
-    mapping = {
-        "int64": janitor_rs.compute_min_start_int64,
-        "int32": janitor_rs.compute_min_start_int32,
-        "int16": janitor_rs.compute_min_start_int16,
-        "int8": janitor_rs.compute_min_start_int8,
-        "uint64": janitor_rs.compute_min_start_uint64,
-        "uint32": janitor_rs.compute_min_start_uint32,
-        "uint16": janitor_rs.compute_min_start_uint16,
-        "uint8": janitor_rs.compute_min_start_uint8,
-        "float64": janitor_rs.compute_min_start_f64,
-        "float32": janitor_rs.compute_min_start_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_min_start", arr.dtype.name)
     return func(arr=arr, starts=starts, booleans=booleans)
 
 
@@ -192,23 +146,7 @@ def _min_ends(
     """
     Compute min
     """
-    mapping = {
-        "int64": janitor_rs.compute_min_end_int64,
-        "int32": janitor_rs.compute_min_end_int32,
-        "int16": janitor_rs.compute_min_end_int16,
-        "int8": janitor_rs.compute_min_end_int8,
-        "uint64": janitor_rs.compute_min_end_uint64,
-        "uint32": janitor_rs.compute_min_end_uint32,
-        "uint16": janitor_rs.compute_min_end_uint16,
-        "uint8": janitor_rs.compute_min_end_uint8,
-        "float64": janitor_rs.compute_min_end_f64,
-        "float32": janitor_rs.compute_min_end_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_min_end", arr.dtype.name)
     return func(arr=arr, ends=ends, booleans=booleans)
 
 
@@ -220,23 +158,7 @@ def _max_starts(
     """
     Compute max
     """
-    mapping = {
-        "int64": janitor_rs.compute_max_start_int64,
-        "int32": janitor_rs.compute_max_start_int32,
-        "int16": janitor_rs.compute_max_start_int16,
-        "int8": janitor_rs.compute_max_start_int8,
-        "uint64": janitor_rs.compute_max_start_uint64,
-        "uint32": janitor_rs.compute_max_start_uint32,
-        "uint16": janitor_rs.compute_max_start_uint16,
-        "uint8": janitor_rs.compute_max_start_uint8,
-        "float64": janitor_rs.compute_max_start_f64,
-        "float32": janitor_rs.compute_max_start_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_max_start", arr.dtype.name)
     return func(arr=arr, starts=starts, booleans=booleans)
 
 
@@ -248,23 +170,7 @@ def _max_ends(
     """
     Compute max
     """
-    mapping = {
-        "int64": janitor_rs.compute_max_end_int64,
-        "int32": janitor_rs.compute_max_end_int32,
-        "int16": janitor_rs.compute_max_end_int16,
-        "int8": janitor_rs.compute_max_end_int8,
-        "uint64": janitor_rs.compute_max_end_uint64,
-        "uint32": janitor_rs.compute_max_end_uint32,
-        "uint16": janitor_rs.compute_max_end_uint16,
-        "uint8": janitor_rs.compute_max_end_uint8,
-        "float64": janitor_rs.compute_max_end_f64,
-        "float32": janitor_rs.compute_max_end_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_max_end", arr.dtype.name)
     return func(arr=arr, ends=ends, booleans=booleans)
 
 
@@ -276,23 +182,7 @@ def _prod_starts(
     """
     Compute prod
     """
-    mapping = {
-        "int64": janitor_rs.compute_prod_start_int64,
-        "int32": janitor_rs.compute_prod_start_int32,
-        "int16": janitor_rs.compute_prod_start_int16,
-        "int8": janitor_rs.compute_prod_start_int8,
-        "uint64": janitor_rs.compute_prod_start_uint64,
-        "uint32": janitor_rs.compute_prod_start_uint32,
-        "uint16": janitor_rs.compute_prod_start_uint16,
-        "uint8": janitor_rs.compute_prod_start_uint8,
-        "float64": janitor_rs.compute_prod_start_f64,
-        "float32": janitor_rs.compute_prod_start_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_prod_start", arr.dtype.name)
     return func(arr=arr, starts=starts, booleans=booleans)
 
 
@@ -304,23 +194,7 @@ def _prod_ends(
     """
     Compute prod
     """
-    mapping = {
-        "int64": janitor_rs.compute_prod_end_int64,
-        "int32": janitor_rs.compute_prod_end_int32,
-        "int16": janitor_rs.compute_prod_end_int16,
-        "int8": janitor_rs.compute_prod_end_int8,
-        "uint64": janitor_rs.compute_prod_end_uint64,
-        "uint32": janitor_rs.compute_prod_end_uint32,
-        "uint16": janitor_rs.compute_prod_end_uint16,
-        "uint8": janitor_rs.compute_prod_end_uint8,
-        "float64": janitor_rs.compute_prod_end_f64,
-        "float32": janitor_rs.compute_prod_end_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_prod_end", arr.dtype.name)
     return func(arr=arr, ends=ends, booleans=booleans)
 
 
@@ -334,23 +208,7 @@ def _sum_starts_matches(
     """
     Compute sum
     """
-    mapping = {
-        "int64": janitor_rs.compute_sum_start_match_int64,
-        "int32": janitor_rs.compute_sum_start_match_int32,
-        "int16": janitor_rs.compute_sum_start_match_int16,
-        "int8": janitor_rs.compute_sum_start_match_int8,
-        "uint64": janitor_rs.compute_sum_start_match_uint64,
-        "uint32": janitor_rs.compute_sum_start_match_uint32,
-        "uint16": janitor_rs.compute_sum_start_match_uint16,
-        "uint8": janitor_rs.compute_sum_start_match_uint8,
-        "float64": janitor_rs.compute_sum_start_match_f64,
-        "float32": janitor_rs.compute_sum_start_match_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_sum_start_match", arr.dtype.name)
     return func(
         arr=arr,
         starts=starts,
@@ -370,23 +228,7 @@ def _sum_ends_matches(
     """
     Compute sum
     """
-    mapping = {
-        "int64": janitor_rs.compute_sum_end_match_int64,
-        "int32": janitor_rs.compute_sum_end_match_int32,
-        "int16": janitor_rs.compute_sum_end_match_int16,
-        "int8": janitor_rs.compute_sum_end_match_int8,
-        "uint64": janitor_rs.compute_sum_end_match_uint64,
-        "uint32": janitor_rs.compute_sum_end_match_uint32,
-        "uint16": janitor_rs.compute_sum_end_match_uint16,
-        "uint8": janitor_rs.compute_sum_end_match_uint8,
-        "float64": janitor_rs.compute_sum_end_match_f64,
-        "float32": janitor_rs.compute_sum_end_match_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_sum_end_match", arr.dtype.name)
     return func(arr=arr, ends=ends, counts=counts, matches=matches, booleans=booleans)
 
 
@@ -400,23 +242,7 @@ def _max_starts_matches(
     """
     Compute max
     """
-    mapping = {
-        "int64": janitor_rs.compute_max_start_match_int64,
-        "int32": janitor_rs.compute_max_start_match_int32,
-        "int16": janitor_rs.compute_max_start_match_int16,
-        "int8": janitor_rs.compute_max_start_match_int8,
-        "uint64": janitor_rs.compute_max_start_match_uint64,
-        "uint32": janitor_rs.compute_max_start_match_uint32,
-        "uint16": janitor_rs.compute_max_start_match_uint16,
-        "uint8": janitor_rs.compute_max_start_match_uint8,
-        "float64": janitor_rs.compute_max_start_match_f64,
-        "float32": janitor_rs.compute_max_start_match_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_max_start_match", arr.dtype.name)
     return func(
         arr=arr,
         starts=starts,
@@ -436,23 +262,7 @@ def _max_ends_matches(
     """
     Compute max
     """
-    mapping = {
-        "int64": janitor_rs.compute_max_end_match_int64,
-        "int32": janitor_rs.compute_max_end_match_int32,
-        "int16": janitor_rs.compute_max_end_match_int16,
-        "int8": janitor_rs.compute_max_end_match_int8,
-        "uint64": janitor_rs.compute_max_end_match_uint64,
-        "uint32": janitor_rs.compute_max_end_match_uint32,
-        "uint16": janitor_rs.compute_max_end_match_uint16,
-        "uint8": janitor_rs.compute_max_end_match_uint8,
-        "float64": janitor_rs.compute_max_end_match_f64,
-        "float32": janitor_rs.compute_max_end_match_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_max_end_match", arr.dtype.name)
     return func(arr=arr, ends=ends, counts=counts, matches=matches, booleans=booleans)
 
 
@@ -466,23 +276,7 @@ def _min_starts_matches(
     """
     Compute min
     """
-    mapping = {
-        "int64": janitor_rs.compute_min_start_match_int64,
-        "int32": janitor_rs.compute_min_start_match_int32,
-        "int16": janitor_rs.compute_min_start_match_int16,
-        "int8": janitor_rs.compute_min_start_match_int8,
-        "uint64": janitor_rs.compute_min_start_match_uint64,
-        "uint32": janitor_rs.compute_min_start_match_uint32,
-        "uint16": janitor_rs.compute_min_start_match_uint16,
-        "uint8": janitor_rs.compute_min_start_match_uint8,
-        "float64": janitor_rs.compute_min_start_match_f64,
-        "float32": janitor_rs.compute_min_start_match_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_min_start_match", arr.dtype.name)
     return func(
         arr=arr,
         starts=starts,
@@ -502,23 +296,7 @@ def _min_ends_matches(
     """
     Compute min
     """
-    mapping = {
-        "int64": janitor_rs.compute_min_end_match_int64,
-        "int32": janitor_rs.compute_min_end_match_int32,
-        "int16": janitor_rs.compute_min_end_match_int16,
-        "int8": janitor_rs.compute_min_end_match_int8,
-        "uint64": janitor_rs.compute_min_end_match_uint64,
-        "uint32": janitor_rs.compute_min_end_match_uint32,
-        "uint16": janitor_rs.compute_min_end_match_uint16,
-        "uint8": janitor_rs.compute_min_end_match_uint8,
-        "float64": janitor_rs.compute_min_end_match_f64,
-        "float32": janitor_rs.compute_min_end_match_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_min_end_match", arr.dtype.name)
     return func(arr=arr, ends=ends, counts=counts, matches=matches, booleans=booleans)
 
 
@@ -532,23 +310,7 @@ def _sum_positions(
     """
     Compute sum
     """
-    mapping = {
-        "int64": janitor_rs.compute_sum_positions_int64,
-        "int32": janitor_rs.compute_sum_positions_int32,
-        "int16": janitor_rs.compute_sum_positions_int16,
-        "int8": janitor_rs.compute_sum_positions_int8,
-        "uint64": janitor_rs.compute_sum_positions_uint64,
-        "uint32": janitor_rs.compute_sum_positions_uint32,
-        "uint16": janitor_rs.compute_sum_positions_uint16,
-        "uint8": janitor_rs.compute_sum_positions_uint8,
-        "float64": janitor_rs.compute_sum_positions_f64,
-        "float32": janitor_rs.compute_sum_positions_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_sum_positions", arr.dtype.name)
     return func(
         arr=arr,
         starts=starts,
@@ -568,23 +330,7 @@ def _prod_starts_matches(
     """
     Compute prod
     """
-    mapping = {
-        "int64": janitor_rs.compute_prod_start_match_int64,
-        "int32": janitor_rs.compute_prod_start_match_int32,
-        "int16": janitor_rs.compute_prod_start_match_int16,
-        "int8": janitor_rs.compute_prod_start_match_int8,
-        "uint64": janitor_rs.compute_prod_start_match_uint64,
-        "uint32": janitor_rs.compute_prod_start_match_uint32,
-        "uint16": janitor_rs.compute_prod_start_match_uint16,
-        "uint8": janitor_rs.compute_prod_start_match_uint8,
-        "float64": janitor_rs.compute_prod_start_match_f64,
-        "float32": janitor_rs.compute_prod_start_match_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_prod_start_match", arr.dtype.name)
     return func(
         arr=arr,
         starts=starts,
@@ -604,23 +350,7 @@ def _prod_ends_matches(
     """
     Compute prod
     """
-    mapping = {
-        "int64": janitor_rs.compute_prod_end_match_int64,
-        "int32": janitor_rs.compute_prod_end_match_int32,
-        "int16": janitor_rs.compute_prod_end_match_int16,
-        "int8": janitor_rs.compute_prod_end_match_int8,
-        "uint64": janitor_rs.compute_prod_end_match_uint64,
-        "uint32": janitor_rs.compute_prod_end_match_uint32,
-        "uint16": janitor_rs.compute_prod_end_match_uint16,
-        "uint8": janitor_rs.compute_prod_end_match_uint8,
-        "float64": janitor_rs.compute_prod_end_match_f64,
-        "float32": janitor_rs.compute_prod_end_match_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_prod_end_match", arr.dtype.name)
     return func(arr=arr, ends=ends, counts=counts, matches=matches, booleans=booleans)
 
 
@@ -634,23 +364,7 @@ def _prod_positions(
     """
     Compute prod
     """
-    mapping = {
-        "int64": janitor_rs.compute_prod_positions_int64,
-        "int32": janitor_rs.compute_prod_positions_int32,
-        "int16": janitor_rs.compute_prod_positions_int16,
-        "int8": janitor_rs.compute_prod_positions_int8,
-        "uint64": janitor_rs.compute_prod_positions_uint64,
-        "uint32": janitor_rs.compute_prod_positions_uint32,
-        "uint16": janitor_rs.compute_prod_positions_uint16,
-        "uint8": janitor_rs.compute_prod_positions_uint8,
-        "float64": janitor_rs.compute_prod_positions_f64,
-        "float32": janitor_rs.compute_prod_positions_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_prod_positions", arr.dtype.name)
     return func(
         arr=arr,
         starts=starts,
@@ -670,23 +384,7 @@ def _min_positions(
     """
     Compute min
     """
-    mapping = {
-        "int64": janitor_rs.compute_min_positions_int64,
-        "int32": janitor_rs.compute_min_positions_int32,
-        "int16": janitor_rs.compute_min_positions_int16,
-        "int8": janitor_rs.compute_min_positions_int8,
-        "uint64": janitor_rs.compute_min_positions_uint64,
-        "uint32": janitor_rs.compute_min_positions_uint32,
-        "uint16": janitor_rs.compute_min_positions_uint16,
-        "uint8": janitor_rs.compute_min_positions_uint8,
-        "float64": janitor_rs.compute_min_positions_f64,
-        "float32": janitor_rs.compute_min_positions_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_min_positions", arr.dtype.name)
     return func(
         arr=arr,
         starts=starts,
@@ -706,23 +404,7 @@ def _max_positions(
     """
     Compute max
     """
-    mapping = {
-        "int64": janitor_rs.compute_max_positions_int64,
-        "int32": janitor_rs.compute_max_positions_int32,
-        "int16": janitor_rs.compute_max_positions_int16,
-        "int8": janitor_rs.compute_max_positions_int8,
-        "uint64": janitor_rs.compute_max_positions_uint64,
-        "uint32": janitor_rs.compute_max_positions_uint32,
-        "uint16": janitor_rs.compute_max_positions_uint16,
-        "uint8": janitor_rs.compute_max_positions_uint8,
-        "float64": janitor_rs.compute_max_positions_f64,
-        "float32": janitor_rs.compute_max_positions_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_max_positions", arr.dtype.name)
     return func(
         arr=arr,
         starts=starts,
@@ -741,23 +423,7 @@ def _max_starts_ends(
     """
     Compute max
     """
-    mapping = {
-        "int64": janitor_rs.compute_max_start_end_int64,
-        "int32": janitor_rs.compute_max_start_end_int32,
-        "int16": janitor_rs.compute_max_start_end_int16,
-        "int8": janitor_rs.compute_max_start_end_int8,
-        "uint64": janitor_rs.compute_max_start_end_uint64,
-        "uint32": janitor_rs.compute_max_start_end_uint32,
-        "uint16": janitor_rs.compute_max_start_end_uint16,
-        "uint8": janitor_rs.compute_max_start_end_uint8,
-        "float64": janitor_rs.compute_max_start_end_f64,
-        "float32": janitor_rs.compute_max_start_end_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_max_start_end", arr.dtype.name)
     return func(arr=arr, starts=starts, ends=ends, booleans=booleans)
 
 
@@ -770,23 +436,7 @@ def _min_starts_ends(
     """
     Compute min
     """
-    mapping = {
-        "int64": janitor_rs.compute_min_start_end_int64,
-        "int32": janitor_rs.compute_min_start_end_int32,
-        "int16": janitor_rs.compute_min_start_end_int16,
-        "int8": janitor_rs.compute_min_start_end_int8,
-        "uint64": janitor_rs.compute_min_start_end_uint64,
-        "uint32": janitor_rs.compute_min_start_end_uint32,
-        "uint16": janitor_rs.compute_min_start_end_uint16,
-        "uint8": janitor_rs.compute_min_start_end_uint8,
-        "float64": janitor_rs.compute_min_start_end_f64,
-        "float32": janitor_rs.compute_min_start_end_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_min_start_end", arr.dtype.name)
     return func(arr=arr, starts=starts, ends=ends, booleans=booleans)
 
 
@@ -799,23 +449,7 @@ def _sum_starts_ends(
     """
     Compute sum
     """
-    mapping = {
-        "int64": janitor_rs.compute_sum_start_end_int64,
-        "int32": janitor_rs.compute_sum_start_end_int32,
-        "int16": janitor_rs.compute_sum_start_end_int16,
-        "int8": janitor_rs.compute_sum_start_end_int8,
-        "uint64": janitor_rs.compute_sum_start_end_uint64,
-        "uint32": janitor_rs.compute_sum_start_end_uint32,
-        "uint16": janitor_rs.compute_sum_start_end_uint16,
-        "uint8": janitor_rs.compute_sum_start_end_uint8,
-        "float64": janitor_rs.compute_sum_start_end_f64,
-        "float32": janitor_rs.compute_sum_start_end_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_sum_start_end", arr.dtype.name)
     return func(arr=arr, starts=starts, ends=ends, booleans=booleans)
 
 
@@ -828,23 +462,7 @@ def _prod_starts_ends(
     """
     Compute prod
     """
-    mapping = {
-        "int64": janitor_rs.compute_prod_start_end_int64,
-        "int32": janitor_rs.compute_prod_start_end_int32,
-        "int16": janitor_rs.compute_prod_start_end_int16,
-        "int8": janitor_rs.compute_prod_start_end_int8,
-        "uint64": janitor_rs.compute_prod_start_end_uint64,
-        "uint32": janitor_rs.compute_prod_start_end_uint32,
-        "uint16": janitor_rs.compute_prod_start_end_uint16,
-        "uint8": janitor_rs.compute_prod_start_end_uint8,
-        "float64": janitor_rs.compute_prod_start_end_f64,
-        "float32": janitor_rs.compute_prod_start_end_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_prod_start_end", arr.dtype.name)
     return func(arr=arr, starts=starts, ends=ends, booleans=booleans)
 
 
@@ -859,23 +477,7 @@ def _prod_starts_ends_matches(
     """
     Compute prod
     """
-    mapping = {
-        "int64": janitor_rs.compute_prod_start_end_match_int64,
-        "int32": janitor_rs.compute_prod_start_end_match_int32,
-        "int16": janitor_rs.compute_prod_start_end_match_int16,
-        "int8": janitor_rs.compute_prod_start_end_match_int8,
-        "uint64": janitor_rs.compute_prod_start_end_match_uint64,
-        "uint32": janitor_rs.compute_prod_start_end_match_uint32,
-        "uint16": janitor_rs.compute_prod_start_end_match_uint16,
-        "uint8": janitor_rs.compute_prod_start_end_match_uint8,
-        "float64": janitor_rs.compute_prod_start_end_match_f64,
-        "float32": janitor_rs.compute_prod_start_end_match_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_prod_start_end_match", arr.dtype.name)
     return func(
         arr=arr,
         starts=starts,
@@ -884,35 +486,6 @@ def _prod_starts_ends_matches(
         matches=matches,
         booleans=booleans,
     )
-
-
-def _sum_starts_ends(
-    arr: np.ndarray,
-    starts: np.ndarray,
-    ends: np.ndarray,
-    booleans: np.ndarray,
-) -> tuple:
-    """
-    Compute sum
-    """
-    mapping = {
-        "int64": janitor_rs.compute_sum_start_end_int64,
-        "int32": janitor_rs.compute_sum_start_end_int32,
-        "int16": janitor_rs.compute_sum_start_end_int16,
-        "int8": janitor_rs.compute_sum_start_end_int8,
-        "uint64": janitor_rs.compute_sum_start_end_uint64,
-        "uint32": janitor_rs.compute_sum_start_end_uint32,
-        "uint16": janitor_rs.compute_sum_start_end_uint16,
-        "uint8": janitor_rs.compute_sum_start_end_uint8,
-        "float64": janitor_rs.compute_sum_start_end_f64,
-        "float32": janitor_rs.compute_sum_start_end_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
-    return func(arr=arr, starts=starts, ends=ends, booleans=booleans)
 
 
 def _sum_starts_ends_matches(
@@ -926,23 +499,7 @@ def _sum_starts_ends_matches(
     """
     Compute sum
     """
-    mapping = {
-        "int64": janitor_rs.compute_sum_start_end_match_int64,
-        "int32": janitor_rs.compute_sum_start_end_match_int32,
-        "int16": janitor_rs.compute_sum_start_end_match_int16,
-        "int8": janitor_rs.compute_sum_start_end_match_int8,
-        "uint64": janitor_rs.compute_sum_start_end_match_uint64,
-        "uint32": janitor_rs.compute_sum_start_end_match_uint32,
-        "uint16": janitor_rs.compute_sum_start_end_match_uint16,
-        "uint8": janitor_rs.compute_sum_start_end_match_uint8,
-        "float64": janitor_rs.compute_sum_start_end_match_f64,
-        "float32": janitor_rs.compute_sum_start_end_match_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_sum_start_end_match", arr.dtype.name)
     return func(
         arr=arr,
         starts=starts,
@@ -964,23 +521,7 @@ def _min_starts_ends_matches(
     """
     Compute min
     """
-    mapping = {
-        "int64": janitor_rs.compute_min_start_end_match_int64,
-        "int32": janitor_rs.compute_min_start_end_match_int32,
-        "int16": janitor_rs.compute_min_start_end_match_int16,
-        "int8": janitor_rs.compute_min_start_end_match_int8,
-        "uint64": janitor_rs.compute_min_start_end_match_uint64,
-        "uint32": janitor_rs.compute_min_start_end_match_uint32,
-        "uint16": janitor_rs.compute_min_start_end_match_uint16,
-        "uint8": janitor_rs.compute_min_start_end_match_uint8,
-        "float64": janitor_rs.compute_min_start_end_match_f64,
-        "float32": janitor_rs.compute_min_start_end_match_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_min_start_end_match", arr.dtype.name)
     return func(
         arr=arr,
         starts=starts,
@@ -1002,23 +543,7 @@ def _max_starts_ends_matches(
     """
     Compute max
     """
-    mapping = {
-        "int64": janitor_rs.compute_max_start_end_match_int64,
-        "int32": janitor_rs.compute_max_start_end_match_int32,
-        "int16": janitor_rs.compute_max_start_end_match_int16,
-        "int8": janitor_rs.compute_max_start_end_match_int8,
-        "uint64": janitor_rs.compute_max_start_end_match_uint64,
-        "uint32": janitor_rs.compute_max_start_end_match_uint32,
-        "uint16": janitor_rs.compute_max_start_end_match_uint16,
-        "uint8": janitor_rs.compute_max_start_end_match_uint8,
-        "float64": janitor_rs.compute_max_start_end_match_f64,
-        "float32": janitor_rs.compute_max_start_end_match_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_max_start_end_match", arr.dtype.name)
     return func(
         arr=arr,
         starts=starts,
@@ -1039,23 +564,7 @@ def _prod_rev_starts(
     """
     Compute prod
     """
-    mapping = {
-        "int64": janitor_rs.compute_prod_rev_start_int64,
-        "int32": janitor_rs.compute_prod_rev_start_int32,
-        "int16": janitor_rs.compute_prod_rev_start_int16,
-        "int8": janitor_rs.compute_prod_rev_start_int8,
-        "uint64": janitor_rs.compute_prod_rev_start_uint64,
-        "uint32": janitor_rs.compute_prod_rev_start_uint32,
-        "uint16": janitor_rs.compute_prod_rev_start_uint16,
-        "uint8": janitor_rs.compute_prod_rev_start_uint8,
-        "float64": janitor_rs.compute_prod_rev_start_f64,
-        "float32": janitor_rs.compute_prod_rev_start_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_prod_rev_start", arr.dtype.name)
     return func(arr=arr, starts=starts, index=index, booleans=booleans, length=length)
 
 
@@ -1069,23 +578,7 @@ def _prod_rev_ends(
     """
     Compute prod
     """
-    mapping = {
-        "int64": janitor_rs.compute_prod_rev_end_int64,
-        "int32": janitor_rs.compute_prod_rev_end_int32,
-        "int16": janitor_rs.compute_prod_rev_end_int16,
-        "int8": janitor_rs.compute_prod_rev_end_int8,
-        "uint64": janitor_rs.compute_prod_rev_end_uint64,
-        "uint32": janitor_rs.compute_prod_rev_end_uint32,
-        "uint16": janitor_rs.compute_prod_rev_end_uint16,
-        "uint8": janitor_rs.compute_prod_rev_end_uint8,
-        "float64": janitor_rs.compute_prod_rev_end_f64,
-        "float32": janitor_rs.compute_prod_rev_end_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_prod_rev_end", arr.dtype.name)
     return func(arr=arr, ends=ends, index=index, booleans=booleans, length=length)
 
 
@@ -1101,23 +594,7 @@ def _prod_rev_starts_matches(
     """
     Compute prod
     """
-    mapping = {
-        "int64": janitor_rs.compute_prod_rev_start_match_int64,
-        "int32": janitor_rs.compute_prod_rev_start_match_int32,
-        "int16": janitor_rs.compute_prod_rev_start_match_int16,
-        "int8": janitor_rs.compute_prod_rev_start_match_int8,
-        "uint64": janitor_rs.compute_prod_rev_start_match_uint64,
-        "uint32": janitor_rs.compute_prod_rev_start_match_uint32,
-        "uint16": janitor_rs.compute_prod_rev_start_match_uint16,
-        "uint8": janitor_rs.compute_prod_rev_start_match_uint8,
-        "float64": janitor_rs.compute_prod_rev_start_match_f64,
-        "float32": janitor_rs.compute_prod_rev_start_match_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_prod_rev_start_match", arr.dtype.name)
     return func(
         arr=arr,
         starts=starts,
@@ -1141,23 +618,7 @@ def _prod_rev_ends_matches(
     """
     Compute prod
     """
-    mapping = {
-        "int64": janitor_rs.compute_prod_rev_end_match_int64,
-        "int32": janitor_rs.compute_prod_rev_end_match_int32,
-        "int16": janitor_rs.compute_prod_rev_end_match_int16,
-        "int8": janitor_rs.compute_prod_rev_end_match_int8,
-        "uint64": janitor_rs.compute_prod_rev_end_match_uint64,
-        "uint32": janitor_rs.compute_prod_rev_end_match_uint32,
-        "uint16": janitor_rs.compute_prod_rev_end_match_uint16,
-        "uint8": janitor_rs.compute_prod_rev_end_match_uint8,
-        "float64": janitor_rs.compute_prod_rev_end_match_f64,
-        "float32": janitor_rs.compute_prod_rev_end_match_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_prod_rev_end_match", arr.dtype.name)
     return func(
         arr=arr,
         index=index,
@@ -1181,23 +642,7 @@ def _prod_rev_positions(
     """
     Compute prod
     """
-    mapping = {
-        "int64": janitor_rs.compute_prod_rev_positions_int64,
-        "int32": janitor_rs.compute_prod_rev_positions_int32,
-        "int16": janitor_rs.compute_prod_rev_positions_int16,
-        "int8": janitor_rs.compute_prod_rev_positions_int8,
-        "uint64": janitor_rs.compute_prod_rev_positions_uint64,
-        "uint32": janitor_rs.compute_prod_rev_positions_uint32,
-        "uint16": janitor_rs.compute_prod_rev_positions_uint16,
-        "uint8": janitor_rs.compute_prod_rev_positions_uint8,
-        "float64": janitor_rs.compute_prod_rev_positions_f64,
-        "float32": janitor_rs.compute_prod_rev_positions_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_prod_rev_positions", arr.dtype.name)
     return func(
         arr=arr,
         starts=starts,
@@ -1220,23 +665,7 @@ def _prod_rev_starts_ends(
     """
     Compute prod
     """
-    mapping = {
-        "int64": janitor_rs.compute_prod_rev_start_end_int64,
-        "int32": janitor_rs.compute_prod_rev_start_end_int32,
-        "int16": janitor_rs.compute_prod_rev_start_end_int16,
-        "int8": janitor_rs.compute_prod_rev_start_end_int8,
-        "uint64": janitor_rs.compute_prod_rev_start_end_uint64,
-        "uint32": janitor_rs.compute_prod_rev_start_end_uint32,
-        "uint16": janitor_rs.compute_prod_rev_start_end_uint16,
-        "uint8": janitor_rs.compute_prod_rev_start_end_uint8,
-        "float64": janitor_rs.compute_prod_rev_start_end_f64,
-        "float32": janitor_rs.compute_prod_rev_start_end_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_prod_rev_start_end", arr.dtype.name)
     return func(
         arr=arr,
         starts=starts,
@@ -1260,23 +689,7 @@ def _prod_rev_starts_ends_matches(
     """
     Compute prod
     """
-    mapping = {
-        "int64": janitor_rs.compute_prod_rev_start_end_match_int64,
-        "int32": janitor_rs.compute_prod_rev_start_end_match_int32,
-        "int16": janitor_rs.compute_prod_rev_start_end_match_int16,
-        "int8": janitor_rs.compute_prod_rev_start_end_match_int8,
-        "uint64": janitor_rs.compute_prod_rev_start_end_match_uint64,
-        "uint32": janitor_rs.compute_prod_rev_start_end_match_uint32,
-        "uint16": janitor_rs.compute_prod_rev_start_end_match_uint16,
-        "uint8": janitor_rs.compute_prod_rev_start_end_match_uint8,
-        "float64": janitor_rs.compute_prod_rev_start_end_match_f64,
-        "float32": janitor_rs.compute_prod_rev_start_end_match_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_prod_rev_start_end_match", arr.dtype.name)
     return func(
         arr=arr,
         starts=starts,
@@ -1299,23 +712,7 @@ def _min_rev_starts(
     """
     Compute min
     """
-    mapping = {
-        "int64": janitor_rs.compute_min_rev_start_int64,
-        "int32": janitor_rs.compute_min_rev_start_int32,
-        "int16": janitor_rs.compute_min_rev_start_int16,
-        "int8": janitor_rs.compute_min_rev_start_int8,
-        "uint64": janitor_rs.compute_min_rev_start_uint64,
-        "uint32": janitor_rs.compute_min_rev_start_uint32,
-        "uint16": janitor_rs.compute_min_rev_start_uint16,
-        "uint8": janitor_rs.compute_min_rev_start_uint8,
-        "float64": janitor_rs.compute_min_rev_start_f64,
-        "float32": janitor_rs.compute_min_rev_start_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_min_rev_start", arr.dtype.name)
     return func(arr=arr, starts=starts, index=index, booleans=booleans, length=length)
 
 
@@ -1329,23 +726,7 @@ def _min_rev_ends(
     """
     Compute min
     """
-    mapping = {
-        "int64": janitor_rs.compute_min_rev_end_int64,
-        "int32": janitor_rs.compute_min_rev_end_int32,
-        "int16": janitor_rs.compute_min_rev_end_int16,
-        "int8": janitor_rs.compute_min_rev_end_int8,
-        "uint64": janitor_rs.compute_min_rev_end_uint64,
-        "uint32": janitor_rs.compute_min_rev_end_uint32,
-        "uint16": janitor_rs.compute_min_rev_end_uint16,
-        "uint8": janitor_rs.compute_min_rev_end_uint8,
-        "float64": janitor_rs.compute_min_rev_end_f64,
-        "float32": janitor_rs.compute_min_rev_end_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_min_rev_end", arr.dtype.name)
     return func(arr=arr, ends=ends, index=index, booleans=booleans, length=length)
 
 
@@ -1361,23 +742,7 @@ def _min_rev_starts_matches(
     """
     Compute min
     """
-    mapping = {
-        "int64": janitor_rs.compute_min_rev_start_match_int64,
-        "int32": janitor_rs.compute_min_rev_start_match_int32,
-        "int16": janitor_rs.compute_min_rev_start_match_int16,
-        "int8": janitor_rs.compute_min_rev_start_match_int8,
-        "uint64": janitor_rs.compute_min_rev_start_match_uint64,
-        "uint32": janitor_rs.compute_min_rev_start_match_uint32,
-        "uint16": janitor_rs.compute_min_rev_start_match_uint16,
-        "uint8": janitor_rs.compute_min_rev_start_match_uint8,
-        "float64": janitor_rs.compute_min_rev_start_match_f64,
-        "float32": janitor_rs.compute_min_rev_start_match_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_min_rev_start_match", arr.dtype.name)
     return func(
         arr=arr,
         starts=starts,
@@ -1401,23 +766,7 @@ def _min_rev_ends_matches(
     """
     Compute min
     """
-    mapping = {
-        "int64": janitor_rs.compute_min_rev_end_match_int64,
-        "int32": janitor_rs.compute_min_rev_end_match_int32,
-        "int16": janitor_rs.compute_min_rev_end_match_int16,
-        "int8": janitor_rs.compute_min_rev_end_match_int8,
-        "uint64": janitor_rs.compute_min_rev_end_match_uint64,
-        "uint32": janitor_rs.compute_min_rev_end_match_uint32,
-        "uint16": janitor_rs.compute_min_rev_end_match_uint16,
-        "uint8": janitor_rs.compute_min_rev_end_match_uint8,
-        "float64": janitor_rs.compute_min_rev_end_match_f64,
-        "float32": janitor_rs.compute_min_rev_end_match_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_min_rev_end_match", arr.dtype.name)
     return func(
         arr=arr,
         index=index,
@@ -1441,23 +790,7 @@ def _min_rev_positions(
     """
     Compute min
     """
-    mapping = {
-        "int64": janitor_rs.compute_min_rev_positions_int64,
-        "int32": janitor_rs.compute_min_rev_positions_int32,
-        "int16": janitor_rs.compute_min_rev_positions_int16,
-        "int8": janitor_rs.compute_min_rev_positions_int8,
-        "uint64": janitor_rs.compute_min_rev_positions_uint64,
-        "uint32": janitor_rs.compute_min_rev_positions_uint32,
-        "uint16": janitor_rs.compute_min_rev_positions_uint16,
-        "uint8": janitor_rs.compute_min_rev_positions_uint8,
-        "float64": janitor_rs.compute_min_rev_positions_f64,
-        "float32": janitor_rs.compute_min_rev_positions_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_min_rev_positions", arr.dtype.name)
     return func(
         arr=arr,
         starts=starts,
@@ -1480,23 +813,7 @@ def _min_rev_starts_ends(
     """
     Compute min
     """
-    mapping = {
-        "int64": janitor_rs.compute_min_rev_start_end_int64,
-        "int32": janitor_rs.compute_min_rev_start_end_int32,
-        "int16": janitor_rs.compute_min_rev_start_end_int16,
-        "int8": janitor_rs.compute_min_rev_start_end_int8,
-        "uint64": janitor_rs.compute_min_rev_start_end_uint64,
-        "uint32": janitor_rs.compute_min_rev_start_end_uint32,
-        "uint16": janitor_rs.compute_min_rev_start_end_uint16,
-        "uint8": janitor_rs.compute_min_rev_start_end_uint8,
-        "float64": janitor_rs.compute_min_rev_start_end_f64,
-        "float32": janitor_rs.compute_min_rev_start_end_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_min_rev_start_end", arr.dtype.name)
     return func(
         arr=arr,
         starts=starts,
@@ -1520,23 +837,7 @@ def _min_rev_starts_ends_matches(
     """
     Compute min
     """
-    mapping = {
-        "int64": janitor_rs.compute_min_rev_start_end_match_int64,
-        "int32": janitor_rs.compute_min_rev_start_end_match_int32,
-        "int16": janitor_rs.compute_min_rev_start_end_match_int16,
-        "int8": janitor_rs.compute_min_rev_start_end_match_int8,
-        "uint64": janitor_rs.compute_min_rev_start_end_match_uint64,
-        "uint32": janitor_rs.compute_min_rev_start_end_match_uint32,
-        "uint16": janitor_rs.compute_min_rev_start_end_match_uint16,
-        "uint8": janitor_rs.compute_min_rev_start_end_match_uint8,
-        "float64": janitor_rs.compute_min_rev_start_end_match_f64,
-        "float32": janitor_rs.compute_min_rev_start_end_match_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_min_rev_start_end_match", arr.dtype.name)
     return func(
         arr=arr,
         starts=starts,
@@ -1559,23 +860,7 @@ def _max_rev_starts(
     """
     Compute max
     """
-    mapping = {
-        "int64": janitor_rs.compute_max_rev_start_int64,
-        "int32": janitor_rs.compute_max_rev_start_int32,
-        "int16": janitor_rs.compute_max_rev_start_int16,
-        "int8": janitor_rs.compute_max_rev_start_int8,
-        "uint64": janitor_rs.compute_max_rev_start_uint64,
-        "uint32": janitor_rs.compute_max_rev_start_uint32,
-        "uint16": janitor_rs.compute_max_rev_start_uint16,
-        "uint8": janitor_rs.compute_max_rev_start_uint8,
-        "float64": janitor_rs.compute_max_rev_start_f64,
-        "float32": janitor_rs.compute_max_rev_start_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_max_rev_start", arr.dtype.name)
     return func(arr=arr, starts=starts, index=index, booleans=booleans, length=length)
 
 
@@ -1589,23 +874,7 @@ def _max_rev_ends(
     """
     Compute max
     """
-    mapping = {
-        "int64": janitor_rs.compute_max_rev_end_int64,
-        "int32": janitor_rs.compute_max_rev_end_int32,
-        "int16": janitor_rs.compute_max_rev_end_int16,
-        "int8": janitor_rs.compute_max_rev_end_int8,
-        "uint64": janitor_rs.compute_max_rev_end_uint64,
-        "uint32": janitor_rs.compute_max_rev_end_uint32,
-        "uint16": janitor_rs.compute_max_rev_end_uint16,
-        "uint8": janitor_rs.compute_max_rev_end_uint8,
-        "float64": janitor_rs.compute_max_rev_end_f64,
-        "float32": janitor_rs.compute_max_rev_end_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_max_rev_end", arr.dtype.name)
     return func(arr=arr, ends=ends, index=index, booleans=booleans, length=length)
 
 
@@ -1621,23 +890,7 @@ def _max_rev_starts_matches(
     """
     Compute max
     """
-    mapping = {
-        "int64": janitor_rs.compute_max_rev_start_match_int64,
-        "int32": janitor_rs.compute_max_rev_start_match_int32,
-        "int16": janitor_rs.compute_max_rev_start_match_int16,
-        "int8": janitor_rs.compute_max_rev_start_match_int8,
-        "uint64": janitor_rs.compute_max_rev_start_match_uint64,
-        "uint32": janitor_rs.compute_max_rev_start_match_uint32,
-        "uint16": janitor_rs.compute_max_rev_start_match_uint16,
-        "uint8": janitor_rs.compute_max_rev_start_match_uint8,
-        "float64": janitor_rs.compute_max_rev_start_match_f64,
-        "float32": janitor_rs.compute_max_rev_start_match_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_max_rev_start_match", arr.dtype.name)
     return func(
         arr=arr,
         starts=starts,
@@ -1661,23 +914,7 @@ def _max_rev_ends_matches(
     """
     Compute max
     """
-    mapping = {
-        "int64": janitor_rs.compute_max_rev_end_match_int64,
-        "int32": janitor_rs.compute_max_rev_end_match_int32,
-        "int16": janitor_rs.compute_max_rev_end_match_int16,
-        "int8": janitor_rs.compute_max_rev_end_match_int8,
-        "uint64": janitor_rs.compute_max_rev_end_match_uint64,
-        "uint32": janitor_rs.compute_max_rev_end_match_uint32,
-        "uint16": janitor_rs.compute_max_rev_end_match_uint16,
-        "uint8": janitor_rs.compute_max_rev_end_match_uint8,
-        "float64": janitor_rs.compute_max_rev_end_match_f64,
-        "float32": janitor_rs.compute_max_rev_end_match_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_max_rev_end_match", arr.dtype.name)
     return func(
         arr=arr,
         index=index,
@@ -1701,23 +938,7 @@ def _max_rev_positions(
     """
     Compute max
     """
-    mapping = {
-        "int64": janitor_rs.compute_max_rev_positions_int64,
-        "int32": janitor_rs.compute_max_rev_positions_int32,
-        "int16": janitor_rs.compute_max_rev_positions_int16,
-        "int8": janitor_rs.compute_max_rev_positions_int8,
-        "uint64": janitor_rs.compute_max_rev_positions_uint64,
-        "uint32": janitor_rs.compute_max_rev_positions_uint32,
-        "uint16": janitor_rs.compute_max_rev_positions_uint16,
-        "uint8": janitor_rs.compute_max_rev_positions_uint8,
-        "float64": janitor_rs.compute_max_rev_positions_f64,
-        "float32": janitor_rs.compute_max_rev_positions_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_max_rev_positions", arr.dtype.name)
     return func(
         arr=arr,
         starts=starts,
@@ -1740,23 +961,7 @@ def _max_rev_starts_ends(
     """
     Compute max
     """
-    mapping = {
-        "int64": janitor_rs.compute_max_rev_start_end_int64,
-        "int32": janitor_rs.compute_max_rev_start_end_int32,
-        "int16": janitor_rs.compute_max_rev_start_end_int16,
-        "int8": janitor_rs.compute_max_rev_start_end_int8,
-        "uint64": janitor_rs.compute_max_rev_start_end_uint64,
-        "uint32": janitor_rs.compute_max_rev_start_end_uint32,
-        "uint16": janitor_rs.compute_max_rev_start_end_uint16,
-        "uint8": janitor_rs.compute_max_rev_start_end_uint8,
-        "float64": janitor_rs.compute_max_rev_start_end_f64,
-        "float32": janitor_rs.compute_max_rev_start_end_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_max_rev_start_end", arr.dtype.name)
     return func(
         arr=arr,
         starts=starts,
@@ -1780,23 +985,7 @@ def _max_rev_starts_ends_matches(
     """
     Compute max
     """
-    mapping = {
-        "int64": janitor_rs.compute_max_rev_start_end_match_int64,
-        "int32": janitor_rs.compute_max_rev_start_end_match_int32,
-        "int16": janitor_rs.compute_max_rev_start_end_match_int16,
-        "int8": janitor_rs.compute_max_rev_start_end_match_int8,
-        "uint64": janitor_rs.compute_max_rev_start_end_match_uint64,
-        "uint32": janitor_rs.compute_max_rev_start_end_match_uint32,
-        "uint16": janitor_rs.compute_max_rev_start_end_match_uint16,
-        "uint8": janitor_rs.compute_max_rev_start_end_match_uint8,
-        "float64": janitor_rs.compute_max_rev_start_end_match_f64,
-        "float32": janitor_rs.compute_max_rev_start_end_match_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_max_rev_start_end_match", arr.dtype.name)
     return func(
         arr=arr,
         starts=starts,
@@ -1819,23 +1008,7 @@ def _prod_rev_no_ranges(
     """
     Compute prod
     """
-    mapping = {
-        "int64": janitor_rs.compute_prod_rev_no_range_int64,
-        "int32": janitor_rs.compute_prod_rev_no_range_int32,
-        "int16": janitor_rs.compute_prod_rev_no_range_int16,
-        "int8": janitor_rs.compute_prod_rev_no_range_int8,
-        "uint64": janitor_rs.compute_prod_rev_no_range_uint64,
-        "uint32": janitor_rs.compute_prod_rev_no_range_uint32,
-        "uint16": janitor_rs.compute_prod_rev_no_range_uint16,
-        "uint8": janitor_rs.compute_prod_rev_no_range_uint8,
-        "float64": janitor_rs.compute_prod_rev_no_range_f64,
-        "float32": janitor_rs.compute_prod_rev_no_range_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_prod_rev_no_range", arr.dtype.name)
     return func(
         arr=arr,
         left_index=left_index,
@@ -1855,23 +1028,7 @@ def _max_rev_no_ranges(
     """
     Compute max
     """
-    mapping = {
-        "int64": janitor_rs.compute_max_rev_no_range_int64,
-        "int32": janitor_rs.compute_max_rev_no_range_int32,
-        "int16": janitor_rs.compute_max_rev_no_range_int16,
-        "int8": janitor_rs.compute_max_rev_no_range_int8,
-        "uint64": janitor_rs.compute_max_rev_no_range_uint64,
-        "uint32": janitor_rs.compute_max_rev_no_range_uint32,
-        "uint16": janitor_rs.compute_max_rev_no_range_uint16,
-        "uint8": janitor_rs.compute_max_rev_no_range_uint8,
-        "float64": janitor_rs.compute_max_rev_no_range_f64,
-        "float32": janitor_rs.compute_max_rev_no_range_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_max_rev_no_range", arr.dtype.name)
     return func(
         arr=arr,
         left_index=left_index,
@@ -1891,23 +1048,7 @@ def _min_rev_no_ranges(
     """
     Compute min
     """
-    mapping = {
-        "int64": janitor_rs.compute_min_rev_no_range_int64,
-        "int32": janitor_rs.compute_min_rev_no_range_int32,
-        "int16": janitor_rs.compute_min_rev_no_range_int16,
-        "int8": janitor_rs.compute_min_rev_no_range_int8,
-        "uint64": janitor_rs.compute_min_rev_no_range_uint64,
-        "uint32": janitor_rs.compute_min_rev_no_range_uint32,
-        "uint16": janitor_rs.compute_min_rev_no_range_uint16,
-        "uint8": janitor_rs.compute_min_rev_no_range_uint8,
-        "float64": janitor_rs.compute_min_rev_no_range_f64,
-        "float32": janitor_rs.compute_min_rev_no_range_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_min_rev_no_range", arr.dtype.name)
     return func(
         arr=arr,
         left_index=left_index,
@@ -1927,23 +1068,7 @@ def _sum_rev_no_ranges(
     """
     Compute sum
     """
-    mapping = {
-        "int64": janitor_rs.compute_sum_rev_no_range_int64,
-        "int32": janitor_rs.compute_sum_rev_no_range_int32,
-        "int16": janitor_rs.compute_sum_rev_no_range_int16,
-        "int8": janitor_rs.compute_sum_rev_no_range_int8,
-        "uint64": janitor_rs.compute_sum_rev_no_range_uint64,
-        "uint32": janitor_rs.compute_sum_rev_no_range_uint32,
-        "uint16": janitor_rs.compute_sum_rev_no_range_uint16,
-        "uint8": janitor_rs.compute_sum_rev_no_range_uint8,
-        "float64": janitor_rs.compute_sum_rev_no_range_f64,
-        "float32": janitor_rs.compute_sum_rev_no_range_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_sum_rev_no_range", arr.dtype.name)
     return func(
         arr=arr,
         left_index=left_index,
@@ -1963,23 +1088,7 @@ def _sum_rev_starts(
     """
     Compute sum
     """
-    mapping = {
-        "int64": janitor_rs.compute_sum_rev_start_int64,
-        "int32": janitor_rs.compute_sum_rev_start_int32,
-        "int16": janitor_rs.compute_sum_rev_start_int16,
-        "int8": janitor_rs.compute_sum_rev_start_int8,
-        "uint64": janitor_rs.compute_sum_rev_start_uint64,
-        "uint32": janitor_rs.compute_sum_rev_start_uint32,
-        "uint16": janitor_rs.compute_sum_rev_start_uint16,
-        "uint8": janitor_rs.compute_sum_rev_start_uint8,
-        "float64": janitor_rs.compute_sum_rev_start_f64,
-        "float32": janitor_rs.compute_sum_rev_start_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_sum_rev_start", arr.dtype.name)
     return func(arr=arr, starts=starts, index=index, booleans=booleans, length=length)
 
 
@@ -1993,23 +1102,7 @@ def _sum_rev_ends(
     """
     Compute sum
     """
-    mapping = {
-        "int64": janitor_rs.compute_sum_rev_end_int64,
-        "int32": janitor_rs.compute_sum_rev_end_int32,
-        "int16": janitor_rs.compute_sum_rev_end_int16,
-        "int8": janitor_rs.compute_sum_rev_end_int8,
-        "uint64": janitor_rs.compute_sum_rev_end_uint64,
-        "uint32": janitor_rs.compute_sum_rev_end_uint32,
-        "uint16": janitor_rs.compute_sum_rev_end_uint16,
-        "uint8": janitor_rs.compute_sum_rev_end_uint8,
-        "float64": janitor_rs.compute_sum_rev_end_f64,
-        "float32": janitor_rs.compute_sum_rev_end_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_sum_rev_end", arr.dtype.name)
     return func(arr=arr, ends=ends, index=index, booleans=booleans, length=length)
 
 
@@ -2025,23 +1118,7 @@ def _sum_rev_starts_matches(
     """
     Compute sum
     """
-    mapping = {
-        "int64": janitor_rs.compute_sum_rev_start_match_int64,
-        "int32": janitor_rs.compute_sum_rev_start_match_int32,
-        "int16": janitor_rs.compute_sum_rev_start_match_int16,
-        "int8": janitor_rs.compute_sum_rev_start_match_int8,
-        "uint64": janitor_rs.compute_sum_rev_start_match_uint64,
-        "uint32": janitor_rs.compute_sum_rev_start_match_uint32,
-        "uint16": janitor_rs.compute_sum_rev_start_match_uint16,
-        "uint8": janitor_rs.compute_sum_rev_start_match_uint8,
-        "float64": janitor_rs.compute_sum_rev_start_match_f64,
-        "float32": janitor_rs.compute_sum_rev_start_match_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_sum_rev_start_match", arr.dtype.name)
     return func(
         arr=arr,
         starts=starts,
@@ -2065,23 +1142,7 @@ def _sum_rev_ends_matches(
     """
     Compute sum
     """
-    mapping = {
-        "int64": janitor_rs.compute_sum_rev_end_match_int64,
-        "int32": janitor_rs.compute_sum_rev_end_match_int32,
-        "int16": janitor_rs.compute_sum_rev_end_match_int16,
-        "int8": janitor_rs.compute_sum_rev_end_match_int8,
-        "uint64": janitor_rs.compute_sum_rev_end_match_uint64,
-        "uint32": janitor_rs.compute_sum_rev_end_match_uint32,
-        "uint16": janitor_rs.compute_sum_rev_end_match_uint16,
-        "uint8": janitor_rs.compute_sum_rev_end_match_uint8,
-        "float64": janitor_rs.compute_sum_rev_end_match_f64,
-        "float32": janitor_rs.compute_sum_rev_end_match_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_sum_rev_end_match", arr.dtype.name)
     return func(
         arr=arr,
         index=index,
@@ -2105,23 +1166,7 @@ def _sum_rev_positions(
     """
     Compute sum
     """
-    mapping = {
-        "int64": janitor_rs.compute_sum_rev_positions_int64,
-        "int32": janitor_rs.compute_sum_rev_positions_int32,
-        "int16": janitor_rs.compute_sum_rev_positions_int16,
-        "int8": janitor_rs.compute_sum_rev_positions_int8,
-        "uint64": janitor_rs.compute_sum_rev_positions_uint64,
-        "uint32": janitor_rs.compute_sum_rev_positions_uint32,
-        "uint16": janitor_rs.compute_sum_rev_positions_uint16,
-        "uint8": janitor_rs.compute_sum_rev_positions_uint8,
-        "float64": janitor_rs.compute_sum_rev_positions_f64,
-        "float32": janitor_rs.compute_sum_rev_positions_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_sum_rev_positions", arr.dtype.name)
     return func(
         arr=arr,
         starts=starts,
@@ -2144,23 +1189,7 @@ def _sum_rev_starts_ends(
     """
     Compute sum
     """
-    mapping = {
-        "int64": janitor_rs.compute_sum_rev_start_end_int64,
-        "int32": janitor_rs.compute_sum_rev_start_end_int32,
-        "int16": janitor_rs.compute_sum_rev_start_end_int16,
-        "int8": janitor_rs.compute_sum_rev_start_end_int8,
-        "uint64": janitor_rs.compute_sum_rev_start_end_uint64,
-        "uint32": janitor_rs.compute_sum_rev_start_end_uint32,
-        "uint16": janitor_rs.compute_sum_rev_start_end_uint16,
-        "uint8": janitor_rs.compute_sum_rev_start_end_uint8,
-        "float64": janitor_rs.compute_sum_rev_start_end_f64,
-        "float32": janitor_rs.compute_sum_rev_start_end_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_sum_rev_start_end", arr.dtype.name)
     return func(
         arr=arr,
         starts=starts,
@@ -2184,23 +1213,7 @@ def _sum_rev_starts_ends_matches(
     """
     Compute sum
     """
-    mapping = {
-        "int64": janitor_rs.compute_sum_rev_start_end_match_int64,
-        "int32": janitor_rs.compute_sum_rev_start_end_match_int32,
-        "int16": janitor_rs.compute_sum_rev_start_end_match_int16,
-        "int8": janitor_rs.compute_sum_rev_start_end_match_int8,
-        "uint64": janitor_rs.compute_sum_rev_start_end_match_uint64,
-        "uint32": janitor_rs.compute_sum_rev_start_end_match_uint32,
-        "uint16": janitor_rs.compute_sum_rev_start_end_match_uint16,
-        "uint8": janitor_rs.compute_sum_rev_start_end_match_uint8,
-        "float64": janitor_rs.compute_sum_rev_start_end_match_f64,
-        "float32": janitor_rs.compute_sum_rev_start_end_match_f32,
-    }
-    dtype_name = arr.dtype.name
-    try:
-        func = mapping[dtype_name]
-    except KeyError:
-        raise KeyError(f"Unsupported data type -> {dtype_name}")
+    func = _rs_func("compute_sum_rev_start_end_match", arr.dtype.name)
     return func(
         arr=arr,
         starts=starts,

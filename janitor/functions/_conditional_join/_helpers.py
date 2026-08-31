@@ -341,6 +341,11 @@ def _get_positive_matches(
 ):
     """
     Compute positive matches for left vs right
+
+    Once ``counts_array`` is present, ``matches`` is the survivor tape from
+    the preceding predicate. The Rust kernels filter that internally-owned,
+    writable array in place and return it again; callers must not pass a
+    read-only or externally shared mask through this branch.
     """
     if (starts is not None) and (ends is None) and (counts_array is None):
         if (left_booleans is None) and (right_booleans is None):
@@ -560,9 +565,7 @@ def _build_indices_positions(
     Build indices for multiple joins
     """
     if keep == "all":
-        left_index = janitor_rs.repeat_index(
-            index=left_index, counts=counts_array, length=total
-        )
+        left_index = np.repeat(left_index, counts_array)
         right_index = janitor_rs.build_positional_index(
             index=right_index, positions=positions, length=total
         )
@@ -609,29 +612,17 @@ def build_indices_matches(
     Build indices for multiple joins, where `matches` exist
     """
     if (keep == "all") and (starts is not None) and (ends is None):
-        left = janitor_rs.repeat_index(
-            index=left_index,
-            counts=counts_array,
-            length=total,
-        )
+        left = np.repeat(left_index, counts_array)
         right = janitor_rs.index_starts_only(
             index=right_index, starts=starts, matches=matches, length=total
         )
     elif (keep == "all") and (starts is None) and (ends is not None):
-        left = janitor_rs.repeat_index(
-            index=left_index,
-            counts=counts_array,
-            length=total,
-        )
+        left = np.repeat(left_index, counts_array)
         right = janitor_rs.index_ends_only(
             index=right_index, ends=ends, matches=matches, length=total
         )
     elif (keep == "all") and (starts is not None) and (ends is not None):
-        left = janitor_rs.repeat_index(
-            index=left_index,
-            counts=counts_array,
-            length=total,
-        )
+        left = np.repeat(left_index, counts_array)
         right = janitor_rs.index_starts_and_ends(
             index=right_index,
             starts=starts,

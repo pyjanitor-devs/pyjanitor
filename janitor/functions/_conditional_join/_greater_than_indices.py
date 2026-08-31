@@ -1,5 +1,4 @@
 # helper functions for >/>=
-import janitor_rs
 import numpy as np
 import pandas as pd
 
@@ -87,9 +86,5 @@ def _greater_than_indices(
         )
     right = [right_index[:ind] for ind in search_indices]
     right = np.concatenate(right)
-    left = janitor_rs.repeat_index(
-        index=left_index,
-        counts=search_indices,
-        length=search_indices.sum(),
-    )
+    left = np.repeat(left_index, search_indices)
     return {"left_index": left, "right_index": right}

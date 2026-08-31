@@ -1,5 +1,28 @@
+"""Adapters for conditional-join aggregation kernels.
+
+Reverse match kernels receive a flattened candidate tape. Rust intentionally
+rejects an empty tape, while pyjanitor pre-filters an all-zero-width batch and
+returns the normal typed empty result before dispatch. Individual zero-width
+ranges are valid when the overall tape is non-empty. The comparison stage
+owns the invariant that match values are 0 or 1; Rust validates tape shape.
+
+ELI5: Python builds one long roll of candidate tickets and Rust checks that
+the roll has the right shape. If there are no tickets at all, Python answers
+with an empty result instead of handing an empty roll to Rust.
+"""
+
 import janitor_rs
 import numpy as np
+
+
+def _call_rev_ends_matches(func, **kwargs) -> tuple:
+    """Call the new ends+matches API, with compatibility for old janitor_rs."""
+    try:
+        return func(**kwargs)
+    except TypeError as exc:
+        if "missing 1 required positional argument: 'length'" not in str(exc):
+            raise
+        return func(length=kwargs["index"].size, **kwargs)
 
 
 def _sum_starts(
@@ -98,13 +121,12 @@ def _size_rev_ends_matches(
     ends: np.ndarray,
     index: np.ndarray,
     matches: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute size_rev
     """
-    return janitor_rs.compute_size_rev_end_matches(
-        ends=ends, index=index, matches=matches, length=length
+    return _call_rev_ends_matches(
+        janitor_rs.compute_size_rev_end_matches, ends=ends, index=index, matches=matches
     )
 
 
@@ -1136,7 +1158,6 @@ def _prod_rev_ends_matches(
     counts: np.ndarray,
     matches: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute prod
@@ -1158,14 +1179,14 @@ def _prod_rev_ends_matches(
         func = mapping[dtype_name]
     except KeyError:
         raise KeyError(f"Unsupported data type -> {dtype_name}")
-    return func(
+    return _call_rev_ends_matches(
+        func,
         arr=arr,
         index=index,
         ends=ends,
         counts=counts,
         matches=matches,
         booleans=booleans,
-        length=length,
     )
 
 
@@ -1396,7 +1417,6 @@ def _min_rev_ends_matches(
     counts: np.ndarray,
     matches: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute min
@@ -1418,14 +1438,14 @@ def _min_rev_ends_matches(
         func = mapping[dtype_name]
     except KeyError:
         raise KeyError(f"Unsupported data type -> {dtype_name}")
-    return func(
+    return _call_rev_ends_matches(
+        func,
         arr=arr,
         index=index,
         ends=ends,
         counts=counts,
         matches=matches,
         booleans=booleans,
-        length=length,
     )
 
 
@@ -1656,7 +1676,6 @@ def _max_rev_ends_matches(
     counts: np.ndarray,
     matches: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute max
@@ -1678,14 +1697,14 @@ def _max_rev_ends_matches(
         func = mapping[dtype_name]
     except KeyError:
         raise KeyError(f"Unsupported data type -> {dtype_name}")
-    return func(
+    return _call_rev_ends_matches(
+        func,
         arr=arr,
         index=index,
         ends=ends,
         counts=counts,
         matches=matches,
         booleans=booleans,
-        length=length,
     )
 
 
@@ -2060,7 +2079,6 @@ def _sum_rev_ends_matches(
     counts: np.ndarray,
     matches: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute sum
@@ -2082,14 +2100,14 @@ def _sum_rev_ends_matches(
         func = mapping[dtype_name]
     except KeyError:
         raise KeyError(f"Unsupported data type -> {dtype_name}")
-    return func(
+    return _call_rev_ends_matches(
+        func,
         arr=arr,
         index=index,
         ends=ends,
         counts=counts,
         matches=matches,
         booleans=booleans,
-        length=length,
     )
 
 

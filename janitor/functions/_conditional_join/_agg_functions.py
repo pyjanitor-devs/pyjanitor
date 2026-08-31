@@ -1,5 +1,40 @@
+"""Adapters for conditional-join aggregation kernels.
+
+Reverse match kernels receive a flattened candidate tape. Rust intentionally
+rejects an empty tape, while pyjanitor pre-filters an all-zero-width batch and
+returns the normal typed empty result before dispatch. Individual zero-width
+ranges are valid when the overall tape is non-empty. The comparison stage
+owns the invariant that match values are 0 or 1; Rust validates tape shape.
+
+ELI5: Python builds one long roll of candidate tickets and Rust checks that
+the roll has the right shape. If there are no tickets at all, Python answers
+with an empty result instead of handing an empty roll to Rust.
+"""
+
+import inspect
+
 import janitor_rs
 import numpy as np
+
+
+def _call_explicit_range_kernel(
+    func,
+    *,
+    starts: np.ndarray,
+    ends: np.ndarray,
+    **kwargs,
+) -> tuple:
+    """Call an explicit-range Rust kernel across the length API transition.
+
+    New janitor-rs kernels derive their output size from ``starts`` and
+    ``ends``.  Until that release is available on PyPI, CI and existing users
+    may still have the older kernels that require ``length``.  Inspecting the
+    callable keeps the normal path free of the redundant span calculation and
+    computes the legacy value only for that older API.
+    """
+    if "length" in inspect.signature(func).parameters:
+        kwargs["length"] = int(ends.max() - starts.min()) if starts.size else 0
+    return func(starts=starts, ends=ends, **kwargs)
 
 
 def _sum_starts(
@@ -84,13 +119,15 @@ def _size_rev_starts_ends(
     starts: np.ndarray,
     ends: np.ndarray,
     index: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute size_rev
     """
-    return janitor_rs.compute_size_rev_start_end(
-        starts=starts, ends=ends, index=index, length=length
+    return _call_explicit_range_kernel(
+        janitor_rs.compute_size_rev_start_end,
+        starts=starts,
+        ends=ends,
+        index=index,
     )
 
 
@@ -1215,7 +1252,6 @@ def _prod_rev_starts_ends(
     ends: np.ndarray,
     index: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute prod
@@ -1237,13 +1273,13 @@ def _prod_rev_starts_ends(
         func = mapping[dtype_name]
     except KeyError:
         raise KeyError(f"Unsupported data type -> {dtype_name}")
-    return func(
-        arr=arr,
+    return _call_explicit_range_kernel(
+        func,
         starts=starts,
         ends=ends,
+        arr=arr,
         index=index,
         booleans=booleans,
-        length=length,
     )
 
 
@@ -1475,7 +1511,6 @@ def _min_rev_starts_ends(
     ends: np.ndarray,
     index: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute min
@@ -1497,13 +1532,13 @@ def _min_rev_starts_ends(
         func = mapping[dtype_name]
     except KeyError:
         raise KeyError(f"Unsupported data type -> {dtype_name}")
-    return func(
-        arr=arr,
+    return _call_explicit_range_kernel(
+        func,
         starts=starts,
         ends=ends,
+        arr=arr,
         index=index,
         booleans=booleans,
-        length=length,
     )
 
 
@@ -1735,7 +1770,6 @@ def _max_rev_starts_ends(
     ends: np.ndarray,
     index: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute max
@@ -1757,13 +1791,13 @@ def _max_rev_starts_ends(
         func = mapping[dtype_name]
     except KeyError:
         raise KeyError(f"Unsupported data type -> {dtype_name}")
-    return func(
-        arr=arr,
+    return _call_explicit_range_kernel(
+        func,
         starts=starts,
         ends=ends,
+        arr=arr,
         index=index,
         booleans=booleans,
-        length=length,
     )
 
 
@@ -2139,7 +2173,6 @@ def _sum_rev_starts_ends(
     ends: np.ndarray,
     index: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute sum
@@ -2161,13 +2194,13 @@ def _sum_rev_starts_ends(
         func = mapping[dtype_name]
     except KeyError:
         raise KeyError(f"Unsupported data type -> {dtype_name}")
-    return func(
-        arr=arr,
+    return _call_explicit_range_kernel(
+        func,
         starts=starts,
         ends=ends,
+        arr=arr,
         index=index,
         booleans=booleans,
-        length=length,
     )
 
 

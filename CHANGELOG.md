@@ -24,6 +24,7 @@
 -   [ENH] Improve `polars.complete` and `polars.expand`, avoiding the potentially expensive schema computation on lazy
 frames. @samukweku
 -   [ENH] Add `strip_whitespace` to `clean_names` function. - Issue #1385
+-   [FIX] Preserve numeric values in column 0 across `adorn_pct_formatting`, `adorn_ns`, and `adorn_rounding`. - Issue #1676 @sumangouda
 -   [TST] Fix 'HealthCheck' failure in 'test_ecdf_string' by adding missing '@settings' decorator. @mjsr84
 -   [INF] Automate contributor recognition: weekly workflow discovers new commit authors and regenerates the all-contributors table; backfilled 30 missing contributors. - Issue #1623
 

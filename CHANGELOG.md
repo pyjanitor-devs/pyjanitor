@@ -1,10 +1,6 @@
 # Changelog
 
 ## [Unreleased]
--   [DOC] Add documentation comparing cumulative-event aggregation to join_agg/conditional_join range aggregations. - Issue #1702 @sumangouda
--   [ENH] Fix `complete` function to support `DataFrameGroupBy` objects without `AttributeError` and properly validate/handle dictionary `fill_value` inputs. - Issue #1669
--   [PERF] Reduce peak memory in `_build_indexer_reorder_contents` for wide frames (reps >= 8) using single NumPy allocation; tall frames with few repetitions retain the original reshape path. - Issue #1655 @Anupam2400
--   [ENH] `conditional_join` now picks the most selective `<`/`<=`/`>`/`>=` predicate as its binary-search anchor (instead of the first one supplied) when `keep` is `'first'` or `'last'`, fixing pathological slowdowns from unfavorable predicate ordering; the choice is estimated from a fixed-size sample so the selection cost no longer scales with input size; `keep='all'` output is unaffected. - Issue #1641 @samukweku
 -   [PERF] Reduce peak memory in `_build_indexer_reorder_contents` for wide frames (reps >= 8) using single NumPy allocation; tall frames with few repetitions retain the original reshape path. - Issue #1655 @Anupam2400
 -   [ENH] `conditional_join` now picks the most selective `<`/`<=`/`>`/`>=` predicate as its binary-search anchor (instead of the first one supplied) when `keep` is `'first'` or `'last'`, fixing pathological slowdowns from unfavorable predicate ordering; the choice is estimated from a fixed-size sample so the selection cost no longer scales with input size; `keep='all'` output is unaffected. - Issue #1641 @samukweku
 -   [BUG] Fix `conditional_join` crash for `keep='last'` joins with a single `<`/`<=` window and multiple non-equi conditions - a missing `counts` argument to the Rust `index_starts_only_keep_last` call. - Issue #1641 @samukweku
@@ -28,7 +24,6 @@
 -   [ENH] Improve `polars.complete` and `polars.expand`, avoiding the potentially expensive schema computation on lazy
 frames. @samukweku
 -   [ENH] Add `strip_whitespace` to `clean_names` function. - Issue #1385
--   [FIX] Preserve numeric values in column 0 across `adorn_pct_formatting`, `adorn_ns`, and `adorn_rounding`. - Issue #1676 @sumangouda
 -   [TST] Fix 'HealthCheck' failure in 'test_ecdf_string' by adding missing '@settings' decorator. @mjsr84
 -   [INF] Automate contributor recognition: weekly workflow discovers new commit authors and regenerates the all-contributors table; backfilled 30 missing contributors. - Issue #1623
 

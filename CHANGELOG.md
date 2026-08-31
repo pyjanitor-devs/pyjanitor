@@ -2,13 +2,20 @@
 
 ## [Unreleased]
 -   [PERF] Simplify the `conditional_join` Python/Rust boundary: removed a duplicate `_sum_starts_ends` definition, replaced ~87 repeated per-call dtype-dispatch dicts with one cached dispatcher, and switched `repeat_index` calls to `np.repeat`. - Issue #1649 @samukweku
+-   [PERF] Reduce peak memory in `_build_indexer_reorder_contents` for wide frames (reps >= 8) using single NumPy allocation; tall frames with few repetitions retain the original reshape path. - Issue #1655 @Anupam2400
+-   [ENH] `conditional_join` now picks the most selective `<`/`<=`/`>`/`>=` predicate as its binary-search anchor (instead of the first one supplied) when `keep` is `'first'` or `'last'`, fixing pathological slowdowns from unfavorable predicate ordering; the choice is estimated from a fixed-size sample so the selection cost no longer scales with input size; `keep='all'` output is unaffected. - Issue #1641 @samukweku
+-   [BUG] Fix `conditional_join` crash for `keep='last'` joins with a single `<`/`<=` window and multiple non-equi conditions - a missing `counts` argument to the Rust `index_starts_only_keep_last` call. - Issue #1641 @samukweku
 -   [ENH] Avoid copying column data during `conditional_join` input
     validation. - Issue #1645, PR #1642 @samukweku
+-   [ENH] Limit `conditional_join` matching work to columns referenced by join
+    conditions. - Issue #1646, PR #1647 @samukweku
 -   [ENH] Speed up `conditional_join` with an unsorted right join key and
     `keep="first"` or `keep="last"`. - Issue #1125, PR #1644 @samukweku
 -   [ENH] Replace `axis=1` `.apply()` with vectorized operations in `compare_df_cols` for 4-7x performance improvement. - Issue #1630 @Anupam2400
 -   [ENH] Replace `.apply()` with `.map()` in `find_replace` for ~6x performance improvement. - Issue #1422 @Anupam2400
 -   [ENH] Add `drop_first` parameter to `expand_column`. - Issue #368 @manav252
+-   [ENH] `conditional_join` now picks the most selective `<`/`<=`/`>`/`>=` predicate as its binary-search anchor (instead of the first one supplied) when `keep` is `'first'` or `'last'`, fixing pathological slowdowns from unfavorable predicate ordering; `keep='all'` output is unaffected. - Issue #1641 @samukweku
+-   [BUG] Fix `conditional_join` crash for `keep='last'` joins with a single `<`/`<=` window and multiple non-equi conditions - a missing `counts` argument to the Rust `index_starts_only_keep_last` call. - Issue #1641 @samukweku
 -   [ENH] Add `include_join_positions` parameter to `conditional_join`; added limited support for join aggregations via the `join_agg` function. - Issue #1497 @samukweku
 -   [ENH] Added `rle_id` function for run-length encoding IDs - Issue #1435 @emmanuel-ferdman
 -   [ENH] Add `scale_mad` for robust median/MAD scaling. - PR #1530 @ShachiMistry

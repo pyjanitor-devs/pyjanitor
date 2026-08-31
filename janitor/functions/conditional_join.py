@@ -579,10 +579,28 @@ def _conditional_join_compute(
             le_lt_check = True
     df.index = range(len(df))
     right.index = range(len(right))
+    # Default to the complete frames for single-condition joins and for the
+    # deprecated Numba path, whose behavior this optimization does not change.
+    matching_df = df
+    matching_right = right
+    if (len(conditions) > 1) and not use_numba:
+        # dict.fromkeys removes repeated column references without scrambling
+        # the user-supplied condition order.
+        condition_left_columns = list(
+            dict.fromkeys(condition[0] for condition in conditions)
+        )
+        condition_right_columns = list(
+            dict.fromkeys(condition[1] for condition in conditions)
+        )
+        # ELI5: use a small working table containing only the columns needed to
+        # find matches. Keep df and right complete so result assembly can still
+        # return every requested payload column with its original dtype.
+        matching_df = df.loc(axis=1)[condition_left_columns]
+        matching_right = right.loc(axis=1)[condition_right_columns]
     if eq_check:
         indices = _multiple_conditional_join_eq(
-            df=df,
-            right=right,
+            df=matching_df,
+            right=matching_right,
             conditions=conditions,
             keep=keep,
             use_numba=use_numba,
@@ -592,8 +610,8 @@ def _conditional_join_compute(
         )
     elif (len(conditions) > 1) & le_lt_check:
         indices = _multiple_conditional_join_le_lt(
-            df=df,
-            right=right,
+            df=matching_df,
+            right=matching_right,
             conditions=conditions,
             keep=keep,
             use_numba=use_numba,
@@ -602,8 +620,8 @@ def _conditional_join_compute(
         )
     elif len(conditions) > 1:
         indices = _multiple_conditional_join_ne(
-            df=df,
-            right=right,
+            df=matching_df,
+            right=matching_right,
             conditions=conditions,
             keep=keep,
         )

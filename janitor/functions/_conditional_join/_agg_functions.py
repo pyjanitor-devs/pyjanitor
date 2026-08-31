@@ -1,5 +1,51 @@
+"""Conditional-join aggregation adapters.
+
+The reverse match kernels consume a flattened candidate tape.  The Rust API
+requires that tape to be non-empty and exactly as wide as the supplied ranges;
+the comparison stage owns the invariant that its values are 0 or 1.  A batch
+whose every range is zero-width is filtered before these adapters are called,
+so it produces the normal empty result without sending an empty tape to Rust.
+Integer reverse sum/product kernels use deterministic wrapping arithmetic;
+floating-point aggregation is unchanged.
+
+ELI5: Rust receives one long roll of candidate tickets, while ``starts`` and
+``ends`` say which tickets belong to each row.  Python builds the roll and
+checks its yes/no flags; Rust checks that the roll has the right shape.
+"""
+
 import janitor_rs
 import numpy as np
+
+
+def _call_rev_starts_matches(func, kwargs, length: int) -> tuple:
+    """Call a starts+matches kernel across old and new janitor-rs releases.
+
+    New kernels derive their right-hand length from ``index`` and do not need
+    the legacy ``length`` argument.  Keeping this compatibility shim here
+    lets pyjanitor support an older installed wheel during the rollout without
+    weakening the new Rust input contract.
+    """
+    try:
+        return func(**kwargs)
+    except TypeError as exc:
+        if "missing 1 required positional argument: 'length'" not in str(exc):
+            raise
+        return func(**kwargs, length=length)
+
+
+def _call_rev_positions(func, kwargs, length: int) -> tuple:
+    """Call a reverse-positions kernel across old and new Rust releases.
+
+    Current positions kernels derive their capacity inputs from the arrays and
+    no longer accept the redundant ``length`` keyword. Older wheels still
+    require it, so retry only for that specific legacy-signature error.
+    """
+    try:
+        return func(**kwargs)
+    except TypeError as exc:
+        if "missing 1 required positional argument: 'length'" not in str(exc):
+            raise
+        return func(**kwargs, length=length)
 
 
 def _sum_starts(
@@ -112,13 +158,14 @@ def _size_rev_starts_matches(
     starts: np.ndarray,
     index: np.ndarray,
     matches: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute size_rev
     """
-    return janitor_rs.compute_size_rev_start_matches(
-        starts=starts, index=index, matches=matches, length=length
+    return _call_rev_starts_matches(
+        janitor_rs.compute_size_rev_start_matches,
+        dict(starts=starts, index=index, matches=matches),
+        index.size,
     )
 
 
@@ -144,15 +191,17 @@ def _size_rev_positions(
     positions: np.ndarray,
     length: int,
 ) -> tuple:
+    """Compute reverse size over the indirect positions tape.
+
+    ``length`` is retained only for the legacy Rust fallback.  It is
+    ``index.size`` because the number of distinct output labels cannot exceed
+    the right index length; the new Rust kernel derives its own capacity and
+    never receives this redundant value.
     """
-    Compute size_rev
-    """
-    return janitor_rs.compute_size_rev_positions(
-        starts=starts,
-        ends=ends,
-        index=index,
-        positions=positions,
-        length=length,
+    return _call_rev_positions(
+        janitor_rs.compute_size_rev_positions,
+        dict(starts=starts, ends=ends, index=index, positions=positions),
+        length,
     )
 
 
@@ -1096,7 +1145,6 @@ def _prod_rev_starts_matches(
     index: np.ndarray,
     matches: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute prod
@@ -1118,14 +1166,17 @@ def _prod_rev_starts_matches(
         func = mapping[dtype_name]
     except KeyError:
         raise KeyError(f"Unsupported data type -> {dtype_name}")
-    return func(
-        arr=arr,
-        starts=starts,
-        counts=counts,
-        index=index,
-        matches=matches,
-        booleans=booleans,
-        length=length,
+    return _call_rev_starts_matches(
+        func,
+        dict(
+            arr=arr,
+            starts=starts,
+            counts=counts,
+            index=index,
+            matches=matches,
+            booleans=booleans,
+        ),
+        index.size,
     )
 
 
@@ -1198,14 +1249,17 @@ def _prod_rev_positions(
         func = mapping[dtype_name]
     except KeyError:
         raise KeyError(f"Unsupported data type -> {dtype_name}")
-    return func(
-        arr=arr,
-        starts=starts,
-        ends=ends,
-        index=index,
-        positions=positions,
-        booleans=booleans,
-        length=length,
+    return _call_rev_positions(
+        func,
+        dict(
+            arr=arr,
+            starts=starts,
+            ends=ends,
+            index=index,
+            positions=positions,
+            booleans=booleans,
+        ),
+        length,
     )
 
 
@@ -1356,7 +1410,6 @@ def _min_rev_starts_matches(
     index: np.ndarray,
     matches: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute min
@@ -1378,14 +1431,17 @@ def _min_rev_starts_matches(
         func = mapping[dtype_name]
     except KeyError:
         raise KeyError(f"Unsupported data type -> {dtype_name}")
-    return func(
-        arr=arr,
-        starts=starts,
-        counts=counts,
-        index=index,
-        matches=matches,
-        booleans=booleans,
-        length=length,
+    return _call_rev_starts_matches(
+        func,
+        dict(
+            arr=arr,
+            starts=starts,
+            counts=counts,
+            index=index,
+            matches=matches,
+            booleans=booleans,
+        ),
+        index.size,
     )
 
 
@@ -1458,14 +1514,17 @@ def _min_rev_positions(
         func = mapping[dtype_name]
     except KeyError:
         raise KeyError(f"Unsupported data type -> {dtype_name}")
-    return func(
-        arr=arr,
-        starts=starts,
-        ends=ends,
-        index=index,
-        positions=positions,
-        booleans=booleans,
-        length=length,
+    return _call_rev_positions(
+        func,
+        dict(
+            arr=arr,
+            starts=starts,
+            ends=ends,
+            index=index,
+            positions=positions,
+            booleans=booleans,
+        ),
+        length,
     )
 
 
@@ -1616,7 +1675,6 @@ def _max_rev_starts_matches(
     index: np.ndarray,
     matches: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute max
@@ -1638,14 +1696,17 @@ def _max_rev_starts_matches(
         func = mapping[dtype_name]
     except KeyError:
         raise KeyError(f"Unsupported data type -> {dtype_name}")
-    return func(
-        arr=arr,
-        starts=starts,
-        counts=counts,
-        index=index,
-        matches=matches,
-        booleans=booleans,
-        length=length,
+    return _call_rev_starts_matches(
+        func,
+        dict(
+            arr=arr,
+            starts=starts,
+            counts=counts,
+            index=index,
+            matches=matches,
+            booleans=booleans,
+        ),
+        index.size,
     )
 
 
@@ -1718,14 +1779,17 @@ def _max_rev_positions(
         func = mapping[dtype_name]
     except KeyError:
         raise KeyError(f"Unsupported data type -> {dtype_name}")
-    return func(
-        arr=arr,
-        starts=starts,
-        ends=ends,
-        index=index,
-        positions=positions,
-        booleans=booleans,
-        length=length,
+    return _call_rev_positions(
+        func,
+        dict(
+            arr=arr,
+            starts=starts,
+            ends=ends,
+            index=index,
+            positions=positions,
+            booleans=booleans,
+        ),
+        length,
     )
 
 
@@ -2020,7 +2084,6 @@ def _sum_rev_starts_matches(
     index: np.ndarray,
     matches: np.ndarray,
     booleans: np.ndarray,
-    length: int,
 ) -> tuple:
     """
     Compute sum
@@ -2042,14 +2105,17 @@ def _sum_rev_starts_matches(
         func = mapping[dtype_name]
     except KeyError:
         raise KeyError(f"Unsupported data type -> {dtype_name}")
-    return func(
-        arr=arr,
-        starts=starts,
-        counts=counts,
-        index=index,
-        matches=matches,
-        booleans=booleans,
-        length=length,
+    return _call_rev_starts_matches(
+        func,
+        dict(
+            arr=arr,
+            starts=starts,
+            counts=counts,
+            index=index,
+            matches=matches,
+            booleans=booleans,
+        ),
+        index.size,
     )
 
 
@@ -2122,14 +2188,17 @@ def _sum_rev_positions(
         func = mapping[dtype_name]
     except KeyError:
         raise KeyError(f"Unsupported data type -> {dtype_name}")
-    return func(
-        arr=arr,
-        starts=starts,
-        ends=ends,
-        index=index,
-        positions=positions,
-        booleans=booleans,
-        length=length,
+    return _call_rev_positions(
+        func,
+        dict(
+            arr=arr,
+            starts=starts,
+            ends=ends,
+            index=index,
+            positions=positions,
+            booleans=booleans,
+        ),
+        length,
     )
 
 

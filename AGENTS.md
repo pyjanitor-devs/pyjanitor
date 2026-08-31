@@ -548,6 +548,17 @@ CLI.
 include MkDocs. The documentation task is available in the `docs` environment.
 **Recommendation**: Run `pixi run -e docs build-docs` to build documentation.
 
+### [2026-08-26] Include performance evidence in optimization PRs and issues
+
+**Context**: Performance changes are coordinated with implementation changes
+in janitor-rs.
+**Learning**: Benchmark results are part of the performance change's review
+record, not merely local investigation notes.
+**Recommendation**: Every performance PR and its tracking issue must include a
+properly formatted comparison with the old implementation, covering runtime
+and memory for tiny, large, very-large, and super-large cases with duplicate
+and unique label distributions. State benchmark limitations explicitly.
+
 ---
 
 ## Version History

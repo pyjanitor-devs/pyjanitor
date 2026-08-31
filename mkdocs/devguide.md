@@ -193,16 +193,6 @@ If any checks fail, review the logs and fix the issues.
 Maintainers may also request changes during code review.
 Update your branch and push new commits to address feedback.
 
-### Contributor Recognition
-pyjanitor uses the @all-contributors bot to recognize all forms of contribution (code, docs, reviews, issues, ideas, etc.).
-
-When your pull request or issue contribution is merged/completed, a maintainer will add you to the contributors list by commenting:
-
-```text
-@all-contributors please add @your-username for code, docs
-```
-You do not need to manually edit any contributor lists!
-
 ## Common Development Tasks
 
 All development tasks are available as pixi commands:

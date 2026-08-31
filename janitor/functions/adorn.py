@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 import pandas_flavor as pf
 
-from janitor.utils import check 
+from janitor.utils import check
 
 
 @pf.register_dataframe_method
@@ -263,8 +263,8 @@ def adorn_pct_formatting(
     # Preserve original counts if they exist
     original_counts = df.attrs.get("_original_counts")
 
-    # Select numeric columns starting from the second column (index 1 onwards)
-    numeric_cols = df.iloc[:, 1:].select_dtypes(include=[np.number]).columns.tolist()
+    # Identify numeric columns
+    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
 
     rounding_mode = ROUND_HALF_EVEN if rounding == "half to even" else ROUND_HALF_UP
     quantize_str = f"0.{'0' * digits}" if digits > 0 else "0"
@@ -366,8 +366,8 @@ def adorn_ns(
 
         format_func = _default_format_func
 
-    # Select numeric columns starting from column index 1 (excluding column 0 identifier)
-    numeric_cols = ns.iloc[:, 1:].select_dtypes(include=[np.number]).columns.tolist()
+    # Get numeric columns from the original counts
+    numeric_cols = ns.select_dtypes(include=[np.number]).columns.tolist()
 
     # Apply to matching columns
     # Use positional indexing to handle cases where df has more rows than ns
@@ -375,9 +375,6 @@ def adorn_ns(
     df_index_list = df.index.tolist()
     for col in numeric_cols:
         if col in df.columns:
-            # Cast column to object dtype so pandas allows string assignment
-            df[col] = df[col].astype("object")
-            
             for i, idx in enumerate(df_index_list):
                 # Only process rows that exist in the original counts
                 if i < len(ns):
@@ -391,7 +388,6 @@ def adorn_ns(
                             df.loc[idx, col] = f"{formatted_n} {current_value}"
 
     return df
-
 
 
 @pf.register_dataframe_method
@@ -527,8 +523,8 @@ def adorn_rounding(
     # Preserve original counts if they exist
     original_counts = df.attrs.get("_original_counts")
 
-    # Identify numeric columns (excluding column 0)
-    numeric_cols = df.iloc[:, 1:].select_dtypes(include=[np.number]).columns.tolist()
+    # Identify numeric columns
+    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
 
     rounding_mode = ROUND_HALF_EVEN if rounding == "half to even" else ROUND_HALF_UP
     quantize_str = f"0.{'0' * digits}" if digits > 0 else "0"

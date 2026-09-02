@@ -115,52 +115,6 @@ def conditional_join(
     will be a MultiIndex; the first level points to the original positions in `df`,
     while the second level points to the original positions in `right`.
 
-    !!! tip "Cumulative-Event Aggregation vs. Range Join Aggregations"
-
-        When computing single additive running totals (e.g., daily sums) over overlapping time intervals,
-        a cumulative-event aggregation (sweep-line algorithm) is often significantly faster than using range join
-        aggregations (`join_agg` / `conditional_join`).
-
-        **Algorithm & Complexity:**
-        For inclusive intervals `[start_date, end_date]`, group values by start and end dates, taking cumulative sums (`cumsum`)
-        reindexed to the target calendar, and subtract the end totals with an appropriate shift (+1 period for inclusive bounds).
-        This operates in $\mathcal{O}(N + K)$ time complexity, where $N$ is the number of interval rows and $K$ is the number of calendar points.
-
-        **When to use `join_agg` / `conditional_join` instead:**
-
-        - Multiple simultaneous aggregations are needed at once.
-        - Non-additive aggregations such as `min`, `max`, or `prod`.
-        - Combining equality conditions with range conditions.
-        - Arbitrary interval/query shapes or standard join semantics.
-
-        **Special Considerations:**
-
-        - **Endpoint Handling:** Ensure inclusive vs. exclusive bounds are shifted properly (e.g., `end_date + pd.Timedelta(days=1)`).
-        - **Precision:** Accumulating floating-point values over long ranges may incur numerical drift; consider rounding or integer representation when exact precision is required.
-        - **Reference:** For details on range aggregation optimizations, see Issue #1648.
-
-        ```python
-        import pandas as pd
-
-        # Example: Daily active totals using cumulative-event aggregation
-        df = pd.DataFrame(
-            {
-                "start_date": pd.to_datetime(["2023-01-01", "2023-01-02"]),
-                "end_date": pd.to_datetime(["2023-01-03", "2023-01-04"]),
-                "val": [10, 20],
-            }
-        )
-        calendar = pd.date_range("2023-01-01", "2023-01-05")
-
-        starts = df.groupby("start_date")["val"].sum()
-        ends = df.groupby(df["end_date"] + pd.Timedelta(days=1))["val"].sum()
-
-        daily_totals = (
-            starts.reindex(calendar, fill_value=0)
-            - ends.reindex(calendar, fill_value=0)
-        ).cumsum()
-        ```
-
     Examples:
         >>> import pandas as pd
         >>> import janitor
@@ -1451,13 +1405,59 @@ def join_agg(
 
     !!! info "New in version 0.32.10"
 
-    !!! tip "Cumulative-Event Aggregation Alternative"
+    !!! tip "Cumulative-Event Aggregation vs. Range Join Aggregations"
 
-        For single additive running totals (such as daily interval sums),
-        computing cumulative start and end events using `groupby` and `cumsum` operates
-        in $\mathcal{O}(N + K)$ time and is often significantly faster than calling
-        `join_agg(..., reverse=True)`. See the [`conditional_join`][janitor.functions.conditional_join.conditional_join]
-        documentation for details and a runnable example.
+        When computing single additive running totals (e.g., daily sums) over
+        overlapping time intervals, a cumulative-event aggregation (sweep-line
+        algorithm) is often significantly faster than using range join
+        aggregations (`join_agg` / `conditional_join`).
+
+        **Algorithm & Complexity:**
+        For inclusive intervals `[start_date, end_date]`, group values by start
+        and end dates, taking cumulative sums (`cumsum`) reindexed to the target
+        calendar, and subtract the end totals with an appropriate shift (+1
+        period for inclusive bounds). This operates in $\\mathcal{O}(N + K)$
+        time complexity, where $N$ is the number of interval rows and $K$ is the
+        number of calendar points.
+
+        **When to use `join_agg` / `conditional_join` instead:**
+
+        - Multiple simultaneous aggregations are needed at once.
+        - Non-additive aggregations such as `min`, `max`, or `prod`.
+        - Combining equality conditions with range conditions.
+        - Arbitrary interval/query shapes or standard join semantics.
+
+        **Special Considerations:**
+
+        - **Endpoint Handling:** Ensure inclusive vs. exclusive bounds are
+          shifted properly (e.g., `end_date + pd.Timedelta(days=1)`).
+        - **Precision:** Accumulating floating-point values over long ranges may
+          incur numerical drift; consider rounding or integer representation
+          when exact precision is required.
+        - **Reference:** For details on range aggregation optimizations, see
+          Issue #1648.
+
+        ```python
+        import pandas as pd
+
+        # Example: Daily active totals using cumulative-event aggregation
+        df = pd.DataFrame(
+            {
+                "start_date": pd.to_datetime(["2023-01-01", "2023-01-02"]),
+                "end_date": pd.to_datetime(["2023-01-03", "2023-01-04"]),
+                "val": [10, 20],
+            }
+        )
+        calendar = pd.date_range("2023-01-01", "2023-01-05")
+
+        starts = df.groupby("start_date")["val"].sum()
+        ends = df.groupby(df["end_date"] + pd.Timedelta(days=1))["val"].sum()
+
+        daily_totals = (
+            starts.reindex(calendar, fill_value=0)
+            - ends.reindex(calendar, fill_value=0)
+        ).cumsum()
+        ```
 
     Examples:
         >>> import pandas as pd

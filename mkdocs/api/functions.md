@@ -19,6 +19,7 @@
         - complete
         - concatenate_columns
         - conditional_join
+        - join_agg
         - convert_date
         - count_cumulative_unique
         - currency_column_to_numeric

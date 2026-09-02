@@ -1416,6 +1416,9 @@ def join_agg(
           when exact precision is required.
         - **Reference:** For details on range aggregation optimizations, see
           Issue #1648.
+        - **Inspiration:** See this
+          [Stack Overflow discussion](https://stackoverflow.com/questions/69194678/python-fast-aggregation-of-many-observations-to-daily-sum)
+          for the cumulative-sum and reindexing approach.
 
         ```python
         import pandas as pd

@@ -631,6 +631,26 @@ def _conditional_join_compute(
             keep=keep,
             return_matching_indices=return_building_blocks or aggfunc,
         )
+    # Internally, join discovery may remain compact until aggregation. A
+    # ``starts``/``ends`` pair contains one half-open candidate slice per driving
+    # row. ``matches`` is a flat mask aligned with those slices, and ``positions``
+    # is an integer tape indexing ``right_index`` rather than a dataframe-label
+    # array. ``left_index`` and ``right_index`` carry original dataframe index
+    # values (labels); ``positions`` entries are offsets into the right-side
+    # array. Depending on join shape, some representations are absent: equality
+    # joins may return pairs directly, while range joins commonly retain
+    # boundaries until aggregation. Empty ranges have equal boundaries and
+    # contribute no matches.
+
+    # For example, with ``right_index = ["a", "b", "c", "d"]``,
+    # ``positions = [2, 0, 2, 3, 1]``, ``starts = [0, 2, 4]`` and
+    # ``ends = [2, 4, 5]``, the three driving rows select ``["c", "a"]``,
+    # ``["c", "d"]`` and ``["b"]`` respectively. Simple/equi joins generally
+    # return direct pairs; starts-only/ends-only paths represent one-sided
+    # inequalities; range and multi-condition joins may retain both boundaries
+    # and a mask. ``keep="first"`` or ``keep="last"`` reduces each slice before
+    # labels are restored, while ``keep="all"`` emits every surviving position.
+
     if aggfunc and reverse:
         return _get_join_aggs._agg_join_left(
             df=df,
@@ -1516,26 +1536,6 @@ def join_agg(
     Returns:
         A pandas DataFrame.
     """
-
-    # Internally, join discovery may remain compact until aggregation. A
-    # ``starts``/``ends`` pair contains one half-open candidate slice per driving
-    # row. ``matches`` is a flat mask aligned with those slices, and ``positions``
-    # is an integer tape indexing ``right_index`` rather than a dataframe-label
-    # array. ``left_index`` and ``right_index`` carry original dataframe index
-    # values (labels); ``positions`` entries are offsets into the right-side
-    # array. Depending
-    # on join shape, some representations are absent: equality joins may return
-    # pairs directly, while range joins commonly retain boundaries until
-    # aggregation. Empty ranges have equal boundaries and contribute no matches.
-
-    # For example, with ``right_index = ["a", "b", "c", "d"]``,
-    # ``positions = [2, 0, 2, 3, 1]``, ``starts = [0, 2, 4]`` and
-    # ``ends = [2, 4, 5]``, the three driving rows select ``["c", "a"]``,
-    # ``["c", "d"]`` and ``["b"]`` respectively. Simple/equi joins generally
-    # return direct pairs; starts-only/ends-only paths represent one-sided
-    # inequalities; range and multi-condition joins may retain both boundaries
-    # and a mask. ``keep="first"`` or ``keep="last"`` reduces each slice before
-    # labels are restored, while ``keep="all"`` emits every surviving position.
 
     return _conditional_join_compute(
         df=df,

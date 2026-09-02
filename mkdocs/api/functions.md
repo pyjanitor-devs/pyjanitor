@@ -19,7 +19,6 @@
         - complete
         - concatenate_columns
         - conditional_join
-        - join_agg
         - convert_date
         - count_cumulative_unique
         - currency_column_to_numeric
@@ -42,6 +41,7 @@
         - impute
         - jitter
         - join_apply
+        - join_agg
         - label_encode
         - limit_column_characters
         - min_max_scale

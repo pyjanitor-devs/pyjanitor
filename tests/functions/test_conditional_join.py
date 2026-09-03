@@ -1427,6 +1427,113 @@ def test_single_condition_not_equal_datetime(df, right):
     assert_frame_equal(expected, actual)
 
 
+@pytest.mark.parametrize("keep", ["first", "last"])
+@pytest.mark.parametrize(
+    ("left", "right"),
+    [
+        (
+            pd.Series([1, 2, 3, 4], dtype="int64"),
+            pd.Series([2, 1, 2, 3], dtype="int64"),
+        ),
+        (
+            pd.Series([2, 3], dtype="Int64"),
+            pd.Series([2, 2, 2], dtype="Int64"),
+        ),
+        (
+            pd.Series([pd.NA, 2, 3, 4], dtype="Int64"),
+            pd.Series([pd.NA, 2, pd.NA, 3], dtype="Int64"),
+        ),
+        (
+            pd.Series(pd.to_datetime([None, "2025-01-02", "2025-01-03"])),
+            pd.Series(pd.to_datetime(["2025-01-03", None, "2025-01-02"])),
+        ),
+        (
+            pd.Series([np.nan, 2.0, 3.0]),
+            pd.Series([2.0, np.nan, 3.0]),
+        ),
+        (
+            pd.Series([np.nan, np.nan]),
+            pd.Series([np.nan, np.nan]),
+        ),
+        (
+            pd.Series([], dtype="float64"),
+            pd.Series([1.0, 2.0]),
+        ),
+        (
+            pd.Series([1.0, 2.0]),
+            pd.Series([], dtype="float64"),
+        ),
+    ],
+    ids=[
+        "duplicates",
+        "one-distinct-value",
+        "nullable-integers",
+        "datetimes",
+        "float-nan",
+        "all-null",
+        "empty-left",
+        "empty-right",
+    ],
+)
+def test_single_condition_not_equal_keep_one(left, right, keep):
+    """First and last selection match a direct scan in original row order."""
+    expected_left = []
+    expected_right = []
+    right_positions = range(len(right))
+    if keep == "last":
+        right_positions = reversed(right_positions)
+
+    for left_position, left_value in enumerate(left):
+        for right_position in right_positions:
+            right_value = right.iloc[right_position]
+            left_is_null = pd.isna(left_value)
+            right_is_null = pd.isna(right_value)
+            if left_is_null or right_is_null:
+                unequal = True
+            else:
+                unequal = left_value != right_value
+            if unequal:
+                expected_left.append(left_position)
+                expected_right.append(right_position)
+                break
+        right_positions = range(len(right))
+        if keep == "last":
+            right_positions = reversed(right_positions)
+
+    left_frame = left.to_frame("left").assign(left_position=range(len(left)))
+    right_frame = right.to_frame("right").assign(right_position=range(len(right)))
+    actual = left_frame.conditional_join(
+        right_frame,
+        ("left", "right", "!="),
+        keep=keep,
+    )
+
+    actual = actual.sort_values("left_position", ignore_index=True)
+    assert actual["left_position"].tolist() == expected_left
+    assert actual["right_position"].tolist() == expected_right
+
+
+@pytest.mark.parametrize(
+    ("keep", "right_positions"),
+    [("first", [1, 0, 0, 0]), ("last", [3, 3, 3, 2])],
+)
+def test_single_condition_not_equal_keep_one_preserves_output_order(
+    keep, right_positions
+):
+    """Optimized selection preserves the legacy materialized-pair order."""
+    left = pd.DataFrame({"left": [2, -1, 3, 0], "left_position": range(4)})
+    right = pd.DataFrame({"right": [2, -3, -2, 3], "right_position": range(4)})
+
+    actual = left.conditional_join(
+        right,
+        ("left", "right", "!="),
+        keep=keep,
+    )
+
+    assert actual["left_position"].tolist() == [0, 1, 3, 2]
+    assert actual["right_position"].tolist() == right_positions
+
+
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())

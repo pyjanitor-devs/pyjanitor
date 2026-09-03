@@ -411,6 +411,53 @@ def test_right_anti_ignores_keep(keep):
 
 
 @pytest.mark.parametrize(
+    ("how", "df_columns", "right_columns", "expected_length"),
+    [
+        ("left", None, ["right"], 2),
+        ("right", ["left"], None, 1),
+        ("outer", None, ["right"], 2),
+        ("outer", ["left"], None, 2),
+    ],
+)
+def test_unmatched_positions_use_original_lengths(
+    how, df_columns, right_columns, expected_length
+):
+    """Column projection must not change unmatched-row index boundaries."""
+    left = pd.DataFrame({"left": [1, 2]})
+    right = pd.DataFrame({"right": [2]})
+
+    actual = left.conditional_join(
+        right,
+        ("left", "right", "<"),
+        how=how,
+        df_columns=df_columns,
+        right_columns=right_columns,
+    )
+
+    assert len(actual) == expected_length
+
+
+def test_not_equal_anti_join_uses_existence_not_pair_materialization():
+    """Anti joins preserve != duplicate-label match semantics."""
+    left = pd.DataFrame({"left": [1, 2]})
+    right = pd.DataFrame({"right": [1, 1]})
+
+    left_anti = left.conditional_join(
+        right,
+        ("left", "right", "!="),
+        how="left_anti",
+    )
+    right_anti = left.conditional_join(
+        right,
+        ("left", "right", "!="),
+        how="right_anti",
+    )
+
+    assert left_anti["left"].tolist() == [1]
+    assert right_anti.empty
+
+
+@pytest.mark.parametrize(
     ("how", "df_columns", "right_columns", "match"),
     [
         ("left_anti", None, slice(None), "df_columns cannot be None"),

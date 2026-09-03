@@ -632,12 +632,29 @@ def _conditional_join_compute(
         # return every requested payload column with its original dtype.
         matching_df = df.loc(axis=1)[condition_left_columns]
         matching_right = right.loc(axis=1)[condition_right_columns]
-    match_keep = "all" if how in {"left_anti", "right_anti"} else keep
+    anti_join = how in {"left_anti", "right_anti"}
+    match_df = matching_df
+    match_right = matching_right
+    match_conditions = conditions
+    if how == "right_anti":
+        # A right anti join is an existence query from the right side. Swap
+        # the driving side so keep="first" retains one witness per right row,
+        # then restore the result shape below.
+        match_df, match_right = matching_right, matching_df
+        match_conditions = [
+            (right_on, left_on, _reverse_operator[op])
+            for left_on, right_on, op in conditions
+        ]
+    # Anti joins only need to know whether a preserved row has one match.
+    # keep="first" bounds the materialized witnesses to one per driving row
+    # in the normal match paths; single != uses a direct existence mask.
+    # keep is intentionally ignored because matched rows are discarded.
+    match_keep = "first" if anti_join else keep
     if eq_check:
         indices = _multiple_conditional_join_eq(
-            df=matching_df,
-            right=matching_right,
-            conditions=conditions,
+            df=match_df,
+            right=match_right,
+            conditions=match_conditions,
             keep=match_keep,
             use_numba=use_numba,
             force=force,
@@ -646,9 +663,9 @@ def _conditional_join_compute(
         )
     elif (len(conditions) > 1) & le_lt_check:
         indices = _multiple_conditional_join_le_lt(
-            df=matching_df,
-            right=matching_right,
-            conditions=conditions,
+            df=match_df,
+            right=match_right,
+            conditions=match_conditions,
             keep=match_keep,
             use_numba=use_numba,
             return_matching_indices=return_building_blocks or aggfunc,
@@ -656,18 +673,19 @@ def _conditional_join_compute(
         )
     elif len(conditions) > 1:
         indices = _multiple_conditional_join_ne(
-            df=matching_df,
-            right=matching_right,
-            conditions=conditions,
+            df=match_df,
+            right=match_right,
+            conditions=match_conditions,
             keep=match_keep,
         )
     else:
         indices = _get_indices_single_join._single_join(
-            df=df,
-            right=right,
-            condition=conditions[0],
+            df=match_df,
+            right=match_right,
+            condition=match_conditions[0],
             keep=match_keep,
             return_matching_indices=return_building_blocks or aggfunc,
+            existence_only=anti_join,
         )
     # Internally, join discovery may remain compact until aggregation. A
     # ``starts``/``ends`` pair contains one half-open candidate slice per driving
@@ -688,6 +706,19 @@ def _conditional_join_compute(
     # inequalities; range and multi-condition joins may retain both boundaries
     # and a mask. ``keep="first"`` or ``keep="last"`` reduces each slice before
     # labels are restored, while ``keep="all"`` emits every surviving position.
+
+    if anti_join:
+        empty_array = np.array([], dtype=np.intp)
+        if how == "left_anti":
+            indices = {
+                "left_index": indices["left_index"],
+                "right_index": empty_array,
+            }
+        else:
+            indices = {
+                "left_index": empty_array,
+                "right_index": indices["left_index"],
+            }
 
     if aggfunc and reverse:
         return _get_join_aggs._agg_join_left(
@@ -723,6 +754,15 @@ operator_map = {
     _JoinOperator.GREATER_THAN.value: operator.gt,
     _JoinOperator.GREATER_THAN_OR_EQUAL.value: operator.ge,
     _JoinOperator.NOT_EQUAL.value: operator.ne,
+}
+
+_reverse_operator = {
+    _JoinOperator.STRICTLY_EQUAL.value: _JoinOperator.STRICTLY_EQUAL.value,
+    _JoinOperator.LESS_THAN.value: _JoinOperator.GREATER_THAN.value,
+    _JoinOperator.LESS_THAN_OR_EQUAL.value: _JoinOperator.GREATER_THAN_OR_EQUAL.value,
+    _JoinOperator.GREATER_THAN.value: _JoinOperator.LESS_THAN.value,
+    _JoinOperator.GREATER_THAN_OR_EQUAL.value: _JoinOperator.LESS_THAN_OR_EQUAL.value,
+    _JoinOperator.NOT_EQUAL.value: _JoinOperator.NOT_EQUAL.value,
 }
 
 
@@ -1175,7 +1215,7 @@ def _create_frame(
             include_join_positions=include_join_positions,
         )
     if how == "left":
-        indexer = _get_unmatched_indices(left_index, len(df))
+        indexer = _get_unmatched_indices(left_index, df_length)
         length = indexer.size
         if not length:
             return _inner(
@@ -1219,7 +1259,7 @@ def _create_frame(
         return pd.DataFrame(dictionary, copy=False)
 
     if how == "right":
-        indexer = _get_unmatched_indices(right_index, len(right))
+        indexer = _get_unmatched_indices(right_index, right_length)
         length = indexer.size
         if not length:
             return _inner(
@@ -1296,8 +1336,8 @@ def _create_frame(
             dictionary[name] = arr
         return pd.DataFrame(dictionary, copy=False)
     # how == 'outer'
-    left_indexer = _get_unmatched_indices(left_index, len(df))
-    right_indexer = _get_unmatched_indices(right_index, len(right))
+    left_indexer = _get_unmatched_indices(left_index, df_length)
+    right_indexer = _get_unmatched_indices(right_index, right_length)
 
     df_nulls_length = left_indexer.size
     right_nulls_length = right_indexer.size

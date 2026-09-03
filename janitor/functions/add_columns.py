@@ -96,6 +96,9 @@ def add_column(
 
     nrows = len(df)
 
+    if fill_remaining:
+        warnings.warn("The fill_remaining parameter is no longer being used")
+
     if hasattr(value, "__len__") and not isinstance(value, (str, bytes, bytearray)):
         len_value = len(value)
 
@@ -114,18 +117,18 @@ def add_column(
         if not len_value:
             raise ValueError("`value` has to be an iterable of minimum length 1")
 
-    elif fill_remaining:
-        # relevant if a scalar val was passed, yet fill_remaining == True
-        len_value = 1
-        value = [value]
-
-    df = df.copy()
-    if fill_remaining:
+        #automatic fill remaining
         times_to_loop = int(np.ceil(nrows / len_value))
         fill_values = list(value) * times_to_loop
         df[column_name] = fill_values[:nrows]
-    else:
-        df[column_name] = value
+
+    else
+        raise NotImplementedError("Bytes and Bytearrays are not currently implemented for add_column")
+
+    df = df.copy()
+
+    
+
 
     return df
 

@@ -352,6 +352,25 @@ def conditional_join(
     )
 
 
+operator_map = {
+    _JoinOperator.STRICTLY_EQUAL.value: operator.eq,
+    _JoinOperator.LESS_THAN.value: operator.lt,
+    _JoinOperator.LESS_THAN_OR_EQUAL.value: operator.le,
+    _JoinOperator.GREATER_THAN.value: operator.gt,
+    _JoinOperator.GREATER_THAN_OR_EQUAL.value: operator.ge,
+    _JoinOperator.NOT_EQUAL.value: operator.ne,
+}
+
+_reverse_operator = {
+    _JoinOperator.STRICTLY_EQUAL.value: _JoinOperator.STRICTLY_EQUAL.value,
+    _JoinOperator.LESS_THAN.value: _JoinOperator.GREATER_THAN.value,
+    _JoinOperator.LESS_THAN_OR_EQUAL.value: _JoinOperator.GREATER_THAN_OR_EQUAL.value,
+    _JoinOperator.GREATER_THAN.value: _JoinOperator.LESS_THAN.value,
+    _JoinOperator.GREATER_THAN_OR_EQUAL.value: _JoinOperator.LESS_THAN_OR_EQUAL.value,
+    _JoinOperator.NOT_EQUAL.value: _JoinOperator.NOT_EQUAL.value,
+}
+
+
 def _check_operator(op: str):
     """
     Check that operator is one of
@@ -717,6 +736,7 @@ def _conditional_join_compute(
         else:
             indices = {
                 "left_index": empty_array,
+                # Remember the sides have been swapped for right_anti.
                 "right_index": indices["left_index"],
             }
 
@@ -745,25 +765,6 @@ def _conditional_join_compute(
         indicator=indicator,
         include_join_positions=include_join_positions,
     )
-
-
-operator_map = {
-    _JoinOperator.STRICTLY_EQUAL.value: operator.eq,
-    _JoinOperator.LESS_THAN.value: operator.lt,
-    _JoinOperator.LESS_THAN_OR_EQUAL.value: operator.le,
-    _JoinOperator.GREATER_THAN.value: operator.gt,
-    _JoinOperator.GREATER_THAN_OR_EQUAL.value: operator.ge,
-    _JoinOperator.NOT_EQUAL.value: operator.ne,
-}
-
-_reverse_operator = {
-    _JoinOperator.STRICTLY_EQUAL.value: _JoinOperator.STRICTLY_EQUAL.value,
-    _JoinOperator.LESS_THAN.value: _JoinOperator.GREATER_THAN.value,
-    _JoinOperator.LESS_THAN_OR_EQUAL.value: _JoinOperator.GREATER_THAN_OR_EQUAL.value,
-    _JoinOperator.GREATER_THAN.value: _JoinOperator.LESS_THAN.value,
-    _JoinOperator.GREATER_THAN_OR_EQUAL.value: _JoinOperator.LESS_THAN_OR_EQUAL.value,
-    _JoinOperator.NOT_EQUAL.value: _JoinOperator.NOT_EQUAL.value,
-}
 
 
 def _generate_indices(

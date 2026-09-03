@@ -99,7 +99,9 @@ def conditional_join(
 
     The operator can be any of `==`, `!=`, `<=`, `<`, `>=`, `>`.
 
-    There is no optimisation for the `!=` operator.
+    For a single `!=` condition with `keep="first"` or `keep="last"`,
+    matching positions are selected without materializing all unequal pairs.
+    Other `!=` joins are not optimized.
 
     The join is done only on the columns.
 

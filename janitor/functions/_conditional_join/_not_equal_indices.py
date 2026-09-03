@@ -1,6 +1,7 @@
 # helper functions for !=
 import numpy as np
 import pandas as pd
+from pandas.api.types import is_extension_array_dtype
 
 from janitor.functions._conditional_join import _binary_search
 from janitor.functions._conditional_join._helpers import (
@@ -15,10 +16,14 @@ def _not_equal_indices(
     left: pd.Series,
     right: pd.Series,
     keep: str,
+    existence_only: bool = False,
 ) -> dict | None:
     """
     Use binary search to get indices where
     `left` is exactly  not equal to `right`.
+
+    With ``existence_only=True``, return only the left rows having at least
+    one match, without materializing the pair stream.
 
     It is a combination of strictly less than
     and strictly greater than indices.
@@ -28,6 +33,33 @@ def _not_equal_indices(
         return _not_equal_keep_one(left=left, right=right, keep=keep)
 
     dummy = np.array([], dtype=np.intp)
+
+    if existence_only:
+        # Anti joins only need one bit per driving row. Avoid constructing the
+        # potentially quadratic set of != pairs before reducing it to that
+        # existence information.
+        left_nulls = left.isna().to_numpy()
+        right_nulls = right.isna().to_numpy()
+        matched = np.zeros(left.size, dtype=bool)
+        right_non_null = right._values[~right_nulls]
+        unique_right = pd.unique(right_non_null)
+        if unique_right.size:
+            matched[left_nulls] = True
+            if unique_right.size > 1:
+                matched[~left_nulls] = True
+            else:
+                different = left._values != unique_right[0]
+                if is_extension_array_dtype(different):
+                    different = different.fillna(False).to_numpy()
+                matched |= (~left_nulls) & np.asarray(different, dtype=bool)
+        if right_nulls.any():
+            # Match the existing != null handling: a null on the right adds
+            # every left row to the candidate matches.
+            matched[:] = True
+        return {
+            "left_index": left.index._values[matched],
+            "right_index": dummy,
+        }
 
     # deal with nulls
     l1_nulls = dummy

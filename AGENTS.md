@@ -37,6 +37,9 @@ these into the main sections.
   task.
 - **Test-Driven**: Always run tests after making code changes.
 - **Document**: Keep docstrings up-to-date using Google-style format.
+- **Explain Simply**: For complex public behavior, include a concise ELI5
+  section in the docstring or nearby documentation. Explain the user-facing
+  mental model, not line-by-line implementation details. Skip trivial helpers.
 - **Lint Markdown**: Always run `markdownlint` on markdown files after editing.
 
 ---
@@ -114,7 +117,7 @@ pixi run -e <environment> <command>
 
 | Task | Command |
 |------|---------|
-| Run all tests | `pixi run test` |
+| Run all tests | `pixi run -e tests test` |
 | Run specific test | `pixi run pytest tests/functions/test_clean_names.py` |
 | Run tests matching pattern | `pixi run pytest -k "test_clean_names" -v` |
 | Run tests with coverage | `pixi run pytest --cov=janitor` |
@@ -557,6 +560,35 @@ documentation, but they can still be useful to maintainers working on the code.
 arguments, limitations, and examples. Retain implementation-only explanations
 as source comments when they clarify non-obvious code or algorithms for
 maintainers.
+
+### [2026-08-19] Select the Tests Environment for the Full Suite
+
+**Context**: Running the full test suite with `pixi run test`.
+**Learning**: The `test` task exists in multiple pixi environments, so the
+unqualified command is ambiguous.
+**Recommendation**: Run the full suite with `pixi run -e tests test`.
+
+### [2026-08-19] Add ELI5 Explanations for Complex Behavior
+
+**Context**: Documenting a feature with several join modes and edge cases.
+**Learning**: Complex public behavior should include a short, plain-language
+mental model in the code documentation as well as technical API details.
+**Recommendation**: Add an ELI5 section to non-trivial public docstrings or
+nearby documentation. Do not add redundant ELI5 comments to straightforward
+helpers.
+
+### [2026-08-19] Derive API Documentation Versions from the Release Sequence
+
+**Context**: Adding a `Version Changed` entry for a feature while other
+docstrings referenced a future minor release for deprecation.
+**Learning**: An unrelated deprecation target is not evidence for the version
+that will introduce a new feature. The package version and active release
+sequence determine the annotation.
+**Recommendation**: Before adding `Version Added`, `Version Changed`, or
+deprecation metadata, check the current version in `pyproject.toml` and recent
+release commits. Use the next patch version for ordinary unreleased changes
+unless a maintainer or release plan specifies a minor or major release. If the
+release target remains ambiguous, ask rather than copying another annotation.
 
 ---
 

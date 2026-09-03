@@ -7,6 +7,17 @@
 -   [PERF] Reduce peak memory in `_build_indexer_reorder_contents` for wide frames (reps >= 8) using single NumPy allocation; tall frames with few repetitions retain the original reshape path. - Issue #1655 @Anupam2400
 -   [ENH] `conditional_join` now picks the most selective `<`/`<=`/`>`/`>=` predicate as its binary-search anchor (instead of the first one supplied) when `keep` is `'first'` or `'last'`, fixing pathological slowdowns from unfavorable predicate ordering; the choice is estimated from a fixed-size sample so the selection cost no longer scales with input size; `keep='all'` output is unaffected. - Issue #1641 @samukweku
 -   [BUG] Fix `conditional_join` crash for `keep='last'` joins with a single `<`/`<=` window and multiple non-equi conditions - a missing `counts` argument to the Rust `index_starts_only_keep_last` call. - Issue #1641 @samukweku
+-   [BUG] `adorn_pct_formatting`, `adorn_ns` and `adorn_rounding` no longer
+    treat a numeric first column as data. The row identifier is now selected
+    by column position across the whole `adorn_*` family, so a frame with
+    duplicate column labels exempts only its first column; `adorn_ns` takes
+    the identifier from the frame being adorned rather than from `ns`, so a
+    counts frame that carries no identifier column keeps every count; a
+    counts frame sharing the column axis of the frame being adorned is
+    matched across by position, and a repeated label is otherwise matched
+    occurrence by occurrence, so duplicate labels no longer all read the
+    first count; and a DataFrame with no columns is returned unchanged
+    instead of raising `IndexError`. - Issue #1676 @dylanpulver
 -   [ENH] Avoid copying column data during `conditional_join` input
     validation. - Issue #1645, PR #1642 @samukweku
 -   [ENH] Limit `conditional_join` matching work to columns referenced by join

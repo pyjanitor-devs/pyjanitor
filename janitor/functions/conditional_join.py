@@ -69,6 +69,10 @@ def conditional_join(
     [`select_columns`][janitor.functions.select.select_columns] syntax.
 
     !!! warning
+        The `df_columns` and `right_columns` parameters are deprecated.
+        Select or rename columns on the DataFrame before calling `conditional_join`.
+
+    !!! warning
 
         The `use_numba` argument is deprecated.
 
@@ -279,9 +283,15 @@ def conditional_join(
         df_columns: Columns to select from `df` in the final output dataframe.
             Column selection is based on the
             [`select_columns`][janitor.functions.select.select_columns] syntax.
+            !!! warning "Deprecated in 0.33.0"
+                `df_columns` will be removed in a future release.
+                Select or rename columns directly on the DataFrame before calling `conditional_join`.
         right_columns: Columns to select from `right` in the final output dataframe.
             Column selection is based on the
             [`select_columns`][janitor.functions.select.select_columns] syntax.
+            !!! warning "Deprecated in 0.33.0"
+                `right_columns` will be removed in a future release.
+                Select or rename columns directly on the DataFrame before calling `conditional_join`.
         use_numba: Use numba, if installed, to accelerate the computation.
             !!! warning "Deprecated in 0.33.0"
         keep: Choose whether to return the first match, last match or all matches.
@@ -368,8 +378,26 @@ def _conditional_join_preliminary_checks(
 
     if isinstance(right, pd.Series):
         if not right.name:
-            raise ValueError("Unnamed Series are not supported for conditional_join.")
+            raise ValueError(
+                "Unnamed Series are not supported for conditional_join."
+            )
         right = right.to_frame()
+
+    if df_columns != slice(None):
+        warnings.warn(
+            "The 'df_columns' parameter is deprecated and will be removed in a future release. "
+            "Please select or rename columns on the left DataFrame before calling conditional_join.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
+    if right_columns != slice(None):
+        warnings.warn(
+            "The 'right_columns' parameter is deprecated and will be removed in a future release. "
+            "Please select or rename columns on the right DataFrame before calling conditional_join.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
 
     # Check MultiIndex column level mismatch first, before any column existence checks
     if df.columns.nlevels != right.columns.nlevels:
@@ -2619,16 +2647,18 @@ def _numba_equi_join(
     elif le_lt and ge_gt:
         conditions = [(le_arr1, le_arr2, op)]
         conditions.extend(rest)
-        left_index, right_index = _numba._numba_equi_join_range_join_non_monotonic(
-            left_index=left_index,
-            right_index=right_index,
-            slice_starts=slice_starts,
-            slice_ends=slice_ends,
-            ge_arr1=ge_arr1,
-            ge_arr2=ge_arr2,
-            ge_strict=ge_strict,
-            row_count=True if row_count else False,
-            tupled=conditions,
+        left_index, right_index = (
+            _numba._numba_equi_join_range_join_non_monotonic(
+                left_index=left_index,
+                right_index=right_index,
+                slice_starts=slice_starts,
+                slice_ends=slice_ends,
+                ge_arr1=ge_arr1,
+                ge_arr2=ge_arr2,
+                ge_strict=ge_strict,
+                row_count=True if row_count else False,
+                tupled=conditions,
+            )
         )
 
     elif le_lt and not rest:

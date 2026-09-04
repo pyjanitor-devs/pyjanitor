@@ -556,8 +556,14 @@ def _build_indices_positions(
     starts: np.ndarray | None = None,
     ends: np.ndarray | None = None,
 ):
-    """
-    Build indices for multiple joins
+    """Build public positional indices from compact join candidates.
+
+    ``left_index`` and ``right_index`` contain original dataframe index values.
+    ``starts``/``ends`` are optional half-open candidate boundaries and
+    ``positions`` maps each surviving candidate position into ``right_index``.
+    ``counts_array`` gives the surviving count for each left row; ``total`` is
+    the number of emitted pairs. The index arrays retain labels throughout;
+    only ``positions`` is positional indirection.
     """
     if keep == "all":
         left_index = janitor_rs.repeat_index(
@@ -605,8 +611,13 @@ def build_indices_matches(
     total: int,
     keep: str,
 ) -> dict:
-    """
-    Build indices for multiple joins, where `matches` exist
+    """Build indices while filtering candidates with a flat ``matches`` mask.
+
+    The mask is aligned with the candidate slices delimited by optional
+    ``starts`` and ``ends`` arrays (ends are exclusive). ``counts_array`` and
+    ``total`` describe surviving entries. The index arrays retain dataframe
+    labels while the mask and any positions tape remain positional. Empty
+    slices are valid and emit no pair.
     """
     if (keep == "all") and (starts is not None) and (ends is None):
         left = janitor_rs.repeat_index(

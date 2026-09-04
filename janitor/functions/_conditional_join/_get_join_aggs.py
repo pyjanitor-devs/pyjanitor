@@ -9,8 +9,15 @@ from janitor.functions._conditional_join import _agg_functions, _helpers
 
 
 def _agg_join_left(df: pd.DataFrame, aggfunc: list, indices: dict) -> pd.DataFrame:
-    """
-    Compute aggregation for multiple joins
+    """Aggregate the right side for left-driven compact join indices.
+
+    ``indices`` contains original dataframe index values and may include
+    half-open ``starts``/``ends`` boundaries, a flat ``matches`` mask, or a
+    ``positions``
+    tape indexing right-side positions. The index arrays retain dataframe
+    labels while the tape is positional indirection. Input indexes are usually
+    unique, but uniqueness is not required; their monotonic order is not
+    assured, so callers must preserve the supplied ordering explicitly.
     """
     if not indices["left_index"].size:
         dtypes = df.dtypes
@@ -404,8 +411,13 @@ def _agg_join_left(df: pd.DataFrame, aggfunc: list, indices: dict) -> pd.DataFra
 
 
 def _agg_join_right(right: pd.DataFrame, aggfunc: list, indices: dict) -> pd.DataFrame:
-    """
-    Compute aggregation for multiple joins
+    """Aggregate the left side for right-driven (reverse) joins.
+
+    The compact ``indices`` contract is the same as ``_agg_join_left`` but the
+    output is indexed by right-side dataframe index values and values come from
+    the left dataframe. Boundaries are half-open and the positions tape remains
+    positional indirection. Input indexes are usually unique, but uniqueness
+    is not required and monotonic ordering is not assured.
     """
     if not indices["left_index"].size:
         dtypes = right.dtypes

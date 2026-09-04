@@ -2648,15 +2648,15 @@ def _numba_equi_join(
         conditions = [(le_arr1, le_arr2, op)]
         conditions.extend(rest)
         left_index, right_index = _numba._numba_equi_join_range_join_non_monotonic(
-                left_index=left_index,
-                right_index=right_index,
-                slice_starts=slice_starts,
-                slice_ends=slice_ends,
-                ge_arr1=ge_arr1,
-                ge_arr2=ge_arr2,
-                ge_strict=ge_strict,
-                row_count=True if row_count else False,
-                tupled=conditions,
+            left_index=left_index,
+            right_index=right_index,
+            slice_starts=slice_starts,
+            slice_ends=slice_ends,
+            ge_arr1=ge_arr1,
+            ge_arr2=ge_arr2,
+            ge_strict=ge_strict,
+            row_count=True if row_count else False,
+            tupled=conditions,
         )
 
     elif le_lt and not rest:

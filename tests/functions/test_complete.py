@@ -809,3 +809,83 @@ def test_MI_1(MI):
     ).rename_axis(columns=[None, None])
     actual = MI.iloc[:2].complete({("a", "bar"): pd.Series(range(1, 5))})
     assert_frame_equal(actual, expected)
+
+
+@pytest.fixture
+def sample_df():
+    return pd.DataFrame(
+        {
+            "state": ["CA", "CA", "NY"],
+            "year": [2020, 2021, 2020],
+            "sales": [100, 150, 200],
+            "profit": [10, 15, 20],
+        }
+    )
+
+ 
+def test_complete_invalid_fill_value_column(sample_df):
+    with pytest.raises(
+        ValueError, match="not present in the dataframe"
+    ):
+        sample_df.complete(
+            "state", "year", fill_value={"non_existent_col": 0}
+        )
+ 
+
+def test_complete_partial_dict_fill(sample_df):
+    # Only specifying fill value for 'sales', leaving 'profit' alone
+    result = sample_df.complete(
+        "state", "year", fill_value={"sales": 0}
+    )
+
+    expected = pd.DataFrame(
+        {
+            "state": ["CA", "CA", "NY", "NY"],
+            "year": [2020, 2021, 2020, 2021],
+            "sales": [100.0, 150.0, 200.0, 0.0],
+            "profit": [10.0, 15.0, 20.0, None],
+        }
+    )
+    assert_frame_equal(result, expected)
+ 
+
+def test_complete_groupby(sample_df):
+    # To expand NY to include 2021, explicit categories/sequence must be passed,
+    # or group-by completes existing combinations within each group.
+    result = sample_df.groupby("state").complete(
+        {"year": [2020, 2021]}, fill_value=0
+    )
+
+    assert isinstance(result, pd.DataFrame)
+    # Now both CA and NY get 2020 & 2021 -> Total 4 rows
+    assert len(result) == 4
+    
+    # Verify NY 2021 missing row was filled with 0
+    ny_2021 = result[(result["state"] == "NY") & (result["year"] == 2021)].iloc[0]
+    assert ny_2021["sales"] == 0
+    assert ny_2021["profit"] == 0
+    
+
+def test_complete_explicit_flag(sample_df):
+    df_with_nan = sample_df.copy()
+    df_with_nan.loc[0, "sales"] = None  # Existing NaN in original data
+
+    # explicit=False should only fill implicit missing combinations, not existing NaNs
+    res_implicit = df_with_nan.complete(
+        "state", "year", fill_value={"sales": 0}, explicit=False
+    )
+    assert pd.isna(res_implicit.loc[0, "sales"])  # Original NaN stays NaN
+    assert res_implicit.loc[3, "sales"] == 0  # Missing row gets filled
+
+    # explicit=True fills both original NaNs and missing combinations
+    res_explicit = df_with_nan.complete(
+        "state", "year", fill_value={"sales": 0}, explicit=True
+    )
+    assert res_explicit.loc[0, "sales"] == 0
+    assert res_explicit.loc[3, "sales"] == 0
+
+ 
+def test_complete_scalar_fill(sample_df):
+    result = sample_df.complete("state", "year", fill_value=0)
+    assert result.loc[3, "sales"] == 0
+    assert result.loc[3, "profit"] == 0

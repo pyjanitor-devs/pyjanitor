@@ -7160,3 +7160,12 @@ def test_equi_le_ge_ge_ne_agg_rev(df, right):
     ).sort_index()
     actual = actual.loc[expected.index]
     assert_frame_equal(expected, actual)
+
+
+def test_conditional_join_columns_deprecation_warning(dummy):
+    """Test that using df_columns or right_columns triggers a DeprecationWarning."""
+    with pytest.warns(DeprecationWarning, match="df_columns"):
+        dummy.conditional_join(dummy, ("id", "id", ">"), df_columns="id")
+
+    with pytest.warns(DeprecationWarning, match="right_columns"):
+        dummy.conditional_join(dummy, ("id", "id", ">"), right_columns="id")

@@ -515,6 +515,13 @@ rm -rf .pixi && pixi install
 
 ## Learned Patterns
 
+### Preserve Source Metadata in Completion
+
+`complete` merges generated combinations with the source frame. The generated
+left input is a plain DataFrame, so restore the source constructor and finalize
+its metadata after the merge, before the fill and early-return paths. Cover
+subclasses and grouped inputs when changing this boundary.
+
 <!--
 This section is for agents to record new learnings.
 Add entries in the format:

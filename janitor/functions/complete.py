@@ -320,6 +320,9 @@ def _computations_complete(
         sort=False,
         indicator=indicator,
     )
+    # The expanded combinations are a plain DataFrame, so the merge cannot
+    # inherit the original frame's subclass or metadata from its left input.
+    out = df._constructor(out).__finalize__(df)
     if indicator:
         indicator = out.pop(indicator)
     if not out.columns.equals(columns):

@@ -809,3 +809,60 @@ def test_MI_1(MI):
     ).rename_axis(columns=[None, None])
     actual = MI.iloc[:2].complete({("a", "bar"): pd.Series(range(1, 5))})
     assert_frame_equal(actual, expected)
+
+
+class MetadataFrame(pd.DataFrame):
+    """DataFrame subclass with pandas-propagated metadata."""
+
+    _metadata = ["provenance"]
+
+    @property
+    def _constructor(self):
+        """Preserve the subclass in pandas operations."""
+        return MetadataFrame
+
+
+@pytest.mark.parametrize("grouped", [False, True])
+@pytest.mark.parametrize(
+    "options",
+    [{}, {"fill_value": 0}, {"fill_value": 0, "explicit": False}],
+)
+def test_complete_preserves_subclass_metadata(grouped, options):
+    """Completion preserves the source type and metadata across fill paths."""
+    frame = MetadataFrame(
+        {
+            "group": [1, 1],
+            "year": [2020, 2021],
+            "kind": ["a", "b"],
+            "value": [1.0, np.nan],
+        }
+    )
+    frame.provenance = "source"
+    frame.attrs = {"description": "observations"}
+    original = frame.copy(deep=True)
+    plain = pd.DataFrame(frame)
+    source = frame.groupby("group") if grouped else frame
+    reference = plain.groupby("group") if grouped else plain
+
+    result = source.complete("year", "kind", **options)
+    expected = reference.complete("year", "kind", **options)
+
+    assert isinstance(result, MetadataFrame)
+    assert result.provenance == "source"
+    assert result.attrs == frame.attrs
+    assert_frame_equal(pd.DataFrame(result), expected)
+    assert_frame_equal(frame, original)
+    assert frame.provenance == original.provenance
+
+
+@pytest.mark.parametrize("empty", [False, True])
+def test_complete_metadata_without_missing_values(empty):
+    """Preserve metadata when completion has no values to fill."""
+    frame = MetadataFrame({"year": [2020], "value": [1]})
+    if empty:
+        frame = frame.iloc[:0]
+    frame.provenance = "source"
+    result = frame.complete("year", fill_value=0)
+    assert isinstance(result, MetadataFrame)
+    assert result.provenance == "source"
+    assert_frame_equal(result, frame)

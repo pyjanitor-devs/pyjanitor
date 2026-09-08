@@ -342,6 +342,27 @@ def test_check_aggfunc_type(dummy, series):
         dummy.join_agg(series, ("id", "B", "<"), aggfunc=1)
 
 
+@pytest.mark.parametrize("aggregation", ["sum", "min", "max", "prod", "size"])
+@pytest.mark.parametrize("reverse", [False, True])
+@pytest.mark.parametrize("empty_side", ["left", "right"])
+def test_join_agg_rejects_empty_inputs(dummy, series, aggregation, reverse, empty_side):
+    """Raise ValueError for either empty input across all aggregations."""
+    left = dummy.iloc[0:0] if empty_side == "left" else dummy
+    right = series.iloc[0:0] if empty_side == "right" else series
+    column = "id" if reverse else "B"
+
+    with pytest.raises(
+        ValueError,
+        match=r"`join_agg` does not support empty input dataframes\.",
+    ):
+        left.join_agg(
+            right,
+            ("id", "B", "<"),
+            reverse=reverse,
+            aggfunc=[(column, aggregation)],
+        )
+
+
 def test_check_aggfunc_ne(dummy, series):
     """
     Raise TypeError if all join conditions are !=

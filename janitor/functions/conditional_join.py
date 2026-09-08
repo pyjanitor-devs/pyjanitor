@@ -378,23 +378,26 @@ def _conditional_join_preliminary_checks(
 
     if isinstance(right, pd.Series):
         if not right.name:
-            raise ValueError(
-                "Unnamed Series are not supported for conditional_join."
-            )
+            raise ValueError("Unnamed Series are not supported for conditional_join.")
         right = right.to_frame()
+
+    if aggfunc is not None and (df.empty or right.empty):
+        raise ValueError("`join_agg` does not support empty input dataframes.")
 
     if df_columns != slice(None):
         warnings.warn(
-            "The 'df_columns' parameter is deprecated and will be removed in a future release. "
-            "Please select or rename columns on the left DataFrame before calling conditional_join.",
+            "The 'df_columns' parameter is deprecated and will be removed in a "
+            "future release. Please select or rename columns on the left "
+            "DataFrame before calling conditional_join.",
             DeprecationWarning,
             stacklevel=2,
         )
 
     if right_columns != slice(None):
         warnings.warn(
-            "The 'right_columns' parameter is deprecated and will be removed in a future release. "
-            "Please select or rename columns on the right DataFrame before calling conditional_join.",
+            "The 'right_columns' parameter is deprecated and will be removed in a "
+            "future release. Please select or rename columns on the right "
+            "DataFrame before calling conditional_join.",
             DeprecationWarning,
             stacklevel=2,
         )
@@ -1424,6 +1427,8 @@ def join_agg(
     `sum`, `prod`, `size`, `min`, `max`.
 
     This is limited to an inner join.
+
+    Both input objects must contain at least one row.
 
     The index of the returned dataframe represent the positions
     of the rows from the left dataframe that have matches

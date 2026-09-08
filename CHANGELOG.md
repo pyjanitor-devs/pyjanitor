@@ -28,6 +28,7 @@
 -   [ENH] Improve `polars.complete` and `polars.expand`, avoiding the potentially expensive schema computation on lazy
 frames. @samukweku
 -   [ENH] Add `strip_whitespace` to `clean_names` function. - Issue #1385
+-   [ENH] Added `flag_in_range` function to flag values outside a given range. - Issue #708 @naseem173
 -   [TST] Fix 'HealthCheck' failure in 'test_ecdf_string' by adding missing '@settings' decorator. @mjsr84
 -   [INF] Automate contributor recognition: weekly workflow discovers new commit authors and regenerates the all-contributors table; backfilled 30 missing contributors. - Issue #1623
 

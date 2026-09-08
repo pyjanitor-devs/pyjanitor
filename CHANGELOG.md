@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+- [BUG] Reject empty input dataframes in `join_agg`. - Issue #1715, PR #1716
+  @samukweku
 - [DEP] Deprecate `df_columns` and `right_columns` parameters in `conditional_join`. - Issue #1712 @sumangouda
 - [DOC] Add documentation explaining when cumulative-event aggregation is preferable to range join aggregations. - Issue #1702 @sumangouda
 -   [ENH] Avoid materializing all unequal pairs in `conditional_join` with

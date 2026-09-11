@@ -31,3 +31,13 @@ def test_column_names_iterable_type(null_df, column_names):
     excepted = null_df.fillna(3)
 
     assert result.equals(excepted)
+
+
+@pytest.mark.functions
+def test_fill_empty_generator(null_df):
+    """One-shot iterables must still fill every requested column."""
+    column_names = map(lambda x: x if x < 2 else str(x), range(4))
+    result = null_df.fill_empty(column_names=column_names, value=3)
+    expected = null_df.fillna(3)
+
+    assert result.equals(expected)

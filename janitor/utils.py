@@ -363,7 +363,7 @@ def rename_kwargs(func_name: str, kwargs: Dict, aliases: Dict):
 
 def check_column(
     df: pd.DataFrame, column_names: Union[Iterable, str], present: bool = True
-):
+) -> list:
     """One-liner syntactic sugar for checking the presence or absence
     of columns.
 
@@ -378,6 +378,9 @@ def check_column(
     One can also guarantee that `'a'` and `'b'` are not present
     by switching to `present=False`.
 
+    One-shot iterables such as `map` objects and generators are materialized
+    so callers can reuse the returned list.
+
     Args:
         df: The name of the variable.
         column_names: A list of column names we want to check to see if
@@ -388,15 +391,22 @@ def check_column(
 
     Raises:
         ValueError: If data is not the expected type.
+
+    Returns:
+        A list of `column_names`. One-shot iterables are materialized so
+        callers can reuse the names after this check.
     """
     if isinstance(column_names, str) or not isinstance(column_names, Iterable):
         column_names = [column_names]
+    else:
+        column_names = list(column_names)
 
     for column_name in column_names:
         if present and column_name not in df.columns:  # skipcq: PYL-R1720
             raise ValueError(f"{column_name} not present in dataframe columns!")
         elif not present and column_name in df.columns:
             raise ValueError(f"{column_name} already present in dataframe columns!")
+    return column_names
 
 
 def skipna(f: Callable) -> Callable:

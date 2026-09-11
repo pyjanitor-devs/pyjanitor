@@ -75,7 +75,7 @@ def flag_nulls(
         columns = [columns]
 
     # Input sanitation checks
-    check_column(df, columns)
+    columns = check_column(df, columns)
     check_column(df, [column_name], present=False)
 
     # This algorithm works best for n_rows >> n_cols. See issue #501

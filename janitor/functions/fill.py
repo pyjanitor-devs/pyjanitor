@@ -177,7 +177,7 @@ def fill_empty(
         A pandas DataFrame with `NaN` values filled.
     """
 
-    check_column(df, column_names)
+    column_names = check_column(df, column_names)
     return _fill_empty(df, column_names, value=value)
 
 

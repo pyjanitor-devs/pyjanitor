@@ -354,3 +354,51 @@ def test_tabyl_preserves_numeric_types_for_adorn():
     for col in ["no", "yes"]:
         if col in pct_result.columns:
             assert pd.api.types.is_numeric_dtype(pct_result[col])
+
+@pytest.mark.functions
+def test_adorn_functions_preserve_numeric_first_column():
+    """Test that adorn functions preserve numeric values in column 0."""
+    df_counts = pd.DataFrame(
+        {
+            "cyl": [4, 6, 8],
+            "gear_3": [1, 2, 1],
+            "gear_4": [2, 2, 3],
+        }
+    )
+
+    df_pct = pd.DataFrame(
+        {
+            "cyl": [4, 6, 8],
+            "gear_3": ["33.3%", "50.0%", "25.0%"],
+            "gear_4": ["66.7%", "50.0%", "75.0%"],
+        }
+    )
+
+    df_unrounded = pd.DataFrame(
+        {
+            "cyl": [4, 6, 8],
+            "gear_3": [33.333333, 50.000000, 25.000000],
+            "gear_4": [66.666667, 50.000000, 75.000000],
+        }
+    )
+
+    # 1. Test adorn_pct_formatting
+    raw_pct_df = pd.DataFrame(
+        {
+            "cyl": [4, 6, 8],
+            "gear_3": [0.333333, 0.500000, 0.250000],
+            "gear_4": [0.666667, 0.500000, 0.750000],
+        }
+    )
+    result_pct = raw_pct_df.adorn_pct_formatting(digits=1)
+    assert list(result_pct["cyl"]) == [4, 6, 8]
+
+    # 2. Test adorn_ns
+    result_ns = df_pct.adorn_ns(ns=df_counts)
+    assert list(result_ns["cyl"]) == [4, 6, 8]
+    assert result_ns.loc[0, "gear_3"] == "33.3% (1)"
+
+    # 3. Test adorn_rounding
+    result_rounding = df_unrounded.adorn_rounding(digits=1)
+    assert list(result_rounding["cyl"]) == [4, 6, 8]
+    assert result_rounding.loc[0, "gear_3"] == 33.3

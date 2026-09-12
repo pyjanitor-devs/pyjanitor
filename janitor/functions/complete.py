@@ -280,17 +280,24 @@ def _computations_complete(
     A DataFrame, with rows of missing values, if any, is returned.
     """
     check("explicit", explicit, [bool])
-
     check("sort", sort, [bool])
 
     fill_value_check = is_scalar(fill_value), isinstance(fill_value, dict)
     if not any(fill_value_check):
         raise TypeError("fill_value should either be a dictionary or a scalar value.")
+
+    cols = getattr(df, "obj", df).columns
     if fill_value_check[-1]:
-        check_column(df, fill_value)
+        missing_cols = set(fill_value.keys()) - set(cols)
+        if missing_cols:
+            raise ValueError(
+                f"The following columns in `fill_value` are not present in the dataframe: {missing_cols}"
+            )
         for column_name, value in fill_value.items():
             if not is_scalar(value):
                 raise ValueError(f"The value for {column_name} should be a scalar.")
+
+    # Call expand on original df (preserves DataFrameGroupBy behavior)
     uniques = df.expand(*columns, by=by, sort=sort)
     if (by is None) and isinstance(df, pd.DataFrame):
         merge_columns = uniques.columns.tolist()
@@ -304,14 +311,17 @@ def _computations_complete(
         )
         merge_columns = [*uniques.index.names]
         merge_columns.extend(uniques.columns.tolist())
+
     if not isinstance(df, pd.DataFrame):
         df = df.obj
+
     columns = df.columns
     if (fill_value is not None) and not explicit:
         # to get a name that does not exist in the columns
         indicator = "".join(columns)
     else:
         indicator = False
+
     out = pd.merge(
         uniques,
         df,
@@ -320,29 +330,39 @@ def _computations_complete(
         sort=False,
         indicator=indicator,
     )
+
     if indicator:
         indicator = out.pop(indicator)
+
     if not out.columns.equals(columns):
         out = out.reindex(columns=columns)
+
     if fill_value is None:
         return out
+
     # keep only columns that are not part of column_checker
     # IOW, we are excluding columns that were not used
     # to generate the combinations
     null_columns = out.columns.difference(merge_columns)
     null_columns = [col for col in null_columns if out[col].hasnans]
+
     if not null_columns:
         return out
+
     if is_scalar(fill_value):
         # faster when fillna operates on a Series basis
         fill_value = {col: fill_value for col in null_columns}
     else:
-        fill_value = {col: fill_value[col] for col in null_columns}
+        fill_value = {
+            col: fill_value[col] for col in null_columns if col in fill_value
+        }
 
     if not fill_value:
         return out
+
     if explicit:
         return out.fillna(fill_value)
+
     # when explicit is False
     # use the indicator parameter to identify rows
     # for `left_only`, and fill the relevant columns

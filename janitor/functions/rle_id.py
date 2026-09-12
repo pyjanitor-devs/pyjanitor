@@ -4,15 +4,18 @@ import copy
 from typing import Hashable, Iterable, Union
 
 import pandas as pd
-import pandas_flavor as pf
 from pandas.api.types import is_list_like
 from pandas.core.groupby.generic import DataFrameGroupBy
 
+from janitor.registration import (
+    register_dataframe_groupby_method,
+    register_dataframe_method,
+)
 from janitor.utils import check_column
 
 
-@pf.register_dataframe_groupby_method
-@pf.register_dataframe_method
+@register_dataframe_groupby_method
+@register_dataframe_method
 def rle_id(
     df: Union[pd.DataFrame, DataFrameGroupBy],
     column_names: Union[Hashable, Iterable[Hashable]],

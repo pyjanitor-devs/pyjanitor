@@ -6,10 +6,10 @@ from functools import lru_cache
 from typing import Optional
 
 import pandas as pd
-import pandas_flavor as pf
 import requests
 
 from janitor.errors import JanitorError
+from janitor.registration import register_dataframe_method
 
 from .utils import check, deprecated_alias, is_connected
 
@@ -401,7 +401,7 @@ def _check_wb_years(year: int):
 #     return rate
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 @deprecated_alias(colname="column_name")
 def convert_currency(
     df: pd.DataFrame,
@@ -617,7 +617,7 @@ def _inflate_currency(
     return inflator
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 def inflate_currency(
     df: pd.DataFrame,
     column_name: str = None,

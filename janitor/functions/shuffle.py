@@ -3,10 +3,11 @@
 from typing import Any
 
 import pandas as pd
-import pandas_flavor as pf
+
+from janitor.registration import register_dataframe_method
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 def shuffle(
     df: pd.DataFrame, random_state: Any = None, reset_index: bool = True
 ) -> pd.DataFrame:

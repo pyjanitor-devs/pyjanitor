@@ -1,8 +1,8 @@
 from typing import Callable, Dict, Hashable, List, Optional, Tuple, Union
 
 import pandas as pd
-import pandas_flavor as pf
 
+from janitor.registration import register_dataframe_method
 from janitor.utils import check, check_column, deprecated_alias
 
 
@@ -17,7 +17,7 @@ def _get_transform_column_result(
     return function(series)
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 @deprecated_alias(col_name="column_name", dest_col_name="dest_column_name")
 def transform_column(
     df: pd.DataFrame,
@@ -124,7 +124,7 @@ def transform_column(
     return df.assign(**{dest_column_name: result})
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 @deprecated_alias(columns="column_names", new_names="new_column_names")
 def transform_columns(
     df: pd.DataFrame,

@@ -5,10 +5,10 @@ from datetime import date, datetime, time, timedelta
 from typing import Any, Callable, Hashable, List, Tuple, Union
 
 import pandas as pd
-import pandas_flavor as pf
 from pandas.api.types import is_list_like, is_scalar
 from pandas.errors import OutOfBoundsDatetime
 
+from janitor.registration import register_dataframe_method
 from janitor.utils import deprecated_alias, find_stack_level, refactored_function
 
 _EXCEL_EPOCH = datetime(1899, 12, 30)
@@ -78,7 +78,7 @@ def _format_failed_strings(values: List[str], out_class: str) -> str:
     )
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 @deprecated_alias(column="column_names")
 def convert_excel_date(
     df: pd.DataFrame, column_names: Union[Hashable, list]
@@ -124,7 +124,7 @@ def convert_excel_date(
     return df.assign(**dictionary)
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 @deprecated_alias(column="column_names")
 def convert_matlab_date(
     df: pd.DataFrame, column_names: Union[Hashable, list]
@@ -431,7 +431,10 @@ def _convert_to_date_or_datetime(
         )
 
     if character_fun is None:
-        character_fun = lambda value: pd.to_datetime(value, errors="coerce")
+
+        def character_fun(value):
+            """Parse strings using the default coercion policy."""
+            return pd.to_datetime(value, errors="coerce")
 
     values, finalize = _prepare_input(x)
     failed_strings: List[str] = []
@@ -697,7 +700,7 @@ def sas_numeric_to_date(
     return results
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 @refactored_function(
     message=(
         "This function will be deprecated in a 1.x release. "

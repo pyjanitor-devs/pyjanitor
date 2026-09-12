@@ -1,13 +1,13 @@
 """Implementation of the `collapse_levels` function."""
 
 import pandas as pd
-import pandas_flavor as pf
 from pandas.api.types import is_string_dtype
 
+from janitor.registration import register_dataframe_method
 from janitor.utils import check
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 def collapse_levels(
     df: pd.DataFrame,
     sep: str = None,

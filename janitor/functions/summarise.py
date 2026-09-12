@@ -6,17 +6,20 @@ from functools import singledispatch
 from typing import Any
 
 import pandas as pd
-import pandas_flavor as pf
 from pandas.api.types import is_scalar
 from pandas.core.common import apply_if_callable
 from pandas.core.groupby.generic import DataFrameGroupBy
 
 from janitor.functions.select import get_index_labels
+from janitor.registration import (
+    register_dataframe_groupby_method,
+    register_dataframe_method,
+)
 from janitor.utils import refactored_function
 
 
-@pf.register_dataframe_groupby_method
-@pf.register_dataframe_method
+@register_dataframe_groupby_method
+@register_dataframe_method
 @refactored_function(
     message=("This function is deprecated. Please use `pd.DataFrame.agg` instead.")
 )

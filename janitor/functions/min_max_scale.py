@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import pandas as pd
-import pandas_flavor as pf
 
+from janitor.registration import register_dataframe_method
 from janitor.utils import deprecated_alias, deprecated_kwargs
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 @deprecated_kwargs(
     "old_min",
     "old_max",

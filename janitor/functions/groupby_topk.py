@@ -3,12 +3,12 @@
 from typing import Hashable, Union
 
 import pandas as pd
-import pandas_flavor as pf
 
+from janitor.registration import register_dataframe_method
 from janitor.utils import check, check_column, deprecated_alias
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 @deprecated_alias(groupby_column_name="by", sort_column_name="column")
 def groupby_topk(
     df: pd.DataFrame,

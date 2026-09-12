@@ -6,12 +6,12 @@ from functools import singledispatch
 
 import numpy as np
 import pandas as pd
-import pandas_flavor as pf
 
+from janitor.registration import register_dataframe_method
 from janitor.utils import check, deprecated_alias
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 @deprecated_alias(row_number="row_numbers", remove_row="remove_rows")
 def row_to_names(
     df: pd.DataFrame,

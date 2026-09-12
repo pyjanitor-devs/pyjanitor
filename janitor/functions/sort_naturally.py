@@ -3,11 +3,12 @@
 from typing import Any
 
 import pandas as pd
-import pandas_flavor as pf
 from natsort import index_natsorted
 
+from janitor.registration import register_dataframe_method
 
-@pf.register_dataframe_method
+
+@register_dataframe_method
 def sort_naturally(
     df: pd.DataFrame, column_name: str, **natsorted_kwargs: Any
 ) -> pd.DataFrame:

@@ -11,12 +11,12 @@ from typing import Callable, Literal, Optional
 
 import numpy as np
 import pandas as pd
-import pandas_flavor as pf
 
+from janitor.registration import register_dataframe_method
 from janitor.utils import check
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 def adorn_totals(
     df: pd.DataFrame,
     where: Literal["row", "col", "both"] = "row",
@@ -112,7 +112,7 @@ def adorn_totals(
     return df
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 def adorn_percentages(
     df: pd.DataFrame,
     denominator: Literal["row", "col", "all"] = "row",
@@ -200,7 +200,7 @@ def adorn_percentages(
     return df
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 def adorn_pct_formatting(
     df: pd.DataFrame,
     digits: int = 1,
@@ -293,7 +293,7 @@ def adorn_pct_formatting(
     return df
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 def adorn_ns(
     df: pd.DataFrame,
     position: Literal["front", "rear"] = "rear",
@@ -390,7 +390,7 @@ def adorn_ns(
     return df
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 def adorn_title(
     df: pd.DataFrame,
     placement: Literal["top", "combined"] = "top",
@@ -462,7 +462,7 @@ def adorn_title(
     return df
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 def adorn_rounding(
     df: pd.DataFrame,
     digits: int = 1,

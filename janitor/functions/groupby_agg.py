@@ -3,12 +3,12 @@
 from typing import Callable, List, Union
 
 import pandas as pd
-import pandas_flavor as pf
 
+from janitor.registration import register_dataframe_method
 from janitor.utils import deprecated_alias, refactored_function
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 @deprecated_alias(new_column="new_column_name", agg_column="agg_column_name")
 @refactored_function(
     message=(

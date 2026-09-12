@@ -5,16 +5,16 @@ from __future__ import annotations
 import unicodedata
 
 import pandas as pd
-import pandas_flavor as pf
 from pandas.api.types import is_scalar
 
 from janitor.errors import JanitorError
 from janitor.functions.select import get_index_labels
 from janitor.functions.utils import _is_str_or_cat
+from janitor.registration import register_dataframe_method
 from janitor.utils import deprecated_alias
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 @deprecated_alias(preserve_original_columns="preserve_original_labels")
 def clean_names(
     df: pd.DataFrame,

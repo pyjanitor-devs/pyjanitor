@@ -3,10 +3,11 @@
 from typing import Hashable
 
 import pandas as pd
-import pandas_flavor as pf
+
+from janitor.registration import register_dataframe_method
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 def drop_duplicate_columns(
     df: pd.DataFrame, column_name: Hashable, nth_index: int = 0
 ) -> pd.DataFrame:

@@ -4,14 +4,14 @@ from typing import Any, Hashable, Iterable, Union
 
 import numpy as np
 import pandas as pd
-import pandas_flavor as pf
 from pandas.api.types import is_list_like
 
 from janitor.functions.select import get_index_labels
+from janitor.registration import register_dataframe_method
 from janitor.utils import check_column, deprecated_alias, find_stack_level
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 @deprecated_alias(columns="column_names")
 def encode_categorical(
     df: pd.DataFrame,

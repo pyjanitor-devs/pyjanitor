@@ -3,12 +3,13 @@
 from typing import Hashable, Iterable, List, Optional, Tuple, Union
 
 import pandas as pd
-import pandas_flavor as pf
+
+from janitor.registration import register_dataframe_method
 
 from .utils import deprecated_alias
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 @deprecated_alias(
     target_columns="target_column_names",
     feature_columns="feature_column_names",

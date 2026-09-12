@@ -4,12 +4,12 @@ from typing import Hashable, Iterable, Optional
 
 import numpy as np
 import pandas as pd
-import pandas_flavor as pf
 
+from janitor.registration import register_dataframe_method
 from janitor.utils import check
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 def jitter(
     df: pd.DataFrame,
     column_name: Hashable,

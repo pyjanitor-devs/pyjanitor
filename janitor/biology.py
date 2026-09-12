@@ -1,7 +1,8 @@
 """Biology and bioinformatics-oriented data cleaning functions."""
 
 import pandas as pd
-import pandas_flavor as pf
+
+from janitor.registration import register_dataframe_method
 
 from .utils import deprecated_alias, import_message
 
@@ -16,7 +17,7 @@ except ImportError:
     )
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 @deprecated_alias(col_name="column_name")
 def join_fasta(
     df: pd.DataFrame, filename: str, id_col: str, column_name: str

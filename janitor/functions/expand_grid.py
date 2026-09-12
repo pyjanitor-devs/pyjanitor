@@ -9,7 +9,6 @@ from typing import Optional, Union
 
 import numpy as np
 import pandas as pd
-import pandas_flavor as pf
 from pandas.api.types import is_scalar
 from pandas.core.col import Expression
 from pandas.core.common import apply_if_callable
@@ -17,12 +16,16 @@ from pandas.core.dtypes.concat import concat_compat
 from pandas.core.groupby.generic import DataFrameGroupBy
 
 from janitor.functions.utils import _computations_expand_grid
+from janitor.registration import (
+    register_dataframe_groupby_method,
+    register_dataframe_method,
+)
 from janitor.utils import check, check_column, find_stack_level, refactored_function
 
 warnings.simplefilter("always", DeprecationWarning)
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 @refactored_function(
     message=(
         "This function will be deprecated in a 1.x release. "
@@ -142,8 +145,8 @@ def expand_grid(
     return pd.DataFrame(others, copy=False)
 
 
-@pf.register_dataframe_groupby_method
-@pf.register_dataframe_method
+@register_dataframe_groupby_method
+@register_dataframe_method
 def expand(
     df: pd.DataFrame | DataFrameGroupBy,
     *columns: tuple,

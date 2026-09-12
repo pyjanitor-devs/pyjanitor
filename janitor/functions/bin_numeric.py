@@ -3,14 +3,14 @@
 from typing import Any, Optional, Sequence, Union
 
 import pandas as pd
-import pandas_flavor as pf
 
+from janitor.registration import register_dataframe_method
 from janitor.utils import check, check_column, deprecated_alias
 
 ScalarSequence = Sequence[float]
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 @deprecated_alias(
     from_column="from_column_name",
     to_column="to_column_name",

@@ -6,9 +6,9 @@ from collections.abc import Callable, Iterable
 from typing import Hashable, Literal
 
 import pandas as pd
-import pandas_flavor as pf
 from pandas.api.types import is_numeric_dtype
 
+from janitor.registration import register_dataframe_method
 from janitor.utils import check, check_column
 
 ZeroMadStrategy = Literal["skip", "center", "raise", "one"]
@@ -48,7 +48,7 @@ def _normalize_columns(
     return list(dict.fromkeys(columns))
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 def scale_mad(
     df: pd.DataFrame,
     columns: Iterable[Hashable]

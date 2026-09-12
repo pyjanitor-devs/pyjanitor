@@ -6,7 +6,8 @@ from typing import Hashable, Literal, Optional
 
 import numpy as np
 import pandas as pd
-import pandas_flavor as pf
+
+from janitor.registration import register_dataframe_method
 
 from .utils import deprecated_alias, import_message
 
@@ -76,7 +77,7 @@ except ImportError:
     )
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 @deprecated_alias(smiles_col="smiles_column_name", mols_col="mols_column_name")
 def smiles2mol(
     df: pd.DataFrame,
@@ -159,7 +160,7 @@ def smiles2mol(
     return df
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 @deprecated_alias(mols_col="mols_column_name")
 def morgan_fingerprint(
     df: pd.DataFrame,
@@ -283,7 +284,7 @@ def morgan_fingerprint(
     return fpdf
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 @deprecated_alias(mols_col="mols_column_name")
 def molecular_descriptors(df: pd.DataFrame, mols_column_name: Hashable) -> pd.DataFrame:
     """Convert a column of RDKIT mol objects into a Pandas DataFrame
@@ -405,7 +406,7 @@ def molecular_descriptors(df: pd.DataFrame, mols_column_name: Hashable) -> pd.Da
     return pd.DataFrame(feats)
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 @deprecated_alias(mols_col="mols_column_name")
 def maccs_keys_fingerprint(
     df: pd.DataFrame, mols_column_name: Hashable

@@ -4,9 +4,9 @@ from operator import methodcaller
 from typing import Any, Hashable, Iterable, Union
 
 import pandas as pd
-import pandas_flavor as pf
 from multipledispatch import dispatch
 
+from janitor.registration import register_dataframe_method
 from janitor.utils import (
     check,
     check_column,
@@ -15,7 +15,7 @@ from janitor.utils import (
 )
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 @refactored_function(
     message=(
         "This function will be deprecated in a 1.x release. "
@@ -121,7 +121,7 @@ class _FILLTYPE(Enum):
     DOWNUP = "ffill", "bfill"
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 @refactored_function(
     message="This function will be deprecated in a 1.x release. "
     "Kindly use `jn.impute` instead."

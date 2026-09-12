@@ -5,12 +5,12 @@ from __future__ import annotations
 from typing import Union
 
 import pandas as pd
-import pandas_flavor as pf
 
+from janitor.registration import register_dataframe_method
 from janitor.utils import check
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 def change_index_dtype(
     df: pd.DataFrame, dtype: Union[str, dict], axis: str = "index"
 ) -> pd.DataFrame:

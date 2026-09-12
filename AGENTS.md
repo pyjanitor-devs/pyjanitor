@@ -515,12 +515,17 @@ rm -rf .pixi && pixi install
 
 ## Learned Patterns
 
-### Preserve Source Metadata in Completion
+### Preserve Source Metadata at Registration
 
-`complete` merges generated combinations with the source frame. The generated
-left input is a plain DataFrame, so restore the source constructor and finalize
-its metadata after the merge, before the fill and early-return paths. Cover
-subclasses and grouped inputs when changing this boundary.
+Register DataFrame and grouped-DataFrame methods through `janitor.registration`.
+The shared wrapper preserves the first input frame's subclass and metadata for
+plain DataFrame results, including grouped sources. Explicit result subtypes
+remain intact. It leaves other return types and
+in-place results untouched; explicit result `attrs` take precedence over inherited
+ones. Use the same wrapper for direct function calls and bound pandas accessors.
+Do not add one-off constructor restoration inside individual functions such as
+`complete`. Cover subclass metadata, grouped and keyword inputs, result attributes,
+and methods returning other types when changing this boundary.
 
 <!--
 This section is for agents to record new learnings.

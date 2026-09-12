@@ -3,12 +3,12 @@
 from typing import Hashable
 
 import pandas as pd
-import pandas_flavor as pf
 
+from janitor.registration import register_dataframe_method
 from janitor.utils import deprecated_alias
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 @deprecated_alias(column="column_name")
 def dropnotnull(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
     """Drop rows that do *not* have null values in the given column.

@@ -5,8 +5,8 @@ from typing import Any, Dict, Hashable, Iterable, List, Optional
 
 import numpy as np
 import pandas as pd
-import pandas_flavor as pf
 
+from janitor.registration import register_dataframe_method
 from janitor.utils import (
     deprecated_alias,
     find_stack_level,
@@ -16,7 +16,7 @@ from janitor.utils import (
 warnings.simplefilter("always", DeprecationWarning)
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 @deprecated_alias(column="column_name")
 def filter_string(
     df: pd.DataFrame,
@@ -106,7 +106,7 @@ def filter_string(
     return df[criteria]
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 @refactored_function(
     message=(
         "This function will be deprecated in a 1.x release. "
@@ -192,7 +192,7 @@ def filter_on(
     return df.query(criteria)
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 @deprecated_alias(column="column_name", start="start_date", end="end_date")
 def filter_date(
     df: pd.DataFrame,
@@ -306,7 +306,7 @@ def filter_date(
     return df.loc[_date_filter_conditions(_filter_list), :]
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 @refactored_function(
     message=(
         "This function will be deprecated in a 1.x release. "

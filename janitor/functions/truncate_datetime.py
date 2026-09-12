@@ -2,11 +2,12 @@
 
 import numpy as np
 import pandas as pd
-import pandas_flavor as pf
 from pandas.api.types import is_datetime64_any_dtype
 
+from janitor.registration import register_dataframe_method
 
-@pf.register_dataframe_method
+
+@register_dataframe_method
 def truncate_datetime_dataframe(
     df: pd.DataFrame,
     datepart: str,

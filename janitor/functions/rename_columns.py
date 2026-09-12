@@ -1,12 +1,12 @@
 from typing import Callable, Dict, Union
 
 import pandas as pd
-import pandas_flavor as pf
 
+from janitor.registration import register_dataframe_method
 from janitor.utils import check_column, deprecated_alias, refactored_function
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 @refactored_function(
     message=(
         "This function will be deprecated in a 1.x release. "
@@ -58,7 +58,7 @@ def rename_column(
     return df.rename(columns={old_column_name: new_column_name})
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 @refactored_function(
     message=(
         "This function will be deprecated in a 1.x release. "

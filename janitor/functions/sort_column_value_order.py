@@ -1,12 +1,12 @@
 """Implementation of the `sort_column_value_order` function."""
 
 import pandas as pd
-import pandas_flavor as pf
 
+from janitor.registration import register_dataframe_method
 from janitor.utils import check, check_column
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 def sort_column_value_order(
     df: pd.DataFrame,
     column: str,

@@ -2,7 +2,8 @@
 
 import numpy as np
 import pandas as pd
-import pandas_flavor as pf
+
+from janitor.registration import register_dataframe_method
 
 from .utils import check, import_message
 
@@ -17,7 +18,7 @@ except ImportError:
     )
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 def convert_units(
     df: pd.DataFrame,
     column_name: str = None,

@@ -3,15 +3,15 @@
 from typing import Any, Hashable
 
 import pandas as pd
-import pandas_flavor as pf
 from pandas.api.types import is_bool_dtype
 from pandas.core.col import Expression
 from pandas.core.common import apply_if_callable
 
+from janitor.registration import register_dataframe_method
 from janitor.utils import deprecated_alias
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 @deprecated_alias(target_col="target_column_name")
 def update_where(
     df: pd.DataFrame,

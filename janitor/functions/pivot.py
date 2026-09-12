@@ -8,7 +8,6 @@ from typing import Any, Callable, Pattern
 
 import numpy as np
 import pandas as pd
-import pandas_flavor as pf
 from pandas.api.types import is_extension_array_dtype
 from pandas.core.dtypes.concat import concat_compat
 from pandas.core.groupby.generic import DataFrameGroupBy
@@ -18,10 +17,11 @@ from janitor.functions.select import (
     _select_index,
     get_index_labels,
 )
+from janitor.registration import register_dataframe_method
 from janitor.utils import check
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 def pivot_longer(
     df: pd.DataFrame,
     index: Any = None,
@@ -1986,7 +1986,7 @@ def _names_transform(
     return spec
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 def pivot_wider(
     df: pd.DataFrame,
     names_from: Any,

@@ -3,13 +3,13 @@
 from typing import Any, Optional, Union
 
 import pandas as pd
-import pandas_flavor as pf
 
 from janitor.functions.select import _select_index
+from janitor.registration import register_dataframe_method
 from janitor.utils import check, deprecated_alias
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 @deprecated_alias(columns="column_names", new_column_name="target_column_name")
 def coalesce(
     df: pd.DataFrame,

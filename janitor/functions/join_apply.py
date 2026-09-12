@@ -3,10 +3,11 @@
 from typing import Callable
 
 import pandas as pd
-import pandas_flavor as pf
+
+from janitor.registration import register_dataframe_method
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 def join_apply(
     df: pd.DataFrame,
     func: Callable,

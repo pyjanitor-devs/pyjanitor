@@ -22,11 +22,15 @@ from pandas.core.common import apply_if_callable, is_bool_indexer
 from pandas.core.groupby.generic import DataFrameGroupBy, SeriesGroupBy
 
 from janitor.functions.utils import _is_str_or_cat
+from janitor.registration import (
+    register_dataframe_groupby_method,
+    register_dataframe_method,
+)
 from janitor.utils import check, deprecated_alias, refactored_function
 
 
-@pf.register_dataframe_groupby_method
-@pf.register_dataframe_method
+@register_dataframe_groupby_method
+@register_dataframe_method
 def select_columns(
     df: pd.DataFrame,
     *args: Any,
@@ -278,7 +282,7 @@ def select_columns(
     return _select(df, columns=list(args), invert=invert)
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 @pf.register_series_method
 def select_rows(
     df: pd.DataFrame,
@@ -344,8 +348,8 @@ def select_rows(
     return _select(df, rows=list(args), invert=invert)
 
 
-@pf.register_dataframe_groupby_method
-@pf.register_dataframe_method
+@register_dataframe_groupby_method
+@register_dataframe_method
 @pf.register_series_groupby_method
 @pf.register_series_method
 @deprecated_alias(rows="index")
@@ -516,7 +520,7 @@ def get_index_labels(
     return index[_select_index(arg, df, axis)]
 
 
-@pf.register_dataframe_groupby_method
+@register_dataframe_groupby_method
 def get_columns(group: DataFrameGroupBy | SeriesGroupBy, label: Any) -> pd.DataFrame:
     """
     Get column(s) from a grouped object,

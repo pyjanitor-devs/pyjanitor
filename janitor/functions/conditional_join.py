@@ -8,7 +8,6 @@ from typing import Any, Hashable, Literal, Optional
 
 import numpy as np
 import pandas as pd
-import pandas_flavor as pf
 from pandas.api.types import (
     is_datetime64_dtype,
     is_dtype_equal,
@@ -21,6 +20,7 @@ from pandas.core.dtypes.concat import concat_compat
 from janitor.functions.utils import (
     _generic_func_cond_join,
 )
+from janitor.registration import register_dataframe_method
 from janitor.utils import check, check_column, deprecated_kwargs
 
 from ._conditional_join import (
@@ -38,7 +38,7 @@ from ._conditional_join._helpers import (
 )
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 def conditional_join(
     df: pd.DataFrame,
     right: pd.DataFrame | pd.Series,
@@ -378,23 +378,23 @@ def _conditional_join_preliminary_checks(
 
     if isinstance(right, pd.Series):
         if not right.name:
-            raise ValueError(
-                "Unnamed Series are not supported for conditional_join."
-            )
+            raise ValueError("Unnamed Series are not supported for conditional_join.")
         right = right.to_frame()
 
     if df_columns != slice(None):
         warnings.warn(
-            "The 'df_columns' parameter is deprecated and will be removed in a future release. "
-            "Please select or rename columns on the left DataFrame before calling conditional_join.",
+            "The 'df_columns' parameter is deprecated and will be removed "
+            "in a future release. Please select or rename columns on the left "
+            "DataFrame before calling conditional_join.",
             DeprecationWarning,
             stacklevel=2,
         )
 
     if right_columns != slice(None):
         warnings.warn(
-            "The 'right_columns' parameter is deprecated and will be removed in a future release. "
-            "Please select or rename columns on the right DataFrame before calling conditional_join.",
+            "The 'right_columns' parameter is deprecated and will be removed "
+            "in a future release. Please select or rename columns on the right "
+            "DataFrame before calling conditional_join.",
             DeprecationWarning,
             stacklevel=2,
         )
@@ -1400,7 +1400,7 @@ def get_join_indices(
     )
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 def join_agg(
     df: pd.DataFrame,
     right: pd.DataFrame | pd.Series,

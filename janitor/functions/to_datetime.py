@@ -3,12 +3,12 @@
 from typing import Any, Hashable
 
 import pandas as pd
-import pandas_flavor as pf
 
+from janitor.registration import register_dataframe_method
 from janitor.utils import deprecated_alias, refactored_function
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 @deprecated_alias(column="column_name")
 @refactored_function(
     message=(

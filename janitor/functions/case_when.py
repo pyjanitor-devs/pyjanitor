@@ -4,16 +4,16 @@ import warnings
 from typing import Any
 
 import pandas as pd
-import pandas_flavor as pf
 from pandas.api.types import is_scalar
 from pandas.core.common import apply_if_callable
 
+from janitor.registration import register_dataframe_method
 from janitor.utils import check, find_stack_level, refactored_function
 
 warnings.simplefilter("always", DeprecationWarning)
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 @refactored_function(
     message=(
         "This function will be deprecated in a 1.x release. "

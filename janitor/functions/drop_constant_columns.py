@@ -1,10 +1,11 @@
 """Implementation of drop_constant_columns."""
 
 import pandas as pd
-import pandas_flavor as pf
+
+from janitor.registration import register_dataframe_method
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 def drop_constant_columns(df: pd.DataFrame) -> pd.DataFrame:
     """Finds and drops the constant columns from a Pandas DataFrame.
 

@@ -2,12 +2,12 @@ from typing import Any, List, Tuple, Union
 
 import numpy as np
 import pandas as pd
-import pandas_flavor as pf
 
+from janitor.registration import register_dataframe_method
 from janitor.utils import check, deprecated_alias, refactored_function
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 @refactored_function(
     message=(
         "This function will be deprecated in a 1.x release. "
@@ -130,7 +130,7 @@ def add_column(
     return df
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 @refactored_function(
     message=(
         "This function will be deprecated in a 1.x release. "

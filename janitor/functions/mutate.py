@@ -7,16 +7,19 @@ import warnings
 from functools import singledispatch
 
 import pandas as pd
-import pandas_flavor as pf
 from pandas.core.col import Expression
 from pandas.core.common import apply_if_callable
 from pandas.core.groupby.generic import DataFrameGroupBy
 
 from janitor.functions.select import get_index_labels
+from janitor.registration import (
+    register_dataframe_groupby_method,
+    register_dataframe_method,
+)
 from janitor.utils import find_stack_level, refactored_function
 
 
-@pf.register_dataframe_groupby_method
+@register_dataframe_groupby_method
 def assign(df: DataFrameGroupBy, **kwargs) -> DataFrameGroupBy:
     """
 
@@ -83,7 +86,7 @@ def assign(df: DataFrameGroupBy, **kwargs) -> DataFrameGroupBy:
     return df
 
 
-@pf.register_dataframe_groupby_method
+@register_dataframe_groupby_method
 @refactored_function(
     message=("This function is deprecated. Please use `jn.get_columns` instead.")
 )
@@ -138,8 +141,8 @@ def ungroup(
     return df.obj
 
 
-@pf.register_dataframe_groupby_method
-@pf.register_dataframe_method
+@register_dataframe_groupby_method
+@register_dataframe_method
 @refactored_function(
     message=("This function is deprecated. Please use `pd.DataFrame.assign` instead.")
 )

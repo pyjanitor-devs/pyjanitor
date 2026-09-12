@@ -4,13 +4,13 @@ from itertools import product
 from typing import Any, Optional
 
 import pandas as pd
-import pandas_flavor as pf
 
 from janitor.functions.select import get_index_labels
+from janitor.registration import register_dataframe_method
 from janitor.utils import deprecated_alias
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 @deprecated_alias(column="column_name")
 @deprecated_alias(column_name="column_names")
 @deprecated_alias(statistic="statistic_column_name")

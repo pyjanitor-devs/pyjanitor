@@ -2,7 +2,10 @@
 
 ## [Unreleased]
 
-- [ENH] Preserve DataFrame subclasses and metadata in `complete`. - Issue #1473
+- [ENH] Preserve source DataFrame subclasses and metadata through a shared
+  registration boundary for pandas DataFrame/groupby methods, including
+  `complete`. Non-DataFrame and in-place returns are unchanged; explicit result
+  attributes take precedence over inherited ones. - Issue #1473
 - [DEP] Deprecate `df_columns` and `right_columns` parameters in `conditional_join`. - Issue #1712 @sumangouda
 - [DOC] Add documentation explaining when cumulative-event aggregation is preferable to range join aggregations. - Issue #1702 @sumangouda
 -   [ENH] Avoid materializing all unequal pairs in `conditional_join` with

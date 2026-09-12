@@ -7,9 +7,9 @@ from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
-import pandas_flavor as pf
 from scipy import stats
 
+from janitor.registration import register_dataframe_method
 from janitor.utils import check
 
 
@@ -112,7 +112,7 @@ def _warn_if_totals(
     )
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 def chisq_test(df: pd.DataFrame, tabyl_results: bool = True) -> ChiSqTestResult:
     """Apply chi-squared test to a two-way tabyl.
 
@@ -189,7 +189,7 @@ def chisq_test(df: pd.DataFrame, tabyl_results: bool = True) -> ChiSqTestResult:
     )
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 def fisher_test(df: pd.DataFrame) -> FisherTestResult:
     """Apply Fisher's exact test to a two-way tabyl.
 

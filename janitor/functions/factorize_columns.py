@@ -3,12 +3,12 @@
 from typing import Any, Hashable, Iterable, Union
 
 import pandas as pd
-import pandas_flavor as pf
 
 from janitor.functions.utils import _factorize
+from janitor.registration import register_dataframe_method
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 def factorize_columns(
     df: pd.DataFrame,
     column_names: Union[str, Iterable[str], Hashable],

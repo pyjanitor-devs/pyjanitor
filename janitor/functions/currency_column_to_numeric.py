@@ -2,12 +2,12 @@ from functools import partial
 from typing import Optional, Union
 
 import pandas as pd
-import pandas_flavor as pf
 
+from janitor.registration import register_dataframe_method
 from janitor.utils import check, check_column, deprecated_alias
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 @deprecated_alias(col_name="column_name", type="cleaning_style")
 def currency_column_to_numeric(
     df: pd.DataFrame,

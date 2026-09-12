@@ -3,12 +3,12 @@
 from typing import Hashable, Iterable, Optional, Union
 
 import pandas as pd
-import pandas_flavor as pf
 
+from janitor.registration import register_dataframe_method
 from janitor.utils import deprecated_alias
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 @deprecated_alias(columns="column_names")
 def get_dupes(
     df: pd.DataFrame,

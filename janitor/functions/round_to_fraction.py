@@ -4,12 +4,12 @@ from typing import Hashable
 
 import numpy as np
 import pandas as pd
-import pandas_flavor as pf
 
+from janitor.registration import register_dataframe_method
 from janitor.utils import check, check_column, deprecated_alias
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 @deprecated_alias(col_name="column_name")
 def round_to_fraction(
     df: pd.DataFrame,

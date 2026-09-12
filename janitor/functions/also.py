@@ -3,10 +3,11 @@
 from typing import Any, Callable
 
 import pandas as pd
-import pandas_flavor as pf
+
+from janitor.registration import register_dataframe_method
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 def also(df: pd.DataFrame, func: Callable, *args: Any, **kwargs: Any) -> pd.DataFrame:
     """Run a function with side effects.
 

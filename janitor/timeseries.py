@@ -4,13 +4,14 @@ import itertools
 from typing import Dict, Union
 
 import pandas as pd
-import pandas_flavor as pf
+
+from janitor.registration import register_dataframe_method
 
 from .errors import JanitorError
 from .utils import check
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 def fill_missing_timestamps(
     df: pd.DataFrame,
     frequency: str,
@@ -102,7 +103,7 @@ def _get_missing_timestamps(
     return expected_df.loc[missing_timestamps]
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 def sort_timestamps_monotonically(
     df: pd.DataFrame, direction: str = "increasing", strict: bool = False
 ) -> pd.DataFrame:
@@ -250,7 +251,7 @@ def _flag_jumps_single_col(
     return out
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 def flag_jumps(
     df: pd.DataFrame,
     scale: Union[str, Dict[str, str]] = "percentage",

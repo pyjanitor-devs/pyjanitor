@@ -1,10 +1,11 @@
 """Implementation of remove_empty."""
 
 import pandas as pd
-import pandas_flavor as pf
+
+from janitor.registration import register_dataframe_method
 
 
-@pf.register_dataframe_method
+@register_dataframe_method
 def remove_empty(df: pd.DataFrame, reset_index: bool = True) -> pd.DataFrame:
     """Drop all rows and columns that are completely null.
 

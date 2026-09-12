@@ -4,17 +4,20 @@ import warnings
 from typing import Any
 
 import pandas as pd
-import pandas_flavor as pf
 from pandas.api.types import is_scalar
 from pandas.core.groupby.generic import DataFrameGroupBy
 
+from janitor.registration import (
+    register_dataframe_groupby_method,
+    register_dataframe_method,
+)
 from janitor.utils import check, check_column, find_stack_level
 
 warnings.simplefilter("always", DeprecationWarning)
 
 
-@pf.register_dataframe_groupby_method
-@pf.register_dataframe_method
+@register_dataframe_groupby_method
+@register_dataframe_method
 def complete(
     df: pd.DataFrame | DataFrameGroupBy,
     *columns: Any,
@@ -320,9 +323,6 @@ def _computations_complete(
         sort=False,
         indicator=indicator,
     )
-    # The expanded combinations are a plain DataFrame, so the merge cannot
-    # inherit the original frame's subclass or metadata from its left input.
-    out = df._constructor(out).__finalize__(df)
     if indicator:
         indicator = out.pop(indicator)
     if not out.columns.equals(columns):

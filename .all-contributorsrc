@@ -1202,6 +1202,15 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "tunglambk",
+      "name": "Tung Lam",
+      "avatar_url": "https://avatars.githubusercontent.com/u/53996158?v=4",
+      "profile": "https://github.com/tunglambk",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "badgeTemplate": "<img alt=\"All Contributors: {{contributorCount}}\" src=\"https://img.shields.io/github/all-contributors/{{projectOwner}}/{{projectName}}?color=ee8449&style=flat-square\">",

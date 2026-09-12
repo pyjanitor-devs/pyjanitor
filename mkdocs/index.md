@@ -503,6 +503,9 @@ Thanks goes to these wonderful people who have contributed to pyjanitor:
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/SumanGouda"><img src="https://avatars.githubusercontent.com/u/185125638?v=4?s=100" width="100px;" alt="Suman Gouda"/><br /><sub><b>Suman Gouda</b></sub></a><br /><a href="https://github.com/pyjanitor-devs/pyjanitor/commits?author=SumanGouda" title="Code">💻</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/ASVLCII"><img src="https://avatars.githubusercontent.com/u/308706627?v=4?s=100" width="100px;" alt="ASVLCII"/><br /><sub><b>ASVLCII</b></sub></a><br /><a href="https://github.com/pyjanitor-devs/pyjanitor/commits?author=ASVLCII" title="Code">💻</a></td>
     </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/tunglambk"><img src="https://avatars.githubusercontent.com/u/53996158?v=4?s=100" width="100px;" alt="Tung Lam"/><br /><sub><b>Tung Lam</b></sub></a><br /><a href="https://github.com/pyjanitor-devs/pyjanitor/commits?author=tunglambk" title="Code">💻</a></td>
+    </tr>
   </tbody>
 </table>
 

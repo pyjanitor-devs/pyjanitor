@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+-   [ENH] Standardize diagnostic error message formatting in `check` utility. - Issue #1718 @SumanGouda
 - [DEP] Deprecate `df_columns` and `right_columns` parameters in `conditional_join`. - Issue #1712 @sumangouda
 - [DOC] Add documentation explaining when cumulative-event aggregation is preferable to range join aggregations. - Issue #1702 @sumangouda
 -   [ENH] Avoid materializing all unequal pairs in `conditional_join` with

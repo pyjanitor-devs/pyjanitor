@@ -43,8 +43,15 @@ def check(varname: str, value, expected_types: list):
             break
 
     if not is_expected_type:
-        raise TypeError(f"{varname} should be one of {expected_types}.")
-
+        types_str = ", ".join(
+            t.__name__ if hasattr(t, "__name__") else str(t)
+            for t in expected_types
+        )
+        actual_type = type(value).__name__
+        raise TypeError(
+            f"Expected '{varname}' to be one of ({types_str}), "
+            f"got object of type '{actual_type}' instead."
+        )
 
 @singledispatch
 def _expand_grid(value, grid_index, key):

@@ -15,6 +15,16 @@ def test_fill_empty_column_string(null_df):
 
 
 @pytest.mark.functions
+@pytest.mark.parametrize("column_names", [0, 1, "2", "3"])
+def test_fill_empty_single_hashable_column(null_df, column_names):
+    """A single column name can be any Hashable, not only a str."""
+    result = null_df.fill_empty(column_names=column_names, value=3)
+    expected = null_df.fillna(value={column_names: 3})
+
+    assert result.equals(expected)
+
+
+@pytest.mark.functions
 @pytest.mark.parametrize(
     "column_names",
     [

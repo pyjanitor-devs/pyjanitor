@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+- [BUG] Accept a single non-string Hashable column name in `fill_empty`. - Issue #1016 @tunglambk
 - [DEP] Deprecate `df_columns` and `right_columns` parameters in `conditional_join`. - Issue #1712 @sumangouda
 - [DOC] Add documentation explaining when cumulative-event aggregation is preferable to range join aggregations. - Issue #1702 @sumangouda
 -   [ENH] Avoid materializing all unequal pairs in `conditional_join` with

@@ -178,6 +178,9 @@ def fill_empty(
     """
 
     check_column(df, column_names)
+    if not isinstance(column_names, (str, abcIterable)):
+        # a single column name can be any Hashable, not only a str
+        column_names = [column_names]
     return _fill_empty(df, column_names, value=value)
 
 

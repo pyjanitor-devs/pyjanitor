@@ -25,6 +25,7 @@ from janitor.utils import check, check_column, deprecated_kwargs
 
 from ._conditional_join import (
     _get_indices_equi,
+    _get_indices_extended,
     _get_indices_non_equi,
     _get_indices_single_join,
     _get_join_aggs,
@@ -378,23 +379,23 @@ def _conditional_join_preliminary_checks(
 
     if isinstance(right, pd.Series):
         if not right.name:
-            raise ValueError(
-                "Unnamed Series are not supported for conditional_join."
-            )
+            raise ValueError("Unnamed Series are not supported for conditional_join.")
         right = right.to_frame()
 
     if df_columns != slice(None):
         warnings.warn(
-            "The 'df_columns' parameter is deprecated and will be removed in a future release. "
-            "Please select or rename columns on the left DataFrame before calling conditional_join.",
+            "The 'df_columns' parameter is deprecated and will be removed in a "
+            "future release. Please select or rename columns on the left "
+            "DataFrame before calling conditional_join.",
             DeprecationWarning,
             stacklevel=2,
         )
 
     if right_columns != slice(None):
         warnings.warn(
-            "The 'right_columns' parameter is deprecated and will be removed in a future release. "
-            "Please select or rename columns on the right DataFrame before calling conditional_join.",
+            "The 'right_columns' parameter is deprecated and will be removed in a "
+            "future release. Please select or rename columns on the right "
+            "DataFrame before calling conditional_join.",
             DeprecationWarning,
             stacklevel=2,
         )
@@ -625,7 +626,21 @@ def _conditional_join_compute(
         # return every requested payload column with its original dtype.
         matching_df = df.loc(axis=1)[condition_left_columns]
         matching_right = right.loc(axis=1)[condition_right_columns]
-    if eq_check:
+    if (
+        (len(conditions) > 1)
+        and le_lt_check
+        and not use_numba
+        and join_algorithm == "default"
+        and _get_indices_extended.available()
+    ):
+        indices = _get_indices_extended._get_indices(
+            df=matching_df,
+            right=matching_right,
+            conditions=conditions,
+            keep=keep,
+            return_matching_indices=return_building_blocks or bool(aggfunc),
+        )
+    elif eq_check:
         indices = _multiple_conditional_join_eq(
             df=matching_df,
             right=matching_right,
@@ -652,6 +667,7 @@ def _conditional_join_compute(
             right=matching_right,
             conditions=conditions,
             keep=keep,
+            return_matching_indices=return_building_blocks or bool(aggfunc),
         )
     else:
         indices = _get_indices_single_join._single_join(
@@ -754,6 +770,7 @@ def _multiple_conditional_join_ne(
     right: pd.DataFrame,
     conditions: list[tuple[pd.Series, pd.Series, str]],
     keep: str,
+    return_matching_indices: bool,
 ) -> tuple:
     """
     Get indices for multiple conditions,
@@ -791,7 +808,8 @@ def _multiple_conditional_join_ne(
             "right_index": empty_array,
         }
     left_index, right_index = outcome
-    outcome = _keep_output(keep, left=left_index, right=right_index)
+    if not return_matching_indices:
+        outcome = _keep_output(keep, left=left_index, right=right_index)
     left_index, right_index = outcome
     return {"left_index": left_index, "right_index": right_index}
 

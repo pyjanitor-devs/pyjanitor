@@ -5300,7 +5300,6 @@ on the left dataframe for each row of the right DataFrame
 <p>Supported aggregation functions are
 <code>sum</code>, <code>prod</code>, <code>size</code>, <code>min</code>, <code>max</code>.</p>
 <p>This is limited to an inner join.</p>
-<p>Both input objects must contain at least one row.</p>
 <p>The index of the returned dataframe represent the positions
 of the rows from the left dataframe that have matches
 in the right dataframe.</p>
@@ -5581,7 +5580,10 @@ Currently limited to <code>default</code> and <code>regions</code>.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>janitor/functions/conditional_join.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1406</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1403</span>
+<span class="normal">1404</span>
+<span class="normal">1405</span>
+<span class="normal">1406</span>
 <span class="normal">1407</span>
 <span class="normal">1408</span>
 <span class="normal">1409</span>
@@ -5760,12 +5762,7 @@ Currently limited to <code>default</code> and <code>regions</code>.</p>
 <span class="normal">1582</span>
 <span class="normal">1583</span>
 <span class="normal">1584</span>
-<span class="normal">1585</span>
-<span class="normal">1586</span>
-<span class="normal">1587</span>
-<span class="normal">1588</span>
-<span class="normal">1589</span>
-<span class="normal">1590</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
+<span class="normal">1585</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">join_agg</span><span class="p">(</span>
     <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
     <span class="n">right</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span> <span class="o">|</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span>
@@ -5789,8 +5786,6 @@ Currently limited to <code>default</code> and <code>regions</code>.</p>
 <span class="sd">    `sum`, `prod`, `size`, `min`, `max`.</span>
 
 <span class="sd">    This is limited to an inner join.</span>
-
-<span class="sd">    Both input objects must contain at least one row.</span>
 
 <span class="sd">    The index of the returned dataframe represent the positions</span>
 <span class="sd">    of the rows from the left dataframe that have matches</span>
@@ -14532,7 +14527,10 @@ Currently limited to <code>default</code> and <code>regions</code>.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>janitor/functions/conditional_join.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1333</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1330</span>
+<span class="normal">1331</span>
+<span class="normal">1332</span>
+<span class="normal">1333</span>
 <span class="normal">1334</span>
 <span class="normal">1335</span>
 <span class="normal">1336</span>
@@ -14599,10 +14597,7 @@ Currently limited to <code>default</code> and <code>regions</code>.</p>
 <span class="normal">1397</span>
 <span class="normal">1398</span>
 <span class="normal">1399</span>
-<span class="normal">1400</span>
-<span class="normal">1401</span>
-<span class="normal">1402</span>
-<span class="normal">1403</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@deprecated_kwargs</span><span class="p">(</span><span class="s2">&quot;return_ragged_arrays&quot;</span><span class="p">)</span>
+<span class="normal">1400</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@deprecated_kwargs</span><span class="p">(</span><span class="s2">&quot;return_ragged_arrays&quot;</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_join_indices</span><span class="p">(</span>
     <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
     <span class="n">right</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span> <span class="o">|</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span>
@@ -14700,7 +14695,6 @@ on the left dataframe for each row of the right DataFrame
 <p>Supported aggregation functions are
 <code>sum</code>, <code>prod</code>, <code>size</code>, <code>min</code>, <code>max</code>.</p>
 <p>This is limited to an inner join.</p>
-<p>Both input objects must contain at least one row.</p>
 <p>The index of the returned dataframe represent the positions
 of the rows from the left dataframe that have matches
 in the right dataframe.</p>
@@ -14981,7 +14975,10 @@ Currently limited to <code>default</code> and <code>regions</code>.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>janitor/functions/conditional_join.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1406</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1403</span>
+<span class="normal">1404</span>
+<span class="normal">1405</span>
+<span class="normal">1406</span>
 <span class="normal">1407</span>
 <span class="normal">1408</span>
 <span class="normal">1409</span>
@@ -15160,12 +15157,7 @@ Currently limited to <code>default</code> and <code>regions</code>.</p>
 <span class="normal">1582</span>
 <span class="normal">1583</span>
 <span class="normal">1584</span>
-<span class="normal">1585</span>
-<span class="normal">1586</span>
-<span class="normal">1587</span>
-<span class="normal">1588</span>
-<span class="normal">1589</span>
-<span class="normal">1590</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
+<span class="normal">1585</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">join_agg</span><span class="p">(</span>
     <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
     <span class="n">right</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span> <span class="o">|</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span>
@@ -15189,8 +15181,6 @@ Currently limited to <code>default</code> and <code>regions</code>.</p>
 <span class="sd">    `sum`, `prod`, `size`, `min`, `max`.</span>
 
 <span class="sd">    This is limited to an inner join.</span>
-
-<span class="sd">    Both input objects must contain at least one row.</span>
 
 <span class="sd">    The index of the returned dataframe represent the positions</span>
 <span class="sd">    of the rows from the left dataframe that have matches</span>

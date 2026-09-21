@@ -10,7 +10,7 @@ from pandas import Timedelta
 from pandas.testing import assert_frame_equal
 
 import janitor as jn
-from janitor.functions._conditional_join import _le_ge_1_or_more
+from janitor.functions._conditional_join import _get_indices_extended, _le_ge_1_or_more
 from janitor.testing_utils.strategies import (
     conditional_df,
     conditional_right,
@@ -182,6 +182,39 @@ def test_join_return_building_blocks(dummy, series):
     """Raise TypeError if return_building_blocks is not a boolean."""
     with pytest.raises(TypeError, match="return_building_blocks should be one of.+"):
         jn.get_join_indices(dummy, series, ("id", "B", ">"), return_building_blocks=1)
+
+
+def test_extended_range_filters_before_keep_and_building_blocks():
+    """Building blocks force all surviving residual matches."""
+    if not _get_indices_extended.available():
+        pytest.skip("requires the extended janitor-rs kernels")
+
+    left = pd.DataFrame({"left": [4], "residual": [4]})
+    right = pd.DataFrame(
+        {
+            "right": [1, 3, 5, 7],
+            "residual": [3, 7, 9, 7],
+        }
+    )
+    all_matches = jn.get_join_indices(
+        left,
+        right,
+        ("left", "right", "<"),
+        ("residual", "residual", "<"),
+        keep="all",
+    )
+    building_blocks = jn.get_join_indices(
+        left,
+        right,
+        ("left", "right", "<"),
+        ("residual", "residual", "<"),
+        keep="first",
+        return_building_blocks=True,
+    )
+    assert np.array_equal(all_matches["left_index"], np.array([0, 0]))
+    assert np.array_equal(all_matches["right_index"], np.array([2, 3]))
+    assert np.array_equal(building_blocks["left_index"], all_matches["left_index"])
+    assert np.array_equal(building_blocks["right_index"], all_matches["right_index"])
 
 
 def test_join_algorithm_type(dummy, series):

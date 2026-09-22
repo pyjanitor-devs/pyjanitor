@@ -1512,6 +1512,7 @@ def test_single_condition_not_equal_keep_one(left, right, keep):
     """First and last selection match a direct scan in original row order."""
     expected_left = []
     expected_right = []
+    is_extension_array = pd.api.types.is_extension_array_dtype(left.dtype)
     right_positions = range(len(right))
     if keep == "last":
         right_positions = reversed(right_positions)
@@ -1522,7 +1523,7 @@ def test_single_condition_not_equal_keep_one(left, right, keep):
             left_is_null = pd.isna(left_value)
             right_is_null = pd.isna(right_value)
             if left_is_null or right_is_null:
-                unequal = True
+                unequal = not is_extension_array
             else:
                 unequal = left_value != right_value
             if unequal:

@@ -217,6 +217,128 @@ def test_extended_range_filters_before_keep_and_building_blocks():
     assert np.array_equal(building_blocks["right_index"], all_matches["right_index"])
 
 
+def test_extended_range_then_not_equal_filters_windows():
+    """Mixed joins keep the range-first window path and filter ``!=`` later."""
+    if not _get_indices_extended.available():
+        pytest.skip("requires the extended janitor-rs kernels")
+
+    left = pd.DataFrame({"range": [4], "residual": [4]})
+    right = pd.DataFrame(
+        {
+            "range": [1, 3, 5, 7],
+            "residual": [3, 7, 9, 8],
+        }
+    )
+
+    matches = jn.get_join_indices(
+        left,
+        right,
+        ("range", "range", "<"),
+        ("residual", "residual", "!="),
+        keep="all",
+    )
+    assert np.array_equal(matches["left_index"], np.array([0, 0]))
+    assert np.array_equal(matches["right_index"], np.array([2, 3]))
+
+
+def test_extended_all_not_equal_filters_materialized_candidates():
+    """All-``!=`` joins use flat candidates before applying ``keep``."""
+    if not _get_indices_extended.available():
+        pytest.skip("requires the extended janitor-rs kernels")
+
+    left = pd.DataFrame({"first": [1, 2, 3], "second": [1, 2, 3]})
+    right = pd.DataFrame({"first": [1, 2, 3], "second": [1, 3, 2]})
+
+    all_matches = jn.get_join_indices(
+        left,
+        right,
+        ("first", "first", "!="),
+        ("second", "second", "!="),
+        keep="all",
+    )
+    assert np.array_equal(all_matches["left_index"], np.array([0, 0, 1, 2]))
+    assert np.array_equal(all_matches["right_index"], np.array([1, 2, 0, 0]))
+
+    first_matches = jn.get_join_indices(
+        left,
+        right,
+        ("first", "first", "!="),
+        ("second", "second", "!="),
+        keep="first",
+    )
+    assert np.array_equal(first_matches["left_index"], np.array([0, 1, 2]))
+    assert np.array_equal(first_matches["right_index"], np.array([1, 0, 0]))
+
+    building_blocks = jn.get_join_indices(
+        left,
+        right,
+        ("first", "first", "!="),
+        ("second", "second", "!="),
+        keep="first",
+        return_building_blocks=True,
+    )
+    assert np.array_equal(building_blocks["left_index"], all_matches["left_index"])
+    assert np.array_equal(building_blocks["right_index"], all_matches["right_index"])
+
+
+def test_extended_all_not_equal_extension_nulls_are_filtered():
+    """Pandas extension nulls do not satisfy residual ``!=`` filters."""
+    if not _get_indices_extended.available():
+        pytest.skip("requires the extended janitor-rs kernels")
+
+    left = pd.DataFrame(
+        {
+            "first": pd.array([1, None, 3], dtype="Int64"),
+            "second": pd.array([1, 2, 3], dtype="Int64"),
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "first": pd.array([1, 2, None], dtype="Int64"),
+            "second": pd.array([1, 3, 2], dtype="Int64"),
+        }
+    )
+
+    matches = jn.get_join_indices(
+        left,
+        right,
+        ("first", "first", "!="),
+        ("second", "second", "!="),
+        keep="all",
+    )
+    assert np.array_equal(matches["left_index"], np.array([0, 2]))
+    assert np.array_equal(matches["right_index"], np.array([1, 0]))
+
+
+def test_extended_all_not_equal_numpy_nulls_match_everything():
+    """NumPy nulls remain candidates for every ``!=`` predicate."""
+    if not _get_indices_extended.available():
+        pytest.skip("requires the extended janitor-rs kernels")
+
+    left = pd.DataFrame(
+        {
+            "first": np.array([1.0, np.nan, 3.0]),
+            "second": np.array([1.0, 2.0, 3.0]),
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "first": np.array([1.0, 2.0, np.nan]),
+            "second": np.array([1.0, 3.0, 2.0]),
+        }
+    )
+
+    matches = jn.get_join_indices(
+        left,
+        right,
+        ("first", "first", "!="),
+        ("second", "second", "!="),
+        keep="all",
+    )
+    assert np.array_equal(matches["left_index"], np.array([0, 0, 1, 1, 2, 2]))
+    assert np.array_equal(matches["right_index"], np.array([1, 2, 0, 1, 0, 2]))
+
+
 def test_join_algorithm_type(dummy, series):
     """Raise TypeError if join_algorithm is not a str."""
     with pytest.raises(TypeError, match="join_algorithm should be one of.+"):
@@ -1549,12 +1671,12 @@ def test_single_condition_not_equal_keep_one(left, right, keep):
 
 @pytest.mark.parametrize(
     ("keep", "right_positions"),
-    [("first", [1, 0, 0, 0]), ("last", [3, 3, 3, 2])],
+    [("first", [1, 0, 0, 0]), ("last", [3, 3, 2, 3])],
 )
 def test_single_condition_not_equal_keep_one_preserves_output_order(
     keep, right_positions
 ):
-    """Optimized selection preserves the legacy materialized-pair order."""
+    """Optimized selection preserves left input order."""
     left = pd.DataFrame({"left": [2, -1, 3, 0], "left_position": range(4)})
     right = pd.DataFrame({"right": [2, -3, -2, 3], "right_position": range(4)})
 
@@ -1564,7 +1686,7 @@ def test_single_condition_not_equal_keep_one_preserves_output_order(
         keep=keep,
     )
 
-    assert actual["left_position"].tolist() == [0, 1, 3, 2]
+    assert actual["left_position"].tolist() == [0, 1, 2, 3]
     assert actual["right_position"].tolist() == right_positions
 
 

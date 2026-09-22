@@ -79,7 +79,7 @@ def _rust_single_join(
         right_index_is_ordered,
         op,
         keep,
-        return_matching_indices,
+        bool(return_matching_indices),
         left_positions,
         left_null_positions,
         right_positions,

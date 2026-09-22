@@ -106,7 +106,9 @@ def conditional_join(
 
     For a single `!=` condition with `keep="first"` or `keep="last"`,
     matching positions are selected without materializing all unequal pairs.
-    Other `!=` joins are not optimized.
+    When the Rust extended kernel is available, multiple all-`!=` conditions
+    use the first condition to build physical candidate pairs and filter the
+    remaining conditions against those pairs before applying `keep`.
 
     The join is done only on the columns.
 
@@ -594,6 +596,9 @@ def _conditional_join_compute(
     )
     eq_check = False
     le_lt_check = False
+    all_not_equal_check = all(
+        condition[2] == _JoinOperator.NOT_EQUAL.value for condition in conditions
+    )
     for condition in conditions:
         left_on, right_on, op = condition
         _conditional_join_type_check(
@@ -628,7 +633,7 @@ def _conditional_join_compute(
         matching_right = right.loc(axis=1)[condition_right_columns]
     if (
         (len(conditions) > 1)
-        and le_lt_check
+        and (le_lt_check or all_not_equal_check)
         and not use_numba
         and join_algorithm == "default"
         and _get_indices_extended.available()
@@ -1384,6 +1389,9 @@ def get_join_indices(
             `==`, `!=`, `<=`, `<`, `>=`, `>`. For multiple conditions,
             the and(`&`) operator is used to combine the results
             of the individual conditions.
+            When all multiple conditions use `!=`, the first condition
+            creates the candidate pairs and the remaining conditions filter
+            those pairs before `keep` is applied.
         use_numba: Use numba, if installed, to accelerate the computation.
             !!! warning "Deprecated in 0.33.0"
         keep: Choose whether to return the first match, last match or all matches.
@@ -1392,6 +1400,8 @@ def get_join_indices(
         return_building_blocks: Return a possibly more extensive dictionary,
             containing data that will be used to build the indices.
             !!! warning "This feature is experimental and may change without warning."
+            For multiple joins, the returned indices are fully materialized
+            left/right pairs after every predicate has been applied.
         join_algorithm: Determines what algorithm to use for multiple non-equi joins.
             Currently limited to `default` and `regions`.
 

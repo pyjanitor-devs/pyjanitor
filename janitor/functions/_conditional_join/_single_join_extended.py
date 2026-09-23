@@ -26,12 +26,6 @@ import janitor_rs
 import numpy as np
 import pandas as pd
 
-from janitor.functions._conditional_join._get_indices_single_join import (
-    _aggregation_inputs,
-    _aggregation_kernel,
-    _empty_aggregation_result,
-    _materialize_aggregation_result,
-)
 from janitor.functions._conditional_join._helpers import (
     _convert_array_to_numpy,
     _get_boolean_args_for_ne,
@@ -39,6 +33,12 @@ from janitor.functions._conditional_join._helpers import (
     _sort_if_not_monotonic,
     greater_than_join_types,
     less_than_join_types,
+)
+from janitor.functions._conditional_join._single_join import (
+    _aggregation_inputs,
+    _aggregation_kernel,
+    _empty_aggregation_result,
+    _materialize_aggregation_result,
 )
 
 _EXTENDED_KERNEL_NAMES = {

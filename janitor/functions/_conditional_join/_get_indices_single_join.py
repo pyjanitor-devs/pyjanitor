@@ -1,4 +1,11 @@
-"""Compute indices for one conditional-join predicate."""
+"""Compute indices for one conditional-join predicate.
+
+This module prepares one predicate for the dtype-specific Rust kernels. The
+caller has already reset both input frames to unique ``RangeIndex`` values;
+those positions are therefore safe to carry through filtering and sorting.
+PyJanitor performs null filtering, stable right-value sorting, and index
+alignment before Rust evaluates candidates.
+"""
 
 import janitor_rs
 import numpy as np
@@ -49,6 +56,38 @@ def _rust_single_join(
     optional null-position arrays contain original physical positions. Rust
     converts those positions into public index labels after candidate
     selection.
+
+    Args:
+        left: Left predicate values. For range operators this is the
+            null-filtered left series; for ``!=`` it contains only non-null
+            values.
+        right: Right predicate values in binary-search order. For range
+            operators and ``!=``, PyJanitor supplies the value-sorted layout.
+        op: Comparison operator understood by the Rust kernel.
+        keep: Requested output selection (``"all"``, ``"first"``, or
+            ``"last"``).
+        return_matching_indices: Whether the Rust wrapper should return
+            matching index arrays rather than only internal range-building
+            information.
+        right_index_is_ordered: Whether right-index labels are monotonically
+            increasing in the value-sorted right layout. This affects
+            first/last selection when the right values were reordered.
+        left_index: Full left index-label array. When omitted, it is derived
+            from ``left.index``.
+        right_index: Full right index-label array. When omitted, it is derived
+            from ``right.index``.
+        left_positions: Positions of ``left`` values in the full left layout,
+            used by ``!=`` after null filtering.
+        left_null_positions: Full-layout left null positions, or ``None``.
+        right_positions: Positions of ``right`` values in the full right
+            layout, used by ``!=`` after sorting and null filtering.
+        right_null_positions: Full-layout right null positions, or ``None``.
+        is_extension_array: Whether the comparison uses pandas nullable
+            extension-array semantics for nulls.
+
+    Returns:
+        A dictionary containing ``left_index`` and ``right_index`` arrays.
+        When Rust reports no matches, both arrays are empty ``int64`` arrays.
     """
     left_values = _convert_array_to_numpy(array=left._values)
     try:
@@ -90,7 +129,32 @@ def _single_join(
     keep: str,
     return_matching_indices: bool,
 ) -> dict:
-    """Compute indices for a single join using the fused Rust kernel."""
+    """Compute indices for a single conditional-join predicate.
+
+    Range operators discard null rows before binary search because nulls do
+    not satisfy ordering comparisons. ``!=`` is handled separately: its
+    non-null values are searched, while null positions are passed explicitly
+    so Rust can apply NumPy and pandas-extension null semantics correctly.
+
+    Equality is intentionally not handled here; PyJanitor dispatches equi
+    joins through its upstream equality implementation.
+
+    Args:
+        df: Left dataframe whose index has been reset to physical positions.
+        right: Right dataframe whose index has been reset to physical
+            positions.
+        condition: A ``(left_column, right_column, operator)`` tuple.
+        keep: Requested selection mode for matching right rows.
+        return_matching_indices: Whether the Rust wrapper should return the
+            matching index arrays required by the caller.
+
+    Returns:
+        A dictionary containing ``left_index`` and ``right_index`` arrays.
+
+    Raises:
+        ValueError: If equality reaches this single non-equi dispatcher.
+        TypeError: If the predicate dtype is unsupported by the Rust kernels.
+    """
     left_on, right_on, op = condition
     left_series = df[left_on]
     right_series = right[right_on]

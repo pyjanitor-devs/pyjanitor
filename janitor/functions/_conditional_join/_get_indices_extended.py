@@ -50,12 +50,36 @@ _EXTENDED_KERNEL_NAMES = {
 
 
 def _empty_indices() -> dict:
+    """Return the standard empty index result.
+
+    The Rust wrappers use empty ``int64`` arrays instead of ``None`` at this
+    internal boundary. The public conditional-join layer decides how that
+    empty result is represented to callers.
+
+    Returns:
+        A dictionary containing empty ``left_index`` and ``right_index``
+        arrays.
+    """
     empty = np.array([], dtype=np.int64)
     return {"left_index": empty, "right_index": empty}
 
 
 def _null_positions(series: pd.Series) -> np.ndarray | None:
-    """Return full-layout null positions, or ``None`` when there are none."""
+    """Return null positions in the series' full physical layout.
+
+    The returned values are positions in the frame after PyJanitor has reset
+    its index to a unique ``RangeIndex``. They are not boolean masks and are
+    not public output labels. Rust uses them to add null-generated ``!=``
+    candidates without receiving the original full value array.
+
+    Args:
+        series: The full-layout predicate series whose null positions should
+            be collected.
+
+    Returns:
+        An ``int64`` NumPy array of null positions, or ``None`` when the
+        series contains no nulls.
+    """
     nulls = series.isna().to_numpy()
     if not nulls.any():
         return None
@@ -81,6 +105,27 @@ def _get_all_not_equal_indices(
     Pyjanitor has already reset both frames to unique ``RangeIndex`` values.
     Rust trusts that alignment, but receives the full indexes and position
     metadata so it can return the original physical labels.
+
+    Args:
+        df: Left working dataframe containing the columns in ``conditions``.
+            Its ``RangeIndex`` identifies physical left-row positions.
+        right: Right working dataframe containing the columns in
+            ``conditions``. Its ``RangeIndex`` identifies physical right-row
+            positions before the non-null values are sorted.
+        conditions: Join predicates in user-supplied order. The first
+            predicate must be ``!=`` for this path; later predicates filter
+            the candidate pairs produced by it.
+        keep: Selection mode requested by the caller. It is used unless
+            ``return_materialized_indices`` is true.
+        return_materialized_indices: Whether every surviving pair must be
+            returned. This overrides ``keep`` with ``"all"`` for building
+            blocks and aggregation preparation.
+        kernel: Dtype-specific Rust callable selected from
+            ``_EXTENDED_KERNEL_NAMES``.
+
+    Returns:
+        A dictionary containing ``left_index`` and ``right_index`` arrays.
+        Both arrays contain public index labels, not filtered-array offsets.
     """
     first_left_on, first_right_on, first_op = conditions[0]
     if first_op != "!=":
@@ -120,7 +165,9 @@ def _get_all_not_equal_indices(
 
     # Residual predicates retain the full physical layout. Their null masks
     # cover those full arrays, so candidate physical positions can index them
-    # directly without another filtered-to-original mapping.
+    # directly without another filtered-to-original mapping. The right side
+    # is already in the seed predicate's value-sorted order, so every residual
+    # right array must use that same order.
     for left_on, right_on, op in conditions[1:]:
         left_aligned = df[left_on]
         right_aligned = right[right_on]
@@ -173,6 +220,28 @@ def _get_indices(
     full-layout arrays to filter those pairs. ``return_materialized_indices``
     means that pyjanitor needs all materialized pairs, so it overrides the
     requested selection with ``keep="all"``.
+
+    Args:
+        df: Left working dataframe with the reset physical ``RangeIndex``.
+        right: Right working dataframe with the reset physical ``RangeIndex``.
+        conditions: Join predicates. An all-``!=`` join uses its first
+            predicate to build flat candidate pairs. A mixed join uses the
+            first range predicate (in condition order) to build candidate
+            windows.
+        keep: ``"all"``, ``"first"``, or ``"last"`` selection requested for
+            the final indices.
+        return_materialized_indices: Force all surviving pairs to be
+            materialized. This is required when the caller needs building
+            blocks or aggregation inputs and therefore overrides ``keep``.
+
+    Returns:
+        A dictionary with ``left_index`` and ``right_index`` arrays. Empty
+        arrays represent no matches at this internal PyJanitor boundary.
+
+    Raises:
+        TypeError: If the seed predicate dtype has no registered Rust kernel.
+        ValueError: If a mixed join has no range predicate or an all-``!=``
+            join does not begin with ``!=``.
     """
     all_not_equal = all(op == "!=" for _, _, op in conditions)
     if all_not_equal:
@@ -237,6 +306,9 @@ def _get_indices(
     if left_series.empty or right_series.empty:
         return _empty_indices()
 
+    # The right values must be sorted before Rust performs binary searches.
+    # The helper also reports whether the resulting right-index labels remain
+    # monotonically ordered in that value-sorted layout.
     right_sorted, right_index_is_ordered = _sort_if_not_monotonic(series=right_series)
     left_positions = _convert_array_to_numpy(array=left_series.index._values)
     right_positions = _convert_array_to_numpy(array=right_sorted.index._values)
@@ -265,6 +337,9 @@ def _get_indices(
     for position, (left_on, right_on, op) in enumerate(conditions):
         if position == first_position:
             continue
+        # The left frame was filtered but never reordered. The right frame was
+        # sorted for the seed range predicate, so only the right residual
+        # series needs explicit positional reordering here.
         left_aligned = df[left_on]
         right_aligned = right.loc[right_positions, right_on]
         left_array = _convert_array_to_numpy(array=left_aligned._values)

@@ -727,14 +727,52 @@ def test_check_aggfunc_type(dummy, series):
 
 
 def test_check_aggfunc_ne(dummy, series):
-    """
-    Raise TypeError if all join conditions are !=
-    """
-    with pytest.raises(
-        NotImplementedError,
-        match="aggfunc is not supported when all the join operators.+",
-    ):
-        dummy.join_agg(series, ("id", "B", "!="), aggfunc=[("B", "sum")])
+    """Support aggregation when the only join condition is ``!=``."""
+    actual = dummy.join_agg(series, ("id", "B", "!="), aggfunc=[("B", "sum")])
+    expected = pd.DataFrame(
+        {("B", "sum"): [9, 9, 9, 7, 7, 6]},
+        index=pd.RangeIndex(6),
+    )
+    assert_frame_equal(expected, actual)
+
+
+def test_all_not_equal_aggregation():
+    """Aggregate all ``!=`` predicates without materializing join pairs."""
+    left = pd.DataFrame({"left_a": [1, 2], "left_b": [10, 20]})
+    right = pd.DataFrame(
+        {"right_a": [1, 2, 3], "right_b": [10, 99, 30], "value": [5, 7, 11]}
+    )
+
+    actual = left.join_agg(
+        right,
+        ("left_a", "right_a", "!="),
+        ("left_b", "right_b", "!="),
+        aggfunc=[("value", "size"), ("value", "sum")],
+    )
+    expected = pd.DataFrame(
+        {
+            ("value", "size"): [2, 2],
+            ("value", "sum"): [18, 16],
+        },
+        index=pd.RangeIndex(2),
+    )
+    assert_frame_equal(expected, actual)
+
+    actual = left.join_agg(
+        right,
+        ("left_a", "right_a", "!="),
+        ("left_b", "right_b", "!="),
+        aggfunc=[("left_a", "size"), ("left_b", "sum")],
+        reverse=True,
+    )
+    expected = pd.DataFrame(
+        {
+            ("left_a", "size"): [1, 1, 2],
+            ("left_b", "sum"): [20, 10, 30],
+        },
+        index=pd.RangeIndex(3),
+    )
+    assert_frame_equal(expected, actual)
 
 
 def test_check_aggfunc_sub(dummy, series):

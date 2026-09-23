@@ -29,6 +29,7 @@ from ._conditional_join import (
     _get_indices_non_equi,
     _get_indices_single_join,
     _get_join_aggs,
+    _get_join_aggs_rust,
     _not_equal_indices,
 )
 from ._conditional_join._helpers import (
@@ -456,10 +457,6 @@ def _conditional_join_preliminary_checks(
 
     if aggfunc is not None:
         check("aggfunc", aggfunc, [list])
-        if all((op == _JoinOperator.NOT_EQUAL.value for *_, op in conditions)):
-            raise NotImplementedError(
-                "aggfunc is not supported when all the join operators are !="
-            )
         if reverse:
             cols = df.columns
             frame = df
@@ -613,6 +610,23 @@ def _conditional_join_compute(
             le_lt_check = True
     df.index = range(len(df))
     right.index = range(len(right))
+    if (
+        aggfunc
+        and not use_numba
+        and join_algorithm == "default"
+        and not eq_check
+        and (len(conditions) == 1 or le_lt_check or all_not_equal_check)
+    ):
+        # ELI5: aggregation has its own fused Rust traversal. It updates the
+        # aggregation state while candidates are compared, so it must run
+        # before the ordinary index-producing dispatch builds any pairs.
+        return _get_join_aggs_rust._aggregate(
+            df=df,
+            right=right,
+            conditions=conditions,
+            aggfunc=aggfunc,
+            reverse=reverse,
+        )
     # Default to the complete frames for single-condition joins and for the
     # deprecated Numba path, whose behavior this optimization does not change.
     matching_df = df

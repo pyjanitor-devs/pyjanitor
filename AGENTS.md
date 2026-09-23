@@ -584,6 +584,30 @@ return compact windows, while `!=` paths return materialized pairs.
 ``single_join.rs`` for one predicate, ``single_join_extended.rs`` for multiple
 predicates, and apply residual predicates before final ``keep`` selection.
 
+### [2026-09-23] Conditional-join aggregation is fused at the Rust boundary
+
+**Context**: Adding aggregation support for single and extended non-equality
+conditional joins.
+**Learning**: `join_agg` sends supported single range, single `!=`, mixed
+range-led, and all-`!=` predicates directly to dedicated Rust aggregation
+kernels. Those kernels update aggregation state while comparing candidates and
+do not materialize left/right join-index pairs. Forward aggregation produces
+one result slot per matched left row; reverse aggregation produces one result
+slot per matched right row. The aggregation API has no `keep` parameter.
+
+PyJanitor still owns dataframe preparation: it resets both frames to physical
+`RangeIndex` positions, removes null rows from non-`!=` predicates, stably
+sorts the right-side range values, preserves the filtered-to-physical position
+maps, and supplies authoritative null masks for `!=`. Aggregation input arrays
+remain full-layout arrays for the side being aggregated, even when predicate
+values are filtered or sorted.
+
+**Recommendation**: Keep aggregation adapters in their own module and preserve
+the distinction between predicate layout and aggregation-source layout. When
+mapping Rust `min`/`max` results back to pandas, treat the returned positions as
+physical source positions and materialize the source values only after the
+aggregation result has been filtered by its matched mask.
+
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol

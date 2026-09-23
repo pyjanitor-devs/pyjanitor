@@ -1,10 +1,29 @@
 """Shared preparation and materialization helpers for Rust aggregations."""
 
+from typing import Hashable
+
 import numpy as np
 import pandas as pd
 
-from janitor.functions._conditional_join._get_join_aggs import _build_agg_label
 from janitor.functions._conditional_join._helpers import _convert_array_to_numpy
+
+
+def _build_agg_label(column_name: Hashable, agg_name: str):
+    """Build the output label for one aggregation request.
+
+    Tuple-valued column labels retain their levels and receive the aggregation
+    name as one additional level. Scalar labels become a two-level tuple.
+
+    Args:
+        column_name: Source column label, scalar or tuple-valued.
+        agg_name: Aggregation name such as ``"sum"`` or ``"size"``.
+
+    Returns:
+        A tuple suitable for use as a pandas column label.
+    """
+    if isinstance(column_name, tuple):
+        return (*column_name, agg_name)
+    return (f"{column_name}", agg_name)
 
 
 def _aggregation_inputs(source: pd.DataFrame, aggfunc: list[tuple]) -> list[tuple]:

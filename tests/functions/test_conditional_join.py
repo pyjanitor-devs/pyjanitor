@@ -322,6 +322,95 @@ def test_extended_mixed_filters_pandas_equality_nulls():
     assert np.array_equal(matches["right_index"], np.array([0]))
 
 
+def test_extended_mixed_filters_pandas_not_equal_nulls():
+    """Pandas extension nulls do not satisfy a residual ``!=`` predicate."""
+    left = pd.DataFrame(
+        {
+            "range": pd.array([4], dtype="Int64"),
+            "not_equal": pd.array([1], dtype="Int64"),
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "range": pd.array([5, 6], dtype="Int64"),
+            "not_equal": pd.array([2, None], dtype="Int64"),
+        }
+    )
+
+    matches = jn.get_join_indices(
+        left,
+        right,
+        ("range", "range", "<"),
+        ("not_equal", "not_equal", "!="),
+        keep="all",
+    )
+
+    assert np.array_equal(matches["left_index"], np.array([0]))
+    assert np.array_equal(matches["right_index"], np.array([0]))
+
+
+def test_extended_mixed_keep_options_and_building_blocks():
+    """Keep options operate after residual predicates have filtered pairs."""
+    left = pd.DataFrame(
+        {
+            "range": [4, 4],
+            "residual": [4, 8],
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "range": [5, 6, 7],
+            "residual": [1, 5, 9],
+        }
+    )
+    conditions = (
+        ("range", "range", "<"),
+        ("residual", "residual", "<"),
+    )
+
+    all_matches = jn.get_join_indices(left, right, *conditions, keep="all")
+    first_matches = jn.get_join_indices(left, right, *conditions, keep="first")
+    last_matches = jn.get_join_indices(left, right, *conditions, keep="last")
+    building_blocks = jn.get_join_indices(
+        left,
+        right,
+        *conditions,
+        keep="first",
+        return_building_blocks=True,
+    )
+
+    assert np.array_equal(all_matches["left_index"], np.array([0, 0, 1]))
+    assert np.array_equal(all_matches["right_index"], np.array([1, 2, 2]))
+    assert np.array_equal(first_matches["left_index"], np.array([0, 1]))
+    assert np.array_equal(first_matches["right_index"], np.array([1, 2]))
+    assert np.array_equal(last_matches["left_index"], np.array([0, 1]))
+    assert np.array_equal(last_matches["right_index"], np.array([2, 2]))
+    assert np.array_equal(building_blocks["left_index"], all_matches["left_index"])
+    assert np.array_equal(building_blocks["right_index"], all_matches["right_index"])
+
+
+def test_extended_mixed_all_null_non_ne_side_has_no_matches():
+    """An all-null non-``!=`` side is removed before Rust is called."""
+    left = pd.DataFrame({"range": [1], "equals": [10]})
+    right = pd.DataFrame(
+        {
+            "range": [2, 3],
+            "equals": pd.array([None, None], dtype="Int64"),
+        }
+    )
+
+    matches = jn.get_join_indices(
+        left,
+        right,
+        ("range", "range", "<"),
+        ("equals", "equals", "=="),
+        keep="all",
+    )
+
+    assert np.array_equal(matches["left_index"], np.array([], dtype=np.int64))
+    assert np.array_equal(matches["right_index"], np.array([], dtype=np.int64))
+
+
 def test_extended_all_not_equal_filters_materialized_candidates():
     """All-``!=`` joins use flat candidates before applying ``keep``."""
     left = pd.DataFrame({"first": [1, 2, 3], "second": [1, 2, 3]})

@@ -183,12 +183,14 @@ def _materialize_aggregation_result(
             # Rust stores a physical source position for extrema and -1 when
             # a matched group contains no non-null value. Guard the sentinel
             # before positional indexing, then restore it as pandas missing.
+            # This position array is consumed in this branch and is not
+            # exposed after materialization, so replacing the sentinel in
+            # place avoids an unnecessary second NumPy allocation.
             invalid = values == -1
-            safe_values = values.copy()
-            safe_values[invalid] = 0
+            values[invalid] = 0
             # `mask` returns a new Series with missing extrema restored and
             # avoids an eager defensive copy followed by in-place assignment.
-            values = series.iloc[safe_values].mask(invalid, pd.NA).array
+            values = series.iloc[values].mask(invalid, pd.NA).array
         elif operation in {"sum", "prod"} and pd.api.types.is_extension_array_dtype(
             series.dtype
         ):

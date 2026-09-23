@@ -222,7 +222,9 @@ def _single_join(
             right_null_positions=right_null_positions
             if right_null_positions.size
             else None,
-            is_extension_array=pd.api.types.is_extension_array_dtype(left_series.dtype),
+            is_extension_array=bool(
+                pd.api.types.is_extension_array_dtype(left_series.dtype)
+            ),
         )
 
     # Equality is dispatched through the equi-join paths upstream.

@@ -38,7 +38,7 @@ def _rust_single_join(
     right: pd.Series,
     op: str,
     keep: str,
-    return_matching_indices: bool,
+    return_materialized_indices: bool,
     right_index_is_ordered: bool,
     left_index: np.ndarray | None = None,
     right_index: np.ndarray | None = None,
@@ -66,9 +66,9 @@ def _rust_single_join(
         op: Comparison operator understood by the Rust kernel.
         keep: Requested output selection (``"all"``, ``"first"``, or
             ``"last"``).
-        return_matching_indices: Whether the Rust wrapper should return
-            matching index arrays rather than only internal range-building
-            information.
+        return_materialized_indices: Whether the Rust wrapper should return
+            materialized matching index arrays rather than only internal
+            range-building information.
         right_index_is_ordered: Whether right-index labels are monotonically
             increasing in the value-sorted right layout. This affects
             first/last selection when the right values were reordered.
@@ -109,7 +109,7 @@ def _rust_single_join(
         right_index_is_ordered,
         op,
         keep,
-        bool(return_matching_indices),
+        bool(return_materialized_indices),
         left_positions,
         left_null_positions,
         right_positions,
@@ -127,7 +127,7 @@ def _single_join(
     right: pd.DataFrame,
     condition: tuple,
     keep: str,
-    return_matching_indices: bool,
+    return_materialized_indices: bool,
 ) -> dict:
     """Compute indices for a single conditional-join predicate.
 
@@ -145,8 +145,8 @@ def _single_join(
             positions.
         condition: A ``(left_column, right_column, operator)`` tuple.
         keep: Requested selection mode for matching right rows.
-        return_matching_indices: Whether the Rust wrapper should return the
-            matching index arrays required by the caller.
+        return_materialized_indices: Whether the Rust wrapper should return
+            the materialized matching index arrays required by the caller.
 
     Returns:
         A dictionary containing ``left_index`` and ``right_index`` arrays.
@@ -175,7 +175,7 @@ def _single_join(
             right=right_sorted,
             op=op,
             keep=keep,
-            return_matching_indices=return_matching_indices,
+            return_materialized_indices=return_materialized_indices,
             right_index_is_ordered=right_index_is_ordered,
         )
 
@@ -207,7 +207,7 @@ def _single_join(
             right=right_sorted,
             op=op,
             keep=keep,
-            return_matching_indices=return_matching_indices,
+            return_materialized_indices=return_materialized_indices,
             right_index_is_ordered=right_index_is_ordered,
             left_index=left_index,
             right_index=right_index,

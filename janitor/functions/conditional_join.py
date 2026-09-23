@@ -679,7 +679,7 @@ def _conditional_join_compute(
             right=right,
             condition=conditions[0],
             keep=keep,
-            return_matching_indices=return_building_blocks or aggfunc,
+            return_materialized_indices=return_building_blocks or aggfunc,
         )
     # Internally, join discovery may remain compact until aggregation. A
     # ``starts``/``ends`` pair contains one half-open candidate slice per driving

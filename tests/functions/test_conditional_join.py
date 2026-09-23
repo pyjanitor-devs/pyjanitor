@@ -268,6 +268,60 @@ def test_extended_mixed_filters_non_ne_nulls_and_preserves_ne_nulls():
     assert np.array_equal(matches["right_index"], np.array([2, 2]))
 
 
+def test_extended_range_seed_can_follow_an_equality_predicate():
+    """Residual arrays follow the sorted right range layout."""
+    left = pd.DataFrame(
+        {
+            "equals": [1, 2],
+            "range": [4, 6],
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "equals": [1, 2, 9],
+            "range": [5, 7, 3],
+        }
+    )
+
+    matches = jn.get_join_indices(
+        left,
+        right,
+        ("equals", "equals", "=="),
+        ("range", "range", "<"),
+        keep="all",
+    )
+
+    assert np.array_equal(matches["left_index"], np.array([0, 1]))
+    assert np.array_equal(matches["right_index"], np.array([0, 1]))
+
+
+def test_extended_mixed_filters_pandas_equality_nulls():
+    """Nulls in residual pandas equality columns are removed before Rust."""
+    left = pd.DataFrame(
+        {
+            "range": pd.array([4, 4], dtype="Int64"),
+            "equals": pd.array([10, None], dtype="Int64"),
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "range": pd.array([5, 5], dtype="Int64"),
+            "equals": pd.array([10, None], dtype="Int64"),
+        }
+    )
+
+    matches = jn.get_join_indices(
+        left,
+        right,
+        ("range", "range", "<"),
+        ("equals", "equals", "=="),
+        keep="all",
+    )
+
+    assert np.array_equal(matches["left_index"], np.array([0]))
+    assert np.array_equal(matches["right_index"], np.array([0]))
+
+
 def test_extended_all_not_equal_filters_materialized_candidates():
     """All-``!=`` joins use flat candidates before applying ``keep``."""
     left = pd.DataFrame({"first": [1, 2, 3], "second": [1, 2, 3]})

@@ -123,9 +123,11 @@ def _single_join(
 
         if right_nonnull.empty:
             right_sorted = right_nonnull
+            right_index_is_ordered = True
         else:
-            right_sorted, _ = _sort_if_not_monotonic(series=right_nonnull)
-        right_index_is_ordered = right_sorted.index.is_monotonic_increasing
+            right_sorted, right_index_is_ordered = _sort_if_not_monotonic(
+                series=right_nonnull
+            )
         left_index = _convert_array_to_numpy(array=left_series.index._values)
         right_index = _convert_array_to_numpy(array=right_series.index._values)
         left_positions = _convert_array_to_numpy(array=left_nonnull.index._values)

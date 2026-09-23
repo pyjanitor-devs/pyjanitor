@@ -26,16 +26,6 @@ _SINGLE_JOIN_KERNELS = {
 }
 
 
-def _kernel_for(array: pd.Series):
-    values = _convert_array_to_numpy(array=array._values)
-    try:
-        return _SINGLE_JOIN_KERNELS[values.dtype.name], values
-    except KeyError as error:
-        raise TypeError(
-            f"single non-equi join does not support dtype {values.dtype}"
-        ) from error
-
-
 def _rust_single_join(
     left: pd.Series,
     right: pd.Series,
@@ -60,7 +50,13 @@ def _rust_single_join(
     converts those positions into public index labels after candidate
     selection.
     """
-    kernel, left_values = _kernel_for(left)
+    left_values = _convert_array_to_numpy(array=left._values)
+    try:
+        kernel = _SINGLE_JOIN_KERNELS[left_values.dtype.name]
+    except KeyError as error:
+        raise TypeError(
+            f"single non-equi join does not support dtype {left_values.dtype}"
+        ) from error
     right_values = _convert_array_to_numpy(array=right._values)
     if left_index is None:
         left_index = _convert_array_to_numpy(array=left.index._values)

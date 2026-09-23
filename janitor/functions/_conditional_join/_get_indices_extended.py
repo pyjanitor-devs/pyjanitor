@@ -92,7 +92,7 @@ def _get_all_not_equal_indices(
     right_nulls = right_series.isna()
     left_nonnull = left_series.loc[~left_nulls]
     right_nonnull = right_series.loc[~right_nulls]
-    right_sorted, right_index_is_sorted = _sort_if_not_monotonic(series=right_nonnull)
+    right_sorted, right_index_is_ordered = _sort_if_not_monotonic(series=right_nonnull)
 
     left_index = _convert_array_to_numpy(array=left_series.index._values)
     right_index = _convert_array_to_numpy(array=right_series.index._values)
@@ -112,7 +112,7 @@ def _get_all_not_equal_indices(
         right_index,
         right_positions,
         right_null_positions,
-        right_index_is_sorted,
+        right_index_is_ordered,
         bool(pd.api.types.is_extension_array_dtype(left_series.dtype)),
         first_op,
     )
@@ -237,7 +237,7 @@ def _get_indices(
     if left_series.empty or right_series.empty:
         return _empty_indices()
 
-    right_sorted, right_index_is_sorted = _sort_if_not_monotonic(series=right_series)
+    right_sorted, right_index_is_ordered = _sort_if_not_monotonic(series=right_series)
     left_positions = _convert_array_to_numpy(array=left_series.index._values)
     right_positions = _convert_array_to_numpy(array=right_sorted.index._values)
     first_left = _convert_array_to_numpy(array=left_series._values)
@@ -257,7 +257,7 @@ def _get_indices(
             left_positions,
             first_right,
             right_positions,
-            right_index_is_sorted,
+            right_index_is_ordered,
             first_op,
         )
     ]

@@ -598,6 +598,40 @@ def test_single_range_aggregation_treats_nan_as_null():
     assert_frame_equal(expected, actual)
 
 
+def test_extended_reverse_extension_not_equal_aggregation_preserves_dtype():
+    """Reverse all-``!=`` aggregation handles nullable extension values."""
+    dtype = "Int64"
+    left = pd.DataFrame(
+        {
+            "key": pd.array([1, 2, pd.NA], dtype=dtype),
+            "residual": pd.array([0, 1, 2], dtype=dtype),
+            "value": pd.array([10, 20, pd.NA], dtype=dtype),
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "key": pd.array([2, 3, pd.NA], dtype=dtype),
+            "residual": pd.array([1, 1, 3], dtype=dtype),
+        }
+    )
+    actual = left.join_agg(
+        right,
+        ("key", "key", "!="),
+        ("residual", "residual", "!="),
+        reverse=True,
+        aggfunc=[("value", "size"), ("value", "sum")],
+    ).sort_index()
+    expected = pd.DataFrame(
+        {
+            ("value", "size"): pd.Series([1, 1], index=[0, 1], dtype="int64"),
+            ("value", "sum"): pd.Series(pd.array([10, 10], dtype=dtype), index=[0, 1]),
+        },
+        index=pd.Index([0, 1]),
+    )
+    expected.index.name = None
+    assert_frame_equal(expected, actual)
+
+
 @pytest.mark.parametrize("dtype", ["int64", "uint64"])
 def test_single_range_aggregation_handles_integer_boundaries(dtype):
     """Signed and unsigned 64-bit boundary values remain comparable."""
@@ -631,6 +665,32 @@ def test_single_range_aggregation_handles_integer_boundaries(dtype):
             ("value", "sum"): pd.Series([30, 20], index=[0, 1], dtype=dtype),
         },
         index=pd.Index([0, 1]),
+    )
+    expected.index.name = None
+    assert_frame_equal(expected, actual)
+
+
+def test_single_range_aggregation_uses_documented_unsigned_wrapping():
+    """Unsigned sum and product follow Rust's wrapping arithmetic contract."""
+    dtype = "uint8"
+    left = pd.DataFrame({"key": pd.Series([1], dtype=dtype)})
+    right = pd.DataFrame(
+        {
+            "key": pd.Series([2, 3], dtype=dtype),
+            "value": pd.Series([250, 10], dtype=dtype),
+        }
+    )
+    actual = left.join_agg(
+        right,
+        ("key", "key", "<"),
+        aggfunc=[("value", "sum"), ("value", "prod")],
+    )
+    expected = pd.DataFrame(
+        {
+            ("value", "sum"): pd.Series([4], dtype=dtype),
+            ("value", "prod"): pd.Series([196], dtype=dtype),
+        },
+        index=pd.Index([0]),
     )
     expected.index.name = None
     assert_frame_equal(expected, actual)

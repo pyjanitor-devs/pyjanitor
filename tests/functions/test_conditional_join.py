@@ -500,6 +500,38 @@ def test_extended_all_not_equal_numpy_nulls_match_everything():
     assert np.array_equal(matches["right_index"], np.array([1, 2, 0, 1, 0, 2]))
 
 
+def test_single_not_equal_all_null_numpy_right_matches():
+    """NumPy ``!=`` matches a null-only right side."""
+    left = pd.DataFrame({"value": np.array([1.0])})
+    right = pd.DataFrame({"value": np.array([np.nan])})
+
+    matches = jn.get_join_indices(
+        left,
+        right,
+        ("value", "value", "!="),
+        keep="all",
+    )
+
+    assert np.array_equal(matches["left_index"], np.array([0]))
+    assert np.array_equal(matches["right_index"], np.array([0]))
+
+
+def test_single_not_equal_all_null_extension_right_does_not_match():
+    """Pandas nullable ``!=`` does not match a null-only right side."""
+    left = pd.DataFrame({"value": pd.array([1], dtype="Int64")})
+    right = pd.DataFrame({"value": pd.array([None], dtype="Int64")})
+
+    matches = jn.get_join_indices(
+        left,
+        right,
+        ("value", "value", "!="),
+        keep="all",
+    )
+
+    assert np.array_equal(matches["left_index"], np.array([], dtype=np.int64))
+    assert np.array_equal(matches["right_index"], np.array([], dtype=np.int64))
+
+
 def test_join_algorithm_type(dummy, series):
     """Raise TypeError if join_algorithm is not a str."""
     with pytest.raises(TypeError, match="join_algorithm should be one of.+"):

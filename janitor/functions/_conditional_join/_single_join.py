@@ -254,10 +254,10 @@ def _aggregate_single(
         raise ValueError("single Rust aggregation requires a non-equality predicate")
 
     dtype = left_array.dtype.name
-    function_name = (
+    function_prefix = (
         "single_join_aggregate_reverse_" if reverse else "single_join_aggregate_"
-    ) + dtype
-    result = _aggregation_kernel(function_name)(
+    )
+    result = _aggregation_kernel(function_prefix, dtype)(
         left_array,
         right_array,
         operation,

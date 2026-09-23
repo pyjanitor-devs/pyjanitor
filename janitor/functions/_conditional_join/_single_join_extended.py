@@ -224,12 +224,12 @@ def _aggregate_extended(
                 _build_residual_predicate(df[left_on], right[right_on], operation)
             )
         dtype = _convert_array_to_numpy(anchor.left_values._values).dtype.name
-        function_name = (
+        function_prefix = (
             "single_join_extended_aggregate_reverse_"
             if reverse
             else "single_join_extended_aggregate_"
-        ) + dtype
-        result = _aggregation_kernel(function_name)(
+        )
+        result = _aggregation_kernel(function_prefix, dtype)(
             predicates,
             _aggregation_inputs(right if not reverse else df, aggfunc),
         )
@@ -282,12 +282,12 @@ def _aggregate_extended(
         )
 
     dtype = _convert_array_to_numpy(left_values._values).dtype.name
-    function_name = (
+    function_prefix = (
         "single_join_extended_aggregate_reverse_"
         if reverse
         else "single_join_extended_aggregate_"
-    ) + dtype
-    result = _aggregation_kernel(function_name)(
+    )
+    result = _aggregation_kernel(function_prefix, dtype)(
         predicates,
         _aggregation_inputs(sorted_right if not reverse else filtered_df, aggfunc),
     )

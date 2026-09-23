@@ -24,6 +24,11 @@ import pandas as pd
 
 from janitor.functions._conditional_join._helpers import _convert_array_to_numpy
 
+_RUST_AGGREGATION_DTYPES = {
+    "float64": "f64",
+    "float32": "f32",
+}
+
 
 def _build_agg_label(column_name: Hashable, agg_name: str):
     """Build the output label for one aggregation request.
@@ -201,13 +206,15 @@ def _materialize_aggregation_result(
     return pd.DataFrame(output, copy=False, index=index)
 
 
-def _aggregation_kernel(name: str):
+def _aggregation_kernel(prefix: str, dtype: str):
     """Resolve a dtype-specific Rust aggregation entry point.
 
     Args:
-        name: Exact PyO3 function name, such as
-            ``"single_join_aggregate_int64"`` or
-            ``"single_join_extended_aggregate_reverse_f64"``.
+        prefix: Function prefix, such as ``"single_join_aggregate_"`` or
+            ``"single_join_extended_aggregate_reverse_"``.
+        dtype: NumPy dtype name. Integer names match the Rust suffixes;
+            floating-point names are translated from ``float64``/``float32``
+            to Rust's ``f64``/``f32`` spelling.
 
     Returns:
         The callable exported by the installed ``janitor_rs`` extension.
@@ -217,6 +224,8 @@ def _aggregation_kernel(name: str):
             the requested name. The error is normalized so callers do not
             expose a raw ``AttributeError`` from the extension boundary.
     """
+    rust_dtype = _RUST_AGGREGATION_DTYPES.get(dtype, dtype)
+    name = f"{prefix}{rust_dtype}"
     try:
         import janitor_rs
 

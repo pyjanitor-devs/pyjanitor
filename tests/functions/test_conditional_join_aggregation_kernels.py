@@ -455,3 +455,104 @@ def test_single_reverse_extension_aggregation_preserves_dtype():
     )
     expected.index.name = None
     assert_frame_equal(expected, actual)
+
+
+@pytest.mark.parametrize(
+    ("left_key", "right_key", "right_value", "expected_size", "expected_sum"),
+    [
+        ([np.nan], [1.0, 2.0], [10.0, 20.0], 2, 30.0),
+        ([1.0], [np.nan], [10.0], 1, 10.0),
+    ],
+)
+def test_single_not_equal_numpy_one_sided_nulls(
+    left_key, right_key, right_value, expected_size, expected_sum
+):
+    """NumPy nulls compare unequal to every non-null value."""
+    left = pd.DataFrame({"key": left_key, "value": [1.0]})
+    right = pd.DataFrame({"key": right_key, "value": right_value})
+    actual = left.join_agg(
+        right,
+        ("key", "key", "!="),
+        aggfunc=[("value", "size"), ("value", "sum")],
+    )
+    expected = pd.DataFrame(
+        {
+            ("value", "size"): pd.Series([expected_size], dtype="int64"),
+            ("value", "sum"): pd.Series([expected_sum], dtype="float64"),
+        },
+        index=pd.Index([0]),
+    )
+    expected.index.name = None
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.parametrize(
+    ("left_key", "right_key"),
+    [([np.nan], [1.0]), ([1.0], [np.nan])],
+)
+def test_single_range_all_null_filtered_side_returns_empty(left_key, right_key):
+    """Range aggregation returns an empty result when one side is all null."""
+    left = pd.DataFrame({"key": left_key})
+    right = pd.DataFrame(
+        {"key": right_key, "value": pd.Series([10.0] * len(right_key))}
+    )
+    actual = left.join_agg(
+        right,
+        ("key", "key", "<"),
+        aggfunc=[("value", "size"), ("value", "sum")],
+    )
+    expected = pd.DataFrame(
+        {
+            ("value", "size"): pd.Series([], dtype="int64"),
+            ("value", "sum"): pd.Series([], dtype="float64"),
+        },
+        index=pd.Index([], dtype="int64"),
+    )
+    expected.index.name = None
+    assert_frame_equal(expected, actual)
+
+
+def test_single_range_all_null_extension_value_handles_sum_and_product():
+    """All-null aggregation values retain a valid match and dtype."""
+    left = pd.DataFrame({"key": [1]})
+    right = pd.DataFrame({"key": [2], "value": pd.array([pd.NA], dtype="Int64")})
+    actual = left.join_agg(
+        right,
+        ("key", "key", "<"),
+        aggfunc=[
+            ("value", "size"),
+            ("value", "sum"),
+            ("value", "prod"),
+        ],
+    )
+    expected = pd.DataFrame(
+        {
+            ("value", "size"): pd.Series([1], dtype="int64"),
+            ("value", "sum"): pd.Series(pd.array([0], dtype="Int64")),
+            ("value", "prod"): pd.Series(pd.array([1], dtype="Int64")),
+        },
+        index=pd.Index([0]),
+    )
+    expected.index.name = None
+    assert_frame_equal(expected, actual)
+
+
+def test_single_reverse_aggregation_keeps_unsorted_duplicate_right_rows():
+    """Unsorted duplicate right values retain both physical output rows."""
+    left = pd.DataFrame({"key": [1], "value": [10]})
+    right = pd.DataFrame({"key": [2, 1, 2], "payload": [20, 10, 21]})
+    actual = left.join_agg(
+        right,
+        ("key", "key", "<"),
+        reverse=True,
+        aggfunc=[("value", "size"), ("value", "sum")],
+    ).sort_index()
+    expected = pd.DataFrame(
+        {
+            ("value", "size"): pd.Series([1, 1], index=[0, 2], dtype="int64"),
+            ("value", "sum"): pd.Series([10, 10], index=[0, 2], dtype="int64"),
+        },
+        index=pd.Index([0, 2]),
+    )
+    expected.index.name = None
+    assert_frame_equal(expected, actual)

@@ -186,9 +186,9 @@ def _materialize_aggregation_result(
             invalid = values == -1
             safe_values = values.copy()
             safe_values[invalid] = 0
-            values = series.iloc[safe_values].copy()
-            values.iloc[invalid] = pd.NA
-            values = values.array
+            # `mask` returns a new Series with missing extrema restored and
+            # avoids an eager defensive copy followed by in-place assignment.
+            values = series.iloc[safe_values].mask(invalid, pd.NA).array
         elif operation in {"sum", "prod"} and pd.api.types.is_extension_array_dtype(
             series.dtype
         ):

@@ -72,7 +72,7 @@ def _get_all_not_equal_indices(
     right: pd.DataFrame,
     conditions: list[tuple],
     keep: str,
-    return_materialized_indices: bool,
+    return_matching_indices: bool,
     kernel,
 ) -> dict:
     """Build all-``!=`` candidates, then filter residual predicates.
@@ -155,7 +155,7 @@ def _get_all_not_equal_indices(
         else:
             predicates.append((left_array, right_array, op))
 
-    effective_keep = "all" if return_materialized_indices else keep
+    effective_keep = "all" if return_matching_indices else keep
     result = kernel(predicates, effective_keep)
     if result is None:
         return _empty_indices()
@@ -167,7 +167,7 @@ def _get_indices(
     right: pd.DataFrame,
     conditions: list[tuple],
     keep: str,
-    return_materialized_indices: bool,
+    return_matching_indices: bool,
 ) -> dict:
     """Build multiple-condition indices with the Rust extended kernel.
 
@@ -175,7 +175,7 @@ def _get_indices(
     physical layout. Every residual condition is reordered to that same layout
     before Rust sees it. All-``!=`` joins use a separate first-predicate path:
     the first predicate creates flat physical pairs and later predicates use
-    full-layout arrays to filter those pairs. ``return_materialized_indices``
+    full-layout arrays to filter those pairs. ``return_matching_indices``
     means that pyjanitor needs all materialized pairs, so it overrides the
     requested selection with ``keep="all"``.
     """
@@ -198,7 +198,7 @@ def _get_indices(
             right=right,
             conditions=conditions,
             keep=keep,
-            return_materialized_indices=return_materialized_indices,
+            return_matching_indices=return_matching_indices,
             kernel=kernel,
         )
 
@@ -236,15 +236,16 @@ def _get_indices(
     left_series = df[left_on]
     right_series = right[right_on]
 
-    if left_series.empty or right_series.empty:
+    left_nonnull = left_series.loc[~left_series.isna()]
+    right_nonnull = right_series.loc[~right_series.isna()]
+    if left_nonnull.empty or right_nonnull.empty:
         return _empty_indices()
 
-    right_sorted, right_index_is_sorted = _sort_if_not_monotonic(series=right_series)
-    left_positions = left_series.index
-    right_positions = right_sorted.index
-
-    first_left = _array_for(left_series)
-    first_right = _array_for(right_sorted)
+    right_sorted, right_index_is_sorted = _sort_if_not_monotonic(series=right_nonnull)
+    left_positions = _convert_array_to_numpy(array=left_nonnull.index._values)
+    right_positions = _convert_array_to_numpy(array=right_sorted.index._values)
+    first_left = _convert_array_to_numpy(array=left_nonnull._values)
+    first_right = _convert_array_to_numpy(array=right_sorted._values)
     first_dtype = first_left.dtype.name
     try:
         kernel_name = _EXTENDED_KERNEL_NAMES[first_dtype]
@@ -257,9 +258,9 @@ def _get_indices(
     predicates = [
         (
             first_left,
-            np.asarray(left_positions, dtype=np.int64),
+            left_positions,
             first_right,
-            np.asarray(right_positions, dtype=np.int64),
+            right_positions,
             right_index_is_sorted,
             first_op,
         )
@@ -289,14 +290,14 @@ def _get_indices(
                         left_booleans,
                         right_array,
                         right_booleans,
-                        bool(is_extension_array),
+                        is_extension_array,
                         op,
                     )
                 )
         else:
             predicates.append((left_array, right_array, op))
 
-    effective_keep = "all" if return_materialized_indices else keep
+    effective_keep = "all" if return_matching_indices else keep
     result = kernel(predicates, effective_keep)
     if result is None:
         return _empty_indices()

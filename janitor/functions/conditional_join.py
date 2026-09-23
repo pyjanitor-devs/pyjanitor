@@ -642,7 +642,7 @@ def _conditional_join_compute(
             right=matching_right,
             conditions=conditions,
             keep=keep,
-            return_materialized_indices=return_building_blocks or bool(aggfunc),
+            return_matching_indices=return_building_blocks or bool(aggfunc),
         )
     elif eq_check:
         indices = _multiple_conditional_join_eq(

@@ -71,7 +71,7 @@ def _get_all_not_equal_indices(
     right: pd.DataFrame,
     conditions: list[tuple],
     keep: str,
-    return_matching_indices: bool,
+    return_materialized_indices: bool,
     kernel,
 ) -> dict:
     """Build all-``!=`` candidates, then filter residual predicates.
@@ -154,7 +154,7 @@ def _get_all_not_equal_indices(
         else:
             predicates.append((left_array, right_array, op))
 
-    effective_keep = "all" if return_matching_indices else keep
+    effective_keep = "all" if return_materialized_indices else keep
     result = kernel(predicates, effective_keep)
     if result is None:
         return _empty_indices()
@@ -166,7 +166,7 @@ def _get_indices(
     right: pd.DataFrame,
     conditions: list[tuple],
     keep: str,
-    return_matching_indices: bool,
+    return_materialized_indices: bool,
 ) -> dict:
     """Build multiple-condition indices with the Rust extended kernel.
 
@@ -174,7 +174,7 @@ def _get_indices(
     physical layout. Every residual condition is reordered to that same layout
     before Rust sees it. All-``!=`` joins use a separate first-predicate path:
     the first predicate creates flat physical pairs and later predicates use
-    full-layout arrays to filter those pairs. ``return_matching_indices``
+    full-layout arrays to filter those pairs. ``return_materialized_indices``
     means that pyjanitor needs all materialized pairs, so it overrides the
     requested selection with ``keep="all"``.
     """
@@ -197,7 +197,7 @@ def _get_indices(
             right=right,
             conditions=conditions,
             keep=keep,
-            return_matching_indices=return_matching_indices,
+            return_materialized_indices=return_materialized_indices,
             kernel=kernel,
         )
 
@@ -279,7 +279,7 @@ def _get_indices(
         else:
             predicates.append((left_array, right_array, op))
 
-    effective_keep = "all" if return_matching_indices else keep
+    effective_keep = "all" if return_materialized_indices else keep
     result = kernel(predicates, effective_keep)
     if result is None:
         return _empty_indices()

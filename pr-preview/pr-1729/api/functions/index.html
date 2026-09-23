@@ -5580,7 +5580,8 @@ Currently limited to <code>default</code> and <code>regions</code>.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>janitor/functions/conditional_join.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1431</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1430</span>
+<span class="normal">1431</span>
 <span class="normal">1432</span>
 <span class="normal">1433</span>
 <span class="normal">1434</span>
@@ -5761,8 +5762,7 @@ Currently limited to <code>default</code> and <code>regions</code>.</p>
 <span class="normal">1609</span>
 <span class="normal">1610</span>
 <span class="normal">1611</span>
-<span class="normal">1612</span>
-<span class="normal">1613</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
+<span class="normal">1612</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">join_agg</span><span class="p">(</span>
     <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
     <span class="n">right</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span> <span class="o">|</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span>
@@ -13266,9 +13266,9 @@ is executed before the equi join - pass <code>force=True</code> to force this.</
 <p>The operator can be any of <code>==</code>, <code>!=</code>, <code>&lt;=</code>, <code>&lt;</code>, <code>&gt;=</code>, <code>&gt;</code>.</p>
 <p>For a single <code>!=</code> condition with <code>keep="first"</code> or <code>keep="last"</code>,
 matching positions are selected without materializing all unequal pairs.
-When the Rust extended kernel is available, multiple all-<code>!=</code> conditions
-use the first condition to build physical candidate pairs and filter the
-remaining conditions against those pairs before applying <code>keep</code>.</p>
+Multiple all-<code>!=</code> conditions use the Rust extended kernel: the first
+condition builds physical candidate pairs and the remaining conditions are
+filtered against those pairs before applying <code>keep</code>.</p>
 <p>The join is done only on the columns.</p>
 <p>For non-equi joins, only numeric, timedelta and date columns are supported.</p>
 <p><code>inner</code>, <code>left</code>, <code>right</code> and <code>outer</code> joins are supported.</p>
@@ -14073,9 +14073,9 @@ should be included as an index of the final dataframe.</p>
 
 <span class="sd">    For a single `!=` condition with `keep=&quot;first&quot;` or `keep=&quot;last&quot;`,</span>
 <span class="sd">    matching positions are selected without materializing all unequal pairs.</span>
-<span class="sd">    When the Rust extended kernel is available, multiple all-`!=` conditions</span>
-<span class="sd">    use the first condition to build physical candidate pairs and filter the</span>
-<span class="sd">    remaining conditions against those pairs before applying `keep`.</span>
+<span class="sd">    Multiple all-`!=` conditions use the Rust extended kernel: the first</span>
+<span class="sd">    condition builds physical candidate pairs and the remaining conditions are</span>
+<span class="sd">    filtered against those pairs before applying `keep`.</span>
 
 <span class="sd">    The join is done only on the columns.</span>
 
@@ -14538,7 +14538,8 @@ Currently limited to <code>default</code> and <code>regions</code>.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>janitor/functions/conditional_join.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1353</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1352</span>
+<span class="normal">1353</span>
 <span class="normal">1354</span>
 <span class="normal">1355</span>
 <span class="normal">1356</span>
@@ -14612,8 +14613,7 @@ Currently limited to <code>default</code> and <code>regions</code>.</p>
 <span class="normal">1424</span>
 <span class="normal">1425</span>
 <span class="normal">1426</span>
-<span class="normal">1427</span>
-<span class="normal">1428</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@deprecated_kwargs</span><span class="p">(</span><span class="s2">&quot;return_ragged_arrays&quot;</span><span class="p">)</span>
+<span class="normal">1427</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@deprecated_kwargs</span><span class="p">(</span><span class="s2">&quot;return_ragged_arrays&quot;</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_join_indices</span><span class="p">(</span>
     <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
     <span class="n">right</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span> <span class="o">|</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span>
@@ -14996,7 +14996,8 @@ Currently limited to <code>default</code> and <code>regions</code>.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>janitor/functions/conditional_join.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1431</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1430</span>
+<span class="normal">1431</span>
 <span class="normal">1432</span>
 <span class="normal">1433</span>
 <span class="normal">1434</span>
@@ -15177,8 +15178,7 @@ Currently limited to <code>default</code> and <code>regions</code>.</p>
 <span class="normal">1609</span>
 <span class="normal">1610</span>
 <span class="normal">1611</span>
-<span class="normal">1612</span>
-<span class="normal">1613</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
+<span class="normal">1612</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">join_agg</span><span class="p">(</span>
     <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
     <span class="n">right</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span> <span class="o">|</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span>

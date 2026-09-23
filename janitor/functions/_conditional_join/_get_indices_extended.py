@@ -137,7 +137,16 @@ def _get_all_not_equal_indices(
     right_nulls = right_series.isna()
     left_nonnull = left_series.loc[~left_nulls]
     right_nonnull = right_series.loc[~right_nulls]
-    right_sorted, right_index_is_ordered = _sort_if_not_monotonic(series=right_nonnull)
+    # Without non-null values on either side, no binary-search candidate can
+    # be built. Keep the original right layout so Rust can still use the full
+    # index and null-position metadata for null semantics.
+    if left_nonnull.empty or right_nonnull.empty:
+        right_sorted = right_nonnull
+        right_index_is_ordered = True
+    else:
+        right_sorted, right_index_is_ordered = _sort_if_not_monotonic(
+            series=right_nonnull
+        )
 
     left_index = _convert_array_to_numpy(array=left_series.index._values)
     right_index = _convert_array_to_numpy(array=right_series.index._values)

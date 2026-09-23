@@ -29,7 +29,6 @@ from ._conditional_join import (
     _get_indices_non_equi,
     _get_indices_single_join,
     _get_join_aggs,
-    _get_join_aggs_rust,
     _not_equal_indices,
 )
 from ._conditional_join._helpers import (
@@ -620,7 +619,15 @@ def _conditional_join_compute(
         # ELI5: aggregation has its own fused Rust traversal. It updates the
         # aggregation state while candidates are compared, so it must run
         # before the ordinary index-producing dispatch builds any pairs.
-        return _get_join_aggs_rust._aggregate(
+        if len(conditions) == 1:
+            return _get_indices_single_join._aggregate_single(
+                df=df,
+                right=right,
+                condition=conditions[0],
+                aggfunc=aggfunc,
+                reverse=reverse,
+            )
+        return _get_indices_extended._aggregate_extended(
             df=df,
             right=right,
             conditions=conditions,

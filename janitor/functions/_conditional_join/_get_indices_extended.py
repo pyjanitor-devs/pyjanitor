@@ -26,6 +26,12 @@ import janitor_rs
 import numpy as np
 import pandas as pd
 
+from janitor.functions._conditional_join._get_indices_single_join import (
+    _aggregation_inputs,
+    _aggregation_kernel,
+    _empty_aggregation_result,
+    _materialize_aggregation_result,
+)
 from janitor.functions._conditional_join._helpers import (
     _convert_array_to_numpy,
     _get_boolean_args_for_ne,
@@ -211,6 +217,153 @@ def _get_all_not_equal_indices(
     if result is None:
         return _empty_indices()
     return result
+
+
+def _aggregate_extended(
+    df: pd.DataFrame,
+    right: pd.DataFrame,
+    conditions: list[tuple],
+    aggfunc: list[tuple],
+    reverse: bool,
+) -> pd.DataFrame:
+    """Run fused Rust aggregation for range-led or all-``!=`` predicates."""
+    all_not_equal = all(operation == "!=" for _, _, operation in conditions)
+    if all_not_equal:
+        first_left_on, first_right_on, _ = conditions[0]
+        left_series = df[first_left_on]
+        right_series = right[first_right_on]
+        left_values = left_series.loc[~left_series.isna()]
+        right_values = right_series.loc[~right_series.isna()]
+        if left_values.empty or right_values.empty:
+            right_sorted = right_values
+        else:
+            right_sorted, _ = _sort_if_not_monotonic(right_values)
+        predicates = [
+            (
+                _convert_array_to_numpy(left_values._values),
+                _convert_array_to_numpy(left_series.index._values),
+                _convert_array_to_numpy(left_values.index._values),
+                _null_positions(left_series),
+                _convert_array_to_numpy(right_sorted._values),
+                _convert_array_to_numpy(right_series.index._values),
+                _convert_array_to_numpy(right_sorted.index._values),
+                _null_positions(right_series),
+                True,
+                bool(pd.api.types.is_extension_array_dtype(left_series.dtype)),
+                "!=",
+            )
+        ]
+        for left_on, right_on, operation in conditions[1:]:
+            left_aligned = df[left_on]
+            right_aligned = right[right_on]
+            left_array = _convert_array_to_numpy(left_aligned._values)
+            right_array = _convert_array_to_numpy(right_aligned._values)
+            left_mask, right_mask, extension = _get_boolean_args_for_ne(
+                operation, left_aligned, right_aligned
+            )
+            if left_mask is None and right_mask is None:
+                predicates.append((left_array, right_array, operation))
+            else:
+                predicates.append(
+                    (
+                        left_array,
+                        left_mask,
+                        right_array,
+                        right_mask,
+                        bool(extension),
+                        operation,
+                    )
+                )
+        dtype = _convert_array_to_numpy(left_values._values).dtype.name
+        function_name = (
+            "single_join_extended_aggregate_reverse_"
+            if reverse
+            else "single_join_extended_aggregate_"
+        ) + dtype
+        result = _aggregation_kernel(function_name)(
+            predicates,
+            _aggregation_inputs(right if not reverse else df, aggfunc),
+        )
+        return _materialize_aggregation_result(
+            result,
+            right.index if reverse else df.index,
+            right if not reverse else df,
+            aggfunc,
+        )
+
+    first_position = next(
+        position
+        for position, (_, _, operation) in enumerate(conditions)
+        if operation in less_than_join_types.union(greater_than_join_types)
+    )
+    non_ne_left = {left for left, _, operation in conditions if operation != "!="}
+    non_ne_right = {
+        right_name for _, right_name, operation in conditions if operation != "!="
+    }
+    filtered_df = _maybe_remove_nulls_from_dataframe(df, non_ne_left)
+    filtered_right = _maybe_remove_nulls_from_dataframe(right, non_ne_right)
+    if filtered_df is None or filtered_right is None:
+        return _empty_aggregation_result(df if reverse else right, aggfunc)
+
+    first_left_on, first_right_on, first_operation = conditions[first_position]
+    left_values = filtered_df[first_left_on]
+    right_values = filtered_right[first_right_on]
+    right_sorted, _ = _sort_if_not_monotonic(right_values)
+    right_positions = _convert_array_to_numpy(right_sorted.index._values)
+    sorted_right = filtered_right.loc[right_sorted.index]
+    predicates = [
+        (
+            _convert_array_to_numpy(left_values._values),
+            _convert_array_to_numpy(left_values.index._values),
+            _convert_array_to_numpy(right_sorted._values),
+            right_positions,
+            True,
+            first_operation,
+        )
+    ]
+    for position, (left_on, right_on, operation) in enumerate(conditions):
+        if position == first_position:
+            continue
+        left_aligned = filtered_df[left_on]
+        right_aligned = filtered_right.loc[right_positions, right_on]
+        left_array = _convert_array_to_numpy(left_aligned._values)
+        right_array = _convert_array_to_numpy(right_aligned._values)
+        if operation == "!=":
+            left_mask, right_mask, extension = _get_boolean_args_for_ne(
+                operation, left_aligned, right_aligned
+            )
+            if left_mask is None and right_mask is None:
+                predicates.append((left_array, right_array, operation))
+            else:
+                predicates.append(
+                    (
+                        left_array,
+                        left_mask,
+                        right_array,
+                        right_mask,
+                        bool(extension),
+                        operation,
+                    )
+                )
+        else:
+            predicates.append((left_array, right_array, operation))
+
+    dtype = _convert_array_to_numpy(left_values._values).dtype.name
+    function_name = (
+        "single_join_extended_aggregate_reverse_"
+        if reverse
+        else "single_join_extended_aggregate_"
+    ) + dtype
+    result = _aggregation_kernel(function_name)(
+        predicates,
+        _aggregation_inputs(sorted_right if not reverse else filtered_df, aggfunc),
+    )
+    return _materialize_aggregation_result(
+        result,
+        sorted_right.index if reverse else filtered_df.index,
+        sorted_right if not reverse else filtered_df,
+        aggfunc,
+    )
 
 
 def _get_indices(

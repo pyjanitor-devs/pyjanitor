@@ -11,6 +11,7 @@ import janitor_rs
 import numpy as np
 import pandas as pd
 
+from janitor.functions._conditional_join._get_join_aggs import _build_agg_label
 from janitor.functions._conditional_join._helpers import (
     _convert_array_to_numpy,
     _null_checks_cond_join,
@@ -31,6 +32,83 @@ _SINGLE_JOIN_KERNELS = {
     "float64": janitor_rs.single_join_indices_f64,
     "float32": janitor_rs.single_join_indices_f32,
 }
+
+
+def _aggregation_inputs(source: pd.DataFrame, aggfunc: list[tuple]) -> list[tuple]:
+    """Prepare full-layout aggregation arrays and authoritative null masks."""
+    result = []
+    for column_name, operation in aggfunc:
+        series = source[column_name]
+        result.append(
+            (
+                _convert_array_to_numpy(array=series._values),
+                series.isna().to_numpy(dtype=bool),
+                operation,
+            )
+        )
+    return result
+
+
+def _null_positions(series: pd.Series) -> np.ndarray | None:
+    """Return full-layout physical positions of null rows."""
+    nulls = series.isna().to_numpy(dtype=bool)
+    if not nulls.any():
+        return None
+    return _convert_array_to_numpy(array=series.index[nulls]._values)
+
+
+def _empty_aggregation_result(
+    source: pd.DataFrame, aggfunc: list[tuple]
+) -> pd.DataFrame:
+    """Return an empty aggregation result with the requested output dtypes."""
+    result = {}
+    for column_name, operation in aggfunc:
+        dtype = "int64" if operation == "size" else source[column_name].dtype
+        result[_build_agg_label(column_name, operation)] = pd.array([], dtype=dtype)
+    return pd.DataFrame(result, copy=False)
+
+
+def _materialize_aggregation_result(
+    result,
+    output_index: pd.Index,
+    source: pd.DataFrame,
+    aggfunc: list[tuple],
+) -> pd.DataFrame:
+    """Convert Rust aggregation slots into a pandas result frame."""
+    if result is None:
+        return _empty_aggregation_result(source, aggfunc)
+    matched = np.asarray(result[0], dtype=bool)
+    index = output_index[matched]
+    arrays = result[1]
+    output = {}
+    for position, (column_name, operation) in enumerate(aggfunc):
+        values = np.asarray(arrays[position])
+        if operation == "size":
+            output[_build_agg_label(column_name, operation)] = values[matched]
+            continue
+
+        series = source[column_name]
+        if operation in {"min", "max"}:
+            invalid = values == -1
+            safe_values = values.copy()
+            safe_values[invalid] = 0
+            values = series.iloc[safe_values].copy()
+            values.iloc[invalid] = pd.NA
+            values = values.array
+        elif operation in {"sum", "prod"} and pd.api.types.is_extension_array_dtype(
+            series.dtype
+        ):
+            values = pd.array(values, dtype=series.dtype)
+        output[_build_agg_label(column_name, operation)] = values[matched]
+    return pd.DataFrame(output, copy=False, index=index)
+
+
+def _aggregation_kernel(name: str):
+    """Resolve a dtype-specific Rust aggregation function."""
+    try:
+        return getattr(janitor_rs, name)
+    except AttributeError as error:
+        raise TypeError(f"Rust aggregation does not support dtype {name}") from error
 
 
 def _rust_single_join(
@@ -229,3 +307,80 @@ def _single_join(
 
     # Equality is dispatched through the equi-join paths upstream.
     raise ValueError(f"unsupported single-join operator: {op}")
+
+
+def _aggregate_single(
+    df: pd.DataFrame,
+    right: pd.DataFrame,
+    condition: tuple,
+    aggfunc: list[tuple],
+    reverse: bool,
+) -> pd.DataFrame:
+    """Run a fused Rust aggregation for one range or ``!=`` predicate.
+
+    Predicate arrays may be filtered and sorted, while aggregation arrays keep
+    the full physical layout needed by the Rust position updates.
+    """
+    left_on, right_on, operation = condition
+    left_series = df[left_on]
+    right_series = right[right_on]
+    left_positions = left_null_positions = right_positions = None
+    right_null_positions = None
+    is_extension_array = False
+
+    if operation in less_than_join_types.union(greater_than_join_types):
+        left_outcome = _null_checks_cond_join(left_series)
+        right_outcome = _null_checks_cond_join(right_series)
+        if left_outcome is None or right_outcome is None:
+            return _empty_aggregation_result(df if reverse else right, aggfunc)
+        left_values, _ = left_outcome
+        right_values, _ = right_outcome
+        right_values, _ = _sort_if_not_monotonic(right_values)
+        left_work = df.loc[left_values.index]
+        right_work = right.loc[right_values.index]
+        left_array = _convert_array_to_numpy(left_values._values)
+        right_array = _convert_array_to_numpy(right_values._values)
+    elif operation == "!=":
+        left_null = left_series.isna().to_numpy(dtype=bool)
+        right_null = right_series.isna().to_numpy(dtype=bool)
+        left_values = left_series.loc[~left_null]
+        right_values = right_series.loc[~right_null]
+        if left_values.empty or right_values.empty:
+            right_sorted = right_values
+        else:
+            right_sorted, _ = _sort_if_not_monotonic(right_values)
+        left_work = df
+        right_work = right
+        left_array = _convert_array_to_numpy(left_values._values)
+        right_array = _convert_array_to_numpy(right_sorted._values)
+        left_positions = _convert_array_to_numpy(left_values.index._values)
+        right_positions = _convert_array_to_numpy(right_sorted.index._values)
+        left_null_positions = _null_positions(left_series)
+        right_null_positions = _null_positions(right_series)
+        is_extension_array = bool(
+            pd.api.types.is_extension_array_dtype(left_series.dtype)
+        )
+    else:
+        raise ValueError("single Rust aggregation requires a non-equality predicate")
+
+    dtype = left_array.dtype.name
+    function_name = (
+        "single_join_aggregate_reverse_" if reverse else "single_join_aggregate_"
+    ) + dtype
+    result = _aggregation_kernel(function_name)(
+        left_array,
+        right_array,
+        operation,
+        left_positions,
+        left_null_positions,
+        right_positions,
+        right_null_positions,
+        is_extension_array,
+        _aggregation_inputs(right_work if not reverse else left_work, aggfunc),
+    )
+    return _materialize_aggregation_result(
+        result,
+        right_work.index if reverse else left_work.index,
+        right_work if not reverse else left_work,
+        aggfunc,
+    )

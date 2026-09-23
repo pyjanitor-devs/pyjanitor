@@ -370,7 +370,7 @@ def _get_indices(
                         left_booleans,
                         right_array,
                         right_booleans,
-                        is_extension_array,
+                        bool(is_extension_array),
                         op,
                     )
                 )

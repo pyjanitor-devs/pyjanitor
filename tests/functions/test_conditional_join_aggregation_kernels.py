@@ -216,3 +216,140 @@ def test_extended_not_equal_aggregation_preserves_nullable_dtypes(dtype):
     )
     expected.index.name = None
     assert_frame_equal(expected, actual)
+
+
+def test_single_not_equal_numpy_nulls_match_nulls():
+    """NumPy-style ``!=`` treats a null pair as unequal."""
+    left = pd.DataFrame({"key": [np.nan], "value": [1.0]})
+    right = pd.DataFrame({"key": [np.nan], "value": [10.0]})
+    actual = left.join_agg(
+        right,
+        ("key", "key", "!="),
+        aggfunc=[("value", "size"), ("value", "sum")],
+    )
+    expected = pd.DataFrame(
+        {
+            ("value", "size"): pd.Series([1], dtype="int64"),
+            ("value", "sum"): pd.Series([10.0], dtype="float64"),
+        },
+        index=pd.Index([0]),
+    )
+    expected.index.name = None
+    assert_frame_equal(expected, actual)
+
+
+def test_single_not_equal_extension_nulls_do_not_match():
+    """Pandas extension ``!=`` treats null comparisons as false filters."""
+    dtype = "Float64"
+    left = pd.DataFrame(
+        {"key": pd.array([pd.NA], dtype=dtype), "value": pd.array([1], dtype=dtype)}
+    )
+    right = pd.DataFrame(
+        {"key": pd.array([pd.NA], dtype=dtype), "value": pd.array([10], dtype=dtype)}
+    )
+    actual = left.join_agg(
+        right,
+        ("key", "key", "!="),
+        aggfunc=[("value", "size"), ("value", "sum")],
+    )
+    expected = pd.DataFrame(
+        {
+            ("value", "size"): pd.Series([], dtype="int64"),
+            ("value", "sum"): pd.Series([], dtype=dtype),
+        },
+        index=pd.Index([], dtype="int64"),
+    )
+    expected.index.name = None
+    assert_frame_equal(expected, actual)
+
+
+def test_single_range_aggregation_preserves_match_for_null_value():
+    """A null aggregation value does not erase an otherwise valid match."""
+    left = pd.DataFrame({"key": [1]})
+    right = pd.DataFrame({"key": [2], "value": pd.array([pd.NA], dtype="Int64")})
+    actual = left.join_agg(
+        right,
+        ("key", "key", "<"),
+        aggfunc=[("value", "size"), ("value", "min"), ("value", "max")],
+    )
+    expected = pd.DataFrame(
+        {
+            ("value", "size"): pd.Series([1], dtype="int64"),
+            ("value", "min"): pd.Series(pd.array([pd.NA], dtype="Int64")),
+            ("value", "max"): pd.Series(pd.array([pd.NA], dtype="Int64")),
+        },
+        index=pd.Index([0]),
+    )
+    expected.index.name = None
+    assert_frame_equal(expected, actual)
+
+
+def test_single_reverse_aggregation_omits_unmatched_right_rows():
+    """Reverse output contains only right rows with at least one match."""
+    left = pd.DataFrame({"key": [1], "value": [10]})
+    right = pd.DataFrame({"key": [2, 1], "payload": [20, 30]})
+    actual = left.join_agg(
+        right,
+        ("key", "key", "<"),
+        reverse=True,
+        aggfunc=[("value", "size"), ("value", "sum")],
+    )
+    expected = pd.DataFrame(
+        {
+            ("value", "size"): pd.Series([1], dtype="int64"),
+            ("value", "sum"): pd.Series([10], dtype="int64"),
+        },
+        index=pd.Index([0]),
+    )
+    expected.index.name = None
+    assert_frame_equal(expected, actual)
+
+
+def test_single_range_aggregation_counts_duplicate_right_values():
+    """Duplicate right values produce separate aggregation candidates."""
+    left = pd.DataFrame({"key": [1]})
+    right = pd.DataFrame({"key": [2, 2], "value": [20, 21]})
+    actual = left.join_agg(
+        right,
+        ("key", "key", "<"),
+        aggfunc=[
+            ("value", "size"),
+            ("value", "sum"),
+            ("value", "prod"),
+            ("value", "min"),
+            ("value", "max"),
+        ],
+    )
+    expected = pd.DataFrame(
+        {
+            ("value", "size"): pd.Series([2], dtype="int64"),
+            ("value", "sum"): pd.Series([41], dtype="int64"),
+            ("value", "prod"): pd.Series([420], dtype="int64"),
+            ("value", "min"): pd.Series([20], dtype="int64"),
+            ("value", "max"): pd.Series([21], dtype="int64"),
+        },
+        index=pd.Index([0]),
+    )
+    expected.index.name = None
+    assert_frame_equal(expected, actual)
+
+
+def test_extended_aggregation_returns_empty_when_residual_rejects_all():
+    """Residual filtering can remove every candidate from a range window."""
+    left = pd.DataFrame({"key": [1], "residual": [5]})
+    right = pd.DataFrame({"key": [2], "residual": [5], "value": [10]})
+    actual = left.join_agg(
+        right,
+        ("key", "key", "<"),
+        ("residual", "residual", "=="),
+        aggfunc=[("value", "size"), ("value", "sum")],
+    )
+    expected = pd.DataFrame(
+        {
+            ("value", "size"): pd.Series([], dtype="int64"),
+            ("value", "sum"): pd.Series([], dtype="int64"),
+        },
+        index=pd.Index([], dtype="int64"),
+    )
+    expected.index.name = None
+    assert_frame_equal(expected, actual)

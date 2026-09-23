@@ -58,17 +58,12 @@ def _array_for(series: pd.Series) -> np.ndarray:
     return _convert_array_to_numpy(array=series._values)
 
 
-def _positions_for(index: pd.Index) -> np.ndarray:
-    """Return the physical positions carried by pyjanitor's RangeIndex."""
-    return np.asarray(index, dtype=np.int64)
-
-
 def _null_positions(series: pd.Series) -> np.ndarray | None:
     """Return full-layout null positions, or ``None`` when there are none."""
     nulls = series.isna().to_numpy()
     if not nulls.any():
         return None
-    return _positions_for(series.index[nulls])
+    return _convert_array_to_numpy(array=series.index[nulls]._values)
 
 
 def _get_all_not_equal_indices(
@@ -107,16 +102,20 @@ def _get_all_not_equal_indices(
     right_index = _convert_array_to_numpy(array=right_series.index._values)
     first_left = _convert_array_to_numpy(array=left_nonnull._values)
     first_right = _convert_array_to_numpy(array=right_sorted._values)
+    left_positions = _convert_array_to_numpy(array=left_nonnull.index._values)
+    right_positions = _convert_array_to_numpy(array=right_sorted.index._values)
+    left_null_positions = _null_positions(left_series)
+    right_null_positions = _null_positions(right_series)
 
     first_predicate = (
         first_left,
         left_index,
-        _positions_for(left_nonnull.index),
-        _null_positions(left_series),
+        left_positions,
+        left_null_positions,
         first_right,
         right_index,
-        _positions_for(right_sorted.index),
-        _null_positions(right_series),
+        right_positions,
+        right_null_positions,
         right_index_is_sorted,
         bool(pd.api.types.is_extension_array_dtype(left_series.dtype)),
         first_op,

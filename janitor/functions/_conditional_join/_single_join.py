@@ -11,13 +11,21 @@ import janitor_rs
 import numpy as np
 import pandas as pd
 
-from janitor.functions._conditional_join._get_join_aggs import _build_agg_label
+from janitor.functions._conditional_join._aggregation_helpers import (
+    _aggregation_inputs,
+    _aggregation_kernel,
+    _empty_aggregation_result,
+    _materialize_aggregation_result,
+)
 from janitor.functions._conditional_join._helpers import (
     _convert_array_to_numpy,
     _null_checks_cond_join,
     _sort_if_not_monotonic,
     greater_than_join_types,
     less_than_join_types,
+)
+from janitor.functions._conditional_join._join_preparation import (
+    _prepare_not_equal_anchor,
 )
 
 _SINGLE_JOIN_KERNELS = {
@@ -32,83 +40,6 @@ _SINGLE_JOIN_KERNELS = {
     "float64": janitor_rs.single_join_indices_f64,
     "float32": janitor_rs.single_join_indices_f32,
 }
-
-
-def _aggregation_inputs(source: pd.DataFrame, aggfunc: list[tuple]) -> list[tuple]:
-    """Prepare full-layout aggregation arrays and authoritative null masks."""
-    result = []
-    for column_name, operation in aggfunc:
-        series = source[column_name]
-        result.append(
-            (
-                _convert_array_to_numpy(array=series._values),
-                series.isna().to_numpy(dtype=bool),
-                operation,
-            )
-        )
-    return result
-
-
-def _null_positions(series: pd.Series) -> np.ndarray | None:
-    """Return full-layout physical positions of null rows."""
-    nulls = series.isna().to_numpy(dtype=bool)
-    if not nulls.any():
-        return None
-    return _convert_array_to_numpy(array=series.index[nulls]._values)
-
-
-def _empty_aggregation_result(
-    source: pd.DataFrame, aggfunc: list[tuple]
-) -> pd.DataFrame:
-    """Return an empty aggregation result with the requested output dtypes."""
-    result = {}
-    for column_name, operation in aggfunc:
-        dtype = "int64" if operation == "size" else source[column_name].dtype
-        result[_build_agg_label(column_name, operation)] = pd.array([], dtype=dtype)
-    return pd.DataFrame(result, copy=False)
-
-
-def _materialize_aggregation_result(
-    result,
-    output_index: pd.Index,
-    source: pd.DataFrame,
-    aggfunc: list[tuple],
-) -> pd.DataFrame:
-    """Convert Rust aggregation slots into a pandas result frame."""
-    if result is None:
-        return _empty_aggregation_result(source, aggfunc)
-    matched = np.asarray(result[0], dtype=bool)
-    index = output_index[matched]
-    arrays = result[1]
-    output = {}
-    for position, (column_name, operation) in enumerate(aggfunc):
-        values = np.asarray(arrays[position])
-        if operation == "size":
-            output[_build_agg_label(column_name, operation)] = values[matched]
-            continue
-
-        series = source[column_name]
-        if operation in {"min", "max"}:
-            invalid = values == -1
-            safe_values = values.copy()
-            safe_values[invalid] = 0
-            values = series.iloc[safe_values].copy()
-            values.iloc[invalid] = pd.NA
-            values = values.array
-        elif operation in {"sum", "prod"} and pd.api.types.is_extension_array_dtype(
-            series.dtype
-        ):
-            values = pd.array(values, dtype=series.dtype)
-        output[_build_agg_label(column_name, operation)] = values[matched]
-    return pd.DataFrame(output, copy=False, index=index)
-
-
-def _aggregation_kernel(name: str):
-    """Resolve a dtype-specific Rust aggregation function."""
-    try:
-        return getattr(janitor_rs, name)
-    except AttributeError as error:
-        raise TypeError(f"Rust aggregation does not support dtype {name}") from error
 
 
 def _rust_single_join(
@@ -258,51 +189,21 @@ def _single_join(
         )
 
     if op == "!=":
-        left_is_null = left_series.isna().to_numpy(dtype=bool)
-        right_is_null = right_series.isna().to_numpy(dtype=bool)
-        left_nonnull = left_series.loc[~left_is_null]
-        right_nonnull = right_series.loc[~right_is_null]
-
-        # Without non-null values on either side, no binary-search candidate
-        # can be built. Keep the original right layout so Rust can still use
-        # the full index and null-position metadata for null semantics.
-        if left_nonnull.empty or right_nonnull.empty:
-            right_sorted = right_nonnull
-            right_index_is_ordered = True
-        else:
-            right_sorted, right_index_is_ordered = _sort_if_not_monotonic(
-                series=right_nonnull
-            )
-        left_index = _convert_array_to_numpy(array=left_series.index._values)
-        right_index = _convert_array_to_numpy(array=right_series.index._values)
-        left_positions = _convert_array_to_numpy(array=left_nonnull.index._values)
-        right_positions = _convert_array_to_numpy(array=right_sorted.index._values)
-        left_null_positions = _convert_array_to_numpy(
-            array=left_series.index[left_is_null]._values
-        )
-        right_null_positions = _convert_array_to_numpy(
-            array=right_series.index[right_is_null]._values
-        )
+        anchor = _prepare_not_equal_anchor(left_series, right_series)
         return _rust_single_join(
-            left=left_nonnull,
-            right=right_sorted,
+            left=anchor.left_values,
+            right=anchor.right_values,
             op=op,
             keep=keep,
             return_materialized_indices=return_materialized_indices,
-            right_index_is_ordered=right_index_is_ordered,
-            left_index=left_index,
-            right_index=right_index,
-            left_positions=left_positions,
-            left_null_positions=left_null_positions
-            if left_null_positions.size
-            else None,
-            right_positions=right_positions,
-            right_null_positions=right_null_positions
-            if right_null_positions.size
-            else None,
-            is_extension_array=bool(
-                pd.api.types.is_extension_array_dtype(left_series.dtype)
-            ),
+            right_index_is_ordered=anchor.right_index_is_ordered,
+            left_index=anchor.left_index,
+            right_index=anchor.right_index,
+            left_positions=anchor.left_positions,
+            left_null_positions=anchor.left_null_positions,
+            right_positions=anchor.right_positions,
+            right_null_positions=anchor.right_null_positions,
+            is_extension_array=anchor.is_extension_array,
         )
 
     # Equality is dispatched through the equi-join paths upstream.
@@ -341,25 +242,16 @@ def _aggregate_single(
         left_array = _convert_array_to_numpy(left_values._values)
         right_array = _convert_array_to_numpy(right_values._values)
     elif operation == "!=":
-        left_null = left_series.isna().to_numpy(dtype=bool)
-        right_null = right_series.isna().to_numpy(dtype=bool)
-        left_values = left_series.loc[~left_null]
-        right_values = right_series.loc[~right_null]
-        if left_values.empty or right_values.empty:
-            right_sorted = right_values
-        else:
-            right_sorted, _ = _sort_if_not_monotonic(right_values)
+        anchor = _prepare_not_equal_anchor(left_series, right_series)
         left_work = df
         right_work = right
-        left_array = _convert_array_to_numpy(left_values._values)
-        right_array = _convert_array_to_numpy(right_sorted._values)
-        left_positions = _convert_array_to_numpy(left_values.index._values)
-        right_positions = _convert_array_to_numpy(right_sorted.index._values)
-        left_null_positions = _null_positions(left_series)
-        right_null_positions = _null_positions(right_series)
-        is_extension_array = bool(
-            pd.api.types.is_extension_array_dtype(left_series.dtype)
-        )
+        left_array = _convert_array_to_numpy(anchor.left_values._values)
+        right_array = _convert_array_to_numpy(anchor.right_values._values)
+        left_positions = anchor.left_positions
+        right_positions = anchor.right_positions
+        left_null_positions = anchor.left_null_positions
+        right_null_positions = anchor.right_null_positions
+        is_extension_array = anchor.is_extension_array
     else:
         raise ValueError("single Rust aggregation requires a non-equality predicate")
 

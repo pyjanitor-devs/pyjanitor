@@ -26,6 +26,12 @@ import janitor_rs
 import numpy as np
 import pandas as pd
 
+from janitor.functions._conditional_join._aggregation_helpers import (
+    _aggregation_inputs,
+    _aggregation_kernel,
+    _empty_aggregation_result,
+    _materialize_aggregation_result,
+)
 from janitor.functions._conditional_join._helpers import (
     _convert_array_to_numpy,
     _get_boolean_args_for_ne,
@@ -34,11 +40,8 @@ from janitor.functions._conditional_join._helpers import (
     greater_than_join_types,
     less_than_join_types,
 )
-from janitor.functions._conditional_join._single_join import (
-    _aggregation_inputs,
-    _aggregation_kernel,
-    _empty_aggregation_result,
-    _materialize_aggregation_result,
+from janitor.functions._conditional_join._join_preparation import (
+    _prepare_not_equal_anchor,
 )
 
 _EXTENDED_KERNEL_NAMES = {
@@ -70,26 +73,44 @@ def _empty_indices() -> dict:
     return {"left_index": empty, "right_index": empty}
 
 
-def _null_positions(series: pd.Series) -> np.ndarray | None:
-    """Return null positions in the series' full physical layout.
+def _build_residual_predicate(
+    left: pd.Series, right: pd.Series, operation: str
+) -> tuple:
+    """Build one residual predicate in the Rust tuple format.
 
-    The returned values are positions in the frame after PyJanitor has reset
-    its index to a unique ``RangeIndex``. They are not boolean masks and are
-    not public output labels. Rust uses them to add null-generated ``!=``
-    candidates without receiving the original full value array.
+    Residual arrays remain in the complete physical layout. Only ``!=`` needs
+    additional null metadata; ordinary comparisons use the compact
+    ``(left_values, right_values, operation)`` representation.
 
     Args:
-        series: The full-layout predicate series whose null positions should
-            be collected.
+        left: Left residual series already aligned to the candidate layout.
+        right: Right residual series already aligned to the candidate layout.
+        operation: String comparison operator.
 
     Returns:
-        An ``int64`` NumPy array of null positions, or ``None`` when the
-        series contains no nulls.
+        A three-element ordinary predicate tuple or the six-element nullable
+        ``!=`` tuple expected by the Rust parser.
     """
-    nulls = series.isna().to_numpy()
-    if not nulls.any():
-        return None
-    return _convert_array_to_numpy(array=series.index[nulls]._values)
+    left_array = _convert_array_to_numpy(array=left._values)
+    right_array = _convert_array_to_numpy(array=right._values)
+    if operation != "!=":
+        return left_array, right_array, operation
+
+    left_mask, right_mask, is_extension_array = _get_boolean_args_for_ne(
+        op=operation,
+        left=left,
+        right=right,
+    )
+    if left_mask is None and right_mask is None:
+        return left_array, right_array, operation
+    return (
+        left_array,
+        left_mask,
+        right_array,
+        right_mask,
+        bool(is_extension_array),
+        operation,
+    )
 
 
 def _get_all_not_equal_indices(
@@ -139,41 +160,19 @@ def _get_all_not_equal_indices(
 
     left_series = df[first_left_on]
     right_series = right[first_right_on]
-    left_nulls = left_series.isna()
-    right_nulls = right_series.isna()
-    left_nonnull = left_series.loc[~left_nulls]
-    right_nonnull = right_series.loc[~right_nulls]
-    # Without non-null values on either side, no binary-search candidate can
-    # be built. Keep the original right layout so Rust can still use the full
-    # index and null-position metadata for null semantics.
-    if left_nonnull.empty or right_nonnull.empty:
-        right_sorted = right_nonnull
-        right_index_is_ordered = True
-    else:
-        right_sorted, right_index_is_ordered = _sort_if_not_monotonic(
-            series=right_nonnull
-        )
-
-    left_index = _convert_array_to_numpy(array=left_series.index._values)
-    right_index = _convert_array_to_numpy(array=right_series.index._values)
-    first_left = _convert_array_to_numpy(array=left_nonnull._values)
-    first_right = _convert_array_to_numpy(array=right_sorted._values)
-    left_positions = _convert_array_to_numpy(array=left_nonnull.index._values)
-    right_positions = _convert_array_to_numpy(array=right_sorted.index._values)
-    left_null_positions = _null_positions(left_series)
-    right_null_positions = _null_positions(right_series)
+    anchor = _prepare_not_equal_anchor(left_series, right_series)
 
     first_predicate = (
-        first_left,
-        left_index,
-        left_positions,
-        left_null_positions,
-        first_right,
-        right_index,
-        right_positions,
-        right_null_positions,
-        right_index_is_ordered,
-        bool(pd.api.types.is_extension_array_dtype(left_series.dtype)),
+        _convert_array_to_numpy(anchor.left_values._values),
+        anchor.left_index,
+        anchor.left_positions,
+        anchor.left_null_positions,
+        _convert_array_to_numpy(anchor.right_values._values),
+        anchor.right_index,
+        anchor.right_positions,
+        anchor.right_null_positions,
+        anchor.right_index_is_ordered,
+        anchor.is_extension_array,
         first_op,
     )
     predicates = [first_predicate]
@@ -184,33 +183,7 @@ def _get_all_not_equal_indices(
     # is already in the seed predicate's value-sorted order, so every residual
     # right array must use that same order.
     for left_on, right_on, op in conditions[1:]:
-        left_aligned = df[left_on]
-        right_aligned = right[right_on]
-        left_array = _convert_array_to_numpy(array=left_aligned._values)
-        right_array = _convert_array_to_numpy(array=right_aligned._values)
-        if op == "!=":
-            left_booleans, right_booleans, is_extension_array = (
-                _get_boolean_args_for_ne(
-                    op=op,
-                    left=left_aligned,
-                    right=right_aligned,
-                )
-            )
-            if left_booleans is None and right_booleans is None:
-                predicates.append((left_array, right_array, op))
-            else:
-                predicates.append(
-                    (
-                        left_array,
-                        left_booleans,
-                        right_array,
-                        right_booleans,
-                        bool(is_extension_array),
-                        op,
-                    )
-                )
-        else:
-            predicates.append((left_array, right_array, op))
+        predicates.append(_build_residual_predicate(df[left_on], right[right_on], op))
 
     effective_keep = "all" if return_materialized_indices else keep
     result = kernel(predicates, effective_keep)
@@ -232,49 +205,27 @@ def _aggregate_extended(
         first_left_on, first_right_on, _ = conditions[0]
         left_series = df[first_left_on]
         right_series = right[first_right_on]
-        left_values = left_series.loc[~left_series.isna()]
-        right_values = right_series.loc[~right_series.isna()]
-        if left_values.empty or right_values.empty:
-            right_sorted = right_values
-        else:
-            right_sorted, _ = _sort_if_not_monotonic(right_values)
+        anchor = _prepare_not_equal_anchor(left_series, right_series)
         predicates = [
             (
-                _convert_array_to_numpy(left_values._values),
-                _convert_array_to_numpy(left_series.index._values),
-                _convert_array_to_numpy(left_values.index._values),
-                _null_positions(left_series),
-                _convert_array_to_numpy(right_sorted._values),
-                _convert_array_to_numpy(right_series.index._values),
-                _convert_array_to_numpy(right_sorted.index._values),
-                _null_positions(right_series),
-                True,
-                bool(pd.api.types.is_extension_array_dtype(left_series.dtype)),
+                _convert_array_to_numpy(anchor.left_values._values),
+                anchor.left_index,
+                anchor.left_positions,
+                anchor.left_null_positions,
+                _convert_array_to_numpy(anchor.right_values._values),
+                anchor.right_index,
+                anchor.right_positions,
+                anchor.right_null_positions,
+                anchor.right_index_is_ordered,
+                anchor.is_extension_array,
                 "!=",
             )
         ]
         for left_on, right_on, operation in conditions[1:]:
-            left_aligned = df[left_on]
-            right_aligned = right[right_on]
-            left_array = _convert_array_to_numpy(left_aligned._values)
-            right_array = _convert_array_to_numpy(right_aligned._values)
-            left_mask, right_mask, extension = _get_boolean_args_for_ne(
-                operation, left_aligned, right_aligned
+            predicates.append(
+                _build_residual_predicate(df[left_on], right[right_on], operation)
             )
-            if left_mask is None and right_mask is None:
-                predicates.append((left_array, right_array, operation))
-            else:
-                predicates.append(
-                    (
-                        left_array,
-                        left_mask,
-                        right_array,
-                        right_mask,
-                        bool(extension),
-                        operation,
-                    )
-                )
-        dtype = _convert_array_to_numpy(left_values._values).dtype.name
+        dtype = _convert_array_to_numpy(anchor.left_values._values).dtype.name
         function_name = (
             "single_join_extended_aggregate_reverse_"
             if reverse
@@ -324,29 +275,13 @@ def _aggregate_extended(
     for position, (left_on, right_on, operation) in enumerate(conditions):
         if position == first_position:
             continue
-        left_aligned = filtered_df[left_on]
-        right_aligned = filtered_right.loc[right_positions, right_on]
-        left_array = _convert_array_to_numpy(left_aligned._values)
-        right_array = _convert_array_to_numpy(right_aligned._values)
-        if operation == "!=":
-            left_mask, right_mask, extension = _get_boolean_args_for_ne(
-                operation, left_aligned, right_aligned
+        predicates.append(
+            _build_residual_predicate(
+                filtered_df[left_on],
+                filtered_right.loc[right_positions, right_on],
+                operation,
             )
-            if left_mask is None and right_mask is None:
-                predicates.append((left_array, right_array, operation))
-            else:
-                predicates.append(
-                    (
-                        left_array,
-                        left_mask,
-                        right_array,
-                        right_mask,
-                        bool(extension),
-                        operation,
-                    )
-                )
-        else:
-            predicates.append((left_array, right_array, operation))
+        )
 
     dtype = _convert_array_to_numpy(left_values._values).dtype.name
     function_name = (

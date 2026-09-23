@@ -224,11 +224,14 @@ def _get_indices(
         df=df,
         columns=non_ne_left_columns,
     )
+    if df is None:
+        return _empty_indices()
+
     right = _maybe_remove_nulls_from_dataframe(
         df=right,
         columns=non_ne_right_columns,
     )
-    if df is None or right is None:
+    if right is None:
         return _empty_indices()
 
     first = conditions[first_position]

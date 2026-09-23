@@ -10,7 +10,7 @@ from pandas import Timedelta
 from pandas.testing import assert_frame_equal
 
 import janitor as jn
-from janitor.functions._conditional_join import _get_indices_extended, _le_ge_1_or_more
+from janitor.functions._conditional_join import _le_ge_1_or_more
 from janitor.testing_utils.strategies import (
     conditional_df,
     conditional_right,
@@ -186,9 +186,6 @@ def test_join_return_building_blocks(dummy, series):
 
 def test_extended_range_filters_before_keep_and_building_blocks():
     """Building blocks force all surviving residual matches."""
-    if not _get_indices_extended.available():
-        pytest.skip("requires the extended janitor-rs kernels")
-
     left = pd.DataFrame({"left": [4], "residual": [4]})
     right = pd.DataFrame(
         {
@@ -219,9 +216,6 @@ def test_extended_range_filters_before_keep_and_building_blocks():
 
 def test_extended_range_then_not_equal_filters_windows():
     """Mixed joins keep the range-first window path and filter ``!=`` later."""
-    if not _get_indices_extended.available():
-        pytest.skip("requires the extended janitor-rs kernels")
-
     left = pd.DataFrame({"range": [4], "residual": [4]})
     right = pd.DataFrame(
         {
@@ -243,9 +237,6 @@ def test_extended_range_then_not_equal_filters_windows():
 
 def test_extended_all_not_equal_filters_materialized_candidates():
     """All-``!=`` joins use flat candidates before applying ``keep``."""
-    if not _get_indices_extended.available():
-        pytest.skip("requires the extended janitor-rs kernels")
-
     left = pd.DataFrame({"first": [1, 2, 3], "second": [1, 2, 3]})
     right = pd.DataFrame({"first": [1, 2, 3], "second": [1, 3, 2]})
 
@@ -283,9 +274,6 @@ def test_extended_all_not_equal_filters_materialized_candidates():
 
 def test_extended_all_not_equal_extension_nulls_are_filtered():
     """Pandas extension nulls do not satisfy residual ``!=`` filters."""
-    if not _get_indices_extended.available():
-        pytest.skip("requires the extended janitor-rs kernels")
-
     left = pd.DataFrame(
         {
             "first": pd.array([1, None, 3], dtype="Int64"),
@@ -312,9 +300,6 @@ def test_extended_all_not_equal_extension_nulls_are_filtered():
 
 def test_extended_all_not_equal_numpy_nulls_match_everything():
     """NumPy nulls remain candidates for every ``!=`` predicate."""
-    if not _get_indices_extended.available():
-        pytest.skip("requires the extended janitor-rs kernels")
-
     left = pd.DataFrame(
         {
             "first": np.array([1.0, np.nan, 3.0]),

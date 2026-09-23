@@ -106,9 +106,9 @@ def conditional_join(
 
     For a single `!=` condition with `keep="first"` or `keep="last"`,
     matching positions are selected without materializing all unequal pairs.
-    When the Rust extended kernel is available, multiple all-`!=` conditions
-    use the first condition to build physical candidate pairs and filter the
-    remaining conditions against those pairs before applying `keep`.
+    Multiple all-`!=` conditions use the Rust extended kernel: the first
+    condition builds physical candidate pairs and the remaining conditions are
+    filtered against those pairs before applying `keep`.
 
     The join is done only on the columns.
 
@@ -636,7 +636,6 @@ def _conditional_join_compute(
         and (le_lt_check or all_not_equal_check)
         and not use_numba
         and join_algorithm == "default"
-        and _get_indices_extended.available()
     ):
         indices = _get_indices_extended._get_indices(
             df=matching_df,

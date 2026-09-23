@@ -48,11 +48,6 @@ _EXTENDED_KERNEL_NAMES = {
 }
 
 
-def available() -> bool:
-    """Return whether the installed Rust extension has the new kernels."""
-    return hasattr(janitor_rs, next(iter(_EXTENDED_KERNEL_NAMES.values())))
-
-
 def _empty_indices() -> dict:
     empty = np.array([], dtype=np.int64)
     return {"left_index": empty, "right_index": empty}
@@ -106,12 +101,12 @@ def _get_all_not_equal_indices(
     right_nulls = right_series.isna()
     left_nonnull = left_series.loc[~left_nulls]
     right_nonnull = right_series.loc[~right_nulls]
-    right_sorted, _ = _sort_if_not_monotonic(series=right_nonnull)
+    right_sorted, right_index_is_sorted = _sort_if_not_monotonic(series=right_nonnull)
 
-    left_index = _positions_for(left_series.index)
-    right_index = _positions_for(right_series.index)
-    first_left = _array_for(left_nonnull)
-    first_right = _array_for(right_sorted)
+    left_index = _convert_array_to_numpy(array=left_series.index._values)
+    right_index = _convert_array_to_numpy(array=right_series.index._values)
+    first_left = _convert_array_to_numpy(array=left_nonnull._values)
+    first_right = _convert_array_to_numpy(array=right_sorted._values)
 
     first_predicate = (
         first_left,
@@ -122,7 +117,7 @@ def _get_all_not_equal_indices(
         right_index,
         _positions_for(right_sorted.index),
         _null_positions(right_series),
-        bool(right_sorted.index.is_monotonic_increasing),
+        right_index_is_sorted,
         bool(pd.api.types.is_extension_array_dtype(left_series.dtype)),
         first_op,
     )

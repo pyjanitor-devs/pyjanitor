@@ -54,11 +54,6 @@ def _empty_indices() -> dict:
     return {"left_index": empty, "right_index": empty}
 
 
-def _array_for(series: pd.Series) -> np.ndarray:
-    """Convert one already-aligned Series without changing its row order."""
-    return _convert_array_to_numpy(array=series._values)
-
-
 def _null_positions(series: pd.Series) -> np.ndarray | None:
     """Return full-layout null positions, or ``None`` when there are none."""
     nulls = series.isna().to_numpy()
@@ -129,8 +124,8 @@ def _get_all_not_equal_indices(
     for left_on, right_on, op in conditions[1:]:
         left_aligned = df[left_on]
         right_aligned = right[right_on]
-        left_array = _array_for(left_aligned)
-        right_array = _array_for(right_aligned)
+        left_array = _convert_array_to_numpy(array=left_aligned._values)
+        right_array = _convert_array_to_numpy(array=right_aligned._values)
         if op == "!=":
             left_booleans, right_booleans, is_extension_array = (
                 _get_boolean_args_for_ne(
@@ -184,7 +179,7 @@ def _get_indices(
         first_left_on = conditions[0][0]
         first_values = df[first_left_on]
         first_values = first_values.loc[~first_values.isna()]
-        first_dtype = _array_for(first_values).dtype.name
+        first_dtype = _convert_array_to_numpy(array=first_values._values).dtype.name
         try:
             kernel_name = _EXTENDED_KERNEL_NAMES[first_dtype]
             kernel = getattr(janitor_rs, kernel_name)
@@ -270,10 +265,10 @@ def _get_indices(
     for position, (left_on, right_on, op) in enumerate(conditions):
         if position == first_position:
             continue
-        left_aligned = df.loc[left_positions, left_on]
+        left_aligned = df[left_on]
         right_aligned = right.loc[right_positions, right_on]
-        left_array = _array_for(left_aligned)
-        right_array = _array_for(right_aligned)
+        left_array = _convert_array_to_numpy(array=left_aligned._values)
+        right_array = _convert_array_to_numpy(array=right_aligned._values)
         if op == "!=":
             left_booleans, right_booleans, is_extension_array = (
                 _get_boolean_args_for_ne(

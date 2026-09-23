@@ -560,18 +560,29 @@ maintainers.
 
 ---
 
-### [2026-09-22] Extended joins are range-led and building blocks are flat
+### [2026-09-23] Conditional inequality joins are delegated to Rust
 
-**Context**: Designing the multi-predicate extension to the single conditional
-join kernel.
-**Learning**: The extended Rust path requires a range predicate first and
-returns flat materialized pairs. `return_building_blocks` is a pyjanitor-level
-request that maps to `keep="all"`; it is not an argument to the extended Rust
-kernel. All-`!=` multiple joins remain in pyjanitor because their filtered
-non-null and full-null layouts do not share the range kernel's coordinate space.
-**Recommendation**: Keep `single_join.rs` as the one-predicate path, use
-`single_join_extended.rs` only for range-led multiple predicates, and apply
-`keep` after all residual predicates have passed.
+**Context**: Routing conditional-join inequality predicates through the
+janitor-rs single and extended kernels.
+**Learning**: Both single-condition and multiple-condition `!=` joins are
+now delegated to Rust. Single predicates use `single_join.rs`. Multiple
+predicates use `single_join_extended.rs`: mixed joins are seeded by a range
+predicate, while all-`!=` joins build flat candidate pairs before applying
+residual predicates.
+
+PyJanitor remains responsible for resetting both frames to unique
+`RangeIndex` values, filtering null rows from non-`!=` predicates,
+stably sorting right-hand values, preserving physical position maps, and
+providing authoritative null masks. Rust trusts those alignments and does not
+sort, infer nullness, or reconstruct dataframe positions.
+
+`return_building_blocks` is a PyJanitor-level request. Internally it asks
+the relevant Rust path to retain all surviving candidates; range paths may
+return compact windows, while `!=` paths return materialized pairs.
+
+**Recommendation**: Keep the Python/Rust boundary explicit. Use
+``single_join.rs`` for one predicate, ``single_join_extended.rs`` for multiple
+predicates, and apply residual predicates before final ``keep`` selection.
 
 ## Version History
 

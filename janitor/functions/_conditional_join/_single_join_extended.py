@@ -28,7 +28,6 @@ import pandas as pd
 
 from janitor.functions._conditional_join._aggregation_helpers import (
     _aggregation_inputs,
-    _aggregation_kernel,
     _empty_aggregation_result,
     _materialize_aggregation_result,
 )
@@ -53,6 +52,52 @@ _EXTENDED_KERNEL_NAMES = {
     "uint8": "single_join_extended_indices_uint8",
     "float64": "single_join_extended_indices_f64",
     "float32": "single_join_extended_indices_f32",
+}
+
+# Each entry is `(forward, reverse)`. Keep this registry separate from the
+# single-join registry because the extended Rust kernels have a different
+# predicate contract and different PyO3 functions.
+_EXTENDED_AGGREGATION_KERNELS = {
+    "int64": (
+        janitor_rs.single_join_extended_aggregate_int64,
+        janitor_rs.single_join_extended_aggregate_reverse_int64,
+    ),
+    "int32": (
+        janitor_rs.single_join_extended_aggregate_int32,
+        janitor_rs.single_join_extended_aggregate_reverse_int32,
+    ),
+    "int16": (
+        janitor_rs.single_join_extended_aggregate_int16,
+        janitor_rs.single_join_extended_aggregate_reverse_int16,
+    ),
+    "int8": (
+        janitor_rs.single_join_extended_aggregate_int8,
+        janitor_rs.single_join_extended_aggregate_reverse_int8,
+    ),
+    "uint64": (
+        janitor_rs.single_join_extended_aggregate_uint64,
+        janitor_rs.single_join_extended_aggregate_reverse_uint64,
+    ),
+    "uint32": (
+        janitor_rs.single_join_extended_aggregate_uint32,
+        janitor_rs.single_join_extended_aggregate_reverse_uint32,
+    ),
+    "uint16": (
+        janitor_rs.single_join_extended_aggregate_uint16,
+        janitor_rs.single_join_extended_aggregate_reverse_uint16,
+    ),
+    "uint8": (
+        janitor_rs.single_join_extended_aggregate_uint8,
+        janitor_rs.single_join_extended_aggregate_reverse_uint8,
+    ),
+    "float64": (
+        janitor_rs.single_join_extended_aggregate_f64,
+        janitor_rs.single_join_extended_aggregate_reverse_f64,
+    ),
+    "float32": (
+        janitor_rs.single_join_extended_aggregate_f32,
+        janitor_rs.single_join_extended_aggregate_reverse_f32,
+    ),
 }
 
 
@@ -224,12 +269,14 @@ def _aggregate_extended(
                 _build_residual_predicate(df[left_on], right[right_on], operation)
             )
         dtype = _convert_array_to_numpy(anchor.left_values._values).dtype.name
-        function_prefix = (
-            "single_join_extended_aggregate_reverse_"
-            if reverse
-            else "single_join_extended_aggregate_"
-        )
-        result = _aggregation_kernel(function_prefix, dtype)(
+        try:
+            forward_kernel, reverse_kernel = _EXTENDED_AGGREGATION_KERNELS[dtype]
+        except KeyError as error:
+            raise TypeError(
+                f"Rust aggregation does not support dtype {dtype}"
+            ) from error
+        kernel = reverse_kernel if reverse else forward_kernel
+        result = kernel(
             predicates,
             _aggregation_inputs(right if not reverse else df, aggfunc),
         )
@@ -282,12 +329,12 @@ def _aggregate_extended(
         )
 
     dtype = _convert_array_to_numpy(left_values._values).dtype.name
-    function_prefix = (
-        "single_join_extended_aggregate_reverse_"
-        if reverse
-        else "single_join_extended_aggregate_"
-    )
-    result = _aggregation_kernel(function_prefix, dtype)(
+    try:
+        forward_kernel, reverse_kernel = _EXTENDED_AGGREGATION_KERNELS[dtype]
+    except KeyError as error:
+        raise TypeError(f"Rust aggregation does not support dtype {dtype}") from error
+    kernel = reverse_kernel if reverse else forward_kernel
+    result = kernel(
         predicates,
         _aggregation_inputs(sorted_right if not reverse else filtered_df, aggfunc),
     )

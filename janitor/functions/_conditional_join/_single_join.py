@@ -13,7 +13,6 @@ import pandas as pd
 
 from janitor.functions._conditional_join._aggregation_helpers import (
     _aggregation_inputs,
-    _aggregation_kernel,
     _empty_aggregation_result,
     _materialize_aggregation_result,
 )
@@ -37,6 +36,51 @@ _SINGLE_JOIN_KERNELS = {
     "uint8": janitor_rs.single_join_indices_uint8,
     "float64": janitor_rs.single_join_indices_f64,
     "float32": janitor_rs.single_join_indices_f32,
+}
+
+# Each entry is `(forward, reverse)`. The explicit suffixes mirror the PyO3
+# exports in `single_join_agg.rs`, including Rust's `f64`/`f32` spelling.
+_SINGLE_AGGREGATION_KERNELS = {
+    "int64": (
+        janitor_rs.single_join_aggregate_int64,
+        janitor_rs.single_join_aggregate_reverse_int64,
+    ),
+    "int32": (
+        janitor_rs.single_join_aggregate_int32,
+        janitor_rs.single_join_aggregate_reverse_int32,
+    ),
+    "int16": (
+        janitor_rs.single_join_aggregate_int16,
+        janitor_rs.single_join_aggregate_reverse_int16,
+    ),
+    "int8": (
+        janitor_rs.single_join_aggregate_int8,
+        janitor_rs.single_join_aggregate_reverse_int8,
+    ),
+    "uint64": (
+        janitor_rs.single_join_aggregate_uint64,
+        janitor_rs.single_join_aggregate_reverse_uint64,
+    ),
+    "uint32": (
+        janitor_rs.single_join_aggregate_uint32,
+        janitor_rs.single_join_aggregate_reverse_uint32,
+    ),
+    "uint16": (
+        janitor_rs.single_join_aggregate_uint16,
+        janitor_rs.single_join_aggregate_reverse_uint16,
+    ),
+    "uint8": (
+        janitor_rs.single_join_aggregate_uint8,
+        janitor_rs.single_join_aggregate_reverse_uint8,
+    ),
+    "float64": (
+        janitor_rs.single_join_aggregate_f64,
+        janitor_rs.single_join_aggregate_reverse_f64,
+    ),
+    "float32": (
+        janitor_rs.single_join_aggregate_f32,
+        janitor_rs.single_join_aggregate_reverse_f32,
+    ),
 }
 
 
@@ -254,10 +298,12 @@ def _aggregate_single(
         raise ValueError("single Rust aggregation requires a non-equality predicate")
 
     dtype = left_array.dtype.name
-    function_prefix = (
-        "single_join_aggregate_reverse_" if reverse else "single_join_aggregate_"
-    )
-    result = _aggregation_kernel(function_prefix, dtype)(
+    try:
+        forward_kernel, reverse_kernel = _SINGLE_AGGREGATION_KERNELS[dtype]
+    except KeyError as error:
+        raise TypeError(f"Rust aggregation does not support dtype {dtype}") from error
+    kernel = reverse_kernel if reverse else forward_kernel
+    result = kernel(
         left_array,
         right_array,
         operation,

@@ -185,7 +185,10 @@ def _single_join(
         left_nonnull = left_series.loc[~left_is_null]
         right_nonnull = right_series.loc[~right_is_null]
 
-        if right_nonnull.empty:
+        # Without non-null values on either side, no binary-search candidate
+        # can be built. Keep the original right layout so Rust can still use
+        # the full index and null-position metadata for null semantics.
+        if left_nonnull.empty or right_nonnull.empty:
             right_sorted = right_nonnull
             right_index_is_ordered = True
         else:

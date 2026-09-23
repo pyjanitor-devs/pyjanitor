@@ -177,3 +177,42 @@ def test_single_not_equal_aggregation_preserves_nullable_dtypes(dtype):
     )
     expected.index.name = None
     assert_frame_equal(expected, actual)
+
+
+@pytest.mark.parametrize("dtype", EXTENSION_DTYPES)
+def test_extended_not_equal_aggregation_preserves_nullable_dtypes(dtype):
+    """Extended all-``!=`` joins preserve nullable aggregation dtypes."""
+    left = pd.DataFrame(
+        {
+            "key": pd.array([1, pd.NA], dtype=dtype),
+            "residual": pd.array([0, 1], dtype=dtype),
+            "left_value": pd.array([1, pd.NA], dtype=dtype),
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "key": pd.array([2, pd.NA], dtype=dtype),
+            "residual": pd.array([1, 1], dtype=dtype),
+            "value": pd.array([10, pd.NA], dtype=dtype),
+        }
+    )
+    actual = left.join_agg(
+        right,
+        ("key", "key", "!="),
+        ("residual", "residual", "!="),
+        aggfunc=[
+            ("value", operation) for operation in ("size", "sum", "prod", "min", "max")
+        ],
+    )
+    expected = pd.DataFrame(
+        {
+            ("value", "size"): pd.Series([1], dtype="int64"),
+            ("value", "sum"): pd.Series(pd.array([10], dtype=dtype)),
+            ("value", "prod"): pd.Series(pd.array([10], dtype=dtype)),
+            ("value", "min"): pd.Series(pd.array([10], dtype=dtype)),
+            ("value", "max"): pd.Series(pd.array([10], dtype=dtype)),
+        },
+        index=pd.Index([0]),
+    )
+    expected.index.name = None
+    assert_frame_equal(expected, actual)

@@ -556,3 +556,81 @@ def test_single_reverse_aggregation_keeps_unsorted_duplicate_right_rows():
     )
     expected.index.name = None
     assert_frame_equal(expected, actual)
+
+
+def test_single_range_aggregation_handles_float_infinities():
+    """Valid infinite float values participate in range comparisons."""
+    left = pd.DataFrame({"key": [0.0, np.inf, -np.inf], "value": [1.0, 2.0, 3.0]})
+    right = pd.DataFrame({"key": [0.0, np.inf], "value": [10.0, 20.0]})
+    actual = left.join_agg(
+        right,
+        ("key", "key", "<"),
+        aggfunc=[("value", "size"), ("value", "sum")],
+    )
+    expected = pd.DataFrame(
+        {
+            ("value", "size"): pd.Series([1, 2], index=[0, 2], dtype="int64"),
+            ("value", "sum"): pd.Series([20.0, 30.0], index=[0, 2]),
+        },
+        index=pd.Index([0, 2]),
+    )
+    expected.index.name = None
+    assert_frame_equal(expected, actual)
+
+
+def test_single_range_aggregation_treats_nan_as_null():
+    """NaN is filtered from range comparisons as a null value."""
+    left = pd.DataFrame({"key": [1.0, np.nan], "value": [1.0, 2.0]})
+    right = pd.DataFrame({"key": [2.0, 3.0], "value": [10.0, 20.0]})
+    actual = left.join_agg(
+        right,
+        ("key", "key", "<"),
+        aggfunc=[("value", "size"), ("value", "sum")],
+    )
+    expected = pd.DataFrame(
+        {
+            ("value", "size"): pd.Series([2], index=[0], dtype="int64"),
+            ("value", "sum"): pd.Series([30.0], index=[0]),
+        },
+        index=pd.Index([0]),
+    )
+    expected.index.name = None
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.parametrize("dtype", ["int64", "uint64"])
+def test_single_range_aggregation_handles_integer_boundaries(dtype):
+    """Signed and unsigned 64-bit boundary values remain comparable."""
+    if dtype == "int64":
+        left_values = [np.iinfo(np.int64).min, np.iinfo(np.int64).max - 1]
+        right_values = [np.iinfo(np.int64).min + 1, np.iinfo(np.int64).max]
+    else:
+        left_values = [0, np.iinfo(np.uint64).max - 1]
+        right_values = [1, np.iinfo(np.uint64).max]
+
+    left = pd.DataFrame(
+        {
+            "key": pd.Series(left_values, dtype=dtype),
+            "value": pd.Series([1, 2], dtype=dtype),
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "key": pd.Series(right_values, dtype=dtype),
+            "value": pd.Series([10, 20], dtype=dtype),
+        }
+    )
+    actual = left.join_agg(
+        right,
+        ("key", "key", "<"),
+        aggfunc=[("value", "size"), ("value", "sum")],
+    )
+    expected = pd.DataFrame(
+        {
+            ("value", "size"): pd.Series([2, 1], index=[0, 1], dtype="int64"),
+            ("value", "sum"): pd.Series([30, 20], index=[0, 1], dtype=dtype),
+        },
+        index=pd.Index([0, 1]),
+    )
+    expected.index.name = None
+    assert_frame_equal(expected, actual)

@@ -564,14 +564,15 @@ maintainers.
 
 **Context**: Designing the multi-predicate extension to the single conditional
 join kernel.
-**Learning**: The extended Rust path requires a range predicate first and
-returns flat materialized pairs. `return_building_blocks` is a pyjanitor-level
-request that maps to `keep="all"`; it is not an argument to the extended Rust
-kernel. All-`!=` multiple joins remain in pyjanitor because their filtered
-non-null and full-null layouts do not share the range kernel's coordinate space.
-**Recommendation**: Keep `single_join.rs` as the one-predicate path, use
-`single_join_extended.rs` only for range-led multiple predicates, and apply
-`keep` after all residual predicates have passed.
+**Learning**: The extended Rust path supports range-led predicates and
+all-not-equal predicates, returning flat materialized pairs. Pyjanitor prepares
+the filtered arrays, physical-position mappings, sorting, alignment, and
+authoritative null metadata before dispatching every supported predicate path
+to Rust. `return_building_blocks` remains a pyjanitor-level request that maps
+to `keep="all"`; it is not an argument to the extended Rust kernel.
+**Recommendation**: Keep `single_join.rs` as the one-predicate path and use
+`single_join_extended.rs` for multi-predicate range and all-not-equal joins. Apply
+`keep` only after all predicates have passed.
 
 ## Version History
 

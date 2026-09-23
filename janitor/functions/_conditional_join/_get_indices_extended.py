@@ -239,15 +239,13 @@ def _get_indices(
     left_series = df[left_on]
     right_series = right[right_on]
 
-    left_nonnull = left_series.loc[~left_series.isna()]
-    right_nonnull = right_series.loc[~right_series.isna()]
-    if left_nonnull.empty or right_nonnull.empty:
+    if left_series.empty or right_series.empty:
         return _empty_indices()
 
-    right_sorted, right_index_is_sorted = _sort_if_not_monotonic(series=right_nonnull)
-    left_positions = _convert_array_to_numpy(array=left_nonnull.index._values)
+    right_sorted, right_index_is_sorted = _sort_if_not_monotonic(series=right_series)
+    left_positions = _convert_array_to_numpy(array=left_series.index._values)
     right_positions = _convert_array_to_numpy(array=right_sorted.index._values)
-    first_left = _convert_array_to_numpy(array=left_nonnull._values)
+    first_left = _convert_array_to_numpy(array=left_series._values)
     first_right = _convert_array_to_numpy(array=right_sorted._values)
     first_dtype = first_left.dtype.name
     try:

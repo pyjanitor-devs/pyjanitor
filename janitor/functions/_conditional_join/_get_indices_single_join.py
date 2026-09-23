@@ -26,11 +26,6 @@ _SINGLE_JOIN_KERNELS = {
 }
 
 
-def _index_array(index: pd.Index) -> np.ndarray:
-    """Return the established int64 index representation for Rust."""
-    return np.asarray(index.to_numpy(copy=False), dtype=np.int64)
-
-
 def _kernel_for(array: pd.Series):
     values = _convert_array_to_numpy(array=array._values)
     try:
@@ -68,9 +63,9 @@ def _rust_single_join(
     kernel, left_values = _kernel_for(left)
     right_values = _convert_array_to_numpy(array=right._values)
     if left_index is None:
-        left_index = _index_array(left.index)
+        left_index = _convert_array_to_numpy(array=left.index._values)
     if right_index is None:
-        right_index = _index_array(right.index)
+        right_index = _convert_array_to_numpy(array=right.index._values)
     result = kernel(
         left_values,
         left_index,
@@ -104,7 +99,7 @@ def _single_join(
     left_series = df[left_on]
     right_series = right[right_on]
 
-    if op in less_than_join_types or op in greater_than_join_types:
+    if op in less_than_join_types.union(greater_than_join_types):
         left_outcome = _null_checks_cond_join(series=left_series)
         right_outcome = _null_checks_cond_join(series=right_series)
         if (left_outcome is None) or (right_outcome is None):
@@ -112,8 +107,9 @@ def _single_join(
             return {"left_index": empty, "right_index": empty}
         left_nonnull, _ = left_outcome
         right_nonnull, _ = right_outcome
-        right_sorted, _ = _sort_if_not_monotonic(series=right_nonnull)
-        right_index_is_ordered = right_sorted.index.is_monotonic_increasing
+        right_sorted, right_index_is_ordered = _sort_if_not_monotonic(
+            series=right_nonnull
+        )
         return _rust_single_join(
             left=left_nonnull,
             right=right_sorted,
@@ -134,12 +130,16 @@ def _single_join(
         else:
             right_sorted, _ = _sort_if_not_monotonic(series=right_nonnull)
         right_index_is_ordered = right_sorted.index.is_monotonic_increasing
-        left_index = _index_array(left_series.index)
-        right_index = _index_array(right_series.index)
-        left_positions = _index_array(left_nonnull.index)
-        right_positions = _index_array(right_sorted.index)
-        left_null_positions = _index_array(left_series.index[left_is_null])
-        right_null_positions = _index_array(right_series.index[right_is_null])
+        left_index = _convert_array_to_numpy(array=left_series.index._values)
+        right_index = _convert_array_to_numpy(array=right_series.index._values)
+        left_positions = _convert_array_to_numpy(array=left_nonnull.index._values)
+        right_positions = _convert_array_to_numpy(array=right_sorted.index._values)
+        left_null_positions = _convert_array_to_numpy(
+            array=left_series.index[left_is_null]._values
+        )
+        right_null_positions = _convert_array_to_numpy(
+            array=right_series.index[right_is_null]._values
+        )
         return _rust_single_join(
             left=left_nonnull,
             right=right_sorted,

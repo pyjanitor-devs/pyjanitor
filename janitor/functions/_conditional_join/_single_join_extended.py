@@ -36,12 +36,10 @@ from janitor.functions._conditional_join._helpers import (
     _convert_array_to_numpy,
     _get_boolean_args_for_ne,
     _maybe_remove_nulls_from_dataframe,
+    _prepare_not_equal_anchor,
     _sort_if_not_monotonic,
     greater_than_join_types,
     less_than_join_types,
-)
-from janitor.functions._conditional_join._join_preparation import (
-    _prepare_not_equal_anchor,
 )
 
 _EXTENDED_KERNEL_NAMES = {

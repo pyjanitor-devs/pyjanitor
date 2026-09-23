@@ -20,12 +20,10 @@ from janitor.functions._conditional_join._aggregation_helpers import (
 from janitor.functions._conditional_join._helpers import (
     _convert_array_to_numpy,
     _null_checks_cond_join,
+    _prepare_not_equal_anchor,
     _sort_if_not_monotonic,
     greater_than_join_types,
     less_than_join_types,
-)
-from janitor.functions._conditional_join._join_preparation import (
-    _prepare_not_equal_anchor,
 )
 
 _SINGLE_JOIN_KERNELS = {

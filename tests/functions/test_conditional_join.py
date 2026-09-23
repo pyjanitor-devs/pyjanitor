@@ -235,6 +235,39 @@ def test_extended_range_then_not_equal_filters_windows():
     assert np.array_equal(matches["right_index"], np.array([2, 3]))
 
 
+def test_extended_mixed_filters_non_ne_nulls_and_preserves_ne_nulls():
+    """Mixed joins filter non-``!=`` nulls but preserve ``!=`` nulls."""
+    left = pd.DataFrame(
+        {
+            "range": [4, 4, 4],
+            "equals": [10.0, np.nan, 10.0],
+            "not_equal": [1.0, 1.0, 1.0],
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "range": [5, 5, 5],
+            "equals": [10.0, np.nan, 10.0],
+            "not_equal": [1.0, 2.0, np.nan],
+        }
+    )
+
+    matches = jn.get_join_indices(
+        left,
+        right,
+        ("range", "range", "<"),
+        ("equals", "equals", "=="),
+        ("not_equal", "not_equal", "!="),
+        keep="all",
+    )
+
+    # Left row 1 and right row 1 are removed because their equality values
+    # are null. The right null in the residual ``!=`` column remains a valid
+    # NumPy inequality match for the surviving left rows.
+    assert np.array_equal(matches["left_index"], np.array([0, 2]))
+    assert np.array_equal(matches["right_index"], np.array([2, 2]))
+
+
 def test_extended_all_not_equal_filters_materialized_candidates():
     """All-``!=`` joins use flat candidates before applying ``keep``."""
     left = pd.DataFrame({"first": [1, 2, 3], "second": [1, 2, 3]})

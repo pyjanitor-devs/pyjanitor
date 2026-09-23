@@ -29,6 +29,7 @@ import pandas as pd
 from janitor.functions._conditional_join._helpers import (
     _convert_array_to_numpy,
     _get_boolean_args_for_ne,
+    _maybe_remove_nulls_from_dataframe,
     _sort_if_not_monotonic,
     greater_than_join_types,
     less_than_join_types,
@@ -212,21 +213,37 @@ def _get_indices(
     if first_position is None:
         raise ValueError("extended multiple join requires a range predicate")
 
+    # A null cannot satisfy any non-``!=`` predicate, including a residual
+    # ``==`` predicate. Filter those rows once at the dataframe level so the
+    # seed range predicate and every residual non-``!=`` predicate receive
+    # null-free, positionally aligned arrays. Keep nulls in ``!=`` columns;
+    # their masks are handled separately below.
+    non_ne_left_columns = {left_on for left_on, _, op in conditions if op != "!="}
+    non_ne_right_columns = {right_on for _, right_on, op in conditions if op != "!="}
+    df = _maybe_remove_nulls_from_dataframe(
+        df=df,
+        columns=non_ne_left_columns,
+    )
+    right = _maybe_remove_nulls_from_dataframe(
+        df=right,
+        columns=non_ne_right_columns,
+    )
+    if df is None or right is None:
+        return _empty_indices()
+
     first = conditions[first_position]
     left_on, right_on, first_op = first
     left_series = df[left_on]
     right_series = right[right_on]
 
-    left_nonnull = left_series.loc[~left_series.isna()]
-    right_nonnull = right_series.loc[~right_series.isna()]
-    if left_nonnull.empty or right_nonnull.empty:
+    if left_series.empty or right_series.empty:
         return _empty_indices()
 
-    right_sorted, _ = _sort_if_not_monotonic(series=right_nonnull)
-    left_positions = left_nonnull.index
+    right_sorted, right_index_is_sorted = _sort_if_not_monotonic(series=right_series)
+    left_positions = left_series.index
     right_positions = right_sorted.index
 
-    first_left = _array_for(left_nonnull)
+    first_left = _array_for(left_series)
     first_right = _array_for(right_sorted)
     first_dtype = first_left.dtype.name
     try:
@@ -243,7 +260,7 @@ def _get_indices(
             np.asarray(left_positions, dtype=np.int64),
             first_right,
             np.asarray(right_positions, dtype=np.int64),
-            bool(right_sorted.index.is_monotonic_increasing),
+            right_index_is_sorted,
             first_op,
         )
     ]

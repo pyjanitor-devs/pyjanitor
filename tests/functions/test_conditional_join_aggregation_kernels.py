@@ -353,3 +353,105 @@ def test_extended_aggregation_returns_empty_when_residual_rejects_all():
     )
     expected.index.name = None
     assert_frame_equal(expected, actual)
+
+
+def test_single_reverse_aggregation_tracks_unsorted_right_positions():
+    """Reverse aggregation preserves values when the right values are sorted."""
+    left = pd.DataFrame({"key": [1, 2], "value": [10, 20]})
+    right = pd.DataFrame({"key": [3, 1, 2], "payload": [30, 40, 50]})
+    actual = left.join_agg(
+        right,
+        ("key", "key", "<"),
+        reverse=True,
+        aggfunc=[("value", "size"), ("value", "sum")],
+    ).sort_index()
+    expected = pd.DataFrame(
+        {
+            ("value", "size"): pd.Series([2, 1], index=[0, 2], dtype="int64"),
+            ("value", "sum"): pd.Series([30, 10], index=[0, 2], dtype="int64"),
+        },
+        index=pd.Index([0, 2]),
+    )
+    expected.index.name = None
+    assert_frame_equal(expected, actual)
+
+
+def test_extended_numpy_all_null_not_equal_aggregation_matches():
+    """All-null NumPy ``!=`` candidates remain valid in extended joins."""
+    left = pd.DataFrame({"key": [np.nan], "residual": [1.0], "value": [1.0]})
+    right = pd.DataFrame({"key": [np.nan], "residual": [2.0], "value": [10.0]})
+    actual = left.join_agg(
+        right,
+        ("key", "key", "!="),
+        ("residual", "residual", "!="),
+        aggfunc=[("value", "size"), ("value", "sum")],
+    )
+    expected = pd.DataFrame(
+        {
+            ("value", "size"): pd.Series([1], dtype="int64"),
+            ("value", "sum"): pd.Series([10.0], dtype="float64"),
+        },
+        index=pd.Index([0]),
+    )
+    expected.index.name = None
+    assert_frame_equal(expected, actual)
+
+
+def test_extended_extension_all_null_not_equal_aggregation_is_empty():
+    """All-null extension ``!=`` candidates are filtered out as false."""
+    dtype = "Int64"
+    left = pd.DataFrame(
+        {
+            "key": pd.array([pd.NA], dtype=dtype),
+            "residual": pd.array([1], dtype=dtype),
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "key": pd.array([pd.NA], dtype=dtype),
+            "residual": pd.array([2], dtype=dtype),
+            "value": pd.array([10], dtype=dtype),
+        }
+    )
+    actual = left.join_agg(
+        right,
+        ("key", "key", "!="),
+        ("residual", "residual", "!="),
+        aggfunc=[("value", "size"), ("value", "sum")],
+    )
+    expected = pd.DataFrame(
+        {
+            ("value", "size"): pd.Series([], dtype="int64"),
+            ("value", "sum"): pd.Series([], dtype=dtype),
+        },
+        index=pd.Index([], dtype="int64"),
+    )
+    expected.index.name = None
+    assert_frame_equal(expected, actual)
+
+
+def test_single_reverse_extension_aggregation_preserves_dtype():
+    """Reverse aggregation keeps nullable source values and labels aligned."""
+    dtype = "Int64"
+    left = pd.DataFrame(
+        {
+            "key": pd.array([1, 2], dtype=dtype),
+            "value": pd.array([10, 20], dtype=dtype),
+        }
+    )
+    right = pd.DataFrame({"key": pd.array([2, 3], dtype=dtype)})
+    actual = left.join_agg(
+        right,
+        ("key", "key", "<"),
+        reverse=True,
+        aggfunc=[("value", "size"), ("value", "sum")],
+    ).sort_index()
+    expected = pd.DataFrame(
+        {
+            ("value", "size"): pd.Series([1, 2], index=[0, 1], dtype="int64"),
+            ("value", "sum"): pd.Series(pd.array([10, 30], dtype=dtype), index=[0, 1]),
+        },
+        index=pd.Index([0, 1]),
+    )
+    expected.index.name = None
+    assert_frame_equal(expected, actual)

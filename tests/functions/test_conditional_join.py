@@ -184,6 +184,42 @@ def test_join_return_building_blocks(dummy, series):
         jn.get_join_indices(dummy, series, ("id", "B", ">"), return_building_blocks=1)
 
 
+def test_single_range_building_blocks_materialize_all_matches():
+    """Single range building blocks override ``keep="first"``."""
+    left = pd.DataFrame({"value": [2]})
+    right = pd.DataFrame({"value": [1, 3, 4]})
+
+    matches = jn.get_join_indices(
+        left,
+        right,
+        ("value", "value", "<"),
+        keep="first",
+        return_building_blocks=True,
+    )
+
+    assert np.array_equal(matches["left_index"], np.array([0]))
+    assert np.array_equal(matches["right_index"], np.array([0, 1, 2]))
+    assert np.array_equal(matches["starts"], np.array([1]))
+    assert np.array_equal(matches["ends"], np.array([3]))
+
+
+def test_single_not_equal_building_blocks_materialize_all_matches():
+    """Single ``!=`` building blocks override ``keep="first"``."""
+    left = pd.DataFrame({"value": [1]})
+    right = pd.DataFrame({"value": [1, 2, 3]})
+
+    matches = jn.get_join_indices(
+        left,
+        right,
+        ("value", "value", "!="),
+        keep="first",
+        return_building_blocks=True,
+    )
+
+    assert np.array_equal(matches["left_index"], np.array([0, 0]))
+    assert np.array_equal(matches["right_index"], np.array([1, 2]))
+
+
 def test_extended_range_filters_before_keep_and_building_blocks():
     """Building blocks force all surviving residual matches."""
     left = pd.DataFrame({"left": [4], "residual": [4]})

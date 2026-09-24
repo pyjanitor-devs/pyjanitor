@@ -456,6 +456,12 @@ def _conditional_join_preliminary_checks(
 
     if aggfunc is not None:
         check("aggfunc", aggfunc, [list])
+        if join_algorithm != "default" and all(
+            op == _JoinOperator.NOT_EQUAL.value for *_, op in conditions
+        ):
+            raise NotImplementedError(
+                "aggfunc is not supported for all-!= joins with the regions algorithm"
+            )
         if reverse:
             cols = df.columns
             frame = df

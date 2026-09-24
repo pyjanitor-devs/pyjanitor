@@ -367,6 +367,22 @@ def test_extended_aggregation_returns_empty_when_residual_rejects_all():
     assert_frame_equal(expected, actual)
 
 
+def test_all_not_equal_aggregation_rejects_regions_algorithm():
+    """Regions does not support fused all-``!=`` aggregation."""
+    left = pd.DataFrame({"left_key": [1, 2]})
+    right = pd.DataFrame({"right_key": [1, 2], "value": [10, 20]})
+    with pytest.raises(
+        NotImplementedError,
+        match="aggfunc is not supported for all-!= joins with the regions algorithm",
+    ):
+        left.join_agg(
+            right,
+            ("left_key", "right_key", "!="),
+            join_algorithm="regions",
+            aggfunc=[("value", "size")],
+        )
+
+
 def test_single_reverse_aggregation_tracks_unsorted_right_positions():
     """Reverse aggregation preserves values when the right values are sorted."""
     left = pd.DataFrame({"key": [1, 2], "value": [10, 20]})

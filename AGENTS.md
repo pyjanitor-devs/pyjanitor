@@ -608,10 +608,14 @@ mapping Rust `min`/`max` results back to pandas, treat the returned positions as
 physical source positions and materialize the source values only after the
 aggregation result has been filtered by its matched mask.
 
-Floating-point aggregation uses and returns `float64` for both `float32` and
-`float64` inputs. Narrow integer `sum` and `prod` wrap at the source dtype
-width. The right-index ordering flag is relevant only to index-building
-selection; aggregation consumes all surviving candidates and does not use it.
+Numeric aggregation follows the pandas reduction contract. Signed integer
+`sum` and `prod` inputs are promoted to `int64`; unsigned integer inputs are
+promoted to `uint64`; `float32` and `float64` retain their respective dtypes;
+and `min`/`max` retain the source dtype. Boolean aggregation is out of scope.
+The wildcard `(*, "size")` and `(*, null_mask, "count")` contracts remain
+dtype-independent. The right-index ordering flag is relevant only to
+index-building selection; aggregation consumes all surviving candidates and
+does not use it.
 
 ## Version History
 

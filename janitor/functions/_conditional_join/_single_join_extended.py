@@ -1,4 +1,4 @@
-"""Multiple conditional-join indices backed by janitor-rs.
+"""Multiple conditional-join indices and aggregations backed by janitor-rs.
 
 Mixed joins are range-led: the first range predicate creates the candidate
 layout and later predicates filter it. When every predicate is ``!=``, the
@@ -17,7 +17,11 @@ Residual predicates use ``(left, right, comparator)`` or, for null-aware
 ``!=``, ``(left, left_null_mask, right, right_null_mask,
 is_extension_array, comparator)``. Residual arrays retain the full physical
 layout because candidate positions index them directly. Rust does not sort,
-align, or infer nullness; pyjanitor owns those responsibilities.
+
+The aggregation entry point uses the same anchor and residual traversal as
+the index entry point, but updates Rust aggregation state for each surviving
+candidate instead of materializing candidate pairs. It returns a complete
+trimmed output domain with an explicit ``matched`` level when requested.
 """
 
 from __future__ import annotations
@@ -36,6 +40,7 @@ from janitor.functions._conditional_join._helpers import (
     _convert_array_to_numpy,
     _get_boolean_args_for_ne,
     _maybe_remove_nulls_from_dataframe,
+    _not_equal_layout_positions,
     _prepare_not_equal_anchor,
     _prepare_range_anchor,
     greater_than_join_types,
@@ -125,6 +130,14 @@ def _build_residual_predicate(
     Residual arrays remain in the complete physical layout. Only ``!=`` needs
     additional null metadata; ordinary comparisons use the compact
     ``(left_values, right_values, operation)`` representation.
+
+    The left and right series must already be aligned to the same physical
+    candidate layout. Rust reuses one candidate position for every residual,
+    so this helper must not independently reset, sort, or drop rows. Null
+    masks are authoritative: ``True`` means that the corresponding physical
+    value is null. Rust does not infer nullness from the value, including
+    ``NaN``. For pandas extension arrays, the extension flag preserves
+    nullable ``!=`` semantics.
 
     Args:
         left: Left residual series already aligned to the candidate layout.
@@ -248,8 +261,53 @@ def _aggregate_extended(
     conditions: list[tuple],
     aggfunc: list[tuple],
     reverse: bool,
+    return_matched: bool,
 ) -> pd.DataFrame:
-    """Run fused Rust aggregation for range-led or all-``!=`` predicates."""
+    """Run fused Rust aggregation for multiple join predicates.
+
+    If every predicate is ``!=``, the first predicate supplies the null-aware
+    candidate stream and later ``!=`` predicates filter those candidates. In
+    a mixed call, the first range predicate supplies a binary-search window
+    and every remaining predicate filters candidates inside that window.
+    Aggregation occurs while candidates are evaluated; no flat pair index is
+    materialized.
+
+    The first predicate's arrays may be filtered and the right range array may
+    be sorted, but every residual predicate is rebuilt in the same physical
+    left/right layout. Aggregation sources use the corresponding trimmed
+    layout; Rust maps physical candidate positions into those local slots.
+
+    Rust returns ``None`` when no candidate survives all predicates. Otherwise
+    it returns output positions and aggregation arrays, with the matched array
+    included only when ``return_matched`` is true. The shared materializer
+    preserves the trimmed calculation layout and chooses a plain index or a
+    boolean ``matched`` MultiIndex level accordingly.
+
+    Args:
+        df: Left dataframe with a unique physical ``RangeIndex``.
+        right: Right dataframe with a unique physical ``RangeIndex``.
+        conditions: Join predicates in user order. An all-``!=`` call must
+            contain only ``!=`` operators. A mixed call must contain at least
+            one range predicate, which anchors candidate generation.
+        aggfunc: Non-empty ``(column, operation)`` requests for ``sum``,
+            ``prod``, ``min``, ``max``, ``count``, or ``size``.
+        reverse: When false, aggregate right-side values into left output
+            rows. When true, aggregate left-side values into right output
+            rows.
+        return_matched: Whether to request the per-output matched mask from
+            Rust and expose it as a second MultiIndex level.
+
+    Returns:
+        A dataframe indexed by ``(output_index, matched)``. Rows with no
+        surviving candidate remain present with neutral or missing values.
+        If no candidate survives anywhere, an empty schema-only dataframe is
+        returned.
+
+    Raises:
+        TypeError: If the anchor dtype has no registered Rust kernel.
+        ValueError: If predicates are malformed, residual arrays are not
+            aligned, or an unsupported operator combination is requested.
+    """
     all_not_equal = all(operation == "!=" for _, _, operation in conditions)
     if all_not_equal:
         first_left_on, first_right_on, _ = conditions[0]
@@ -258,6 +316,12 @@ def _aggregate_extended(
         anchor = _prepare_not_equal_anchor(left=left_series, right=right_series)
         left_array = _convert_array_to_numpy(array=anchor.left_values._values)
         right_array = _convert_array_to_numpy(array=anchor.right_values._values)
+        left_output_positions = _not_equal_layout_positions(
+            anchor.left_positions, anchor.left_null_positions
+        )
+        right_output_positions = _not_equal_layout_positions(
+            anchor.right_positions, anchor.right_null_positions
+        )
         predicates = [
             (
                 left_array,
@@ -270,6 +334,8 @@ def _aggregate_extended(
                 anchor.right_null_positions,
                 anchor.right_index_is_ordered,
                 anchor.is_extension_array,
+                left_output_positions,
+                right_output_positions,
                 "!=",
             )
         ]
@@ -281,6 +347,11 @@ def _aggregate_extended(
                     operation=operation,
                 )
             )
+        aggregation_source = (
+            right.iloc[right_output_positions]
+            if not reverse
+            else df.iloc[left_output_positions]
+        )
         kernel = _select_aggregation_kernel(
             registry=_EXTENDED_AGGREGATION_KERNELS,
             dtype=left_array.dtype.name,
@@ -289,15 +360,21 @@ def _aggregate_extended(
         result = kernel(
             predicates,
             _aggregation_inputs(
-                source=right if not reverse else df,
+                source=aggregation_source,
                 aggfunc=aggfunc,
             ),
+            return_matched,
         )
         return _materialize_aggregation_result(
             result=result,
-            output_index=right.index if reverse else df.index,
-            source=right if not reverse else df,
+            output_index=(
+                right.index.take(right_output_positions)
+                if reverse
+                else df.index.take(left_output_positions)
+            ),
+            source=aggregation_source,
             aggfunc=aggfunc,
+            return_matched=return_matched,
         )
 
     first_position = next(
@@ -313,7 +390,7 @@ def _aggregate_extended(
     filtered_right = _maybe_remove_nulls_from_dataframe(right, non_ne_right)
     if filtered_df is None or filtered_right is None:
         return _empty_aggregation_result(
-            source=df if reverse else right,
+            source=right if not reverse else df,
             aggfunc=aggfunc,
         )
 
@@ -324,10 +401,9 @@ def _aggregate_extended(
     )
     if anchor is None:
         return _empty_aggregation_result(
-            source=df if reverse else right,
+            source=right if not reverse else df,
             aggfunc=aggfunc,
         )
-    sorted_right = filtered_right.loc[anchor.right_values.index]
     predicates = [
         (
             anchor.left_array,
@@ -335,9 +411,21 @@ def _aggregate_extended(
             anchor.right_array,
             anchor.right_index,
             anchor.right_index_is_ordered,
+            _convert_array_to_numpy(array=df.index._values),
+            _convert_array_to_numpy(array=right.index._values),
             first_operation,
         )
     ]
+    aggregation_source = (
+        filtered_right.loc[anchor.right_index]
+        if not reverse
+        else filtered_df.loc[anchor.left_index]
+    )
+    output_index = (
+        right.index.take(anchor.right_index)
+        if reverse
+        else df.index.take(anchor.left_index)
+    )
     for position, (left_on, right_on, operation) in enumerate(conditions):
         if position == first_position:
             continue
@@ -357,15 +445,17 @@ def _aggregate_extended(
     result = kernel(
         predicates,
         _aggregation_inputs(
-            source=sorted_right if not reverse else filtered_df,
+            source=aggregation_source,
             aggfunc=aggfunc,
         ),
+        return_matched,
     )
     return _materialize_aggregation_result(
         result=result,
-        output_index=sorted_right.index if reverse else filtered_df.index,
-        source=sorted_right if not reverse else filtered_df,
+        output_index=output_index,
+        source=aggregation_source,
         aggfunc=aggfunc,
+        return_matched=return_matched,
     )
 
 
@@ -393,8 +483,8 @@ def _get_indices(
             predicate to build flat candidate pairs. A mixed join uses the
             first range predicate (in condition order) to build candidate
             windows.
-        keep: ``"all"``, ``"first"``, or ``"last"`` selection requested for
-            the final indices.
+        keep: ``"all"``, ``"first"``, ``"last"``, or ``"any"`` selection
+            requested for the final indices.
         return_materialized_indices: Force all surviving pairs to be
             materialized. This is required when the caller needs building
             blocks or aggregation inputs and therefore overrides ``keep``.

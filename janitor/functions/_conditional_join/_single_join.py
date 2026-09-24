@@ -1,10 +1,12 @@
-"""Compute indices for one conditional-join predicate.
+"""Compute indices and aggregations for one conditional-join predicate.
 
 This module prepares one predicate for the dtype-specific Rust kernels. The
 caller has already reset both input frames to unique ``RangeIndex`` values;
 those positions are therefore safe to carry through filtering and sorting.
 PyJanitor performs null filtering, stable right-value sorting, and index
-alignment before Rust evaluates candidates.
+alignment before Rust evaluates candidates. Aggregation calls retain full
+source arrays and materialize Rust's explicit output positions and match mask
+as a pandas ``MultiIndex``.
 """
 
 import janitor_rs
@@ -19,6 +21,7 @@ from janitor.functions._conditional_join._aggregation_helpers import (
 )
 from janitor.functions._conditional_join._helpers import (
     _convert_array_to_numpy,
+    _not_equal_layout_positions,
     _prepare_not_equal_anchor,
     _prepare_range_anchor,
     greater_than_join_types,
@@ -115,8 +118,8 @@ def _rust_single_join(
         right: Right predicate values in binary-search order. For range
             operators and ``!=``, PyJanitor supplies the value-sorted layout.
         op: Comparison operator understood by the Rust kernel.
-        keep: Requested output selection (``"all"``, ``"first"``, or
-            ``"last"``).
+        keep: Requested output selection (``"all"``, ``"first"``,
+            ``"last"``, or ``"any"``).
         return_materialized_indices: Whether the Rust wrapper should return
             materialized matching index arrays rather than only internal
             range-building information.
@@ -252,11 +255,40 @@ def _aggregate_single(
     condition: tuple,
     aggfunc: list[tuple],
     reverse: bool,
+    return_matched: bool,
 ) -> pd.DataFrame:
-    """Run a fused Rust aggregation for one range or ``!=`` predicate.
+    """Run one fused Rust aggregation for a range or ``!=`` predicate.
 
-    Predicate arrays may be filtered and sorted, while aggregation arrays keep
-    the full physical layout needed by the Rust position updates.
+    Predicate and aggregation arrays use the same trimmed calculation layout.
+    Rust returns ``None`` when no pair satisfies the predicate; otherwise it
+    returns output positions and aggregation arrays, with the matched array
+    included only when ``return_matched`` is true. The materializer uses the
+    trimmed output index directly and chooses either a plain index or a
+    boolean ``matched`` MultiIndex level accordingly.
+
+    Args:
+        df: Left dataframe with its physical ``RangeIndex``.
+        right: Right dataframe with its physical ``RangeIndex``.
+        condition: ``(left_column, right_column, operator)``. Supported
+            operators are ``<``, ``<=``, ``>``, ``>=``, and ``!=``. Equality
+            is handled upstream by PyJanitor.
+        aggfunc: Non-empty ``(column, operation)`` requests. Operations may
+            be ``sum``, ``prod``, ``min``, ``max``, ``count``, or ``size``.
+        reverse: When false, aggregate right-side values into left output
+            rows. When true, aggregate left-side values into right output
+            rows.
+        return_matched: Whether to request the per-output matched mask from
+            Rust and expose it as a second MultiIndex level.
+
+    Returns:
+        A dataframe with one row per trimmed output position. An empty
+        schema-only dataframe is returned when the predicate has no possible
+        matches.
+
+    Raises:
+        TypeError: If the predicate dtype has no registered Rust kernel.
+        ValueError: If the operator or aggregation request violates the Rust
+            kernel contract.
     """
     left_on, right_on, operation = condition
     left_series = df[left_on]
@@ -264,22 +296,35 @@ def _aggregate_single(
     left_positions = left_null_positions = right_positions = None
     right_null_positions = None
     is_extension_array = False
+    left_output_positions = _convert_array_to_numpy(array=df.index._values)
+    right_output_positions = _convert_array_to_numpy(array=right.index._values)
+    aggregation_source = right if not reverse else df
+    output_index = right.index if reverse else df.index
 
     if operation in less_than_join_types.union(greater_than_join_types):
         anchor = _prepare_range_anchor(left=left_series, right=right_series)
         if anchor is None:
             return _empty_aggregation_result(
-                source=df if reverse else right,
+                source=right if not reverse else df,
                 aggfunc=aggfunc,
             )
-        left_work = df.loc[anchor.left_values.index]
-        right_work = right.loc[anchor.right_values.index]
         left_array = anchor.left_array
         right_array = anchor.right_array
+        left_positions = anchor.left_index
+        right_positions = anchor.right_index
+        aggregation_source = (
+            right.loc[anchor.right_index] if not reverse else df.loc[anchor.left_index]
+        )
+        output_index = (
+            right.index.take(anchor.right_index)
+            if reverse
+            else df.index.take(anchor.left_index)
+        )
+        # The range arrays may be filtered and sorted. These maps tell Rust
+        # where each calculation-order row belongs in the trimmed output
+        # layout. Rust uses the same map for its returned positions.
     elif operation == "!=":
         anchor = _prepare_not_equal_anchor(left=left_series, right=right_series)
-        left_work = df
-        right_work = right
         left_array = _convert_array_to_numpy(array=anchor.left_values._values)
         right_array = _convert_array_to_numpy(array=anchor.right_values._values)
         left_positions = anchor.left_positions
@@ -287,6 +332,22 @@ def _aggregate_single(
         left_null_positions = anchor.left_null_positions
         right_null_positions = anchor.right_null_positions
         is_extension_array = anchor.is_extension_array
+        left_output_positions = _not_equal_layout_positions(
+            anchor.left_positions, anchor.left_null_positions
+        )
+        right_output_positions = _not_equal_layout_positions(
+            anchor.right_positions, anchor.right_null_positions
+        )
+        aggregation_source = (
+            right.iloc[right_output_positions]
+            if not reverse
+            else df.iloc[left_output_positions]
+        )
+        output_index = (
+            right.index.take(right_output_positions)
+            if reverse
+            else df.index.take(left_output_positions)
+        )
     else:
         raise ValueError("single Rust aggregation requires a non-equality predicate")
 
@@ -305,13 +366,17 @@ def _aggregate_single(
         right_null_positions,
         is_extension_array,
         _aggregation_inputs(
-            source=right_work if not reverse else left_work,
+            source=aggregation_source,
             aggfunc=aggfunc,
         ),
+        left_output_positions,
+        right_output_positions,
+        return_matched,
     )
     return _materialize_aggregation_result(
         result=result,
-        output_index=right_work.index if reverse else left_work.index,
-        source=right_work if not reverse else left_work,
+        output_index=output_index,
+        source=aggregation_source,
         aggfunc=aggfunc,
+        return_matched=return_matched,
     )

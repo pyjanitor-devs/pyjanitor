@@ -205,6 +205,35 @@ def _null_positions(series: pd.Series) -> np.ndarray | None:
     return _convert_array_to_numpy(array=series.index[nulls]._values)
 
 
+def _not_equal_layout_positions(
+    non_null_positions: np.ndarray,
+    null_positions: np.ndarray | None,
+) -> np.ndarray:
+    """Return the compact aggregation layout for a ``!=`` side.
+
+    ``!=`` searches only the non-null values, but aggregation must also be
+    able to address null rows for NumPy null semantics. The compact layout is
+    therefore the filtered non-null positions followed by the null positions.
+    Rust receives this same array as both the aggregation source/output map
+    and the output-position result, so Python and Rust cannot silently drift
+    to different row orders.
+
+    Args:
+        non_null_positions: Physical positions of searchable non-null rows.
+        null_positions: Physical positions of null rows, or ``None`` when
+            there are no null rows.
+
+    Returns:
+        An ``int64`` array containing every physical position exactly once.
+    """
+    non_null_positions = np.asarray(non_null_positions, dtype=np.int64)
+    if null_positions is None:
+        return non_null_positions.copy()
+    return np.concatenate(
+        [non_null_positions, np.asarray(null_positions, dtype=np.int64)]
+    )
+
+
 def _prepare_not_equal_anchor(left: pd.Series, right: pd.Series) -> _NotEqualAnchor:
     """Prepare filtered values and physical metadata for a ``!=`` anchor.
 

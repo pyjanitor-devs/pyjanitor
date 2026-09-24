@@ -32,6 +32,39 @@ EXTENSION_DTYPES = [
 ]
 
 
+def _with_matched_level(expected, output_length, matched):
+    """Expand expected aggregations to the complete output domain."""
+    if output_length == 0:
+        return expected
+    original_dtypes = {column: expected[column].dtype for column in expected.columns}
+    expected = expected.reindex(range(output_length))
+    for column_name, operation in expected.columns:
+        if operation in {"size", "count", "sum"}:
+            expected[(column_name, operation)] = expected[
+                (column_name, operation)
+            ].fillna(0)
+            if operation in {"size", "count"}:
+                expected[(column_name, operation)] = expected[
+                    (column_name, operation)
+                ].astype("int64")
+            elif operation == "sum":
+                expected[(column_name, operation)] = expected[
+                    (column_name, operation)
+                ].astype(_reduction_dtype(original_dtypes[(column_name, operation)]))
+        elif operation == "prod":
+            expected[(column_name, operation)] = expected[
+                (column_name, operation)
+            ].fillna(1)
+            expected[(column_name, operation)] = expected[
+                (column_name, operation)
+            ].astype(_reduction_dtype(original_dtypes[(column_name, operation)]))
+    expected.index = pd.MultiIndex.from_arrays(
+        [range(output_length), matched],
+        names=[None, "matched"],
+    )
+    return expected
+
+
 def _numeric_frames(dtype):
     """Build small, sorted frames for a numeric dtype kernel test."""
     left = pd.DataFrame(
@@ -49,6 +82,28 @@ def _numeric_frames(dtype):
         }
     )
     return left, right
+
+
+def _apply_rust_integer_contract(expected, source, output_column):
+    """Keep pandas' promoted sum/product baseline unchanged.
+
+    Pandas/NumPy reductions promote signed integers to ``int64`` and unsigned
+    integers to ``uint64``. The helper remains as a named compatibility point
+    for the shared expected-result builders.
+    """
+    return expected
+
+
+def _reduction_dtype(dtype):
+    """Return the pandas/NumPy dtype for a sum or product reduction."""
+    dtype = pd.api.types.pandas_dtype(dtype)
+    if pd.api.types.is_unsigned_integer_dtype(dtype):
+        return "UInt64" if pd.api.types.is_extension_array_dtype(dtype) else "uint64"
+    if pd.api.types.is_integer_dtype(dtype):
+        return "Int64" if pd.api.types.is_extension_array_dtype(dtype) else "int64"
+    if pd.api.types.is_float_dtype(dtype):
+        return dtype
+    return dtype
 
 
 def _expected_single(left, right, reverse):
@@ -70,13 +125,10 @@ def _expected_single(left, right, reverse):
         [(output_column, operation) for operation in expected.columns]
     )
     source = left["left_value"] if reverse else right["value"]
-    if source.dtype == np.dtype("float32"):
-        for operation in ("sum", "prod"):
-            expected[(output_column, operation)] = expected[
-                (output_column, operation)
-            ].astype("float64")
-    expected.index.name = None
-    return expected
+    expected = _apply_rust_integer_contract(expected, source, output_column)
+    output_length = len(right) if reverse else len(left)
+    matched = expected.reindex(range(output_length))[(output_column, "size")].notna()
+    return _with_matched_level(expected, output_length, matched.to_numpy())
 
 
 @pytest.mark.parametrize("dtype", NUMERIC_DTYPES)
@@ -97,6 +149,74 @@ def test_single_join_aggregation_dispatches_all_numeric_dtypes(dtype, reverse):
         ],
     )
     expected = _expected_single(left, right, reverse)
+    assert_frame_equal(expected, actual)
+
+
+def test_count_and_size_support_non_numeric_aggregation_columns():
+    """Count uses only its mask and size counts every matched pair."""
+    left = pd.DataFrame({"limit": [3, 6, 10]})
+    right = pd.DataFrame(
+        {
+            "value": [1, 4, 7, 12],
+            "label": pd.Series(["a", "b", None, "d"], dtype="string"),
+        }
+    )
+
+    actual = left.join_agg(
+        right,
+        ("limit", "value", "<"),
+        aggfunc=[("label", "count"), ("label", "size")],
+    )
+
+    expected = pd.DataFrame(
+        {
+            ("label", "count"): [2, 1, 1],
+            ("label", "size"): [3, 2, 1],
+        },
+        index=pd.MultiIndex.from_arrays(
+            [[0, 1, 2], [True, True, True]],
+            names=[None, "matched"],
+        ),
+    )
+    assert_frame_equal(expected, actual)
+
+
+def test_join_agg_can_omit_matched_level():
+    """A caller that does not need matched metadata receives a plain index."""
+    left = pd.DataFrame({"limit": [3, 6, 10]})
+    right = pd.DataFrame({"value": [1, 4, 7, 12]})
+
+    actual = left.join_agg(
+        right,
+        ("limit", "value", "<"),
+        aggfunc=[("value", "size")],
+        return_matched=False,
+    )
+
+    expected = pd.DataFrame(
+        {("value", "size"): [3, 2, 1]},
+        index=pd.RangeIndex(3),
+    )
+    assert_frame_equal(expected, actual)
+
+
+def test_extended_join_agg_can_omit_matched_level():
+    """The extended fused path uses the same plain-index contract."""
+    left = pd.DataFrame({"limit": [3, 6, 10], "left_filter": [0, 1, 2]})
+    right = pd.DataFrame({"value": [1, 4, 7, 12], "right_filter": [1, 0, 3, 2]})
+
+    actual = left.join_agg(
+        right,
+        ("limit", "value", "<"),
+        ("left_filter", "right_filter", "!="),
+        aggfunc=[("value", "size")],
+        return_matched=False,
+    )
+
+    expected = pd.DataFrame(
+        {("value", "size"): [2, 2, 0]},
+        index=pd.RangeIndex(3),
+    )
     assert_frame_equal(expected, actual)
 
 
@@ -121,13 +241,10 @@ def _expected_extended(left, right, reverse):
         [(output_column, operation) for operation in expected.columns]
     )
     source = left["left_value"] if reverse else right["value"]
-    if source.dtype == np.dtype("float32"):
-        for operation in ("sum", "prod"):
-            expected[(output_column, operation)] = expected[
-                (output_column, operation)
-            ].astype("float64")
-    expected.index.name = None
-    return expected
+    expected = _apply_rust_integer_contract(expected, source, output_column)
+    output_length = len(right) if reverse else len(left)
+    matched = expected.reindex(range(output_length))[(output_column, "size")].notna()
+    return _with_matched_level(expected, output_length, matched.to_numpy())
 
 
 @pytest.mark.parametrize("dtype", NUMERIC_DTYPES)
@@ -180,14 +297,18 @@ def test_single_not_equal_aggregation_preserves_nullable_dtypes(dtype):
     expected = pd.DataFrame(
         {
             ("value", "size"): pd.Series([1], dtype="int64"),
-            ("value", "sum"): pd.Series(pd.array([10], dtype=dtype)),
-            ("value", "prod"): pd.Series(pd.array([10], dtype=dtype)),
+            ("value", "sum"): pd.Series(pd.array([10], dtype=_reduction_dtype(dtype))),
+            ("value", "prod"): pd.Series(pd.array([10], dtype=_reduction_dtype(dtype))),
             ("value", "min"): pd.Series(pd.array([10], dtype=dtype)),
             ("value", "max"): pd.Series(pd.array([10], dtype=dtype)),
         },
         index=pd.Index([0]),
     )
-    expected.index.name = None
+    expected = _with_matched_level(
+        expected,
+        len(actual),
+        np.isin(np.arange(len(actual)), expected.index),
+    )
     assert_frame_equal(expected, actual)
 
 
@@ -219,14 +340,18 @@ def test_extended_not_equal_aggregation_preserves_nullable_dtypes(dtype):
     expected = pd.DataFrame(
         {
             ("value", "size"): pd.Series([1], dtype="int64"),
-            ("value", "sum"): pd.Series(pd.array([10], dtype=dtype)),
-            ("value", "prod"): pd.Series(pd.array([10], dtype=dtype)),
+            ("value", "sum"): pd.Series(pd.array([10], dtype=_reduction_dtype(dtype))),
+            ("value", "prod"): pd.Series(pd.array([10], dtype=_reduction_dtype(dtype))),
             ("value", "min"): pd.Series(pd.array([10], dtype=dtype)),
             ("value", "max"): pd.Series(pd.array([10], dtype=dtype)),
         },
         index=pd.Index([0]),
     )
-    expected.index.name = None
+    expected = _with_matched_level(
+        expected,
+        len(actual),
+        np.isin(np.arange(len(actual)), expected.index),
+    )
     assert_frame_equal(expected, actual)
 
 
@@ -246,7 +371,11 @@ def test_single_not_equal_numpy_nulls_match_nulls():
         },
         index=pd.Index([0]),
     )
-    expected.index.name = None
+    expected = _with_matched_level(
+        expected,
+        len(actual),
+        np.isin(np.arange(len(actual)), expected.index),
+    )
     assert_frame_equal(expected, actual)
 
 
@@ -267,11 +396,15 @@ def test_single_not_equal_extension_nulls_do_not_match():
     expected = pd.DataFrame(
         {
             ("value", "size"): pd.Series([], dtype="int64"),
-            ("value", "sum"): pd.Series([], dtype=dtype),
+            ("value", "sum"): pd.Series([], dtype=_reduction_dtype(dtype)),
         },
         index=pd.Index([], dtype="int64"),
     )
-    expected.index.name = None
+    expected = _with_matched_level(
+        expected,
+        len(actual),
+        np.isin(np.arange(len(actual)), expected.index),
+    )
     assert_frame_equal(expected, actual)
 
 
@@ -292,12 +425,16 @@ def test_single_range_aggregation_preserves_match_for_null_value():
         },
         index=pd.Index([0]),
     )
-    expected.index.name = None
+    expected = _with_matched_level(
+        expected,
+        len(actual),
+        np.isin(np.arange(len(actual)), expected.index),
+    )
     assert_frame_equal(expected, actual)
 
 
-def test_single_reverse_aggregation_omits_unmatched_right_rows():
-    """Reverse output contains only right rows with at least one match."""
+def test_single_reverse_aggregation_preserves_trimmed_right_order():
+    """Reverse output follows the trimmed, value-sorted right layout."""
     left = pd.DataFrame({"key": [1], "value": [10]})
     right = pd.DataFrame({"key": [2, 1], "payload": [20, 30]})
     actual = left.join_agg(
@@ -308,12 +445,14 @@ def test_single_reverse_aggregation_omits_unmatched_right_rows():
     )
     expected = pd.DataFrame(
         {
-            ("value", "size"): pd.Series([1], dtype="int64"),
-            ("value", "sum"): pd.Series([10], dtype="int64"),
+            ("value", "size"): np.array([0, 1], dtype="int64"),
+            ("value", "sum"): np.array([0, 10], dtype="int64"),
         },
-        index=pd.Index([0]),
+        index=pd.MultiIndex.from_arrays(
+            [[1, 0], [False, True]],
+            names=[None, "matched"],
+        ),
     )
-    expected.index.name = None
     assert_frame_equal(expected, actual)
 
 
@@ -342,7 +481,11 @@ def test_single_range_aggregation_counts_duplicate_right_values():
         },
         index=pd.Index([0]),
     )
-    expected.index.name = None
+    expected = _with_matched_level(
+        expected,
+        len(actual),
+        np.isin(np.arange(len(actual)), expected.index),
+    )
     assert_frame_equal(expected, actual)
 
 
@@ -363,7 +506,11 @@ def test_extended_aggregation_returns_empty_when_residual_rejects_all():
         },
         index=pd.Index([], dtype="int64"),
     )
-    expected.index.name = None
+    expected = _with_matched_level(
+        expected,
+        len(actual),
+        np.isin(np.arange(len(actual)), expected.index),
+    )
     assert_frame_equal(expected, actual)
 
 
@@ -400,7 +547,11 @@ def test_single_reverse_aggregation_tracks_unsorted_right_positions():
         },
         index=pd.Index([0, 2]),
     )
-    expected.index.name = None
+    expected = _with_matched_level(
+        expected,
+        len(actual),
+        np.isin(np.arange(len(actual)), expected.index),
+    )
     assert_frame_equal(expected, actual)
 
 
@@ -421,7 +572,11 @@ def test_extended_numpy_all_null_not_equal_aggregation_matches():
         },
         index=pd.Index([0]),
     )
-    expected.index.name = None
+    expected = _with_matched_level(
+        expected,
+        len(actual),
+        np.isin(np.arange(len(actual)), expected.index),
+    )
     assert_frame_equal(expected, actual)
 
 
@@ -450,11 +605,15 @@ def test_extended_extension_all_null_not_equal_aggregation_is_empty():
     expected = pd.DataFrame(
         {
             ("value", "size"): pd.Series([], dtype="int64"),
-            ("value", "sum"): pd.Series([], dtype=dtype),
+            ("value", "sum"): pd.Series([], dtype=_reduction_dtype(dtype)),
         },
         index=pd.Index([], dtype="int64"),
     )
-    expected.index.name = None
+    expected = _with_matched_level(
+        expected,
+        len(actual),
+        np.isin(np.arange(len(actual)), expected.index),
+    )
     assert_frame_equal(expected, actual)
 
 
@@ -477,11 +636,17 @@ def test_single_reverse_extension_aggregation_preserves_dtype():
     expected = pd.DataFrame(
         {
             ("value", "size"): pd.Series([1, 2], index=[0, 1], dtype="int64"),
-            ("value", "sum"): pd.Series(pd.array([10, 30], dtype=dtype), index=[0, 1]),
+            ("value", "sum"): pd.Series(
+                pd.array([10, 30], dtype=_reduction_dtype(dtype)), index=[0, 1]
+            ),
         },
         index=pd.Index([0, 1]),
     )
-    expected.index.name = None
+    expected = _with_matched_level(
+        expected,
+        len(actual),
+        np.isin(np.arange(len(actual)), expected.index),
+    )
     assert_frame_equal(expected, actual)
 
 
@@ -510,7 +675,11 @@ def test_single_not_equal_numpy_one_sided_nulls(
         },
         index=pd.Index([0]),
     )
-    expected.index.name = None
+    expected = _with_matched_level(
+        expected,
+        len(actual),
+        np.isin(np.arange(len(actual)), expected.index),
+    )
     assert_frame_equal(expected, actual)
 
 
@@ -536,7 +705,11 @@ def test_single_range_all_null_filtered_side_returns_empty(left_key, right_key):
         },
         index=pd.Index([], dtype="int64"),
     )
-    expected.index.name = None
+    expected = _with_matched_level(
+        expected,
+        len(actual),
+        np.isin(np.arange(len(actual)), expected.index),
+    )
     assert_frame_equal(expected, actual)
 
 
@@ -561,7 +734,11 @@ def test_single_range_all_null_extension_value_handles_sum_and_product():
         },
         index=pd.Index([0]),
     )
-    expected.index.name = None
+    expected = _with_matched_level(
+        expected,
+        len(actual),
+        np.isin(np.arange(len(actual)), expected.index),
+    )
     assert_frame_equal(expected, actual)
 
 
@@ -582,7 +759,11 @@ def test_single_reverse_aggregation_keeps_unsorted_duplicate_right_rows():
         },
         index=pd.Index([0, 2]),
     )
-    expected.index.name = None
+    expected = _with_matched_level(
+        expected,
+        len(actual),
+        np.isin(np.arange(len(actual)), expected.index),
+    )
     assert_frame_equal(expected, actual)
 
 
@@ -602,7 +783,11 @@ def test_single_range_aggregation_handles_float_infinities():
         },
         index=pd.Index([0, 2]),
     )
-    expected.index.name = None
+    expected = _with_matched_level(
+        expected,
+        len(actual),
+        np.isin(np.arange(len(actual)), expected.index),
+    )
     assert_frame_equal(expected, actual)
 
 
@@ -622,7 +807,11 @@ def test_single_range_aggregation_treats_nan_as_null():
         },
         index=pd.Index([0]),
     )
-    expected.index.name = None
+    expected = _with_matched_level(
+        expected,
+        len(actual),
+        np.isin(np.arange(len(actual)), expected.index),
+    )
     assert_frame_equal(expected, actual)
 
 
@@ -652,11 +841,17 @@ def test_extended_reverse_extension_not_equal_aggregation_preserves_dtype():
     expected = pd.DataFrame(
         {
             ("value", "size"): pd.Series([1, 1], index=[0, 1], dtype="int64"),
-            ("value", "sum"): pd.Series(pd.array([10, 10], dtype=dtype), index=[0, 1]),
+            ("value", "sum"): pd.Series(
+                pd.array([10, 10], dtype=_reduction_dtype(dtype)), index=[0, 1]
+            ),
         },
         index=pd.Index([0, 1]),
     )
-    expected.index.name = None
+    expected = _with_matched_level(
+        expected,
+        len(actual),
+        np.isin(np.arange(len(actual)), expected.index),
+    )
     assert_frame_equal(expected, actual)
 
 
@@ -690,29 +885,35 @@ def test_single_range_aggregation_handles_integer_boundaries(dtype):
     expected = pd.DataFrame(
         {
             ("value", "size"): pd.Series([2, 1], index=[0, 1], dtype="int64"),
-            ("value", "sum"): pd.Series([30, 20], index=[0, 1], dtype=dtype),
+            ("value", "sum"): pd.Series(
+                [30, 20], index=[0, 1], dtype=_reduction_dtype(dtype)
+            ),
         },
         index=pd.Index([0, 1]),
     )
-    expected.index.name = None
+    expected = _with_matched_level(
+        expected,
+        len(actual),
+        np.isin(np.arange(len(actual)), expected.index),
+    )
     assert_frame_equal(expected, actual)
 
 
 @pytest.mark.parametrize(
-    ("dtype", "expected_sum", "expected_prod"),
+    ("dtype", "expected_sum", "expected_prod", "output_dtype"),
     [
-        ("int8", -127, -2),
-        ("int16", -32767, -2),
-        ("int32", -2147483647, -2),
-        ("uint8", 1, 254),
-        ("uint16", 1, 65534),
-        ("uint32", 1, 4294967294),
+        ("int8", 129, 254, "int64"),
+        ("int16", 32769, 65534, "int64"),
+        ("int32", 2147483649, 4294967294, "int64"),
+        ("uint8", 257, 510, "uint64"),
+        ("uint16", 65537, 131070, "uint64"),
+        ("uint32", 4294967297, 8589934590, "uint64"),
     ],
 )
-def test_single_range_aggregation_wraps_at_source_integer_width(
-    dtype, expected_sum, expected_prod
+def test_single_range_aggregation_uses_pandas_integer_promotion(
+    dtype, expected_sum, expected_prod, output_dtype
 ):
-    """Integer sum and product wrap at the source dtype width."""
+    """Integer reductions use pandas-style signed/unsigned promotion."""
     maximum = np.iinfo(dtype).max
     left = pd.DataFrame({"key": pd.Series([1], dtype=dtype)})
     right = pd.DataFrame(
@@ -728,17 +929,21 @@ def test_single_range_aggregation_wraps_at_source_integer_width(
     )
     expected = pd.DataFrame(
         {
-            ("value", "sum"): pd.Series([expected_sum], dtype="int64"),
-            ("value", "prod"): pd.Series([expected_prod], dtype="int64"),
+            ("value", "sum"): pd.Series([expected_sum], dtype=output_dtype),
+            ("value", "prod"): pd.Series([expected_prod], dtype=output_dtype),
         },
         index=pd.Index([0]),
     )
-    expected.index.name = None
+    expected = _with_matched_level(
+        expected,
+        len(actual),
+        np.isin(np.arange(len(actual)), expected.index),
+    )
     assert_frame_equal(expected, actual)
 
 
-def test_single_range_float32_aggregation_returns_float64():
-    """Float32 inputs use the documented float64 aggregation contract."""
+def test_single_range_float32_aggregation_preserves_float32():
+    """Float32 sum follows pandas and retains the float32 result dtype."""
     left = pd.DataFrame({"key": pd.Series([1], dtype="float32")})
     right = pd.DataFrame(
         {
@@ -751,10 +956,14 @@ def test_single_range_float32_aggregation_returns_float64():
         ("key", "key", "<"),
         aggfunc=[("value", "sum")],
     )
-    expected_value = float(right["value"].iloc[0]) + float(right["value"].iloc[1])
+    expected_value = right["value"].sum()
     expected = pd.DataFrame(
-        {("value", "sum"): pd.Series([expected_value], dtype="float64")},
+        {("value", "sum"): pd.Series([expected_value], dtype="float32")},
         index=pd.Index([0]),
     )
-    expected.index.name = None
+    expected = _with_matched_level(
+        expected,
+        len(actual),
+        np.isin(np.arange(len(actual)), expected.index),
+    )
     assert_frame_equal(expected, actual)

@@ -28,8 +28,8 @@ from ._conditional_join import (
     _get_indices_non_equi,
     _get_join_aggs,
     _not_equal_indices,
-    _single_join,
-    _single_join_extended,
+    _single_non_equi_join,
+    _single_non_equi_join_extended,
 )
 from ._conditional_join._helpers import (
     _JoinOperator,
@@ -629,7 +629,7 @@ def _conditional_join_compute(
         # aggregation state while candidates are compared, so it must run
         # before the ordinary index-producing dispatch builds any pairs.
         if len(conditions) == 1:
-            return _single_join._aggregate_single(
+            return _single_non_equi_join._aggregate_single(
                 df=df,
                 right=right,
                 condition=conditions[0],
@@ -637,7 +637,7 @@ def _conditional_join_compute(
                 reverse=reverse,
                 return_matched=return_matched,
             )
-        return _single_join_extended._aggregate_extended(
+        return _single_non_equi_join_extended._aggregate_extended(
             df=df,
             right=right,
             conditions=conditions,
@@ -668,7 +668,7 @@ def _conditional_join_compute(
         and (le_lt_check or all_not_equal_check)
         and default_rust_path
     ):
-        indices = _single_join_extended._get_indices(
+        indices = _single_non_equi_join_extended._get_indices(
             df=matching_df,
             right=matching_right,
             conditions=conditions,
@@ -705,7 +705,7 @@ def _conditional_join_compute(
             return_matching_indices=return_building_blocks or bool(aggfunc),
         )
     else:
-        indices = _single_join._single_join(
+        indices = _single_non_equi_join._single_non_equi_join(
             df=df,
             right=right,
             condition=conditions[0],

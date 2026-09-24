@@ -30,13 +30,14 @@ from janitor.functions._conditional_join._aggregation_helpers import (
     _aggregation_inputs,
     _empty_aggregation_result,
     _materialize_aggregation_result,
+    _select_aggregation_kernel,
 )
 from janitor.functions._conditional_join._helpers import (
     _convert_array_to_numpy,
     _get_boolean_args_for_ne,
     _maybe_remove_nulls_from_dataframe,
     _prepare_not_equal_anchor,
-    _sort_if_not_monotonic,
+    _prepare_range_anchor,
     greater_than_join_types,
     less_than_join_types,
 )
@@ -203,14 +204,14 @@ def _get_all_not_equal_indices(
 
     left_series = df[first_left_on]
     right_series = right[first_right_on]
-    anchor = _prepare_not_equal_anchor(left_series, right_series)
+    anchor = _prepare_not_equal_anchor(left=left_series, right=right_series)
 
     first_predicate = (
-        _convert_array_to_numpy(anchor.left_values._values),
+        _convert_array_to_numpy(array=anchor.left_values._values),
         anchor.left_index,
         anchor.left_positions,
         anchor.left_null_positions,
-        _convert_array_to_numpy(anchor.right_values._values),
+        _convert_array_to_numpy(array=anchor.right_values._values),
         anchor.right_index,
         anchor.right_positions,
         anchor.right_null_positions,
@@ -226,7 +227,13 @@ def _get_all_not_equal_indices(
     # is already in the seed predicate's value-sorted order, so every residual
     # right array must use that same order.
     for left_on, right_on, op in conditions[1:]:
-        predicates.append(_build_residual_predicate(df[left_on], right[right_on], op))
+        predicates.append(
+            _build_residual_predicate(
+                left=df[left_on],
+                right=right[right_on],
+                operation=op,
+            )
+        )
 
     effective_keep = "all" if return_materialized_indices else keep
     result = kernel(predicates, effective_keep)
@@ -248,14 +255,16 @@ def _aggregate_extended(
         first_left_on, first_right_on, _ = conditions[0]
         left_series = df[first_left_on]
         right_series = right[first_right_on]
-        anchor = _prepare_not_equal_anchor(left_series, right_series)
+        anchor = _prepare_not_equal_anchor(left=left_series, right=right_series)
+        left_array = _convert_array_to_numpy(array=anchor.left_values._values)
+        right_array = _convert_array_to_numpy(array=anchor.right_values._values)
         predicates = [
             (
-                _convert_array_to_numpy(anchor.left_values._values),
+                left_array,
                 anchor.left_index,
                 anchor.left_positions,
                 anchor.left_null_positions,
-                _convert_array_to_numpy(anchor.right_values._values),
+                right_array,
                 anchor.right_index,
                 anchor.right_positions,
                 anchor.right_null_positions,
@@ -266,25 +275,29 @@ def _aggregate_extended(
         ]
         for left_on, right_on, operation in conditions[1:]:
             predicates.append(
-                _build_residual_predicate(df[left_on], right[right_on], operation)
+                _build_residual_predicate(
+                    left=df[left_on],
+                    right=right[right_on],
+                    operation=operation,
+                )
             )
-        dtype = _convert_array_to_numpy(anchor.left_values._values).dtype.name
-        try:
-            forward_kernel, reverse_kernel = _EXTENDED_AGGREGATION_KERNELS[dtype]
-        except KeyError as error:
-            raise TypeError(
-                f"Rust aggregation does not support dtype {dtype}"
-            ) from error
-        kernel = reverse_kernel if reverse else forward_kernel
+        kernel = _select_aggregation_kernel(
+            registry=_EXTENDED_AGGREGATION_KERNELS,
+            dtype=left_array.dtype.name,
+            reverse=reverse,
+        )
         result = kernel(
             predicates,
-            _aggregation_inputs(right if not reverse else df, aggfunc),
+            _aggregation_inputs(
+                source=right if not reverse else df,
+                aggfunc=aggfunc,
+            ),
         )
         return _materialize_aggregation_result(
-            result,
-            right.index if reverse else df.index,
-            right if not reverse else df,
-            aggfunc,
+            result=result,
+            output_index=right.index if reverse else df.index,
+            source=right if not reverse else df,
+            aggfunc=aggfunc,
         )
 
     first_position = next(
@@ -299,21 +312,29 @@ def _aggregate_extended(
     filtered_df = _maybe_remove_nulls_from_dataframe(df, non_ne_left)
     filtered_right = _maybe_remove_nulls_from_dataframe(right, non_ne_right)
     if filtered_df is None or filtered_right is None:
-        return _empty_aggregation_result(df if reverse else right, aggfunc)
+        return _empty_aggregation_result(
+            source=df if reverse else right,
+            aggfunc=aggfunc,
+        )
 
     first_left_on, first_right_on, first_operation = conditions[first_position]
-    left_values = filtered_df[first_left_on]
-    right_values = filtered_right[first_right_on]
-    right_sorted, _ = _sort_if_not_monotonic(right_values)
-    right_positions = _convert_array_to_numpy(right_sorted.index._values)
-    sorted_right = filtered_right.loc[right_sorted.index]
+    anchor = _prepare_range_anchor(
+        left=filtered_df[first_left_on],
+        right=filtered_right[first_right_on],
+    )
+    if anchor is None:
+        return _empty_aggregation_result(
+            source=df if reverse else right,
+            aggfunc=aggfunc,
+        )
+    sorted_right = filtered_right.loc[anchor.right_values.index]
     predicates = [
         (
-            _convert_array_to_numpy(left_values._values),
-            _convert_array_to_numpy(left_values.index._values),
-            _convert_array_to_numpy(right_sorted._values),
-            right_positions,
-            True,
+            anchor.left_array,
+            anchor.left_index,
+            anchor.right_array,
+            anchor.right_index,
+            anchor.right_index_is_ordered,
             first_operation,
         )
     ]
@@ -322,27 +343,29 @@ def _aggregate_extended(
             continue
         predicates.append(
             _build_residual_predicate(
-                filtered_df[left_on],
-                filtered_right.loc[right_positions, right_on],
-                operation,
+                left=filtered_df[left_on],
+                right=filtered_right.loc[anchor.right_index, right_on],
+                operation=operation,
             )
         )
 
-    dtype = _convert_array_to_numpy(left_values._values).dtype.name
-    try:
-        forward_kernel, reverse_kernel = _EXTENDED_AGGREGATION_KERNELS[dtype]
-    except KeyError as error:
-        raise TypeError(f"Rust aggregation does not support dtype {dtype}") from error
-    kernel = reverse_kernel if reverse else forward_kernel
+    kernel = _select_aggregation_kernel(
+        registry=_EXTENDED_AGGREGATION_KERNELS,
+        dtype=anchor.left_array.dtype.name,
+        reverse=reverse,
+    )
     result = kernel(
         predicates,
-        _aggregation_inputs(sorted_right if not reverse else filtered_df, aggfunc),
+        _aggregation_inputs(
+            source=sorted_right if not reverse else filtered_df,
+            aggfunc=aggfunc,
+        ),
     )
     return _materialize_aggregation_result(
-        result,
-        sorted_right.index if reverse else filtered_df.index,
-        sorted_right if not reverse else filtered_df,
-        aggfunc,
+        result=result,
+        output_index=sorted_right.index if reverse else filtered_df.index,
+        source=sorted_right if not reverse else filtered_df,
+        aggfunc=aggfunc,
     )
 
 
@@ -442,36 +465,25 @@ def _get_indices(
 
     first = conditions[first_position]
     left_on, right_on, first_op = first
-    left_series = df[left_on]
-    right_series = right[right_on]
-
-    if left_series.empty or right_series.empty:
+    anchor = _prepare_range_anchor(left=df[left_on], right=right[right_on])
+    if anchor is None:
         return _empty_indices()
-
-    # The right values must be sorted before Rust performs binary searches.
-    # The helper also reports whether the resulting right-index labels remain
-    # monotonically ordered in that value-sorted layout.
-    right_sorted, right_index_is_ordered = _sort_if_not_monotonic(series=right_series)
-    left_positions = _convert_array_to_numpy(array=left_series.index._values)
-    right_positions = _convert_array_to_numpy(array=right_sorted.index._values)
-    first_left = _convert_array_to_numpy(array=left_series._values)
-    first_right = _convert_array_to_numpy(array=right_sorted._values)
-    first_dtype = first_left.dtype.name
+    first_dtype = anchor.left_array.dtype.name
     try:
         kernel_name = _EXTENDED_KERNEL_NAMES[first_dtype]
         kernel = getattr(janitor_rs, kernel_name)
     except KeyError as error:
         raise TypeError(
-            f"extended non-equi join does not support dtype {first_left.dtype}"
+            f"extended non-equi join does not support dtype {anchor.left_array.dtype}"
         ) from error
 
     predicates = [
         (
-            first_left,
-            left_positions,
-            first_right,
-            right_positions,
-            right_index_is_ordered,
+            anchor.left_array,
+            anchor.left_index,
+            anchor.right_array,
+            anchor.right_index,
+            anchor.right_index_is_ordered,
             first_op,
         )
     ]
@@ -483,7 +495,7 @@ def _get_indices(
         # sorted for the seed range predicate, so only the right residual
         # series needs explicit positional reordering here.
         left_aligned = df[left_on]
-        right_aligned = right.loc[right_positions, right_on]
+        right_aligned = right.loc[anchor.right_index, right_on]
         left_array = _convert_array_to_numpy(array=left_aligned._values)
         right_array = _convert_array_to_numpy(array=right_aligned._values)
         if op == "!=":

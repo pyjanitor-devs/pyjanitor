@@ -23,6 +23,7 @@ Numerical contract:
     Position, length, and allocation calculations remain checked in Rust.
 """
 
+from collections.abc import Callable
 from typing import Hashable
 
 import numpy as np
@@ -31,7 +32,7 @@ import pandas as pd
 from janitor.functions._conditional_join._helpers import _convert_array_to_numpy
 
 
-def _build_agg_label(column_name: Hashable, agg_name: str):
+def _build_agg_label(column_name: Hashable, agg_name: str) -> tuple:
     """Build the output label for one aggregation request.
 
     Tuple-valued column labels retain their levels and receive the aggregation
@@ -53,6 +54,38 @@ def _build_agg_label(column_name: Hashable, agg_name: str):
     if isinstance(column_name, tuple):
         return (*column_name, agg_name)
     return (f"{column_name}", agg_name)
+
+
+def _select_aggregation_kernel(
+    registry: dict[str, tuple[Callable, Callable]],
+    dtype: str,
+    reverse: bool,
+) -> Callable:
+    """Select a forward or reverse Rust aggregation kernel.
+
+    Single-predicate and extended-predicate aggregations use separate kernel
+    registries because their PyO3 functions accept different predicate
+    contracts. Their lookup and direction-selection rules are nevertheless
+    identical, so this helper centralizes only that shared dispatch logic.
+
+    Args:
+        registry: Mapping from NumPy dtype names to ``(forward, reverse)``
+            Rust callables.
+        dtype: NumPy dtype name for the anchor predicate, such as ``"int64"``.
+        reverse: Select the reverse aggregation kernel when true; otherwise
+            select the forward kernel.
+
+    Returns:
+        The registered Rust aggregation callable for ``dtype`` and direction.
+
+    Raises:
+        TypeError: If no Rust aggregation kernel is registered for ``dtype``.
+    """
+    try:
+        forward_kernel, reverse_kernel = registry[dtype]
+    except KeyError as error:
+        raise TypeError(f"Rust aggregation does not support dtype {dtype}") from error
+    return reverse_kernel if reverse else forward_kernel
 
 
 def _aggregation_inputs(source: pd.DataFrame, aggfunc: list[tuple]) -> list[tuple]:
@@ -169,7 +202,7 @@ def _materialize_aggregation_result(
             extension dtype cannot be reconstructed.
     """
     if result is None:
-        return _empty_aggregation_result(source, aggfunc)
+        return _empty_aggregation_result(source=source, aggfunc=aggfunc)
 
     # The matched mask is the authoritative indication of which accumulator
     # slots correspond to actual join results. Aggregation values in unmatched

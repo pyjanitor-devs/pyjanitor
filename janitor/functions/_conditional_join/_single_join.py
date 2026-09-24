@@ -15,12 +15,12 @@ from janitor.functions._conditional_join._aggregation_helpers import (
     _aggregation_inputs,
     _empty_aggregation_result,
     _materialize_aggregation_result,
+    _select_aggregation_kernel,
 )
 from janitor.functions._conditional_join._helpers import (
     _convert_array_to_numpy,
-    _null_checks_cond_join,
     _prepare_not_equal_anchor,
-    _sort_if_not_monotonic,
+    _prepare_range_anchor,
     greater_than_join_types,
     less_than_join_types,
 )
@@ -211,27 +211,21 @@ def _single_join(
     right_series = right[right_on]
 
     if op in less_than_join_types.union(greater_than_join_types):
-        left_outcome = _null_checks_cond_join(series=left_series)
-        right_outcome = _null_checks_cond_join(series=right_series)
-        if (left_outcome is None) or (right_outcome is None):
+        anchor = _prepare_range_anchor(left=left_series, right=right_series)
+        if anchor is None:
             empty = np.array([], dtype=np.int64)
             return {"left_index": empty, "right_index": empty}
-        left_nonnull, _ = left_outcome
-        right_nonnull, _ = right_outcome
-        right_sorted, right_index_is_ordered = _sort_if_not_monotonic(
-            series=right_nonnull
-        )
         return _rust_single_join(
-            left=left_nonnull,
-            right=right_sorted,
+            left=anchor.left_values,
+            right=anchor.right_values,
             op=op,
             keep=keep,
             return_materialized_indices=return_materialized_indices,
-            right_index_is_ordered=right_index_is_ordered,
+            right_index_is_ordered=anchor.right_index_is_ordered,
         )
 
     if op == "!=":
-        anchor = _prepare_not_equal_anchor(left_series, right_series)
+        anchor = _prepare_not_equal_anchor(left=left_series, right=right_series)
         return _rust_single_join(
             left=anchor.left_values,
             right=anchor.right_values,
@@ -272,23 +266,22 @@ def _aggregate_single(
     is_extension_array = False
 
     if operation in less_than_join_types.union(greater_than_join_types):
-        left_outcome = _null_checks_cond_join(left_series)
-        right_outcome = _null_checks_cond_join(right_series)
-        if left_outcome is None or right_outcome is None:
-            return _empty_aggregation_result(df if reverse else right, aggfunc)
-        left_values, _ = left_outcome
-        right_values, _ = right_outcome
-        right_values, _ = _sort_if_not_monotonic(right_values)
-        left_work = df.loc[left_values.index]
-        right_work = right.loc[right_values.index]
-        left_array = _convert_array_to_numpy(left_values._values)
-        right_array = _convert_array_to_numpy(right_values._values)
+        anchor = _prepare_range_anchor(left=left_series, right=right_series)
+        if anchor is None:
+            return _empty_aggregation_result(
+                source=df if reverse else right,
+                aggfunc=aggfunc,
+            )
+        left_work = df.loc[anchor.left_values.index]
+        right_work = right.loc[anchor.right_values.index]
+        left_array = anchor.left_array
+        right_array = anchor.right_array
     elif operation == "!=":
-        anchor = _prepare_not_equal_anchor(left_series, right_series)
+        anchor = _prepare_not_equal_anchor(left=left_series, right=right_series)
         left_work = df
         right_work = right
-        left_array = _convert_array_to_numpy(anchor.left_values._values)
-        right_array = _convert_array_to_numpy(anchor.right_values._values)
+        left_array = _convert_array_to_numpy(array=anchor.left_values._values)
+        right_array = _convert_array_to_numpy(array=anchor.right_values._values)
         left_positions = anchor.left_positions
         right_positions = anchor.right_positions
         left_null_positions = anchor.left_null_positions
@@ -297,12 +290,11 @@ def _aggregate_single(
     else:
         raise ValueError("single Rust aggregation requires a non-equality predicate")
 
-    dtype = left_array.dtype.name
-    try:
-        forward_kernel, reverse_kernel = _SINGLE_AGGREGATION_KERNELS[dtype]
-    except KeyError as error:
-        raise TypeError(f"Rust aggregation does not support dtype {dtype}") from error
-    kernel = reverse_kernel if reverse else forward_kernel
+    kernel = _select_aggregation_kernel(
+        registry=_SINGLE_AGGREGATION_KERNELS,
+        dtype=left_array.dtype.name,
+        reverse=reverse,
+    )
     result = kernel(
         left_array,
         right_array,
@@ -312,11 +304,14 @@ def _aggregate_single(
         right_positions,
         right_null_positions,
         is_extension_array,
-        _aggregation_inputs(right_work if not reverse else left_work, aggfunc),
+        _aggregation_inputs(
+            source=right_work if not reverse else left_work,
+            aggfunc=aggfunc,
+        ),
     )
     return _materialize_aggregation_result(
-        result,
-        right_work.index if reverse else left_work.index,
-        right_work if not reverse else left_work,
-        aggfunc,
+        result=result,
+        output_index=right_work.index if reverse else left_work.index,
+        source=right_work if not reverse else left_work,
+        aggfunc=aggfunc,
     )

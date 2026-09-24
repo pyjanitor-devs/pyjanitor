@@ -615,10 +615,10 @@ def _conditional_join_compute(
             le_lt_check = True
     df.index = range(len(df))
     right.index = range(len(right))
+    default_rust_path = not use_numba and join_algorithm == "default"
     if (
         aggfunc
-        and not use_numba
-        and join_algorithm == "default"
+        and default_rust_path
         and not eq_check
         and (len(conditions) == 1 or le_lt_check or all_not_equal_check)
     ):
@@ -661,8 +661,7 @@ def _conditional_join_compute(
     if (
         (len(conditions) > 1)
         and (le_lt_check or all_not_equal_check)
-        and not use_numba
-        and join_algorithm == "default"
+        and default_rust_path
     ):
         indices = _single_join_extended._get_indices(
             df=matching_df,

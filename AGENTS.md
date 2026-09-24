@@ -608,6 +608,11 @@ mapping Rust `min`/`max` results back to pandas, treat the returned positions as
 physical source positions and materialize the source values only after the
 aggregation result has been filtered by its matched mask.
 
+Floating-point aggregation uses and returns `float64` for both `float32` and
+`float64` inputs. Narrow integer `sum` and `prod` wrap at the source dtype
+width. The right-index ordering flag is relevant only to index-building
+selection; aggregation consumes all surviving candidates and does not use it.
+
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol

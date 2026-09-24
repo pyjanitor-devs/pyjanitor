@@ -15,6 +15,12 @@ The helpers deliberately receive complete physical-layout aggregation arrays.
 Predicate arrays may be filtered or sorted before they reach Rust, but the
 aggregation source arrays must remain in the original layout so Rust position
 updates address the correct rows.
+
+Numerical contract:
+    Integer ``sum`` and ``prod`` use fixed-width wrapping arithmetic at the
+    source dtype width. Floating-point aggregation uses ``float64`` arithmetic
+    and returns ``float64`` for both ``float32`` and ``float64`` inputs.
+    Position, length, and allocation calculations remain checked in Rust.
 """
 
 from typing import Hashable

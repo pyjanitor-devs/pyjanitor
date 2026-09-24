@@ -69,6 +69,12 @@ def _expected_single(left, right, reverse):
     expected.columns = pd.MultiIndex.from_tuples(
         [(output_column, operation) for operation in expected.columns]
     )
+    source = left["left_value"] if reverse else right["value"]
+    if source.dtype == np.dtype("float32"):
+        for operation in ("sum", "prod"):
+            expected[(output_column, operation)] = expected[
+                (output_column, operation)
+            ].astype("float64")
     expected.index.name = None
     return expected
 
@@ -114,6 +120,12 @@ def _expected_extended(left, right, reverse):
     expected.columns = pd.MultiIndex.from_tuples(
         [(output_column, operation) for operation in expected.columns]
     )
+    source = left["left_value"] if reverse else right["value"]
+    if source.dtype == np.dtype("float32"):
+        for operation in ("sum", "prod"):
+            expected[(output_column, operation)] = expected[
+                (output_column, operation)
+            ].astype("float64")
     expected.index.name = None
     return expected
 
@@ -337,7 +349,7 @@ def test_single_range_aggregation_counts_duplicate_right_values():
 def test_extended_aggregation_returns_empty_when_residual_rejects_all():
     """Residual filtering can remove every candidate from a range window."""
     left = pd.DataFrame({"key": [1], "residual": [5]})
-    right = pd.DataFrame({"key": [2], "residual": [5], "value": [10]})
+    right = pd.DataFrame({"key": [2], "residual": [6], "value": [10]})
     actual = left.join_agg(
         right,
         ("key", "key", "<"),
@@ -670,14 +682,27 @@ def test_single_range_aggregation_handles_integer_boundaries(dtype):
     assert_frame_equal(expected, actual)
 
 
-def test_single_range_aggregation_uses_documented_unsigned_wrapping():
-    """Unsigned sum and product follow Rust's wrapping arithmetic contract."""
-    dtype = "uint8"
+@pytest.mark.parametrize(
+    ("dtype", "expected_sum", "expected_prod"),
+    [
+        ("int8", -127, -2),
+        ("int16", -32767, -2),
+        ("int32", -2147483647, -2),
+        ("uint8", 1, 254),
+        ("uint16", 1, 65534),
+        ("uint32", 1, 4294967294),
+    ],
+)
+def test_single_range_aggregation_wraps_at_source_integer_width(
+    dtype, expected_sum, expected_prod
+):
+    """Integer sum and product wrap at the source dtype width."""
+    maximum = np.iinfo(dtype).max
     left = pd.DataFrame({"key": pd.Series([1], dtype=dtype)})
     right = pd.DataFrame(
         {
             "key": pd.Series([2, 3], dtype=dtype),
-            "value": pd.Series([250, 10], dtype=dtype),
+            "value": pd.Series([maximum, 2], dtype=dtype),
         }
     )
     actual = left.join_agg(
@@ -687,9 +712,32 @@ def test_single_range_aggregation_uses_documented_unsigned_wrapping():
     )
     expected = pd.DataFrame(
         {
-            ("value", "sum"): pd.Series([4], dtype=dtype),
-            ("value", "prod"): pd.Series([196], dtype=dtype),
+            ("value", "sum"): pd.Series([expected_sum], dtype="int64"),
+            ("value", "prod"): pd.Series([expected_prod], dtype="int64"),
         },
+        index=pd.Index([0]),
+    )
+    expected.index.name = None
+    assert_frame_equal(expected, actual)
+
+
+def test_single_range_float32_aggregation_returns_float64():
+    """Float32 inputs use the documented float64 aggregation contract."""
+    left = pd.DataFrame({"key": pd.Series([1], dtype="float32")})
+    right = pd.DataFrame(
+        {
+            "key": pd.Series([2, 3], dtype="float32"),
+            "value": pd.Series([0.1, 0.2], dtype="float32"),
+        }
+    )
+    actual = left.join_agg(
+        right,
+        ("key", "key", "<"),
+        aggfunc=[("value", "sum")],
+    )
+    expected_value = float(right["value"].iloc[0]) + float(right["value"].iloc[1])
+    expected = pd.DataFrame(
+        {("value", "sum"): pd.Series([expected_value], dtype="float64")},
         index=pd.Index([0]),
     )
     expected.index.name = None

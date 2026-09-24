@@ -1469,7 +1469,12 @@ def join_agg(
     (that has a match) based on the join keys.
 
     Supported aggregation functions are
-    `sum`, `prod`, `size`, `min`, `max`.
+    `sum`, `count`, `prod`, `size`, `min`, `max`.
+
+    `count` and `size` support source columns of any dtype. `count` excludes
+    null source values, while `size` counts every matched pair. Floating-point
+    aggregation uses and returns `float64` for both `float32` and `float64`
+    source columns.
 
     This is limited to an inner join.
 

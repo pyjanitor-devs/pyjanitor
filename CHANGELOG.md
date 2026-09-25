@@ -1,7 +1,7 @@
 # Changelog
 
 ## [Unreleased]
--   [PERF] Optimize scalar column extraction in `expand` using `Series.unique()` with an `object`-dtype fallback. - Issue #1670 @sumangouda
+-   [PERF] Optimize scalar column extraction in `expand` using `Series.unique()`, with fallbacks for object dtypes and duplicate column labels. - Issue #1670 @sumangouda
 -   [DEP] Deprecate `df_columns` and `right_columns` parameters in `conditional_join`. - Issue #1712 @sumangouda
 -   [DOC] Add documentation explaining when cumulative-event aggregation is preferable to range join aggregations. - Issue #1702 @sumangouda
 -   [ENH] Avoid materializing all unequal pairs in `conditional_join` with

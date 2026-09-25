@@ -617,6 +617,17 @@ dtype-independent. The right-index ordering flag is relevant only to
 index-building selection; aggregation consumes all surviving candidates and
 does not use it.
 
+### [2026-09-25] Temporary integration branch for PyJanitor pull requests
+
+**Context**: Coordinating the conditional-join migration with janitor-rs.
+**Learning**: Until the maintainer explicitly changes the workflow, new
+PyJanitor pull requests must target the temporary
+`208-single-join-aggregation` branch rather than `dev`.
+
+**Recommendation**: Before opening a PyJanitor pull request, set its base to
+`208-single-join-aggregation`. Do not merge these changes directly into `dev`
+until the maintainer authorizes the final integration.
+
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol

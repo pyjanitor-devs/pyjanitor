@@ -628,6 +628,19 @@ PyJanitor pull requests must target the temporary
 `208-single-join-aggregation`. Do not merge these changes directly into `dev`
 until the maintainer authorizes the final integration.
 
+### [2026-09-25] Keep single-anchor and dual-range extended joins separate
+
+**Context**: Clarifying the multi-predicate range-join routing contract.
+**Learning**: The single-extended path uses the first range predicate as its
+only binary-search anchor and evaluates every later predicate as a residual
+filter. The dedicated range-join path is responsible for two confirmed range
+anchors and their intersected windows.
+
+**Recommendation**: Do not pass a second-range optimization flag to the
+single-extended Rust kernel. Route confirmed dual-range calls through the
+range-join implementation; use the single-extended path for one anchor plus
+residual predicates.
+
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol

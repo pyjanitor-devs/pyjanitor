@@ -601,6 +601,35 @@ def test_extended_aggregation_returns_empty_when_residual_rejects_all():
     assert_frame_equal(expected, actual)
 
 
+def test_extended_aggregation_intersects_sorted_range_residuals():
+    """Sorted residual ranges narrow candidates before aggregation."""
+    left = pd.DataFrame({"first": [4], "second": [4]})
+    right = pd.DataFrame(
+        {
+            "first": [1, 3, 5, 7],
+            "second": [0, 1, 2, 6],
+            "value": [10, 20, 30, 40],
+        }
+    )
+
+    actual = left.join_agg(
+        right,
+        ("first", "first", "<"),
+        ("second", "second", "<"),
+        aggfunc=[("value", "size"), ("value", "sum")],
+    )
+
+    expected = pd.DataFrame(
+        {
+            ("value", "size"): pd.Series([1], dtype="int64"),
+            ("value", "sum"): pd.Series([40], dtype="int64"),
+        },
+        index=pd.Index([0]),
+    )
+    expected = _with_matched_level(expected, len(actual), np.array([True]))
+    assert_frame_equal(expected, actual)
+
+
 def test_all_not_equal_aggregation_rejects_regions_algorithm():
     """Regions does not support fused all-``!=`` aggregation."""
     left = pd.DataFrame({"left_key": [1, 2]})

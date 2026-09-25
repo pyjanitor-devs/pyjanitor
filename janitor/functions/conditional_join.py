@@ -28,6 +28,7 @@ from ._conditional_join import (
     _get_indices_non_equi,
     _get_join_aggs,
     _not_equal_indices,
+    _range_join,
     _single_non_equi_join,
     _single_non_equi_join_extended,
 )
@@ -668,13 +669,34 @@ def _conditional_join_compute(
         and (le_lt_check or all_not_equal_check)
         and default_rust_path
     ):
-        indices = _single_non_equi_join_extended._get_indices(
-            df=matching_df,
-            right=matching_right,
-            conditions=conditions,
-            keep=keep,
-            return_materialized_indices=return_building_blocks or bool(aggfunc),
+        all_range = all(
+            condition[2] in less_than_join_types.union(greater_than_join_types)
+            for condition in conditions
         )
+        if len(conditions) == 2 and all_range:
+            indices = _range_join._get_indices(
+                df=matching_df,
+                right=matching_right,
+                conditions=conditions,
+                keep=keep,
+                return_materialized_indices=return_building_blocks or bool(aggfunc),
+            )
+            if indices is None:
+                indices = _single_non_equi_join_extended._get_indices(
+                    df=matching_df,
+                    right=matching_right,
+                    conditions=conditions,
+                    keep=keep,
+                    return_materialized_indices=return_building_blocks or bool(aggfunc),
+                )
+        else:
+            indices = _single_non_equi_join_extended._get_indices(
+                df=matching_df,
+                right=matching_right,
+                conditions=conditions,
+                keep=keep,
+                return_materialized_indices=return_building_blocks or bool(aggfunc),
+            )
     elif eq_check:
         indices = _multiple_conditional_join_eq(
             df=matching_df,

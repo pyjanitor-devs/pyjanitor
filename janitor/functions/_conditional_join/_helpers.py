@@ -60,15 +60,22 @@ def _null_checks_cond_join(series: pd.Series) -> tuple | None:
     return series, any_nulls.any()
 
 
-def _sort_if_not_monotonic(series: pd.Series) -> pd.Series | None:
+def _sort_if_not_monotonic(series: pd.Series) -> tuple[pd.Series, bool]:
     """
-    Sort the pandas `series` if it is not monotonic increasing
+    Normalize a series to ascending order and report its original ordering.
+
+    An already increasing series is returned unchanged. A decreasing series
+    is reversed, which preserves its values and index pairing without a full
+    sort. Other non-monotonic series use a stable sort so duplicate values
+    retain deterministic physical order.
     """
 
     is_sorted = series.is_monotonic_increasing
-    if not is_sorted:
-        series = series.sort_values(kind="stable")
-    return series, is_sorted
+    if is_sorted:
+        return series, True
+    if series.is_monotonic_decreasing:
+        return series.iloc[::-1], False
+    return series.sort_values(kind="stable"), False
 
 
 def _keep_output(keep: str, left: np.ndarray, right: np.ndarray):

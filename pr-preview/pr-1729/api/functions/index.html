@@ -5283,29 +5283,44 @@
 
 
 <h3 id="janitor.functions.join_agg" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">join_agg</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">right</span><span class="p">,</span> <span class="o">*</span><span class="n">conditions</span><span class="p">,</span> <span class="n">aggfunc</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">join_algorithm</span><span class="o">=</span><span class="s1">&#39;default&#39;</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">join_agg</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">right</span><span class="p">,</span> <span class="o">*</span><span class="n">conditions</span><span class="p">,</span> <span class="n">aggfunc</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">return_matched</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">join_algorithm</span><span class="o">=</span><span class="s1">&#39;default&#39;</span><span class="p">)</span></code>
 
 <a href="#janitor.functions.join_agg" class="headerlink" title="Permanent link">&para;</a></h3>
 
 
     <div class="doc doc-contents ">
 
-        <p>Compute an aggregation after the successful execution of a join;
-the aggregaton is computed on the right dataframe
-for each row of the left DataFrame (that has a match)
-based on the join keys.</p>
-<p>If <code>reverse=True</code>, the aggregaton is computed
-on the left dataframe for each row of the right DataFrame
-(that has a match) based on the join keys.</p>
+        <p>Compute aggregations over rows matched by a conditional join.</p>
+<p>The aggregation is computed on the right dataframe for each physical row
+of the left dataframe. With <code>reverse=True</code>, the direction is exchanged:
+values from the left dataframe are aggregated into one output slot per
+physical row of the right dataframe.</p>
+<p>Rust evaluates the join predicate and updates the aggregation state in the
+same traversal. It returns one result slot for every row in the output
+domain, including rows that received no match. Unmatched slots retain the
+operation's neutral value (for example, <code>0</code> for <code>size</code> and <code>sum</code> or
+<code>1</code> for <code>prod</code>); use <code>return_matched=True</code> when those slots must be
+distinguished explicitly.</p>
 <p>Supported aggregation functions are
-<code>sum</code>, <code>prod</code>, <code>size</code>, <code>min</code>, <code>max</code>.</p>
+<code>sum</code>, <code>count</code>, <code>prod</code>, <code>size</code>, <code>min</code>, <code>max</code>.</p>
+<p><code>count</code> and <code>size</code> support source columns of any dtype. <code>count</code> excludes
+null source values using the authoritative null mask, while <code>size</code> counts
+every matched pair. For <code>sum</code> and <code>prod</code>, signed integer inputs produce
+<code>int64</code>, unsigned integer inputs produce <code>uint64</code>, and <code>float32</code> and
+<code>float64</code> inputs retain their respective floating dtypes. The result
+retains the complete output domain. Its index is a two-level index containing
+the original output index
+and, when <code>return_matched=True</code>, a boolean <code>matched</code> level. When
+<code>return_matched=False</code>, the result uses the plain output index.</p>
 <p>This is limited to an inner join.</p>
-<p>The index of the returned dataframe represent the positions
-of the rows from the left dataframe that have matches
-in the right dataframe.</p>
-<p>If <code>reverse=True</code>, the index of the returned dataframe
-represent the positions of the rows from the right dataframe
-that have matches in the left dataframe.</p>
+<p>When <code>return_matched=True</code> (the default), the result index is a
+<code>MultiIndex</code>. Its first level contains physical positions from the left
+dataframe, or from the right dataframe when <code>reverse=True</code>. Its second
+level, named <code>matched</code>, is <code>True</code> when at least one complete predicate
+combination succeeded for that output row and <code>False</code> otherwise.</p>
+<p>When <code>return_matched=False</code>, Rust does not allocate or return the
+per-output boolean mask, and the dataframe uses the plain physical output
+index. The aggregation values and their row alignment are unchanged.</p>
 <div class="admonition info">
 <p class="admonition-title">New in version 0.32.10</p>
 </div>
@@ -5508,8 +5523,10 @@ to execute before the equi join.</p>
                 <p>Compute aggregates on the right dataframe
 for each row of the left DataFrame (that has a match)
 based on the join keys.
-Supported aggregation functions are
-<code>sum</code>, <code>size</code>, <code>min</code>, <code>max</code>, <code>prod</code>.</p>
+Each item is a <code>(column, operation)</code> tuple. Supported operations
+are <code>sum</code>, <code>count</code>, <code>size</code>, <code>min</code>, <code>max</code>, and <code>prod</code>. <code>count</code> and
+<code>size</code> accept any source dtype; value reductions require numeric
+source columns.</p>
               </div>
             </td>
             <td>
@@ -5536,6 +5553,25 @@ compute the aggregation on the columns of the right dataframe.</p>
           </tr>
           <tr class="doc-section-item">
             <td>
+                <code>return_matched</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If <code>True</code>, include a boolean <code>matched</code> level in the
+result index and allocate the mask in Rust. If <code>False</code>, omit the
+mask and return the same full-height aggregation arrays with the
+plain output index. This option does not filter unmatched rows.</p>
+              </div>
+            </td>
+            <td>
+                  <code>True</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
                 <code>join_algorithm</code>
             </td>
             <td>
@@ -5544,7 +5580,10 @@ compute the aggregation on the columns of the right dataframe.</p>
             <td>
               <div class="doc-md-description">
                 <p>Determines what algorithm to use for multiple non-equi joins.
-Currently limited to <code>default</code> and <code>regions</code>.</p>
+Currently limited to <code>default</code> and <code>regions</code>. Fused aggregation
+is supported by the default Rust path; unsupported algorithm and
+predicate combinations raise the same validation errors as the
+corresponding conditional join.</p>
               </div>
             </td>
             <td>
@@ -5570,7 +5609,47 @@ Currently limited to <code>default</code> and <code>regions</code>.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>A pandas DataFrame.</p>
+                <p>A pandas DataFrame containing one row per physical output row. The</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="pandas.DataFrame">DataFrame</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>index is a <code>MultiIndex</code> with a <code>matched</code> level when</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="pandas.DataFrame">DataFrame</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>return_matched=True</code>; otherwise it is the plain physical output</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="pandas.DataFrame">DataFrame</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>index. If no pair matches, an empty dataframe with the requested</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="pandas.DataFrame">DataFrame</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>aggregation columns is returned regardless of <code>return_matched</code>.</p>
               </div>
             </td>
           </tr>
@@ -5578,41 +5657,33 @@ Currently limited to <code>default</code> and <code>regions</code>.</p>
     </table>
 
 
+<p><span class="doc-section-title">Examples:</span></p>
+    <p>Request the match mask and retain all output rows:</p>
+    <div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">left</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;limit&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">]})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">right</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">7</span><span class="p">]})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">left</span><span class="o">.</span><span class="n">join_agg</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="n">right</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="p">(</span><span class="s2">&quot;limit&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="s2">&quot;&lt;&quot;</span><span class="p">),</span>
+<span class="gp">... </span>    <span class="n">aggfunc</span><span class="o">=</span><span class="p">[(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="s2">&quot;size&quot;</span><span class="p">)],</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">result</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">names</span>
+<span class="go">[None, &#39;matched&#39;]</span>
+</code></pre></div>
+    <p>Omit the mask when a plain, full-height index is sufficient:</p>
+    <div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">left</span><span class="o">.</span><span class="n">join_agg</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="n">right</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="p">(</span><span class="s2">&quot;limit&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="s2">&quot;&lt;&quot;</span><span class="p">),</span>
+<span class="gp">... </span>    <span class="n">aggfunc</span><span class="o">=</span><span class="p">[(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="s2">&quot;size&quot;</span><span class="p">)],</span>
+<span class="gp">... </span>    <span class="n">return_matched</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">result</span><span class="o">.</span><span class="n">index</span>
+<span class="go">RangeIndex(start=0, stop=2, step=1)</span>
+</code></pre></div>
+
+
             <details class="mkdocstrings-source">
               <summary>Source code in <code>janitor/functions/conditional_join.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1430</span>
-<span class="normal">1431</span>
-<span class="normal">1432</span>
-<span class="normal">1433</span>
-<span class="normal">1434</span>
-<span class="normal">1435</span>
-<span class="normal">1436</span>
-<span class="normal">1437</span>
-<span class="normal">1438</span>
-<span class="normal">1439</span>
-<span class="normal">1440</span>
-<span class="normal">1441</span>
-<span class="normal">1442</span>
-<span class="normal">1443</span>
-<span class="normal">1444</span>
-<span class="normal">1445</span>
-<span class="normal">1446</span>
-<span class="normal">1447</span>
-<span class="normal">1448</span>
-<span class="normal">1449</span>
-<span class="normal">1450</span>
-<span class="normal">1451</span>
-<span class="normal">1452</span>
-<span class="normal">1453</span>
-<span class="normal">1454</span>
-<span class="normal">1455</span>
-<span class="normal">1456</span>
-<span class="normal">1457</span>
-<span class="normal">1458</span>
-<span class="normal">1459</span>
-<span class="normal">1460</span>
-<span class="normal">1461</span>
-<span class="normal">1462</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1462</span>
 <span class="normal">1463</span>
 <span class="normal">1464</span>
 <span class="normal">1465</span>
@@ -5762,7 +5833,94 @@ Currently limited to <code>default</code> and <code>regions</code>.</p>
 <span class="normal">1609</span>
 <span class="normal">1610</span>
 <span class="normal">1611</span>
-<span class="normal">1612</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
+<span class="normal">1612</span>
+<span class="normal">1613</span>
+<span class="normal">1614</span>
+<span class="normal">1615</span>
+<span class="normal">1616</span>
+<span class="normal">1617</span>
+<span class="normal">1618</span>
+<span class="normal">1619</span>
+<span class="normal">1620</span>
+<span class="normal">1621</span>
+<span class="normal">1622</span>
+<span class="normal">1623</span>
+<span class="normal">1624</span>
+<span class="normal">1625</span>
+<span class="normal">1626</span>
+<span class="normal">1627</span>
+<span class="normal">1628</span>
+<span class="normal">1629</span>
+<span class="normal">1630</span>
+<span class="normal">1631</span>
+<span class="normal">1632</span>
+<span class="normal">1633</span>
+<span class="normal">1634</span>
+<span class="normal">1635</span>
+<span class="normal">1636</span>
+<span class="normal">1637</span>
+<span class="normal">1638</span>
+<span class="normal">1639</span>
+<span class="normal">1640</span>
+<span class="normal">1641</span>
+<span class="normal">1642</span>
+<span class="normal">1643</span>
+<span class="normal">1644</span>
+<span class="normal">1645</span>
+<span class="normal">1646</span>
+<span class="normal">1647</span>
+<span class="normal">1648</span>
+<span class="normal">1649</span>
+<span class="normal">1650</span>
+<span class="normal">1651</span>
+<span class="normal">1652</span>
+<span class="normal">1653</span>
+<span class="normal">1654</span>
+<span class="normal">1655</span>
+<span class="normal">1656</span>
+<span class="normal">1657</span>
+<span class="normal">1658</span>
+<span class="normal">1659</span>
+<span class="normal">1660</span>
+<span class="normal">1661</span>
+<span class="normal">1662</span>
+<span class="normal">1663</span>
+<span class="normal">1664</span>
+<span class="normal">1665</span>
+<span class="normal">1666</span>
+<span class="normal">1667</span>
+<span class="normal">1668</span>
+<span class="normal">1669</span>
+<span class="normal">1670</span>
+<span class="normal">1671</span>
+<span class="normal">1672</span>
+<span class="normal">1673</span>
+<span class="normal">1674</span>
+<span class="normal">1675</span>
+<span class="normal">1676</span>
+<span class="normal">1677</span>
+<span class="normal">1678</span>
+<span class="normal">1679</span>
+<span class="normal">1680</span>
+<span class="normal">1681</span>
+<span class="normal">1682</span>
+<span class="normal">1683</span>
+<span class="normal">1684</span>
+<span class="normal">1685</span>
+<span class="normal">1686</span>
+<span class="normal">1687</span>
+<span class="normal">1688</span>
+<span class="normal">1689</span>
+<span class="normal">1690</span>
+<span class="normal">1691</span>
+<span class="normal">1692</span>
+<span class="normal">1693</span>
+<span class="normal">1694</span>
+<span class="normal">1695</span>
+<span class="normal">1696</span>
+<span class="normal">1697</span>
+<span class="normal">1698</span>
+<span class="normal">1699</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">join_agg</span><span class="p">(</span>
     <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
     <span class="n">right</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span> <span class="o">|</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span>
@@ -5770,30 +5928,47 @@ Currently limited to <code>default</code> and <code>regions</code>.</p>
     <span class="n">aggfunc</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">],</span>
     <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">reverse</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">return_matched</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">join_algorithm</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;default&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Compute an aggregation after the successful execution of a join;</span>
-<span class="sd">    the aggregaton is computed on the right dataframe</span>
-<span class="sd">    for each row of the left DataFrame (that has a match)</span>
-<span class="sd">    based on the join keys.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute aggregations over rows matched by a conditional join.</span>
 
-<span class="sd">    If `reverse=True`, the aggregaton is computed</span>
-<span class="sd">    on the left dataframe for each row of the right DataFrame</span>
-<span class="sd">    (that has a match) based on the join keys.</span>
+<span class="sd">    The aggregation is computed on the right dataframe for each physical row</span>
+<span class="sd">    of the left dataframe. With ``reverse=True``, the direction is exchanged:</span>
+<span class="sd">    values from the left dataframe are aggregated into one output slot per</span>
+<span class="sd">    physical row of the right dataframe.</span>
+
+<span class="sd">    Rust evaluates the join predicate and updates the aggregation state in the</span>
+<span class="sd">    same traversal. It returns one result slot for every row in the output</span>
+<span class="sd">    domain, including rows that received no match. Unmatched slots retain the</span>
+<span class="sd">    operation&#39;s neutral value (for example, ``0`` for ``size`` and ``sum`` or</span>
+<span class="sd">    ``1`` for ``prod``); use ``return_matched=True`` when those slots must be</span>
+<span class="sd">    distinguished explicitly.</span>
 
 <span class="sd">    Supported aggregation functions are</span>
-<span class="sd">    `sum`, `prod`, `size`, `min`, `max`.</span>
+<span class="sd">    `sum`, `count`, `prod`, `size`, `min`, `max`.</span>
+
+<span class="sd">    `count` and `size` support source columns of any dtype. `count` excludes</span>
+<span class="sd">    null source values using the authoritative null mask, while `size` counts</span>
+<span class="sd">    every matched pair. For `sum` and `prod`, signed integer inputs produce</span>
+<span class="sd">    `int64`, unsigned integer inputs produce `uint64`, and `float32` and</span>
+<span class="sd">    `float64` inputs retain their respective floating dtypes. The result</span>
+<span class="sd">    retains the complete output domain. Its index is a two-level index containing</span>
+<span class="sd">    the original output index</span>
+<span class="sd">    and, when ``return_matched=True``, a boolean `matched` level. When</span>
+<span class="sd">    ``return_matched=False``, the result uses the plain output index.</span>
 
 <span class="sd">    This is limited to an inner join.</span>
 
-<span class="sd">    The index of the returned dataframe represent the positions</span>
-<span class="sd">    of the rows from the left dataframe that have matches</span>
-<span class="sd">    in the right dataframe.</span>
+<span class="sd">    When ``return_matched=True`` (the default), the result index is a</span>
+<span class="sd">    ``MultiIndex``. Its first level contains physical positions from the left</span>
+<span class="sd">    dataframe, or from the right dataframe when ``reverse=True``. Its second</span>
+<span class="sd">    level, named ``matched``, is ``True`` when at least one complete predicate</span>
+<span class="sd">    combination succeeded for that output row and ``False`` otherwise.</span>
 
-<span class="sd">    If `reverse=True`, the index of the returned dataframe</span>
-<span class="sd">    represent the positions of the rows from the right dataframe</span>
-<span class="sd">    that have matches in the left dataframe.</span>
+<span class="sd">    When ``return_matched=False``, Rust does not allocate or return the</span>
+<span class="sd">    per-output boolean mask, and the dataframe uses the plain physical output</span>
+<span class="sd">    index. The aggregation values and their row alignment are unchanged.</span>
 
 <span class="sd">    !!! info &quot;New in version 0.32.10&quot;</span>
 
@@ -5917,16 +6092,53 @@ Currently limited to <code>default</code> and <code>regions</code>.</p>
 <span class="sd">        aggfunc: Compute aggregates on the right dataframe</span>
 <span class="sd">            for each row of the left DataFrame (that has a match)</span>
 <span class="sd">            based on the join keys.</span>
-<span class="sd">            Supported aggregation functions are</span>
-<span class="sd">            `sum`, `size`, `min`, `max`, `prod`.</span>
+<span class="sd">            Each item is a `(column, operation)` tuple. Supported operations</span>
+<span class="sd">            are `sum`, `count`, `size`, `min`, `max`, and `prod`. `count` and</span>
+<span class="sd">            `size` accept any source dtype; value reductions require numeric</span>
+<span class="sd">            source columns.</span>
 <span class="sd">        reverse: If `True`, compute the aggregation on the columns</span>
 <span class="sd">            of the left dataframe; if `False`, which is the default,</span>
 <span class="sd">            compute the aggregation on the columns of the right dataframe.</span>
+<span class="sd">        return_matched: If `True`, include a boolean ``matched`` level in the</span>
+<span class="sd">            result index and allocate the mask in Rust. If `False`, omit the</span>
+<span class="sd">            mask and return the same full-height aggregation arrays with the</span>
+<span class="sd">            plain output index. This option does not filter unmatched rows.</span>
 <span class="sd">        join_algorithm: Determines what algorithm to use for multiple non-equi joins.</span>
-<span class="sd">            Currently limited to `default` and `regions`.</span>
+<span class="sd">            Currently limited to `default` and `regions`. Fused aggregation</span>
+<span class="sd">            is supported by the default Rust path; unsupported algorithm and</span>
+<span class="sd">            predicate combinations raise the same validation errors as the</span>
+<span class="sd">            corresponding conditional join.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        A pandas DataFrame.</span>
+<span class="sd">        A pandas DataFrame containing one row per physical output row. The</span>
+<span class="sd">        index is a ``MultiIndex`` with a ``matched`` level when</span>
+<span class="sd">        ``return_matched=True``; otherwise it is the plain physical output</span>
+<span class="sd">        index. If no pair matches, an empty dataframe with the requested</span>
+<span class="sd">        aggregation columns is returned regardless of ``return_matched``.</span>
+
+<span class="sd">    Examples:</span>
+<span class="sd">        Request the match mask and retain all output rows:</span>
+
+<span class="sd">        &gt;&gt;&gt; left = pd.DataFrame({&quot;limit&quot;: [2, 5]})</span>
+<span class="sd">        &gt;&gt;&gt; right = pd.DataFrame({&quot;value&quot;: [1, 3, 7]})</span>
+<span class="sd">        &gt;&gt;&gt; result = left.join_agg(</span>
+<span class="sd">        ...     right,</span>
+<span class="sd">        ...     (&quot;limit&quot;, &quot;value&quot;, &quot;&lt;&quot;),</span>
+<span class="sd">        ...     aggfunc=[(&quot;value&quot;, &quot;size&quot;)],</span>
+<span class="sd">        ... )</span>
+<span class="sd">        &gt;&gt;&gt; result.index.names</span>
+<span class="sd">        [None, &#39;matched&#39;]</span>
+
+<span class="sd">        Omit the mask when a plain, full-height index is sufficient:</span>
+
+<span class="sd">        &gt;&gt;&gt; result = left.join_agg(</span>
+<span class="sd">        ...     right,</span>
+<span class="sd">        ...     (&quot;limit&quot;, &quot;value&quot;, &quot;&lt;&quot;),</span>
+<span class="sd">        ...     aggfunc=[(&quot;value&quot;, &quot;size&quot;)],</span>
+<span class="sd">        ...     return_matched=False,</span>
+<span class="sd">        ... )</span>
+<span class="sd">        &gt;&gt;&gt; result.index</span>
+<span class="sd">        RangeIndex(start=0, stop=2, step=1)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">return</span> <span class="n">_conditional_join_compute</span><span class="p">(</span>
@@ -5942,6 +6154,7 @@ Currently limited to <code>default</code> and <code>regions</code>.</p>
         <span class="n">force</span><span class="o">=</span><span class="n">force</span><span class="p">,</span>
         <span class="n">return_matching_indices</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">aggfunc</span><span class="o">=</span><span class="n">aggfunc</span><span class="p">,</span>
+        <span class="n">return_matched</span><span class="o">=</span><span class="n">return_matched</span><span class="p">,</span>
         <span class="n">reverse</span><span class="o">=</span><span class="n">reverse</span><span class="p">,</span>
         <span class="n">join_algorithm</span><span class="o">=</span><span class="n">join_algorithm</span><span class="p">,</span>
     <span class="p">)</span>
@@ -13597,11 +13810,12 @@ Select or rename columns directly on the DataFrame before calling <code>conditio
                 <code>keep</code>
             </td>
             <td>
-                  <code><span title="typing.Literal">Literal</span>[&#39;first&#39;, &#39;last&#39;, &#39;all&#39;]</code>
+                  <code><span title="typing.Literal">Literal</span>[&#39;first&#39;, &#39;last&#39;, &#39;any&#39;, &#39;all&#39;]</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Choose whether to return the first match, last match or all matches.</p>
+                <p>Choose whether to return the first match, last match, any match,
+or all matches.</p>
               </div>
             </td>
             <td>
@@ -14006,7 +14220,8 @@ should be included as an index of the final dataframe.</p>
 <span class="normal">335</span>
 <span class="normal">336</span>
 <span class="normal">337</span>
-<span class="normal">338</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
+<span class="normal">338</span>
+<span class="normal">339</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">conditional_join</span><span class="p">(</span>
     <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
     <span class="n">right</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span> <span class="o">|</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span>
@@ -14014,7 +14229,7 @@ should be included as an index of the final dataframe.</p>
     <span class="n">how</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;inner&quot;</span><span class="p">,</span> <span class="s2">&quot;left&quot;</span><span class="p">,</span> <span class="s2">&quot;right&quot;</span><span class="p">,</span> <span class="s2">&quot;outer&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;inner&quot;</span><span class="p">,</span>
     <span class="n">df_columns</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span>
     <span class="n">right_columns</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span>
-    <span class="n">keep</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;first&quot;</span><span class="p">,</span> <span class="s2">&quot;last&quot;</span><span class="p">,</span> <span class="s2">&quot;all&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;all&quot;</span><span class="p">,</span>
+    <span class="n">keep</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;first&quot;</span><span class="p">,</span> <span class="s2">&quot;last&quot;</span><span class="p">,</span> <span class="s2">&quot;any&quot;</span><span class="p">,</span> <span class="s2">&quot;all&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;all&quot;</span><span class="p">,</span>
     <span class="n">use_numba</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">indicator</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span> <span class="o">|</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -14264,7 +14479,8 @@ should be included as an index of the final dataframe.</p>
 <span class="sd">                Select or rename columns directly on the DataFrame before calling `conditional_join`.</span>
 <span class="sd">        use_numba: Use numba, if installed, to accelerate the computation.</span>
 <span class="sd">            !!! warning &quot;Deprecated in 0.33.0&quot;</span>
-<span class="sd">        keep: Choose whether to return the first match, last match or all matches.</span>
+<span class="sd">        keep: Choose whether to return the first match, last match, any match,</span>
+<span class="sd">            or all matches.</span>
 <span class="sd">        indicator: If `True`, adds a column to the output DataFrame</span>
 <span class="sd">            called `_merge` with information on the source of each row.</span>
 <span class="sd">            The column can be given a different name by providing a string argument.</span>
@@ -14442,11 +14658,12 @@ those pairs before <code>keep</code> is applied.</p>
                 <code>keep</code>
             </td>
             <td>
-                  <code><span title="typing.Literal">Literal</span>[&#39;first&#39;, &#39;last&#39;, &#39;all&#39;]</code>
+                  <code><span title="typing.Literal">Literal</span>[&#39;first&#39;, &#39;last&#39;, &#39;any&#39;, &#39;all&#39;]</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Choose whether to return the first match, last match or all matches.</p>
+                <p>Choose whether to return the first match, last match, any match,
+or all matches.</p>
               </div>
             </td>
             <td>
@@ -14538,38 +14755,7 @@ Currently limited to <code>default</code> and <code>regions</code>.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>janitor/functions/conditional_join.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1352</span>
-<span class="normal">1353</span>
-<span class="normal">1354</span>
-<span class="normal">1355</span>
-<span class="normal">1356</span>
-<span class="normal">1357</span>
-<span class="normal">1358</span>
-<span class="normal">1359</span>
-<span class="normal">1360</span>
-<span class="normal">1361</span>
-<span class="normal">1362</span>
-<span class="normal">1363</span>
-<span class="normal">1364</span>
-<span class="normal">1365</span>
-<span class="normal">1366</span>
-<span class="normal">1367</span>
-<span class="normal">1368</span>
-<span class="normal">1369</span>
-<span class="normal">1370</span>
-<span class="normal">1371</span>
-<span class="normal">1372</span>
-<span class="normal">1373</span>
-<span class="normal">1374</span>
-<span class="normal">1375</span>
-<span class="normal">1376</span>
-<span class="normal">1377</span>
-<span class="normal">1378</span>
-<span class="normal">1379</span>
-<span class="normal">1380</span>
-<span class="normal">1381</span>
-<span class="normal">1382</span>
-<span class="normal">1383</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1383</span>
 <span class="normal">1384</span>
 <span class="normal">1385</span>
 <span class="normal">1386</span>
@@ -14613,12 +14799,44 @@ Currently limited to <code>default</code> and <code>regions</code>.</p>
 <span class="normal">1424</span>
 <span class="normal">1425</span>
 <span class="normal">1426</span>
-<span class="normal">1427</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@deprecated_kwargs</span><span class="p">(</span><span class="s2">&quot;return_ragged_arrays&quot;</span><span class="p">)</span>
+<span class="normal">1427</span>
+<span class="normal">1428</span>
+<span class="normal">1429</span>
+<span class="normal">1430</span>
+<span class="normal">1431</span>
+<span class="normal">1432</span>
+<span class="normal">1433</span>
+<span class="normal">1434</span>
+<span class="normal">1435</span>
+<span class="normal">1436</span>
+<span class="normal">1437</span>
+<span class="normal">1438</span>
+<span class="normal">1439</span>
+<span class="normal">1440</span>
+<span class="normal">1441</span>
+<span class="normal">1442</span>
+<span class="normal">1443</span>
+<span class="normal">1444</span>
+<span class="normal">1445</span>
+<span class="normal">1446</span>
+<span class="normal">1447</span>
+<span class="normal">1448</span>
+<span class="normal">1449</span>
+<span class="normal">1450</span>
+<span class="normal">1451</span>
+<span class="normal">1452</span>
+<span class="normal">1453</span>
+<span class="normal">1454</span>
+<span class="normal">1455</span>
+<span class="normal">1456</span>
+<span class="normal">1457</span>
+<span class="normal">1458</span>
+<span class="normal">1459</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@deprecated_kwargs</span><span class="p">(</span><span class="s2">&quot;return_ragged_arrays&quot;</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_join_indices</span><span class="p">(</span>
     <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
     <span class="n">right</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span> <span class="o">|</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span>
     <span class="o">*</span><span class="n">conditions</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">,</span>
-    <span class="n">keep</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;first&quot;</span><span class="p">,</span> <span class="s2">&quot;last&quot;</span><span class="p">,</span> <span class="s2">&quot;all&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;all&quot;</span><span class="p">,</span>
+    <span class="n">keep</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;first&quot;</span><span class="p">,</span> <span class="s2">&quot;last&quot;</span><span class="p">,</span> <span class="s2">&quot;any&quot;</span><span class="p">,</span> <span class="s2">&quot;all&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;all&quot;</span><span class="p">,</span>
     <span class="n">use_numba</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">return_building_blocks</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -14657,7 +14875,8 @@ Currently limited to <code>default</code> and <code>regions</code>.</p>
 <span class="sd">            those pairs before `keep` is applied.</span>
 <span class="sd">        use_numba: Use numba, if installed, to accelerate the computation.</span>
 <span class="sd">            !!! warning &quot;Deprecated in 0.33.0&quot;</span>
-<span class="sd">        keep: Choose whether to return the first match, last match or all matches.</span>
+<span class="sd">        keep: Choose whether to return the first match, last match, any match,</span>
+<span class="sd">            or all matches.</span>
 <span class="sd">        force: If `True`, force the non-equi join conditions</span>
 <span class="sd">            to execute before the equi join.</span>
 <span class="sd">        return_building_blocks: Return a possibly more extensive dictionary,</span>
@@ -14699,29 +14918,44 @@ Currently limited to <code>default</code> and <code>regions</code>.</p>
 
 
 <h4 id="janitor.functions.conditional_join.join_agg" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">join_agg</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">right</span><span class="p">,</span> <span class="o">*</span><span class="n">conditions</span><span class="p">,</span> <span class="n">aggfunc</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">join_algorithm</span><span class="o">=</span><span class="s1">&#39;default&#39;</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">join_agg</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">right</span><span class="p">,</span> <span class="o">*</span><span class="n">conditions</span><span class="p">,</span> <span class="n">aggfunc</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">return_matched</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">join_algorithm</span><span class="o">=</span><span class="s1">&#39;default&#39;</span><span class="p">)</span></code>
 
 <a href="#janitor.functions.conditional_join.join_agg" class="headerlink" title="Permanent link">&para;</a></h4>
 
 
     <div class="doc doc-contents ">
 
-        <p>Compute an aggregation after the successful execution of a join;
-the aggregaton is computed on the right dataframe
-for each row of the left DataFrame (that has a match)
-based on the join keys.</p>
-<p>If <code>reverse=True</code>, the aggregaton is computed
-on the left dataframe for each row of the right DataFrame
-(that has a match) based on the join keys.</p>
+        <p>Compute aggregations over rows matched by a conditional join.</p>
+<p>The aggregation is computed on the right dataframe for each physical row
+of the left dataframe. With <code>reverse=True</code>, the direction is exchanged:
+values from the left dataframe are aggregated into one output slot per
+physical row of the right dataframe.</p>
+<p>Rust evaluates the join predicate and updates the aggregation state in the
+same traversal. It returns one result slot for every row in the output
+domain, including rows that received no match. Unmatched slots retain the
+operation's neutral value (for example, <code>0</code> for <code>size</code> and <code>sum</code> or
+<code>1</code> for <code>prod</code>); use <code>return_matched=True</code> when those slots must be
+distinguished explicitly.</p>
 <p>Supported aggregation functions are
-<code>sum</code>, <code>prod</code>, <code>size</code>, <code>min</code>, <code>max</code>.</p>
+<code>sum</code>, <code>count</code>, <code>prod</code>, <code>size</code>, <code>min</code>, <code>max</code>.</p>
+<p><code>count</code> and <code>size</code> support source columns of any dtype. <code>count</code> excludes
+null source values using the authoritative null mask, while <code>size</code> counts
+every matched pair. For <code>sum</code> and <code>prod</code>, signed integer inputs produce
+<code>int64</code>, unsigned integer inputs produce <code>uint64</code>, and <code>float32</code> and
+<code>float64</code> inputs retain their respective floating dtypes. The result
+retains the complete output domain. Its index is a two-level index containing
+the original output index
+and, when <code>return_matched=True</code>, a boolean <code>matched</code> level. When
+<code>return_matched=False</code>, the result uses the plain output index.</p>
 <p>This is limited to an inner join.</p>
-<p>The index of the returned dataframe represent the positions
-of the rows from the left dataframe that have matches
-in the right dataframe.</p>
-<p>If <code>reverse=True</code>, the index of the returned dataframe
-represent the positions of the rows from the right dataframe
-that have matches in the left dataframe.</p>
+<p>When <code>return_matched=True</code> (the default), the result index is a
+<code>MultiIndex</code>. Its first level contains physical positions from the left
+dataframe, or from the right dataframe when <code>reverse=True</code>. Its second
+level, named <code>matched</code>, is <code>True</code> when at least one complete predicate
+combination succeeded for that output row and <code>False</code> otherwise.</p>
+<p>When <code>return_matched=False</code>, Rust does not allocate or return the
+per-output boolean mask, and the dataframe uses the plain physical output
+index. The aggregation values and their row alignment are unchanged.</p>
 <div class="admonition info">
 <p class="admonition-title">New in version 0.32.10</p>
 </div>
@@ -14924,8 +15158,10 @@ to execute before the equi join.</p>
                 <p>Compute aggregates on the right dataframe
 for each row of the left DataFrame (that has a match)
 based on the join keys.
-Supported aggregation functions are
-<code>sum</code>, <code>size</code>, <code>min</code>, <code>max</code>, <code>prod</code>.</p>
+Each item is a <code>(column, operation)</code> tuple. Supported operations
+are <code>sum</code>, <code>count</code>, <code>size</code>, <code>min</code>, <code>max</code>, and <code>prod</code>. <code>count</code> and
+<code>size</code> accept any source dtype; value reductions require numeric
+source columns.</p>
               </div>
             </td>
             <td>
@@ -14952,6 +15188,25 @@ compute the aggregation on the columns of the right dataframe.</p>
           </tr>
           <tr class="doc-section-item">
             <td>
+                <code>return_matched</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If <code>True</code>, include a boolean <code>matched</code> level in the
+result index and allocate the mask in Rust. If <code>False</code>, omit the
+mask and return the same full-height aggregation arrays with the
+plain output index. This option does not filter unmatched rows.</p>
+              </div>
+            </td>
+            <td>
+                  <code>True</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
                 <code>join_algorithm</code>
             </td>
             <td>
@@ -14960,7 +15215,10 @@ compute the aggregation on the columns of the right dataframe.</p>
             <td>
               <div class="doc-md-description">
                 <p>Determines what algorithm to use for multiple non-equi joins.
-Currently limited to <code>default</code> and <code>regions</code>.</p>
+Currently limited to <code>default</code> and <code>regions</code>. Fused aggregation
+is supported by the default Rust path; unsupported algorithm and
+predicate combinations raise the same validation errors as the
+corresponding conditional join.</p>
               </div>
             </td>
             <td>
@@ -14986,7 +15244,47 @@ Currently limited to <code>default</code> and <code>regions</code>.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>A pandas DataFrame.</p>
+                <p>A pandas DataFrame containing one row per physical output row. The</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="pandas.DataFrame">DataFrame</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>index is a <code>MultiIndex</code> with a <code>matched</code> level when</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="pandas.DataFrame">DataFrame</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>return_matched=True</code>; otherwise it is the plain physical output</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="pandas.DataFrame">DataFrame</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>index. If no pair matches, an empty dataframe with the requested</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="pandas.DataFrame">DataFrame</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>aggregation columns is returned regardless of <code>return_matched</code>.</p>
               </div>
             </td>
           </tr>
@@ -14994,41 +15292,33 @@ Currently limited to <code>default</code> and <code>regions</code>.</p>
     </table>
 
 
+<p><span class="doc-section-title">Examples:</span></p>
+    <p>Request the match mask and retain all output rows:</p>
+    <div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">left</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;limit&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">]})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">right</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">7</span><span class="p">]})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">left</span><span class="o">.</span><span class="n">join_agg</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="n">right</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="p">(</span><span class="s2">&quot;limit&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="s2">&quot;&lt;&quot;</span><span class="p">),</span>
+<span class="gp">... </span>    <span class="n">aggfunc</span><span class="o">=</span><span class="p">[(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="s2">&quot;size&quot;</span><span class="p">)],</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">result</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">names</span>
+<span class="go">[None, &#39;matched&#39;]</span>
+</code></pre></div>
+    <p>Omit the mask when a plain, full-height index is sufficient:</p>
+    <div class="highlight"><pre><span></span><code><span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">left</span><span class="o">.</span><span class="n">join_agg</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="n">right</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="p">(</span><span class="s2">&quot;limit&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="s2">&quot;&lt;&quot;</span><span class="p">),</span>
+<span class="gp">... </span>    <span class="n">aggfunc</span><span class="o">=</span><span class="p">[(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="s2">&quot;size&quot;</span><span class="p">)],</span>
+<span class="gp">... </span>    <span class="n">return_matched</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">result</span><span class="o">.</span><span class="n">index</span>
+<span class="go">RangeIndex(start=0, stop=2, step=1)</span>
+</code></pre></div>
+
+
             <details class="mkdocstrings-source">
               <summary>Source code in <code>janitor/functions/conditional_join.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1430</span>
-<span class="normal">1431</span>
-<span class="normal">1432</span>
-<span class="normal">1433</span>
-<span class="normal">1434</span>
-<span class="normal">1435</span>
-<span class="normal">1436</span>
-<span class="normal">1437</span>
-<span class="normal">1438</span>
-<span class="normal">1439</span>
-<span class="normal">1440</span>
-<span class="normal">1441</span>
-<span class="normal">1442</span>
-<span class="normal">1443</span>
-<span class="normal">1444</span>
-<span class="normal">1445</span>
-<span class="normal">1446</span>
-<span class="normal">1447</span>
-<span class="normal">1448</span>
-<span class="normal">1449</span>
-<span class="normal">1450</span>
-<span class="normal">1451</span>
-<span class="normal">1452</span>
-<span class="normal">1453</span>
-<span class="normal">1454</span>
-<span class="normal">1455</span>
-<span class="normal">1456</span>
-<span class="normal">1457</span>
-<span class="normal">1458</span>
-<span class="normal">1459</span>
-<span class="normal">1460</span>
-<span class="normal">1461</span>
-<span class="normal">1462</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1462</span>
 <span class="normal">1463</span>
 <span class="normal">1464</span>
 <span class="normal">1465</span>
@@ -15178,7 +15468,94 @@ Currently limited to <code>default</code> and <code>regions</code>.</p>
 <span class="normal">1609</span>
 <span class="normal">1610</span>
 <span class="normal">1611</span>
-<span class="normal">1612</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
+<span class="normal">1612</span>
+<span class="normal">1613</span>
+<span class="normal">1614</span>
+<span class="normal">1615</span>
+<span class="normal">1616</span>
+<span class="normal">1617</span>
+<span class="normal">1618</span>
+<span class="normal">1619</span>
+<span class="normal">1620</span>
+<span class="normal">1621</span>
+<span class="normal">1622</span>
+<span class="normal">1623</span>
+<span class="normal">1624</span>
+<span class="normal">1625</span>
+<span class="normal">1626</span>
+<span class="normal">1627</span>
+<span class="normal">1628</span>
+<span class="normal">1629</span>
+<span class="normal">1630</span>
+<span class="normal">1631</span>
+<span class="normal">1632</span>
+<span class="normal">1633</span>
+<span class="normal">1634</span>
+<span class="normal">1635</span>
+<span class="normal">1636</span>
+<span class="normal">1637</span>
+<span class="normal">1638</span>
+<span class="normal">1639</span>
+<span class="normal">1640</span>
+<span class="normal">1641</span>
+<span class="normal">1642</span>
+<span class="normal">1643</span>
+<span class="normal">1644</span>
+<span class="normal">1645</span>
+<span class="normal">1646</span>
+<span class="normal">1647</span>
+<span class="normal">1648</span>
+<span class="normal">1649</span>
+<span class="normal">1650</span>
+<span class="normal">1651</span>
+<span class="normal">1652</span>
+<span class="normal">1653</span>
+<span class="normal">1654</span>
+<span class="normal">1655</span>
+<span class="normal">1656</span>
+<span class="normal">1657</span>
+<span class="normal">1658</span>
+<span class="normal">1659</span>
+<span class="normal">1660</span>
+<span class="normal">1661</span>
+<span class="normal">1662</span>
+<span class="normal">1663</span>
+<span class="normal">1664</span>
+<span class="normal">1665</span>
+<span class="normal">1666</span>
+<span class="normal">1667</span>
+<span class="normal">1668</span>
+<span class="normal">1669</span>
+<span class="normal">1670</span>
+<span class="normal">1671</span>
+<span class="normal">1672</span>
+<span class="normal">1673</span>
+<span class="normal">1674</span>
+<span class="normal">1675</span>
+<span class="normal">1676</span>
+<span class="normal">1677</span>
+<span class="normal">1678</span>
+<span class="normal">1679</span>
+<span class="normal">1680</span>
+<span class="normal">1681</span>
+<span class="normal">1682</span>
+<span class="normal">1683</span>
+<span class="normal">1684</span>
+<span class="normal">1685</span>
+<span class="normal">1686</span>
+<span class="normal">1687</span>
+<span class="normal">1688</span>
+<span class="normal">1689</span>
+<span class="normal">1690</span>
+<span class="normal">1691</span>
+<span class="normal">1692</span>
+<span class="normal">1693</span>
+<span class="normal">1694</span>
+<span class="normal">1695</span>
+<span class="normal">1696</span>
+<span class="normal">1697</span>
+<span class="normal">1698</span>
+<span class="normal">1699</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">join_agg</span><span class="p">(</span>
     <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
     <span class="n">right</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span> <span class="o">|</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span>
@@ -15186,30 +15563,47 @@ Currently limited to <code>default</code> and <code>regions</code>.</p>
     <span class="n">aggfunc</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">],</span>
     <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">reverse</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">return_matched</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">join_algorithm</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;default&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Compute an aggregation after the successful execution of a join;</span>
-<span class="sd">    the aggregaton is computed on the right dataframe</span>
-<span class="sd">    for each row of the left DataFrame (that has a match)</span>
-<span class="sd">    based on the join keys.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute aggregations over rows matched by a conditional join.</span>
 
-<span class="sd">    If `reverse=True`, the aggregaton is computed</span>
-<span class="sd">    on the left dataframe for each row of the right DataFrame</span>
-<span class="sd">    (that has a match) based on the join keys.</span>
+<span class="sd">    The aggregation is computed on the right dataframe for each physical row</span>
+<span class="sd">    of the left dataframe. With ``reverse=True``, the direction is exchanged:</span>
+<span class="sd">    values from the left dataframe are aggregated into one output slot per</span>
+<span class="sd">    physical row of the right dataframe.</span>
+
+<span class="sd">    Rust evaluates the join predicate and updates the aggregation state in the</span>
+<span class="sd">    same traversal. It returns one result slot for every row in the output</span>
+<span class="sd">    domain, including rows that received no match. Unmatched slots retain the</span>
+<span class="sd">    operation&#39;s neutral value (for example, ``0`` for ``size`` and ``sum`` or</span>
+<span class="sd">    ``1`` for ``prod``); use ``return_matched=True`` when those slots must be</span>
+<span class="sd">    distinguished explicitly.</span>
 
 <span class="sd">    Supported aggregation functions are</span>
-<span class="sd">    `sum`, `prod`, `size`, `min`, `max`.</span>
+<span class="sd">    `sum`, `count`, `prod`, `size`, `min`, `max`.</span>
+
+<span class="sd">    `count` and `size` support source columns of any dtype. `count` excludes</span>
+<span class="sd">    null source values using the authoritative null mask, while `size` counts</span>
+<span class="sd">    every matched pair. For `sum` and `prod`, signed integer inputs produce</span>
+<span class="sd">    `int64`, unsigned integer inputs produce `uint64`, and `float32` and</span>
+<span class="sd">    `float64` inputs retain their respective floating dtypes. The result</span>
+<span class="sd">    retains the complete output domain. Its index is a two-level index containing</span>
+<span class="sd">    the original output index</span>
+<span class="sd">    and, when ``return_matched=True``, a boolean `matched` level. When</span>
+<span class="sd">    ``return_matched=False``, the result uses the plain output index.</span>
 
 <span class="sd">    This is limited to an inner join.</span>
 
-<span class="sd">    The index of the returned dataframe represent the positions</span>
-<span class="sd">    of the rows from the left dataframe that have matches</span>
-<span class="sd">    in the right dataframe.</span>
+<span class="sd">    When ``return_matched=True`` (the default), the result index is a</span>
+<span class="sd">    ``MultiIndex``. Its first level contains physical positions from the left</span>
+<span class="sd">    dataframe, or from the right dataframe when ``reverse=True``. Its second</span>
+<span class="sd">    level, named ``matched``, is ``True`` when at least one complete predicate</span>
+<span class="sd">    combination succeeded for that output row and ``False`` otherwise.</span>
 
-<span class="sd">    If `reverse=True`, the index of the returned dataframe</span>
-<span class="sd">    represent the positions of the rows from the right dataframe</span>
-<span class="sd">    that have matches in the left dataframe.</span>
+<span class="sd">    When ``return_matched=False``, Rust does not allocate or return the</span>
+<span class="sd">    per-output boolean mask, and the dataframe uses the plain physical output</span>
+<span class="sd">    index. The aggregation values and their row alignment are unchanged.</span>
 
 <span class="sd">    !!! info &quot;New in version 0.32.10&quot;</span>
 
@@ -15333,16 +15727,53 @@ Currently limited to <code>default</code> and <code>regions</code>.</p>
 <span class="sd">        aggfunc: Compute aggregates on the right dataframe</span>
 <span class="sd">            for each row of the left DataFrame (that has a match)</span>
 <span class="sd">            based on the join keys.</span>
-<span class="sd">            Supported aggregation functions are</span>
-<span class="sd">            `sum`, `size`, `min`, `max`, `prod`.</span>
+<span class="sd">            Each item is a `(column, operation)` tuple. Supported operations</span>
+<span class="sd">            are `sum`, `count`, `size`, `min`, `max`, and `prod`. `count` and</span>
+<span class="sd">            `size` accept any source dtype; value reductions require numeric</span>
+<span class="sd">            source columns.</span>
 <span class="sd">        reverse: If `True`, compute the aggregation on the columns</span>
 <span class="sd">            of the left dataframe; if `False`, which is the default,</span>
 <span class="sd">            compute the aggregation on the columns of the right dataframe.</span>
+<span class="sd">        return_matched: If `True`, include a boolean ``matched`` level in the</span>
+<span class="sd">            result index and allocate the mask in Rust. If `False`, omit the</span>
+<span class="sd">            mask and return the same full-height aggregation arrays with the</span>
+<span class="sd">            plain output index. This option does not filter unmatched rows.</span>
 <span class="sd">        join_algorithm: Determines what algorithm to use for multiple non-equi joins.</span>
-<span class="sd">            Currently limited to `default` and `regions`.</span>
+<span class="sd">            Currently limited to `default` and `regions`. Fused aggregation</span>
+<span class="sd">            is supported by the default Rust path; unsupported algorithm and</span>
+<span class="sd">            predicate combinations raise the same validation errors as the</span>
+<span class="sd">            corresponding conditional join.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        A pandas DataFrame.</span>
+<span class="sd">        A pandas DataFrame containing one row per physical output row. The</span>
+<span class="sd">        index is a ``MultiIndex`` with a ``matched`` level when</span>
+<span class="sd">        ``return_matched=True``; otherwise it is the plain physical output</span>
+<span class="sd">        index. If no pair matches, an empty dataframe with the requested</span>
+<span class="sd">        aggregation columns is returned regardless of ``return_matched``.</span>
+
+<span class="sd">    Examples:</span>
+<span class="sd">        Request the match mask and retain all output rows:</span>
+
+<span class="sd">        &gt;&gt;&gt; left = pd.DataFrame({&quot;limit&quot;: [2, 5]})</span>
+<span class="sd">        &gt;&gt;&gt; right = pd.DataFrame({&quot;value&quot;: [1, 3, 7]})</span>
+<span class="sd">        &gt;&gt;&gt; result = left.join_agg(</span>
+<span class="sd">        ...     right,</span>
+<span class="sd">        ...     (&quot;limit&quot;, &quot;value&quot;, &quot;&lt;&quot;),</span>
+<span class="sd">        ...     aggfunc=[(&quot;value&quot;, &quot;size&quot;)],</span>
+<span class="sd">        ... )</span>
+<span class="sd">        &gt;&gt;&gt; result.index.names</span>
+<span class="sd">        [None, &#39;matched&#39;]</span>
+
+<span class="sd">        Omit the mask when a plain, full-height index is sufficient:</span>
+
+<span class="sd">        &gt;&gt;&gt; result = left.join_agg(</span>
+<span class="sd">        ...     right,</span>
+<span class="sd">        ...     (&quot;limit&quot;, &quot;value&quot;, &quot;&lt;&quot;),</span>
+<span class="sd">        ...     aggfunc=[(&quot;value&quot;, &quot;size&quot;)],</span>
+<span class="sd">        ...     return_matched=False,</span>
+<span class="sd">        ... )</span>
+<span class="sd">        &gt;&gt;&gt; result.index</span>
+<span class="sd">        RangeIndex(start=0, stop=2, step=1)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">return</span> <span class="n">_conditional_join_compute</span><span class="p">(</span>
@@ -15358,6 +15789,7 @@ Currently limited to <code>default</code> and <code>regions</code>.</p>
         <span class="n">force</span><span class="o">=</span><span class="n">force</span><span class="p">,</span>
         <span class="n">return_matching_indices</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">aggfunc</span><span class="o">=</span><span class="n">aggfunc</span><span class="p">,</span>
+        <span class="n">return_matched</span><span class="o">=</span><span class="n">return_matched</span><span class="p">,</span>
         <span class="n">reverse</span><span class="o">=</span><span class="n">reverse</span><span class="p">,</span>
         <span class="n">join_algorithm</span><span class="o">=</span><span class="n">join_algorithm</span><span class="p">,</span>
     <span class="p">)</span>

@@ -565,8 +565,8 @@ maintainers.
 **Context**: Routing conditional-join inequality predicates through the
 janitor-rs single and extended kernels.
 **Learning**: Both single-condition and multiple-condition `!=` joins are
-now delegated to Rust. Single predicates use `single_non_equi_join.rs`. Multiple
-predicates use `single_non_equi_join_extended.rs`: mixed joins are seeded by a range
+now delegated to Rust. Single-anchor predicates use `anchor_non_equi_join.rs`. Multiple
+predicates use `anchor_non_equi_join_extended.rs`: mixed joins are seeded by a range
 predicate, while all-`!=` joins build flat candidate pairs before applying
 residual predicates.
 
@@ -581,7 +581,7 @@ the relevant Rust path to retain all surviving candidates; range paths may
 return compact windows, while `!=` paths return materialized pairs.
 
 **Recommendation**: Keep the Python/Rust boundary explicit. Use
-``single_non_equi_join.rs`` for one predicate, ``single_non_equi_join_extended.rs`` for multiple
+``anchor_non_equi_join.py`` for one predicate, ``anchor_non_equi_join_extended.py`` for multiple
 predicates, and apply residual predicates before final ``keep`` selection.
 
 ### [2026-09-23] Conditional-join aggregation is fused at the Rust boundary

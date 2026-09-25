@@ -133,7 +133,7 @@ def _expected_single(left, right, reverse):
 
 @pytest.mark.parametrize("dtype", NUMERIC_DTYPES)
 @pytest.mark.parametrize("reverse", [False, True])
-def test_single_non_equi_join_aggregation_dispatches_all_numeric_dtypes(dtype, reverse):
+def test_anchor_non_equi_join_aggregation_dispatches_all_numeric_dtypes(dtype, reverse):
     """Every numeric dtype reaches the correct single Rust kernel."""
     left, right = _numeric_frames(dtype)
     actual = left.join_agg(

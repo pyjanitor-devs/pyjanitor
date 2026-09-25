@@ -2,7 +2,8 @@
 
 PyJanitor prepares the shared right layout here. Rust then computes the two
 binary-search windows and applies ``keep`` without evaluating residual
-predicates; calls with additional predicates use ``_single_non_equi_join_extended``.
+predicates; calls with additional predicates use
+``_anchor_non_equi_join_extended``.
 """
 
 from __future__ import annotations
@@ -55,7 +56,7 @@ def _get_indices(
         empty = np.array([], dtype=np.int64)
         return {"left_index": empty, "right_index": empty}
 
-    from janitor.functions._conditional_join._single_non_equi_join_extended import (
+    from janitor.functions._conditional_join._anchor_non_equi_join_extended import (
         _select_range_pair,
     )
 

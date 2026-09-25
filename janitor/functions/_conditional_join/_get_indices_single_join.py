@@ -23,6 +23,7 @@ def _single_join(
     condition: tuple,
     keep: str,
     return_matching_indices: bool,
+    existence_only: bool = False,
 ) -> dict:
     """
     Compute indices for a single join
@@ -49,4 +50,5 @@ def _single_join(
             left=df[left_on],
             right=right[right_on],
             keep=keep,
+            existence_only=existence_only,
         )

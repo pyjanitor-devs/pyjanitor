@@ -401,14 +401,20 @@ def _build_pandas_objects_for_expand(df: pd.DataFrame, columns: tuple) -> list:
     contents = []
     for position, column in enumerate(columns):
         if is_scalar(column) or isinstance(column, tuple):
-            series = df[column]
-            # Guardrail: Fallback to drop_duplicates for object dtypes 
-            # to safely handle unhashable types (e.g. lists or dicts)
-            if series.dtype == "object":
-                arr = series.drop_duplicates()
+            arr = df[column]
+            if isinstance(arr, pd.Series):
+                if arr.dtype == "object":
+                    arr = arr.drop_duplicates()
+                else:
+                    arr = pd.Series(arr.unique(), name=column)
+                contents.append(arr)
             else:
-                arr = pd.Series(series.unique(), name=column)
-            contents.append(arr)
+                for label, series in arr.items():
+                    if series.dtype == "object":
+                        series = series.drop_duplicates()
+                    else:
+                        series = pd.Series(series.unique(), name=label)
+                    contents.append(series)
         elif isinstance(column, list):
             arr = df.loc[:, column].drop_duplicates()
             contents.append(arr)

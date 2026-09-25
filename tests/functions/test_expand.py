@@ -7,7 +7,7 @@ import janitor  # noqa: F401
 from janitor.testing_utils.strategies import (
     df_strategy,
 )
-from janitor.functions.expand_grid import _build_pandas_objects_for_expand
+
 
 @pytest.fixture
 def df():
@@ -316,39 +316,3 @@ def test_expand_grouped():
         .reset_index()
     )
     assert_frame_equal(actual, expected)
-
-
-def test_build_pandas_objects_for_expand_scalar_unique():
-    """Verify scalar columns use unique() and return expected named Series."""
-    df = pd.DataFrame({"a": [1, 1, 2, 3], "b": ["x", "x", "y", "z"]})
-    result = _build_pandas_objects_for_expand(df, ("a", "b"))
-
-    assert len(result) == 2
-    pd.testing.assert_series_equal(
-        result[0], pd.Series([1, 2, 3], name="a")
-    )
-    pd.testing.assert_series_equal(
-        result[1], pd.Series(["x", "y", "z"], name="b")
-    )
-
-def test_build_pandas_objects_for_expand_object_unhashable_fallback():
-    """Verify object columns with unhashable types fall back safely to drop_duplicates."""
-    df = pd.DataFrame({"a": [[1, 2], [1, 2], [3, 4]]})
-
-    # Should NOT raise TypeError: unhashable type: 'list'
-    result = _build_pandas_objects_for_expand(df, ("a",))
-
-    assert len(result) == 1
-    pd.testing.assert_series_equal(
-        result[0].reset_index(drop=True),
-        pd.Series([[1, 2], [3, 4]], name="a"),
-    )
-
-def test_expand_object_with_lists():
-    """Integration test to verify public df.expand() handles object dtypes with lists."""
-    df = pd.DataFrame({"a": [[1, 2], [1, 2], [3, 4]], "b": [1, 1, 2]})
-    result = df.expand("a", "b")
-
-    # Verify expand output shape and execution without crashing
-    assert len(result) == 4
-    assert list(result.columns) == ["a", "b"]

@@ -40,6 +40,36 @@ def series():
     return pd.Series([2, 3, 4], name="B")
 
 
+def _with_matched_level(frame):
+    """Add the aggregation match-status level to an expected frame."""
+    frame = frame.copy()
+    frame.index = pd.MultiIndex.from_arrays(
+        [frame.index, np.ones(len(frame), dtype=bool)],
+        names=[frame.index.name, "matched"],
+    )
+    return frame
+
+
+def _with_aggregation_contract(expected, output_length):
+    """Expand a cross-join aggregation baseline to Rust's output contract."""
+    expected = expected.reindex(range(output_length))
+    size_column = next(column for column in expected.columns if column[1] == "size")
+    matched = expected[size_column].notna().to_numpy()
+    for column_name, operation in expected.columns:
+        column = (column_name, operation)
+        if operation in {"size", "sum"}:
+            expected[column] = expected[column].fillna(0)
+            if operation == "size":
+                expected[column] = expected[column].astype("int64")
+        elif operation == "prod":
+            expected[column] = expected[column].fillna(1)
+    expected.index = pd.MultiIndex.from_arrays(
+        [range(output_length), matched],
+        names=[None, "matched"],
+    )
+    return expected
+
+
 def test_conditional_join():
     """Execution test for conditional_join.
 
@@ -727,14 +757,55 @@ def test_check_aggfunc_type(dummy, series):
 
 
 def test_check_aggfunc_ne(dummy, series):
-    """
-    Raise TypeError if all join conditions are !=
-    """
-    with pytest.raises(
-        NotImplementedError,
-        match="aggfunc is not supported when all the join operators.+",
-    ):
-        dummy.join_agg(series, ("id", "B", "!="), aggfunc=[("B", "sum")])
+    """Support aggregation when the only join condition is ``!=``."""
+    actual = dummy.join_agg(series, ("id", "B", "!="), aggfunc=[("B", "sum")])
+    expected = pd.DataFrame(
+        {("B", "sum"): [9, 9, 9, 7, 7, 6]},
+        index=pd.RangeIndex(6),
+    )
+    expected = _with_matched_level(expected)
+    assert_frame_equal(expected, actual)
+
+
+def test_all_not_equal_aggregation():
+    """Aggregate all ``!=`` predicates without materializing join pairs."""
+    left = pd.DataFrame({"left_a": [1, 2], "left_b": [10, 20]})
+    right = pd.DataFrame(
+        {"right_a": [1, 2, 3], "right_b": [10, 99, 30], "value": [5, 7, 11]}
+    )
+
+    actual = left.join_agg(
+        right,
+        ("left_a", "right_a", "!="),
+        ("left_b", "right_b", "!="),
+        aggfunc=[("value", "size"), ("value", "sum")],
+    )
+    expected = pd.DataFrame(
+        {
+            ("value", "size"): [2, 2],
+            ("value", "sum"): [18, 16],
+        },
+        index=pd.RangeIndex(2),
+    )
+    expected = _with_matched_level(expected)
+    assert_frame_equal(expected, actual)
+
+    actual = left.join_agg(
+        right,
+        ("left_a", "right_a", "!="),
+        ("left_b", "right_b", "!="),
+        aggfunc=[("left_a", "size"), ("left_b", "sum")],
+        reverse=True,
+    )
+    expected = pd.DataFrame(
+        {
+            ("left_a", "size"): [1, 1, 2],
+            ("left_b", "sum"): [20, 10, 30],
+        },
+        index=pd.RangeIndex(3),
+    )
+    expected = _with_matched_level(expected)
+    assert_frame_equal(expected, actual)
 
 
 def test_check_aggfunc_sub(dummy, series):
@@ -6283,7 +6354,7 @@ def test_gt_ne_agg(df, right):
             ("Integers", "sum"),
         ],
     )
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6314,7 +6385,7 @@ def test_lt_ne_agg(df, right):
             ("Integers", "sum"),
         ],
     )
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6344,7 +6415,7 @@ def test_dual_gt_agg(df, right):
             ("Integers", "sum"),
         ],
     )
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6374,7 +6445,7 @@ def test_dual_lt_agg(df, right):
             ("Integers", "sum"),
         ],
     )
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6405,7 +6476,7 @@ def test_multiple__ge__agg(df, right):
             ("Integers", "sum"),
         ],
     )
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6436,7 +6507,7 @@ def test_multiple__le__agg(df, right):
             ("Integers", "sum"),
         ],
     )
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6467,7 +6538,7 @@ def test_multiple_range_aggs(df, right):
             ("Integers", "sum"),
         ],
     )
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6499,7 +6570,7 @@ def test_multiple_range_ne_agg(df, right):
             ("Integers", "sum"),
         ],
     )
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6529,7 +6600,7 @@ def test_range_only_agg(df, right):
             ("Integers", "sum"),
         ],
     )
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6559,7 +6630,7 @@ def test_equi_agg(df, right):
             ("Integers", "sum"),
         ],
     )
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6588,7 +6659,7 @@ def test_equi_only_agg(df, right):
             ("Integers", "sum"),
         ],
     )
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6618,7 +6689,7 @@ def test_equi_ne_agg(df, right):
             ("Integers", "sum"),
         ],
     )
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6649,7 +6720,7 @@ def test_equi_le_ne_agg(df, right):
             ("Integers", "sum"),
         ],
     )
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6680,7 +6751,7 @@ def test_equi_ge_ne_agg(df, right):
             ("Integers", "sum"),
         ],
     )
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6711,7 +6782,7 @@ def test_equi_le_ge_agg(df, right):
             ("Integers", "sum"),
         ],
     )
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6743,7 +6814,7 @@ def test_equi_le_ge_ne_agg(df, right):
             ("Integers", "sum"),
         ],
     )
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6775,7 +6846,7 @@ def test_equi_ge_ge_ne_agg(df, right):
             ("Integers", "sum"),
         ],
     )
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6807,7 +6878,7 @@ def test_equi_le_le_ne_agg(df, right):
             ("Integers", "sum"),
         ],
     )
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6844,7 +6915,7 @@ def test_equi_le_ge_ge_ne_agg(df, right):
             ("Integers", "sum"),
         ],
     )
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6982,7 +7053,7 @@ def test_gt_ne_agg_rev(df, right):
         ],
         reverse=True,
     ).sort_index()
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -7013,7 +7084,7 @@ def test_lt_ne_agg_rev(df, right):
         ],
         reverse=True,
     ).sort_index()
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -7043,7 +7114,7 @@ def test_dual_gt_agg_rev(df, right):
         ],
         reverse=True,
     ).sort_index()
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -7073,7 +7144,7 @@ def test_dual_lt_agg_rev(df, right):
         ],
         reverse=True,
     ).sort_index()
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -7104,7 +7175,7 @@ def test_multiple__ge__agg_rev(df, right):
         ],
         reverse=True,
     ).sort_index()
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -7135,7 +7206,7 @@ def test_multiple__le__agg_rev(df, right):
         ],
         reverse=True,
     ).sort_index()
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -7166,7 +7237,7 @@ def test_multiple_range_aggs_rev(df, right):
         ],
         reverse=True,
     ).sort_index()
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -7198,7 +7269,7 @@ def test_multiple_range_ne_agg_rev(df, right):
         ],
         reverse=True,
     ).sort_index()
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -7228,7 +7299,7 @@ def test_range_only_agg_rev(df, right):
         ],
         reverse=True,
     ).sort_index()
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -7258,7 +7329,7 @@ def test_equi_agg_rev(df, right):
         ],
         reverse=True,
     ).sort_index()
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -7287,7 +7358,7 @@ def test_equi_only_agg_rev(df, right):
         ],
         reverse=True,
     ).sort_index()
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -7317,7 +7388,7 @@ def test_equi_ne_agg_rev(df, right):
         ],
         reverse=True,
     ).sort_index()
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -7348,7 +7419,7 @@ def test_equi_le_ne_agg_rev(df, right):
         ],
         reverse=True,
     ).sort_index()
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -7379,7 +7450,7 @@ def test_equi_ge_ne_agg_rev(df, right):
         ],
         reverse=True,
     ).sort_index()
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -7410,7 +7481,7 @@ def test_equi_le_ge_agg_rev(df, right):
         ],
         reverse=True,
     ).sort_index()
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -7442,7 +7513,7 @@ def test_equi_le_ge_ne_agg_rev(df, right):
         ],
         reverse=True,
     ).sort_index()
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -7474,7 +7545,7 @@ def test_equi_ge_ge_ne_agg_rev(df, right):
         ],
         reverse=True,
     ).sort_index()
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -7506,7 +7577,7 @@ def test_equi_le_le_ne_agg_rev(df, right):
         ],
         reverse=True,
     ).sort_index()
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -7543,7 +7614,7 @@ def test_equi_le_ge_ge_ne_agg_rev(df, right):
         ],
         reverse=True,
     ).sort_index()
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 

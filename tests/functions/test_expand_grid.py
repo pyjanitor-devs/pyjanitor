@@ -7,7 +7,7 @@ from hypothesis import given, settings
 from pandas.testing import assert_frame_equal
 
 import janitor  # noqa: F401
-from janitor.functions.expand_grid import expand_grid
+from janitor.functions.expand_grid import expand_grid, _build_pandas_objects_for_expand
 from janitor.testing_utils.strategies import (
     categoricaldf_strategy,
     df_strategy,
@@ -319,3 +319,45 @@ def test_extension_array():
     func = lambda x, y: pd.merge(x, y, how="cross")  # noqa: E731
     actual = reduce(func, others)
     assert_frame_equal(expected, actual, check_dtype=False)
+
+def test_build_pandas_objects_for_expand_scalar_optimization():
+    """Test unique() for non-object and drop_duplicates() for object columns."""
+    df = pd.DataFrame(
+        {
+            "a": [1, 1, 2, 3],
+            "b": [[1, 2], [1, 2], [3, 4], [3, 4]],
+        }
+    )
+
+    result = _build_pandas_objects_for_expand(df, ("a", "b"))
+
+    pd.testing.assert_series_equal(
+        result[0],
+        pd.Series([1, 2, 3], name="a"),
+    )
+    pd.testing.assert_series_equal(
+        result[1].reset_index(drop=True),
+        pd.Series([[1, 2], [3, 4]], name="b"),
+    )
+
+def test_build_pandas_objects_for_expand_duplicate_labels():
+    """Handle duplicate column labels by processing each column separately."""
+    df = pd.DataFrame(
+        [[1, 2], [1, 3], [2, 3]],
+        columns=["a", "a"],
+    )
+
+    result = _build_pandas_objects_for_expand(df, ("a",))
+
+    expected_1 = pd.Series([1, 2], name="a")
+    expected_2 = pd.Series([2, 3], name="a")
+
+    pd.testing.assert_series_equal(
+        result[0].reset_index(drop=True),
+        expected_1,
+    )
+    pd.testing.assert_series_equal(
+        result[1].reset_index(drop=True),
+        expected_2,
+    )
+       

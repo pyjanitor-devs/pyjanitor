@@ -220,6 +220,93 @@ def test_extended_join_agg_can_omit_matched_level():
     assert_frame_equal(expected, actual)
 
 
+def test_join_agg_no_match_returns_empty_plain_index_without_matched():
+    """No-match aggregation returns an empty frame without matched metadata."""
+    left = pd.DataFrame({"key": [1]})
+    right = pd.DataFrame({"key": [1], "value": [10]})
+
+    actual = left.join_agg(
+        right,
+        ("key", "key", "<"),
+        aggfunc=[("value", "size")],
+        return_matched=False,
+    )
+
+    assert actual.empty
+    assert isinstance(actual.index, pd.RangeIndex)
+    assert list(actual.columns) == [("value", "size")]
+
+
+def test_single_not_equal_aggregation_counts_duplicate_right_candidates():
+    """Each duplicate right row contributes to a non-equal aggregation."""
+    left = pd.DataFrame({"key": [1]})
+    right = pd.DataFrame({"key": [2, 2], "value": [10, 20]})
+
+    actual = left.join_agg(
+        right,
+        ("key", "key", "!="),
+        aggfunc=[("value", "size"), ("value", "sum")],
+    )
+
+    expected = pd.DataFrame(
+        {
+            ("value", "size"): pd.Series([2], dtype="int64"),
+            ("value", "sum"): pd.Series([30], dtype="int64"),
+        },
+        index=pd.Index([0]),
+    )
+    expected = _with_matched_level(expected, 1, np.array([True]))
+    assert_frame_equal(expected, actual)
+
+
+def test_reverse_not_equal_aggregation_preserves_reordered_right_positions():
+    """Reverse ``!=`` aggregation stays aligned to physical right rows."""
+    left = pd.DataFrame({"key": [1, 2], "left_value": [10, 20]})
+    right = pd.DataFrame({"key": [3, 1, 2]})
+
+    actual = left.join_agg(
+        right,
+        ("key", "key", "!="),
+        reverse=True,
+        aggfunc=[("left_value", "size"), ("left_value", "sum")],
+    )
+
+    expected = pd.DataFrame(
+        {
+            ("left_value", "size"): pd.array([1, 1, 2], dtype="int64"),
+            ("left_value", "sum"): pd.array([20, 10, 30], dtype="int64"),
+        },
+        index=pd.MultiIndex.from_arrays(
+            [[1, 2, 0], [True, True, True]], names=[None, "matched"]
+        ),
+    )
+    assert_frame_equal(expected, actual)
+
+
+def test_reverse_not_equal_aggregation_marks_only_matching_slots():
+    """Reverse ``!=`` matched metadata identifies the surviving right row."""
+    left = pd.DataFrame({"key": [1], "left_value": [10]})
+    right = pd.DataFrame({"key": [1, 2]})
+
+    actual = left.join_agg(
+        right,
+        ("key", "key", "!="),
+        reverse=True,
+        aggfunc=[("left_value", "size"), ("left_value", "sum")],
+    )
+
+    expected = pd.DataFrame(
+        {
+            ("left_value", "size"): pd.array([0, 1], dtype="int64"),
+            ("left_value", "sum"): pd.array([0, 10], dtype="int64"),
+        },
+        index=pd.MultiIndex.from_arrays(
+            [[0, 1], [False, True]], names=[None, "matched"]
+        ),
+    )
+    assert_frame_equal(expected, actual)
+
+
 def _expected_extended(left, right, reverse):
     """Compute the range-plus-residual expectation with a cross join."""
     pairs = left.assign(_left=np.arange(len(left))).merge(

@@ -560,6 +560,63 @@ maintainers.
 
 ---
 
+### [2026-09-23] Conditional inequality joins are delegated to Rust
+
+**Context**: Routing conditional-join inequality predicates through the
+janitor-rs single and extended kernels.
+**Learning**: Both single-condition and multiple-condition `!=` joins are
+now delegated to Rust. Single predicates use `single_non_equi_join.rs`. Multiple
+predicates use `single_non_equi_join_extended.rs`: mixed joins are seeded by a range
+predicate, while all-`!=` joins build flat candidate pairs before applying
+residual predicates.
+
+PyJanitor remains responsible for resetting both frames to unique
+`RangeIndex` values, filtering null rows from non-`!=` predicates,
+stably sorting right-hand values, preserving physical position maps, and
+providing authoritative null masks. Rust trusts those alignments and does not
+sort, infer nullness, or reconstruct dataframe positions.
+
+`return_building_blocks` is a PyJanitor-level request. Internally it asks
+the relevant Rust path to retain all surviving candidates; range paths may
+return compact windows, while `!=` paths return materialized pairs.
+
+**Recommendation**: Keep the Python/Rust boundary explicit. Use
+``single_non_equi_join.rs`` for one predicate, ``single_non_equi_join_extended.rs`` for multiple
+predicates, and apply residual predicates before final ``keep`` selection.
+
+### [2026-09-23] Conditional-join aggregation is fused at the Rust boundary
+
+**Context**: Adding aggregation support for single and extended non-equality
+conditional joins.
+**Learning**: `join_agg` sends supported single range, single `!=`, mixed
+range-led, and all-`!=` predicates directly to dedicated Rust aggregation
+kernels. Those kernels update aggregation state while comparing candidates and
+do not materialize left/right join-index pairs. Forward aggregation produces
+one result slot per matched left row; reverse aggregation produces one result
+slot per matched right row. The aggregation API has no `keep` parameter.
+
+PyJanitor still owns dataframe preparation: it resets both frames to physical
+`RangeIndex` positions, removes null rows from non-`!=` predicates, stably
+sorts the right-side range values, preserves the filtered-to-physical position
+maps, and supplies authoritative null masks for `!=`. Aggregation input arrays
+remain full-layout arrays for the side being aggregated, even when predicate
+values are filtered or sorted.
+
+**Recommendation**: Keep aggregation adapters in their own module and preserve
+the distinction between predicate layout and aggregation-source layout. When
+mapping Rust `min`/`max` results back to pandas, treat the returned positions as
+physical source positions and materialize the source values only after the
+aggregation result has been filtered by its matched mask.
+
+Numeric aggregation follows the pandas reduction contract. Signed integer
+`sum` and `prod` inputs are promoted to `int64`; unsigned integer inputs are
+promoted to `uint64`; `float32` and `float64` retain their respective dtypes;
+and `min`/`max` retain the source dtype. Boolean aggregation is out of scope.
+The wildcard `(*, "size")` and `(*, null_mask, "count")` contracts remain
+dtype-independent. The right-index ordering flag is relevant only to
+index-building selection; aggregation consumes all surviving candidates and
+does not use it.
+
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol

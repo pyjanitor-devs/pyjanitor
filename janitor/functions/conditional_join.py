@@ -26,9 +26,10 @@ from janitor.utils import check, check_column, deprecated_kwargs
 from ._conditional_join import (
     _get_indices_equi,
     _get_indices_non_equi,
-    _get_indices_single_join,
     _get_join_aggs,
     _not_equal_indices,
+    _single_non_equi_join,
+    _single_non_equi_join_extended,
 )
 from ._conditional_join._helpers import (
     _JoinOperator,
@@ -46,7 +47,7 @@ def conditional_join(
     how: Literal["inner", "left", "right", "outer"] = "inner",
     df_columns: Optional[Any] = slice(None),
     right_columns: Optional[Any] = slice(None),
-    keep: Literal["first", "last", "all"] = "all",
+    keep: Literal["first", "last", "any", "all"] = "all",
     use_numba: bool = False,
     indicator: Optional[bool | str] = False,
     force: bool = False,
@@ -105,7 +106,9 @@ def conditional_join(
 
     For a single `!=` condition with `keep="first"` or `keep="last"`,
     matching positions are selected without materializing all unequal pairs.
-    Other `!=` joins are not optimized.
+    Multiple all-`!=` conditions use the Rust extended kernel: the first
+    condition builds physical candidate pairs and the remaining conditions are
+    filtered against those pairs before applying `keep`.
 
     The join is done only on the columns.
 
@@ -294,7 +297,8 @@ def conditional_join(
                 Select or rename columns directly on the DataFrame before calling `conditional_join`.
         use_numba: Use numba, if installed, to accelerate the computation.
             !!! warning "Deprecated in 0.33.0"
-        keep: Choose whether to return the first match, last match or all matches.
+        keep: Choose whether to return the first match, last match, any match,
+            or all matches.
         indicator: If `True`, adds a column to the output DataFrame
             called `_merge` with information on the source of each row.
             The column can be given a different name by providing a string argument.
@@ -378,23 +382,23 @@ def _conditional_join_preliminary_checks(
 
     if isinstance(right, pd.Series):
         if not right.name:
-            raise ValueError(
-                "Unnamed Series are not supported for conditional_join."
-            )
+            raise ValueError("Unnamed Series are not supported for conditional_join.")
         right = right.to_frame()
 
     if df_columns != slice(None):
         warnings.warn(
-            "The 'df_columns' parameter is deprecated and will be removed in a future release. "
-            "Please select or rename columns on the left DataFrame before calling conditional_join.",
+            "The 'df_columns' parameter is deprecated and will be removed in a "
+            "future release. Please select or rename columns on the left "
+            "DataFrame before calling conditional_join.",
             DeprecationWarning,
             stacklevel=2,
         )
 
     if right_columns != slice(None):
         warnings.warn(
-            "The 'right_columns' parameter is deprecated and will be removed in a future release. "
-            "Please select or rename columns on the right DataFrame before calling conditional_join.",
+            "The 'right_columns' parameter is deprecated and will be removed in a "
+            "future release. Please select or rename columns on the right "
+            "DataFrame before calling conditional_join.",
             DeprecationWarning,
             stacklevel=2,
         )
@@ -436,8 +440,8 @@ def _conditional_join_preliminary_checks(
 
     check("keep", keep, [str])
 
-    if keep not in {"all", "first", "last"}:
-        raise ValueError("'keep' should be one of 'all', 'first', 'last'.")
+    if keep not in {"all", "first", "last", "any"}:
+        raise ValueError("'keep' should be one of 'all', 'first', 'last', 'any'.")
 
     # TODO: deprecate in a future version
     check("use_numba", use_numba, [bool])
@@ -453,9 +457,11 @@ def _conditional_join_preliminary_checks(
 
     if aggfunc is not None:
         check("aggfunc", aggfunc, [list])
-        if all((op == _JoinOperator.NOT_EQUAL.value for *_, op in conditions)):
+        if join_algorithm != "default" and all(
+            op == _JoinOperator.NOT_EQUAL.value for *_, op in conditions
+        ):
             raise NotImplementedError(
-                "aggfunc is not supported when all the join operators are !="
+                "aggfunc is not supported for all-!= joins with the regions algorithm"
             )
         if reverse:
             cols = df.columns
@@ -474,7 +480,7 @@ def _conditional_join_preliminary_checks(
                     f"in the {replacement} dataframe, while the second element "
                     "in the tuple should be a supported aggregation function"
                 )
-        aggs = {"sum", "min", "max", "size", "prod"}
+        aggs = {"sum", "count", "min", "max", "size", "prod"}
         for column_name, agg in aggfunc:
             if column_name not in cols:
                 raise KeyError(
@@ -564,6 +570,7 @@ def _conditional_join_compute(
     force: bool,
     return_matching_indices: bool = False,
     aggfunc: list[tuple] = None,
+    return_matched: bool = True,
     include_join_positions: bool = False,
     return_building_blocks: bool = False,
     reverse: bool = False,
@@ -573,6 +580,7 @@ def _conditional_join_compute(
     This is where the actual computation
     for the conditional join takes place.
     """
+    check("return_matched", return_matched, [bool])
     df, right = _conditional_join_preliminary_checks(
         df=df,
         right=right,
@@ -593,6 +601,9 @@ def _conditional_join_compute(
     )
     eq_check = False
     le_lt_check = False
+    all_not_equal_check = all(
+        condition[2] == _JoinOperator.NOT_EQUAL.value for condition in conditions
+    )
     for condition in conditions:
         left_on, right_on, op = condition
         _conditional_join_type_check(
@@ -607,6 +618,33 @@ def _conditional_join_compute(
             le_lt_check = True
     df.index = range(len(df))
     right.index = range(len(right))
+    default_rust_path = not use_numba and join_algorithm == "default"
+    if (
+        aggfunc
+        and default_rust_path
+        and not eq_check
+        and (len(conditions) == 1 or le_lt_check or all_not_equal_check)
+    ):
+        # ELI5: aggregation has its own fused Rust traversal. It updates the
+        # aggregation state while candidates are compared, so it must run
+        # before the ordinary index-producing dispatch builds any pairs.
+        if len(conditions) == 1:
+            return _single_non_equi_join._aggregate_single(
+                df=df,
+                right=right,
+                condition=conditions[0],
+                aggfunc=aggfunc,
+                reverse=reverse,
+                return_matched=return_matched,
+            )
+        return _single_non_equi_join_extended._aggregate_extended(
+            df=df,
+            right=right,
+            conditions=conditions,
+            aggfunc=aggfunc,
+            reverse=reverse,
+            return_matched=return_matched,
+        )
     # Default to the complete frames for single-condition joins and for the
     # deprecated Numba path, whose behavior this optimization does not change.
     matching_df = df
@@ -625,7 +663,19 @@ def _conditional_join_compute(
         # return every requested payload column with its original dtype.
         matching_df = df.loc(axis=1)[condition_left_columns]
         matching_right = right.loc(axis=1)[condition_right_columns]
-    if eq_check:
+    if (
+        (len(conditions) > 1)
+        and (le_lt_check or all_not_equal_check)
+        and default_rust_path
+    ):
+        indices = _single_non_equi_join_extended._get_indices(
+            df=matching_df,
+            right=matching_right,
+            conditions=conditions,
+            keep=keep,
+            return_materialized_indices=return_building_blocks or bool(aggfunc),
+        )
+    elif eq_check:
         indices = _multiple_conditional_join_eq(
             df=matching_df,
             right=matching_right,
@@ -652,14 +702,15 @@ def _conditional_join_compute(
             right=matching_right,
             conditions=conditions,
             keep=keep,
+            return_matching_indices=return_building_blocks or bool(aggfunc),
         )
     else:
-        indices = _get_indices_single_join._single_join(
+        indices = _single_non_equi_join._single_non_equi_join(
             df=df,
             right=right,
             condition=conditions[0],
             keep=keep,
-            return_matching_indices=return_building_blocks or aggfunc,
+            return_materialized_indices=return_building_blocks or aggfunc,
         )
     # Internally, join discovery may remain compact until aggregation. A
     # ``starts``/``ends`` pair contains one half-open candidate slice per driving
@@ -754,6 +805,7 @@ def _multiple_conditional_join_ne(
     right: pd.DataFrame,
     conditions: list[tuple[pd.Series, pd.Series, str]],
     keep: str,
+    return_matching_indices: bool,
 ) -> tuple:
     """
     Get indices for multiple conditions,
@@ -791,7 +843,8 @@ def _multiple_conditional_join_ne(
             "right_index": empty_array,
         }
     left_index, right_index = outcome
-    outcome = _keep_output(keep, left=left_index, right=right_index)
+    if not return_matching_indices:
+        outcome = _keep_output(keep, left=left_index, right=right_index)
     left_index, right_index = outcome
     return {"left_index": left_index, "right_index": right_index}
 
@@ -1332,7 +1385,7 @@ def get_join_indices(
     df: pd.DataFrame,
     right: pd.DataFrame | pd.Series,
     *conditions: tuple,
-    keep: Literal["first", "last", "all"] = "all",
+    keep: Literal["first", "last", "any", "all"] = "all",
     use_numba: bool = False,
     force: bool = False,
     return_building_blocks: bool = False,
@@ -1366,14 +1419,20 @@ def get_join_indices(
             `==`, `!=`, `<=`, `<`, `>=`, `>`. For multiple conditions,
             the and(`&`) operator is used to combine the results
             of the individual conditions.
+            When all multiple conditions use `!=`, the first condition
+            creates the candidate pairs and the remaining conditions filter
+            those pairs before `keep` is applied.
         use_numba: Use numba, if installed, to accelerate the computation.
             !!! warning "Deprecated in 0.33.0"
-        keep: Choose whether to return the first match, last match or all matches.
+        keep: Choose whether to return the first match, last match, any match,
+            or all matches.
         force: If `True`, force the non-equi join conditions
             to execute before the equi join.
         return_building_blocks: Return a possibly more extensive dictionary,
             containing data that will be used to build the indices.
             !!! warning "This feature is experimental and may change without warning."
+            For multiple joins, the returned indices are fully materialized
+            left/right pairs after every predicate has been applied.
         join_algorithm: Determines what algorithm to use for multiple non-equi joins.
             Currently limited to `default` and `regions`.
 
@@ -1408,30 +1467,47 @@ def join_agg(
     aggfunc: list[tuple],
     force: bool = False,
     reverse: bool = False,
+    return_matched: bool = True,
     join_algorithm: str = "default",
 ) -> pd.DataFrame:
-    """
-    Compute an aggregation after the successful execution of a join;
-    the aggregaton is computed on the right dataframe
-    for each row of the left DataFrame (that has a match)
-    based on the join keys.
+    """Compute aggregations over rows matched by a conditional join.
 
-    If `reverse=True`, the aggregaton is computed
-    on the left dataframe for each row of the right DataFrame
-    (that has a match) based on the join keys.
+    The aggregation is computed on the right dataframe for each physical row
+    of the left dataframe. With ``reverse=True``, the direction is exchanged:
+    values from the left dataframe are aggregated into one output slot per
+    physical row of the right dataframe.
+
+    Rust evaluates the join predicate and updates the aggregation state in the
+    same traversal. It returns one result slot for every row in the output
+    domain, including rows that received no match. Unmatched slots retain the
+    operation's neutral value (for example, ``0`` for ``size`` and ``sum`` or
+    ``1`` for ``prod``); use ``return_matched=True`` when those slots must be
+    distinguished explicitly.
 
     Supported aggregation functions are
-    `sum`, `prod`, `size`, `min`, `max`.
+    `sum`, `count`, `prod`, `size`, `min`, `max`.
+
+    `count` and `size` support source columns of any dtype. `count` excludes
+    null source values using the authoritative null mask, while `size` counts
+    every matched pair. For `sum` and `prod`, signed integer inputs produce
+    `int64`, unsigned integer inputs produce `uint64`, and `float32` and
+    `float64` inputs retain their respective floating dtypes. The result
+    retains the complete output domain. Its index is a two-level index containing
+    the original output index
+    and, when ``return_matched=True``, a boolean `matched` level. When
+    ``return_matched=False``, the result uses the plain output index.
 
     This is limited to an inner join.
 
-    The index of the returned dataframe represent the positions
-    of the rows from the left dataframe that have matches
-    in the right dataframe.
+    When ``return_matched=True`` (the default), the result index is a
+    ``MultiIndex``. Its first level contains physical positions from the left
+    dataframe, or from the right dataframe when ``reverse=True``. Its second
+    level, named ``matched``, is ``True`` when at least one complete predicate
+    combination succeeded for that output row and ``False`` otherwise.
 
-    If `reverse=True`, the index of the returned dataframe
-    represent the positions of the rows from the right dataframe
-    that have matches in the left dataframe.
+    When ``return_matched=False``, Rust does not allocate or return the
+    per-output boolean mask, and the dataframe uses the plain physical output
+    index. The aggregation values and their row alignment are unchanged.
 
     !!! info "New in version 0.32.10"
 
@@ -1555,16 +1631,53 @@ def join_agg(
         aggfunc: Compute aggregates on the right dataframe
             for each row of the left DataFrame (that has a match)
             based on the join keys.
-            Supported aggregation functions are
-            `sum`, `size`, `min`, `max`, `prod`.
+            Each item is a `(column, operation)` tuple. Supported operations
+            are `sum`, `count`, `size`, `min`, `max`, and `prod`. `count` and
+            `size` accept any source dtype; value reductions require numeric
+            source columns.
         reverse: If `True`, compute the aggregation on the columns
             of the left dataframe; if `False`, which is the default,
             compute the aggregation on the columns of the right dataframe.
+        return_matched: If `True`, include a boolean ``matched`` level in the
+            result index and allocate the mask in Rust. If `False`, omit the
+            mask and return the same full-height aggregation arrays with the
+            plain output index. This option does not filter unmatched rows.
         join_algorithm: Determines what algorithm to use for multiple non-equi joins.
-            Currently limited to `default` and `regions`.
+            Currently limited to `default` and `regions`. Fused aggregation
+            is supported by the default Rust path; unsupported algorithm and
+            predicate combinations raise the same validation errors as the
+            corresponding conditional join.
 
     Returns:
-        A pandas DataFrame.
+        A pandas DataFrame containing one row per physical output row. The
+        index is a ``MultiIndex`` with a ``matched`` level when
+        ``return_matched=True``; otherwise it is the plain physical output
+        index. If no pair matches, an empty dataframe with the requested
+        aggregation columns is returned regardless of ``return_matched``.
+
+    Examples:
+        Request the match mask and retain all output rows:
+
+        >>> left = pd.DataFrame({"limit": [2, 5]})
+        >>> right = pd.DataFrame({"value": [1, 3, 7]})
+        >>> result = left.join_agg(
+        ...     right,
+        ...     ("limit", "value", "<"),
+        ...     aggfunc=[("value", "size")],
+        ... )
+        >>> result.index.names
+        [None, 'matched']
+
+        Omit the mask when a plain, full-height index is sufficient:
+
+        >>> result = left.join_agg(
+        ...     right,
+        ...     ("limit", "value", "<"),
+        ...     aggfunc=[("value", "size")],
+        ...     return_matched=False,
+        ... )
+        >>> result.index
+        RangeIndex(start=0, stop=2, step=1)
     """
 
     return _conditional_join_compute(
@@ -1580,6 +1693,7 @@ def join_agg(
         force=force,
         return_matching_indices=False,
         aggfunc=aggfunc,
+        return_matched=return_matched,
         reverse=reverse,
         join_algorithm=join_algorithm,
     )

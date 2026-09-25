@@ -40,6 +40,36 @@ def series():
     return pd.Series([2, 3, 4], name="B")
 
 
+def _with_matched_level(frame):
+    """Add the aggregation match-status level to an expected frame."""
+    frame = frame.copy()
+    frame.index = pd.MultiIndex.from_arrays(
+        [frame.index, np.ones(len(frame), dtype=bool)],
+        names=[frame.index.name, "matched"],
+    )
+    return frame
+
+
+def _with_aggregation_contract(expected, output_length):
+    """Expand a cross-join aggregation baseline to Rust's output contract."""
+    expected = expected.reindex(range(output_length))
+    size_column = next(column for column in expected.columns if column[1] == "size")
+    matched = expected[size_column].notna().to_numpy()
+    for column_name, operation in expected.columns:
+        column = (column_name, operation)
+        if operation in {"size", "sum"}:
+            expected[column] = expected[column].fillna(0)
+            if operation == "size":
+                expected[column] = expected[column].astype("int64")
+        elif operation == "prod":
+            expected[column] = expected[column].fillna(1)
+    expected.index = pd.MultiIndex.from_arrays(
+        [range(output_length), matched],
+        names=[None, "matched"],
+    )
+    return expected
+
+
 def test_conditional_join():
     """Execution test for conditional_join.
 
@@ -182,6 +212,390 @@ def test_join_return_building_blocks(dummy, series):
     """Raise TypeError if return_building_blocks is not a boolean."""
     with pytest.raises(TypeError, match="return_building_blocks should be one of.+"):
         jn.get_join_indices(dummy, series, ("id", "B", ">"), return_building_blocks=1)
+
+
+def test_single_range_building_blocks_materialize_all_matches():
+    """Single range building blocks override ``keep="first"``."""
+    left = pd.DataFrame({"value": [2]})
+    right = pd.DataFrame({"value": [1, 3, 4]})
+
+    matches = jn.get_join_indices(
+        left,
+        right,
+        ("value", "value", "<"),
+        keep="first",
+        return_building_blocks=True,
+    )
+
+    assert np.array_equal(matches["left_index"], np.array([0]))
+    assert np.array_equal(matches["right_index"], np.array([0, 1, 2]))
+    assert np.array_equal(matches["starts"], np.array([1]))
+    assert np.array_equal(matches["ends"], np.array([3]))
+
+
+def test_single_not_equal_building_blocks_materialize_all_matches():
+    """Single ``!=`` building blocks override ``keep="first"``."""
+    left = pd.DataFrame({"value": [1]})
+    right = pd.DataFrame({"value": [1, 2, 3]})
+
+    matches = jn.get_join_indices(
+        left,
+        right,
+        ("value", "value", "!="),
+        keep="first",
+        return_building_blocks=True,
+    )
+
+    assert np.array_equal(matches["left_index"], np.array([0, 0]))
+    assert np.array_equal(matches["right_index"], np.array([1, 2]))
+
+
+def test_extended_range_filters_before_keep_and_building_blocks():
+    """Building blocks force all surviving residual matches."""
+    left = pd.DataFrame({"left": [4], "residual": [4]})
+    right = pd.DataFrame(
+        {
+            "right": [1, 3, 5, 7],
+            "residual": [3, 7, 9, 7],
+        }
+    )
+    all_matches = jn.get_join_indices(
+        left,
+        right,
+        ("left", "right", "<"),
+        ("residual", "residual", "<"),
+        keep="all",
+    )
+    building_blocks = jn.get_join_indices(
+        left,
+        right,
+        ("left", "right", "<"),
+        ("residual", "residual", "<"),
+        keep="first",
+        return_building_blocks=True,
+    )
+    assert np.array_equal(all_matches["left_index"], np.array([0, 0]))
+    assert np.array_equal(all_matches["right_index"], np.array([2, 3]))
+    assert np.array_equal(building_blocks["left_index"], all_matches["left_index"])
+    assert np.array_equal(building_blocks["right_index"], all_matches["right_index"])
+
+
+def test_extended_range_then_not_equal_filters_windows():
+    """Mixed joins keep the range-first window path and filter ``!=`` later."""
+    left = pd.DataFrame({"range": [4], "residual": [4]})
+    right = pd.DataFrame(
+        {
+            "range": [1, 3, 5, 7],
+            "residual": [3, 7, 9, 8],
+        }
+    )
+
+    matches = jn.get_join_indices(
+        left,
+        right,
+        ("range", "range", "<"),
+        ("residual", "residual", "!="),
+        keep="all",
+    )
+    assert np.array_equal(matches["left_index"], np.array([0, 0]))
+    assert np.array_equal(matches["right_index"], np.array([2, 3]))
+
+
+def test_extended_mixed_filters_non_ne_nulls_and_preserves_ne_nulls():
+    """Mixed joins filter non-``!=`` nulls but preserve ``!=`` nulls."""
+    left = pd.DataFrame(
+        {
+            "range": [4, 4, 4],
+            "equals": [10.0, np.nan, 10.0],
+            "not_equal": [1.0, 1.0, 1.0],
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "range": [5, 5, 5],
+            "equals": [10.0, np.nan, 10.0],
+            "not_equal": [1.0, 2.0, np.nan],
+        }
+    )
+
+    matches = jn.get_join_indices(
+        left,
+        right,
+        ("range", "range", "<"),
+        ("equals", "equals", "=="),
+        ("not_equal", "not_equal", "!="),
+        keep="all",
+    )
+
+    # Left row 1 and right row 1 are removed because their equality values
+    # are null. The right null in the residual ``!=`` column remains a valid
+    # NumPy inequality match for the surviving left rows.
+    assert np.array_equal(matches["left_index"], np.array([0, 2]))
+    assert np.array_equal(matches["right_index"], np.array([2, 2]))
+
+
+def test_extended_range_seed_can_follow_an_equality_predicate():
+    """Residual arrays follow the sorted right range layout."""
+    left = pd.DataFrame(
+        {
+            "equals": [1, 2],
+            "range": [4, 6],
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "equals": [1, 2, 9],
+            "range": [5, 7, 3],
+        }
+    )
+
+    matches = jn.get_join_indices(
+        left,
+        right,
+        ("equals", "equals", "=="),
+        ("range", "range", "<"),
+        keep="all",
+    )
+
+    assert np.array_equal(matches["left_index"], np.array([0, 1]))
+    assert np.array_equal(matches["right_index"], np.array([0, 1]))
+
+
+def test_extended_mixed_filters_pandas_equality_nulls():
+    """Nulls in residual pandas equality columns are removed before Rust."""
+    left = pd.DataFrame(
+        {
+            "range": pd.array([4, 4], dtype="Int64"),
+            "equals": pd.array([10, None], dtype="Int64"),
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "range": pd.array([5, 5], dtype="Int64"),
+            "equals": pd.array([10, None], dtype="Int64"),
+        }
+    )
+
+    matches = jn.get_join_indices(
+        left,
+        right,
+        ("range", "range", "<"),
+        ("equals", "equals", "=="),
+        keep="all",
+    )
+
+    assert np.array_equal(matches["left_index"], np.array([0]))
+    assert np.array_equal(matches["right_index"], np.array([0]))
+
+
+def test_extended_mixed_filters_pandas_not_equal_nulls():
+    """Pandas extension nulls do not satisfy a residual ``!=`` predicate."""
+    left = pd.DataFrame(
+        {
+            "range": pd.array([4], dtype="Int64"),
+            "not_equal": pd.array([1], dtype="Int64"),
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "range": pd.array([5, 6], dtype="Int64"),
+            "not_equal": pd.array([2, None], dtype="Int64"),
+        }
+    )
+
+    matches = jn.get_join_indices(
+        left,
+        right,
+        ("range", "range", "<"),
+        ("not_equal", "not_equal", "!="),
+        keep="all",
+    )
+
+    assert np.array_equal(matches["left_index"], np.array([0]))
+    assert np.array_equal(matches["right_index"], np.array([0]))
+
+
+def test_extended_mixed_keep_options_and_building_blocks():
+    """Keep options operate after residual predicates have filtered pairs."""
+    left = pd.DataFrame(
+        {
+            "range": [4, 4],
+            "residual": [4, 8],
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "range": [5, 6, 7],
+            "residual": [1, 5, 9],
+        }
+    )
+    conditions = (
+        ("range", "range", "<"),
+        ("residual", "residual", "<"),
+    )
+
+    all_matches = jn.get_join_indices(left, right, *conditions, keep="all")
+    first_matches = jn.get_join_indices(left, right, *conditions, keep="first")
+    last_matches = jn.get_join_indices(left, right, *conditions, keep="last")
+    building_blocks = jn.get_join_indices(
+        left,
+        right,
+        *conditions,
+        keep="first",
+        return_building_blocks=True,
+    )
+
+    assert np.array_equal(all_matches["left_index"], np.array([0, 0, 1]))
+    assert np.array_equal(all_matches["right_index"], np.array([1, 2, 2]))
+    assert np.array_equal(first_matches["left_index"], np.array([0, 1]))
+    assert np.array_equal(first_matches["right_index"], np.array([1, 2]))
+    assert np.array_equal(last_matches["left_index"], np.array([0, 1]))
+    assert np.array_equal(last_matches["right_index"], np.array([2, 2]))
+    assert np.array_equal(building_blocks["left_index"], all_matches["left_index"])
+    assert np.array_equal(building_blocks["right_index"], all_matches["right_index"])
+
+
+def test_extended_mixed_all_null_non_ne_side_has_no_matches():
+    """An all-null non-``!=`` side is removed before Rust is called."""
+    left = pd.DataFrame({"range": [1], "equals": [10]})
+    right = pd.DataFrame(
+        {
+            "range": [2, 3],
+            "equals": pd.array([None, None], dtype="Int64"),
+        }
+    )
+
+    matches = jn.get_join_indices(
+        left,
+        right,
+        ("range", "range", "<"),
+        ("equals", "equals", "=="),
+        keep="all",
+    )
+
+    assert np.array_equal(matches["left_index"], np.array([], dtype=np.int64))
+    assert np.array_equal(matches["right_index"], np.array([], dtype=np.int64))
+
+
+def test_extended_all_not_equal_filters_materialized_candidates():
+    """All-``!=`` joins use flat candidates before applying ``keep``."""
+    left = pd.DataFrame({"first": [1, 2, 3], "second": [1, 2, 3]})
+    right = pd.DataFrame({"first": [1, 2, 3], "second": [1, 3, 2]})
+
+    all_matches = jn.get_join_indices(
+        left,
+        right,
+        ("first", "first", "!="),
+        ("second", "second", "!="),
+        keep="all",
+    )
+    assert np.array_equal(all_matches["left_index"], np.array([0, 0, 1, 2]))
+    assert np.array_equal(all_matches["right_index"], np.array([1, 2, 0, 0]))
+
+    first_matches = jn.get_join_indices(
+        left,
+        right,
+        ("first", "first", "!="),
+        ("second", "second", "!="),
+        keep="first",
+    )
+    assert np.array_equal(first_matches["left_index"], np.array([0, 1, 2]))
+    assert np.array_equal(first_matches["right_index"], np.array([1, 0, 0]))
+
+    building_blocks = jn.get_join_indices(
+        left,
+        right,
+        ("first", "first", "!="),
+        ("second", "second", "!="),
+        keep="first",
+        return_building_blocks=True,
+    )
+    assert np.array_equal(building_blocks["left_index"], all_matches["left_index"])
+    assert np.array_equal(building_blocks["right_index"], all_matches["right_index"])
+
+
+def test_extended_all_not_equal_extension_nulls_are_filtered():
+    """Pandas extension nulls do not satisfy residual ``!=`` filters."""
+    left = pd.DataFrame(
+        {
+            "first": pd.array([1, None, 3], dtype="Int64"),
+            "second": pd.array([1, 2, 3], dtype="Int64"),
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "first": pd.array([1, 2, None], dtype="Int64"),
+            "second": pd.array([1, 3, 2], dtype="Int64"),
+        }
+    )
+
+    matches = jn.get_join_indices(
+        left,
+        right,
+        ("first", "first", "!="),
+        ("second", "second", "!="),
+        keep="all",
+    )
+    assert np.array_equal(matches["left_index"], np.array([0, 2]))
+    assert np.array_equal(matches["right_index"], np.array([1, 0]))
+
+
+def test_extended_all_not_equal_numpy_nulls_match_everything():
+    """NumPy nulls remain candidates for every ``!=`` predicate."""
+    left = pd.DataFrame(
+        {
+            "first": np.array([1.0, np.nan, 3.0]),
+            "second": np.array([1.0, 2.0, 3.0]),
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "first": np.array([1.0, 2.0, np.nan]),
+            "second": np.array([1.0, 3.0, 2.0]),
+        }
+    )
+
+    matches = jn.get_join_indices(
+        left,
+        right,
+        ("first", "first", "!="),
+        ("second", "second", "!="),
+        keep="all",
+    )
+    assert np.array_equal(matches["left_index"], np.array([0, 0, 1, 1, 2, 2]))
+    assert np.array_equal(matches["right_index"], np.array([1, 2, 0, 1, 0, 2]))
+
+
+def test_single_not_equal_all_null_numpy_right_matches():
+    """NumPy ``!=`` matches a null-only right side."""
+    left = pd.DataFrame({"value": np.array([1.0])})
+    right = pd.DataFrame({"value": np.array([np.nan])})
+
+    matches = jn.get_join_indices(
+        left,
+        right,
+        ("value", "value", "!="),
+        keep="all",
+    )
+
+    assert np.array_equal(matches["left_index"], np.array([0]))
+    assert np.array_equal(matches["right_index"], np.array([0]))
+
+
+def test_single_not_equal_all_null_extension_right_does_not_match():
+    """Pandas nullable ``!=`` does not match a null-only right side."""
+    left = pd.DataFrame({"value": pd.array([1], dtype="Int64")})
+    right = pd.DataFrame({"value": pd.array([None], dtype="Int64")})
+
+    matches = jn.get_join_indices(
+        left,
+        right,
+        ("value", "value", "!="),
+        keep="all",
+    )
+
+    assert np.array_equal(matches["left_index"], np.array([], dtype=np.int64))
+    assert np.array_equal(matches["right_index"], np.array([], dtype=np.int64))
 
 
 def test_join_algorithm_type(dummy, series):
@@ -343,14 +757,55 @@ def test_check_aggfunc_type(dummy, series):
 
 
 def test_check_aggfunc_ne(dummy, series):
-    """
-    Raise TypeError if all join conditions are !=
-    """
-    with pytest.raises(
-        NotImplementedError,
-        match="aggfunc is not supported when all the join operators.+",
-    ):
-        dummy.join_agg(series, ("id", "B", "!="), aggfunc=[("B", "sum")])
+    """Support aggregation when the only join condition is ``!=``."""
+    actual = dummy.join_agg(series, ("id", "B", "!="), aggfunc=[("B", "sum")])
+    expected = pd.DataFrame(
+        {("B", "sum"): [9, 9, 9, 7, 7, 6]},
+        index=pd.RangeIndex(6),
+    )
+    expected = _with_matched_level(expected)
+    assert_frame_equal(expected, actual)
+
+
+def test_all_not_equal_aggregation():
+    """Aggregate all ``!=`` predicates without materializing join pairs."""
+    left = pd.DataFrame({"left_a": [1, 2], "left_b": [10, 20]})
+    right = pd.DataFrame(
+        {"right_a": [1, 2, 3], "right_b": [10, 99, 30], "value": [5, 7, 11]}
+    )
+
+    actual = left.join_agg(
+        right,
+        ("left_a", "right_a", "!="),
+        ("left_b", "right_b", "!="),
+        aggfunc=[("value", "size"), ("value", "sum")],
+    )
+    expected = pd.DataFrame(
+        {
+            ("value", "size"): [2, 2],
+            ("value", "sum"): [18, 16],
+        },
+        index=pd.RangeIndex(2),
+    )
+    expected = _with_matched_level(expected)
+    assert_frame_equal(expected, actual)
+
+    actual = left.join_agg(
+        right,
+        ("left_a", "right_a", "!="),
+        ("left_b", "right_b", "!="),
+        aggfunc=[("left_a", "size"), ("left_b", "sum")],
+        reverse=True,
+    )
+    expected = pd.DataFrame(
+        {
+            ("left_a", "size"): [1, 1, 2],
+            ("left_b", "sum"): [20, 10, 30],
+        },
+        index=pd.RangeIndex(3),
+    )
+    expected = _with_matched_level(expected)
+    assert_frame_equal(expected, actual)
 
 
 def test_check_aggfunc_sub(dummy, series):
@@ -1479,6 +1934,7 @@ def test_single_condition_not_equal_keep_one(left, right, keep):
     """First and last selection match a direct scan in original row order."""
     expected_left = []
     expected_right = []
+    is_extension_array = pd.api.types.is_extension_array_dtype(left.dtype)
     right_positions = range(len(right))
     if keep == "last":
         right_positions = reversed(right_positions)
@@ -1489,7 +1945,7 @@ def test_single_condition_not_equal_keep_one(left, right, keep):
             left_is_null = pd.isna(left_value)
             right_is_null = pd.isna(right_value)
             if left_is_null or right_is_null:
-                unequal = True
+                unequal = not is_extension_array
             else:
                 unequal = left_value != right_value
             if unequal:
@@ -1515,12 +1971,12 @@ def test_single_condition_not_equal_keep_one(left, right, keep):
 
 @pytest.mark.parametrize(
     ("keep", "right_positions"),
-    [("first", [1, 0, 0, 0]), ("last", [3, 3, 3, 2])],
+    [("first", [1, 0, 0, 0]), ("last", [3, 3, 2, 3])],
 )
 def test_single_condition_not_equal_keep_one_preserves_output_order(
     keep, right_positions
 ):
-    """Optimized selection preserves the legacy materialized-pair order."""
+    """Optimized selection preserves left input order."""
     left = pd.DataFrame({"left": [2, -1, 3, 0], "left_position": range(4)})
     right = pd.DataFrame({"right": [2, -3, -2, 3], "right_position": range(4)})
 
@@ -1530,7 +1986,7 @@ def test_single_condition_not_equal_keep_one_preserves_output_order(
         keep=keep,
     )
 
-    assert actual["left_position"].tolist() == [0, 1, 3, 2]
+    assert actual["left_position"].tolist() == [0, 1, 2, 3]
     assert actual["right_position"].tolist() == right_positions
 
 
@@ -5898,7 +6354,7 @@ def test_gt_ne_agg(df, right):
             ("Integers", "sum"),
         ],
     )
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -5929,7 +6385,7 @@ def test_lt_ne_agg(df, right):
             ("Integers", "sum"),
         ],
     )
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -5959,7 +6415,7 @@ def test_dual_gt_agg(df, right):
             ("Integers", "sum"),
         ],
     )
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -5989,7 +6445,7 @@ def test_dual_lt_agg(df, right):
             ("Integers", "sum"),
         ],
     )
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6020,7 +6476,7 @@ def test_multiple__ge__agg(df, right):
             ("Integers", "sum"),
         ],
     )
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6051,7 +6507,7 @@ def test_multiple__le__agg(df, right):
             ("Integers", "sum"),
         ],
     )
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6082,7 +6538,7 @@ def test_multiple_range_aggs(df, right):
             ("Integers", "sum"),
         ],
     )
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6114,7 +6570,7 @@ def test_multiple_range_ne_agg(df, right):
             ("Integers", "sum"),
         ],
     )
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6144,7 +6600,7 @@ def test_range_only_agg(df, right):
             ("Integers", "sum"),
         ],
     )
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6174,7 +6630,7 @@ def test_equi_agg(df, right):
             ("Integers", "sum"),
         ],
     )
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6203,7 +6659,7 @@ def test_equi_only_agg(df, right):
             ("Integers", "sum"),
         ],
     )
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6233,7 +6689,7 @@ def test_equi_ne_agg(df, right):
             ("Integers", "sum"),
         ],
     )
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6264,7 +6720,7 @@ def test_equi_le_ne_agg(df, right):
             ("Integers", "sum"),
         ],
     )
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6295,7 +6751,7 @@ def test_equi_ge_ne_agg(df, right):
             ("Integers", "sum"),
         ],
     )
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6326,7 +6782,7 @@ def test_equi_le_ge_agg(df, right):
             ("Integers", "sum"),
         ],
     )
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6358,7 +6814,7 @@ def test_equi_le_ge_ne_agg(df, right):
             ("Integers", "sum"),
         ],
     )
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6390,7 +6846,7 @@ def test_equi_ge_ge_ne_agg(df, right):
             ("Integers", "sum"),
         ],
     )
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6422,7 +6878,7 @@ def test_equi_le_le_ne_agg(df, right):
             ("Integers", "sum"),
         ],
     )
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6459,7 +6915,7 @@ def test_equi_le_ge_ge_ne_agg(df, right):
             ("Integers", "sum"),
         ],
     )
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6597,7 +7053,7 @@ def test_gt_ne_agg_rev(df, right):
         ],
         reverse=True,
     ).sort_index()
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6628,7 +7084,7 @@ def test_lt_ne_agg_rev(df, right):
         ],
         reverse=True,
     ).sort_index()
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6658,7 +7114,7 @@ def test_dual_gt_agg_rev(df, right):
         ],
         reverse=True,
     ).sort_index()
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6688,7 +7144,7 @@ def test_dual_lt_agg_rev(df, right):
         ],
         reverse=True,
     ).sort_index()
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6719,7 +7175,7 @@ def test_multiple__ge__agg_rev(df, right):
         ],
         reverse=True,
     ).sort_index()
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6750,7 +7206,7 @@ def test_multiple__le__agg_rev(df, right):
         ],
         reverse=True,
     ).sort_index()
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6781,7 +7237,7 @@ def test_multiple_range_aggs_rev(df, right):
         ],
         reverse=True,
     ).sort_index()
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6813,7 +7269,7 @@ def test_multiple_range_ne_agg_rev(df, right):
         ],
         reverse=True,
     ).sort_index()
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6843,7 +7299,7 @@ def test_range_only_agg_rev(df, right):
         ],
         reverse=True,
     ).sort_index()
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6873,7 +7329,7 @@ def test_equi_agg_rev(df, right):
         ],
         reverse=True,
     ).sort_index()
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6902,7 +7358,7 @@ def test_equi_only_agg_rev(df, right):
         ],
         reverse=True,
     ).sort_index()
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6932,7 +7388,7 @@ def test_equi_ne_agg_rev(df, right):
         ],
         reverse=True,
     ).sort_index()
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6963,7 +7419,7 @@ def test_equi_le_ne_agg_rev(df, right):
         ],
         reverse=True,
     ).sort_index()
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -6994,7 +7450,7 @@ def test_equi_ge_ne_agg_rev(df, right):
         ],
         reverse=True,
     ).sort_index()
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -7025,7 +7481,7 @@ def test_equi_le_ge_agg_rev(df, right):
         ],
         reverse=True,
     ).sort_index()
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -7057,7 +7513,7 @@ def test_equi_le_ge_ne_agg_rev(df, right):
         ],
         reverse=True,
     ).sort_index()
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -7089,7 +7545,7 @@ def test_equi_ge_ge_ne_agg_rev(df, right):
         ],
         reverse=True,
     ).sort_index()
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -7121,7 +7577,7 @@ def test_equi_le_le_ne_agg_rev(df, right):
         ],
         reverse=True,
     ).sort_index()
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 
@@ -7158,7 +7614,7 @@ def test_equi_le_ge_ge_ne_agg_rev(df, right):
         ],
         reverse=True,
     ).sort_index()
-    actual = actual.loc[expected.index]
+    expected = _with_aggregation_contract(expected, len(actual))
     assert_frame_equal(expected, actual)
 
 

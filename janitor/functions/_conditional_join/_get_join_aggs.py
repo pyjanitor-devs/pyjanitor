@@ -1,11 +1,10 @@
 # helper function for join aggregations
 
-from typing import Hashable
-
 import numpy as np
 import pandas as pd
 
 from janitor.functions._conditional_join import _agg_functions, _helpers
+from janitor.functions._conditional_join._aggregation_helpers import _build_agg_label
 
 
 def _agg_join_left(df: pd.DataFrame, aggfunc: list, indices: dict) -> pd.DataFrame:
@@ -711,9 +710,3 @@ def _agg_join_right(right: pd.DataFrame, aggfunc: list, indices: dict) -> pd.Dat
             new_label = _build_agg_label(column_name=column_name, agg_name=agg)
             aggs[new_label] = out
     return pd.DataFrame(aggs, copy=False, index=indices["left_index"])
-
-
-def _build_agg_label(column_name: Hashable, agg_name: str):
-    if isinstance(column_name, tuple):
-        return (*column_name, agg_name)
-    return (f"{column_name}", agg_name)

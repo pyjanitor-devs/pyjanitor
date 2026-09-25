@@ -1,5 +1,6 @@
 # helper functions for conditional_join.py
 
+from dataclasses import dataclass
 from enum import Enum
 from typing import Sequence
 
@@ -155,6 +156,160 @@ def _convert_array_to_numpy(
     ):
         array = array.view(np.int64)
     return array
+
+
+@dataclass(frozen=True)
+class _NotEqualAnchor:
+    """Prepared first-predicate data for a null-aware ``!=`` comparison.
+
+    The value series contain only non-null rows. Their indexes are physical
+    positions in the original full layouts, so they remain aligned with the
+    position arrays and can be used to recover public index labels later.
+    """
+
+    left_values: pd.Series
+    right_values: pd.Series
+    left_index: np.ndarray
+    right_index: np.ndarray
+    left_positions: np.ndarray
+    right_positions: np.ndarray
+    left_null_positions: np.ndarray | None
+    right_null_positions: np.ndarray | None
+    right_index_is_ordered: bool
+    is_extension_array: bool
+
+
+@dataclass(frozen=True)
+class _RangeAnchor:
+    """Prepared first-predicate data for a range comparison.
+
+    The right values are in the stable value-sorted layout required by Rust's
+    binary search. Both position arrays refer to the original reset physical
+    dataframe layouts, not to offsets created by filtering or sorting.
+    """
+
+    left_values: pd.Series
+    right_values: pd.Series
+    left_index: np.ndarray
+    right_index: np.ndarray
+    left_array: np.ndarray
+    right_array: np.ndarray
+    right_index_is_ordered: bool
+
+
+def _null_positions(series: pd.Series) -> np.ndarray | None:
+    """Return full-layout physical positions of null rows, if any."""
+    nulls = series.isna().to_numpy(dtype=bool)
+    if not nulls.any():
+        return None
+    return _convert_array_to_numpy(array=series.index[nulls]._values)
+
+
+def _not_equal_layout_positions(
+    non_null_positions: np.ndarray,
+    null_positions: np.ndarray | None,
+) -> np.ndarray:
+    """Return the compact aggregation layout for a ``!=`` side.
+
+    ``!=`` searches only the non-null values, but aggregation must also be
+    able to address null rows for NumPy null semantics. The compact layout is
+    therefore the filtered non-null positions followed by the null positions.
+    Rust receives this same array as both the aggregation source/output map
+    and the output-position result, so Python and Rust cannot silently drift
+    to different row orders.
+
+    Args:
+        non_null_positions: Physical positions of searchable non-null rows.
+        null_positions: Physical positions of null rows, or ``None`` when
+            there are no null rows.
+
+    Returns:
+        An ``int64`` array containing every physical position exactly once.
+    """
+    non_null_positions = np.asarray(non_null_positions, dtype=np.int64)
+    if null_positions is None:
+        return non_null_positions.copy()
+    return np.concatenate(
+        [non_null_positions, np.asarray(null_positions, dtype=np.int64)]
+    )
+
+
+def _prepare_not_equal_anchor(left: pd.Series, right: pd.Series) -> _NotEqualAnchor:
+    """Prepare filtered values and physical metadata for a ``!=`` anchor.
+
+    PyJanitor owns dataframe index reset, value sorting, and dtype alignment.
+    This helper only removes null values, sorts the non-null right values when
+    both sides contain searchable values, and carries every physical mapping
+    needed by Rust to handle null-generated candidates.
+
+    Args:
+        left: Full-layout left predicate series.
+        right: Full-layout right predicate series.
+
+    Returns:
+        A named bundle containing non-null values, full index labels, filtered
+        physical positions, null physical positions, and the ordering flags.
+    """
+    left_nulls = left.isna()
+    right_nulls = right.isna()
+    left_values = left.loc[~left_nulls]
+    right_values = right.loc[~right_nulls]
+    if left_values.empty or right_values.empty:
+        right_sorted = right_values
+        right_index_is_ordered = True
+    else:
+        right_sorted, right_index_is_ordered = _sort_if_not_monotonic(right_values)
+
+    return _NotEqualAnchor(
+        left_values=left_values,
+        right_values=right_sorted,
+        left_index=_convert_array_to_numpy(array=left.index._values),
+        right_index=_convert_array_to_numpy(array=right.index._values),
+        left_positions=_convert_array_to_numpy(array=left_values.index._values),
+        right_positions=_convert_array_to_numpy(array=right_sorted.index._values),
+        left_null_positions=_null_positions(left),
+        right_null_positions=_null_positions(right),
+        right_index_is_ordered=right_index_is_ordered,
+        is_extension_array=bool(pd.api.types.is_extension_array_dtype(left.dtype)),
+    )
+
+
+def _prepare_range_anchor(left: pd.Series, right: pd.Series) -> _RangeAnchor | None:
+    """Prepare one range predicate for Rust index or aggregation kernels.
+
+    Null rows are removed because ordering comparisons never match nulls. The
+    right values are stably sorted when necessary, and the returned position
+    arrays preserve the mapping from that sorted/filtered view to the reset
+    physical dataframe layouts. Aggregation uses the same prepared arrays as
+    index generation; its ``right_index_is_ordered`` value is retained for
+    the shared contract but is not used by aggregation selection.
+
+    Args:
+        left: Full-layout left predicate series.
+        right: Full-layout right predicate series.
+
+    Returns:
+        A prepared range anchor, or ``None`` when either side has no non-null
+        values and therefore cannot produce a range match.
+    """
+    left_outcome = _null_checks_cond_join(series=left)
+    right_outcome = _null_checks_cond_join(series=right)
+    if left_outcome is None or right_outcome is None:
+        return None
+    left_values, _ = left_outcome
+    right_values, _ = right_outcome
+    right_sorted, right_index_is_ordered = _sort_if_not_monotonic(series=right_values)
+    left_array = _convert_array_to_numpy(array=left_values._values)
+    right_array = _convert_array_to_numpy(array=right_sorted._values)
+    return _RangeAnchor(
+        left_values=left_values,
+        right_values=right_sorted,
+        left_index=_convert_array_to_numpy(array=left_values.index._values),
+        right_index=_convert_array_to_numpy(array=right_sorted.index._values),
+        left_array=left_array,
+        right_array=right_array,
+        right_index_is_ordered=right_index_is_ordered,
+    )
 
 
 def _update_positions_no_range(

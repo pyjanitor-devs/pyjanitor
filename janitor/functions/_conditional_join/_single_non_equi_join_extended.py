@@ -1,11 +1,10 @@
-"""Single-anchor and all-``!=`` conditional joins backed by janitor-rs.
+"""Multiple conditional-join indices and aggregations backed by janitor-rs.
 
-This module is deliberately narrower than its historical “extended” name
-suggests. A range-led call here has exactly one binary-search anchor; every
-remaining predicate is a residual filter evaluated against that anchor's
-candidate window. Dual-range calls are routed to ``_range_join``, which owns
-the second sorted right array, window intersection, and range aggregation
-dispatch. All-``!=`` calls use their null-aware flat candidate stream here.
+Mixed joins are range-led: the first range predicate creates a candidate
+window and later predicates filter it. Two-range window intersection belongs
+to the dedicated range-join implementation. When every predicate is ``!=``,
+the first predicate creates flat physical position pairs and later predicates
+filter those pairs directly.
 
 The Rust boundary uses two first-predicate tuple shapes:
 
@@ -39,15 +38,31 @@ from janitor.functions._conditional_join._aggregation_helpers import (
     _select_aggregation_kernel,
 )
 from janitor.functions._conditional_join._helpers import (
-    _build_residual_predicate,
     _convert_array_to_numpy,
     _get_boolean_args_for_ne,
     _maybe_remove_nulls_from_dataframe,
     _not_equal_layout_positions,
     _prepare_not_equal_anchor,
     _prepare_range_anchor,
+    _RangeAnchor,
+    greater_than_join_types,
+    less_than_join_types,
 )
-from janitor.functions.utils import greater_than_join_types, less_than_join_types
+
+_RANGE_PAIR_PRIORITY = (
+    (">", "<"),
+    (">", "<="),
+    (">=", "<"),
+    (">=", "<="),
+    (">", ">"),
+    (">", ">="),
+    (">=", ">"),
+    (">=", ">="),
+    ("<", "<"),
+    ("<", "<="),
+    ("<=", "<"),
+    ("<=", "<="),
+)
 
 _EXTENDED_KERNEL_NAMES = {
     "int64": "single_join_extended_indices_int64",
@@ -122,6 +137,97 @@ def _empty_indices() -> dict:
     """
     empty = np.array([], dtype=np.int64)
     return {"left_index": empty, "right_index": empty}
+
+
+def _select_range_pair(
+    df: pd.DataFrame,
+    right: pd.DataFrame,
+    conditions: list[tuple],
+) -> tuple[int, int, _RangeAnchor] | None:
+    """Select the first compatible pair of range predicates.
+
+    The first selected predicate becomes the binary-search anchor. Its right
+    values establish the shared layout, so the second predicate is checked
+    only after its right values have been reordered by the anchor's carried
+    physical index. A pair is compatible when that second array is monotonic
+    increasing in the shared layout. If no pair is compatible,
+    callers retain the existing extended-kernel fallback.
+
+    Args:
+        df: Null-filtered left working dataframe.
+        right: Null-filtered right working dataframe.
+        conditions: User-ordered join predicates.
+
+    Returns:
+        ``(anchor_position, second_position, anchor)`` for the first
+        compatible pair, or ``None`` when no pair can establish the optimized
+        shared layout.
+    """
+    for anchor_op, second_op in _RANGE_PAIR_PRIORITY:
+        for anchor_position, (left_on, right_on, operation) in enumerate(conditions):
+            if operation != anchor_op:
+                continue
+            anchor = _prepare_range_anchor(df[left_on], right[right_on])
+            if anchor is None:
+                continue
+            for second_position, (_, second_right_on, residual_op) in enumerate(
+                conditions
+            ):
+                if second_position == anchor_position or residual_op != second_op:
+                    continue
+                second_right = right.loc[anchor.right_index, second_right_on]
+                second_is_monotonic = second_right.is_monotonic_increasing
+                if second_is_monotonic:
+                    return anchor_position, second_position, anchor
+    return None
+
+
+def _build_residual_predicate(
+    left: pd.Series, right: pd.Series, operation: str
+) -> tuple:
+    """Build one residual predicate in the Rust tuple format.
+
+    Residual arrays remain in the complete physical layout. Only ``!=`` needs
+    additional null metadata; ordinary comparisons use the compact
+    ``(left_values, right_values, operation)`` representation.
+
+    The left and right series must already be aligned to the same physical
+    candidate layout. Rust reuses one candidate position for every residual,
+    so this helper must not independently reset, sort, or drop rows. Null
+    masks are authoritative: ``True`` means that the corresponding physical
+    value is null. Rust does not infer nullness from the value, including
+    ``NaN``. For pandas extension arrays, the extension flag preserves
+    nullable ``!=`` semantics.
+
+    Args:
+        left: Left residual series already aligned to the candidate layout.
+        right: Right residual series already aligned to the candidate layout.
+        operation: String comparison operator.
+
+    Returns:
+        A three-element ordinary predicate tuple or the six-element nullable
+        ``!=`` tuple expected by the Rust parser.
+    """
+    left_array = _convert_array_to_numpy(array=left._values)
+    right_array = _convert_array_to_numpy(array=right._values)
+    if operation != "!=":
+        return left_array, right_array, operation
+
+    left_mask, right_mask, is_extension_array = _get_boolean_args_for_ne(
+        op=operation,
+        left=left,
+        right=right,
+    )
+    if left_mask is None and right_mask is None:
+        return left_array, right_array, operation
+    return (
+        left_array,
+        left_mask,
+        right_array,
+        right_mask,
+        bool(is_extension_array),
+        operation,
+    )
 
 
 def _get_all_not_equal_indices(
@@ -217,15 +323,14 @@ def _aggregate_extended(
     reverse: bool,
     return_matched: bool,
 ) -> pd.DataFrame:
-    """Run fused Rust aggregation for one anchor plus residual predicates.
+    """Run fused Rust aggregation for multiple join predicates.
 
     If every predicate is ``!=``, the first predicate supplies the null-aware
     candidate stream and later ``!=`` predicates filter those candidates. In
-    In a mixed call, the first range predicate supplies the single binary-
-    search window and every remaining predicate filters candidates inside that
-    window. Dual-range calls are dispatched to ``_range_join`` before this
-    function is entered. If a pair cannot satisfy the dual-range sorted-layout
-    contract, this function remains the correctness-preserving fallback.
+    a mixed call, the first compatible range pair supplies intersected
+    binary-search windows and every remaining predicate filters candidates
+    inside those windows. If no compatible pair exists, the ordinary extended
+    range path remains the correctness-preserving fallback.
     Aggregation occurs while candidates are evaluated; no flat pair index is
     materialized.
 
@@ -243,11 +348,10 @@ def _aggregate_extended(
     Args:
         df: Left dataframe with a unique physical ``RangeIndex``.
         right: Right dataframe with a unique physical ``RangeIndex``.
-        conditions: Join predicates in user order. An all-``!=`` call is
-            handled by the null-aware branch. A mixed call must contain at
-            least one range predicate; this function uses the first range
-            predicate as its only anchor and evaluates all other predicates as
-            residuals.
+        conditions: Join predicates in user order. An all-``!=`` call must
+            contain only ``!=`` operators. A mixed call must contain at least
+            one range predicate; two compatible range predicates are preferred
+            for the optimized anchor layout.
         aggfunc: Non-empty ``(column, operation)`` requests for ``sum``,
             ``prod``, ``min``, ``max``, ``count``, or ``size``.
         reverse: When false, aggregate right-side values into left output
@@ -348,22 +452,38 @@ def _aggregate_extended(
             aggfunc=aggfunc,
         )
 
-    # This module owns one range anchor plus residual predicates. Calls with
-    # two compatible range anchors are dispatched by `_range_join` before this
-    # function is entered.
-    first_position = next(
-        position
-        for position, (_, _, operation) in enumerate(conditions)
-        if operation in less_than_join_types.union(greater_than_join_types)
+    selected_pair = _select_range_pair(
+        df=filtered_df,
+        right=filtered_right,
+        conditions=conditions,
     )
-    first_left_on, first_right_on, first_operation = conditions[first_position]
-    anchor = _prepare_range_anchor(
-        left=filtered_df[first_left_on],
-        right=filtered_right[first_right_on],
-    )
-    residual_positions = [
-        position for position in range(len(conditions)) if position != first_position
-    ]
+    if selected_pair is None:
+        # Neither range predicate can share an ascending right layout. Keep
+        # this call on the general extended fallback; the optimized
+        # range-join kernels must never receive an unsorted P2 array.
+        first_position = next(
+            position
+            for position, (_, _, operation) in enumerate(conditions)
+            if operation in less_than_join_types.union(greater_than_join_types)
+        )
+        first_left_on, first_right_on, first_operation = conditions[first_position]
+        anchor = _prepare_range_anchor(
+            left=filtered_df[first_left_on],
+            right=filtered_right[first_right_on],
+        )
+        residual_positions = [
+            position
+            for position in range(len(conditions))
+            if position != first_position
+        ]
+    else:
+        first_position, second_position, anchor = selected_pair
+        first_operation = conditions[first_position][2]
+        residual_positions = [second_position] + [
+            position
+            for position in range(len(conditions))
+            if position not in {first_position, second_position}
+        ]
     if anchor is None:
         return _empty_aggregation_result(
             source=right if not reverse else df,
@@ -430,12 +550,12 @@ def _get_indices(
     keep: str,
     return_materialized_indices: bool,
 ) -> dict:
-    """Build one-anchor indices with the Rust extended kernel.
+    """Build multiple-condition indices with the Rust extended kernel.
 
     Mixed joins use the first range predicate to establish the filtered,
     sorted physical layout. Every later condition is reordered to that same
-    layout before Rust sees it and is passed as a residual filter. Dual-range
-    window intersection is routed to the dedicated range-join path. All-``!=``
+    layout before Rust sees it and is passed as a residual filter. Two-range
+    window intersection belongs to the dedicated range-join path. All-``!=``
     joins use a separate first-predicate path:
     the first predicate creates flat physical pairs and later predicates use
     full-layout arrays to filter those pairs. ``return_materialized_indices``
@@ -447,9 +567,8 @@ def _get_indices(
         right: Right working dataframe with the reset physical ``RangeIndex``.
         conditions: Join predicates. An all-``!=`` join uses its first
             predicate to build flat candidate pairs. Otherwise the first
-            range predicate builds the only candidate window here; every later
-            predicate is a residual filter. Calls with two compatible range
-            anchors are handled by ``_range_join`` before this function.
+            predicate must be a range predicate and builds the candidate
+            window; every later predicate is a residual filter.
         keep: ``"all"``, ``"first"``, ``"last"``, or ``"any"`` selection
             requested for the final indices.
         return_materialized_indices: Force all surviving pairs to be

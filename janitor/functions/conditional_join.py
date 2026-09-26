@@ -24,18 +24,17 @@ from janitor.functions.utils import (
 from janitor.utils import check, check_column, deprecated_kwargs
 
 from ._conditional_join import (
-    _anchor_non_equi_join,
-    _anchor_non_equi_join_extended,
     _get_indices_equi,
     _get_indices_non_equi,
     _get_join_aggs,
     _not_equal_indices,
     _range_join,
+    _single_non_equi_join,
+    _single_non_equi_join_extended,
 )
 from ._conditional_join._helpers import (
     _JoinOperator,
     _keep_output,
-    _normalize_conditions,
     greater_than_join_types,
     less_than_join_types,
 )
@@ -601,10 +600,6 @@ def _conditional_join_compute(
         reverse=reverse,
         join_algorithm=join_algorithm,
     )
-    # Keep the public tuple API stable, but use named immutable conditions
-    # throughout the internal routing layer. Tuple-style indexing remains
-    # supported by `JoinCondition` for legacy paths that have not migrated.
-    conditions = _normalize_conditions(conditions)
     eq_check = False
     le_lt_check = False
     all_not_equal_check = all(
@@ -635,7 +630,7 @@ def _conditional_join_compute(
         # aggregation state while candidates are compared, so it must run
         # before the ordinary index-producing dispatch builds any pairs.
         if len(conditions) == 1:
-            return _anchor_non_equi_join._aggregate_single(
+            return _single_non_equi_join._aggregate_single(
                 df=df,
                 right=right,
                 condition=conditions[0],
@@ -643,26 +638,7 @@ def _conditional_join_compute(
                 reverse=reverse,
                 return_matched=return_matched,
             )
-        if (
-            not all_not_equal_check
-            and le_lt_check
-            and _range_join._can_use_dual_range(
-                df=df,
-                right=right,
-                conditions=list(conditions),
-            )
-        ):
-            range_result = _range_join._aggregate_extended(
-                df=df,
-                right=right,
-                conditions=list(conditions),
-                aggfunc=aggfunc,
-                reverse=reverse,
-                return_matched=return_matched,
-            )
-            if range_result is not None:
-                return range_result
-        return _anchor_non_equi_join_extended._aggregate_extended(
+        return _single_non_equi_join_extended._aggregate_extended(
             df=df,
             right=right,
             conditions=conditions,
@@ -706,27 +682,7 @@ def _conditional_join_compute(
                 return_materialized_indices=return_building_blocks or bool(aggfunc),
             )
             if indices is None:
-                indices = _anchor_non_equi_join_extended._get_indices(
-                    df=matching_df,
-                    right=matching_right,
-                    conditions=conditions,
-                    keep=keep,
-                    return_materialized_indices=return_building_blocks or bool(aggfunc),
-                )
-        elif _range_join._can_use_dual_range(
-            df=matching_df,
-            right=matching_right,
-            conditions=list(conditions),
-        ):
-            indices = _range_join._get_extended_indices(
-                df=matching_df,
-                right=matching_right,
-                conditions=list(conditions),
-                keep=keep,
-                return_materialized_indices=return_building_blocks or bool(aggfunc),
-            )
-            if indices is None:
-                indices = _anchor_non_equi_join_extended._get_indices(
+                indices = _single_non_equi_join_extended._get_indices(
                     df=matching_df,
                     right=matching_right,
                     conditions=conditions,
@@ -734,7 +690,7 @@ def _conditional_join_compute(
                     return_materialized_indices=return_building_blocks or bool(aggfunc),
                 )
         else:
-            indices = _anchor_non_equi_join_extended._get_indices(
+            indices = _single_non_equi_join_extended._get_indices(
                 df=matching_df,
                 right=matching_right,
                 conditions=conditions,
@@ -771,7 +727,7 @@ def _conditional_join_compute(
             return_matching_indices=return_building_blocks or bool(aggfunc),
         )
     else:
-        indices = _anchor_non_equi_join._anchor_non_equi_join(
+        indices = _single_non_equi_join._single_non_equi_join(
             df=df,
             right=right,
             condition=conditions[0],

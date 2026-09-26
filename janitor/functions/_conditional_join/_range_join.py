@@ -15,7 +15,7 @@ remaining predicates. This module never sorts inside Rust and never treats a
 second range predicate as an ordinary residual when the dual-range contract
 has been selected.
 
-The neighboring ``_anchor_non_equi_join_extended`` module handles a single
+The neighboring ``_single_non_equi_join_extended`` module handles a single
 range anchor plus residual predicates and all-``!=`` candidate streams. Keeping
 these responsibilities separate is important: a single-anchor residual path
 may use an arbitrary later predicate, while this module may use two sorted

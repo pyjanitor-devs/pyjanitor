@@ -565,8 +565,8 @@ maintainers.
 **Context**: Routing conditional-join inequality predicates through the
 janitor-rs single and extended kernels.
 **Learning**: Both single-condition and multiple-condition `!=` joins are
-now delegated to Rust. Single-anchor predicates use `anchor_non_equi_join.rs`. Multiple
-predicates use `anchor_non_equi_join_extended.rs`: mixed joins are seeded by a range
+now delegated to Rust. Single predicates use `single_non_equi_join.rs`. Multiple
+predicates use `single_non_equi_join_extended.rs`: mixed joins are seeded by a range
 predicate, while all-`!=` joins build flat candidate pairs before applying
 residual predicates.
 
@@ -581,7 +581,7 @@ the relevant Rust path to retain all surviving candidates; range paths may
 return compact windows, while `!=` paths return materialized pairs.
 
 **Recommendation**: Keep the Python/Rust boundary explicit. Use
-``anchor_non_equi_join.py`` for one predicate, ``anchor_non_equi_join_extended.py`` for multiple
+``single_non_equi_join.rs`` for one predicate, ``single_non_equi_join_extended.rs`` for multiple
 predicates, and apply residual predicates before final ``keep`` selection.
 
 ### [2026-09-23] Conditional-join aggregation is fused at the Rust boundary
@@ -617,17 +617,6 @@ dtype-independent. The right-index ordering flag is relevant only to
 index-building selection; aggregation consumes all surviving candidates and
 does not use it.
 
-### [2026-09-25] Temporary integration branch for PyJanitor pull requests
-
-**Context**: Coordinating the conditional-join migration with janitor-rs.
-**Learning**: Until the maintainer explicitly changes the workflow, new
-PyJanitor pull requests must target the temporary
-`208-single-join-aggregation` branch rather than `dev`.
-
-**Recommendation**: Before opening a PyJanitor pull request, set its base to
-`208-single-join-aggregation`. Do not merge these changes directly into `dev`
-until the maintainer authorizes the final integration.
-
 ### [2026-09-25] Keep single-anchor and dual-range extended joins separate
 
 **Context**: Clarifying the multi-predicate range-join routing contract.
@@ -640,19 +629,6 @@ anchors and their intersected windows.
 single-extended Rust kernel. Route confirmed dual-range calls through the
 range-join implementation; use the single-extended path for one anchor plus
 residual predicates.
-
-### [2026-09-26] Define dual-range joins by per-row window intersection
-
-**Context**: Defining the dual-range join contract and its implementation.
-**Learning**: Each of the first two range predicates builds one half-open
-window for each logical left row. Rust intersects those two windows row by row;
-index generation and aggregation then operate on the surviving positional
-windows. Anchor dtype handling is an implementation detail of each search, not
-the definition of a dual-range join.
-
-**Recommendation**: Keep PyJanitor responsible for null filtering, sorting,
-and physical alignment of the right layouts. Let Rust search each anchor using
-its supplied value representation, then intersect only the positional windows.
 
 ## Version History
 

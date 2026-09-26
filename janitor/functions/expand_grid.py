@@ -391,6 +391,24 @@ def _expand_groupby(grouped: DataFrameGroupBy, columns: tuple, sort: bool):
         elif isinstance(column, pd.Series):
             group_table = df[group_keys].drop_duplicates()
             tables.append(group_table.merge(column.to_frame(), how="cross"))
+        elif callable(column) or isinstance(column, Expression):
+            group_tables = []
+            for _, frame in grouped:
+                objects = _build_pandas_objects_for_expand(
+                    df=frame,
+                    columns=(column,),
+                )
+                objects = _compute_cartesian_product(
+                    inputs=objects,
+                    sort=False,
+                )
+                object_table = pd.DataFrame(objects)
+                group_table = frame[group_keys].drop_duplicates()
+                group_tables.append(
+                    group_table.merge(object_table, how="cross")
+                )
+            tables.append(pd.concat(group_tables, ignore_index=True))
+
     out = tables[0]
     for table in tables[1:]:
         out = out.merge(table, on=group_keys, how="inner", sort=False)

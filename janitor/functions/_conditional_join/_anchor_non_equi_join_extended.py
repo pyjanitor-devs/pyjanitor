@@ -44,25 +44,10 @@ from janitor.functions._conditional_join._helpers import (
     _not_equal_layout_positions,
     _prepare_not_equal_anchor,
     _prepare_range_anchor,
-    _RangeAnchor,
     greater_than_join_types,
     less_than_join_types,
 )
-
-_RANGE_PAIR_PRIORITY = (
-    (">", "<"),
-    (">", "<="),
-    (">=", "<"),
-    (">=", "<="),
-    (">", ">"),
-    (">", ">="),
-    (">=", ">"),
-    (">=", ">="),
-    ("<", "<"),
-    ("<", "<="),
-    ("<=", "<"),
-    ("<=", "<="),
-)
+from janitor.functions._conditional_join._range_join import _select_range_pair
 
 _EXTENDED_KERNEL_NAMES = {
     "int64": "single_join_extended_indices_int64",
@@ -137,49 +122,6 @@ def _empty_indices() -> dict:
     """
     empty = np.array([], dtype=np.int64)
     return {"left_index": empty, "right_index": empty}
-
-
-def _select_range_pair(
-    df: pd.DataFrame,
-    right: pd.DataFrame,
-    conditions: list[tuple],
-) -> tuple[int, int, _RangeAnchor] | None:
-    """Select the first compatible pair of range predicates.
-
-    The first selected predicate becomes the binary-search anchor. Its right
-    values establish the shared layout, so the second predicate is checked
-    only after its right values have been reordered by the anchor's carried
-    physical index. A pair is compatible when that second array is monotonic
-    increasing in the shared layout. If no pair is compatible,
-    callers retain the existing extended-kernel fallback.
-
-    Args:
-        df: Null-filtered left working dataframe.
-        right: Null-filtered right working dataframe.
-        conditions: User-ordered join predicates.
-
-    Returns:
-        ``(anchor_position, second_position, anchor)`` for the first
-        compatible pair, or ``None`` when no pair can establish the optimized
-        shared layout.
-    """
-    for anchor_op, second_op in _RANGE_PAIR_PRIORITY:
-        for anchor_position, (left_on, right_on, operation) in enumerate(conditions):
-            if operation != anchor_op:
-                continue
-            anchor = _prepare_range_anchor(df[left_on], right[right_on])
-            if anchor is None:
-                continue
-            for second_position, (_, second_right_on, residual_op) in enumerate(
-                conditions
-            ):
-                if second_position == anchor_position or residual_op != second_op:
-                    continue
-                second_right = right.loc[anchor.right_index, second_right_on]
-                second_is_monotonic = second_right.is_monotonic_increasing
-                if second_is_monotonic:
-                    return anchor_position, second_position, anchor
-    return None
 
 
 def _build_residual_predicate(

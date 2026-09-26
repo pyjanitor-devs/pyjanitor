@@ -15,6 +15,23 @@ import pandas as pd
 from janitor.functions._conditional_join._helpers import (
     _convert_array_to_numpy,
     _maybe_remove_nulls_from_dataframe,
+    _prepare_range_anchor,
+    _RangeAnchor,
+)
+
+_RANGE_PAIR_PRIORITY = (
+    (">", "<"),
+    (">", "<="),
+    (">=", "<"),
+    (">=", "<="),
+    (">", ">"),
+    (">", ">="),
+    (">=", ">"),
+    (">=", ">="),
+    ("<", "<"),
+    ("<", "<="),
+    ("<=", "<"),
+    ("<=", "<="),
 )
 
 _RANGE_KERNELS = {
@@ -29,6 +46,47 @@ _RANGE_KERNELS = {
     "float64": janitor_rs.range_join_indices_f64,
     "float32": janitor_rs.range_join_indices_f32,
 }
+
+
+def _select_range_pair(
+    df: pd.DataFrame,
+    right: pd.DataFrame,
+    conditions: list[tuple],
+) -> tuple[int, int, _RangeAnchor] | None:
+    """Select the first compatible pair of range predicates.
+
+    This is dual-range preparation, so it belongs to the range-join module.
+    The selected first predicate establishes the shared sorted right layout;
+    the second predicate is reordered through that layout and must also be
+    monotonic increasing before the pair can use the optimized Rust range
+    kernel.
+
+    Args:
+        df: Null-filtered left working dataframe.
+        right: Null-filtered right working dataframe.
+        conditions: User-ordered range predicates.
+
+    Returns:
+        ``(anchor_position, second_position, anchor)`` for the first
+        compatible pair, or ``None`` when no pair can establish a shared
+        ascending right layout.
+    """
+    for anchor_op, second_op in _RANGE_PAIR_PRIORITY:
+        for anchor_position, (left_on, right_on, operation) in enumerate(conditions):
+            if operation != anchor_op:
+                continue
+            anchor = _prepare_range_anchor(df[left_on], right[right_on])
+            if anchor is None:
+                continue
+            for second_position, (_, second_right_on, residual_op) in enumerate(
+                conditions
+            ):
+                if second_position == anchor_position or residual_op != second_op:
+                    continue
+                second_right = right.loc[anchor.right_index, second_right_on]
+                if second_right.is_monotonic_increasing:
+                    return anchor_position, second_position, anchor
+    return None
 
 
 def _get_indices(
@@ -55,10 +113,6 @@ def _get_indices(
     if df is None or right is None:
         empty = np.array([], dtype=np.int64)
         return {"left_index": empty, "right_index": empty}
-
-    from janitor.functions._conditional_join._anchor_non_equi_join_extended import (
-        _select_range_pair,
-    )
 
     selected = _select_range_pair(df=df, right=right, conditions=conditions)
     if selected is None:

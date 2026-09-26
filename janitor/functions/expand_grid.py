@@ -400,9 +400,8 @@ def _expand_groupby(grouped: DataFrameGroupBy, columns: tuple, sort: bool):
         headers = out.columns.tolist()
         return out.sort_values(headers)
     return out
+
     
-
-
 def _build_pandas_objects_for_expand(df: pd.DataFrame, columns: tuple) -> list:
     """
     Build pandas_objects for expand().

@@ -320,6 +320,7 @@ def test_extension_array():
     actual = reduce(func, others)
     assert_frame_equal(expected, actual, check_dtype=False)
 
+
 def test_expand_groupby_join():
     """Test grouped expand output, ordering, duplicates, and sorting."""
     df = pd.DataFrame(

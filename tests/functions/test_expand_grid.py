@@ -319,3 +319,56 @@ def test_extension_array():
     func = lambda x, y: pd.merge(x, y, how="cross")  # noqa: E731
     actual = reduce(func, others)
     assert_frame_equal(expected, actual, check_dtype=False)
+
+def test_expand_groupby_join():
+    """Test grouped expand output, ordering, duplicates, and sorting."""
+    df = pd.DataFrame(
+        {
+            "group": [
+                "A", "A", "A", "A",
+                "B", "B", "B",
+                "C", "C",
+            ],
+            "year": [
+                2020, 2020, 2021, 2021,
+                2020, 2021, 2021,
+                2021, 2021,
+            ],
+            "size": [
+                "S", "S", "M", "M",
+                "L", "L", "L",
+                "S", "M",
+            ],
+        }
+    )
+    grouped = df.groupby("group")
+    columns = ("year", "size")
+
+    result = grouped.expand(*columns, sort=False)
+    expected = pd.DataFrame(
+        {
+            "year": [
+                2020, 2020, 2021, 2021,
+                2020, 2021,
+                2021, 2021,
+            ],
+            "size": [
+                "S", "M", "S", "M",
+                "L", "L",
+                "S", "M",
+            ],
+        },
+        index=pd.Index(
+            ["A", "A", "A", "A", "B", "B", "C", "C"],
+            name="group",
+        ),
+    )
+    pd.testing.assert_frame_equal(result, expected)
+    sorted_result = grouped.expand(*columns, sort=True)
+    expected_sorted = expected.sort_values(
+        ["year", "size"]
+    )
+    pd.testing.assert_frame_equal(
+        sorted_result,
+        expected_sorted,
+    )

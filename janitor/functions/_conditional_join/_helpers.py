@@ -165,6 +165,46 @@ def _convert_array_to_numpy(
     return array
 
 
+def _build_residual_predicate(
+    left: pd.Series, right: pd.Series, operation: str
+) -> tuple:
+    """Build one residual predicate in the Rust tuple format.
+
+    Residual arrays are already aligned to the anchor's physical layout. This
+    helper only converts their values and, for ``!=``, attaches authoritative
+    null masks; it does not sort, filter, or reset either series.
+
+    Args:
+        left: Left residual series in anchor-aligned physical order.
+        right: Right residual series in the same aligned order.
+        operation: String comparison operator.
+
+    Returns:
+        A three-element ordinary predicate tuple or the six-element nullable
+        ``!=`` tuple expected by the Rust parser.
+    """
+    left_array = _convert_array_to_numpy(array=left._values)
+    right_array = _convert_array_to_numpy(array=right._values)
+    if operation != "!=":
+        return left_array, right_array, operation
+
+    left_mask, right_mask, is_extension_array = _get_boolean_args_for_ne(
+        op=operation,
+        left=left,
+        right=right,
+    )
+    if left_mask is None and right_mask is None:
+        return left_array, right_array, operation
+    return (
+        left_array,
+        left_mask,
+        right_array,
+        right_mask,
+        bool(is_extension_array),
+        operation,
+    )
+
+
 @dataclass(frozen=True)
 class _NotEqualAnchor:
     """Prepared first-predicate data for a null-aware ``!=`` comparison.

@@ -638,6 +638,25 @@ def _conditional_join_compute(
                 reverse=reverse,
                 return_matched=return_matched,
             )
+        if (
+            not all_not_equal_check
+            and le_lt_check
+            and _range_join._can_use_dual_range(
+                df=df,
+                right=right,
+                conditions=list(conditions),
+            )
+        ):
+            range_result = _range_join._aggregate_extended(
+                df=df,
+                right=right,
+                conditions=list(conditions),
+                aggfunc=aggfunc,
+                reverse=reverse,
+                return_matched=return_matched,
+            )
+            if range_result is not None:
+                return range_result
         return _anchor_non_equi_join_extended._aggregate_extended(
             df=df,
             right=right,
@@ -678,6 +697,26 @@ def _conditional_join_compute(
                 df=matching_df,
                 right=matching_right,
                 conditions=conditions,
+                keep=keep,
+                return_materialized_indices=return_building_blocks or bool(aggfunc),
+            )
+            if indices is None:
+                indices = _anchor_non_equi_join_extended._get_indices(
+                    df=matching_df,
+                    right=matching_right,
+                    conditions=conditions,
+                    keep=keep,
+                    return_materialized_indices=return_building_blocks or bool(aggfunc),
+                )
+        elif _range_join._can_use_dual_range(
+            df=matching_df,
+            right=matching_right,
+            conditions=list(conditions),
+        ):
+            indices = _range_join._get_extended_indices(
+                df=matching_df,
+                right=matching_right,
+                conditions=list(conditions),
                 keep=keep,
                 return_materialized_indices=return_building_blocks or bool(aggfunc),
             )

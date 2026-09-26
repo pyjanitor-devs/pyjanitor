@@ -38,6 +38,7 @@ from janitor.functions._conditional_join._aggregation_helpers import (
     _select_aggregation_kernel,
 )
 from janitor.functions._conditional_join._helpers import (
+    _build_residual_predicate,
     _convert_array_to_numpy,
     _get_boolean_args_for_ne,
     _maybe_remove_nulls_from_dataframe,
@@ -47,7 +48,6 @@ from janitor.functions._conditional_join._helpers import (
     greater_than_join_types,
     less_than_join_types,
 )
-from janitor.functions._conditional_join._range_join import _select_range_pair
 
 _EXTENDED_KERNEL_NAMES = {
     "int64": "single_join_extended_indices_int64",
@@ -122,54 +122,6 @@ def _empty_indices() -> dict:
     """
     empty = np.array([], dtype=np.int64)
     return {"left_index": empty, "right_index": empty}
-
-
-def _build_residual_predicate(
-    left: pd.Series, right: pd.Series, operation: str
-) -> tuple:
-    """Build one residual predicate in the Rust tuple format.
-
-    Residual arrays remain in the complete physical layout. Only ``!=`` needs
-    additional null metadata; ordinary comparisons use the compact
-    ``(left_values, right_values, operation)`` representation.
-
-    The left and right series must already be aligned to the same physical
-    candidate layout. Rust reuses one candidate position for every residual,
-    so this helper must not independently reset, sort, or drop rows. Null
-    masks are authoritative: ``True`` means that the corresponding physical
-    value is null. Rust does not infer nullness from the value, including
-    ``NaN``. For pandas extension arrays, the extension flag preserves
-    nullable ``!=`` semantics.
-
-    Args:
-        left: Left residual series already aligned to the candidate layout.
-        right: Right residual series already aligned to the candidate layout.
-        operation: String comparison operator.
-
-    Returns:
-        A three-element ordinary predicate tuple or the six-element nullable
-        ``!=`` tuple expected by the Rust parser.
-    """
-    left_array = _convert_array_to_numpy(array=left._values)
-    right_array = _convert_array_to_numpy(array=right._values)
-    if operation != "!=":
-        return left_array, right_array, operation
-
-    left_mask, right_mask, is_extension_array = _get_boolean_args_for_ne(
-        op=operation,
-        left=left,
-        right=right,
-    )
-    if left_mask is None and right_mask is None:
-        return left_array, right_array, operation
-    return (
-        left_array,
-        left_mask,
-        right_array,
-        right_mask,
-        bool(is_extension_array),
-        operation,
-    )
 
 
 def _get_all_not_equal_indices(
@@ -269,10 +221,10 @@ def _aggregate_extended(
 
     If every predicate is ``!=``, the first predicate supplies the null-aware
     candidate stream and later ``!=`` predicates filter those candidates. In
-    a mixed call, the first compatible range pair supplies intersected
-    binary-search windows and every remaining predicate filters candidates
-    inside those windows. If no compatible pair exists, the ordinary extended
-    range path remains the correctness-preserving fallback.
+    In a mixed call, the first range predicate supplies the single binary-
+    search window and every remaining predicate filters candidates inside that
+    window. Dual-range calls are dispatched to ``_range_join`` before this
+    function is entered.
     Aggregation occurs while candidates are evaluated; no flat pair index is
     materialized.
 
@@ -292,8 +244,8 @@ def _aggregate_extended(
         right: Right dataframe with a unique physical ``RangeIndex``.
         conditions: Join predicates in user order. An all-``!=`` call must
             contain only ``!=`` operators. A mixed call must contain at least
-            one range predicate; two compatible range predicates are preferred
-            for the optimized anchor layout.
+            one range predicate; dual-range calls are handled by the dedicated
+            range module.
         aggfunc: Non-empty ``(column, operation)`` requests for ``sum``,
             ``prod``, ``min``, ``max``, ``count``, or ``size``.
         reverse: When false, aggregate right-side values into left output
@@ -394,38 +346,22 @@ def _aggregate_extended(
             aggfunc=aggfunc,
         )
 
-    selected_pair = _select_range_pair(
-        df=filtered_df,
-        right=filtered_right,
-        conditions=conditions,
+    # This module owns one range anchor plus residual predicates. Calls with
+    # two compatible range anchors are dispatched by `_range_join` before this
+    # function is entered.
+    first_position = next(
+        position
+        for position, (_, _, operation) in enumerate(conditions)
+        if operation in less_than_join_types.union(greater_than_join_types)
     )
-    if selected_pair is None:
-        # Neither range predicate can share an ascending right layout. Keep
-        # this call on the general extended fallback; the optimized
-        # range-join kernels must never receive an unsorted P2 array.
-        first_position = next(
-            position
-            for position, (_, _, operation) in enumerate(conditions)
-            if operation in less_than_join_types.union(greater_than_join_types)
-        )
-        first_left_on, first_right_on, first_operation = conditions[first_position]
-        anchor = _prepare_range_anchor(
-            left=filtered_df[first_left_on],
-            right=filtered_right[first_right_on],
-        )
-        residual_positions = [
-            position
-            for position in range(len(conditions))
-            if position != first_position
-        ]
-    else:
-        first_position, second_position, anchor = selected_pair
-        first_operation = conditions[first_position][2]
-        residual_positions = [second_position] + [
-            position
-            for position in range(len(conditions))
-            if position not in {first_position, second_position}
-        ]
+    first_left_on, first_right_on, first_operation = conditions[first_position]
+    anchor = _prepare_range_anchor(
+        left=filtered_df[first_left_on],
+        right=filtered_right[first_right_on],
+    )
+    residual_positions = [
+        position for position in range(len(conditions)) if position != first_position
+    ]
     if anchor is None:
         return _empty_aggregation_result(
             source=right if not reverse else df,

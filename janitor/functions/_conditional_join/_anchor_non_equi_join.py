@@ -24,9 +24,8 @@ from janitor.functions._conditional_join._helpers import (
     _not_equal_layout_positions,
     _prepare_not_equal_anchor,
     _prepare_range_anchor,
-    greater_than_join_types,
-    less_than_join_types,
 )
+from janitor.functions.utils import greater_than_join_types, less_than_join_types
 
 _SINGLE_JOIN_KERNELS = {
     "int64": janitor_rs.single_join_indices_int64,

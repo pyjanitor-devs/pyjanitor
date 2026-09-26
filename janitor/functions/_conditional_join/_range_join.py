@@ -172,8 +172,23 @@ def _select_range_pair(
                     or second_condition.op != second_op
                 ):
                     continue
+                # Both anchors are consumed by one dtype-specialized Rust
+                # kernel. If their value dtypes differ, this pair cannot be
+                # represented by that kernel and must use the single-anchor
+                # residual path instead.
+                second_left = _convert_array_to_numpy(
+                    df.loc[anchor.left_index, second_condition.left]._values
+                )
                 second_right = right.loc[anchor.right_index, second_condition.right]
-                if second_right.is_monotonic_increasing:
+                if (
+                    pd.api.types.is_dtype_equal(
+                        anchor.left_array.dtype, second_left.dtype
+                    )
+                    and pd.api.types.is_dtype_equal(
+                        anchor.right_array.dtype, second_right.dtype
+                    )
+                    and second_right.is_monotonic_increasing
+                ):
                     return anchor_position, second_position, anchor
     return None
 

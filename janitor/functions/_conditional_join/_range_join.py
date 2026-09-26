@@ -34,7 +34,6 @@ from janitor.functions._conditional_join._aggregation_helpers import (
     _materialize_aggregation_result,
 )
 from janitor.functions._conditional_join._helpers import (
-    JoinCondition,
     _build_residual_predicate,
     _convert_array_to_numpy,
     _maybe_remove_nulls_from_dataframe,
@@ -61,7 +60,7 @@ _RANGE_PAIR_PRIORITY = (
 def _select_range_pair(
     df: pd.DataFrame,
     right: pd.DataFrame,
-    conditions: list[JoinCondition],
+    conditions: list[tuple],
 ) -> tuple[int, int, _RangeAnchor] | None:
     """Select the first compatible pair of range predicates.
 
@@ -92,18 +91,18 @@ def _select_range_pair(
 
     for anchor_op, second_op in _RANGE_PAIR_PRIORITY:
         for anchor_position, condition in enumerate(conditions):
-            if condition.op != anchor_op:
+            if condition[2] != anchor_op:
                 continue
-            anchor = _prepare_range_anchor(df[condition.left], right[condition.right])
+            anchor = _prepare_range_anchor(df[condition[0]], right[condition[1]])
             if anchor is None:
                 continue
             for second_position, second_condition in enumerate(conditions):
                 if (
                     second_position == anchor_position
-                    or second_condition.op != second_op
+                    or second_condition[2] != second_op
                 ):
                     continue
-                second_right = right.loc[anchor.right_index, second_condition.right]
+                second_right = right.loc[anchor.right_index, second_condition[1]]
                 if second_right.is_monotonic_increasing:
                     return anchor_position, second_position, anchor
     return None
@@ -112,7 +111,7 @@ def _select_range_pair(
 def _filtered_range_frames(
     df: pd.DataFrame,
     right: pd.DataFrame,
-    conditions: list[JoinCondition],
+    conditions: list[tuple],
 ) -> tuple[pd.DataFrame | None, pd.DataFrame | None]:
     """Return null-filtered working frames for range preparation.
 
@@ -131,10 +130,8 @@ def _filtered_range_frames(
         A pair ``(filtered_df, filtered_right)``. Either value is ``None``
         when every row is null in at least one required non-``!=`` column.
     """
-    left_columns = {condition.left for condition in conditions if condition.op != "!="}
-    right_columns = {
-        condition.right for condition in conditions if condition.op != "!="
-    }
+    left_columns = {condition[0] for condition in conditions if condition[2] != "!="}
+    right_columns = {condition[1] for condition in conditions if condition[2] != "!="}
     filtered_df = _maybe_remove_nulls_from_dataframe(df, left_columns)
     if filtered_df is None:
         # No left row can satisfy the required non-`!=` predicates, so the
@@ -147,7 +144,7 @@ def _filtered_range_frames(
 def _can_use_dual_range(
     df: pd.DataFrame,
     right: pd.DataFrame,
-    conditions: list[JoinCondition],
+    conditions: list[tuple],
 ) -> bool:
     """Report whether a multi-predicate call has a usable dual-range pair.
 
@@ -175,7 +172,7 @@ def _can_use_dual_range(
 def _get_extended_indices(
     df: pd.DataFrame,
     right: pd.DataFrame,
-    conditions: list[JoinCondition],
+    conditions: list[tuple],
     keep: str,
     return_materialized_indices: bool,
 ) -> dict | None:
@@ -221,9 +218,9 @@ def _get_extended_indices(
     first = conditions[first_position]
     second = conditions[second_position]
     second_left = _convert_array_to_numpy(
-        filtered_df.loc[anchor.left_index, second.left]._values
+        filtered_df.loc[anchor.left_index, second[0]]._values
     )
-    second_right_series = filtered_right.loc[anchor.right_index, second.right]
+    second_right_series = filtered_right.loc[anchor.right_index, second[1]]
     second_right = _convert_array_to_numpy(array=second_right_series._values)
     predicates = [
         (
@@ -231,23 +228,23 @@ def _get_extended_indices(
             anchor.left_index,
             anchor.right_array,
             anchor.right_index,
-            first.op,
+            first[2],
         ),
         (
             second_left,
             anchor.left_index,
             second_right,
             anchor.right_index,
-            second.op,
+            second[2],
         ),
     ]
     for position, condition in enumerate(conditions):
         if position in {first_position, second_position}:
             continue
-        left_residual = filtered_df.loc[anchor.left_index, condition.left]
-        right_residual = filtered_right.loc[anchor.right_index, condition.right]
+        left_residual = filtered_df.loc[anchor.left_index, condition[0]]
+        right_residual = filtered_right.loc[anchor.right_index, condition[1]]
         predicates.append(
-            _build_residual_predicate(left_residual, right_residual, condition.op)
+            _build_residual_predicate(left_residual, right_residual, condition[2])
         )
     result = janitor_rs.range_join_extended_indices(predicates, keep)
     if result is None:
@@ -261,7 +258,7 @@ def _get_extended_indices(
 def _aggregate_extended(
     df: pd.DataFrame,
     right: pd.DataFrame,
-    conditions: list[JoinCondition],
+    conditions: list[tuple],
     aggfunc: list[tuple],
     reverse: bool,
     return_matched: bool,
@@ -310,10 +307,10 @@ def _aggregate_extended(
     first = conditions[first_position]
     second = conditions[second_position]
     second_left = _convert_array_to_numpy(
-        filtered_df.loc[anchor.left_index, second.left]._values
+        filtered_df.loc[anchor.left_index, second[0]]._values
     )
     second_right = _convert_array_to_numpy(
-        filtered_right.loc[anchor.right_index, second.right]._values
+        filtered_right.loc[anchor.right_index, second[1]]._values
     )
     source = (
         filtered_right.loc[anchor.right_index]
@@ -338,14 +335,14 @@ def _aggregate_extended(
             anchor.left_index,
             anchor.right_index,
             anchor.right_index_is_ordered,
-            first.op,
+            first[2],
         ),
         (
             second_left,
             anchor.left_index,
             second_right,
             anchor.right_index,
-            second.op,
+            second[2],
         ),
     ]
     for position, condition in enumerate(conditions):
@@ -353,9 +350,9 @@ def _aggregate_extended(
             continue
         predicates.append(
             _build_residual_predicate(
-                filtered_df.loc[anchor.left_index, condition.left],
-                filtered_right.loc[anchor.right_index, condition.right],
-                condition.op,
+                filtered_df.loc[anchor.left_index, condition[0]],
+                filtered_right.loc[anchor.right_index, condition[1]],
+                condition[2],
             )
         )
     # Exactly two anchors have no residual filtering and use the simpler
@@ -427,8 +424,8 @@ def _get_indices(
     if len(conditions) != 2:
         raise ValueError("range join requires exactly two predicates")
 
-    left_columns = {condition.left for condition in conditions}
-    right_columns = {condition.right for condition in conditions}
+    left_columns = {condition[0] for condition in conditions}
+    right_columns = {condition[1] for condition in conditions}
     df = _maybe_remove_nulls_from_dataframe(df, left_columns)
     right = _maybe_remove_nulls_from_dataframe(right, right_columns)
     if df is None or right is None:
@@ -445,8 +442,8 @@ def _get_indices(
     first_position, second_position, anchor = selected
     first = conditions[first_position]
     second = conditions[second_position]
-    second_left = df.loc[anchor.left_index, second.left]
-    second_right = right.loc[anchor.right_index, second.right]
+    second_left = df.loc[anchor.left_index, second[0]]
+    second_right = right.loc[anchor.right_index, second[1]]
     second_left_array = _convert_array_to_numpy(array=second_left._values)
     second_right_array = _convert_array_to_numpy(array=second_right._values)
     predicates = [
@@ -456,7 +453,7 @@ def _get_indices(
             anchor.right_array,
             anchor.right_index,
             anchor.right_index_is_ordered,
-            first.op,
+            first[2],
         ),
         (
             second_left_array,
@@ -464,7 +461,7 @@ def _get_indices(
             second_right_array,
             anchor.right_index,
             True,
-            second.op,
+            second[2],
         ),
     ]
     result = janitor_rs.range_join_indices(

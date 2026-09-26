@@ -35,6 +35,7 @@ from ._conditional_join import (
 from ._conditional_join._helpers import (
     _JoinOperator,
     _keep_output,
+    _normalize_conditions,
     greater_than_join_types,
     less_than_join_types,
 )
@@ -600,6 +601,10 @@ def _conditional_join_compute(
         reverse=reverse,
         join_algorithm=join_algorithm,
     )
+    # Keep the public tuple API stable, but use named immutable conditions
+    # throughout the internal routing layer. Tuple-style indexing remains
+    # supported by `JoinCondition` for legacy paths that have not migrated.
+    conditions = _normalize_conditions(conditions)
     eq_check = False
     le_lt_check = False
     all_not_equal_check = all(

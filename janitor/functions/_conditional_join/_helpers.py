@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Sequence
+from typing import Hashable, Sequence
 
 import janitor_rs
 import numpy as np
@@ -28,6 +28,59 @@ less_than_join_types = {
     _JoinOperator.LESS_THAN.value,
     _JoinOperator.LESS_THAN_OR_EQUAL.value,
 }
+
+
+@dataclass(frozen=True, slots=True)
+class JoinCondition:
+    """Normalized internal representation of one conditional-join predicate.
+
+    The public API continues to accept three-element tuples. PyJanitor converts
+    those tuples to this immutable object immediately after public validation,
+    so routing and preparation code can use descriptive attributes instead of
+    remembering whether field ``0``, ``1``, or ``2`` means the operator.
+
+    ``__iter__`` and ``__getitem__`` intentionally preserve the old tuple-like
+    behavior while the migration is in progress. Existing legacy and Numba
+    paths can therefore continue to unpack a condition, while new code should
+    prefer ``condition.left``, ``condition.right``, and ``condition.op``.
+
+    Args:
+        left: Left dataframe column label.
+        right: Right dataframe column label.
+        op: Comparison operator, such as ``"<"`` or ``"!="``.
+    """
+
+    left: Hashable
+    right: Hashable
+    op: str
+
+    def __iter__(self):
+        """Yield fields in the historical ``(left, right, op)`` order."""
+        yield self.left
+        yield self.right
+        yield self.op
+
+    def __getitem__(self, position: int):
+        """Return a field using the historical tuple positions."""
+        return (self.left, self.right, self.op)[position]
+
+
+def _normalize_conditions(conditions: Sequence[tuple]) -> list[JoinCondition]:
+    """Convert validated public condition tuples to immutable objects.
+
+    Args:
+        conditions: Three-element public condition tuples, or conditions that
+            have already been normalized by an internal caller.
+
+    Returns:
+        A new list containing one :class:`JoinCondition` per input predicate.
+    """
+    return [
+        condition if isinstance(condition, JoinCondition) else JoinCondition(*condition)
+        for condition in conditions
+    ]
+
+
 greater_than_join_types = {
     _JoinOperator.GREATER_THAN.value,
     _JoinOperator.GREATER_THAN_OR_EQUAL.value,

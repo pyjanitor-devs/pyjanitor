@@ -133,7 +133,7 @@ def _expected_single(left, right, reverse):
 
 @pytest.mark.parametrize("dtype", NUMERIC_DTYPES)
 @pytest.mark.parametrize("reverse", [False, True])
-def test_single_non_equi_join_aggregation_dispatches_all_numeric_dtypes(dtype, reverse):
+def test_anchor_non_equi_join_aggregation_dispatches_all_numeric_dtypes(dtype, reverse):
     """Every numeric dtype reaches the correct single Rust kernel."""
     left, right = _numeric_frames(dtype)
     actual = left.join_agg(
@@ -601,6 +601,35 @@ def test_extended_aggregation_returns_empty_when_residual_rejects_all():
     assert_frame_equal(expected, actual)
 
 
+def test_extended_aggregation_intersects_sorted_range_residuals():
+    """Sorted residual ranges narrow candidates before aggregation."""
+    left = pd.DataFrame({"first": [4], "second": [4]})
+    right = pd.DataFrame(
+        {
+            "first": [1, 3, 5, 7],
+            "second": [0, 1, 2, 6],
+            "value": [10, 20, 30, 40],
+        }
+    )
+
+    actual = left.join_agg(
+        right,
+        ("first", "first", "<"),
+        ("second", "second", "<"),
+        aggfunc=[("value", "size"), ("value", "sum")],
+    )
+
+    expected = pd.DataFrame(
+        {
+            ("value", "size"): pd.Series([1], dtype="int64"),
+            ("value", "sum"): pd.Series([40], dtype="int64"),
+        },
+        index=pd.Index([0]),
+    )
+    expected = _with_matched_level(expected, len(actual), np.array([True]))
+    assert_frame_equal(expected, actual)
+
+
 def test_all_not_equal_aggregation_rejects_regions_algorithm():
     """Regions does not support fused all-``!=`` aggregation."""
     left = pd.DataFrame({"left_key": [1, 2]})
@@ -1054,3 +1083,56 @@ def test_single_range_float32_aggregation_preserves_float32():
         np.isin(np.arange(len(actual)), expected.index),
     )
     assert_frame_equal(expected, actual)
+
+
+def test_dual_range_join_dispatches_each_anchor_dtype_independently():
+    """Different numeric anchor dtypes still use the dual-range Rust path."""
+    left = pd.DataFrame({"left_int": [2], "left_float": [6.0]})
+    right = pd.DataFrame(
+        {
+            "right_int": [1, 3, 5, 7],
+            "right_float": pd.Series([0.0, 2.0, 4.0, 6.0], dtype="float64"),
+        }
+    )
+
+    actual = left.conditional_join(
+        right,
+        ("left_int", "right_int", "<"),
+        ("left_float", "right_float", ">"),
+        keep="all",
+    )
+
+    expected = pd.DataFrame(
+        {
+            "left_int": [2, 2],
+            "left_float": [6.0, 6.0],
+            "right_int": [3, 5],
+            "right_float": [2.0, 4.0],
+        },
+        index=pd.RangeIndex(2),
+    )
+    assert_frame_equal(expected, actual)
+
+
+def test_dual_range_aggregation_dispatches_each_anchor_dtype_independently():
+    """Dual-range aggregation accepts independently typed range anchors."""
+    left = pd.DataFrame({"left_int": [2], "left_float": [6.0]})
+    right = pd.DataFrame(
+        {
+            "right_int": [1, 3, 5, 7],
+            "right_float": pd.Series([0.0, 2.0, 4.0, 6.0], dtype="float64"),
+            "value": [10, 20, 30, 40],
+        }
+    )
+
+    actual = left.join_agg(
+        right,
+        ("left_int", "right_int", "<"),
+        ("left_float", "right_float", ">"),
+        aggfunc=[("value", "sum"), ("value", "size")],
+        return_matched=True,
+    )
+
+    assert actual["value", "sum"].tolist() == [50]
+    assert actual["value", "size"].tolist() == [2]
+    assert actual.index.get_level_values("matched").tolist() == [True]

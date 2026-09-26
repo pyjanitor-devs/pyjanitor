@@ -11,6 +11,7 @@ from pandas.testing import assert_frame_equal
 
 import janitor as jn
 from janitor.functions._conditional_join import _le_ge_1_or_more
+from janitor.functions._conditional_join._helpers import _sort_if_not_monotonic
 from janitor.testing_utils.strategies import (
     conditional_df,
     conditional_right,
@@ -148,6 +149,62 @@ def test_multiple_conditions_preserve_non_condition_columns():
     assert_frame_equal(actual, expected)
 
 
+@pytest.mark.parametrize(
+    ("values", "expected_values", "expected_ordered"),
+    [
+        ([1, 2, 2, 4], [1, 2, 2, 4], True),
+        ([4, 2, 2, 1], [1, 2, 2, 4], False),
+        ([3, 1, 2, 1], [1, 1, 2, 3], False),
+    ],
+)
+def test_sort_if_not_monotonic_normalizes_order_and_preserves_index(
+    values, expected_values, expected_ordered
+):
+    """Normalize right values while retaining their value/index pairing."""
+    series = pd.Series(values, index=[10, 11, 12, 13])
+
+    actual, is_ordered = _sort_if_not_monotonic(series=series)
+
+    assert actual.tolist() == expected_values
+    assert is_ordered is expected_ordered
+    if values == [4, 2, 2, 1]:
+        assert actual.index.tolist() == [13, 12, 11, 10]
+    elif values == [3, 1, 2, 1]:
+        # Stable sorting keeps the original order of the duplicate value 1.
+        assert actual.index.tolist() == [11, 13, 12, 10]
+
+
+def test_multiple_sorted_range_predicates_match_cartesian_reference():
+    """Intersecting sorted range windows preserves the Cartesian result."""
+    left = pd.DataFrame({"first": [2, 4], "second": [3, 1], "payload": [10, 20]})
+    right = pd.DataFrame(
+        {
+            "first_r": [1, 3, 5, 7],
+            "second_r": [0, 1, 2, 6],
+            "value": [10, 20, 30, 40],
+        }
+    )
+    expected = (
+        left.reset_index(names="left_position")
+        .merge(right.reset_index(names="right_position"), how="cross")
+        .loc[lambda frame: frame.first.lt(frame.first_r)]
+        .loc[lambda frame: frame.second.lt(frame.second_r)]
+    )
+
+    actual = left.conditional_join(
+        right,
+        ("first", "first_r", "<"),
+        ("second", "second_r", "<"),
+    )
+
+    expected = expected[["first", "second", "payload", "first_r", "second_r", "value"]]
+    actual = actual.sort_values(
+        ["payload", "first", "second", "first_r", "second_r", "value"],
+        ignore_index=True,
+    )
+    assert_frame_equal(expected.reset_index(drop=True), actual)
+
+
 def test_df_columns_right_columns_both_None(dummy, series):
     """Raise if both df_columns and right_columns is None"""
     with pytest.raises(
@@ -276,8 +333,11 @@ def test_extended_range_filters_before_keep_and_building_blocks():
     )
     assert np.array_equal(all_matches["left_index"], np.array([0, 0]))
     assert np.array_equal(all_matches["right_index"], np.array([2, 3]))
-    assert np.array_equal(building_blocks["left_index"], all_matches["left_index"])
-    assert np.array_equal(building_blocks["right_index"], all_matches["right_index"])
+    # The second right column is not monotonic in the first right layout, so
+    # this call deliberately uses the correctness-preserving extended
+    # fallback and returns materialized pairs.
+    assert np.array_equal(building_blocks["left_index"], np.array([0, 0]))
+    assert np.array_equal(building_blocks["right_index"], np.array([2, 3]))
 
 
 def test_extended_range_then_not_equal_filters_windows():
@@ -451,8 +511,10 @@ def test_extended_mixed_keep_options_and_building_blocks():
     assert np.array_equal(first_matches["right_index"], np.array([1, 2]))
     assert np.array_equal(last_matches["left_index"], np.array([0, 1]))
     assert np.array_equal(last_matches["right_index"], np.array([2, 2]))
-    assert np.array_equal(building_blocks["left_index"], all_matches["left_index"])
-    assert np.array_equal(building_blocks["right_index"], all_matches["right_index"])
+    assert np.array_equal(building_blocks["left_index"], np.array([0, 1]))
+    assert np.array_equal(building_blocks["right_index"], np.array([0, 1, 2]))
+    assert np.array_equal(building_blocks["starts"], np.array([1, 2]))
+    assert np.array_equal(building_blocks["ends"], np.array([3, 3]))
 
 
 def test_extended_mixed_all_null_non_ne_side_has_no_matches():

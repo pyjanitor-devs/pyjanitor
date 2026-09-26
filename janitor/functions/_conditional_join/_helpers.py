@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Sequence
+from typing import Hashable, Sequence
 
 import janitor_rs
 import numpy as np
@@ -28,6 +28,59 @@ less_than_join_types = {
     _JoinOperator.LESS_THAN.value,
     _JoinOperator.LESS_THAN_OR_EQUAL.value,
 }
+
+
+@dataclass(frozen=True, slots=True)
+class JoinCondition:
+    """Normalized internal representation of one conditional-join predicate.
+
+    The public API continues to accept three-element tuples. PyJanitor converts
+    those tuples to this immutable object immediately after public validation,
+    so routing and preparation code can use descriptive attributes instead of
+    remembering whether field ``0``, ``1``, or ``2`` means the operator.
+
+    ``__iter__`` and ``__getitem__`` intentionally preserve the old tuple-like
+    behavior while the migration is in progress. Existing legacy and Numba
+    paths can therefore continue to unpack a condition, while new code should
+    prefer ``condition.left``, ``condition.right``, and ``condition.op``.
+
+    Args:
+        left: Left dataframe column label.
+        right: Right dataframe column label.
+        op: Comparison operator, such as ``"<"`` or ``"!="``.
+    """
+
+    left: Hashable
+    right: Hashable
+    op: str
+
+    def __iter__(self):
+        """Yield fields in the historical ``(left, right, op)`` order."""
+        yield self.left
+        yield self.right
+        yield self.op
+
+    def __getitem__(self, position: int):
+        """Return a field using the historical tuple positions."""
+        return (self.left, self.right, self.op)[position]
+
+
+def _normalize_conditions(conditions: Sequence[tuple]) -> list[JoinCondition]:
+    """Convert validated public condition tuples to immutable objects.
+
+    Args:
+        conditions: Three-element public condition tuples, or conditions that
+            have already been normalized by an internal caller.
+
+    Returns:
+        A new list containing one :class:`JoinCondition` per input predicate.
+    """
+    return [
+        condition if isinstance(condition, JoinCondition) else JoinCondition(*condition)
+        for condition in conditions
+    ]
+
+
 greater_than_join_types = {
     _JoinOperator.GREATER_THAN.value,
     _JoinOperator.GREATER_THAN_OR_EQUAL.value,
@@ -60,15 +113,22 @@ def _null_checks_cond_join(series: pd.Series) -> tuple | None:
     return series, any_nulls.any()
 
 
-def _sort_if_not_monotonic(series: pd.Series) -> pd.Series | None:
+def _sort_if_not_monotonic(series: pd.Series) -> tuple[pd.Series, bool]:
     """
-    Sort the pandas `series` if it is not monotonic increasing
+    Normalize a series to ascending order and report its original ordering.
+
+    An already increasing series is returned unchanged. A decreasing series
+    is reversed, which preserves its values and index pairing without a full
+    sort. Other non-monotonic series use a stable sort so duplicate values
+    retain deterministic physical order.
     """
 
     is_sorted = series.is_monotonic_increasing
-    if not is_sorted:
-        series = series.sort_values(kind="stable")
-    return series, is_sorted
+    if is_sorted:
+        return series, True
+    if series.is_monotonic_decreasing:
+        return series.iloc[::-1], False
+    return series.sort_values(kind="stable"), False
 
 
 def _keep_output(keep: str, left: np.ndarray, right: np.ndarray):
@@ -156,6 +216,46 @@ def _convert_array_to_numpy(
     ):
         array = array.view(np.int64)
     return array
+
+
+def _build_residual_predicate(
+    left: pd.Series, right: pd.Series, operation: str
+) -> tuple:
+    """Build one residual predicate in the Rust tuple format.
+
+    Residual arrays are already aligned to the anchor's physical layout. This
+    helper only converts their values and, for ``!=``, attaches authoritative
+    null masks; it does not sort, filter, or reset either series.
+
+    Args:
+        left: Left residual series in anchor-aligned physical order.
+        right: Right residual series in the same aligned order.
+        operation: String comparison operator.
+
+    Returns:
+        A three-element ordinary predicate tuple or the six-element nullable
+        ``!=`` tuple expected by the Rust parser.
+    """
+    left_array = _convert_array_to_numpy(array=left._values)
+    right_array = _convert_array_to_numpy(array=right._values)
+    if operation != "!=":
+        return left_array, right_array, operation
+
+    left_mask, right_mask, is_extension_array = _get_boolean_args_for_ne(
+        op=operation,
+        left=left,
+        right=right,
+    )
+    if left_mask is None and right_mask is None:
+        return left_array, right_array, operation
+    return (
+        left_array,
+        left_mask,
+        right_array,
+        right_mask,
+        bool(is_extension_array),
+        operation,
+    )
 
 
 @dataclass(frozen=True)

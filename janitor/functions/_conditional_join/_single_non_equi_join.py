@@ -24,9 +24,8 @@ from janitor.functions._conditional_join._helpers import (
     _not_equal_layout_positions,
     _prepare_not_equal_anchor,
     _prepare_range_anchor,
-    greater_than_join_types,
-    less_than_join_types,
 )
+from janitor.functions.utils import greater_than_join_types, less_than_join_types
 
 _SINGLE_JOIN_KERNELS = {
     "int64": janitor_rs.single_join_indices_int64,
@@ -42,7 +41,7 @@ _SINGLE_JOIN_KERNELS = {
 }
 
 # Each entry is `(forward, reverse)`. The explicit suffixes mirror the PyO3
-# exports in `single_non_equi_join_agg.rs`, including Rust's `f64`/`f32` spelling.
+# exports in `anchor_non_equi_join_agg.rs`, including Rust's `f64`/`f32` spelling.
 _SINGLE_AGGREGATION_KERNELS = {
     "int64": (
         janitor_rs.single_join_aggregate_int64,
@@ -87,7 +86,7 @@ _SINGLE_AGGREGATION_KERNELS = {
 }
 
 
-def _rust_single_non_equi_join(
+def _rust_anchor_non_equi_join(
     left: pd.Series,
     right: pd.Series,
     op: str,
@@ -176,7 +175,7 @@ def _rust_single_non_equi_join(
     return result
 
 
-def _single_non_equi_join(
+def _anchor_non_equi_join(
     df: pd.DataFrame,
     right: pd.DataFrame,
     condition: tuple,
@@ -218,7 +217,7 @@ def _single_non_equi_join(
         if anchor is None:
             empty = np.array([], dtype=np.int64)
             return {"left_index": empty, "right_index": empty}
-        return _rust_single_non_equi_join(
+        return _rust_anchor_non_equi_join(
             left=anchor.left_values,
             right=anchor.right_values,
             op=op,
@@ -229,7 +228,7 @@ def _single_non_equi_join(
 
     if op == "!=":
         anchor = _prepare_not_equal_anchor(left=left_series, right=right_series)
-        return _rust_single_non_equi_join(
+        return _rust_anchor_non_equi_join(
             left=anchor.left_values,
             right=anchor.right_values,
             op=op,

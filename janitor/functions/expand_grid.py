@@ -377,28 +377,31 @@ def _expand_groupby(grouped: DataFrameGroupBy, columns: tuple, sort: bool):
     group_keys = list(grouped._grouper.names)
     group_order = grouped._grouper.result_index
     df = grouped.obj
-    
     tables = []
     for column in columns:
-        spec = [*group_keys, column]
-        table = _build_pandas_objects_for_expand(df=df, columns=(spec,),)[0]
-        tables.append(table)
-    
+        if is_scalar(column) or isinstance(column, tuple):
+            spec = [*group_keys, column]
+            table = _build_pandas_objects_for_expand(df=df, columns=(spec,))[0]
+            tables.append(table)
+        elif isinstance(column, dict):
+            group_table = df[group_keys].drop_duplicates()
+            dict_objects = [pd.Series(values, name=label) for label, values in column.items()]
+            dict_table = pd.DataFrame(_compute_cartesian_product(inputs=dict_objects, sort=False))
+            tables.append(group_table.merge(dict_table, how="cross"))
+        elif isinstance(column, pd.Series):
+            group_table = df[group_keys].drop_duplicates()
+            tables.append(group_table.merge(column.to_frame(), how="cross"))
     out = tables[0]
     for table in tables[1:]:
-        out = out.merge(table, on=group_keys, how="inner", sort=False,)
-    
-    # Restore the original group order used by GroupBy
+        out = out.merge(table, on=group_keys, how="inner", sort=False)
     if len(group_keys) == 1:
         order = group_order.get_indexer(out[group_keys[0]])
     else:
         out_groups = pd.MultiIndex.from_frame(out[group_keys])
         order = group_order.get_indexer(out_groups)
-    out = out.iloc[np.argsort(order, kind="stable")]
-    out = out.set_index(group_keys)
+    out = out.iloc[np.argsort(order, kind="stable")].set_index(group_keys)
     if sort:
-        headers = out.columns.tolist()
-        return out.sort_values(headers)
+        return out.sort_values(out.columns.tolist())
     return out
 
     

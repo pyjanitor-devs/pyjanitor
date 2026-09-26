@@ -344,8 +344,8 @@ def test_expand_groupby_join():
     )
     grouped = df.groupby("group")
     columns = ("year", "size")
-
     result = grouped.expand(*columns, sort=False)
+
     expected = pd.DataFrame(
         {
             "year": [
@@ -365,11 +365,42 @@ def test_expand_groupby_join():
         ),
     )
     pd.testing.assert_frame_equal(result, expected)
+
     sorted_result = grouped.expand(*columns, sort=True)
-    expected_sorted = expected.sort_values(
-        ["year", "size"]
+    expected_sorted = expected.sort_values(["year", "size"])
+    pd.testing.assert_frame_equal(sorted_result, expected_sorted)
+
+    # Test dictionary input
+    dict_columns = (
+        {
+            "year": [2022, 2023],
+            "size": ["S", "M"],
+        },
     )
-    pd.testing.assert_frame_equal(
-        sorted_result,
-        expected_sorted,
+    dict_result = grouped.expand(*dict_columns, sort=False)
+    dict_expected = pd.DataFrame(
+        {
+            "year": [2022, 2022, 2023, 2023] * 3,
+            "size": ["S", "M", "S", "M"] * 3,
+        },
+        index=pd.Index(
+            ["A", "A", "A", "A",
+             "B", "B", "B", "B",
+             "C", "C", "C", "C"],
+            name="group",
+        ),
     )
+    pd.testing.assert_frame_equal(dict_result, dict_expected)
+
+    # Test Series input
+    series = pd.Series([1, 2], name="value")
+    series_result = grouped.expand(series, sort=False)
+    series_expected = pd.DataFrame(
+        {"value": [1, 2] * 3},
+        index=pd.Index(
+            ["A", "A", "B", "B", "C", "C"],
+            name="group",
+        ),
+    )
+    pd.testing.assert_frame_equal(series_result, series_expected)
+    

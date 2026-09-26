@@ -204,10 +204,13 @@ def _filtered_range_frames(
     right_columns = {
         right_on for _, right_on, operation in conditions if operation != "!="
     }
-    return (
-        _maybe_remove_nulls_from_dataframe(df, left_columns),
-        _maybe_remove_nulls_from_dataframe(right, right_columns),
-    )
+    filtered_df = _maybe_remove_nulls_from_dataframe(df, left_columns)
+    if filtered_df is None:
+        # No left row can satisfy the required non-`!=` predicates, so the
+        # right frame does not need to be inspected or copied.
+        return None, None
+    filtered_right = _maybe_remove_nulls_from_dataframe(right, right_columns)
+    return filtered_df, filtered_right
 
 
 def _can_use_dual_range(

@@ -1,10 +1,11 @@
-"""Multiple conditional-join indices and aggregations backed by janitor-rs.
+"""Single-anchor and all-``!=`` conditional joins backed by janitor-rs.
 
-Mixed joins are range-led: the first range predicate creates a candidate
-window and later predicates filter it. Two-range window intersection belongs
-to the dedicated range-join implementation. When every predicate is ``!=``,
-the first predicate creates flat physical position pairs and later predicates
-filter those pairs directly.
+This module is deliberately narrower than its historical “extended” name
+suggests. A range-led call here has exactly one binary-search anchor; every
+remaining predicate is a residual filter evaluated against that anchor's
+candidate window. Dual-range calls are routed to ``_range_join``, which owns
+the second sorted right array, window intersection, and range aggregation
+dispatch. All-``!=`` calls use their null-aware flat candidate stream here.
 
 The Rust boundary uses two first-predicate tuple shapes:
 
@@ -217,14 +218,15 @@ def _aggregate_extended(
     reverse: bool,
     return_matched: bool,
 ) -> pd.DataFrame:
-    """Run fused Rust aggregation for multiple join predicates.
+    """Run fused Rust aggregation for one anchor plus residual predicates.
 
     If every predicate is ``!=``, the first predicate supplies the null-aware
     candidate stream and later ``!=`` predicates filter those candidates. In
     In a mixed call, the first range predicate supplies the single binary-
     search window and every remaining predicate filters candidates inside that
     window. Dual-range calls are dispatched to ``_range_join`` before this
-    function is entered.
+    function is entered. If a pair cannot satisfy the dual-range sorted-layout
+    contract, this function remains the correctness-preserving fallback.
     Aggregation occurs while candidates are evaluated; no flat pair index is
     materialized.
 
@@ -242,10 +244,11 @@ def _aggregate_extended(
     Args:
         df: Left dataframe with a unique physical ``RangeIndex``.
         right: Right dataframe with a unique physical ``RangeIndex``.
-        conditions: Join predicates in user order. An all-``!=`` call must
-            contain only ``!=`` operators. A mixed call must contain at least
-            one range predicate; dual-range calls are handled by the dedicated
-            range module.
+        conditions: Join predicates in user order. An all-``!=`` call is
+            handled by the null-aware branch. A mixed call must contain at
+            least one range predicate; this function uses the first range
+            predicate as its only anchor and evaluates all other predicates as
+            residuals.
         aggfunc: Non-empty ``(column, operation)`` requests for ``sum``,
             ``prod``, ``min``, ``max``, ``count``, or ``size``.
         reverse: When false, aggregate right-side values into left output
@@ -428,12 +431,12 @@ def _get_indices(
     keep: str,
     return_materialized_indices: bool,
 ) -> dict:
-    """Build multiple-condition indices with the Rust extended kernel.
+    """Build one-anchor indices with the Rust extended kernel.
 
     Mixed joins use the first range predicate to establish the filtered,
     sorted physical layout. Every later condition is reordered to that same
-    layout before Rust sees it and is passed as a residual filter. Two-range
-    window intersection belongs to the dedicated range-join path. All-``!=``
+    layout before Rust sees it and is passed as a residual filter. Dual-range
+    window intersection is routed to the dedicated range-join path. All-``!=``
     joins use a separate first-predicate path:
     the first predicate creates flat physical pairs and later predicates use
     full-layout arrays to filter those pairs. ``return_materialized_indices``
@@ -445,8 +448,9 @@ def _get_indices(
         right: Right working dataframe with the reset physical ``RangeIndex``.
         conditions: Join predicates. An all-``!=`` join uses its first
             predicate to build flat candidate pairs. Otherwise the first
-            predicate must be a range predicate and builds the candidate
-            window; every later predicate is a residual filter.
+            range predicate builds the only candidate window here; every later
+            predicate is a residual filter. Calls with two compatible range
+            anchors are handled by ``_range_join`` before this function.
         keep: ``"all"``, ``"first"``, ``"last"``, or ``"any"`` selection
             requested for the final indices.
         return_materialized_indices: Force all surviving pairs to be

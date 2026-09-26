@@ -1083,3 +1083,56 @@ def test_single_range_float32_aggregation_preserves_float32():
         np.isin(np.arange(len(actual)), expected.index),
     )
     assert_frame_equal(expected, actual)
+
+
+def test_dual_range_join_dispatches_each_anchor_dtype_independently():
+    """Different numeric anchor dtypes still use the dual-range Rust path."""
+    left = pd.DataFrame({"left_int": [2], "left_float": [6.0]})
+    right = pd.DataFrame(
+        {
+            "right_int": [1, 3, 5, 7],
+            "right_float": pd.Series([0.0, 2.0, 4.0, 6.0], dtype="float64"),
+        }
+    )
+
+    actual = left.conditional_join(
+        right,
+        ("left_int", "right_int", "<"),
+        ("left_float", "right_float", ">"),
+        keep="all",
+    )
+
+    expected = pd.DataFrame(
+        {
+            "left_int": [2, 2],
+            "left_float": [6.0, 6.0],
+            "right_int": [3, 5],
+            "right_float": [2.0, 4.0],
+        },
+        index=pd.RangeIndex(2),
+    )
+    assert_frame_equal(expected, actual)
+
+
+def test_dual_range_aggregation_dispatches_each_anchor_dtype_independently():
+    """Dual-range aggregation accepts independently typed range anchors."""
+    left = pd.DataFrame({"left_int": [2], "left_float": [6.0]})
+    right = pd.DataFrame(
+        {
+            "right_int": [1, 3, 5, 7],
+            "right_float": pd.Series([0.0, 2.0, 4.0, 6.0], dtype="float64"),
+            "value": [10, 20, 30, 40],
+        }
+    )
+
+    actual = left.join_agg(
+        right,
+        ("left_int", "right_int", "<"),
+        ("left_float", "right_float", ">"),
+        aggfunc=[("value", "sum"), ("value", "size")],
+        return_matched=True,
+    )
+
+    assert actual["value", "sum"].tolist() == [50]
+    assert actual["value", "size"].tolist() == [2]
+    assert actual.index.get_level_values("matched").tolist() == [True]

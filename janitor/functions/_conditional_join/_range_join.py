@@ -32,7 +32,6 @@ from janitor.functions._conditional_join._aggregation_helpers import (
     _aggregation_inputs,
     _empty_aggregation_result,
     _materialize_aggregation_result,
-    _select_aggregation_kernel,
 )
 from janitor.functions._conditional_join._helpers import (
     JoinCondition,
@@ -57,75 +56,6 @@ _RANGE_PAIR_PRIORITY = (
     ("<=", "<"),
     ("<=", "<="),
 )
-
-_RANGE_KERNELS = {
-    "int64": janitor_rs.range_join_indices_int64,
-    "int32": janitor_rs.range_join_indices_int32,
-    "int16": janitor_rs.range_join_indices_int16,
-    "int8": janitor_rs.range_join_indices_int8,
-    "uint64": janitor_rs.range_join_indices_uint64,
-    "uint32": janitor_rs.range_join_indices_uint32,
-    "uint16": janitor_rs.range_join_indices_uint16,
-    "uint8": janitor_rs.range_join_indices_uint8,
-    "float64": janitor_rs.range_join_indices_f64,
-    "float32": janitor_rs.range_join_indices_f32,
-}
-
-_RANGE_EXTENDED_KERNEL_NAMES = {
-    "int64": "range_join_extended_indices_int64",
-    "int32": "range_join_extended_indices_int32",
-    "int16": "range_join_extended_indices_int16",
-    "int8": "range_join_extended_indices_int8",
-    "uint64": "range_join_extended_indices_uint64",
-    "uint32": "range_join_extended_indices_uint32",
-    "uint16": "range_join_extended_indices_uint16",
-    "uint8": "range_join_extended_indices_uint8",
-    "float64": "range_join_extended_indices_f64",
-    "float32": "range_join_extended_indices_f32",
-}
-
-_RANGE_EXTENDED_AGGREGATION_KERNELS = {
-    "int64": (
-        janitor_rs.range_join_extended_aggregate_int64,
-        janitor_rs.range_join_extended_aggregate_reverse_int64,
-    ),
-    "int32": (
-        janitor_rs.range_join_extended_aggregate_int32,
-        janitor_rs.range_join_extended_aggregate_reverse_int32,
-    ),
-    "int16": (
-        janitor_rs.range_join_extended_aggregate_int16,
-        janitor_rs.range_join_extended_aggregate_reverse_int16,
-    ),
-    "int8": (
-        janitor_rs.range_join_extended_aggregate_int8,
-        janitor_rs.range_join_extended_aggregate_reverse_int8,
-    ),
-    "uint64": (
-        janitor_rs.range_join_extended_aggregate_uint64,
-        janitor_rs.range_join_extended_aggregate_reverse_uint64,
-    ),
-    "uint32": (
-        janitor_rs.range_join_extended_aggregate_uint32,
-        janitor_rs.range_join_extended_aggregate_reverse_uint32,
-    ),
-    "uint16": (
-        janitor_rs.range_join_extended_aggregate_uint16,
-        janitor_rs.range_join_extended_aggregate_reverse_uint16,
-    ),
-    "uint8": (
-        janitor_rs.range_join_extended_aggregate_uint8,
-        janitor_rs.range_join_extended_aggregate_reverse_uint8,
-    ),
-    "float64": (
-        janitor_rs.range_join_extended_aggregate_f64,
-        janitor_rs.range_join_extended_aggregate_reverse_f64,
-    ),
-    "float32": (
-        janitor_rs.range_join_extended_aggregate_f32,
-        janitor_rs.range_join_extended_aggregate_reverse_f32,
-    ),
-}
 
 
 def _select_range_pair(
@@ -159,6 +89,7 @@ def _select_range_pair(
         shared ascending right layout, so the caller must use the single-
         anchor fallback.
     """
+
     for anchor_op, second_op in _RANGE_PAIR_PRIORITY:
         for anchor_position, condition in enumerate(conditions):
             if condition.op != anchor_op:
@@ -172,23 +103,8 @@ def _select_range_pair(
                     or second_condition.op != second_op
                 ):
                     continue
-                # Both anchors are consumed by one dtype-specialized Rust
-                # kernel. If their value dtypes differ, this pair cannot be
-                # represented by that kernel and must use the single-anchor
-                # residual path instead.
-                second_left = _convert_array_to_numpy(
-                    df.loc[anchor.left_index, second_condition.left]._values
-                )
                 second_right = right.loc[anchor.right_index, second_condition.right]
-                if (
-                    pd.api.types.is_dtype_equal(
-                        anchor.left_array.dtype, second_left.dtype
-                    )
-                    and pd.api.types.is_dtype_equal(
-                        anchor.right_array.dtype, second_right.dtype
-                    )
-                    and second_right.is_monotonic_increasing
-                ):
+                if second_right.is_monotonic_increasing:
                     return anchor_position, second_position, anchor
     return None
 
@@ -333,14 +249,7 @@ def _get_extended_indices(
         predicates.append(
             _build_residual_predicate(left_residual, right_residual, condition.op)
         )
-    dtype_name = anchor.left_array.dtype.name
-    try:
-        kernel = getattr(janitor_rs, _RANGE_EXTENDED_KERNEL_NAMES[dtype_name])
-    except KeyError as error:
-        raise TypeError(
-            f"range join does not support dtype {anchor.left_array.dtype}"
-        ) from error
-    result = kernel(predicates, keep)
+    result = janitor_rs.range_join_extended_indices(predicates, keep)
     if result is None:
         return {
             "left_index": np.array([], dtype=np.int64),
@@ -357,20 +266,21 @@ def _aggregate_extended(
     reverse: bool,
     return_matched: bool,
 ) -> pd.DataFrame | None:
-    """Aggregate a dual-range join, including later residual predicates.
+    """Aggregate a dual-range join, with an optional residual phase.
 
-    The aggregation kernel receives the same two range anchors as the index
-    kernel, but updates aggregation state while traversing each intersected
-    window. No candidate pair dataframe is materialized. The first tuple uses
-    the eight-field range-aggregation form so the compact filtered layout can
-    be mapped back to the original physical left/right positions.
+    The first two compatible range predicates always produce the two anchor
+    windows. If there are no remaining predicates, the exact-two-range Rust
+    API aggregates directly over their intersection. If residual predicates
+    remain, the range-extended API evaluates them inside that intersection
+    before updating aggregation state. Neither path materializes candidate
+    pairs in Python.
 
     Args:
         df: Left dataframe with reset, unique physical positions.
         right: Right dataframe with reset, unique physical positions.
         conditions: Complete predicate list. Two compatible range predicates
             are selected as anchors; any remaining predicates are residuals
-            evaluated in user order.
+            evaluated in their original user order.
         aggfunc: Rust-supported ``(column, operation)`` requests.
         reverse: If false, aggregate right-side source values into left
             output slots. If true, aggregate left-side values into right
@@ -415,9 +325,10 @@ def _aggregate_extended(
         if reverse
         else df.index.take(anchor.left_index)
     )
-    # Use the range-extended aggregation contract even when there are no
-    # residual predicates. Its explicit output maps preserve the trimmed
-    # physical layout when null filtering or right-side sorting reordered rows.
+    # The first tuple carries the physical-to-trimmed output maps. They are
+    # needed by both APIs when null filtering or right-side sorting reordered
+    # the compact layouts. The second anchor has the same aligned layouts but
+    # does not need to repeat the ordering flag.
     predicates = [
         (
             anchor.left_array,
@@ -447,12 +358,21 @@ def _aggregate_extended(
                 condition.op,
             )
         )
-    registry = _RANGE_EXTENDED_AGGREGATION_KERNELS
-    kernel = _select_aggregation_kernel(
-        registry=registry,
-        dtype=anchor.left_array.dtype.name,
-        reverse=reverse,
-    )
+    # Exactly two anchors have no residual filtering and use the simpler
+    # range_join_aggregate API. Once a third predicate is present, use the
+    # extended API so Rust evaluates that predicate inside each intersection.
+    if len(predicates) == 2:
+        kernel = (
+            janitor_rs.range_join_aggregate_reverse
+            if reverse
+            else janitor_rs.range_join_aggregate
+        )
+    else:
+        kernel = (
+            janitor_rs.range_join_extended_aggregate_reverse
+            if reverse
+            else janitor_rs.range_join_extended_aggregate
+        )
     result = kernel(
         predicates,
         _aggregation_inputs(source=source, aggfunc=aggfunc),
@@ -529,14 +449,6 @@ def _get_indices(
     second_right = right.loc[anchor.right_index, second.right]
     second_left_array = _convert_array_to_numpy(array=second_left._values)
     second_right_array = _convert_array_to_numpy(array=second_right._values)
-    dtype_name = anchor.left_array.dtype.name
-    try:
-        kernel = _RANGE_KERNELS[dtype_name]
-    except KeyError as error:
-        raise TypeError(
-            f"range join does not support dtype {anchor.left_array.dtype}"
-        ) from error
-
     predicates = [
         (
             anchor.left_array,
@@ -555,7 +467,7 @@ def _get_indices(
             second.op,
         ),
     ]
-    result = kernel(
+    result = janitor_rs.range_join_indices(
         predicates,
         keep,
         bool(return_materialized_indices),

@@ -641,6 +641,19 @@ single-extended Rust kernel. Route confirmed dual-range calls through the
 range-join implementation; use the single-extended path for one anchor plus
 residual predicates.
 
+### [2026-09-26] Define dual-range joins by per-row window intersection
+
+**Context**: Defining the dual-range join contract and its implementation.
+**Learning**: Each of the first two range predicates builds one half-open
+window for each logical left row. Rust intersects those two windows row by row;
+index generation and aggregation then operate on the surviving positional
+windows. Anchor dtype handling is an implementation detail of each search, not
+the definition of a dual-range join.
+
+**Recommendation**: Keep PyJanitor responsible for null filtering, sorting,
+and physical alignment of the right layouts. Let Rust search each anchor using
+its supplied value representation, then intersect only the positional windows.
+
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol

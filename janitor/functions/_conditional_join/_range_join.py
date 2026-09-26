@@ -165,10 +165,10 @@ def _select_range_pair(
             anchor = _prepare_range_anchor(df[left_on], right[right_on])
             if anchor is None:
                 continue
-            for second_position, (_, second_right_on, residual_op) in enumerate(
+            for second_position, (_, second_right_on, second_operation) in enumerate(
                 conditions
             ):
-                if second_position == anchor_position or residual_op != second_op:
+                if second_position == anchor_position or second_operation != second_op:
                     continue
                 second_right = right.loc[anchor.right_index, second_right_on]
                 if second_right.is_monotonic_increasing:

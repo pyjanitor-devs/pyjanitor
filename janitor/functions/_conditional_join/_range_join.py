@@ -290,7 +290,6 @@ def _aggregate_extended(
         dual-range pair exists and the caller should use the anchor fallback.
 
     Raises:
-        TypeError: If the selected anchor dtype has no registered Rust kernel.
         ValueError: If Rust rejects predicate layout, aggregation requests, or
             output-position metadata.
     """

@@ -1,10 +1,16 @@
-"""Multiple conditional-join indices and aggregations backed by janitor-rs.
+"""Build and aggregate one-anchor conditional joins with residual filters.
 
-Mixed joins are range-led: the first range predicate creates a candidate
-window and later predicates filter it. Two-range window intersection belongs
-to the dedicated range-join implementation. When every predicate is ``!=``,
-the first predicate creates flat physical position pairs and later predicates
-filter those pairs directly.
+This module owns the *anchor* path. One predicate establishes the candidate
+domain, and every remaining predicate is evaluated against that domain:
+
+* a range anchor creates one half-open candidate window per left row;
+* an all-``!=`` anchor creates flat physical candidate pairs;
+* later predicates, including later range comparisons, are residual filters.
+
+The dedicated ``_range_join`` module owns the separate dual-range path. It
+constructs two windows and intersects them before residual filtering. Keeping
+that operation out of this module is important: this module has one candidate
+generator, while the dual-range module has two coordinated generators.
 
 The Rust boundary uses two first-predicate tuple shapes:
 
@@ -18,7 +24,7 @@ Residual predicates use ``(left, right, comparator)`` or, for null-aware
 ``!=``, ``(left, left_null_mask, right, right_null_mask,
 is_extension_array, comparator)``. Residual arrays retain the full physical
 layout because candidate positions index them directly. Rust does not sort or
-infer nullness from values.
+infer nullness from values; PyJanitor supplies the masks and aligned arrays.
 
 The aggregation entry point uses the same anchor and residual traversal as
 the index entry point, but updates Rust aggregation state for each surviving
@@ -62,9 +68,11 @@ _EXTENDED_KERNEL_NAMES = {
     "float32": "single_join_extended_indices_f32",
 }
 
-# Each entry is `(forward, reverse)`. Keep this registry separate from the
-# single-join registry because the extended Rust kernels have a different
-# predicate contract and different PyO3 functions.
+# Each entry is ``(forward, reverse)`` for the one-anchor extended kernels.
+# This registry is separate from the basic single-anchor registry because
+# extended predicates have a different tuple contract and support residual
+# filtering inside the Rust candidate loop. It is unrelated to the dual-range
+# APIs, which live in ``_range_join.py`` and use separate Rust functions.
 _EXTENDED_AGGREGATION_KERNELS = {
     "int64": (
         janitor_rs.single_join_extended_aggregate_int64,
@@ -149,6 +157,10 @@ def _build_residual_predicate(
     Returns:
         A three-element ordinary predicate tuple or the six-element nullable
         ``!=`` tuple expected by the Rust parser.
+
+    Raises:
+        ValueError: If the operator is not supported by the Rust predicate
+            parser or if the nullable ``!=`` metadata cannot be constructed.
     """
     left_array = _convert_array_to_numpy(array=left._values)
     right_array = _convert_array_to_numpy(array=right._values)
@@ -221,6 +233,10 @@ def _get_all_not_equal_indices(
     right_series = right[first_right_on]
     anchor = _prepare_not_equal_anchor(left=left_series, right=right_series)
 
+    # The anchor owns candidate generation. Its filtered values are used for
+    # the binary search, while the position arrays describe where those
+    # filtered values came from in the complete physical frames. This is why
+    # the anchor tuple is larger than an ordinary residual tuple.
     first_predicate = (
         _convert_array_to_numpy(array=anchor.left_values._values),
         anchor.left_index,
@@ -239,8 +255,9 @@ def _get_all_not_equal_indices(
     # Residual predicates retain the full physical layout. Their null masks
     # cover those full arrays, so candidate physical positions can index them
     # directly without another filtered-to-original mapping. The right side
-    # is already in the seed predicate's value-sorted order, so every residual
-    # right array must use that same order.
+    # is already in the anchor's value-sorted order, so every residual right
+    # array must be reordered through the same physical right positions before
+    # it is passed to Rust.
     for left_on, right_on, op in conditions[1:]:
         predicates.append(
             _build_residual_predicate(
@@ -269,9 +286,11 @@ def _aggregate_extended(
 
     If every predicate is ``!=``, the first predicate supplies the null-aware
     candidate stream and later ``!=`` predicates filter those candidates. In
-    In a mixed call, the first range predicate supplies the only binary-search
-    window and every other predicate filters candidates inside that window.
-    Dual-range window intersection belongs to ``_range_join``.
+    In a mixed call, the selected range predicate is the sole candidate
+    generator. It supplies one binary-search window per left row; every other
+    predicate filters candidates inside that window. A later range comparison
+    is deliberately treated like any other residual and is not binary-searched
+    here. Dual-range window intersection belongs to ``_range_join``.
     Aggregation occurs while candidates are evaluated; no flat pair index is
     materialized.
 
@@ -290,9 +309,10 @@ def _aggregate_extended(
         df: Left dataframe with a unique physical ``RangeIndex``.
         right: Right dataframe with a unique physical ``RangeIndex``.
         conditions: Join predicates in user order. An all-``!=`` call must
-            contain only ``!=`` operators. A mixed call must contain at least
-            one range predicate; that first range predicate supplies the
-            candidate window and all remaining predicates are residuals.
+            contain only ``!=`` operators and use the first predicate as its
+            candidate generator. A mixed call must contain at least one range
+            predicate; the selected range predicate supplies the candidate
+            window and all remaining predicates are residuals.
         aggfunc: Non-empty ``(column, operation)`` requests for ``sum``,
             ``prod``, ``min``, ``max``, ``count``, or ``size``.
         reverse: When false, aggregate right-side values into left output
@@ -302,10 +322,11 @@ def _aggregate_extended(
             Rust and expose it as a second MultiIndex level.
 
     Returns:
-        A dataframe indexed by ``(output_index, matched)``. Rows with no
-        surviving candidate remain present with neutral or missing values.
-        If no candidate survives anywhere, an empty schema-only dataframe is
-        returned.
+        A dataframe indexed by ``(output_index, matched)`` when
+        ``return_matched`` is true, otherwise by the trimmed output index.
+        Rows with no surviving candidate remain present with neutral or missing
+        values. If no candidate survives anywhere, an empty schema-only
+        dataframe is returned.
 
     Raises:
         TypeError: If the anchor dtype has no registered Rust kernel.
@@ -561,7 +582,7 @@ def _get_indices(
     if right is None:
         return _empty_indices()
 
-    # This is the single-anchor extended path. The first range predicate
+    # This is the single-anchor extended path. The selected range predicate
     # creates the only binary-search window; every other predicate, including
     # a second range comparison, remains a residual filter. Dual-range window
     # intersection is selected separately through `_range_join`.
@@ -592,6 +613,10 @@ def _get_indices(
         )
     ]
 
+    # Align each residual to the anchor layout. Left rows remain in their
+    # filtered logical order; right rows must follow the anchor's reordered
+    # right positions. This preserves the invariant that one candidate pair
+    # uses the same physical position in every residual predicate.
     for position in residual_positions:
         left_on, right_on, op = conditions[position]
         # The left frame was filtered but never reordered. The right frame was

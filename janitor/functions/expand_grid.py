@@ -372,54 +372,68 @@ def expand(
     return _expand_groupby(grouped=grouped, columns=columns, sort=sort)
 
 
+def _evaluate_expand_argument(argument, group):
+    if callable(argument):
+        return argument(group)
+
+    if isinstance(argument, dict):
+        return {
+            name: value(group) if callable(value) else value
+            for name, value in argument.items()
+        }
+    return argument
+
+
 def _expand_groupby(grouped: DataFrameGroupBy, columns: tuple, sort: bool):
     """Compute expand on a grouped object"""
-    group_keys = list(grouped._grouper.names)
-    group_order = grouped._grouper.result_index
-    df = grouped.obj
-    tables = []
-    for column in columns:
-        if is_scalar(column) or isinstance(column, tuple):
-            spec = [*group_keys, column]
-            table = _build_pandas_objects_for_expand(df=df, columns=(spec,))[0]
-            tables.append(table)
-        elif isinstance(column, dict):
-            group_table = df[group_keys].drop_duplicates()
-            dict_objects = [pd.Series(values, name=label) for label, values in column.items()]
-            dict_table = pd.DataFrame(_compute_cartesian_product(inputs=dict_objects, sort=False))
-            tables.append(group_table.merge(dict_table, how="cross"))
-        elif isinstance(column, pd.Series):
-            group_table = df[group_keys].drop_duplicates()
-            tables.append(group_table.merge(column.to_frame(), how="cross"))
-        elif callable(column) or isinstance(column, Expression):
-            group_tables = []
-            for _, frame in grouped:
-                objects = _build_pandas_objects_for_expand(
-                    df=frame,
-                    columns=(column,),
-                )
-                objects = _compute_cartesian_product(
-                    inputs=objects,
-                    sort=False,
-                )
-                object_table = pd.DataFrame(objects)
-                group_table = frame[group_keys].drop_duplicates()
-                group_tables.append(
-                    group_table.merge(object_table, how="cross")
-                )
-            tables.append(pd.concat(group_tables, ignore_index=True))
-
-    out = tables[0]
-    for table in tables[1:]:
-        out = out.merge(table, on=group_keys, how="inner", sort=False)
-    if len(group_keys) == 1:
-        order = group_order.get_indexer(out[group_keys[0]])
+    # Check if any column or dict value is callable
+    has_callable = any(
+        callable(col)
+        or (isinstance(col, dict) and any(callable(v) for v in col.values()))
+        for col in columns
+    )
+    if has_callable:
+        group_tables = []
+        for _, frame in grouped:
+            evaluated_cols = tuple(_evaluate_expand_argument(col, frame) for col in columns)
+            expanded_frame = frame.expand(*evaluated_cols, sort=False)
+            group_tables.append(expanded_frame)
+        out = pd.concat(group_tables, ignore_index=True)
     else:
-        out_groups = pd.MultiIndex.from_frame(out[group_keys])
-        order = group_order.get_indexer(out_groups)
-    out = out.iloc[np.argsort(order, kind="stable")].set_index(group_keys)
+        group_keys = list(grouped._grouper.names)
+        group_order = grouped._grouper.result_index
+        df = grouped.obj
+        tables = []
+
+        for column in columns:
+            if is_scalar(column) or isinstance(column, tuple):
+                spec = [*group_keys, column]
+                table = _build_pandas_objects_for_expand(df=df, columns=(spec,))[0]
+                tables.append(table)
+            elif isinstance(column, dict):
+                group_table = df[group_keys].drop_duplicates()
+                dict_objects = [pd.Series(values, name=label)for label, values in column.items()]
+                dict_table = pd.DataFrame(_compute_cartesian_product(inputs=dict_objects, sort=False))
+                tables.append(group_table.merge(dict_table, how="cross"))
+            elif isinstance(column, pd.Series):
+                group_table = df[group_keys].drop_duplicates()
+                tables.append(group_table.merge(column.to_frame(), how="cross"))
+
+        out = tables[0]
+        for table in tables[1:]:
+            out = out.merge(table, on=group_keys, how="inner", sort=False)
+
+        if len(group_keys) == 1:
+            order = group_order.get_indexer(out[group_keys[0]])
+        else:
+            out_groups = pd.MultiIndex.from_frame(out[group_keys])
+            order = group_order.get_indexer(out_groups)
+
+        out = out.iloc[np.argsort(order, kind="stable")].reset_index(drop=True)
+
     if sort:
-        return out.sort_values(out.columns.tolist())
+        return out.sort_values(by=out.columns.tolist()).reset_index(drop=True)
+
     return out
 
     

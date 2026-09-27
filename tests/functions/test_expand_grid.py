@@ -322,55 +322,34 @@ def test_extension_array():
 
 
 def test_expand_groupby_join():
-    """Test grouped expand output, ordering, duplicates, and sorting."""
+    """Test grouped expand across all input types: scalars, dicts, Series, and callables."""
     df = pd.DataFrame(
         {
-            "group": [
-                "A", "A", "A", "A",
-                "B", "B", "B",
-                "C", "C",
-            ],
-            "year": [
-                2020, 2020, 2021, 2021,
-                2020, 2021, 2021,
-                2021, 2021,
-            ],
-            "size": [
-                "S", "S", "M", "M",
-                "L", "L", "L",
-                "S", "M",
-            ],
+            "group": ["A", "A", "A", "A", "B", "B", "B", "C", "C"],
+            "year": [2020, 2020, 2021, 2021, 2020, 2021, 2021, 2021, 2021],
+            "size": ["S", "S", "M", "M", "L", "L", "L", "S", "M"],
         }
     )
     grouped = df.groupby("group")
+
+    # Scalar column names
     columns = ("year", "size")
     result = grouped.expand(*columns, sort=False)
-
     expected = pd.DataFrame(
         {
-            "year": [
-                2020, 2020, 2021, 2021,
-                2020, 2021,
-                2021, 2021,
-            ],
-            "size": [
-                "S", "M", "S", "M",
-                "L", "L",
-                "S", "M",
-            ],
-        },
-        index=pd.Index(
-            ["A", "A", "A", "A", "B", "B", "C", "C"],
-            name="group",
-        ),
+            "group": ["A", "A", "A", "A", "B", "B", "C", "C"],
+            "year": [2020, 2020, 2021, 2021, 2020, 2021, 2021, 2021],
+            "size": ["S", "M", "S", "M", "L", "L", "S", "M"],
+        }
     )
     pd.testing.assert_frame_equal(result, expected)
 
+    # Sorting behavior
     sorted_result = grouped.expand(*columns, sort=True)
-    expected_sorted = expected.sort_values(["year", "size"])
+    expected_sorted = expected.sort_values(["group", "year", "size"]).reset_index(drop=True)
     pd.testing.assert_frame_equal(sorted_result, expected_sorted)
 
-    # Test dictionary input
+    # Dictionary input
     dict_columns = (
         {
             "year": [2022, 2023],
@@ -380,27 +359,33 @@ def test_expand_groupby_join():
     dict_result = grouped.expand(*dict_columns, sort=False)
     dict_expected = pd.DataFrame(
         {
+            "group": ["A", "A", "A", "A", "B", "B", "B", "B", "C", "C", "C", "C"],
             "year": [2022, 2022, 2023, 2023] * 3,
             "size": ["S", "M", "S", "M"] * 3,
-        },
-        index=pd.Index(
-            ["A", "A", "A", "A",
-             "B", "B", "B", "B",
-             "C", "C", "C", "C"],
-            name="group",
-        ),
+        }
     )
     pd.testing.assert_frame_equal(dict_result, dict_expected)
 
-    # Test Series input
+    # Series input
     series = pd.Series([1, 2], name="value")
     series_result = grouped.expand(series, sort=False)
     series_expected = pd.DataFrame(
-        {"value": [1, 2] * 3},
-        index=pd.Index(
-            ["A", "A", "B", "B", "C", "C"],
-            name="group",
-        ),
+        {
+            "group": ["A", "A", "B", "B", "C", "C"],
+            "value": [1, 2] * 3,
+        }
     )
     pd.testing.assert_frame_equal(series_result, series_expected)
+
+    # Callable/Lambda input (evaluated per group)
+    func_spec = {
+        "year": lambda g: range(g["year"].min(), g["year"].max() + 1)
+    }
+    callable_result = grouped.expand(func_spec, sort=False)
+    callable_expected = pd.DataFrame(
+        {
+            "year": [2020, 2021, 2020, 2021, 2021],
+        }
+    )
+    pd.testing.assert_frame_equal(callable_result, callable_expected)
     

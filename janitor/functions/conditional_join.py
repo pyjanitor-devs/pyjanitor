@@ -622,6 +622,23 @@ def _conditional_join_compute(
     default_rust_path = not use_numba and join_algorithm == "default"
     if (
         aggfunc
+        and not use_numba
+        and join_algorithm == "regions"
+        and not eq_check
+        and le_lt_check
+    ):
+        from janitor.functions._conditional_join import _range_join_regions
+
+        return _range_join_regions._aggregate(
+            df=df,
+            right=right,
+            conditions=conditions,
+            aggfunc=aggfunc,
+            reverse=reverse,
+            return_matched=return_matched,
+        )
+    if (
+        aggfunc
         and default_rust_path
         and not eq_check
         and (len(conditions) == 1 or le_lt_check or all_not_equal_check)

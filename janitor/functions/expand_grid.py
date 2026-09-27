@@ -386,19 +386,29 @@ def _evaluate_expand_argument(argument, group):
 
 def _expand_groupby(grouped: DataFrameGroupBy, columns: tuple, sort: bool):
     """Compute expand on a grouped object"""
-    # Check if any column or dict value is callable
     has_callable = any(
         callable(col)
         or (isinstance(col, dict) and any(callable(v) for v in col.values()))
         for col in columns
     )
+
     if has_callable:
         group_tables = []
+        group_keys = grouped._grouper.result_index
+        group_names = grouped._grouper.names
+
         for _, frame in grouped:
-            evaluated_cols = tuple(_evaluate_expand_argument(col, frame) for col in columns)
+            evaluated_cols = tuple(
+                _evaluate_expand_argument(col, frame) for col in columns
+            )
             expanded_frame = frame.expand(*evaluated_cols, sort=False)
             group_tables.append(expanded_frame)
-        out = pd.concat(group_tables, ignore_index=True)
+
+        out = pd.concat(
+            group_tables,
+            keys=group_keys,
+            names=group_names,
+        )
     else:
         group_keys = list(grouped._grouper.names)
         group_order = grouped._grouper.result_index
@@ -412,8 +422,13 @@ def _expand_groupby(grouped: DataFrameGroupBy, columns: tuple, sort: bool):
                 tables.append(table)
             elif isinstance(column, dict):
                 group_table = df[group_keys].drop_duplicates()
-                dict_objects = [pd.Series(values, name=label)for label, values in column.items()]
-                dict_table = pd.DataFrame(_compute_cartesian_product(inputs=dict_objects, sort=False))
+                dict_objects = [
+                    pd.Series(values, name=label)
+                    for label, values in column.items()
+                ]
+                dict_table = pd.DataFrame(
+                    _compute_cartesian_product(inputs=dict_objects, sort=False)
+                )
                 tables.append(group_table.merge(dict_table, how="cross"))
             elif isinstance(column, pd.Series):
                 group_table = df[group_keys].drop_duplicates()
@@ -429,13 +444,13 @@ def _expand_groupby(grouped: DataFrameGroupBy, columns: tuple, sort: bool):
             out_groups = pd.MultiIndex.from_frame(out[group_keys])
             order = group_order.get_indexer(out_groups)
 
-        out = out.iloc[np.argsort(order, kind="stable")].reset_index(drop=True)
+        out = out.iloc[np.argsort(order, kind="stable")].set_index(group_keys)
 
     if sort:
-        return out.sort_values(by=out.columns.tolist()).reset_index(drop=True)
+        headers = out.columns.tolist()
+        return out.sort_values(headers)
 
     return out
-
     
 def _build_pandas_objects_for_expand(df: pd.DataFrame, columns: tuple) -> list:
     """

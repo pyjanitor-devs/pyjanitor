@@ -4,8 +4,7 @@ import pandas as pd
 from janitor.functions._conditional_join._equi_join_rust import (
     EquiPredicate,
     RangePredicate,
-    ResidualPredicate,
-    prepare_equi_join,
+    _get_indices,
 )
 
 
@@ -13,39 +12,39 @@ def test_unique_equi_representation_uses_get_indexer_positions():
     left = pd.DataFrame({"key": ["b", "missing", "a"]})
     right = pd.DataFrame({"key": ["a", "b"]})
 
-    prepared = prepare_equi_join(left, right, [("key", "key", "==")])
+    result = _get_indices(left, right, [("key", "key", "==")])
 
-    assert prepared is not None
-    assert len(prepared.predicates) == 1
-    equi = prepared.equi
+    assert result is not None
+    equi, ranges, residuals, left_index, right_index = result
     assert isinstance(equi, EquiPredicate)
-    np.testing.assert_array_equal(equi.left_index, [0, 1, 2])
-    np.testing.assert_array_equal(equi.right_index, [0, 1])
+    assert ranges == []
+    assert residuals == []
+    np.testing.assert_array_equal(left_index, [0, 1, 2])
+    np.testing.assert_array_equal(right_index, [0, 1])
     np.testing.assert_array_equal(equi.left_indexer, [1, -1, 0])
     assert equi.original_right_positions is None
 
 
-def test_duplicate_equi_representation_keeps_original_positions():
+def test_duplicate_equi_representation_keeps_factorized_positions():
     left = pd.DataFrame({"key": ["b", "a", "missing"]})
     right = pd.DataFrame({"key": ["a", "b", "a"]})
 
-    prepared = prepare_equi_join(left, right, [("key", "key", "==")])
+    result = _get_indices(left, right, [("key", "key", "==")])
 
-    assert prepared is not None
-    equi = prepared.equi
+    assert result is not None
+    equi, _, _, _, _ = result
     np.testing.assert_array_equal(equi.left_indexer, [1, 0, -1])
-    np.testing.assert_array_equal(equi.right_codes, [0, 1, 0])
-    np.testing.assert_array_equal(equi.original_right_positions, [0, 1, 2])
+    np.testing.assert_array_equal(equi.original_right_positions, [0, 1, 0])
 
 
-def test_shared_range_index_is_used_by_equi_and_both_ranges():
+def test_shared_range_index_is_global_for_equi_and_both_ranges():
     left = pd.DataFrame({"key": [1], "upper": [8], "lower": [2]})
     right = pd.DataFrame(
         {"key": [1, 1], "upper": [9, 7], "lower": [7, 3]},
         index=[10, 11],
     )
 
-    prepared = prepare_equi_join(
+    result = _get_indices(
         left,
         right,
         [
@@ -55,16 +54,12 @@ def test_shared_range_index_is_used_by_equi_and_both_ranges():
         ],
     )
 
-    assert prepared is not None
-    assert [type(predicate) for predicate in prepared.predicates] == [
-        EquiPredicate,
-        RangePredicate,
-        RangePredicate,
-    ]
-    equi, first_range, second_range = prepared.predicates
-    np.testing.assert_array_equal(equi.right_index, [11, 10])
-    np.testing.assert_array_equal(first_range.right_index, equi.right_index)
-    np.testing.assert_array_equal(second_range.right_index, equi.right_index)
+    assert result is not None
+    equi, ranges, residuals, _, right_index = result
+    assert len(ranges) == 2
+    assert residuals == []
+    assert all(isinstance(item, RangePredicate) for item in ranges)
+    np.testing.assert_array_equal(right_index, [11, 10])
 
 
 def test_non_shared_second_range_is_residual():
@@ -74,7 +69,7 @@ def test_non_shared_second_range_is_residual():
         index=[10, 11],
     )
 
-    prepared = prepare_equi_join(
+    result = _get_indices(
         left,
         right,
         [
@@ -84,8 +79,10 @@ def test_non_shared_second_range_is_residual():
         ],
     )
 
-    assert prepared is not None
-    assert isinstance(prepared.predicates[1], RangePredicate)
-    assert isinstance(prepared.predicates[2], ResidualPredicate)
-    residual = prepared.predicates[2]
-    np.testing.assert_array_equal(residual.right_index, prepared.equi.right_index)
+    assert result is not None
+    _, ranges, residuals, _, right_index = result
+    assert len(ranges) == 1
+    assert len(residuals) == 1
+    np.testing.assert_array_equal(right_index, [11, 10])
+    np.testing.assert_array_equal(residuals[0][1], [9, 1])
+    assert residuals[0][2] == "<="

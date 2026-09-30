@@ -1192,3 +1192,241 @@ def test_duplicate_equi_aggregation_applies_range_and_residual_filters():
         index=pd.MultiIndex.from_tuples([(0, True)], names=[None, "matched"]),
     )
     assert_frame_equal(expected, actual)
+
+
+def test_unique_equi_aggregation_covers_forward_and_reverse_output_domains():
+    """Unique equi keys produce complete forward and reverse output domains."""
+    left = pd.DataFrame(
+        {"key": ["b", "a", "c"], "left_value": [2, 3, 4]},
+        index=pd.Index([10, 11, 12], name="left_id"),
+    )
+    right = pd.DataFrame(
+        {"key": ["a", "b", "d"], "value": [10, 20, 30]},
+        index=pd.Index([20, 21, 22], name="right_id"),
+    )
+    aggfunc = [
+        ("value", "sum"),
+        ("value", "prod"),
+        ("value", "min"),
+        ("value", "max"),
+        ("value", "count"),
+        ("value", "size"),
+    ]
+
+    forward = left.join_agg(
+        right,
+        ("key", "key", "=="),
+        aggfunc=aggfunc,
+    )
+    expected_forward = pd.DataFrame(
+        {
+            ("value", "sum"): [20, 10, 0],
+            ("value", "prod"): [20, 10, 1],
+            ("value", "min"): [20.0, 10.0, np.nan],
+            ("value", "max"): [20.0, 10.0, np.nan],
+            ("value", "count"): [1, 1, 0],
+            ("value", "size"): [1, 1, 0],
+        },
+        index=pd.MultiIndex.from_tuples(
+            [(0, True), (1, True), (2, False)],
+            names=[None, "matched"],
+        ),
+    )
+    assert_frame_equal(expected_forward, forward)
+
+    reverse = left.join_agg(
+        right,
+        ("key", "key", "=="),
+        aggfunc=[
+            ("left_value", operation)
+            for operation in [
+                "sum",
+                "prod",
+                "min",
+                "max",
+                "count",
+                "size",
+            ]
+        ],
+        reverse=True,
+    )
+    expected_reverse = pd.DataFrame(
+        {
+            ("left_value", "sum"): [3, 2, 0],
+            ("left_value", "prod"): [3, 2, 1],
+            ("left_value", "min"): [3.0, 2.0, np.nan],
+            ("left_value", "max"): [3.0, 2.0, np.nan],
+            ("left_value", "count"): [1, 1, 0],
+            ("left_value", "size"): [1, 1, 0],
+        },
+        index=pd.MultiIndex.from_tuples(
+            [(0, True), (1, True), (2, False)],
+            names=[None, "matched"],
+        ),
+    )
+    assert_frame_equal(expected_reverse, reverse)
+
+
+def test_duplicate_equi_aggregation_forward_covers_all_operations_without_matched():
+    """Duplicate-right forward aggregation covers every operation and shape."""
+    left = pd.DataFrame({"key": ["a", "b"]})
+    right = pd.DataFrame(
+        {"key": ["a", "b", "a"], "value": [2, 3, 4]},
+        index=pd.Index([20, 21, 22], name="right_id"),
+    )
+
+    actual = left.join_agg(
+        right,
+        ("key", "key", "=="),
+        aggfunc=[
+            ("value", "sum"),
+            ("value", "prod"),
+            ("value", "min"),
+            ("value", "max"),
+            ("value", "count"),
+            ("value", "size"),
+        ],
+        return_matched=False,
+    )
+
+    expected = pd.DataFrame(
+        {
+            ("value", "sum"): [6, 3],
+            ("value", "prod"): [8, 3],
+            ("value", "min"): [2, 3],
+            ("value", "max"): [4, 3],
+            ("value", "count"): [2, 1],
+            ("value", "size"): [2, 1],
+        },
+        index=pd.RangeIndex(2),
+    )
+    assert_frame_equal(expected, actual)
+
+
+def test_duplicate_equi_reverse_aggregation_intersects_two_sorted_ranges():
+    """Reverse duplicate equi aggregation intersects two compatible ranges."""
+    left = pd.DataFrame({"key": ["a"], "lower": [2], "upper": [3], "value": [9]})
+    right = pd.DataFrame(
+        {
+            "key": ["a", "a", "a", "a"],
+            "lower": [1, 3, 5, 7],
+            "upper": [0, 2, 4, 6],
+        },
+        index=pd.Index([20, 21, 22, 23], name="right_id"),
+    )
+
+    actual = left.join_agg(
+        right,
+        ("key", "key", "=="),
+        ("lower", "lower", "<"),
+        ("upper", "upper", "<="),
+        aggfunc=[("value", "sum"), ("value", "size")],
+        reverse=True,
+    )
+
+    expected = pd.DataFrame(
+        {
+            ("value", "sum"): [0, 0, 9, 9],
+            ("value", "size"): [0, 0, 1, 1],
+        },
+        index=pd.MultiIndex.from_tuples(
+            [(0, False), (1, False), (2, True), (3, True)],
+            names=[None, "matched"],
+        ),
+    )
+    assert_frame_equal(expected, actual)
+
+
+def test_duplicate_equi_aggregation_filters_incompatible_second_range_as_residual():
+    """A differently ordered second range is evaluated as a residual."""
+    left = pd.DataFrame({"key": ["a"], "first": [2], "second": [25]})
+    right = pd.DataFrame(
+        {
+            "key": ["a", "a", "a", "a"],
+            "first": [1, 3, 5, 7],
+            "second": [40, 10, 30, 20],
+            "value": [10, 20, 30, 40],
+        }
+    )
+
+    actual = left.join_agg(
+        right,
+        ("key", "key", "=="),
+        ("first", "first", "<"),
+        ("second", "second", "<"),
+        aggfunc=[("value", "sum"), ("value", "size")],
+    )
+
+    expected = pd.DataFrame(
+        {("value", "sum"): [30], ("value", "size"): [1]},
+        index=pd.MultiIndex.from_tuples([(0, True)], names=[None, "matched"]),
+    )
+    assert_frame_equal(expected, actual)
+
+
+def test_equi_aggregation_preserves_not_equal_residual_semantics():
+    """An equi candidate can be narrowed by the existing ``!=`` residual."""
+    left = pd.DataFrame({"key": ["a"], "filter": [1]})
+    right = pd.DataFrame({"key": ["a", "a"], "filter": [1, 2], "value": [10, 20]})
+
+    actual = left.join_agg(
+        right,
+        ("key", "key", "=="),
+        ("filter", "filter", "!="),
+        aggfunc=[("value", "sum"), ("value", "size")],
+    )
+
+    expected = pd.DataFrame(
+        {("value", "sum"): [20], ("value", "size"): [1]},
+        index=pd.MultiIndex.from_tuples([(0, True)], names=[None, "matched"]),
+    )
+    assert_frame_equal(expected, actual)
+
+
+def test_equi_aggregation_supports_multiple_equi_columns():
+    """MultiIndex equi keys are mapped before aggregation."""
+    left = pd.DataFrame({"key_a": ["a", "a"], "key_b": [1, 2]})
+    right = pd.DataFrame(
+        {
+            "key_a": ["a", "a", "a"],
+            "key_b": [1, 1, 3],
+            "value": [10, 20, 30],
+        }
+    )
+
+    actual = left.join_agg(
+        right,
+        ("key_a", "key_a", "=="),
+        ("key_b", "key_b", "=="),
+        aggfunc=[("value", "sum"), ("value", "size")],
+    )
+
+    expected = pd.DataFrame(
+        {("value", "sum"): [30, 0], ("value", "size"): [2, 0]},
+        index=pd.MultiIndex.from_tuples(
+            [(0, True), (1, False)], names=[None, "matched"]
+        ),
+    )
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.parametrize("return_matched", [True, False])
+def test_equi_aggregation_with_no_matches_returns_requested_empty_shape(return_matched):
+    """No equi match returns the standard empty aggregation schema."""
+    left = pd.DataFrame({"key": [1]})
+    right = pd.DataFrame({"key": [2], "value": [10]})
+
+    actual = left.join_agg(
+        right,
+        ("key", "key", "=="),
+        aggfunc=[("value", "sum"), ("value", "size")],
+        return_matched=return_matched,
+    )
+
+    assert actual.empty
+    assert list(actual.columns) == [("value", "sum"), ("value", "size")]
+    if return_matched:
+        assert isinstance(actual.index, pd.MultiIndex)
+        assert actual.index.names == [None, "matched"]
+    else:
+        assert isinstance(actual.index, pd.RangeIndex)

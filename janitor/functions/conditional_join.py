@@ -24,6 +24,7 @@ from janitor.functions.utils import (
 from janitor.utils import check, check_column, deprecated_kwargs
 
 from ._conditional_join import (
+    _equi_join_rust,
     _get_indices_equi,
     _get_indices_non_equi,
     _get_join_aggs,
@@ -620,6 +621,15 @@ def _conditional_join_compute(
     df.index = range(len(df))
     right.index = range(len(right))
     default_rust_path = not use_numba and join_algorithm == "default"
+    if aggfunc and default_rust_path and eq_check:
+        return _equi_join_rust._aggregate(
+            df=df,
+            right=right,
+            conditions=conditions,
+            aggfunc=aggfunc,
+            reverse=reverse,
+            return_matched=return_matched,
+        )
     if (
         aggfunc
         and not use_numba

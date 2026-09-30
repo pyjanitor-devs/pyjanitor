@@ -1,5 +1,6 @@
 # helper functions for conditional_join.py
 
+from collections.abc import Collection
 from dataclasses import dataclass
 from enum import Enum
 from typing import Hashable, Sequence
@@ -93,6 +94,8 @@ def _maybe_remove_nulls_from_dataframe(df: pd.DataFrame, columns: Sequence):
     """
     Remove nulls if op is not !=;
     """
+    if df.empty:
+        return None
     any_nulls = df.loc[:, [*columns]].isna().any(axis=1)
     if any_nulls.all():
         return None
@@ -199,6 +202,36 @@ def _separate_conditions_based_on_op(conditions: Sequence):
     }
 
 
+def _separate_conditions_based_on_join_op(conditions: Collection):
+    """
+    Create separate blocks (`equals`, `not_equals`, `le_or_ge`)
+    based on `op`
+    """
+
+    not_equals = []
+    le_or_lt = []
+    ge_or_gt = []
+    equals = []
+    for condition in conditions:
+        left_on, right_on, op = condition
+        if op == _JoinOperator.NOT_EQUAL.value:
+            not_equals.append(condition)
+        elif op == _JoinOperator.STRICTLY_EQUAL.value:
+            equals.append(condition)
+        elif op in less_than_join_types:
+            le_or_lt.append(condition)
+        elif op in greater_than_join_types:
+            ge_or_gt.append(condition)
+        else:
+            raise NotImplementedError(f"Unknown join operator: {op}")
+    return {
+        "equals": equals,
+        "not_equals": not_equals,
+        "le_lt": le_or_lt,
+        "ge_gt": ge_or_gt,
+    }
+
+
 def _convert_array_to_numpy(
     array: np.ndarray,
     na_value: int = 0,
@@ -218,8 +251,21 @@ def _convert_array_to_numpy(
     return array
 
 
+@dataclass(frozen=True)
+class ResidualPredicate:
+    left_values: np.ndarray
+    right_values: np.ndarray
+    operator: str
+    left_null_mask: np.ndarray | None = None
+    right_null_mask: np.ndarray | None = None
+    is_extension_array: bool = False
+
+
 def _build_residual_predicate(
-    left: pd.Series, right: pd.Series, operation: str
+    left: pd.Series,
+    right: pd.Series,
+    operation: str,
+    right_index: pd.Index | None = None,
 ) -> tuple:
     """Build one residual predicate in the Rust tuple format.
 
@@ -231,28 +277,42 @@ def _build_residual_predicate(
         left: Left residual series in anchor-aligned physical order.
         right: Right residual series in the same aligned order.
         operation: String comparison operator.
+        right_index: Right index positions to align the right series to.
 
     Returns:
-        A three-element ordinary predicate tuple or the six-element nullable
-        ``!=`` tuple expected by the Rust parser.
+        A three-element tuple containing ``left_array``, ``right_array``, and
+        ``operation`` for ordinary predicates. For null-aware ``!=``
+        predicates, returns a six-element tuple containing the two value
+        arrays, their null masks, the extension-array flag, and the operator
+        in the format expected by the Rust parser.
     """
     left_array = _convert_array_to_numpy(array=left._values)
+    if right_index is not None:
+        right = right.loc[right_index]
     right_array = _convert_array_to_numpy(array=right._values)
     if operation != "!=":
-        return left_array, right_array, operation
+        return (
+            left_array,
+            right_array,
+            operation,
+        )
 
-    left_mask, right_mask, is_extension_array = _get_boolean_args_for_ne(
+    left_null_mask, right_null_mask, is_extension_array = _get_boolean_args_for_ne(
         op=operation,
         left=left,
         right=right,
     )
-    if left_mask is None and right_mask is None:
-        return left_array, right_array, operation
+    if left_null_mask is None and right_null_mask is None:
+        return (
+            left_array,
+            right_array,
+            operation,
+        )
     return (
         left_array,
-        left_mask,
+        left_null_mask,
         right_array,
-        right_mask,
+        right_null_mask,
         bool(is_extension_array),
         operation,
     )

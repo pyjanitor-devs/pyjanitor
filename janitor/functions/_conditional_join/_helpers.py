@@ -94,6 +94,8 @@ def _maybe_remove_nulls_from_dataframe(df: pd.DataFrame, columns: Sequence):
     """
     Remove nulls if op is not !=;
     """
+    if df.empty:
+        return None
     any_nulls = df.loc[:, [*columns]].isna().any(axis=1)
     if any_nulls.all():
         return None
@@ -249,6 +251,16 @@ def _convert_array_to_numpy(
     return array
 
 
+@dataclass(frozen=True)
+class ResidualPredicate:
+    left_values: np.ndarray
+    right_values: np.ndarray
+    operator: str
+    left_null_mask: np.ndarray | None = None
+    right_null_mask: np.ndarray | None = None
+    is_extension_array: bool = False
+
+
 def _build_residual_predicate(
     left: pd.Series,
     right: pd.Series,
@@ -268,28 +280,39 @@ def _build_residual_predicate(
         right_index: Right index positions to align the right series to.
 
     Returns:
-        A three-element ordinary predicate tuple or the six-element nullable
-        ``!=`` tuple expected by the Rust parser.
+        A three-element tuple containing ``left_array``, ``right_array``, and
+        ``operation`` for ordinary predicates. For null-aware ``!=``
+        predicates, returns a six-element tuple containing the two value
+        arrays, their null masks, the extension-array flag, and the operator
+        in the format expected by the Rust parser.
     """
     left_array = _convert_array_to_numpy(array=left._values)
     if right_index is not None:
         right = right.loc[right_index]
     right_array = _convert_array_to_numpy(array=right._values)
     if operation != "!=":
-        return left_array, right_array, operation
+        return (
+            left_array,
+            right_array,
+            operation,
+        )
 
-    left_mask, right_mask, is_extension_array = _get_boolean_args_for_ne(
+    left_null_mask, right_null_mask, is_extension_array = _get_boolean_args_for_ne(
         op=operation,
         left=left,
         right=right,
     )
-    if left_mask is None and right_mask is None:
-        return left_array, right_array, operation
+    if left_null_mask is None and right_null_mask is None:
+        return (
+            left_array,
+            right_array,
+            operation,
+        )
     return (
         left_array,
-        left_mask,
+        left_null_mask,
         right_array,
-        right_mask,
+        right_null_mask,
         bool(is_extension_array),
         operation,
     )

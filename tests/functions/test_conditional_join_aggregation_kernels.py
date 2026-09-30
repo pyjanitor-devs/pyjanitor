@@ -598,6 +598,11 @@ def test_extended_aggregation_returns_empty_when_residual_rejects_all():
         len(actual),
         np.isin(np.arange(len(actual)), expected.index),
     )
+    if len(actual) == 0:
+        expected.index = pd.MultiIndex.from_arrays(
+            [np.array([], dtype="int64"), np.array([], dtype=bool)],
+            names=[None, "matched"],
+        )
     assert_frame_equal(expected, actual)
 
 
@@ -1136,3 +1141,54 @@ def test_dual_range_aggregation_dispatches_each_anchor_dtype_independently():
     assert actual["value", "sum"].tolist() == [50]
     assert actual["value", "size"].tolist() == [2]
     assert actual.index.get_level_values("matched").tolist() == [True]
+
+
+def test_duplicate_equi_aggregation_reverse_updates_each_right_slot():
+    """Reverse equi aggregation visits every duplicate-right equi match."""
+    left = pd.DataFrame({"key": ["a", "a"], "value": [2, 3]})
+    right = pd.DataFrame({"key": ["a", "a", "b"], "payload": [10, 20, 30]})
+
+    actual = left.join_agg(
+        right,
+        ("key", "key", "=="),
+        aggfunc=[("value", "sum")],
+        reverse=True,
+        return_matched=True,
+    )
+
+    expected = pd.DataFrame(
+        {("value", "sum"): [5, 5, 0]},
+        index=pd.MultiIndex.from_tuples(
+            [(0, True), (1, True), (2, False)],
+            names=[None, "matched"],
+        ),
+    )
+    assert_frame_equal(expected, actual)
+
+
+def test_duplicate_equi_aggregation_applies_range_and_residual_filters():
+    """Duplicate equi candidates are narrowed by range and residual filters."""
+    left = pd.DataFrame({"key": ["a"], "bound": [2], "residual": [2]})
+    right = pd.DataFrame(
+        {
+            "key": ["a", "a", "b"],
+            "bound": [1, 3, 5],
+            "residual": [0, 2, 4],
+            "value": [10, 20, 30],
+        }
+    )
+
+    actual = left.join_agg(
+        right,
+        ("key", "key", "=="),
+        ("bound", "bound", "<"),
+        ("residual", "residual", "=="),
+        aggfunc=[("value", "sum"), ("value", "size")],
+        return_matched=True,
+    )
+
+    expected = pd.DataFrame(
+        {("value", "sum"): [20], ("value", "size"): [1]},
+        index=pd.MultiIndex.from_tuples([(0, True)], names=[None, "matched"]),
+    )
+    assert_frame_equal(expected, actual)

@@ -12,6 +12,11 @@ import numpy as np
 import pandas as pd
 
 from janitor.functions._conditional_join import _helpers
+from janitor.functions._conditional_join._aggregation_helpers import (
+    _aggregation_inputs,
+    _empty_aggregation_result,
+    _materialize_aggregation_result,
+)
 
 
 def _empty_indices() -> dict[str, np.ndarray]:
@@ -97,37 +102,72 @@ def _build_equi_keys(
     return l_cols, r_cols
 
 
-def _get_indices(
+def _preparatory_work(
     df: pd.DataFrame,
     right: pd.DataFrame,
     conditions: list[tuple[str, str, str]],
-    keep: str,
-    return_building_blocks: bool = False,
-) -> dict[str, np.ndarray] | None:
-    """Prepare and dispatch an equi-led conditional join.
+) -> (
+    tuple[
+        pd.DataFrame,
+        pd.Index,
+        np.ndarray,
+        np.ndarray | None,
+        list[tuple],
+        list[tuple],
+    ]
+    | None
+):
+    """Prepare the shared positional representation for an equi-led join.
 
-    The conditions must contain at least one equi predicate. Normal operator
-    columns use PyJanitor's existing null policy before key mapping; != keeps
-    its existing special handling.
+    This function performs the Python-side work required before either index
+    generation or fused Rust aggregation. It establishes one physical layout
+    for all predicate arrays and returns that same representation to both
+    callers. It does not materialize matching pairs or aggregation values.
 
-    Range preparation happens before equi mapping. Therefore, right_index
-    maps Rust's physical right positions back to public right labels.
+    Preparation occurs in this order:
+
+    1. Rows containing nulls in ordinary comparison columns are removed using
+       PyJanitor's existing null policy. ``!=`` columns are excluded because
+       their null semantics are represented explicitly in their residual
+       predicate tuples.
+    2. The first suitable range predicate sorts the right dataframe when
+       necessary. ``right_index`` records the resulting physical right-row
+       layout.
+    3. A second range predicate is retained only when its right values are
+       monotonic in the first predicate's physical layout. Otherwise it is
+       evaluated later as a residual predicate.
+    4. Equality keys are built after any right-side layout change. Unique
+       right keys use direct positions from ``get_indexer``; duplicate right
+       keys use dense factorization codes and a code-to-right-position array.
+    5. Every remaining non-equality predicate is converted to a Rust residual
+       tuple. Its right values are aligned to ``right_index`` so Rust can use
+       one physical coordinate system for all predicates.
+
+    The returned coordinates are physical positions, not public dataframe
+    labels. Public labels are restored later by the caller or by the Rust
+    aggregation materializer. ``right_index`` is always populated in a
+    successful return; when no range reorders the right side, it is the
+    current right dataframe index.
 
     Args:
-        df: Left dataframe.
-        right: Right dataframe.
-        conditions: Join conditions as
-            (left_column, right_column, operator) tuples.
-        keep: Match-selection mode for materialized Rust paths.
-        return_building_blocks: For duplicate-right, pure-equi joins, return
-            Rust's building-block dictionary with left_index, right_index,
-            left_indexer, offsets, and positions. It has no effect on unique
-            or predicate-filtered paths.
+        df: Left dataframe in its current physical row layout.
+        right: Right dataframe in its current physical row layout.
+        conditions: Join predicates represented as
+            ``(left_column, right_column, operator)`` tuples. At least one
+            predicate must be an equality predicate.
 
     Returns:
-        A final left_index/right_index dictionary, a Rust building-block
-        dictionary when requested, or the standard empty dictionary when no
-        matches exist.
+        ``None`` when either side has no usable rows or when no left equality
+        key matches any right equality key. Otherwise, a six-element tuple:
+
+        * the null-filtered left dataframe;
+        * the physical right index shared by all prepared right arrays;
+        * ``left_indexer``, containing direct right positions for unique keys
+          or dense right-key codes for duplicate keys, with ``-1`` for
+          unmatched left rows;
+        * ``right_codes``, or ``None`` when right equality keys are unique;
+        * up to two aligned range predicate tuples; and
+        * residual predicate tuples for all remaining conditions.
     """
     left_columns = {
         left_column
@@ -209,7 +249,7 @@ def _get_indices(
     )
 
     if equi_predicates is None:
-        return _empty_indices()
+        return None
 
     left_indexer, right_codes = equi_predicates
 
@@ -223,6 +263,62 @@ def _get_indices(
                 right_index=right_index,
             )
             residual_predicates.append(residual_predicate)
+    if right_index is None:
+        right_index = right.index
+    return (
+        df,
+        right_index,
+        left_indexer,
+        right_codes,
+        range_predicates,
+        residual_predicates,
+    )
+
+
+def _get_indices(
+    df: pd.DataFrame,
+    right: pd.DataFrame,
+    conditions: list[tuple[str, str, str]],
+    keep: str,
+    return_building_blocks: bool = False,
+) -> dict[str, np.ndarray] | None:
+    """Prepare and dispatch an equi-led conditional join.
+
+    The conditions must contain at least one equi predicate. Normal operator
+    columns use PyJanitor's existing null policy before key mapping; != keeps
+    its existing special handling.
+
+    Range preparation happens before equi mapping. Therefore, right_index
+    maps Rust's physical right positions back to public right labels.
+
+    Args:
+        df: Left dataframe.
+        right: Right dataframe.
+        conditions: Join conditions as
+            (left_column, right_column, operator) tuples.
+        keep: Match-selection mode for materialized Rust paths.
+        return_building_blocks: For duplicate-right, pure-equi joins, return
+            Rust's building-block dictionary with left_index, right_index,
+            left_indexer, offsets, and positions. It has no effect on unique
+            or predicate-filtered paths.
+
+    Returns:
+        A final left_index/right_index dictionary, a Rust building-block
+        dictionary when requested, or the standard empty dictionary when no
+        matches exist.
+    """
+    outcome = _preparatory_work(df, right, conditions)
+    if outcome is None:
+        return _empty_indices()
+    (
+        df,
+        right_index,
+        left_indexer,
+        right_codes,
+        range_predicates,
+        residual_predicates,
+    ) = outcome
+
     left_index = _helpers._convert_array_to_numpy(array=df.index._values)
     if right_index is None:
         right_index = right.index
@@ -275,3 +371,102 @@ def _get_indices(
     if indices is None:
         return _empty_indices()
     return indices
+
+
+def _empty_result(
+    source: pd.DataFrame,
+    return_matched: bool,
+    aggfunc: list[tuple],
+) -> pd.DataFrame:
+    """Build an empty equi-aggregation result with the requested index shape."""
+    result = _empty_aggregation_result(source=source, aggfunc=aggfunc)
+    if return_matched:
+        result.index = pd.MultiIndex.from_arrays(
+            [result.index, np.array([], dtype=bool)],
+            names=[result.index.name, "matched"],
+        )
+    return result
+
+
+def _aggregate(
+    df: pd.DataFrame,
+    right: pd.DataFrame,
+    conditions: list[tuple[str, str, str]],
+    aggfunc: list[tuple],
+    reverse: bool,
+    return_matched: bool,
+) -> pd.DataFrame:
+    """Aggregate an equi-led conditional join in the Rust fused kernel.
+
+    The Python side owns the physical layout. It removes null rows for the
+    ordinary comparison operators, optionally sorts the right side for one
+    or two compatible range anchors, builds the equi indexer, and sends the
+    resulting positional representation to Rust. Rust then traverses equi
+    candidates, applies range windows and residual predicates, and updates
+    the aggregation state without materializing matching pairs.
+
+    Args:
+        df: Left dataframe in reset physical-row order.
+        right: Right dataframe in reset physical-row order.
+        conditions: Join predicates containing at least one equality. At most
+            two range predicates are sent as windows; all remaining
+            predicates are residual filters.
+        aggfunc: Non-empty ``(column_name, operation)`` aggregation requests.
+        reverse: Aggregate left values into right output rows when true;
+            otherwise aggregate right values into left output rows.
+        return_matched: Include the per-output matched mask in the result
+            index when true.
+
+    Returns:
+        A dataframe using the shared conditional-join aggregation contract.
+        When no candidate survives, an empty dataframe with the requested
+        aggregation schema is returned.
+    """
+
+    outcome = _preparatory_work(df, right, conditions)
+    if outcome is None:
+        return _empty_result(
+            source=df if reverse else right,
+            return_matched=return_matched,
+            aggfunc=aggfunc,
+        )
+    (
+        df,
+        right_index,
+        left_indexer,
+        right_codes,
+        range_predicates,
+        residual_predicates,
+    ) = outcome
+
+    left_index = _helpers._convert_array_to_numpy(array=df.index._values)
+    if right_index is None:
+        right_index = right.index
+    index_right = _helpers._convert_array_to_numpy(array=right_index._values)
+
+    aggregation_source = df if reverse else right.loc[right_index]
+    output_index = right_index if reverse else df.index
+    result = janitor_rs.equi_join_aggregate(
+        left_index,
+        index_right,
+        left_indexer,
+        right_codes,
+        range_predicates,
+        residual_predicates,
+        _aggregation_inputs(source=aggregation_source, aggfunc=aggfunc),
+        return_matched,
+        reverse,
+    )
+    if result is None:
+        return _empty_result(
+            source=aggregation_source,
+            return_matched=return_matched,
+            aggfunc=aggfunc,
+        )
+    return _materialize_aggregation_result(
+        result=result,
+        output_index=output_index,
+        source=aggregation_source,
+        aggfunc=aggfunc,
+        return_matched=return_matched,
+    )

@@ -135,6 +135,19 @@ def test_row_to_names_delete_above_delete_rows_scalar(df):
     assert df.to_series(3)[0] == "Cambridge"
 
 
+def test_row_to_names_open_slice(df):
+    """
+    Test output if row_numbers is a slice
+    without a start or a stop
+    """
+    out = df.row_to_names(slice(None, 1), remove_rows=True)
+    assert out.columns == ["1.23452345", "1", "rabbit", "Cambridge"]
+    assert out.height == 8
+    out = df.row_to_names(slice(-1, None), remove_rows=True, remove_rows_above=True)
+    assert out.columns == ["3.2346125", "3", "lion", "Basel"]
+    assert out.is_empty()
+
+
 def test_row_to_names_not_a_slice_remove_rows_above(df):
     with pytest.raises(
         ValueError, match=r"The remove_rows_above argument is applicable.+"

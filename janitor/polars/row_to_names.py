@@ -165,19 +165,18 @@ def _row_to_names_dispatch(  # noqa: F811
         raise ValueError(
             "The step argument for slice is not supported in row_to_names."
         )
-    headers = df.slice(row_numbers.start, row_numbers.stop - row_numbers.start)
+    start, stop, _ = row_numbers.indices(df.height)
+    headers = df.slice(start, stop - start)
     expression = pl.all().str.join(delimiter=separator)
     headers = headers.select(expression).row(0, named=True)
     headers = {col: str(repl) for col, repl in headers.items()}
     df = df.rename(mapping=headers)
     if remove_rows_above and remove_rows:
-        return df.slice(row_numbers.stop)
+        return df.slice(stop)
     elif remove_rows_above:
-        return df.slice(row_numbers.start)
+        return df.slice(start)
     elif remove_rows:
-        expression = pl.int_range(pl.len()).is_between(
-            row_numbers.start, row_numbers.stop, closed="left"
-        )
+        expression = pl.int_range(pl.len()).is_between(start, stop, closed="left")
         return df.filter(~expression)
     return df
 

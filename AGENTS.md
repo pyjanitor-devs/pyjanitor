@@ -630,6 +630,19 @@ single-extended Rust kernel. Route confirmed dual-range calls through the
 range-join implementation; use the single-extended path for one anchor plus
 residual predicates.
 
+### [2026-10-02] Conditional-join index uniqueness is a Python-side invariant
+
+**Context**: Designing the single range-predicate Rust boundary.
+**Learning**: PyJanitor guarantees that the left and right physical index
+arrays contain unique positions. They are not necessarily ordered. Ordering
+must therefore be represented separately by the right-layout ordering flag and
+must not be inferred from uniqueness.
+
+**Recommendation**: Rust may rely on uniqueness for physical-position
+identity, but must use `right_index_is_ordered` when deciding whether sorted
+range boundaries can directly implement `first` or `last`. Otherwise, compute
+the extrema over the physical right positions in the candidate window.
+
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol

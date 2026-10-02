@@ -23,16 +23,7 @@ from janitor.functions.utils import (
 )
 from janitor.utils import check, check_column, deprecated_kwargs
 
-from ._conditional_join import (
-    _equi_join_rust,
-    _get_indices_equi,
-    _get_indices_non_equi,
-    _get_join_aggs,
-    _not_equal_indices,
-    _range_join,
-    _single_non_equi_join,
-    _single_non_equi_join_extended,
-)
+from ._conditional_join import _equi_join, _not_equals_only, _single_range_predicate
 from ._conditional_join._helpers import (
     _JoinOperator,
     _keep_output,
@@ -372,6 +363,7 @@ def _conditional_join_preliminary_checks(
     return_building_blocks: bool = False,
     reverse: bool = False,
     join_algorithm: str = "default",
+    return_matched: bool = False,
 ) -> tuple:
     """
     Preliminary checks for conditional_join are conducted here.
@@ -449,7 +441,7 @@ def _conditional_join_preliminary_checks(
     check("use_numba", use_numba, [bool])
 
     if use_numba:
-        warnings.warn("numba support deprecated.", DeprecationWarning)
+        warnings.warn("numba support is deprecated.", DeprecationWarning)
 
     check("indicator", indicator, [bool, str])
 
@@ -459,12 +451,6 @@ def _conditional_join_preliminary_checks(
 
     if aggfunc is not None:
         check("aggfunc", aggfunc, [list])
-        if join_algorithm != "default" and all(
-            op == _JoinOperator.NOT_EQUAL.value for *_, op in conditions
-        ):
-            raise NotImplementedError(
-                "aggfunc is not supported for all-!= joins with the regions algorithm"
-            )
         if reverse:
             cols = df.columns
             frame = df
@@ -495,10 +481,19 @@ def _conditional_join_preliminary_checks(
                     f"should be one of {','.join(aggs)}; "
                     f"instead got {agg}"
                 )
-            if (agg in {"sum", "prod"}) and not pd.api.types.is_numeric_dtype(
-                frame[column_name]
-            ):
+            series_ = frame[column_name]
+            if (agg in {"sum", "prod"}) and not is_numeric_dtype(series_):
                 raise ValueError(f"{agg} is supported only for numeric columns")
+            if (
+                (agg in {"min", "max"})
+                and not is_numeric_dtype(series_)
+                and not is_datetime64_dtype(series_)
+                and not is_timedelta64_dtype(series_)
+            ):
+                raise ValueError(
+                    f"{agg} is supported only for numeric, datetime, timedelta columns"
+                )
+            series_ = None
     if all((op == _JoinOperator.STRICTLY_EQUAL.value for *_, op in conditions)):
         if not (return_matching_indices or aggfunc):
             raise ValueError("Equality only joins are not supported.")
@@ -511,12 +506,16 @@ def _conditional_join_preliminary_checks(
     if include_join_positions and (how != "inner"):
         raise ValueError("include_join_positions is valid only if `how='inner'`")
     check("return_building_blocks", return_building_blocks, [bool])
+    if all(op == "!=" for *_, op in conditions) and return_building_blocks:
+        keep = "all"
+
     check("join_algorithm", join_algorithm, [str])
     if join_algorithm not in {"default", "regions"}:
         raise ValueError(
             f"join_algorithm should be either default or regions, "
             f"instead got {join_algorithm}"
         )
+    check("return_matched", return_matched, [bool])
 
     # Only index and column metadata are reassigned downstream. Shallow copies
     # protect the caller's frames without duplicating every column buffer.
@@ -524,7 +523,11 @@ def _conditional_join_preliminary_checks(
 
 
 def _conditional_join_type_check(
-    left_column: pd.Series, right_column: pd.Series, op: str, use_numba: bool
+    left_column: pd.Series,
+    right_column: pd.Series,
+    op: str,
+    use_numba: bool,
+    force: bool,
 ) -> None:
     """
     Dtype check for columns in the join.
@@ -532,8 +535,9 @@ def _conditional_join_type_check(
     except when use_numba is set to True.
     """
 
+    strictly_equal = op == _JoinOperator.STRICTLY_EQUAL.value
     if (
-        ((op != _JoinOperator.STRICTLY_EQUAL.value) or use_numba)
+        ((use_numba or not strictly_equal) or (force and strictly_equal))
         and not is_numeric_dtype(left_column)
         and not is_datetime64_dtype(left_column)
         and not is_timedelta64_dtype(left_column)
@@ -547,9 +551,9 @@ def _conditional_join_type_check(
             f"has a dtype {left_column.dtype}."
         )
 
-    if ((op != _JoinOperator.STRICTLY_EQUAL.value) or use_numba) and not is_dtype_equal(
-        left_column, right_column
-    ):
+    if (
+        (use_numba or not strictly_equal) or (force and strictly_equal)
+    ) and not is_dtype_equal(left_column, right_column):
         raise TypeError(
             f"Both columns should have the same type - "
             f"'{left_column.name}' has {left_column.dtype} type;"
@@ -572,17 +576,16 @@ def _conditional_join_compute(
     force: bool,
     return_matching_indices: bool = False,
     aggfunc: list[tuple] = None,
-    return_matched: bool = True,
     include_join_positions: bool = False,
     return_building_blocks: bool = False,
     reverse: bool = False,
     join_algorithm: str = "default",
+    return_matched: bool = False,
 ) -> pd.DataFrame:
     """
     This is where the actual computation
     for the conditional join takes place.
     """
-    check("return_matched", return_matched, [bool])
     df, right = _conditional_join_preliminary_checks(
         df=df,
         right=right,
@@ -600,12 +603,9 @@ def _conditional_join_compute(
         return_building_blocks=return_building_blocks,
         reverse=reverse,
         join_algorithm=join_algorithm,
+        return_matched=return_matched,
     )
-    eq_check = False
-    le_lt_check = False
-    all_not_equal_check = all(
-        condition[2] == _JoinOperator.NOT_EQUAL.value for condition in conditions
-    )
+
     for condition in conditions:
         left_on, right_on, op = condition
         _conditional_join_type_check(
@@ -613,33 +613,15 @@ def _conditional_join_compute(
             right_column=right[right_on],
             op=op,
             use_numba=use_numba,
+            force=force,
         )
-        if op == _JoinOperator.STRICTLY_EQUAL.value:
-            eq_check = True
-        elif op in less_than_join_types.union(greater_than_join_types):
-            le_lt_check = True
+
     df.index = range(len(df))
     right.index = range(len(right))
-    default_rust_path = not use_numba and join_algorithm == "default"
-    if aggfunc and default_rust_path and eq_check:
-        return _equi_join_rust._aggregate(
-            df=df,
-            right=right,
-            conditions=conditions,
-            aggfunc=aggfunc,
-            reverse=reverse,
-            return_matched=return_matched,
-        )
-    if (
-        aggfunc
-        and not use_numba
-        and join_algorithm == "regions"
-        and not eq_check
-        and le_lt_check
-    ):
-        from janitor.functions._conditional_join import _range_join_regions
 
-        return _range_join_regions._aggregate(
+    eq_check = all(op == _JoinOperator.STRICTLY_EQUAL.value for *_, op in conditions)
+    if eq_check and aggfunc:
+        return _equi_join._aggregate(
             df=df,
             right=right,
             conditions=conditions,
@@ -647,25 +629,23 @@ def _conditional_join_compute(
             reverse=reverse,
             return_matched=return_matched,
         )
-    if (
-        aggfunc
-        and default_rust_path
-        and not eq_check
-        and (len(conditions) == 1 or le_lt_check or all_not_equal_check)
-    ):
-        # ELI5: aggregation has its own fused Rust traversal. It updates the
-        # aggregation state while candidates are compared, so it must run
-        # before the ordinary index-producing dispatch builds any pairs.
-        if len(conditions) == 1:
-            return _single_non_equi_join._aggregate_single(
-                df=df,
-                right=right,
-                condition=conditions[0],
-                aggfunc=aggfunc,
-                reverse=reverse,
-                return_matched=return_matched,
-            )
-        return _single_non_equi_join_extended._aggregate_extended(
+    if eq_check:
+        return _equi_join._get_indices(
+            df=df,
+            right=right,
+            conditions=conditions,
+            keep=keep,
+            return_building_blocks=return_building_blocks,
+        )
+
+    # All-!= predicates have their own null-aware Rust ABI. Route them before
+    # the mixed non-equi algorithms; join_algorithm is intentionally ignored
+    # because this family never enters the regions/range dispatch.
+    all_nes_check = all(op == "!=" for *_, op in conditions)
+    if all_nes_check and aggfunc:
+        # The dedicated all-!= aggregation path returns a schema-only empty
+        # frame when no pair survives, preserving the requested index shape.
+        return _not_equals_only._aggregate(
             df=df,
             right=right,
             conditions=conditions,
@@ -673,139 +653,38 @@ def _conditional_join_compute(
             reverse=reverse,
             return_matched=return_matched,
         )
-    # Default to the complete frames for single-condition joins and for the
-    # deprecated Numba path, whose behavior this optimization does not change.
-    matching_df = df
-    matching_right = right
-    if (len(conditions) > 1) and not use_numba:
-        # dict.fromkeys removes repeated column references without scrambling
-        # the user-supplied condition order.
-        condition_left_columns = list(
-            dict.fromkeys(condition[0] for condition in conditions)
+    if all_nes_check and return_building_blocks:
+        return _not_equals_only._get_indices(
+            df=df,
+            right=right,
+            conditions=conditions,
+            keep="all",
         )
-        condition_right_columns = list(
-            dict.fromkeys(condition[1] for condition in conditions)
-        )
-        # ELI5: use a small working table containing only the columns needed to
-        # find matches. Keep df and right complete so result assembly can still
-        # return every requested payload column with its original dtype.
-        matching_df = df.loc(axis=1)[condition_left_columns]
-        matching_right = right.loc(axis=1)[condition_right_columns]
-    if (
-        (len(conditions) > 1)
-        and (le_lt_check or all_not_equal_check)
-        and default_rust_path
-    ):
-        all_range = all(
-            condition[2] in less_than_join_types.union(greater_than_join_types)
-            for condition in conditions
-        )
-        if len(conditions) == 2 and all_range:
-            indices = _range_join._get_indices(
-                df=matching_df,
-                right=matching_right,
-                conditions=conditions,
-                keep=keep,
-                return_materialized_indices=return_building_blocks or bool(aggfunc),
-            )
-            if indices is None:
-                indices = _single_non_equi_join_extended._get_indices(
-                    df=matching_df,
-                    right=matching_right,
-                    conditions=conditions,
-                    keep=keep,
-                    return_materialized_indices=return_building_blocks or bool(aggfunc),
-                )
-        else:
-            indices = _single_non_equi_join_extended._get_indices(
-                df=matching_df,
-                right=matching_right,
-                conditions=conditions,
-                keep=keep,
-                return_materialized_indices=return_building_blocks or bool(aggfunc),
-            )
-    elif eq_check:
-        indices = _multiple_conditional_join_eq(
-            df=matching_df,
-            right=matching_right,
+    if all_nes_check:
+        return _not_equals_only._get_indices(
+            df=df,
+            right=right,
             conditions=conditions,
             keep=keep,
-            use_numba=use_numba,
-            force=force,
-            return_matching_indices=return_building_blocks or aggfunc,
-            join_algorithm=join_algorithm,
         )
-    elif (len(conditions) > 1) & le_lt_check:
-        indices = _multiple_conditional_join_le_lt(
-            df=matching_df,
-            right=matching_right,
-            conditions=conditions,
-            keep=keep,
-            use_numba=use_numba,
-            return_matching_indices=return_building_blocks or aggfunc,
-            join_algorithm=join_algorithm,
+    single_join_check = len(conditions) == 1
+    if single_join_check and aggfunc:
+        return _single_range_predicate._aggregate_single_join(
+            df=df,
+            right=right,
+            condition=conditions[0],
+            aggfunc=aggfunc,
+            return_matched=return_matched,
+            reverse=reverse,
         )
-    elif len(conditions) > 1:
-        indices = _multiple_conditional_join_ne(
-            df=matching_df,
-            right=matching_right,
-            conditions=conditions,
-            keep=keep,
-            return_matching_indices=return_building_blocks or bool(aggfunc),
-        )
-    else:
-        indices = _single_non_equi_join._single_non_equi_join(
+    if single_join_check:
+        return _single_range_predicate._get_indices_single(
             df=df,
             right=right,
             condition=conditions[0],
             keep=keep,
-            return_materialized_indices=return_building_blocks or aggfunc,
+            return_building_blocks=return_building_blocks,
         )
-    # Internally, join discovery may remain compact until aggregation. A
-    # ``starts``/``ends`` pair contains one half-open candidate slice per driving
-    # row. ``matches`` is a flat mask aligned with those slices, and ``positions``
-    # is an integer tape indexing ``right_index`` rather than a dataframe-label
-    # array. ``left_index`` and ``right_index`` carry original dataframe index
-    # values (labels); ``positions`` entries are offsets into the right-side
-    # array. Depending on join shape, some representations are absent: equality
-    # joins may return pairs directly, while range joins commonly retain
-    # boundaries until aggregation. Empty ranges have equal boundaries and
-    # contribute no matches.
-
-    # For example, with ``right_index = ["a", "b", "c", "d"]``,
-    # ``positions = [2, 0, 2, 3, 1]``, ``starts = [0, 2, 4]`` and
-    # ``ends = [2, 4, 5]``, the three driving rows select ``["c", "a"]``,
-    # ``["c", "d"]`` and ``["b"]`` respectively. Simple/equi joins generally
-    # return direct pairs; starts-only/ends-only paths represent one-sided
-    # inequalities; range and multi-condition joins may retain both boundaries
-    # and a mask. ``keep="first"`` or ``keep="last"`` reduces each slice before
-    # labels are restored, while ``keep="all"`` emits every surviving position.
-
-    if aggfunc and reverse:
-        return _get_join_aggs._agg_join_left(
-            df=df,
-            aggfunc=aggfunc,
-            indices=indices,
-        )
-    if aggfunc:
-        return _get_join_aggs._agg_join_right(
-            right=right,
-            aggfunc=aggfunc,
-            indices=indices,
-        )
-    if return_matching_indices:
-        return indices
-    return _create_frame(
-        df=df,
-        right=right,
-        left_index=indices["left_index"],
-        right_index=indices["right_index"],
-        how=how,
-        df_columns=df_columns,
-        right_columns=right_columns,
-        indicator=indicator,
-        include_join_positions=include_join_positions,
-    )
 
 
 operator_map = {

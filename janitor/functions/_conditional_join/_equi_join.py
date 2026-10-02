@@ -254,15 +254,14 @@ def _preparatory_work(
     left_indexer, right_codes = equi_predicates
 
     residual_predicates = []
-    if rest:
-        for left_column, right_column, operator in rest:
-            residual_predicate = _helpers._build_residual_predicate(
-                left=df[left_column],
-                right=right[right_column],
-                operation=operator,
-                right_index=right_index,
-            )
-            residual_predicates.append(residual_predicate)
+    for left_column, right_column, operator in rest:
+        residual_predicate = _helpers._build_residual_predicate(
+            left=df[left_column],
+            right=right[right_column],
+            operation=operator,
+            right_index=right_index,
+        )
+        residual_predicates.append(residual_predicate)
     if right_index is None:
         right_index = right.index
     return (

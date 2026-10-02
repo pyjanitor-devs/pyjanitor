@@ -90,7 +90,9 @@ def _select_aggregation_kernel(
     return reverse_kernel if reverse else forward_kernel
 
 
-def _aggregation_inputs(source: pd.DataFrame, aggfunc: list[tuple]) -> list[tuple]:
+def _aggregation_inputs(
+    source: pd.DataFrame, aggfunc: list[tuple], indexer: pd.Index | slice = slice(None)
+) -> list[tuple]:
     """Prepare aggregation requests for the Rust input contract.
 
     Numeric value reductions are converted to
@@ -127,7 +129,7 @@ def _aggregation_inputs(source: pd.DataFrame, aggfunc: list[tuple]) -> list[tupl
     """
     result = []
     for column_name, operation in aggfunc:
-        series = source[column_name]
+        series = source.loc[indexer, column_name]
         null_mask = series.isna().to_numpy(dtype=bool)
         if operation == "size":
             result.append(("*", "size"))
@@ -154,8 +156,7 @@ def _aggregation_inputs(source: pd.DataFrame, aggfunc: list[tuple]) -> list[tupl
 
 
 def _empty_aggregation_result(
-    source: pd.DataFrame,
-    aggfunc: list[tuple],
+    source: pd.DataFrame, aggfunc: list[tuple], return_matched: bool = False
 ) -> pd.DataFrame:
     """Build the pandas result for a join with no surviving pairs.
 
@@ -201,7 +202,14 @@ def _empty_aggregation_result(
         else:
             dtype = series.dtype
         result[_build_agg_label(column_name, operation)] = pd.array([], dtype=dtype)
-    return pd.DataFrame(result, copy=False)
+    if return_matched:
+        index = pd.MultiIndex.from_arrays(
+            [np.array([], dtype=np.intp), np.array([], dtype=bool)],
+            names=[None, "matched"],
+        )
+    else:
+        index = pd.Index([], dtype=np.intp)
+    return pd.DataFrame(result, copy=False, index=index)
 
 
 def _materialize_aggregation_result(
@@ -210,6 +218,7 @@ def _materialize_aggregation_result(
     source: pd.DataFrame,
     aggfunc: list[tuple],
     return_matched: bool,
+    source_index: pd.Index | slice = slice(None),
 ) -> pd.DataFrame:
     """Convert the common Rust aggregation result into a pandas dataframe.
 
@@ -287,8 +296,7 @@ def _materialize_aggregation_result(
         if operation in {"count", "size"}:
             output[_build_agg_label(column_name, operation)] = values
             continue
-
-        series = source[column_name]
+        series = source.loc[source_index, column_name]
         if operation in {"sum", "prod"}:
             # Extension arrays are not limited to nullable floats; nullable
             # integer dtypes also enter this path. Integer reductions already

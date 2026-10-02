@@ -9,8 +9,6 @@ import janitor_rs
 import numpy as np
 import pandas as pd
 
-from janitor.functions._conditional_join import _compare
-
 
 class _JoinOperator(Enum):
     """
@@ -29,6 +27,17 @@ less_than_join_types = {
     _JoinOperator.LESS_THAN.value,
     _JoinOperator.LESS_THAN_OR_EQUAL.value,
 }
+
+
+def _empty_indices() -> dict[str, np.ndarray]:
+    """Return the standard empty conditional-join result.
+
+    Returns:
+        A dictionary containing empty ``left_index`` and ``right_index``
+        arrays, matching the other conditional-join paths.
+    """
+    empty = np.array([], dtype=np.intp)
+    return {"left_index": empty, "right_index": empty}
 
 
 @dataclass(frozen=True, slots=True)
@@ -265,7 +274,8 @@ def _build_residual_predicate(
     left: pd.Series,
     right: pd.Series,
     operation: str,
-    right_index: pd.Index | None = None,
+    left_index: pd.Index | slice = slice(None),
+    right_index: pd.Index | slice = slice(None),
 ) -> tuple:
     """Build one residual predicate in the Rust tuple format.
 
@@ -286,9 +296,9 @@ def _build_residual_predicate(
         arrays, their null masks, the extension-array flag, and the operator
         in the format expected by the Rust parser.
     """
+    left = left.loc[left_index]
     left_array = _convert_array_to_numpy(array=left._values)
-    if right_index is not None:
-        right = right.loc[right_index]
+    right = right.loc[right_index]
     right_array = _convert_array_to_numpy(array=right._values)
     if operation != "!=":
         return (

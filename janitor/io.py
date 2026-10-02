@@ -625,7 +625,8 @@ def _xlsx_cells(
         start_point: start coordinates of the Excel sheet.
         end_point: end coordinates of the Excel sheet.
         include_blank_cells: Determines if empty cells should be included.
-        path_is_workbook: True/False.
+        base_engine: The DataFrame library to build the output with -
+            `pandas` or `polars`.
 
     Returns:
         A DataFrame.

@@ -2305,16 +2305,14 @@ def _expand_sorted_array(
         positions_array: positions of regions in the sorted_array.
         maxxes: array of max values per column in the sorted_array.
         lengths: array of lengths per column in the sorted_array.
-        region: integer to insert into sorted_array.
         posn: binary search position of region in maxxes array.
             Determines which column in the sorted_array
             the region will go to.
         maxxes_counter: keeps a count of the number
             of entries in the maxxes array that have
             actual values.
-        num: position of region in right_regions array.
-            Inserted into positions_array to keep
-            in sync with the region the sorted_array.
+        load_factor: number of entries each column holds after a split;
+            a column is split once its length reaches `load_factor * 2`.
     """
     # shift from left+1 to right
     for pos in range(maxxes_counter - 1, posn, -1):

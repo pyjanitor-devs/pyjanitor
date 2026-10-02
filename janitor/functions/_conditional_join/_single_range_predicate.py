@@ -1,4 +1,36 @@
-# here the first entry is a range predicate, i.e greater than or less than
+"""Python boundary for single range and range-first conditional joins.
+
+This module owns the Python preparation that sits immediately before the
+Rust range kernels.  It deliberately keeps the pandas-facing concerns here:
+
+* removing null anchor values, since ordinary range comparisons do not match
+  nulls;
+* sorting the right anchor values while retaining their original physical
+  positions;
+* selecting a dtype-specialised PyO3 function; and
+* converting Rust's positional result into pandas indexes and aggregation
+  columns.
+
+The Rust kernels never receive pandas labels.  Every ``*_index`` array passed
+through this module contains a zero-based physical position in the original
+left or right dataframe.  A sorted right anchor therefore carries two pieces
+of information: ``right`` is the sorted search layout, while ``right_index``
+maps each sorted slot back to the original right row.
+
+There are two related ABI shapes:
+
+``single_range_predicate_indices_*``
+    One range predicate.  The right values and right-position array are
+    sorted together.  ``keep`` and ``right_index_is_ordered`` are handled by
+    Rust after the binary-search window is built.
+
+``range_anchor_extended_*``
+    A range predicate followed by residual predicates.  The first tuple uses
+    compact anchor arrays for searching.  Aggregation uses the seven-field
+    form with the full left/right lengths; Rust maps compact candidate slots
+    back through the physical position arrays before indexing full-layout
+    aggregation inputs.
+"""
 
 
 from __future__ import annotations
@@ -92,7 +124,17 @@ _MULTI_RANGE_AGGREGATE_FUNCTIONS = {
 
 
 def _get_single_range_function(dtype: np.dtype) -> object:
-    """Return the Rust range kernel specialized for ``dtype``."""
+    """Return the single-range index kernel for a NumPy dtype.
+
+    Args:
+        dtype: NumPy dtype of the prepared right anchor values.
+
+    Returns:
+        The dtype-specialised PyO3 function exported by ``janitor_rs``.
+
+    Raises:
+        KeyError: If the Rust extension has no kernel for ``dtype``.
+    """
     dtype_name = dtype.name
     try:
         return _SINGLE_RANGE_FUNCTIONS[dtype_name]
@@ -101,7 +143,19 @@ def _get_single_range_function(dtype: np.dtype) -> object:
 
 
 def _get_single_range_aggregation_function(dtype: np.dtype, reverse: bool) -> object:
-    """Return the forward or reverse Rust single-range aggregation kernel."""
+    """Select the single-range aggregation kernel and direction.
+
+    Args:
+        dtype: NumPy dtype of the range anchor.
+        reverse: When true, aggregate left values into right output slots;
+            otherwise aggregate right values into left output slots.
+
+    Returns:
+        The forward or reverse dtype-specialised PyO3 function.
+
+    Raises:
+        KeyError: If ``dtype`` is unsupported by the Rust aggregation family.
+    """
     dtype_name = dtype.name
     try:
         forward, reverse_function = _SINGLE_RANGE_AGGREGATE_FUNCTIONS[dtype_name]
@@ -113,7 +167,17 @@ def _get_single_range_aggregation_function(dtype: np.dtype, reverse: bool) -> ob
 
 
 def _get_multi_range_function(dtype: np.dtype) -> object:
-    """Return the range-first multi-predicate index kernel for ``dtype``."""
+    """Return the range-first residual index kernel for ``dtype``.
+
+    The first predicate owns the sorted right search layout.  Rust evaluates
+    every later predicate against that layout before applying ``keep``.
+
+    Args:
+        dtype: NumPy dtype of the range anchor.
+
+    Returns:
+        The matching ``range_anchor_extended_indices_*`` PyO3 function.
+    """
     try:
         return _MULTI_RANGE_FUNCTIONS[dtype.name]
     except KeyError as err:
@@ -121,13 +185,37 @@ def _get_multi_range_function(dtype: np.dtype) -> object:
 
 
 def _get_multi_range_aggregation_function(reverse: bool) -> object:
-    """Return the forward or reverse range-first aggregation kernel."""
+    """Return the range-first aggregation kernel for one join direction.
+
+    Args:
+        reverse: Select the reverse kernel when true.  Reverse aggregation
+            produces one slot per right row and reads source values from the
+            left dataframe; forward aggregation does the opposite.
+
+    Returns:
+        The registered range-first aggregation PyO3 function.
+    """
     return _MULTI_RANGE_AGGREGATE_FUNCTIONS[bool(reverse)]
 
 
 def _preparatory_work_single_join(
     df: pd.DataFrame, right: pd.DataFrame, condition: tuple[str, str, str]
 ) -> tuple | None:
+    """Prepare one non-null range anchor for the Rust index kernel.
+
+    The returned series retain their original dataframe indexes.  The right
+    series is sorted by value, but its index travels with it, so Rust can
+    return original physical right positions rather than sorted offsets.
+
+    Args:
+        df: Left dataframe.
+        right: Right dataframe.
+        condition: ``(left_column, right_column, operator)``.
+
+    Returns:
+        ``(left_values, right_values, right_index_is_ordered)`` or ``None``
+        when either input is empty or one side contains only null anchors.
+    """
     if df.empty or right.empty:
         return None
     left_column, *_ = condition
@@ -153,6 +241,20 @@ def _preparatory_work_single_join(
 
 
 def _get_indices_single(df, right, condition, keep, return_building_blocks):
+    """Build index pairs for a single range predicate.
+
+    Args:
+        df: Left dataframe.
+        right: Right dataframe.
+        condition: Single range condition.
+        keep: ``"all"``, ``"any"``, ``"first"``, or ``"last"``.
+        return_building_blocks: Return ``starts``/``ends`` windows instead of
+            materialised pairs when true.
+
+    Returns:
+        A dictionary containing physical left/right positions, or the shared
+        empty-index result when no pair matches.
+    """
     outcome = _preparatory_work_single_join(df=df, right=right, condition=condition)
     if outcome is None:
         return _helpers._empty_indices()
@@ -188,6 +290,26 @@ def _aggregate_single_join(
     return_matched: bool,
     reverse: bool,
 ) -> pd.DataFrame:
+    """Aggregate one range predicate through the Rust range kernel.
+
+    Forward aggregation has one output slot per left row and reads values
+    from the right source.  Reverse aggregation has one output slot per right
+    row and reads values from the left source.  Python supplies aggregation
+    arrays in the same prepared layout as the predicate arrays, allowing the
+    specialised single-range Rust kernels to use their prefix/suffix paths.
+
+    Args:
+        df: Left dataframe.
+        right: Right dataframe.
+        condition: Single range condition.
+        aggfunc: ``(column_name, operation)`` aggregation requests.
+        return_matched: Include the match mask in the output index.
+        reverse: Aggregate left values into right output slots when true.
+
+    Returns:
+        A pandas dataframe indexed by the participating side's physical
+        positions, with one output column per aggregation request.
+    """
     aggregation_source = df if reverse else right
     outcome = _preparatory_work_single_join(df=df, right=right, condition=condition)
     if outcome is None:
@@ -241,6 +363,25 @@ def _aggregate_single_join(
 def _preparatory_work_multi_join(
     df: pd.DataFrame, right: pd.DataFrame, conditions: list[tuple[str, str, str]]
 ) -> tuple | None:
+    """Prepare a range-first multi-predicate join.
+
+    Null rows are removed from ordinary range anchors.  The first range
+    predicate is converted to compact value arrays and sorted on the right;
+    each residual predicate is then indexed into that same physical layout.
+    The residual tuple list is consumed unchanged by both the index and
+    aggregation Rust entry points.
+
+    Args:
+        df: Left dataframe.
+        right: Right dataframe.
+        conditions: Ordered conditional-join predicates.  One range
+            predicate must be available to act as the anchor.
+
+    Returns:
+        ``(predicates, anchor_dtype)`` where the first tuple is the range
+        anchor and later tuples are residual predicates, or ``None`` when no
+        non-null anchor rows remain.
+    """
     if df.empty or right.empty:
         return None
     booleans = None
@@ -323,6 +464,12 @@ def _preparatory_work_multi_join(
 
 
 def _get_indices_multiple(df, right, conditions, keep):
+    """Build pairs for a range-first join with residual predicates.
+
+    ``keep`` is applied in Rust only after the anchor window and every
+    residual predicate have passed.  This matters for ``first``/``last``:
+    choosing before residual filtering could return a rejected candidate.
+    """
     outcome = _preparatory_work_multi_join(df=df, right=right, conditions=conditions)
     if outcome is None:
         return _helpers._empty_indices()
@@ -340,6 +487,31 @@ def _aggregate_multiple_join(
     return_matched: bool,
     reverse: bool,
 ) -> pd.DataFrame:
+    """Aggregate a range-first join with residual predicates.
+
+    The predicate arrays are compact because the right anchor is sorted, but
+    aggregation inputs are built from the complete source dataframe.  The
+    first predicate is therefore expanded to the seven-field Rust ABI:
+
+    ``(left_values, left_positions, right_values, right_positions,
+    left_full_length, right_full_length, operator)``.
+
+    The position arrays are physical positions in the original dataframes;
+    they are not compact offsets.  Rust uses them to route each surviving
+    pair to the correct full-layout aggregation slot.  This is why the
+    multi-predicate path does not reuse the single-range aggregation kernel.
+
+    Args:
+        df: Left dataframe and source for reverse aggregation.
+        right: Right dataframe and source for forward aggregation.
+        conditions: Range-first predicate list with residual predicates.
+        aggfunc: ``(column_name, operation)`` aggregation requests.
+        return_matched: Include the match mask in the output index.
+        reverse: Aggregate left values into right output slots when true.
+
+    Returns:
+        A pandas aggregation dataframe indexed by the full output side.
+    """
     aggregation_source = df if reverse else right
     outcome = _preparatory_work_multi_join(df=df, right=right, conditions=conditions)
     if outcome is None:

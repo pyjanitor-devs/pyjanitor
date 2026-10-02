@@ -12,10 +12,12 @@ positional representation back to pandas while preserving column labels,
 extension dtypes, null behavior, the trimmed output domain, and the matched
 flag as a ``MultiIndex`` level.
 
-The helpers receive aggregation arrays in the same trimmed calculation layout
-as the predicate arrays. Rust returns those arrays in that order; Python uses
-the already-prepared trimmed index directly and validates the returned
-positions to prevent cross-language layout drift.
+There are two supported layout contracts. Single-range and older aligned
+callers pass aggregation arrays in the prepared calculation layout. The
+range-first multi-predicate caller instead passes full source arrays and
+physical position maps; Rust translates compact candidate offsets before
+indexing those arrays. Rust returns output positions in the caller's output
+layout, and Python validates them to prevent cross-language drift.
 
 Numerical contract:
     Signed integer ``sum`` and ``prod`` results use ``int64``; unsigned
@@ -99,9 +101,11 @@ def _aggregation_inputs(
     ``(values, null_mask, operation)``. ``count`` is converted to
     ``("*", null_mask, "count")`` because its result depends only on the
     authoritative mask; ``size`` is converted to ``("*", "size")``.
-    Arrays and masks use the trimmed calculation layout supplied by the
-    caller. Every predicate position used by Rust must therefore index this
-    same source layout.
+    Arrays and masks use the layout selected by ``indexer``. For ordinary
+    single-range aggregation this is the prepared compact layout. For
+    range-first multi-predicate aggregation it is ``slice(None)``: the
+    complete source array is passed because Rust receives physical position
+    maps for translating sorted-anchor candidates.
 
     Before crossing the Rust boundary, integer ``sum`` and ``prod`` values
     are promoted to the pandas/NumPy reduction dtype: signed integers become
@@ -118,6 +122,9 @@ def _aggregation_inputs(
             operations are interpreted by the Rust aggregation parser, for
             example ``"sum"``, ``"count"``, ``"size"``, ``"prod"``,
             ``"min"``, and ``"max"``.
+        indexer: Pandas indexer selecting the layout exposed to Rust. It must
+            be a positional/label selection that produces arrays whose
+            positions match the Rust predicate contract.
 
     Returns:
         A list of Rust-facing aggregation tuples in the same order as
@@ -168,6 +175,8 @@ def _empty_aggregation_result(
         source: Dataframe supplying the requested columns and their dtypes.
         aggfunc: ``(column_name, operation)`` requests whose output columns
             must be represented in the empty result.
+        return_matched: Preserve the standard ``matched`` MultiIndex level
+            even though the result contains no rows.
 
     Returns:
         An empty dataframe with one column per aggregation request.
@@ -222,11 +231,11 @@ def _materialize_aggregation_result(
 ) -> pd.DataFrame:
     """Convert the common Rust aggregation result into a pandas dataframe.
 
-    Rust returns one accumulator slot per trimmed output position, including
-    trimmed rows that never matched. The returned positions identify those
-    physical output slots in the same order as the result arrays; they are
-    validated against the already-prepared trimmed index and never used to
-    reorder the arrays.
+    Rust returns one accumulator slot per output position, including output
+    rows that never matched. The output may be a prepared compact index for a
+    single-range call or the full original index for a range-first call. The
+    returned positions identify that exact output layout and are validated;
+    they are never used to reorder the aggregation arrays.
 
     ``min`` and ``max`` use ``-1`` as Rust's internal no-value sentinel. The
     sentinel cannot be passed directly to ``Series.iloc`` because it would
@@ -245,11 +254,17 @@ def _materialize_aggregation_result(
             ``output_index``. The arrays must contain one result per request
             in ``aggfunc``.
         output_index: Already-trimmed output index. It is left-aligned for
-            forward aggregation and right-aligned for reverse aggregation.
+            forward aggregation and right-aligned for reverse aggregation. In
+            the full-layout range-first path this is the complete original
+            dataframe index.
         source: Dataframe containing the source columns and their original
             pandas dtypes. This is also used to resolve ``min``/``max`` row
             positions back to values.
         aggfunc: Requests in the same order used to create ``result[2]``.
+        return_matched: Whether ``result`` contains the matched mask between
+            output positions and aggregation arrays.
+        source_index: Selection used to recover source dtype and values for
+            ``min``/``max``. It matches the source layout sent to Rust.
 
     Returns:
         A pandas dataframe containing the trimmed output domain. Its index is

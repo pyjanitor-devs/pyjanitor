@@ -685,6 +685,38 @@ def _conditional_join_compute(
             keep=keep,
             return_building_blocks=return_building_blocks,
         )
+    counter = 0
+    for *_, op in conditions:
+        if op not in less_than_join_types.union(greater_than_join_types):
+            continue
+        counter += 1
+    # A join with exactly one range predicate uses the range-first Rust
+    # boundary even when residual predicates are present. The first range
+    # owns the sorted right search layout; residuals are filtered inside Rust
+    # before keep/aggregation semantics are applied.
+    if (counter == 1) and aggfunc:
+        return _single_range_predicate._aggregate_multiple_join(
+            df=df,
+            right=right,
+            conditions=conditions,
+            aggfunc=aggfunc,
+            return_matched=return_matched,
+            reverse=reverse,
+        )
+    if (counter == 1) and return_building_blocks:
+        return _single_range_predicate._get_indices_multiple(
+            df=df,
+            right=right,
+            conditions=conditions,
+            keep="all",
+        )
+    if (counter == 1):
+        return _single_range_predicate._get_indices_multiple(
+            df=df,
+            right=right,
+            conditions=conditions,
+            keep=keep,
+        )
 
 
 operator_map = {

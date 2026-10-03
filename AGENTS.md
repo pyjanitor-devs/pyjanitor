@@ -558,6 +558,24 @@ arguments, limitations, and examples. Retain implementation-only explanations
 as source comments when they clarify non-obvious code or algorithms for
 maintainers.
 
+### [2026-09-18] conditional_join Indexes Are Row Positions, Not Labels
+
+**Context**: Correcting index-contract prose in `_get_join_aggs.py`,
+`_helpers.py`, and the `_conditional_join_compute` comment.
+**Learning**: `_conditional_join_compute` resets both frames with
+`df.index = range(len(df))` before join discovery, so `left_index` and
+`right_index` are 0-based row positions rather than original index labels; the
+emitted arrays can still repeat positions, though, so a many-to-one equi join
+yields `right_index = [0, 0, 1, 1]`. The two `_agg_join_*` summaries had their
+sides swapped: `_agg_join_left` (`reverse=True`) aggregates the left frame for
+each matching right row, while `_agg_join_right` aggregates the right frame
+for each matching left row.
+**Recommendation**: Before editing index or aggregation prose under
+`janitor/functions/_conditional_join/`, check the index reset in
+`_conditional_join_compute` and confirm orientation with frames of unequal
+length. Describe `left_index`/`right_index` as row positions, not dataframe
+labels.
+
 ---
 
 ## Version History

@@ -9,15 +9,16 @@ from janitor.functions._conditional_join import _agg_functions, _helpers
 
 
 def _agg_join_left(df: pd.DataFrame, aggfunc: list, indices: dict) -> pd.DataFrame:
-    """Aggregate the right side for left-driven compact join indices.
+    """Aggregate the left frame for each matching right row.
 
-    ``indices`` contains original dataframe index values and may include
-    half-open ``starts``/``ends`` boundaries, a flat ``matches`` mask, or a
-    ``positions``
-    tape indexing right-side positions. The index arrays retain dataframe
-    labels while the tape is positional indirection. Input indexes are usually
-    unique, but uniqueness is not required; their monotonic order is not
-    assured, so callers must preserve the supplied ordering explicitly.
+    The output is indexed by right-frame row positions and the values come from
+    ``df``. ``_conditional_join_compute`` normalizes both frames to
+    ``range(len(frame))`` before join discovery, so ``indices`` carries row
+    positions rather than the caller's index labels: ``left_index`` and
+    ``right_index`` are 0-based positions, and ``positions`` is a positional
+    tape into ``right_index``. ``indices`` may also hold half-open
+    ``starts``/``ends`` boundaries or a flat ``matches`` mask. Emitted rows
+    keep the order the join produced, which isn't necessarily sorted.
     """
     if not indices["left_index"].size:
         dtypes = df.dtypes
@@ -411,13 +412,15 @@ def _agg_join_left(df: pd.DataFrame, aggfunc: list, indices: dict) -> pd.DataFra
 
 
 def _agg_join_right(right: pd.DataFrame, aggfunc: list, indices: dict) -> pd.DataFrame:
-    """Aggregate the left side for right-driven (reverse) joins.
+    """Aggregate the right frame for each matching left row.
 
-    The compact ``indices`` contract is the same as ``_agg_join_left`` but the
-    output is indexed by right-side dataframe index values and values come from
-    the left dataframe. Boundaries are half-open and the positions tape remains
-    positional indirection. Input indexes are usually unique, but uniqueness
-    is not required and monotonic ordering is not assured.
+    The output is indexed by left-frame row positions and the values come from
+    ``right``. The compact ``indices`` contract is the same as
+    ``_agg_join_left``: both frames are normalized to ``range(len(frame))``
+    beforehand, so ``left_index`` and ``right_index`` hold row positions rather
+    than caller index labels, and ``positions`` stays a positional tape into
+    ``right_index``. Boundaries are half-open. Emitted rows keep the order the
+    join produced, which isn't necessarily sorted.
     """
     if not indices["left_index"].size:
         dtypes = right.dtypes

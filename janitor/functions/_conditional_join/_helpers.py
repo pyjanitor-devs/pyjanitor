@@ -558,12 +558,13 @@ def _build_indices_positions(
 ):
     """Build public positional indices from compact join candidates.
 
-    ``left_index`` and ``right_index`` contain original dataframe index values.
-    ``starts``/``ends`` are optional half-open candidate boundaries and
-    ``positions`` maps each surviving candidate position into ``right_index``.
-    ``counts_array`` gives the surviving count for each left row; ``total`` is
-    the number of emitted pairs. The index arrays retain labels throughout;
-    only ``positions`` is positional indirection.
+    ``left_index`` and ``right_index`` hold 0-based row positions rather than
+    caller index labels, since both frames are normalized to
+    ``range(len(frame))`` before join discovery. ``starts``/``ends`` are
+    optional half-open candidate boundaries and ``positions`` maps each
+    surviving candidate position into ``right_index``. ``counts_array`` gives
+    the surviving count for each left row; ``total`` is the number of emitted
+    pairs.
     """
     if keep == "all":
         left_index = janitor_rs.repeat_index(
@@ -615,9 +616,9 @@ def build_indices_matches(
 
     The mask is aligned with the candidate slices delimited by optional
     ``starts`` and ``ends`` arrays (ends are exclusive). ``counts_array`` and
-    ``total`` describe surviving entries. The index arrays retain dataframe
-    labels while the mask and any positions tape remain positional. Empty
-    slices are valid and emit no pair.
+    ``total`` describe surviving entries. ``left_index`` and ``right_index``
+    hold 0-based row positions rather than caller index labels. Empty slices
+    are valid and emit no pair.
     """
     if (keep == "all") and (starts is not None) and (ends is None):
         left = janitor_rs.repeat_index(

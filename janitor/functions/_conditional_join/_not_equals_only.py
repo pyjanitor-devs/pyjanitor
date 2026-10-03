@@ -84,29 +84,6 @@ from janitor.functions._conditional_join._aggregation_helpers import (
 
 
 @dataclass(frozen=True)
-class _NotEqualAnchor:
-    """Prepared first-predicate data for a null-aware ``!=`` comparison.
-
-    The value series contain only non-null rows. Their indexes are physical
-    positions in the original full layouts, so they remain aligned with the
-    position arrays and can be used to recover public index labels later.
-    This type belongs here because the dedicated ``!=`` path is its only
-    consumer.
-    """
-
-    left_values: pd.Series
-    right_values: pd.Series
-    left_index: np.ndarray
-    right_index: np.ndarray
-    left_positions: np.ndarray
-    right_positions: np.ndarray
-    left_null_positions: np.ndarray | None
-    right_null_positions: np.ndarray | None
-    right_index_is_ordered: bool
-    is_extension_array: bool
-
-
-@dataclass(frozen=True)
 class _NotEqualsAnchor:
     """Named Python representation of the prepared ``!=`` anchor.
 

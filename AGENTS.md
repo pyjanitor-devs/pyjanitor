@@ -643,6 +643,20 @@ identity, but must use `right_index_is_ordered` when deciding whether sorted
 range boundaries can directly implement `first` or `last`. Otherwise, compute
 the extrema over the physical right positions in the candidate window.
 
+### [2026-10-04] Anchor selection must retain predicate occurrence positions
+
+**Context**: Documenting the `enumerate` calls used when selecting range
+anchors in the conditional-join dispatchers.
+**Learning**: Anchor selection tracks the original condition position, not only
+the condition value. Duplicate predicate tuples can be equal by value, so a
+condition object or value-based comparison cannot identify which occurrence
+was selected. The position is also used to remove exactly the selected anchor
+occurrences from the residual predicate list while preserving input order.
+
+**Recommendation**: Keep `enumerate` in anchor-selection and residual-filtering
+loops, and explain both the duplicate-occurrence and original-order invariants
+when changing those loops.
+
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol

@@ -265,6 +265,8 @@ def conditional_join(
         - 0.32.10
             - Added `include_join_positions` parameter.
             - Added `join_algorithm` parameter.
+        - 0.32.27
+            - The `use_numba` parameter is deprecated and has no effect.
 
     Args:
         df: A pandas DataFrame.
@@ -887,6 +889,10 @@ def _conditional_join_compute(
             return_building_blocks=return_building_blocks,
             **index_result_kwargs,
         )
+
+    raise RuntimeError(
+        "conditional_join reached an unsupported predicate dispatch combination"
+    )
 
 
 @deprecated_kwargs("return_ragged_arrays")

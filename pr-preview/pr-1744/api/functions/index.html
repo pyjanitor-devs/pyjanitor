@@ -12498,6 +12498,24 @@ within <code>column_names</code>.</p>
 
     <div class="doc doc-contents ">
 
+        <p>Public conditional-join API and dispatch coordinator.</p>
+<p>The public methods in this module intentionally describe pandas behavior and
+do not expose the implementation language used by the kernels.  Internally,
+the dispatcher normalizes both inputs to shallow working copies, validates
+the complete predicate list, resets indexes to physical row positions, and
+selects one specialized join family:</p>
+<ul>
+<li>equality-led joins use the equi-key dispatcher;</li>
+<li>all-<code>!=</code> joins use the null-aware not-equal dispatcher;</li>
+<li>one range predicate, optionally followed by residuals, uses the
+  single-range dispatcher;</li>
+<li>two or more range predicates use either the range or regions dispatcher.</li>
+</ul>
+<p>Every dispatcher returns physical position arrays or an aggregation result.
+The shared helpers materialize those positions back into pandas rows, which
+keeps outer-join, indicator, column-selection, and positional-index behavior
+consistent across all algorithms.</p>
+
 
 
 
@@ -12987,27 +13005,7 @@ should be included as an index of the final dataframe.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>janitor/functions/conditional_join.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 31</span>
-<span class="normal"> 32</span>
-<span class="normal"> 33</span>
-<span class="normal"> 34</span>
-<span class="normal"> 35</span>
-<span class="normal"> 36</span>
-<span class="normal"> 37</span>
-<span class="normal"> 38</span>
-<span class="normal"> 39</span>
-<span class="normal"> 40</span>
-<span class="normal"> 41</span>
-<span class="normal"> 42</span>
-<span class="normal"> 43</span>
-<span class="normal"> 44</span>
-<span class="normal"> 45</span>
-<span class="normal"> 46</span>
-<span class="normal"> 47</span>
-<span class="normal"> 48</span>
-<span class="normal"> 49</span>
-<span class="normal"> 50</span>
-<span class="normal"> 51</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 51</span>
 <span class="normal"> 52</span>
 <span class="normal"> 53</span>
 <span class="normal"> 54</span>
@@ -13268,7 +13266,27 @@ should be included as an index of the final dataframe.</p>
 <span class="normal">309</span>
 <span class="normal">310</span>
 <span class="normal">311</span>
-<span class="normal">312</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
+<span class="normal">312</span>
+<span class="normal">313</span>
+<span class="normal">314</span>
+<span class="normal">315</span>
+<span class="normal">316</span>
+<span class="normal">317</span>
+<span class="normal">318</span>
+<span class="normal">319</span>
+<span class="normal">320</span>
+<span class="normal">321</span>
+<span class="normal">322</span>
+<span class="normal">323</span>
+<span class="normal">324</span>
+<span class="normal">325</span>
+<span class="normal">326</span>
+<span class="normal">327</span>
+<span class="normal">328</span>
+<span class="normal">329</span>
+<span class="normal">330</span>
+<span class="normal">331</span>
+<span class="normal">332</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">conditional_join</span><span class="p">(</span>
     <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
     <span class="n">right</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span> <span class="o">|</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span>
@@ -13568,38 +13586,231 @@ should be included as an index of the final dataframe.</p>
     <div class="doc doc-contents ">
 
         <p>Return matching physical positions for an inner conditional join.</p>
+<p>Unlike :func:<code>conditional_join</code>, this helper does not gather dataframe
+rows. It returns zero-based physical positions in two parallel arrays;
+<code>left_index[i]</code> and <code>right_index[i]</code> identify one matched pair. The
+arrays are suitable for callers that need to perform their own material
+or aggregation step. With <code>return_building_blocks=True</code>, the selected
+kernel may also return range windows such as <code>starts</code> and <code>ends</code>.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>df</code>
+            </td>
+            <td>
+                  <code><span title="pandas.DataFrame">DataFrame</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Left dataframe.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>right</code>
+            </td>
+            <td>
+                  <code><span title="pandas.DataFrame">DataFrame</span> | <span title="pandas.Series">Series</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Right dataframe or named Series.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>conditions</code>
+            </td>
+            <td>
+                  <code><span title="tuple">tuple</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>(left_column, right_column, operator)</code> predicates.</p>
+              </div>
+            </td>
+            <td>
+                  <code>()</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>keep</code>
+            </td>
+            <td>
+                  <code><span title="typing.Literal">Literal</span>[&#39;first&#39;, &#39;last&#39;, &#39;any&#39;, &#39;all&#39;]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Return all matches, or one <code>first</code>, <code>last</code>, or <code>any</code> match
+per left row.</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;all&#39;</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>force</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Permit equality predicates to participate in a forced non-equi
+preparation path.</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>return_building_blocks</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Return the kernel's intermediate positional
+representation instead of only materialized pairs.</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>join_algorithm</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Algorithm for multiple range predicates.</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;default&#39;</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="dict">dict</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A dictionary containing parallel physical-position arrays. The result</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="dict">dict</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>is empty when no pair satisfies every predicate.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>janitor/functions/conditional_join.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">762</span>
-<span class="normal">763</span>
-<span class="normal">764</span>
-<span class="normal">765</span>
-<span class="normal">766</span>
-<span class="normal">767</span>
-<span class="normal">768</span>
-<span class="normal">769</span>
-<span class="normal">770</span>
-<span class="normal">771</span>
-<span class="normal">772</span>
-<span class="normal">773</span>
-<span class="normal">774</span>
-<span class="normal">775</span>
-<span class="normal">776</span>
-<span class="normal">777</span>
-<span class="normal">778</span>
-<span class="normal">779</span>
-<span class="normal">780</span>
-<span class="normal">781</span>
-<span class="normal">782</span>
-<span class="normal">783</span>
-<span class="normal">784</span>
-<span class="normal">785</span>
-<span class="normal">786</span>
-<span class="normal">787</span>
-<span class="normal">788</span>
-<span class="normal">789</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@deprecated_kwargs</span><span class="p">(</span><span class="s2">&quot;return_ragged_arrays&quot;</span><span class="p">)</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">889</span>
+<span class="normal">890</span>
+<span class="normal">891</span>
+<span class="normal">892</span>
+<span class="normal">893</span>
+<span class="normal">894</span>
+<span class="normal">895</span>
+<span class="normal">896</span>
+<span class="normal">897</span>
+<span class="normal">898</span>
+<span class="normal">899</span>
+<span class="normal">900</span>
+<span class="normal">901</span>
+<span class="normal">902</span>
+<span class="normal">903</span>
+<span class="normal">904</span>
+<span class="normal">905</span>
+<span class="normal">906</span>
+<span class="normal">907</span>
+<span class="normal">908</span>
+<span class="normal">909</span>
+<span class="normal">910</span>
+<span class="normal">911</span>
+<span class="normal">912</span>
+<span class="normal">913</span>
+<span class="normal">914</span>
+<span class="normal">915</span>
+<span class="normal">916</span>
+<span class="normal">917</span>
+<span class="normal">918</span>
+<span class="normal">919</span>
+<span class="normal">920</span>
+<span class="normal">921</span>
+<span class="normal">922</span>
+<span class="normal">923</span>
+<span class="normal">924</span>
+<span class="normal">925</span>
+<span class="normal">926</span>
+<span class="normal">927</span>
+<span class="normal">928</span>
+<span class="normal">929</span>
+<span class="normal">930</span>
+<span class="normal">931</span>
+<span class="normal">932</span>
+<span class="normal">933</span>
+<span class="normal">934</span>
+<span class="normal">935</span>
+<span class="normal">936</span>
+<span class="normal">937</span>
+<span class="normal">938</span>
+<span class="normal">939</span>
+<span class="normal">940</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@deprecated_kwargs</span><span class="p">(</span><span class="s2">&quot;return_ragged_arrays&quot;</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_join_indices</span><span class="p">(</span>
     <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
     <span class="n">right</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span> <span class="o">|</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span>
@@ -13609,7 +13820,31 @@ should be included as an index of the final dataframe.</p>
     <span class="n">return_building_blocks</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">join_algorithm</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;default&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return matching physical positions for an inner conditional join.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return matching physical positions for an inner conditional join.</span>
+
+<span class="sd">    Unlike :func:`conditional_join`, this helper does not gather dataframe</span>
+<span class="sd">    rows. It returns zero-based physical positions in two parallel arrays;</span>
+<span class="sd">    ``left_index[i]`` and ``right_index[i]`` identify one matched pair. The</span>
+<span class="sd">    arrays are suitable for callers that need to perform their own material</span>
+<span class="sd">    or aggregation step. With ``return_building_blocks=True``, the selected</span>
+<span class="sd">    kernel may also return range windows such as ``starts`` and ``ends``.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        df: Left dataframe.</span>
+<span class="sd">        right: Right dataframe or named Series.</span>
+<span class="sd">        conditions: ``(left_column, right_column, operator)`` predicates.</span>
+<span class="sd">        keep: Return all matches, or one ``first``, ``last``, or ``any`` match</span>
+<span class="sd">            per left row.</span>
+<span class="sd">        force: Permit equality predicates to participate in a forced non-equi</span>
+<span class="sd">            preparation path.</span>
+<span class="sd">        return_building_blocks: Return the kernel&#39;s intermediate positional</span>
+<span class="sd">            representation instead of only materialized pairs.</span>
+<span class="sd">        join_algorithm: Algorithm for multiple range predicates.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A dictionary containing parallel physical-position arrays. The result</span>
+<span class="sd">        is empty when no pair satisfies every predicate.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">_conditional_join_compute</span><span class="p">(</span>
         <span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">,</span>
         <span class="n">right</span><span class="o">=</span><span class="n">right</span><span class="p">,</span>
@@ -13649,44 +13884,244 @@ should be included as an index of the final dataframe.</p>
 are <code>sum</code>, <code>count</code>, <code>size</code>, <code>min</code>, <code>max</code> and <code>prod</code>. The
 result retains one row for every physical row in the aggregation domain;
 when <code>return_matched</code> is true, its index also contains the match mask.</p>
+<p>Forward aggregation groups right-side values by left rows. Set
+<code>reverse=True</code> to group left-side values by right rows. The aggregation
+source arrays may be filtered or sorted internally, but their physical
+position maps remain aligned so extrema and residual predicates refer to
+the original dataframe rows.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>df</code>
+            </td>
+            <td>
+                  <code><span title="pandas.DataFrame">DataFrame</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Left dataframe and reverse-aggregation source.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>right</code>
+            </td>
+            <td>
+                  <code><span title="pandas.DataFrame">DataFrame</span> | <span title="pandas.Series">Series</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Right dataframe or named Series and forward-aggregation source.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>conditions</code>
+            </td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Conditional-join predicate tuples.</p>
+              </div>
+            </td>
+            <td>
+                  <code>()</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>aggfunc</code>
+            </td>
+            <td>
+                  <code><span title="list">list</span>[<span title="tuple">tuple</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Non-empty <code>(column, operation)</code> requests.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>force</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Permit equality predicates to use the forced non-equi path.</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>reverse</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Group left-side values into right-side output rows.</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>return_matched</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Add a boolean <code>matched</code> level to the result index.</p>
+              </div>
+            </td>
+            <td>
+                  <code>True</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>join_algorithm</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Algorithm for multiple range predicates.</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;default&#39;</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="pandas.DataFrame">DataFrame</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A dataframe whose columns are labelled <code>(column, operation)</code> and</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="pandas.DataFrame">DataFrame</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>whose rows follow the physical output side.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>janitor/functions/conditional_join.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">792</span>
-<span class="normal">793</span>
-<span class="normal">794</span>
-<span class="normal">795</span>
-<span class="normal">796</span>
-<span class="normal">797</span>
-<span class="normal">798</span>
-<span class="normal">799</span>
-<span class="normal">800</span>
-<span class="normal">801</span>
-<span class="normal">802</span>
-<span class="normal">803</span>
-<span class="normal">804</span>
-<span class="normal">805</span>
-<span class="normal">806</span>
-<span class="normal">807</span>
-<span class="normal">808</span>
-<span class="normal">809</span>
-<span class="normal">810</span>
-<span class="normal">811</span>
-<span class="normal">812</span>
-<span class="normal">813</span>
-<span class="normal">814</span>
-<span class="normal">815</span>
-<span class="normal">816</span>
-<span class="normal">817</span>
-<span class="normal">818</span>
-<span class="normal">819</span>
-<span class="normal">820</span>
-<span class="normal">821</span>
-<span class="normal">822</span>
-<span class="normal">823</span>
-<span class="normal">824</span>
-<span class="normal">825</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">943</span>
+<span class="normal">944</span>
+<span class="normal">945</span>
+<span class="normal">946</span>
+<span class="normal">947</span>
+<span class="normal">948</span>
+<span class="normal">949</span>
+<span class="normal">950</span>
+<span class="normal">951</span>
+<span class="normal">952</span>
+<span class="normal">953</span>
+<span class="normal">954</span>
+<span class="normal">955</span>
+<span class="normal">956</span>
+<span class="normal">957</span>
+<span class="normal">958</span>
+<span class="normal">959</span>
+<span class="normal">960</span>
+<span class="normal">961</span>
+<span class="normal">962</span>
+<span class="normal">963</span>
+<span class="normal">964</span>
+<span class="normal">965</span>
+<span class="normal">966</span>
+<span class="normal">967</span>
+<span class="normal">968</span>
+<span class="normal">969</span>
+<span class="normal">970</span>
+<span class="normal">971</span>
+<span class="normal">972</span>
+<span class="normal">973</span>
+<span class="normal">974</span>
+<span class="normal">975</span>
+<span class="normal">976</span>
+<span class="normal">977</span>
+<span class="normal">978</span>
+<span class="normal">979</span>
+<span class="normal">980</span>
+<span class="normal">981</span>
+<span class="normal">982</span>
+<span class="normal">983</span>
+<span class="normal">984</span>
+<span class="normal">985</span>
+<span class="normal">986</span>
+<span class="normal">987</span>
+<span class="normal">988</span>
+<span class="normal">989</span>
+<span class="normal">990</span>
+<span class="normal">991</span>
+<span class="normal">992</span>
+<span class="normal">993</span>
+<span class="normal">994</span>
+<span class="normal">995</span>
+<span class="normal">996</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">join_agg</span><span class="p">(</span>
     <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
     <span class="n">right</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span> <span class="o">|</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span>
@@ -13703,6 +14138,26 @@ when <code>return_matched</code> is true, its index also contains the match mask
 <span class="sd">    are ``sum``, ``count``, ``size``, ``min``, ``max`` and ``prod``. The</span>
 <span class="sd">    result retains one row for every physical row in the aggregation domain;</span>
 <span class="sd">    when ``return_matched`` is true, its index also contains the match mask.</span>
+
+<span class="sd">    Forward aggregation groups right-side values by left rows. Set</span>
+<span class="sd">    ``reverse=True`` to group left-side values by right rows. The aggregation</span>
+<span class="sd">    source arrays may be filtered or sorted internally, but their physical</span>
+<span class="sd">    position maps remain aligned so extrema and residual predicates refer to</span>
+<span class="sd">    the original dataframe rows.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        df: Left dataframe and reverse-aggregation source.</span>
+<span class="sd">        right: Right dataframe or named Series and forward-aggregation source.</span>
+<span class="sd">        conditions: Conditional-join predicate tuples.</span>
+<span class="sd">        aggfunc: Non-empty ``(column, operation)`` requests.</span>
+<span class="sd">        force: Permit equality predicates to use the forced non-equi path.</span>
+<span class="sd">        reverse: Group left-side values into right-side output rows.</span>
+<span class="sd">        return_matched: Add a boolean ``matched`` level to the result index.</span>
+<span class="sd">        join_algorithm: Algorithm for multiple range predicates.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A dataframe whose columns are labelled ``(column, operation)`` and</span>
+<span class="sd">        whose rows follow the physical output side.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">_conditional_join_compute</span><span class="p">(</span>
         <span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">,</span>

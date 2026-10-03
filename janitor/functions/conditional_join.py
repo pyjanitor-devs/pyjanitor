@@ -43,6 +43,7 @@ from ._conditional_join import (
 )
 from ._conditional_join._helpers import (
     _JoinOperator,
+    _normalize_conditions,
     greater_than_join_types,
     less_than_join_types,
 )
@@ -711,13 +712,13 @@ def _conditional_join_compute(
         join_algorithm=join_algorithm,
         return_matched=return_matched,
     )
+    conditions = _normalize_conditions(conditions)
 
     for condition in conditions:
-        left_on, right_on, op = condition
         _conditional_join_type_check(
-            left_column=df[left_on],
-            right_column=right[right_on],
-            op=op,
+            left_column=df[condition.left],
+            right_column=right[condition.right],
+            op=condition.op,
             force=force,
         )
 
@@ -733,10 +734,12 @@ def _conditional_join_compute(
         "return_matching_indices": return_matching_indices,
     }
 
-    eq_check = any(op == _JoinOperator.STRICTLY_EQUAL.value for *_, op in conditions)
+    eq_check = any(
+        condition.op == _JoinOperator.STRICTLY_EQUAL.value for condition in conditions
+    )
     has_range = any(
-        op in less_than_join_types.union(greater_than_join_types)
-        for *_, op in conditions
+        condition.op in less_than_join_types.union(greater_than_join_types)
+        for condition in conditions
     )
     use_equi_path = eq_check and (not force or not has_range)
     if use_equi_path and aggfunc:
@@ -761,7 +764,7 @@ def _conditional_join_compute(
     # All-!= predicates have their own null-aware Rust ABI. Route them before
     # the mixed non-equi algorithms; join_algorithm is intentionally ignored
     # because this family never enters the regions/range dispatch.
-    all_nes_check = all(op == "!=" for *_, op in conditions)
+    all_nes_check = all(condition.op == "!=" for condition in conditions)
     if all_nes_check and aggfunc:
         # The dedicated all-!= aggregation path returns a schema-only empty
         # frame when no pair survives, preserving the requested index shape.
@@ -811,8 +814,8 @@ def _conditional_join_compute(
             **index_result_kwargs,
         )
     counter = 0
-    for *_, op in conditions:
-        if op not in less_than_join_types.union(greater_than_join_types):
+    for condition in conditions:
+        if condition.op not in less_than_join_types.union(greater_than_join_types):
             continue
         counter += 1
     # A join with exactly one range predicate uses the range-first Rust

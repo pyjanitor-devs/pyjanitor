@@ -47,6 +47,11 @@ less_than_join_types = {
     _JoinOperator.LESS_THAN_OR_EQUAL.value,
 }
 
+greater_than_join_types = {
+    _JoinOperator.GREATER_THAN.value,
+    _JoinOperator.GREATER_THAN_OR_EQUAL.value,
+}
+
 
 def _empty_indices() -> dict[str, np.ndarray]:
     """Return the standard empty conditional-join result.
@@ -267,10 +272,11 @@ def _materialize_index_result(
         right_positions: np.ndarray,
     ) -> pd.DataFrame:
         """Build matched rows without creating intermediate frames."""
-        dictionary = {key: value._values[left_positions] for key, value in df.items()}
-        dictionary.update(
-            {key: value._values[right_positions] for key, value in right.items()}
-        )
+        dictionary = {}
+        for key, value in df.items():
+            dictionary[key] = value._values[left_positions]
+        for key, value in right.items():
+            dictionary[key] = value._values[right_positions]
         if indicator:
             name, values = _add_indicator(
                 indicator,
@@ -362,11 +368,6 @@ class JoinCondition:
     so routing and preparation code can use descriptive attributes instead of
     remembering whether field ``0``, ``1``, or ``2`` means the operator.
 
-    ``__iter__`` and ``__getitem__`` intentionally preserve the old tuple-like
-    behavior while the migration is in progress. Existing callers can
-    therefore continue to unpack a condition, while new code should prefer
-    ``condition.left``, ``condition.right``, and ``condition.op``.
-
     Args:
         left: Left dataframe column label.
         right: Right dataframe column label.
@@ -376,16 +377,6 @@ class JoinCondition:
     left: Hashable
     right: Hashable
     op: str
-
-    def __iter__(self):
-        """Yield fields in the historical ``(left, right, op)`` order."""
-        yield self.left
-        yield self.right
-        yield self.op
-
-    def __getitem__(self, position: int):
-        """Return a field using the historical tuple positions."""
-        return (self.left, self.right, self.op)[position]
 
 
 def _normalize_conditions(conditions: Sequence[tuple]) -> list[JoinCondition]:
@@ -402,14 +393,6 @@ def _normalize_conditions(conditions: Sequence[tuple]) -> list[JoinCondition]:
         condition if isinstance(condition, JoinCondition) else JoinCondition(*condition)
         for condition in conditions
     ]
-
-
-greater_than_join_types = {
-    _JoinOperator.GREATER_THAN.value,
-    _JoinOperator.GREATER_THAN_OR_EQUAL.value,
-}
-
-operator_mapping = {">": 0, ">=": 1, "<": 2, "<=": 3, "==": 4, "!=": 5}
 
 
 def _sort_if_not_monotonic(series: pd.Series) -> tuple[pd.Series, bool]:

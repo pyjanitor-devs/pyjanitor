@@ -75,14 +75,16 @@ def _preparatory_work(
     if df.empty or right.empty:
         return None
 
-    left_columns_and_ops = [(column, operator) for column, _, operator in conditions]
+    left_columns_and_ops = [(condition.left, condition.op) for condition in conditions]
     left_index = _helpers._get_indexer_for_non_null_rows(
         df=df, columns_and_ops=left_columns_and_ops
     )
     if left_index is None:
         return None
 
-    right_columns_and_ops = [(column, operator) for _, column, operator in conditions]
+    right_columns_and_ops = [
+        (condition.right, condition.op) for condition in conditions
+    ]
     right_index = _helpers._get_indexer_for_non_null_rows(
         df=right, columns_and_ops=right_columns_and_ops
     )
@@ -97,10 +99,10 @@ def _preparatory_work(
     for position, condition in enumerate(conditions):
         if le_lt_count and ge_gt_count:
             break
-        if (condition[-1] in _helpers.less_than_join_types) and not le_lt_count:
+        if (condition.op in _helpers.less_than_join_types) and not le_lt_count:
             range_positions.append(position)
             le_lt_count += 1
-        elif (condition[-1] in _helpers.greater_than_join_types) and not ge_gt_count:
+        elif (condition.op in _helpers.greater_than_join_types) and not ge_gt_count:
             range_positions.append(position)
             ge_gt_count += 1
 
@@ -109,13 +111,17 @@ def _preparatory_work(
         for position, condition in enumerate(conditions):
             if len(range_positions) == 2:
                 break
-            if condition[-1] in _helpers.less_than_join_types.union(
+            if condition.op in _helpers.less_than_join_types.union(
                 _helpers.greater_than_join_types
             ):
                 range_positions.append(position)
 
     first_anchor, second_anchor = (conditions[position] for position in range_positions)
-    left_column, right_column, op = first_anchor
+    left_column, right_column, op = (
+        first_anchor.left,
+        first_anchor.right,
+        first_anchor.op,
+    )
     left_column = df.loc[left_index, left_column]
     right_column = right.loc[right_index, right_column]
     right_column, right_index_is_ordered = _helpers._sort_if_not_monotonic(
@@ -130,7 +136,11 @@ def _preparatory_work(
         _helpers._convert_array_to_numpy(array=right_column.index._values),
         op,
     )
-    second_left_column, second_right_column, second_op = second_anchor
+    second_left_column, second_right_column, second_op = (
+        second_anchor.left,
+        second_anchor.right,
+        second_anchor.op,
+    )
     second_left_column = df.loc[left_index, second_left_column]
     second_right_column = right.loc[right_index, second_right_column]
     second_right_column, _ = _helpers._sort_if_not_monotonic(series=second_right_column)
@@ -151,11 +161,11 @@ def _preparatory_work(
     ]
     residual_predicates = []
 
-    for left_column, right_column, operator in rest:
+    for condition in rest:
         residual_predicate = _helpers._build_residual_predicate(
-            left=df.loc[left_index, left_column],
-            right=right.loc[right_index, right_column],
-            operation=operator,
+            left=df.loc[left_index, condition.left],
+            right=right.loc[right_index, condition.right],
+            operation=condition.op,
             left_index=left_index,
             right_index=right_index,
         )

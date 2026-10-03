@@ -216,14 +216,14 @@ def _preparatory_work_single_join(
     """
     if df.empty or right.empty:
         return None
-    left_column, *_ = condition
+    left_column = condition.left
     left_column = df[left_column]
     booleans = left_column.isna()
     if booleans.all():
         return None
     if booleans.any():
         left_column = left_column[~booleans]
-    _, right_column, _ = condition
+    right_column = condition.right
     right_column = right[right_column]
     booleans = right_column.isna()
     if booleans.all():
@@ -291,7 +291,7 @@ def _compute_single_range_join(
             return_building_blocks=return_building_blocks,
         )
 
-    operator = condition[-1]
+    operator = condition.op
     left_column, right_column, right_index_is_ordered = outcome
     left_index = _helpers._convert_array_to_numpy(array=left_column.index._values)
     left_array = _helpers._convert_array_to_numpy(array=left_column._values)
@@ -361,7 +361,7 @@ def _aggregate_single_join(
             return_matched=return_matched,
         )
 
-    operator = condition[-1]
+    operator = condition.op
     left_column, right_column, _ = outcome
     source_indexer = left_column.index if reverse else right_column.index
     left_index = _helpers._convert_array_to_numpy(array=left_column.index._values)
@@ -430,13 +430,13 @@ def _preparatory_work_multi_join(
         return None
     left_index = _helpers._get_indexer_for_non_null_rows(
         df=df,
-        columns_and_ops=[(column, operator) for column, _, operator in conditions],
+        columns_and_ops=[(condition.left, condition.op) for condition in conditions],
     )
     if left_index is None:
         return None
     right_index = _helpers._get_indexer_for_non_null_rows(
         df=right,
-        columns_and_ops=[(column, operator) for _, column, operator in conditions],
+        columns_and_ops=[(condition.right, condition.op) for condition in conditions],
     )
     if right_index is None:
         return None
@@ -445,7 +445,7 @@ def _preparatory_work_multi_join(
     anchor_position = next(
         position
         for position, condition in enumerate(conditions)
-        if condition[-1]
+        if condition.op
         in _helpers.less_than_join_types.union(_helpers.greater_than_join_types)
     )
     anchor_predicate = conditions[anchor_position]
@@ -455,7 +455,11 @@ def _preparatory_work_multi_join(
         if position != anchor_position
     ]
 
-    left_column, right_column, op = anchor_predicate
+    left_column, right_column, op = (
+        anchor_predicate.left,
+        anchor_predicate.right,
+        anchor_predicate.op,
+    )
     if isinstance(left_index, slice):
         left_index = df.index
     if isinstance(right_index, slice):
@@ -475,11 +479,11 @@ def _preparatory_work_multi_join(
         op,
     )
     residual_predicates = []
-    for left_column, right_column, operator in rest:
+    for condition in rest:
         residual_predicate = _helpers._build_residual_predicate(
-            left=df.loc[left_index, left_column],
-            right=right.loc[right_index, right_column],
-            operation=operator,
+            left=df.loc[left_index, condition.left],
+            right=right.loc[right_index, condition.right],
+            operation=condition.op,
             left_index=left_index,
             right_index=right_index,
         )

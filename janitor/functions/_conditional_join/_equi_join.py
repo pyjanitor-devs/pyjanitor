@@ -89,9 +89,9 @@ def _build_equi_keys(
     """
     l_cols = []
     r_cols = []
-    for left_col, right_col, _ in equi_conditions:
-        l_cols.append(df.loc[left_index, left_col]._values)
-        r_cols.append(right.loc[right_index, right_col]._values)
+    for condition in equi_conditions:
+        l_cols.append(df.loc[left_index, condition.left]._values)
+        r_cols.append(right.loc[right_index, condition.right]._values)
     if len(l_cols) > 1:
         l_cols = pd.MultiIndex.from_arrays(l_cols)
         r_cols = pd.MultiIndex.from_arrays(r_cols)
@@ -169,9 +169,7 @@ def _preparatory_work(
         * up to two aligned range predicate tuples; and
         * residual predicate tuples for all remaining conditions.
     """
-    left_columns_and_ops = [
-        (left_column, operator) for left_column, _, operator in conditions
-    ]
+    left_columns_and_ops = [(condition.left, condition.op) for condition in conditions]
     left_index = _helpers._get_indexer_for_non_null_rows(
         df=df,
         columns_and_ops=left_columns_and_ops,
@@ -179,7 +177,7 @@ def _preparatory_work(
     if left_index is None:
         return None
     right_columns_and_ops = [
-        (right_column, operator) for _, right_column, operator in conditions
+        (condition.right, condition.op) for condition in conditions
     ]
     right_index = _helpers._get_indexer_for_non_null_rows(
         df=right,
@@ -191,7 +189,7 @@ def _preparatory_work(
     le_lt_count = 0
     ge_gt_count = 0
     for position, condition in enumerate(conditions):
-        operator = condition[-1]
+        operator = condition.op
         if operator in _helpers.less_than_join_types and not le_lt_count:
             range_positions.append(position)
             le_lt_count += 1
@@ -205,7 +203,7 @@ def _preparatory_work(
         for position, condition in enumerate(conditions):
             if len(range_positions) == 2:
                 break
-            if condition[-1] in _helpers.less_than_join_types.union(
+            if condition.op in _helpers.less_than_join_types.union(
                 _helpers.greater_than_join_types
             ):
                 range_positions.append(position)
@@ -215,13 +213,17 @@ def _preparatory_work(
         condition
         for position, condition in enumerate(conditions)
         if position not in selected_range_positions
-        and condition[-1] != _helpers._JoinOperator.STRICTLY_EQUAL.value
+        and condition.op != _helpers._JoinOperator.STRICTLY_EQUAL.value
     ]
     # Select at most two range predicates. A second range is retained only
     # when its right values share the first range's physical permutation.
     range_predicates = []
     if range_maybe:
-        left_column, right_column, op = range_maybe[0]
+        left_column, right_column, op = (
+            range_maybe[0].left,
+            range_maybe[0].right,
+            range_maybe[0].op,
+        )
         right_, _ = _helpers._sort_if_not_monotonic(
             series=right.loc[right_index, right_column]
         )
@@ -236,7 +238,11 @@ def _preparatory_work(
         )
         range_predicates.append(range_predicate)
         if len(range_maybe) > 1:
-            left_column, right_column, op = range_maybe[1]
+            left_column, right_column, op = (
+                range_maybe[1].left,
+                range_maybe[1].right,
+                range_maybe[1].op,
+            )
             right_ = right.loc[right_.index, right_column]
             if right_.is_monotonic_increasing:
                 left_array = _helpers._convert_array_to_numpy(
@@ -256,7 +262,7 @@ def _preparatory_work(
                     condition
                     for position, condition in enumerate(conditions)
                     if position not in selected_range_positions
-                    and condition[-1] != _helpers._JoinOperator.STRICTLY_EQUAL.value
+                    and condition.op != _helpers._JoinOperator.STRICTLY_EQUAL.value
                 ]
         right_index = right_.index
     left_keys, right_keys = _build_equi_keys(
@@ -267,7 +273,7 @@ def _preparatory_work(
         equi_conditions=[
             condition
             for condition in conditions
-            if condition[-1] == _helpers._JoinOperator.STRICTLY_EQUAL.value
+            if condition.op == _helpers._JoinOperator.STRICTLY_EQUAL.value
         ],
     )
     equi_predicates = _build_equi_predicate(
@@ -281,11 +287,11 @@ def _preparatory_work(
     left_indexer, right_codes = equi_predicates
 
     residual_predicates = []
-    for left_column, right_column, operator in rest:
+    for condition in rest:
         residual_predicate = _helpers._build_residual_predicate(
-            left=df[left_column],
-            right=right[right_column],
-            operation=operator,
+            left=df[condition.left],
+            right=right[condition.right],
+            operation=condition.op,
             left_index=left_index,
             right_index=right_index,
         )

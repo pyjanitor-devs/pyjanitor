@@ -285,7 +285,10 @@ def _preparatory_work(
     if df.empty or right.empty:
         return None
 
-    (left_column, right_column, op), *rest = conditions
+    anchor_condition, *rest = conditions
+    left_column = anchor_condition.left
+    right_column = anchor_condition.right
+    op = anchor_condition.op
 
     left_column = df[left_column]
     right_column = right[right_column]
@@ -363,11 +366,11 @@ def _preparatory_work(
     )
 
     residual_predicates = []
-    for left_column, right_column, operator in rest:
+    for condition in rest:
         residual_predicate = _helpers._build_residual_predicate(
-            left=df[left_column],
-            right=right[right_column],
-            operation=operator,
+            left=df[condition.left],
+            right=right[condition.right],
+            operation=condition.op,
             left_index=slice(None),
             right_index=slice(None),
         )

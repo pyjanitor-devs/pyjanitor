@@ -1,8 +1,8 @@
 import numpy as np
 import pandas as pd
+from janitor.functions._conditional_join._equi_join_rust import _get_indices
 
 from janitor.functions._conditional_join import _equi_join_rust
-from janitor.functions._conditional_join._equi_join_rust import _get_indices
 
 
 def test_unique_equi_join_returns_direct_indices():

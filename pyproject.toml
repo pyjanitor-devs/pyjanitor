@@ -153,7 +153,6 @@ matplotlib = ">=3.10.8,<4"
 openpyxl = ">=3.1.5,<4"
 rdkit = ">=2025.9.4,<2026"
 requests = ">=2.32.5,<3"
-numba = ">=0.63.1,<0.64"
 pyspark = ">=4.1.1,<5"
 
 [tool.pixi.feature.docs.dependencies]

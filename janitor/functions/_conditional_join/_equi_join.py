@@ -1,8 +1,15 @@
-"""Prepare and dispatch conditional joins with at least one equi predicate.
+"""Preparation and dispatch for conditional joins with an equality anchor.
 
-This module owns the Python-side physical layout used by the Rust equi-join
-functions. Range predicates may reorder the right-hand rows first; after that
-reordering, right_index maps physical right positions back to public labels.
+This module owns the Python-side layout for joins that contain one or more
+``==`` predicates. Equality keys are converted into either direct right-row
+positions (when the right keys are unique) or dense key codes (when they are
+duplicated). Optional range and residual predicates are prepared in the same
+physical layout before the final index or aggregation operation.
+
+The first compatible range predicate may reorder the right dataframe. The
+resulting right-position array travels with every prepared predicate, so the
+equality mapping, residual filters, and aggregation source all refer to the
+same physical rows. Public pandas labels are restored only after dispatch.
 """
 
 from __future__ import annotations
@@ -18,16 +25,10 @@ from janitor.functions._conditional_join._aggregation_helpers import (
     _materialize_aggregation_result,
 )
 
-
-def _empty_indices() -> dict[str, np.ndarray]:
-    """Return the standard empty conditional-join result.
-
-    Returns:
-        A dictionary containing empty left_index and right_index arrays,
-        matching the other conditional-join paths.
-    """
-    empty = np.array([], dtype=np.intp)
-    return {"left_index": empty, "right_index": empty}
+_EQUI_BUILDING_BLOCKS_FUNCTION = janitor_rs.equi_join_building_blocks
+_EQUI_FUNCTION = janitor_rs.equi_join_indices
+_EQUI_FILTERED_FUNCTION = janitor_rs.equi_join_filtered_indices
+_EQUI_AGGREGATE_FUNCTION = janitor_rs.equi_join_aggregate
 
 
 def _build_equi_predicate(
@@ -67,16 +68,19 @@ def _build_equi_predicate(
 def _build_equi_keys(
     df: pd.DataFrame,
     right: pd.DataFrame,
-    right_index: pd.Index | None,
+    left_index: pd.Index | slice,
+    right_index: pd.Index | slice,
     equi_conditions: list[tuple[str, str, str]],
 ) -> tuple[pd.Index, pd.Index]:
     """Build aligned single- or multi-column equi keys.
 
     Args:
-        df: Left dataframe after null-row filtering.
-        right: Right dataframe after null-row filtering.
-        right_index: Optional physical right layout produced by range
-            preparation. When present, right keys use this order.
+        df: Full left working dataframe.
+        right: Full right working dataframe.
+        left_index: Physical left positions that survive ordinary null
+            filtering.
+        right_index: Physical right positions that survive ordinary null
+            filtering and any right-side sort.
         equi_conditions: Equi predicates as column/operator tuples.
 
     Returns:
@@ -85,14 +89,9 @@ def _build_equi_keys(
     """
     l_cols = []
     r_cols = []
-    if right_index is None:
-        for left_col, right_col, _ in equi_conditions:
-            l_cols.append(df[left_col]._values)
-            r_cols.append(right[right_col]._values)
-    else:
-        for left_col, right_col, _ in equi_conditions:
-            l_cols.append(df[left_col]._values)
-            r_cols.append(right.loc[right_index, right_col]._values)
+    for left_col, right_col, _ in equi_conditions:
+        l_cols.append(df.loc[left_index, left_col]._values)
+        r_cols.append(right.loc[right_index, right_col]._values)
     if len(l_cols) > 1:
         l_cols = pd.MultiIndex.from_arrays(l_cols)
         r_cols = pd.MultiIndex.from_arrays(r_cols)
@@ -108,8 +107,8 @@ def _preparatory_work(
     conditions: list[tuple[str, str, str]],
 ) -> (
     tuple[
-        pd.DataFrame,
-        pd.Index,
+        pd.Index | slice,
+        pd.Index | slice,
         np.ndarray,
         np.ndarray | None,
         list[tuple],
@@ -126,10 +125,11 @@ def _preparatory_work(
 
     Preparation occurs in this order:
 
-    1. Rows containing nulls in ordinary comparison columns are removed using
-       PyJanitor's existing null policy. ``!=`` columns are excluded because
-       their null semantics are represented explicitly in their residual
-       predicate tuples.
+    1. Physical indexers for rows containing no nulls in ordinary comparison
+       columns are computed using PyJanitor's existing null policy. ``!=``
+       columns are excluded because their null semantics are represented
+       explicitly in their residual predicate tuples. The working dataframes
+       remain full-length; the indexers carry the compact layout.
     2. The first suitable range predicate sorts the right dataframe when
        necessary. ``right_index`` records the resulting physical right-row
        layout.
@@ -160,7 +160,7 @@ def _preparatory_work(
         ``None`` when either side has no usable rows or when no left equality
         key matches any right equality key. Otherwise, a six-element tuple:
 
-        * the null-filtered left dataframe;
+        * the physical left index shared by all prepared left arrays;
         * the physical right index shared by all prepared right arrays;
         * ``left_indexer``, containing direct right positions for unique keys
           or dense right-key codes for duplicate keys, with ``-1`` for
@@ -169,47 +169,65 @@ def _preparatory_work(
         * up to two aligned range predicate tuples; and
         * residual predicate tuples for all remaining conditions.
     """
-    left_columns = {
-        left_column
-        for left_column, _, operator in conditions
-        if operator != _helpers._JoinOperator.NOT_EQUAL.value
-    }
-    df = _helpers._maybe_remove_nulls_from_dataframe(df=df, columns=left_columns)
-    if df is None:
-        return None
-    right_columns = {
-        right_column
-        for _, right_column, operator in conditions
-        if operator != _helpers._JoinOperator.NOT_EQUAL.value
-    }
-    right = _helpers._maybe_remove_nulls_from_dataframe(df=right, columns=right_columns)
-    if right is None:
-        return None
-    mapped_conditions = _helpers._separate_conditions_based_on_join_op(
-        conditions=conditions
+    left_columns_and_ops = [
+        (left_column, operator) for left_column, _, operator in conditions
+    ]
+    left_index = _helpers._get_indexer_for_non_null_rows(
+        df=df,
+        columns_and_ops=left_columns_and_ops,
     )
-    le_lt = mapped_conditions["le_lt"]
-    ge_gt = mapped_conditions["ge_gt"]
-    rest = []
-    rest.extend(le_lt)
-    rest.extend(ge_gt)
-    rest.extend(mapped_conditions["not_equals"])
-    range_maybe = []
-    if le_lt:
-        range_maybe.append(le_lt[0])
-    if ge_gt:
-        range_maybe.append(ge_gt[0])
-    if len(range_maybe) == 1 and len(le_lt) > 1:
-        range_maybe = le_lt[:2]
-    elif len(range_maybe) == 1 and len(ge_gt) > 1:
-        range_maybe = ge_gt[:2]
+    if left_index is None:
+        return None
+    right_columns_and_ops = [
+        (right_column, operator) for _, right_column, operator in conditions
+    ]
+    right_index = _helpers._get_indexer_for_non_null_rows(
+        df=right,
+        columns_and_ops=right_columns_and_ops,
+    )
+    if right_index is None:
+        return None
+    range_positions = []
+    le_lt_count = 0
+    ge_gt_count = 0
+    for position, condition in enumerate(conditions):
+        operator = condition[-1]
+        if operator in _helpers.less_than_join_types and not le_lt_count:
+            range_positions.append(position)
+            le_lt_count += 1
+        elif operator in _helpers.greater_than_join_types and not ge_gt_count:
+            range_positions.append(position)
+            ge_gt_count += 1
+        if len(range_positions) == 2:
+            break
+    if len(range_positions) < 2:
+        range_positions = []
+        for position, condition in enumerate(conditions):
+            if len(range_positions) == 2:
+                break
+            if condition[-1] in _helpers.less_than_join_types.union(
+                _helpers.greater_than_join_types
+            ):
+                range_positions.append(position)
+    range_maybe = [conditions[position] for position in range_positions]
+    selected_range_positions = set(range_positions)
+    rest = [
+        condition
+        for position, condition in enumerate(conditions)
+        if position not in selected_range_positions
+        and condition[-1] != _helpers._JoinOperator.STRICTLY_EQUAL.value
+    ]
     # Select at most two range predicates. A second range is retained only
     # when its right values share the first range's physical permutation.
     range_predicates = []
     if range_maybe:
         left_column, right_column, op = range_maybe[0]
-        right_, _ = _helpers._sort_if_not_monotonic(series=right[right_column])
-        left_array = _helpers._convert_array_to_numpy(array=df[left_column]._values)
+        right_, _ = _helpers._sort_if_not_monotonic(
+            series=right.loc[right_index, right_column]
+        )
+        left_array = _helpers._convert_array_to_numpy(
+            array=df.loc[left_index, left_column]._values
+        )
         right_array = _helpers._convert_array_to_numpy(array=right_._values)
         range_predicate = (
             left_array,
@@ -222,7 +240,7 @@ def _preparatory_work(
             right_ = right.loc[right_.index, right_column]
             if right_.is_monotonic_increasing:
                 left_array = _helpers._convert_array_to_numpy(
-                    array=df[left_column]._values
+                    array=df.loc[left_index, left_column]._values
                 )
                 right_array = _helpers._convert_array_to_numpy(array=right_._values)
                 range_predicate = (
@@ -232,16 +250,25 @@ def _preparatory_work(
                 )
                 range_predicates.append(range_predicate)
             else:
-                range_maybe = [range_maybe[0]]
+                range_positions = range_positions[:1]
+                selected_range_positions = set(range_positions)
+                rest = [
+                    condition
+                    for position, condition in enumerate(conditions)
+                    if position not in selected_range_positions
+                    and condition[-1] != _helpers._JoinOperator.STRICTLY_EQUAL.value
+                ]
         right_index = right_.index
-        rest = [condition for condition in rest if condition not in range_maybe]
-    else:
-        right_index = None
     left_keys, right_keys = _build_equi_keys(
         df=df,
         right=right,
+        left_index=left_index,
         right_index=right_index,
-        equi_conditions=mapped_conditions["equals"],
+        equi_conditions=[
+            condition
+            for condition in conditions
+            if condition[-1] == _helpers._JoinOperator.STRICTLY_EQUAL.value
+        ],
     )
     equi_predicates = _build_equi_predicate(
         left_keys=left_keys,
@@ -254,19 +281,17 @@ def _preparatory_work(
     left_indexer, right_codes = equi_predicates
 
     residual_predicates = []
-    if rest:
-        for left_column, right_column, operator in rest:
-            residual_predicate = _helpers._build_residual_predicate(
-                left=df[left_column],
-                right=right[right_column],
-                operation=operator,
-                right_index=right_index,
-            )
-            residual_predicates.append(residual_predicate)
-    if right_index is None:
-        right_index = right.index
+    for left_column, right_column, operator in rest:
+        residual_predicate = _helpers._build_residual_predicate(
+            left=df[left_column],
+            right=right[right_column],
+            operation=operator,
+            left_index=left_index,
+            right_index=right_index,
+        )
+        residual_predicates.append(residual_predicate)
     return (
-        df,
+        left_index,
         right_index,
         left_indexer,
         right_codes,
@@ -275,13 +300,20 @@ def _preparatory_work(
     )
 
 
-def _get_indices(
+def _compute_equi_join(
     df: pd.DataFrame,
     right: pd.DataFrame,
     conditions: list[tuple[str, str, str]],
     keep: str,
     return_building_blocks: bool = False,
-) -> dict[str, np.ndarray] | None:
+    *,
+    how: str = "inner",
+    df_columns=slice(None),
+    right_columns=slice(None),
+    indicator: bool | str = False,
+    include_join_positions: bool = False,
+    return_matching_indices: bool = True,
+) -> dict[str, np.ndarray] | pd.DataFrame:
     """Prepare and dispatch an equi-led conditional join.
 
     The conditions must contain at least one equi predicate. Normal operator
@@ -303,15 +335,27 @@ def _get_indices(
             or predicate-filtered paths.
 
     Returns:
-        A final left_index/right_index dictionary, a Rust building-block
-        dictionary when requested, or the standard empty dictionary when no
-        matches exist.
+        A physical-index dictionary for index callers or a materialized
+        dataframe when ``return_matching_indices`` is false. Building-block
+        requests always retain the dictionary form.
     """
     outcome = _preparatory_work(df, right, conditions)
     if outcome is None:
-        return _empty_indices()
+        result = _helpers._empty_indices()
+        return _helpers._materialize_or_return_indices(
+            result=result,
+            df=df,
+            right=right,
+            how=how,
+            df_columns=df_columns,
+            right_columns=right_columns,
+            indicator=indicator,
+            include_join_positions=include_join_positions,
+            return_matching_indices=return_matching_indices,
+            return_building_blocks=return_building_blocks,
+        )
     (
-        df,
+        left_index,
         right_index,
         left_indexer,
         right_codes,
@@ -319,9 +363,11 @@ def _get_indices(
         residual_predicates,
     ) = outcome
 
-    left_index = _helpers._convert_array_to_numpy(array=df.index._values)
-    if right_index is None:
+    if isinstance(left_index, slice):
+        left_index = df.index
+    if isinstance(right_index, slice):
         right_index = right.index
+    left_index = _helpers._convert_array_to_numpy(array=left_index._values)
     right_index = _helpers._convert_array_to_numpy(array=right_index._values)
 
     # A unique right equi key already gives one direct right position per
@@ -332,60 +378,50 @@ def _get_indices(
             left_indexer = left_indexer[booleans]
             left_index = left_index[booleans]
         right_index = right_index[left_indexer]
-        return {"left_index": left_index, "right_index": right_index}
-    if (
+        result = {"left_index": left_index, "right_index": right_index}
+    elif (
         right_codes is not None
         and not range_predicates
         and not residual_predicates
         and return_building_blocks
     ):
-        blocks = janitor_rs.equi_join_building_blocks(
+        result = _EQUI_BUILDING_BLOCKS_FUNCTION(
             left_index,
             right_index,
             left_indexer,
             right_codes,
         )
-        if blocks is None:
-            return _empty_indices()
-        return blocks
-    if (right_codes is not None) and not range_predicates and not residual_predicates:
-        indices = janitor_rs.equi_join_indices(
+    elif right_codes is not None and not range_predicates and not residual_predicates:
+        result = _EQUI_FUNCTION(
             left_index,
             right_index,
             left_indexer,
             right_codes,
             keep,
         )
-        if indices is None:
-            return _empty_indices()
-        return indices
-    indices = janitor_rs.equi_join_filtered_indices(
-        left_index,
-        right_index,
-        left_indexer,
-        right_codes,
-        range_predicates,
-        residual_predicates,
-        keep,
-    )
-    if indices is None:
-        return _empty_indices()
-    return indices
-
-
-def _empty_result(
-    source: pd.DataFrame,
-    return_matched: bool,
-    aggfunc: list[tuple],
-) -> pd.DataFrame:
-    """Build an empty equi-aggregation result with the requested index shape."""
-    result = _empty_aggregation_result(source=source, aggfunc=aggfunc)
-    if return_matched:
-        result.index = pd.MultiIndex.from_arrays(
-            [result.index, np.array([], dtype=bool)],
-            names=[result.index.name, "matched"],
+    else:
+        result = _EQUI_FILTERED_FUNCTION(
+            left_index,
+            right_index,
+            left_indexer,
+            right_codes,
+            range_predicates,
+            residual_predicates,
+            keep,
         )
-    return result
+    result = _helpers._empty_indices() if result is None else result
+    return _helpers._materialize_or_return_indices(
+        result=result,
+        df=df,
+        right=right,
+        how=how,
+        df_columns=df_columns,
+        right_columns=right_columns,
+        indicator=indicator,
+        include_join_positions=include_join_positions,
+        return_matching_indices=return_matching_indices,
+        return_building_blocks=return_building_blocks,
+    )
 
 
 def _aggregate(
@@ -398,12 +434,12 @@ def _aggregate(
 ) -> pd.DataFrame:
     """Aggregate an equi-led conditional join in the Rust fused kernel.
 
-    The Python side owns the physical layout. It removes null rows for the
-    ordinary comparison operators, optionally sorts the right side for one
-    or two compatible range anchors, builds the equi indexer, and sends the
-    resulting positional representation to Rust. Rust then traverses equi
-    candidates, applies range windows and residual predicates, and updates
-    the aggregation state without materializing matching pairs.
+    The Python side owns the physical layout. It computes non-null indexers
+    for ordinary comparison operators, optionally sorts the right side for
+    one or two compatible range anchors, builds the equi indexer, and sends
+    the resulting positional representation to Rust. Rust then traverses
+    equi candidates, applies range windows and residual predicates, and
+    updates the aggregation state without materializing matching pairs.
 
     Args:
         df: Left dataframe in reset physical-row order.
@@ -425,13 +461,13 @@ def _aggregate(
 
     outcome = _preparatory_work(df, right, conditions)
     if outcome is None:
-        return _empty_result(
+        return _empty_aggregation_result(
             source=df if reverse else right,
             return_matched=return_matched,
             aggfunc=aggfunc,
         )
     (
-        df,
+        left_index,
         right_index,
         left_indexer,
         right_codes,
@@ -439,26 +475,33 @@ def _aggregate(
         residual_predicates,
     ) = outcome
 
-    left_index = _helpers._convert_array_to_numpy(array=df.index._values)
-    if right_index is None:
+    if isinstance(left_index, slice):
+        left_index = df.index
+    if isinstance(right_index, slice):
         right_index = right.index
+    left_positions = _helpers._convert_array_to_numpy(array=left_index._values)
     index_right = _helpers._convert_array_to_numpy(array=right_index._values)
 
-    aggregation_source = df if reverse else right.loc[right_index]
-    output_index = right_index if reverse else df.index
-    result = janitor_rs.equi_join_aggregate(
-        left_index,
+    aggregation_source = df if reverse else right
+    source_index = left_index if reverse else right_index
+    output_index = right_index if reverse else left_index
+    result = _EQUI_AGGREGATE_FUNCTION(
+        left_positions,
         index_right,
         left_indexer,
         right_codes,
         range_predicates,
         residual_predicates,
-        _aggregation_inputs(source=aggregation_source, aggfunc=aggfunc),
+        _aggregation_inputs(
+            source=aggregation_source,
+            aggfunc=aggfunc,
+            indexer=source_index,
+        ),
         return_matched,
         reverse,
     )
     if result is None:
-        return _empty_result(
+        return _empty_aggregation_result(
             source=aggregation_source,
             return_matched=return_matched,
             aggfunc=aggfunc,
@@ -469,4 +512,5 @@ def _aggregate(
         source=aggregation_source,
         aggfunc=aggfunc,
         return_matched=return_matched,
+        source_index=source_index,
     )

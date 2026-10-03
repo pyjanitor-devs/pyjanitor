@@ -26,12 +26,10 @@ There are two related ABI shapes:
 
 ``range_anchor_extended_*``
     A range predicate followed by residual predicates.  The first tuple uses
-    compact anchor arrays for searching.  Aggregation uses the seven-field
-    form with the full left/right lengths; Rust maps compact candidate slots
-    back through the physical position arrays before indexing full-layout
-    aggregation inputs.
+    compact anchor values and the operator.  The physical position arrays are
+    passed separately; aggregation receives arrays aligned to those compact
+    layouts.
 """
-
 
 from __future__ import annotations
 
@@ -240,7 +238,20 @@ def _preparatory_work_single_join(
     return left_column, right_column, right_index_is_ordered
 
 
-def _get_indices_single(df, right, condition, keep, return_building_blocks):
+def _compute_single_range_join(
+    df,
+    right,
+    condition,
+    keep,
+    return_building_blocks,
+    *,
+    how="inner",
+    df_columns=slice(None),
+    right_columns=slice(None),
+    indicator=False,
+    include_join_positions=False,
+    return_matching_indices=True,
+):
     """Build index pairs for a single range predicate.
 
     Args:
@@ -250,14 +261,35 @@ def _get_indices_single(df, right, condition, keep, return_building_blocks):
         keep: ``"all"``, ``"any"``, ``"first"``, or ``"last"``.
         return_building_blocks: Return ``starts``/``ends`` windows instead of
             materialised pairs when true.
+        how: Join shape used when materializing dataframe output.
+        df_columns: Left columns to retain when materializing output.
+        right_columns: Right columns to retain when materializing output.
+        indicator: Whether to add the merge indicator column.
+        include_join_positions: Whether to include physical pair positions in
+            the materialized result index.
+        return_matching_indices: Return the physical index dictionary instead
+            of a dataframe.
 
     Returns:
-        A dictionary containing physical left/right positions, or the shared
-        empty-index result when no pair matches.
+        A physical-index dictionary for index callers, or a materialized
+        dataframe when ``return_matching_indices`` is false. No-match results
+        use the corresponding empty form.
     """
     outcome = _preparatory_work_single_join(df=df, right=right, condition=condition)
     if outcome is None:
-        return _helpers._empty_indices()
+        result = _helpers._empty_indices()
+        return _helpers._materialize_or_return_indices(
+            result=result,
+            df=df,
+            right=right,
+            how=how,
+            df_columns=df_columns,
+            right_columns=right_columns,
+            indicator=indicator,
+            include_join_positions=include_join_positions,
+            return_matching_indices=return_matching_indices,
+            return_building_blocks=return_building_blocks,
+        )
 
     operator = condition[-1]
     left_column, right_column, right_index_is_ordered = outcome
@@ -277,9 +309,19 @@ def _get_indices_single(df, right, condition, keep, return_building_blocks):
         keep=keep,
         return_building_blocks=return_building_blocks,
     )
-    if result is None:
-        return _helpers._empty_indices()
-    return result
+    result = _helpers._empty_indices() if result is None else result
+    return _helpers._materialize_or_return_indices(
+        result=result,
+        df=df,
+        right=right,
+        how=how,
+        df_columns=df_columns,
+        right_columns=right_columns,
+        indicator=indicator,
+        include_join_positions=include_join_positions,
+        return_matching_indices=return_matching_indices,
+        return_building_blocks=return_building_blocks,
+    )
 
 
 def _aggregate_single_join(
@@ -348,7 +390,8 @@ def _aggregate_single_join(
             aggfunc=aggfunc,
             return_matched=return_matched,
         )
-
+    # for performance reasons the returned data may not be full length index
+    # i.e output index len may be less than the original right index len
     output_index = right_column.index if reverse else left_column.index
     return _materialize_aggregation_result(
         result=result,
@@ -378,105 +421,164 @@ def _preparatory_work_multi_join(
             predicate must be available to act as the anchor.
 
     Returns:
-        ``(predicates, anchor_dtype)`` where the first tuple is the range
-        anchor and later tuples are residual predicates, or ``None`` when no
-        non-null anchor rows remain.
+        ``(left_index, right_index, anchor, residuals, anchor_dtype)``.
+        The first predicate is a three-field value/operator tuple; the
+        indexers are retained for residual alignment and converted to NumPy
+        physical-position arrays only at the Rust call site.
     """
     if df.empty or right.empty:
         return None
-    booleans = None
-    for left_column, _, op in conditions:
-        if op == _helpers._JoinOperator.NOT_EQUAL.value:
-            continue
-        left_column = df[left_column]
-        new_booleans = left_column.isna()
-        if booleans is None:
-            booleans = new_booleans
-        else:
-            booleans = booleans & new_booleans
-    if booleans.all():
+    left_index = _helpers._get_indexer_for_non_null_rows(
+        df=df,
+        columns_and_ops=[(column, operator) for column, _, operator in conditions],
+    )
+    if left_index is None:
         return None
-    if booleans.any():
-        df_mapping = {}
-        for left_column, *_ in conditions:
-            df_mapping[left_column] = df.loc[~booleans, left_column]
-    else:
-        df_mapping = {}
-        for left_column, *_ in conditions:
-            df_mapping[left_column] = df[left_column]
-
-    booleans = None
-    for _, right_column, op in conditions:
-        if op == _helpers._JoinOperator.NOT_EQUAL.value:
-            continue
-        right_column = right[right_column]
-        new_booleans = right_column.isna()
-        if booleans is None:
-            booleans = new_booleans
-        else:
-            booleans = booleans & new_booleans
-    if booleans.all():
+    right_index = _helpers._get_indexer_for_non_null_rows(
+        df=right,
+        columns_and_ops=[(column, operator) for _, column, operator in conditions],
+    )
+    if right_index is None:
         return None
-    if booleans.any():
-        right_mapping = {}
-        for _, right_column, *_ in conditions:
-            right_mapping[right_column] = right.loc[~booleans, right_column]
-    else:
-        right_mapping = {}
-        for _, right_column, *_ in conditions:
-            right_mapping[right_column] = right[right_column]
-    booleans = None
 
     # range_predicate
-    anchor_predicate = next(
-        condition
-        for condition in conditions
+    anchor_position = next(
+        position
+        for position, condition in enumerate(conditions)
         if condition[-1]
         in _helpers.less_than_join_types.union(_helpers.greater_than_join_types)
     )
-    rest = [condition for condition in conditions if condition != anchor_predicate]
+    anchor_predicate = conditions[anchor_position]
+    rest = [
+        condition
+        for position, condition in enumerate(conditions)
+        if position != anchor_position
+    ]
 
     left_column, right_column, op = anchor_predicate
-    left_column = df_mapping[left_column]
-    left_column_index = left_column.index
-    left_index = _helpers._convert_array_to_numpy(array=left_column_index._values)
-    left_column = _helpers._convert_array_to_numpy(array=left_column._values)
-    right_column = right_mapping[right_column]
-    right_column, _ = _helpers._sort_if_not_monotonic(series=right_column)
-    right_column_index = right_column.index
-    right_index = _helpers._convert_array_to_numpy(array=right_column_index._values)
-    anchor_dtype = right_column.dtype
-    right_column = _helpers._convert_array_to_numpy(array=right_column._values)
-    anchor_predicate = (left_column, left_index, right_column, right_index, op)
-
-    residual_predicates = [anchor_predicate]
+    if isinstance(left_index, slice):
+        left_index = df.index
+    if isinstance(right_index, slice):
+        right_index = right.index
+    left_column = df.loc[left_index, left_column]
+    right_column = right.loc[right_index, right_column]
+    right_column, right_index_is_ordered = _helpers._sort_if_not_monotonic(
+        series=right_column
+    )
+    if not right_index_is_ordered:
+        right_index = right_column.index
+    right_array = _helpers._convert_array_to_numpy(array=right_column._values)
+    anchor_dtype = right_array.dtype
+    anchor_predicate = (
+        _helpers._convert_array_to_numpy(array=left_column._values),
+        right_array,
+        op,
+    )
+    residual_predicates = []
     for left_column, right_column, operator in rest:
         residual_predicate = _helpers._build_residual_predicate(
-            left=df_mapping[left_column],
-            right=right_mapping[right_column],
+            left=df.loc[left_index, left_column],
+            right=right.loc[right_index, right_column],
             operation=operator,
-            left_index=left_column_index,
-            right_index=right_column_index,
+            left_index=left_index,
+            right_index=right_index,
         )
         residual_predicates.append(residual_predicate)
 
-    return residual_predicates, anchor_dtype
+    return (
+        left_index,
+        right_index,
+        anchor_predicate,
+        residual_predicates,
+        anchor_dtype,
+    )
 
 
-def _get_indices_multiple(df, right, conditions, keep):
+def _compute_multi_range_join(
+    df,
+    right,
+    conditions,
+    keep,
+    *,
+    how="inner",
+    df_columns=slice(None),
+    right_columns=slice(None),
+    indicator=False,
+    include_join_positions=False,
+    return_matching_indices=True,
+    return_building_blocks=False,
+):
     """Build pairs for a range-first join with residual predicates.
 
     ``keep`` is applied in Rust only after the anchor window and every
     residual predicate have passed.  This matters for ``first``/``last``:
     choosing before residual filtering could return a rejected candidate.
+
+    Args:
+        df: Left dataframe.
+        right: Right dataframe.
+        conditions: One range anchor followed by residual predicates.
+        keep: Output policy applied after residual filtering.
+        how: Join shape used when materializing dataframe output.
+        df_columns: Left columns to retain when materializing output.
+        right_columns: Right columns to retain when materializing output.
+        indicator: Whether to add the merge indicator column.
+        include_join_positions: Whether to include physical pair positions in
+            the materialized result index.
+        return_matching_indices: Return the physical index dictionary instead
+            of a dataframe.
+        return_building_blocks: Preserve any returned building-block arrays.
+
+    Returns:
+        A physical-index dictionary for index callers, or a materialized
+        dataframe when ``return_matching_indices`` is false. No-match results
+        use the corresponding empty form.
     """
     outcome = _preparatory_work_multi_join(df=df, right=right, conditions=conditions)
     if outcome is None:
-        return _helpers._empty_indices()
-    residual_predicates, anchor_dtype = outcome
+        result = _helpers._empty_indices()
+        return _helpers._materialize_or_return_indices(
+            result=result,
+            df=df,
+            right=right,
+            how=how,
+            df_columns=df_columns,
+            right_columns=right_columns,
+            indicator=indicator,
+            include_join_positions=include_join_positions,
+            return_matching_indices=return_matching_indices,
+            return_building_blocks=return_building_blocks,
+        )
+    (
+        left_index,
+        right_index,
+        anchor_predicate,
+        residual_predicates,
+        anchor_dtype,
+    ) = outcome
+    left_positions = _helpers._convert_array_to_numpy(array=left_index._values)
+    right_positions = _helpers._convert_array_to_numpy(array=right_index._values)
+    predicates = [anchor_predicate, *residual_predicates]
     function = _get_multi_range_function(anchor_dtype)
-    result = function(residual_predicates, keep)
-    return _helpers._empty_indices() if result is None else result
+    result = function(
+        predicates=predicates,
+        left_index=left_positions,
+        right_index=right_positions,
+        keep=keep,
+    )
+    result = _helpers._empty_indices() if result is None else result
+    return _helpers._materialize_or_return_indices(
+        result=result,
+        df=df,
+        right=right,
+        how=how,
+        df_columns=df_columns,
+        right_columns=right_columns,
+        indicator=indicator,
+        include_join_positions=include_join_positions,
+        return_matching_indices=return_matching_indices,
+        return_building_blocks=return_building_blocks,
+    )
 
 
 def _aggregate_multiple_join(
@@ -489,17 +591,14 @@ def _aggregate_multiple_join(
 ) -> pd.DataFrame:
     """Aggregate a range-first join with residual predicates.
 
-    The predicate arrays are compact because the right anchor is sorted, but
-    aggregation inputs are built from the complete source dataframe.  The
-    first predicate is therefore expanded to the seven-field Rust ABI:
-
-    ``(left_values, left_positions, right_values, right_positions,
-    left_full_length, right_full_length, operator)``.
+    The predicate and aggregation arrays use the same compact aligned layout.
+    The first predicate remains a three-field value/operator tuple; its
+    physical position arrays are passed separately to Rust.
 
     The position arrays are physical positions in the original dataframes;
-    they are not compact offsets.  Rust uses them to route each surviving
-    pair to the correct full-layout aggregation slot.  This is why the
-    multi-predicate path does not reuse the single-range aggregation kernel.
+    they are not compact offsets. Aggregation arrays are aligned to the
+    compact anchor layout, so Rust can use window offsets directly while the
+    physical maps identify output rows.
 
     Args:
         df: Left dataframe and source for reverse aggregation.
@@ -510,7 +609,7 @@ def _aggregate_multiple_join(
         reverse: Aggregate left values into right output slots when true.
 
     Returns:
-        A pandas aggregation dataframe indexed by the full output side.
+        A pandas aggregation dataframe indexed by the prepared output side.
     """
     aggregation_source = df if reverse else right
     outcome = _preparatory_work_multi_join(df=df, right=right, conditions=conditions)
@@ -521,35 +620,27 @@ def _aggregate_multiple_join(
             return_matched=return_matched,
         )
 
-    residual_predicates, _ = outcome
+    left_index, right_index, anchor_predicate, residual_predicates, _ = outcome
+    left_positions = _helpers._convert_array_to_numpy(array=left_index._values)
+    right_positions = _helpers._convert_array_to_numpy(array=right_index._values)
+    source_indexer = left_index if reverse else right_index
+    output_index = right_index if reverse else left_index
 
-    # The range-first index kernel receives the anchor in its compact,
-    # predicate layout.  Aggregation uses the same physical positions, but
-    # its value arrays remain in the original full dataframe layout.  Pass
-    # the full lengths so Rust can translate each compact candidate position
-    # back to the source aggregation slot without relying on the sorted right
-    # layout.
-    left_values, left_positions, right_values, right_positions, operator = (
-        residual_predicates[0]
-    )
-    residual_predicates[0] = (
-        left_values,
-        left_positions,
-        right_values,
-        right_positions,
-        len(df),
-        len(right),
-        operator,
-    )
+    # The range-first index kernel receives the anchor in its compact
+    # predicate layout. Its aggregation arrays use the same aligned compact
+    # layout, so Rust can index them directly with window offsets.
+    predicates = [anchor_predicate, *residual_predicates]
 
     aggregation_inputs = _aggregation_inputs(
         source=aggregation_source,
         aggfunc=aggfunc,
-        indexer=slice(None),
+        indexer=source_indexer,
     )
     function = _get_multi_range_aggregation_function(reverse)
     result = function(
-        predicates=residual_predicates,
+        predicates=predicates,
+        left_index=left_positions,
+        right_index=right_positions,
         aggregations=aggregation_inputs,
         return_matched=return_matched,
     )
@@ -560,11 +651,10 @@ def _aggregate_multiple_join(
             return_matched=return_matched,
         )
 
-    output_index = right.index if reverse else df.index
     return _materialize_aggregation_result(
         result=result,
         output_index=output_index,
-        source_index=slice(None),
+        source_index=source_indexer,
         source=aggregation_source,
         aggfunc=aggfunc,
         return_matched=return_matched,

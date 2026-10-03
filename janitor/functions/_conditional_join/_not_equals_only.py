@@ -84,6 +84,29 @@ from janitor.functions._conditional_join._aggregation_helpers import (
 
 
 @dataclass(frozen=True)
+class _NotEqualAnchor:
+    """Prepared first-predicate data for a null-aware ``!=`` comparison.
+
+    The value series contain only non-null rows. Their indexes are physical
+    positions in the original full layouts, so they remain aligned with the
+    position arrays and can be used to recover public index labels later.
+    This type belongs here because the dedicated ``!=`` path is its only
+    consumer.
+    """
+
+    left_values: pd.Series
+    right_values: pd.Series
+    left_index: np.ndarray
+    right_index: np.ndarray
+    left_positions: np.ndarray
+    right_positions: np.ndarray
+    left_null_positions: np.ndarray | None
+    right_null_positions: np.ndarray | None
+    right_index_is_ordered: bool
+    is_extension_array: bool
+
+
+@dataclass(frozen=True)
 class _NotEqualsAnchor:
     """Named Python representation of the prepared ``!=`` anchor.
 
@@ -266,13 +289,7 @@ def _preparatory_work(
 
     left_column = df[left_column]
     right_column = right[right_column]
-    left_dtype = _helpers._convert_array_to_numpy(array=left_column._values).dtype
     anchor_dtype = _helpers._convert_array_to_numpy(array=right_column._values).dtype
-    if left_dtype != anchor_dtype:
-        raise TypeError(
-            "not-equals anchor columns must have matching NumPy dtypes; "
-            f"got {left_dtype.name} and {anchor_dtype.name}"
-        )
     # The same-dtype contract lets Rust use one extension flag for the pair;
     # read it from the left anchor consistently.
     is_extension_array = pd.api.types.is_extension_array_dtype(left_column.dtype)
@@ -345,25 +362,34 @@ def _preparatory_work(
         is_extension_array=is_extension_array,
     )
 
-    residual_predicates = [anchor_predicate]
+    residual_predicates = []
     for left_column, right_column, operator in rest:
         residual_predicate = _helpers._build_residual_predicate(
             left=df[left_column],
             right=right[right_column],
             operation=operator,
-            right_index=None,
+            left_index=slice(None),
+            right_index=slice(None),
         )
         residual_predicates.append(residual_predicate)
 
-    return residual_predicates, anchor_dtype
+    return anchor_predicate, residual_predicates, anchor_dtype
 
 
-def _get_indices(
+def _compute_not_equals_join(
     df: pd.DataFrame,
     right: pd.DataFrame,
     conditions: list[tuple[str, str, str]],
     keep: str,
-) -> dict[str, np.ndarray] | None:
+    *,
+    how: str = "inner",
+    df_columns=slice(None),
+    right_columns=slice(None),
+    indicator: bool | str = False,
+    include_join_positions: bool = False,
+    return_matching_indices: bool = True,
+    return_building_blocks: bool = False,
+) -> dict[str, np.ndarray] | pd.DataFrame:
     """Generate all-``!=`` join indices through the Rust boundary.
 
     A single predicate uses the direct index kernel.  Two or more predicates
@@ -376,36 +402,57 @@ def _get_indices(
         right: Reset-index right dataframe.
         conditions: Complete all-``!=`` predicate list.
         keep: ``"all"``, ``"any"``, ``"first"``, or ``"last"``.
+        how: Join shape used when materializing dataframe output.
+        df_columns: Left columns to retain when materializing output.
+        right_columns: Right columns to retain when materializing output.
+        indicator: Whether to add the merge indicator column.
+        include_join_positions: Whether to include physical pair positions in
+            the materialized result index.
+        return_matching_indices: Return physical index arrays instead of a
+            materialized dataframe.
+        return_building_blocks: Preserve index/building-block output.
 
     Returns:
-        A dictionary containing physical ``left_index`` and ``right_index``
-        arrays.  A no-match result is normalized to empty arrays.
+        A physical-index dictionary for index callers, or a materialized
+        dataframe when ``return_matching_indices`` is false. A no-match result
+        is normalized to the corresponding empty form.
     """
 
     outcome = _preparatory_work(df=df, right=right, conditions=conditions)
     if outcome is None:
-        return _helpers._empty_indices()
+        result = _helpers._empty_indices()
+        return _helpers._materialize_or_return_indices(
+            result=result,
+            df=df,
+            right=right,
+            how=how,
+            df_columns=df_columns,
+            right_columns=right_columns,
+            indicator=indicator,
+            include_join_positions=include_join_positions,
+            return_matching_indices=return_matching_indices,
+            return_building_blocks=return_building_blocks,
+        )
 
-    residual_predicates, anchor_dtype = outcome
-    anchor = residual_predicates[0]
+    anchor_predicate, residual_predicates, anchor_dtype = outcome
 
-    if len(residual_predicates) == 1:
+    if len(residual_predicates) == 0:
         function = _get_not_equals_function(
             _NOT_EQUALS_INDEX_FUNCTIONS,
             anchor_dtype,
         )
         result = function(
-            left=anchor.left_values,
-            left_full_positions=anchor.left_full_positions,
-            right=anchor.right_values,
-            right_full_positions=anchor.right_full_positions,
-            comparator=anchor.comparator,
+            left=anchor_predicate.left_values,
+            left_full_positions=anchor_predicate.left_full_positions,
+            right=anchor_predicate.right_values,
+            right_full_positions=anchor_predicate.right_full_positions,
+            comparator=anchor_predicate.comparator,
             keep=keep,
-            left_non_null_positions=anchor.left_non_null_positions,
-            left_null_positions=anchor.left_null_positions,
-            right_non_null_positions=anchor.right_non_null_positions,
-            right_null_positions=anchor.right_null_positions,
-            is_extension_array=anchor.is_extension_array,
+            left_non_null_positions=anchor_predicate.left_non_null_positions,
+            left_null_positions=anchor_predicate.left_null_positions,
+            right_non_null_positions=anchor_predicate.right_non_null_positions,
+            right_null_positions=anchor_predicate.right_null_positions,
+            is_extension_array=anchor_predicate.is_extension_array,
         )
     else:
         function = _get_not_equals_function(
@@ -414,12 +461,22 @@ def _get_indices(
         )
         # The Python tuple is readable/natural; the Rust extended ABI keeps
         # its historical fields grouped by side and partition.
-        rust_anchor = anchor.to_rust_tuple()
-        result = function([rust_anchor, *residual_predicates[1:]], keep)
+        rust_anchor = anchor_predicate.to_rust_tuple()
+        result = function([rust_anchor, *residual_predicates], keep)
 
-    if result is None:
-        return _helpers._empty_indices()
-    return result
+    result = _helpers._empty_indices() if result is None else result
+    return _helpers._materialize_or_return_indices(
+        result=result,
+        df=df,
+        right=right,
+        how=how,
+        df_columns=df_columns,
+        right_columns=right_columns,
+        indicator=indicator,
+        include_join_positions=include_join_positions,
+        return_matching_indices=return_matching_indices,
+        return_building_blocks=return_building_blocks,
+    )
 
 
 def _aggregate(
@@ -465,15 +522,14 @@ def _aggregate(
             return_matched=return_matched,
         )
 
-    residual_predicates, anchor_dtype = outcome
+    anchor_predicate, residual_predicates, anchor_dtype = outcome
     output_index = right.index if reverse else df.index
 
-    anchor = residual_predicates[0]
     aggregation_inputs = _aggregation_inputs(
         source=aggregation_source,
         aggfunc=aggfunc,
     )
-    if len(residual_predicates) == 1:
+    if len(residual_predicates) == 0:
         registry = (
             _NOT_EQUALS_REVERSE_AGGREGATE_FUNCTIONS
             if reverse
@@ -481,16 +537,16 @@ def _aggregate(
         )
         function = _get_not_equals_function(registry, anchor_dtype)
         result = function(
-            left=anchor.left_values,
-            left_full_positions=anchor.left_full_positions,
-            right=anchor.right_values,
-            right_full_positions=anchor.right_full_positions,
-            comparator=anchor.comparator,
-            left_non_null_positions=anchor.left_non_null_positions,
-            left_null_positions=anchor.left_null_positions,
-            right_non_null_positions=anchor.right_non_null_positions,
-            right_null_positions=anchor.right_null_positions,
-            is_extension_array=anchor.is_extension_array,
+            left=anchor_predicate.left_values,
+            left_full_positions=anchor_predicate.left_full_positions,
+            right=anchor_predicate.right_values,
+            right_full_positions=anchor_predicate.right_full_positions,
+            comparator=anchor_predicate.comparator,
+            left_non_null_positions=anchor_predicate.left_non_null_positions,
+            left_null_positions=anchor_predicate.left_null_positions,
+            right_non_null_positions=anchor_predicate.right_non_null_positions,
+            right_null_positions=anchor_predicate.right_null_positions,
+            is_extension_array=anchor_predicate.is_extension_array,
             aggregations=aggregation_inputs,
             return_matched=return_matched,
         )
@@ -502,7 +558,7 @@ def _aggregate(
         )
         function = _get_not_equals_function(registry, anchor_dtype)
         result = function(
-            [anchor.to_rust_tuple(), *residual_predicates[1:]],
+            [anchor_predicate.to_rust_tuple(), *residual_predicates],
             aggregation_inputs,
             return_matched,
         )

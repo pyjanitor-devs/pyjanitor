@@ -12,12 +12,12 @@ positional representation back to pandas while preserving column labels,
 extension dtypes, null behavior, the trimmed output domain, and the matched
 flag as a ``MultiIndex`` level.
 
-There are two supported layout contracts. Single-range and older aligned
-callers pass aggregation arrays in the prepared calculation layout. The
-range-first multi-predicate caller instead passes full source arrays and
-physical position maps; Rust translates compact candidate offsets before
-indexing those arrays. Rust returns output positions in the caller's output
-layout, and Python validates them to prevent cross-language drift.
+All range-family callers pass aggregation arrays in the prepared calculation
+layout used by their anchor values. That layout may be filtered and, for a
+sorted right anchor, value-sorted. Rust uses compact window offsets to read
+these aligned arrays and returns physical output positions separately. The
+not-equals family has its own split non-null/null layout contract, documented
+at its caller, but uses the same result materialization shape.
 
 Numerical contract:
     Signed integer ``sum`` and ``prod`` results use ``int64``; unsigned
@@ -25,6 +25,21 @@ Numerical contract:
     and ``float64`` results remain ``float64``. ``min`` and ``max`` preserve
     the source dtype. Position, length, and allocation calculations remain
     checked in Rust.
+
+Layout contract:
+    ``indexer`` selects the exact calculation layout sent to Rust. It is not
+    an output reorder instruction. For a forward aggregation, source values
+    are read from the right-side layout and written to left output slots. For
+    a reverse aggregation, source values are read from the left-side layout
+    and written to right output slots. The caller must build ``output_index``
+    from the same anchor layout so returned positions and pandas rows remain
+    aligned.
+
+Sentinel contract:
+    Rust extrema kernels return physical source positions and use ``-1`` for
+    an output slot with no valid value. This module resolves those positions
+    back to values and converts the sentinel to a pandas missing value; it
+    must never pass ``-1`` directly to ``Series.iloc``.
 """
 
 from collections.abc import Callable
@@ -102,10 +117,9 @@ def _aggregation_inputs(
     ``("*", null_mask, "count")`` because its result depends only on the
     authoritative mask; ``size`` is converted to ``("*", "size")``.
     Arrays and masks use the layout selected by ``indexer``. For ordinary
-    single-range aggregation this is the prepared compact layout. For
-    range-first multi-predicate aggregation it is ``slice(None)``: the
-    complete source array is passed because Rust receives physical position
-    maps for translating sorted-anchor candidates.
+    single-range and range-first multi-predicate aggregation this is the
+    filtered/sorted compact layout. Rust receives physical position maps for
+    output labels, but its window offsets index the aligned arrays directly.
 
     Before crossing the Rust boundary, integer ``sum`` and ``prod`` values
     are promoted to the pandas/NumPy reduction dtype: signed integers become
@@ -217,7 +231,7 @@ def _empty_aggregation_result(
             names=[None, "matched"],
         )
     else:
-        index = pd.Index([], dtype=np.intp)
+        index = pd.RangeIndex(0)
     return pd.DataFrame(result, copy=False, index=index)
 
 
@@ -232,10 +246,10 @@ def _materialize_aggregation_result(
     """Convert the common Rust aggregation result into a pandas dataframe.
 
     Rust returns one accumulator slot per output position, including output
-    rows that never matched. The output may be a prepared compact index for a
-    single-range call or the full original index for a range-first call. The
-    returned positions identify that exact output layout and are validated;
-    they are never used to reorder the aggregation arrays.
+    rows that never matched. The output uses the prepared compact index for
+    the range-family call. The returned positions identify that exact output
+    layout and are validated; they are never used to reorder the aggregation
+    arrays.
 
     ``min`` and ``max`` use ``-1`` as Rust's internal no-value sentinel. The
     sentinel cannot be passed directly to ``Series.iloc`` because it would
@@ -253,10 +267,8 @@ def _materialize_aggregation_result(
             the prepared trimmed layout and must be in the same order as
             ``output_index``. The arrays must contain one result per request
             in ``aggfunc``.
-        output_index: Already-trimmed output index. It is left-aligned for
-            forward aggregation and right-aligned for reverse aggregation. In
-            the full-layout range-first path this is the complete original
-            dataframe index.
+        output_index: Already-prepared output index. It is left-aligned for
+            forward aggregation and right-aligned for reverse aggregation.
         source: Dataframe containing the source columns and their original
             pandas dtypes. This is also used to resolve ``min``/``max`` row
             positions back to values.
@@ -328,6 +340,16 @@ def _materialize_aggregation_result(
                     values = pd.array(values, dtype="Int64")
             elif pd.api.types.is_float_dtype(series.dtype):
                 values = values.astype(series.dtype, copy=False)
+            elif (
+                matched is not None
+                and not matched.all()
+                and pd.api.types.is_integer_dtype(series.dtype)
+            ):
+                # Pandas promotes a reindexed integer reduction to float when
+                # unmatched output rows are represented by the reduction's
+                # identity value. Match that public contract for NumPy-backed
+                # integer sources; nullable integer sources retain Int64.
+                values = values.astype(np.float64, copy=False)
         if operation in {"min", "max"}:
             # Rust stores a physical source position for extrema and -1 when
             # an output row contains no non-null value. Replace the sentinel

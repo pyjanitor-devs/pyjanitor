@@ -336,7 +336,7 @@ def _equal_indices(
         right = [right_index[slicer] for slicer in right]
         return left_index, right
     # necessary step to remove non matches in right
-    # vital to ensuring correct output in numba_equi_join
+    # vital to ensuring correct output in equi joins
     # when building the regions
     booleans = pd.Index(left).get_indexer(right) != -1
     if not booleans.any():

@@ -96,6 +96,8 @@ def _preparatory_work(
     le_lt_count = 0
     ge_gt_count = 0
 
+    # Store condition positions along with the selected anchors. The positions
+    # let residual construction exclude exactly those anchors later.
     for position, condition in enumerate(conditions):
         if le_lt_count and ge_gt_count:
             break
@@ -108,6 +110,8 @@ def _preparatory_work(
 
     if (le_lt_count + ge_gt_count) < 2:
         range_positions = []
+        # The fallback still needs original positions so the selected anchors
+        # can be removed from residual evaluation without reordering anything.
         for position, condition in enumerate(conditions):
             if len(range_positions) == 2:
                 break
@@ -154,6 +158,8 @@ def _preparatory_work(
 
     anchor_predicates = [first_anchor, second_anchor]
     primary_positions = set(range_positions)
+    # Filter by original condition position: anchor predicates have already
+    # been handled by the regions kernel and must not run as residuals.
     rest = [
         condition
         for position, condition in enumerate(conditions)

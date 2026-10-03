@@ -443,12 +443,16 @@ def _preparatory_work_multi_join(
 
     # range_predicate
     anchor_position = next(
+        # Keep the condition's original position: the selected anchor is
+        # removed from the residual predicates using that position below.
         position
         for position, condition in enumerate(conditions)
         if condition.op
         in _helpers.less_than_join_types.union(_helpers.greater_than_join_types)
     )
     anchor_predicate = conditions[anchor_position]
+    # Compare original positions so only the selected range anchor is omitted
+    # and residual predicates retain their input order.
     rest = [
         condition
         for position, condition in enumerate(conditions)

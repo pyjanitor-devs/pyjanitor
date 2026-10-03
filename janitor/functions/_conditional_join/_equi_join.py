@@ -188,6 +188,8 @@ def _preparatory_work(
     range_positions = []
     le_lt_count = 0
     ge_gt_count = 0
+    # Retain positions because the chosen range anchors are removed from the
+    # residual list by their original condition slots below.
     for position, condition in enumerate(conditions):
         operator = condition.op
         if operator in _helpers.less_than_join_types and not le_lt_count:
@@ -200,6 +202,8 @@ def _preparatory_work(
             break
     if len(range_positions) < 2:
         range_positions = []
+        # Record original slots as well as conditions; residual predicates are
+        # reconstructed from every condition not selected as an anchor.
         for position, condition in enumerate(conditions):
             if len(range_positions) == 2:
                 break
@@ -209,6 +213,8 @@ def _preparatory_work(
                 range_positions.append(position)
     range_maybe = [conditions[position] for position in range_positions]
     selected_range_positions = set(range_positions)
+    # Exclude anchors by their original positions and preserve the order of
+    # all remaining residual predicates.
     rest = [
         condition
         for position, condition in enumerate(conditions)
@@ -258,6 +264,8 @@ def _preparatory_work(
             else:
                 range_positions = range_positions[:1]
                 selected_range_positions = set(range_positions)
+                # The fallback range anchor is also tracked by position so it
+                # can be excluded from the residual predicates.
                 rest = [
                     condition
                     for position, condition in enumerate(conditions)

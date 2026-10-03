@@ -152,6 +152,9 @@ def _preparatory_work(
     le_lt_count = 0
     ge_gt_count = 0
 
+    # Keep the original condition position, not just the condition object:
+    # the selected positions are later used to remove the anchors from the
+    # residual predicates while preserving the caller's condition order.
     for position, condition in enumerate(conditions):
         if le_lt_count and ge_gt_count:
             break
@@ -164,6 +167,9 @@ def _preparatory_work(
 
     if (le_lt_count + ge_gt_count) < 2:
         range_positions = []
+        # ``enumerate`` is needed because the fallback also records which
+        # original condition slots became anchors; those slots must not be
+        # evaluated a second time as residual predicates.
         for position, condition in enumerate(conditions):
             if len(range_positions) == 2:
                 break
@@ -206,6 +212,8 @@ def _preparatory_work(
         second_op,
     )
     primary_positions = set(range_positions)
+    # Compare original positions so anchor predicates are excluded by their
+    # slots, while all remaining predicates stay in their original order.
     rest = [
         condition
         for position, condition in enumerate(conditions)

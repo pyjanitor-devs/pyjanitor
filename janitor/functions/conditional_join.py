@@ -1,3 +1,23 @@
+"""Public conditional-join API and dispatch coordinator.
+
+The public methods in this module intentionally describe pandas behavior and
+do not expose the implementation language used by the kernels.  Internally,
+the dispatcher normalizes both inputs to shallow working copies, validates
+the complete predicate list, resets indexes to physical row positions, and
+selects one specialized join family:
+
+* equality-led joins use the equi-key dispatcher;
+* all-``!=`` joins use the null-aware not-equal dispatcher;
+* one range predicate, optionally followed by residuals, uses the
+  single-range dispatcher;
+* two or more range predicates use either the range or regions dispatcher.
+
+Every dispatcher returns physical position arrays or an aggregation result.
+The shared helpers materialize those positions back into pandas rows, which
+keeps outer-join, indicator, column-selection, and positional-index behavior
+consistent across all algorithms.
+"""
+
 from __future__ import annotations
 
 import warnings
@@ -313,11 +333,14 @@ def conditional_join(
 
 
 def _check_operator(op: str):
-    """
-    Check that operator is one of
-    `>`, `>=`, `==`, `!=`, `<`, `<=`.
+    """Validate one public conditional-join operator.
 
-    Used in `conditional_join`.
+    Args:
+        op: Operator supplied in a three-element condition tuple.
+
+    Raises:
+        ValueError: If ``op`` is not one of ``>``, ``>=``, ``==``, ``!=``,
+            ``<``, or ``<=``.
     """
     sequence_of_operators = {op.value for op in _JoinOperator}
     if op not in sequence_of_operators:
@@ -331,7 +354,26 @@ def _check_conditions(
     right: pd.DataFrame,
     conditions: tuple,
 ) -> None:
-    """Validate condition shape, columns, and operators."""
+    """Validate all public predicate tuples before dispatch.
+
+    This is deliberately separate from dtype validation.  Shape and column
+    errors can be reported without inspecting values, while dtype validation
+    is performed later for each pair of referenced columns. Keeping these
+    phases separate also lets equality-only aggregation requests reach the
+    equi aggregation path without accidentally routing ordinary equality
+    joins through a non-equi kernel.
+
+    Args:
+        df: Left dataframe whose columns are referenced by the conditions.
+        right: Right dataframe whose columns are referenced by the conditions.
+        conditions: Public ``(left_column, right_column, operator)`` tuples.
+
+    Raises:
+        ValueError: If no conditions are supplied, a tuple has the wrong
+            length, or an operator is unsupported.
+        TypeError: If a condition or column reference has the wrong type.
+        KeyError: If a referenced column does not exist.
+    """
     if not conditions:
         raise ValueError("Kindly provide at least one join condition.")
 
@@ -358,7 +400,25 @@ def _check_aggfunc(
     aggfunc: list[tuple] | None,
     reverse: bool,
 ) -> None:
-    """Validate aggregation requests against their source frame."""
+    """Validate aggregation requests against their source dataframe.
+
+    Aggregations read from the right dataframe for forward joins and from the
+    left dataframe for reverse joins. Validation follows that same direction
+    so a request cannot silently read from the wrong side after dispatch.
+
+    Args:
+        df: Left dataframe and reverse-aggregation source.
+        right: Right dataframe and forward-aggregation source.
+        aggfunc: ``(column, operation)`` requests, or ``None`` for index
+            output. Supported operations are ``sum``, ``count``, ``min``,
+            ``max``, ``size``, and ``prod``.
+        reverse: Whether source values come from ``df`` instead of ``right``.
+
+    Raises:
+        ValueError: If a request is malformed, unsupported, or uses an
+            operation incompatible with its source dtype.
+        KeyError: If a requested aggregation column is absent.
+    """
     if aggfunc is None:
         return
 
@@ -420,11 +480,38 @@ def _conditional_join_preliminary_checks(
     join_algorithm: str = "default",
     return_matched: bool = False,
 ) -> tuple:
-    """
-    Preliminary checks for conditional_join are conducted here.
+    """Normalize and validate inputs shared by every conditional-join path.
 
-    Checks include differences in number of column levels,
-    length of conditions, existence of columns in dataframe, etc.
+    This function owns public argument validation and returns shallow copies
+    so downstream preparation can reset indexes without mutating caller-owned
+    dataframes. It intentionally does not choose a Rust/kernel path; that
+    decision belongs to :func:`_conditional_join_compute` after dtype checks.
+
+    Args:
+        df: Left dataframe.
+        right: Right dataframe or named Series, converted to a dataframe.
+        conditions: Public predicate tuples.
+        how: Requested join shape.
+        df_columns: Deprecated left-column selection.
+        right_columns: Deprecated right-column selection.
+        keep: Match-selection policy.
+        indicator: Whether to include a merge indicator column.
+        force: Whether equality predicates may be handled by the non-equi
+            preparation path.
+        return_matching_indices: Whether callers want physical index arrays.
+        aggfunc: Aggregation requests, when the caller is ``join_agg``.
+        include_join_positions: Whether materialized output includes pair
+            positions in its index.
+        return_building_blocks: Whether to preserve kernel building blocks.
+        reverse: Whether aggregation reads from the left side.
+        join_algorithm: Multi-range algorithm selection.
+        return_matched: Whether aggregation output includes a match mask.
+
+    Returns:
+        Shallow copies of the validated left and right dataframes.
+
+    Raises:
+        TypeError, ValueError, or KeyError: If a public argument is invalid.
     """
 
     check("right", right, [pd.DataFrame, pd.Series])
@@ -511,10 +598,23 @@ def _conditional_join_type_check(
     op: str,
     force: bool,
 ) -> None:
-    """
-    Dtype check for columns in the join.
-    Equality columns are allowed to use non-numeric dtypes unless ``force``
-    routes an equality predicate through the non-equality preparation path.
+    """Validate the dtype contract for one pair of join columns.
+
+    Equality columns may use arbitrary pandas dtypes on the normal equi path.
+    A forced equality or any inequality must use equal, numeric, datetime, or
+    timedelta dtypes because those paths eventually use typed positional
+    kernels.
+
+    Args:
+        left_column: Left condition column.
+        right_column: Right condition column.
+        op: Comparison operator for the condition.
+        force: Whether an equality condition is being forced through the
+            non-equi preparation path.
+
+    Raises:
+        TypeError: If an inequality-compatible dtype is unsupported or the
+            two columns have unequal dtypes.
     """
 
     strictly_equal = op == _JoinOperator.STRICTLY_EQUAL.value
@@ -562,9 +662,36 @@ def _conditional_join_compute(
     join_algorithm: str = "default",
     return_matched: bool = False,
 ) -> pd.DataFrame:
-    """
-    This is where the actual computation
-    for the conditional join takes place.
+    """Execute the validated conditional join or aggregation request.
+
+    The dispatcher first resets working indexes to physical positions. Those
+    positions are the only indexes sent to Rust and remain paired with sorted
+    values throughout preparation. The selected family returns physical pairs
+    or aggregation arrays; the shared materializer then restores the pandas
+    result shape.
+
+    Args:
+        df: Validated left dataframe.
+        right: Validated right dataframe.
+        conditions: Validated predicate tuples.
+        how: Requested join shape.
+        df_columns: Deprecated left output selection.
+        right_columns: Deprecated right output selection.
+        keep: Match-selection policy.
+        indicator: Indicator-column request.
+        force: Whether equality conditions may use non-equi preparation.
+        return_matching_indices: Return physical index arrays instead of rows.
+        aggfunc: Aggregation requests, or ``None`` for index output.
+        include_join_positions: Include physical pair positions in dataframe
+            output.
+        return_building_blocks: Preserve starts/ends or equivalent blocks.
+        reverse: Aggregate left values into right output rows.
+        join_algorithm: Multi-range algorithm, ``default`` or ``regions``.
+        return_matched: Include aggregation match metadata.
+
+    Returns:
+        A dataframe, physical-index dictionary, or kernel building-block
+        dictionary depending on the requested mode.
     """
     df, right = _conditional_join_preliminary_checks(
         df=df,
@@ -769,7 +896,31 @@ def get_join_indices(
     return_building_blocks: bool = False,
     join_algorithm: str = "default",
 ) -> dict:
-    """Return matching physical positions for an inner conditional join."""
+    """Return matching physical positions for an inner conditional join.
+
+    Unlike :func:`conditional_join`, this helper does not gather dataframe
+    rows. It returns zero-based physical positions in two parallel arrays;
+    ``left_index[i]`` and ``right_index[i]`` identify one matched pair. The
+    arrays are suitable for callers that need to perform their own material
+    or aggregation step. With ``return_building_blocks=True``, the selected
+    kernel may also return range windows such as ``starts`` and ``ends``.
+
+    Args:
+        df: Left dataframe.
+        right: Right dataframe or named Series.
+        conditions: ``(left_column, right_column, operator)`` predicates.
+        keep: Return all matches, or one ``first``, ``last``, or ``any`` match
+            per left row.
+        force: Permit equality predicates to participate in a forced non-equi
+            preparation path.
+        return_building_blocks: Return the kernel's intermediate positional
+            representation instead of only materialized pairs.
+        join_algorithm: Algorithm for multiple range predicates.
+
+    Returns:
+        A dictionary containing parallel physical-position arrays. The result
+        is empty when no pair satisfies every predicate.
+    """
     return _conditional_join_compute(
         df=df,
         right=right,
@@ -806,6 +957,26 @@ def join_agg(
     are ``sum``, ``count``, ``size``, ``min``, ``max`` and ``prod``. The
     result retains one row for every physical row in the aggregation domain;
     when ``return_matched`` is true, its index also contains the match mask.
+
+    Forward aggregation groups right-side values by left rows. Set
+    ``reverse=True`` to group left-side values by right rows. The aggregation
+    source arrays may be filtered or sorted internally, but their physical
+    position maps remain aligned so extrema and residual predicates refer to
+    the original dataframe rows.
+
+    Args:
+        df: Left dataframe and reverse-aggregation source.
+        right: Right dataframe or named Series and forward-aggregation source.
+        conditions: Conditional-join predicate tuples.
+        aggfunc: Non-empty ``(column, operation)`` requests.
+        force: Permit equality predicates to use the forced non-equi path.
+        reverse: Group left-side values into right-side output rows.
+        return_matched: Add a boolean ``matched`` level to the result index.
+        join_algorithm: Algorithm for multiple range predicates.
+
+    Returns:
+        A dataframe whose columns are labelled ``(column, operation)`` and
+        whose rows follow the physical output side.
     """
     return _conditional_join_compute(
         df=df,

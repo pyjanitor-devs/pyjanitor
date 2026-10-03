@@ -121,6 +121,22 @@ def _materialize_or_return_indices(
 def construct_1d_array_from_inferred_fill_value(
     value: object, length: int
 ) -> np.ndarray:
+    """Create a repeated missing-value array using pandas' inferred dtype.
+
+    This mirrors pandas' internal fill-value construction for extension and
+    object dtypes. It is used when an outer join needs rows from one side to
+    be padded with a dtype-compatible missing value rather than a hard-coded
+    ``np.nan``.
+
+    Args:
+        value: Representative scalar or array-like value whose dtype should
+            determine the fill array.
+        length: Number of missing entries to create.
+
+    Returns:
+        A NumPy-compatible array containing ``length`` inferred missing
+        values.
+    """
     # Find our empty_value dtype by constructing an array
     #  from our value and doing a .take on it
     from pandas.core.algorithms import take_nd
@@ -133,7 +149,20 @@ def construct_1d_array_from_inferred_fill_value(
 
 
 def _create_multiindex_column(df: pd.DataFrame, right: pd.DataFrame) -> tuple:
-    """Namespace overlapping columns under ``left`` and ``right``."""
+    """Namespace overlapping columns under ``left`` and ``right``.
+
+    The helper mutates the two shallow working frames used during
+    materialization. A leading level distinguishes columns originating from
+    each side, while all original column levels remain unchanged beneath it.
+
+    Args:
+        df: Left working dataframe.
+        right: Right working dataframe.
+
+    Returns:
+        The same two dataframes with MultiIndex columns containing a source
+        namespace.
+    """
     header = np.empty(df.columns.size, dtype="U4")
     header[:] = "left"
     header = [header]
@@ -413,8 +442,19 @@ def _convert_array_to_numpy(
     array: np.ndarray,
     na_value: int = 0,
 ) -> np.ndarray:
-    """
-    Ensure array is a numpy array.
+    """Convert pandas-backed values to the NumPy dtype expected by Rust.
+
+    Nullable extension arrays need an explicit ``na_value`` before they can
+    cross the PyO3 boundary. Datetime and timedelta values are viewed as their
+    int64 nanosecond representation so the numeric Rust kernels can compare
+    them without losing physical row alignment.
+
+    Args:
+        array: NumPy array, pandas extension array, or pandas-backed values.
+        na_value: Scalar used for missing entries in non-mask value arrays.
+
+    Returns:
+        A NumPy array suitable for a dtype-specialized kernel.
     """
     if pd.api.types.is_extension_array_dtype(array):
         array_dtype = getattr(array.dtype, "numpy_dtype", None)
@@ -502,8 +542,22 @@ def _build_residual_predicate(
 def _get_boolean_args_for_ne(
     op: str, left: np.ndarray | None, right: np.ndarray | None
 ) -> tuple:
-    """
-    Get boolean arguments for !=
+    """Build null masks and the extension-array flag for ``!=``.
+
+    Ordinary range predicates remove null rows before dispatch. ``!=`` is
+    different: NumPy-backed nulls match according to the dedicated all-`!=`
+    contract, while pandas extension-array nulls do not match. The returned
+    masks therefore travel with residual predicates so Rust can distinguish
+    missing values from converted numeric sentinels.
+
+    Args:
+        op: Predicate operator; only ``!=`` requests masks.
+        left: Left residual series or array-like values.
+        right: Right residual series or array-like values.
+
+    Returns:
+        ``(left_null_mask, right_null_mask, is_extension_array)``. When no
+        null is present, both masks are ``None`` and the flag is ``False``.
     """
     if op != "!=":
         return None, None, False

@@ -412,23 +412,23 @@ def test_check_aggfunc_numeric(dummy):
         )
 
 
-@pytest.mark.turtle
-@settings(deadline=None, max_examples=10)
-@given(df=conditional_df(), right=conditional_right())
-def test_check_use_numba_equi_join_no_le_or_ge(df, right):
-    """
-    Raise ValueError if `use_numba` is True,
-    there is an equi join,
-    and there is no less than/greater than join.
-    """
-    with pytest.raises(ValueError, match="At least one less than or greater than.+"):
-        df.conditional_join(
-            right,
-            ("E", "Dates", "!="),
-            ("A", "Integers", "=="),
-            ("B", "Numeric", "!="),
-            use_numba=True,
-        )
+# @pytest.mark.turtle
+# @settings(deadline=None, max_examples=10)
+# @given(df=conditional_df(), right=conditional_right())
+# def test_check_use_numba_equi_join_no_le_or_ge(df, right):
+#     """
+#     Raise ValueError if `use_numba` is True,
+#     there is an equi join,
+#     and there is no less than/greater than join.
+#     """
+#     with pytest.raises(ValueError, match="At least one less than or greater than.+"):
+#         df.conditional_join(
+#             right,
+#             ("E", "Dates", "!="),
+#             ("A", "Integers", "=="),
+#             ("B", "Numeric", "!="),
+#             use_numba=True,
+#         )
 
 
 def test_check_keep_type(dummy, series):

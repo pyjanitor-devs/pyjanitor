@@ -631,7 +631,6 @@ def _conditional_join_compute(
             right=matching_right,
             conditions=conditions,
             keep=keep,
-            use_numba=use_numba,
             force=force,
             return_matching_indices=return_building_blocks or aggfunc,
             join_algorithm=join_algorithm,
@@ -641,8 +640,7 @@ def _conditional_join_compute(
             df=matching_df,
             right=matching_right,
             conditions=conditions,
-            keep=keep,
-            use_numba=use_numba,
+            keep=keep, 
             return_matching_indices=return_building_blocks or aggfunc,
             join_algorithm=join_algorithm,
         )
@@ -801,7 +799,6 @@ def _multiple_conditional_join_eq(
     right: pd.DataFrame,
     conditions: list,
     keep: str,
-    use_numba: bool,
     force: bool,
     return_matching_indices: bool,
     join_algorithm: str,
@@ -819,119 +816,10 @@ def _multiple_conditional_join_eq(
             right=right,
             conditions=conditions,
             keep=keep,
-            use_numba=use_numba,
             return_matching_indices=return_matching_indices,
             join_algorithm=join_algorithm,
         )
     # deprecated - no longer maintained
-    if use_numba:
-        eqs = None
-        for left_on, right_on, op in conditions:
-            if op == _JoinOperator.STRICTLY_EQUAL.value:
-                eqs = (left_on, right_on, op)
-                break
-
-        le_lt = None
-        ge_gt = None
-
-        for condition in conditions:
-            *_, op = condition
-            if op in less_than_join_types:
-                if le_lt:
-                    continue
-                le_lt = condition
-            elif op in greater_than_join_types:
-                if ge_gt:
-                    continue
-                ge_gt = condition
-            if le_lt and ge_gt:
-                break
-        if not le_lt and not ge_gt:
-            raise ValueError(
-                "At least one less than or greater than "
-                "join condition should be present when an equi-join "
-                "is present, and use_numba is set to True."
-            )
-        rest = [
-            condition
-            for condition in conditions
-            if condition not in {eqs, le_lt, ge_gt}
-        ]
-
-        right_columns = [eqs[1]]
-        df_columns = [eqs[0]]
-        # ensure the sort columns are unique
-        if ge_gt:
-            if ge_gt[1] not in right_columns:
-                right_columns.append(ge_gt[1])
-            if ge_gt[0] not in df_columns:
-                df_columns.append(ge_gt[0])
-        if le_lt:
-            if le_lt[1] not in right_columns:
-                right_columns.append(le_lt[1])
-            if le_lt[0] not in df_columns:
-                df_columns.append(le_lt[0])
-
-        right_df = right.loc(axis=1)[right_columns]
-        left_df = df.loc(axis=1)[df_columns]
-        any_nulls = left_df.isna().any(axis=1)
-        if any_nulls.all(axis=None):
-            return {
-                "left_index": np.array([], dtype=np.intp),
-                "right_index": np.array([], dtype=np.intp),
-            }
-        if any_nulls.any():
-            left_df = left_df.loc[~any_nulls]
-        any_nulls = right_df.isna().any(axis=1)
-        if any_nulls.all(axis=None):
-            return {
-                "left_index": np.array([], dtype=np.intp),
-                "right_index": np.array([], dtype=np.intp),
-            }
-        if any_nulls.any():
-            right_df = right.loc[~any_nulls]
-        equi_col = right_columns[0]
-        # check if the first column is sorted
-        # if sorted, check if the second column is sorted
-        # per group in the first column
-        right_is_sorted = right_df[equi_col].is_monotonic_increasing
-        if right_is_sorted:
-            grp = right_df.groupby(equi_col, sort=False, observed=True)
-            non_equi_col = right_columns[1]
-            # groupby.is_monotonic_increasing uses apply under the hood
-            # the approach used below circumvents the Series creation
-            # (which isn't required here)
-            # and just gets a sequence of booleans, before calling `all`
-            # to get a single True or False.
-            right_is_sorted = all(
-                arr.is_monotonic_increasing for _, arr in grp[non_equi_col]
-            )
-        if not right_is_sorted:
-            right_df = right_df.sort_values(right_columns)
-        rest = [
-            (
-                df.loc[left_df.index, left_on],
-                right.loc[right_df.index, right_on],
-                op,
-            )
-            for left_on, right_on, op in rest
-        ]
-        outcome = _numba_equi_join(
-            df=left_df,
-            right=right_df,
-            eqs=eqs,
-            ge_gt=ge_gt,
-            le_lt=le_lt,
-            rest=rest,
-            row_count=None,
-        )
-        if outcome is None:
-            return {
-                "left_index": np.array([], dtype=np.intp),
-                "right_index": np.array([], dtype=np.intp),
-            }
-        left_index, right_index = outcome
-        return {"left_index": left_index, "right_index": right_index}
     return _get_indices_equi._get_indices(
         df=df,
         right=right,
@@ -946,7 +834,6 @@ def _multiple_conditional_join_le_lt(
     right: pd.DataFrame,
     conditions: list,
     keep: str,
-    use_numba: bool,
     return_matching_indices: bool,
     join_algorithm: str,
 ) -> tuple:
@@ -958,53 +845,6 @@ def _multiple_conditional_join_le_lt(
     Returns a tuple of (df_index, right_index)
     """
     # deprecated - numba implementation no longer maintained
-    if use_numba:
-        gt_lt = [
-            condition
-            for condition in conditions
-            if condition[-1] in less_than_join_types.union(greater_than_join_types)
-        ]
-        conditions = [condition for condition in conditions if condition not in gt_lt]
-        if len(gt_lt) > 1:
-            first_two = [op for *_, op in gt_lt[:2]]
-            range_join_ops = itertools.product(
-                less_than_join_types, greater_than_join_types
-            )
-            range_join_ops = map(set, range_join_ops)
-            is_range_join = set(first_two) in range_join_ops
-            if is_range_join and (first_two[0] in less_than_join_types):
-                gt_lt = [gt_lt[1], gt_lt[0], *gt_lt[2:]]
-            gt_lt.extend(conditions)
-            indices = _numba_multiple_non_equi_join(
-                df,
-                right,
-                gt_lt,
-                keep=keep,
-                is_range_join=is_range_join,
-                row_count=False,
-            )
-        else:
-            left_on, right_on, op = gt_lt[0]
-            indices = _numba_single_non_equi_join(
-                left=df[left_on],
-                right=right[right_on],
-                op=op,
-                keep="all",
-            )
-        if conditions and (indices is not None):
-            conditions = (
-                (df[left_on], right[right_on], op)
-                for left_on, right_on, op in conditions
-            )
-            indices = _generate_indices(*indices, conditions)
-        if indices is None:
-            return {
-                "left_index": np.array([], dtype=np.intp),
-                "right_index": np.array([], dtype=np.intp),
-            }
-        outcome = _keep_output(keep, *indices)
-        left_index, right_index = outcome
-        return {"left_index": left_index, "right_index": right_index}
     return _get_indices_non_equi._get_indices(
         df=df,
         right=right,

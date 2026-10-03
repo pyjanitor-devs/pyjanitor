@@ -1,10 +1,11 @@
 # Changelog
 
 ## [Unreleased]
-- [BUG] Fix polars `make_clean_names` collapsing only the first run of underscores. - Issue #1740 @Rodrigo-Palma
-- [BUG] Fix `row_to_names` for slices without a start or a stop, in pandas and polars. - Issue #1738 @Rodrigo-Palma
-- [DEP] Deprecate `df_columns` and `right_columns` parameters in `conditional_join`. - Issue #1712 @sumangouda
-- [DOC] Add documentation explaining when cumulative-event aggregation is preferable to range join aggregations. - Issue #1702 @sumangouda
+-   [DEP] Remove deprecated `use_numba` parameter and legacy Numba execution logic in `conditional_join`. - Issue #1737 @sumangouda
+-   [BUG] Fix polars `make_clean_names` collapsing only the first run of underscores. - Issue #1740 @Rodrigo-Palma
+-   [BUG] Fix `row_to_names` for slices without a start or a stop, in pandas and polars. - Issue #1738 @Rodrigo-Palma
+-   [DEP] Deprecate `df_columns` and `right_columns` parameters in `conditional_join`. - Issue #1712 @sumangouda
+-   [DOC] Add documentation explaining when cumulative-event aggregation is preferable to range join aggregations. - Issue #1702 @sumangouda
 -   [ENH] Avoid materializing all unequal pairs in `conditional_join` with
     `keep="first"` or `keep="last"`. - Issue #1651, PR #1681 @tunglambk
 -   [PERF] Reduce peak memory in `_build_indexer_reorder_contents` for wide frames (reps >= 8) using single NumPy allocation; tall frames with few repetitions retain the original reshape path. - Issue #1655 @Anupam2400

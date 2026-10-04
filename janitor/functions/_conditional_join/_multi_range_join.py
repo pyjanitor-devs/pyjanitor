@@ -266,8 +266,9 @@ def _preparatory_work(
             # because ``4 <= [8, 8, 8, 8]``. The original values only admit
             # positions 0 and 2 (``4 <= [8, 2, 5, 3]``), so Rust's residual
             # filter removes positions 1 and 3.
+            cumulative_right = second_right_column.cummax()
             cumulative_right = _helpers._convert_array_to_numpy(
-                array=second_right_column.cummax()._values
+                array=cumulative_right._values
             )
         elif (
             first_anchor[2] in _helpers.less_than_join_types
@@ -286,8 +287,9 @@ def _preparatory_work(
             # 2 because ``4 >= [1, 1, 1, 5]``. The original values admit only
             # positions 0 and 2 (``4 >= [2, 8, 1, 5]``); Rust removes position
             # 1 during the exact residual check.
+            cumulative_right = second_right_column.iloc[::-1].cummin().iloc[::-1]
             cumulative_right = _helpers._convert_array_to_numpy(
-                array=second_right_column.iloc[::-1].cummin().iloc[::-1]._values
+                array=cumulative_right._values
             )
 
         if cumulative_right is None:

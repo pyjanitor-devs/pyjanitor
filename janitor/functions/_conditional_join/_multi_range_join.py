@@ -257,6 +257,16 @@ def _preparatory_work(
             # the prefix. It may widen a candidate window, but never removes
             # a genuinely matching row; the original endpoint comparison is
             # rechecked below before a result is emitted.
+            #
+            # Example, after sorting by the first right column:
+            #
+            #     second_right = [8, 2, 5, 3]
+            #     cummax       = [8, 8, 8, 8]
+            #
+            # For ``left.start == 4``, the envelope admits all four positions
+            # because ``4 <= [8, 8, 8, 8]``. The original values only admit
+            # positions 0 and 2 (``4 <= [8, 2, 5, 3]``), so Rust's residual
+            # filter removes positions 1 and 3.
             if _CUMULATIVE_BOUND_FUNCTION is None:
                 cumulative_right = second_right_column.cummax().to_numpy()
             else:
@@ -267,6 +277,17 @@ def _preparatory_work(
         ):
             # This is the mirrored layout: a reverse cumulative minimum keeps
             # the suffix boundary monotonic while remaining a safe superset.
+            #
+            # Example, with the second right column aligned to the same
+            # primary layout:
+            #
+            #     second_right = [2, 8, 1, 5]
+            #     reverse_min  = [1, 1, 1, 5]
+            #
+            # For ``left.end == 4``, the envelope admits positions 0, 1, and
+            # 2 because ``4 >= [1, 1, 1, 5]``. The original values admit only
+            # positions 0 and 2 (``4 >= [2, 8, 1, 5]``); Rust removes position
+            # 1 during the exact residual check.
             if _CUMULATIVE_BOUND_FUNCTION is None:
                 cumulative_right = (
                     second_right_column.iloc[::-1].cummin().iloc[::-1].to_numpy()

@@ -236,6 +236,19 @@ def conditional_join(
         2        3         2         4
         3        4         3         6
 
+        Get any match for each left row. The selected match is not ordered:
+        >>> df1.conditional_join(
+        ...     df2,
+        ...     ("value_1", "value_2A", ">"),
+        ...     ("value_1", "value_2B", "<"),
+        ...     keep="any",
+        ... )
+           value_1  value_2A  value_2B
+        0        2         1         3
+        1        5         3         6
+        2        3         2         4
+        3        4         3         5
+
         Add an indicator column:
         >>> df1.conditional_join(
         ...     df2,

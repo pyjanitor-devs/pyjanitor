@@ -1056,24 +1056,19 @@ def get_join_indices(
             the region-based implementation. It is ignored for other joins.
 
     Returns:
-        dict: A dictionary with these required keys:
+        dict: Matching physical-position arrays and optional building blocks.
 
-        - ``left_index``: A one-dimensional NumPy array of zero-based physical
-          row positions from ``df``.
-        - ``right_index``: A one-dimensional NumPy array of zero-based physical
-          row positions from ``right``.
+    !!! note "Return layout"
 
-        The arrays have the same length. Values at the same position form one
-        matching pair, so ``left_index[i]`` is matched with
-        ``right_index[i]``. With ``keep="all"``, every matching pair is
-        returned. With ``keep="first"``, ``"last"``, or ``"any"``, at most
-        one pair is returned for each left row. When there are no matches,
-        both required arrays are empty.
-
-        If ``return_building_blocks=True``, the dictionary may also contain
-        implementation-level arrays such as ``starts`` and ``ends``. These
-        optional keys are experimental and are not part of the stable return
-        contract.
+        - ``left_index`` and ``right_index`` are one-dimensional NumPy arrays
+          of zero-based physical row positions from ``df`` and ``right``.
+        - The arrays have equal length; values at position ``i`` form one
+          matching pair.
+        - ``keep="all"`` returns every pair. ``keep="first"``, ``"last"``,
+          and ``"any"`` return at most one pair per left row.
+        - When there are no matches, both required arrays are empty.
+        - ``return_building_blocks=True`` may add experimental arrays such as
+          ``starts`` and ``ends``. Their keys and shape are not stable.
 
     Examples:
         >>> import pandas as pd
@@ -1193,10 +1188,7 @@ def join_agg(
             the region-based implementation. It is ignored for other joins.
 
     Returns:
-        pd.DataFrame: Aggregated values whose columns are labelled
-            ``(column, operation)`` and whose rows follow the physical output
-            side. When ``return_matched`` is true, the index also includes
-            the boolean ``matched`` level.
+        pd.DataFrame: Aggregated values with one row per physical output row.
 
     Examples:
         >>> import pandas as pd

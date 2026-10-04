@@ -340,6 +340,18 @@ def _materialize_aggregation_result(
                     values = pd.array(values, dtype="Int64")
             elif pd.api.types.is_float_dtype(series.dtype):
                 values = values.astype(series.dtype, copy=False)
+            elif (
+                operation in {"sum", "prod"}
+                and matched is not None
+                and not matched.all()
+                and pd.api.types.is_integer_dtype(series.dtype)
+            ):
+                # Rust uses the multiplicative identity (1) for an output
+                # row with no contributing values. Pandas represents the
+                # same reindexed NumPy-integer reduction as float64 when the
+                # output also contains unmatched rows. Keep nullable integer
+                # extension arrays on their existing Int64/UInt64 path above.
+                values = values.astype(np.float64, copy=False)
         if operation in {"min", "max"}:
             # Rust stores a physical source position for extrema and -1 when
             # an output row contains no non-null value. Replace the sentinel

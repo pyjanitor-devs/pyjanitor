@@ -1148,23 +1148,24 @@ def join_agg(
 
     !!! info "Aggregation semantics"
 
-        - ``count`` counts matched, non-null source values.
-        - ``size`` counts every matched source row, including null values.
-        - ``sum`` and ``prod`` ignore null values and use ``0`` and ``1`` as
-          the identity for an output row with no contributing values.
-        - ``min`` and ``max`` ignore null values and return a missing value
-          when no non-null value contributes.
+        | Operation | Match and null behavior |
+        | --- | --- |
+        | `count` | Counts matched, non-null source values. |
+        | `size` | Counts every matched source row, including null values. |
+        | `sum` | Ignores nulls; uses `0` when no value contributes. |
+        | `prod` | Ignores nulls; uses `1` when no value contributes. |
+        | `min`, `max` | Ignore nulls; missing if no non-null value contributes. |
 
-        Integer ``sum`` and ``prod`` results remain integer-valued. Signed
-        results use ``int64`` and unsigned results use ``uint64``. Integer
-        ``min`` and ``max`` use pandas nullable ``Int64`` or ``UInt64`` when
-        an unmatched output row needs ``pd.NA``. Floating, datetime, and
-        timedelta results retain their corresponding source dtype.
+    !!! note "Dtypes and match status"
 
-    ``sum`` and ``prod`` require numeric source columns. ``min`` and ``max``
-    also support datetime and timedelta columns. ``return_matched`` reports
-    whether any row pair matched, independently of whether ``count`` is zero
-    because all matched source values were null.
+        - `sum` and `prod` require numeric source columns. Signed integer
+          results use `int64`; unsigned results use `uint64`.
+        - `min` and `max` support numeric, datetime, and timedelta columns.
+          Integer results use nullable `Int64` or `UInt64` when an unmatched
+          output row needs `pd.NA`; other results retain their source dtype.
+        - `return_matched` identifies whether any row pair matched. This is
+          independent of `count`, which can be zero when all matched source
+          values are null.
 
     By default, right-side values are aggregated for each left row. Set
     ``reverse=True`` to aggregate left-side values for each right row.

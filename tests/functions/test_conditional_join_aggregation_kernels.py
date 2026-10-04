@@ -88,16 +88,6 @@ def _numeric_frames(dtype):
     return left, right
 
 
-def _apply_rust_integer_contract(expected, source, output_column):
-    """Keep pandas' promoted sum/product baseline unchanged.
-
-    Pandas/NumPy reductions promote signed integers to ``int64`` and unsigned
-    integers to ``uint64``. The helper remains as a named compatibility point
-    for the shared expected-result builders.
-    """
-    return expected
-
-
 def _reduction_dtype(dtype):
     """Return the pandas/NumPy dtype for a sum or product reduction."""
     dtype = pd.api.types.pandas_dtype(dtype)
@@ -134,8 +124,6 @@ def _expected_single(left, right, reverse, operator="<"):
     expected.columns = pd.MultiIndex.from_tuples(
         [(output_column, operation) for operation in expected.columns]
     )
-    source = left["left_value"] if reverse else right["value"]
-    expected = _apply_rust_integer_contract(expected, source, output_column)
     output_length = len(right) if reverse else len(left)
     matched = expected.reindex(range(output_length))[(output_column, "size")].notna()
     return _with_matched_level(expected, output_length, matched.to_numpy())
@@ -337,8 +325,6 @@ def _expected_extended(left, right, reverse):
     expected.columns = pd.MultiIndex.from_tuples(
         [(output_column, operation) for operation in expected.columns]
     )
-    source = left["left_value"] if reverse else right["value"]
-    expected = _apply_rust_integer_contract(expected, source, output_column)
     output_length = len(right) if reverse else len(left)
     matched = expected.reindex(range(output_length))[(output_column, "size")].notna()
     return _with_matched_level(expected, output_length, matched.to_numpy())

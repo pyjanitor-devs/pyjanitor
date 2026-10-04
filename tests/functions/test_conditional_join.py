@@ -250,6 +250,14 @@ def test_check_conditions_exist(dummy, series):
         dummy.conditional_join(series)
 
 
+def test_use_numba_is_a_deprecated_noop(dummy, series):
+    """Accept the historical keyword while warning that it has no effect."""
+    with pytest.warns(DeprecationWarning, match="use_numba"):
+        result = dummy.conditional_join(series, ("id", "B", ">"), use_numba=True)
+
+    assert not result.empty
+
+
 def test_check_condition_type(dummy, series):
     """Raise TypeError if any condition in conditions is not a tuple."""
     with pytest.raises(TypeError, match="condition should be one of.+"):

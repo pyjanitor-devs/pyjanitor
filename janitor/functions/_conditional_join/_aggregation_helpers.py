@@ -340,16 +340,6 @@ def _materialize_aggregation_result(
                     values = pd.array(values, dtype="Int64")
             elif pd.api.types.is_float_dtype(series.dtype):
                 values = values.astype(series.dtype, copy=False)
-            elif (
-                matched is not None
-                and not matched.all()
-                and pd.api.types.is_integer_dtype(series.dtype)
-            ):
-                # Pandas promotes a reindexed integer reduction to float when
-                # unmatched output rows are represented by the reduction's
-                # identity value. Match that public contract for NumPy-backed
-                # integer sources; nullable integer sources retain Int64.
-                values = values.astype(np.float64, copy=False)
         if operation in {"min", "max"}:
             # Rust stores a physical source position for extrema and -1 when
             # an output row contains no non-null value. Replace the sentinel

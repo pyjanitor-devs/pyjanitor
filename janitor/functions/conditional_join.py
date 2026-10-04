@@ -58,6 +58,7 @@ def conditional_join(
     df_columns: Optional[Any] = slice(None),
     right_columns: Optional[Any] = slice(None),
     keep: Literal["first", "last", "any", "all"] = "all",
+    use_numba: bool | None = None,
     indicator: Optional[bool | str] = False,
     force: bool = False,
     join_algorithm: str = "default",
@@ -248,6 +249,26 @@ def conditional_join(
         9       NaN      12.0      15.0  right_only
         10      NaN       0.0       1.0  right_only
 
+        Use ``force=True`` when a mixed equality/range join should use the
+        non-equi preparation order, and select the regions algorithm for a
+        multi-range join when desired:
+
+        >>> forced = df1.conditional_join(
+        ...     df2,
+        ...     ("value_1", "value_2A", "=="),
+        ...     ("value_1", "value_2B", "<"),
+        ...     force=True,
+        ... )
+        >>> regional = df1.conditional_join(
+        ...     df2,
+        ...     ("value_1", "value_2A", ">"),
+        ...     ("value_1", "value_2B", "<"),
+        ...     join_algorithm="regions",
+        ...     include_join_positions=True,
+        ... )
+        >>> isinstance(regional.index, pd.MultiIndex)
+        True
+
     !!! abstract "Version Changed"
 
         - 0.24.0
@@ -296,6 +317,8 @@ def conditional_join(
             !!! warning "Deprecated in 0.33.0"
         keep: Choose whether to return the first match, last match, any match,
             or all matches.
+        use_numba: Deprecated no-op retained for compatibility with older
+            callers. Its value is ignored.
         indicator: If `True`, adds a column to the output DataFrame
             called `_merge` with information on the source of each row.
             The column can be given a different name by providing a string argument.
@@ -315,6 +338,13 @@ def conditional_join(
     Returns:
         A pandas DataFrame of the two merged Pandas objects.
     """  # noqa: E501
+
+    if use_numba is not None:
+        warnings.warn(
+            "The 'use_numba' parameter is deprecated and has no effect.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
 
     return _conditional_join_compute(
         df=df,
@@ -724,8 +754,9 @@ def _conditional_join_compute(
             force=force,
         )
 
-    df.index = range(len(df))
-    right.index = range(len(right))
+    # Rust receives physical row positions, never the caller's labels.
+    df.index = pd.RangeIndex(len(df))
+    right.index = pd.RangeIndex(len(right))
 
     index_result_kwargs = {
         "how": how,
@@ -929,6 +960,34 @@ def get_join_indices(
     Returns:
         A dictionary containing parallel physical-position arrays. The result
         is empty when no pair satisfies every predicate.
+
+    Examples:
+        >>> import pandas as pd
+        >>> import janitor
+        >>> left = pd.DataFrame({"value": [1, 4, 7]})
+        >>> right = pd.DataFrame({"value": [2, 5, 8]})
+        >>> janitor.get_join_indices(left, right, ("value", "value", "<"), keep="first")
+        {'left_index': array([0, 1, 2]), 'right_index': array([0, 1, 2])}
+
+        With ``keep="all"`` (the default), every matching pair is returned:
+
+        >>> all_matches = janitor.get_join_indices(left, right, ("value", "value", "<"))
+        >>> all_matches["left_index"].tolist()
+        [0, 0, 0, 1, 1, 2]
+        >>> all_matches["right_index"].tolist()
+        [0, 1, 2, 1, 2, 2]
+
+        ``return_building_blocks`` exposes the range windows used by callers
+        that need to perform their own materialization:
+
+        >>> blocks = janitor.get_join_indices(
+        ...     left,
+        ...     right,
+        ...     ("value", "value", "<"),
+        ...     return_building_blocks=True,
+        ... )
+        >>> sorted(blocks)
+        ['ends', 'left_index', 'right_index', 'starts']
     """
     return _conditional_join_compute(
         df=df,
@@ -967,6 +1026,17 @@ def join_agg(
     result retains one row for every physical row in the aggregation domain;
     when ``return_matched`` is true, its index also contains the match mask.
 
+    Aggregation semantics follow the join matches rather than pandas group
+    labels. ``count`` counts matched, non-null source values; ``size`` counts
+    every matched row, including rows whose source value is null. ``sum`` and
+    ``prod`` ignore null values and use ``0`` and ``1`` respectively for an
+    output row with no contributing values. ``min`` and ``max`` ignore null
+    values and return a missing value when no non-null value contributes.
+    ``sum`` and ``prod`` require numeric source columns, while ``min`` and
+    ``max`` support numeric, datetime, and timedelta columns. ``return_matched``
+    reports whether any row pair matched; it is independent of whether
+    ``count`` is zero because all matched source values were null.
+
     Forward aggregation groups right-side values by left rows. Set
     ``reverse=True`` to group left-side values by right rows. The aggregation
     source arrays may be filtered or sorted internally, but their physical
@@ -986,6 +1056,41 @@ def join_agg(
     Returns:
         A dataframe whose columns are labelled ``(column, operation)`` and
         whose rows follow the physical output side.
+
+    Examples:
+        >>> import pandas as pd
+        >>> import janitor
+        >>> left = pd.DataFrame({"key": [1, 2]})
+        >>> right = pd.DataFrame({"key": [1, 2, 3], "amount": [10, 20, 30]})
+        >>> left.join_agg(
+        ...     right,
+        ...     ("key", "key", "<"),
+        ...     aggfunc=[("amount", "sum"), ("amount", "count")],
+        ...     return_matched=True,
+        ... )  # doctest: +NORMALIZE_WHITESPACE
+                  amount
+                     sum count
+        matched
+        0 True        50     2
+        1 True        30     1
+
+        Set ``reverse=True`` to aggregate left-side values into right-side
+        output rows:
+
+        >>> left = pd.DataFrame({"key": [1, 2], "amount": [10, 20]})
+        >>> right = pd.DataFrame({"key": [1, 2, 3]})
+        >>> left.join_agg(
+        ...     right,
+        ...     ("key", "key", "<"),
+        ...     aggfunc=[("amount", "sum")],
+        ...     reverse=True,
+        ...     return_matched=False,
+        ... )
+          amount
+             sum
+        0      0
+        1     10
+        2     30
     """
     return _conditional_join_compute(
         df=df,

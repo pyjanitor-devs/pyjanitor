@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+- [DOC] Fix `_xlsx_cells` and `_expand_sorted_array` docstrings naming parameters the functions do not take (`path_is_workbook`, `region`, `num`); document `base_engine` and `load_factor` instead. - PR #1742 @VenishPaneliya
 - [BUG] Fix polars `make_clean_names` collapsing only the first run of underscores. - Issue #1740 @Rodrigo-Palma
 - [BUG] Fix `row_to_names` for slices without a start or a stop, in pandas and polars. - Issue #1738 @Rodrigo-Palma
 - [DEP] Deprecate `df_columns` and `right_columns` parameters in `conditional_join`. - Issue #1712 @sumangouda

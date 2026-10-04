@@ -167,6 +167,15 @@ def _preparatory_work(
     # by an envelope in that same right-side ordering. Choosing the predicates
     # in the opposite order loses this compact-window opportunity whenever
     # the right endpoints are not monotonic after sorting by right.start.
+    # Maintainer note: this selects the layout that supports the cumulative
+    # envelope optimization; it is not a selectivity estimator. On skewed
+    # data, the selected anchor can admit substantially more candidates than
+    # another valid range predicate, causing a large performance and memory
+    # penalty before residual predicates are applied. The previous
+    # implementation used a sampling heuristic for this choice, but sampling
+    # can mis-rank predicates and is intentionally not restored here. Revisit
+    # this only with a representative user workload or a deterministic cost
+    # estimate that is cheaper than constructing the join candidates.
     range_positions = [
         position
         for position, condition in enumerate(conditions)

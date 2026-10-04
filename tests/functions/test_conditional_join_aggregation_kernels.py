@@ -232,8 +232,8 @@ def test_extended_join_agg_can_omit_matched_level():
     assert_frame_equal(expected, actual)
 
 
-def test_join_agg_no_match_returns_empty_plain_index_without_matched():
-    """No-match aggregation returns an empty frame without matched metadata."""
+def test_join_agg_no_match_retains_plain_output_index_without_matched():
+    """No-match aggregation retains eligible rows without matched metadata."""
     left = pd.DataFrame({"key": [1]})
     right = pd.DataFrame({"key": [1], "value": [10]})
 
@@ -244,9 +244,12 @@ def test_join_agg_no_match_returns_empty_plain_index_without_matched():
         return_matched=False,
     )
 
-    assert actual.empty
+    expected = pd.DataFrame(
+        {("value", "size"): [0]},
+        index=pd.RangeIndex(1),
+    )
+    assert_frame_equal(expected, actual)
     assert isinstance(actual.index, pd.RangeIndex)
-    assert list(actual.columns) == [("value", "size")]
 
 
 def test_single_not_equal_aggregation_counts_duplicate_right_candidates():
@@ -1518,8 +1521,10 @@ def test_equi_aggregation_supports_multiple_equi_columns():
 
 
 @pytest.mark.parametrize("return_matched", [True, False])
-def test_equi_aggregation_with_no_matches_returns_requested_empty_shape(return_matched):
-    """No equi match returns the standard empty aggregation schema."""
+def test_equi_aggregation_with_no_matches_retains_requested_output_shape(
+    return_matched,
+):
+    """No equi match retains eligible rows in the requested index shape."""
     left = pd.DataFrame({"key": [1]})
     right = pd.DataFrame({"key": [2], "value": [10]})
 
@@ -1530,10 +1535,15 @@ def test_equi_aggregation_with_no_matches_returns_requested_empty_shape(return_m
         return_matched=return_matched,
     )
 
-    assert actual.empty
-    assert list(actual.columns) == [("value", "sum"), ("value", "size")]
+    expected = pd.DataFrame(
+        {
+            ("value", "sum"): [0],
+            ("value", "size"): [0],
+        },
+        index=pd.RangeIndex(1),
+    )
     if return_matched:
-        assert isinstance(actual.index, pd.MultiIndex)
-        assert actual.index.names == [None, "matched"]
+        expected = _with_matched_level(expected, 1, np.array([False]))
     else:
         assert isinstance(actual.index, pd.RangeIndex)
+    assert_frame_equal(expected, actual)

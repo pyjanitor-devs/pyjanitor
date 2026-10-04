@@ -202,8 +202,9 @@ def _empty_aggregation_result(
     """Build the pandas result for a join with no surviving pairs.
 
     This path is used before calling Rust when a filtered predicate side is
-    empty, and when Rust returns ``None`` because no candidate survives. It
-    returns an empty dataframe with the requested output schema.
+    empty and no eligible output domain exists. It returns an empty dataframe
+    with the requested output schema. A prepared non-empty output domain with
+    no surviving pairs uses :func:`_unmatched_aggregation_result` instead.
 
     Args:
         source: Dataframe supplying the requested columns and their dtypes.
@@ -241,6 +242,65 @@ def _empty_aggregation_result(
         )
     else:
         index = pd.RangeIndex(0)
+    return pd.DataFrame(result, copy=False, index=index)
+
+
+def _unmatched_aggregation_result(
+    output_index: pd.Index,
+    source: pd.DataFrame,
+    aggfunc: list[tuple],
+    return_matched: bool = False,
+) -> pd.DataFrame:
+    """Build identity-valued output rows when no eligible pair matches.
+
+    Unlike :func:`_empty_aggregation_result`, this path has a real prepared
+    output domain. Rows with null join keys have already been removed by the
+    caller; every remaining output row is retained with ``matched=False`` and
+    the identity for its requested reduction. ``sum`` and ``size`` use zero,
+    ``prod`` uses one, and ``min``/``max`` use missing values.
+    """
+    length = len(output_index)
+    result = {}
+    for column_name, operation in aggfunc:
+        series = source[column_name]
+        if operation in {"count", "size"}:
+            values = np.zeros(length, dtype=np.int64)
+        elif operation in {"sum", "prod"}:
+            identity = 0 if operation == "sum" else 1
+            if pd.api.types.is_extension_array_dtype(series.dtype):
+                values = pd.array([identity] * length, dtype=series.dtype)
+            elif pd.api.types.is_integer_dtype(series.dtype):
+                values = np.full(
+                    length,
+                    identity,
+                    dtype=_integer_reduction_dtype(series.dtype),
+                )
+            else:
+                values = np.full(length, identity, dtype=series.dtype)
+        elif pd.api.types.is_integer_dtype(series.dtype):
+            values = pd.array(
+                [pd.NA] * length,
+                dtype=_nullable_integer_dtype(series.dtype),
+            )
+        elif pd.api.types.is_datetime64_any_dtype(
+            series.dtype
+        ) or pd.api.types.is_timedelta64_dtype(series.dtype):
+            values = pd.array([pd.NaT] * length, dtype=series.dtype)
+        elif pd.api.types.is_float_dtype(series.dtype):
+            values = np.full(length, np.nan, dtype=series.dtype)
+        elif pd.api.types.is_extension_array_dtype(series.dtype):
+            values = pd.array([pd.NA] * length, dtype=series.dtype)
+        else:
+            values = pd.array([pd.NA] * length, dtype=series.dtype)
+        result[_build_agg_label(column_name, operation)] = values
+
+    if return_matched:
+        index = pd.MultiIndex.from_arrays(
+            [output_index, np.zeros(length, dtype=bool)],
+            names=[output_index.name, "matched"],
+        )
+    else:
+        index = output_index
     return pd.DataFrame(result, copy=False, index=index)
 
 
@@ -300,7 +360,12 @@ def _materialize_aggregation_result(
             extension dtype cannot be reconstructed.
     """
     if result is None:
-        return _empty_aggregation_result(source=source, aggfunc=aggfunc)
+        return _unmatched_aggregation_result(
+            output_index=output_index,
+            source=source,
+            aggfunc=aggfunc,
+            return_matched=return_matched,
+        )
 
     # Rust has calculated directly in the trimmed layout. Positions are an
     # explicit cross-language alignment check; they must match the prepared

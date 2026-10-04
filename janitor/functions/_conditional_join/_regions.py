@@ -41,6 +41,7 @@ from janitor.functions._conditional_join._aggregation_helpers import (
     _aggregation_inputs,
     _empty_aggregation_result,
     _materialize_aggregation_result,
+    _unmatched_aggregation_result,
 )
 
 
@@ -302,8 +303,8 @@ def _aggregate(
 
     Returns:
         A dataframe with one row per first-anchor output position, including
-        unmatched slots. If no candidate survives, returns the standard empty
-        aggregation schema.
+        unmatched slots. If no candidate survives, every eligible output slot
+        remains with identity values.
 
     Direction contract:
         Forward aggregation reads values from ``right`` and emits one output
@@ -322,6 +323,10 @@ def _aggregate(
             return_matched=return_matched,
         )
     left_index, right_index, anchor_predicates, residual_predicates = outcome
+    if isinstance(left_index, slice):
+        left_index = df.index
+    if isinstance(right_index, slice):
+        right_index = right.index
     predicates = _aggregation_predicates([*anchor_predicates, *residual_predicates])
     source_index = left_index if reverse else right_index
     output_index = right_index if reverse else left_index
@@ -343,7 +348,8 @@ def _aggregate(
         return_matched=return_matched,
     )
     if result is None:
-        return _empty_aggregation_result(
+        return _unmatched_aggregation_result(
+            output_index=output_index,
             source=aggregation_source,
             aggfunc=aggfunc,
             return_matched=return_matched,

@@ -583,7 +583,8 @@ def _aggregate(
             return_matched=return_matched,
         )
     if result is None:
-        return _aggregation_helpers._empty_aggregation_result(
+        return _aggregation_helpers._unmatched_aggregation_result(
+            output_index=output_index,
             source=aggregation_source,
             aggfunc=aggfunc,
             return_matched=return_matched,

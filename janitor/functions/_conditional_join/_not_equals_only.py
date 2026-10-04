@@ -80,6 +80,7 @@ from janitor.functions._conditional_join._aggregation_helpers import (
     _aggregation_inputs,
     _empty_aggregation_result,
     _materialize_aggregation_result,
+    _unmatched_aggregation_result,
 )
 
 
@@ -488,9 +489,9 @@ def _aggregate(
 
     Returns:
         A pandas dataframe using the shared conditional-join aggregation
-        contract. If Rust finds no surviving all-``!=`` pair, the result is an
-        empty schema-only dataframe whose index shape still follows
-        ``return_matched``.
+        contract. If Rust finds no surviving all-``!=`` pair, every eligible
+        output row is retained with identity values and a false matched flag
+        when ``return_matched`` is true.
     """
 
     aggregation_source = df if reverse else right
@@ -544,18 +545,18 @@ def _aggregate(
         )
 
     if result is None:
-        return _empty_aggregation_result(
+        return _unmatched_aggregation_result(
+            output_index=output_index,
             source=aggregation_source,
             aggfunc=aggfunc,
             return_matched=return_matched,
         )
-    # The all-!= public contract trims the output domain when no complete
-    # candidate survives. Rust can represent that case either as ``None`` or
-    # as a zero-length result carrying empty accumulator arrays. Normalize
-    # both forms to the same schema-only result while preserving the caller's
-    # requested ``matched`` index level.
+    # Rust can represent an all-unmatched result as a zero-length result
+    # carrying empty accumulator arrays. The prepared output domain still
+    # exists, so retain one identity-valued row per eligible output row.
     if len(result[0]) == 0:
-        return _empty_aggregation_result(
+        return _unmatched_aggregation_result(
+            output_index=output_index,
             source=aggregation_source,
             aggfunc=aggfunc,
             return_matched=return_matched,

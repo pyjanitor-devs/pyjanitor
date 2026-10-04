@@ -111,13 +111,6 @@ def conditional_join(
 
     The operator can be any of `==`, `!=`, `<=`, `<`, `>=`, `>`.
 
-    For a single `!=` condition, `keep="any"`, `keep="first"`, and
-    `keep="last"` select a matching position without materializing all
-    unequal pairs; `keep="all"` returns every unequal pair. For multiple
-    all-`!=` conditions, candidates are formed from the first condition,
-    filtered by every remaining condition, and then reduced according to
-    `keep`.
-
     The join is done only on the columns.
 
     For non-equi joins, only numeric, timedelta and date columns are supported.

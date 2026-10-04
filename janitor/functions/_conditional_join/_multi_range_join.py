@@ -154,10 +154,20 @@ def _preparatory_work(
     if right_index is None:
         return None
 
+    # Every array below is indexed through these two compact maps. Null rows
+    # have already been removed, so the maps may be shorter than the source
+    # dataframes; retaining them is what lets Rust return original dataframe
+    # positions after it searches the compact arrays.
+
     # For opposing interval predicates, make the lower-bound predicate the
     # primary anchor. Its sorted right array gives a compact prefix window;
     # the upper-bound predicate can then use a cumulative envelope in that
     # same layout, followed by an exact residual recheck.
+    # A lower-bound search (`right.start <= left.end`) produces a prefix. An
+    # upper-bound search (`left.start <= right.end`) can then be represented
+    # by an envelope in that same right-side ordering. Choosing the predicates
+    # in the opposite order loses this compact-window opportunity whenever
+    # the right endpoints are not monotonic after sorting by right.start.
     range_positions = [
         position
         for position, condition in enumerate(conditions)
@@ -195,6 +205,9 @@ def _preparatory_work(
         series=right_column
     )
     if not right_index_is_ordered:
+        # Sorting changes search offsets, not row identity. Carry the sorted
+        # index positions forward so every second anchor, residual predicate,
+        # and aggregation source uses exactly the same physical layout.
         right_index = right_column.index
     right_array = _helpers._convert_array_to_numpy(array=right_column._values)
     anchor_dtype = right_array.dtype
@@ -228,6 +241,8 @@ def _preparatory_work(
     ]
     residual_predicates = []
     if second_right_column.is_monotonic_increasing:
+        # Both real predicates are monotonic in the shared sorted layout, so
+        # Rust can intersect their two binary-search windows directly.
         anchor_predicates = [
             first_anchor,
             (second_left_array, second_right_array, second_op),
@@ -238,6 +253,10 @@ def _preparatory_work(
             first_anchor[2] in _helpers.greater_than_join_types
             and second_op in _helpers.less_than_join_types
         ):
+            # For each position, cummax records the largest endpoint seen in
+            # the prefix. It may widen a candidate window, but never removes
+            # a genuinely matching row; the original endpoint comparison is
+            # rechecked below before a result is emitted.
             if _CUMULATIVE_BOUND_FUNCTION is None:
                 cumulative_right = second_right_column.cummax().to_numpy()
             else:
@@ -246,6 +265,8 @@ def _preparatory_work(
             first_anchor[2] in _helpers.less_than_join_types
             and second_op in _helpers.greater_than_join_types
         ):
+            # This is the mirrored layout: a reverse cumulative minimum keeps
+            # the suffix boundary monotonic while remaining a safe superset.
             if _CUMULATIVE_BOUND_FUNCTION is None:
                 cumulative_right = (
                     second_right_column.iloc[::-1].cummin().iloc[::-1].to_numpy()
@@ -256,13 +277,18 @@ def _preparatory_work(
                 )
 
         if cumulative_right is None:
+            # Same-direction range predicates do not have a generally safe
+            # opposing envelope. Keep the second predicate as a residual and
+            # let the single-anchor extended kernel evaluate it exactly.
             residual_predicates.append(
                 (second_left_array, second_right_array, second_op)
             )
             anchor_predicates = [first_anchor]
         else:
             # The cumulative envelope supplies a monotonic superset window;
-            # retain the original predicate for an exact Rust recheck.
+            # retain the original predicate for an exact Rust recheck. This
+            # two-stage contract is essential: the envelope is for speed, not
+            # for changing the join's truth table.
             anchor_predicates = [
                 first_anchor,
                 (second_left_array, cumulative_right, second_op),
@@ -365,6 +391,9 @@ def _compute_multi_range_join(
     right_positions = _helpers._convert_array_to_numpy(array=right_index._values)
 
     if len(anchor_predicates) == 1:
+        # There is no safe second monotonic window. The range-first extended
+        # endpoint still avoids a Cartesian product by filtering candidates
+        # inside the first anchor's bounded window.
         if return_building_blocks:
             keep = "all"
         predicates = [*anchor_predicates, *residual_predicates]
@@ -392,7 +421,9 @@ def _compute_multi_range_join(
     predicates = [*anchor_predicates, *residual_predicates]
     if residual_predicates:
         # The extended Rust entry point evaluates residuals against the
-        # intersected dual-anchor candidates before applying ``keep``.
+        # intersected dual-anchor candidates before applying ``keep``. In the
+        # cumulative-envelope case, this is where the original second range
+        # predicate is restored exactly.
         if return_building_blocks:
             keep = "all"
         function = _get_dual_range_extended_function()
@@ -405,7 +436,8 @@ def _compute_multi_range_join(
     else:
         # Both anchors use the same physical layouts. Their tuples carry only
         # value arrays and operators; the shared maps and ordering flag are
-        # passed once at the Rust boundary.
+        # passed once at the Rust boundary. Since no residual can reject a
+        # candidate, the cheaper basic dual-range endpoint is sufficient.
         function = _get_dual_range_function()
         result = function(
             predicates=predicates,
@@ -477,6 +509,10 @@ def _aggregate(
         right_index = right.index
     source_indexer = left_index if reverse else right_index
     output_index = right_index if reverse else left_index
+    # The source and output sides intentionally swap for reverse aggregation.
+    # These indexers refer to original dataframe positions, while the anchor
+    # arrays may be compact and sorted; mixing the two would aggregate values
+    # into the wrong rows without necessarily raising an error.
     left_positions = _helpers._convert_array_to_numpy(array=left_index._values)
     right_positions = _helpers._convert_array_to_numpy(array=right_index._values)
 

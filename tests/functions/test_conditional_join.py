@@ -56,6 +56,12 @@ def _with_aggregation_contract(expected, output_index):
         if isinstance(output_index, pd.MultiIndex)
         else output_index
     )
+    integer_reduction_series = {
+        column: expected[column]
+        for column in expected.columns
+        if column[1] in {"sum", "prod"}
+        and pd.api.types.is_integer_dtype(expected[column].dtype)
+    }
     expected = expected.reindex(physical_index)
     size_column = next(column for column in expected.columns if column[1] == "size")
     matched = expected[size_column].notna().to_numpy()
@@ -67,6 +73,13 @@ def _with_aggregation_contract(expected, output_index):
                 expected[column] = expected[column].astype("int64")
         elif operation == "prod":
             expected[column] = expected[column].fillna(1)
+        if column in integer_reduction_series:
+            # Reindexing through missing rows promotes integers to floats and
+            # can round an exact product before a later cast restores dtype.
+            identity = 1 if operation == "prod" else 0
+            expected[column] = integer_reduction_series[column].reindex(
+                physical_index, fill_value=identity
+            )
     expected.index = pd.MultiIndex.from_arrays(
         [physical_index, matched],
         names=[None, "matched"],

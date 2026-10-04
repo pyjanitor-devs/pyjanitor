@@ -52,6 +52,18 @@ import pandas as pd
 from janitor.functions._conditional_join._helpers import _convert_array_to_numpy
 
 
+def _nullable_integer_dtype(dtype):
+    """Return the pandas nullable dtype corresponding to an integer dtype.
+
+    NumPy integer dtypes cannot represent ``pd.NA``, so missing integer
+    extrema use pandas' nullable ``Int64``/``UInt64`` dtypes. Existing pandas
+    integer extension dtypes are preserved, including narrower widths.
+    """
+    if pd.api.types.is_extension_array_dtype(dtype):
+        return dtype
+    return "UInt64" if pd.api.types.is_unsigned_integer_dtype(dtype) else "Int64"
+
+
 def _build_agg_label(column_name: Hashable, agg_name: str) -> tuple:
     """Build the output label for one aggregation request.
 
@@ -352,16 +364,10 @@ def _materialize_aggregation_result(
                 # representation because NumPy integer arrays cannot hold
                 # the missing extrema marker.
                 if pd.api.types.is_integer_dtype(series.dtype):
-                    dtype = (
-                        series.dtype
-                        if pd.api.types.is_extension_array_dtype(series.dtype)
-                        else (
-                            "UInt64"
-                            if pd.api.types.is_unsigned_integer_dtype(series.dtype)
-                            else "Int64"
-                        )
+                    values = pd.array(
+                        [pd.NA] * len(values),
+                        dtype=_nullable_integer_dtype(series.dtype),
                     )
-                    values = pd.array([pd.NA] * len(values), dtype=dtype)
                 elif pd.api.types.is_extension_array_dtype(series.dtype):
                     values = pd.array([pd.NA] * len(values), dtype=series.dtype)
                 else:
@@ -371,16 +377,9 @@ def _materialize_aggregation_result(
                 selected = series.iloc[safe_positions]
                 if pd.api.types.is_integer_dtype(series.dtype):
                     if invalid.any():
-                        dtype = (
-                            series.dtype
-                            if pd.api.types.is_extension_array_dtype(series.dtype)
-                            else (
-                                "UInt64"
-                                if pd.api.types.is_unsigned_integer_dtype(series.dtype)
-                                else "Int64"
-                            )
+                        values = pd.array(
+                            selected, dtype=_nullable_integer_dtype(series.dtype)
                         )
-                        values = pd.array(selected, dtype=dtype)
                         values[invalid] = pd.NA
                     elif pd.api.types.is_extension_array_dtype(series.dtype):
                         values = pd.array(selected, dtype=series.dtype)

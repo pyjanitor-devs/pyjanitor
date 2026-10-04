@@ -62,17 +62,20 @@ def _with_matched_level(expected, output_length, matched):
             expected[(column_name, operation)] = expected[
                 (column_name, operation)
             ].astype(_reduction_dtype(original_dtypes[(column_name, operation)]))
-    if not matched.all():
-        for column_name, operation in expected.columns:
+        elif operation in {"min", "max"} and pd.api.types.is_integer_dtype(
+            original_dtypes[(column_name, operation)]
+        ):
             dtype = original_dtypes[(column_name, operation)]
-            if (
-                operation in {"sum", "prod"}
-                and pd.api.types.is_integer_dtype(dtype)
-                and not pd.api.types.is_extension_array_dtype(dtype)
-            ):
-                expected[(column_name, operation)] = expected[
-                    (column_name, operation)
-                ].astype("float64")
+            if expected[(column_name, operation)].isna().any():
+                if not pd.api.types.is_extension_array_dtype(dtype):
+                    dtype = (
+                        "UInt64"
+                        if pd.api.types.is_unsigned_integer_dtype(dtype)
+                        else "Int64"
+                    )
+                expected[(column_name, operation)] = pd.array(
+                    expected[(column_name, operation)], dtype=dtype
+                )
     expected.index = pd.MultiIndex.from_arrays(
         [range(output_length), matched],
         names=[None, "matched"],
@@ -307,7 +310,7 @@ def test_reverse_not_equal_aggregation_marks_only_matching_slots():
     expected = pd.DataFrame(
         {
             ("left_value", "size"): pd.array([0, 1], dtype="int64"),
-            ("left_value", "sum"): pd.array([0, 10], dtype="float64"),
+            ("left_value", "sum"): pd.array([0, 10], dtype="int64"),
         },
         index=pd.MultiIndex.from_arrays(
             [[0, 1], [False, True]], names=[None, "matched"]
@@ -540,7 +543,7 @@ def test_single_reverse_aggregation_preserves_trimmed_right_order():
     expected = pd.DataFrame(
         {
             ("value", "size"): np.array([0, 1], dtype="int64"),
-            ("value", "sum"): np.array([0, 10], dtype="float64"),
+            ("value", "sum"): np.array([0, 10], dtype="int64"),
         },
         index=pd.MultiIndex.from_arrays(
             [[1, 0], [False, True]],
@@ -641,10 +644,10 @@ def test_single_range_aggregation_aligns_unsorted_right_source(reverse):
         expected = pd.DataFrame(
             {
                 (column, "size"): [0, 0, 1],
-                (column, "sum"): np.array([0, 0, 40], dtype="float64"),
-                (column, "prod"): np.array([1, 1, 40], dtype="float64"),
-                (column, "min"): [np.nan, np.nan, 40],
-                (column, "max"): [np.nan, np.nan, 40],
+                (column, "sum"): [0, 0, 40],
+                (column, "prod"): [1, 1, 40],
+                (column, "min"): pd.array([pd.NA, pd.NA, 40], dtype="Int64"),
+                (column, "max"): pd.array([pd.NA, pd.NA, 40], dtype="Int64"),
             },
             index=pd.MultiIndex.from_arrays(
                 [[1, 2, 0], [False, False, True]],
@@ -1258,7 +1261,7 @@ def test_duplicate_equi_aggregation_reverse_updates_each_right_slot():
     )
 
     expected = pd.DataFrame(
-        {("value", "sum"): np.array([5, 5, 0], dtype="float64")},
+        {("value", "sum"): [5, 5, 0]},
         index=pd.MultiIndex.from_tuples(
             [(0, True), (1, True), (2, False)],
             names=[None, "matched"],
@@ -1321,10 +1324,10 @@ def test_unique_equi_aggregation_covers_forward_and_reverse_output_domains():
     )
     expected_forward = pd.DataFrame(
         {
-            ("value", "sum"): np.array([20, 10, 0], dtype="float64"),
-            ("value", "prod"): np.array([20, 10, 1], dtype="float64"),
-            ("value", "min"): [20.0, 10.0, np.nan],
-            ("value", "max"): [20.0, 10.0, np.nan],
+            ("value", "sum"): [20, 10, 0],
+            ("value", "prod"): [20, 10, 1],
+            ("value", "min"): pd.array([20, 10, pd.NA], dtype="Int64"),
+            ("value", "max"): pd.array([20, 10, pd.NA], dtype="Int64"),
             ("value", "count"): [1, 1, 0],
             ("value", "size"): [1, 1, 0],
         },
@@ -1353,10 +1356,10 @@ def test_unique_equi_aggregation_covers_forward_and_reverse_output_domains():
     )
     expected_reverse = pd.DataFrame(
         {
-            ("left_value", "sum"): np.array([3, 2, 0], dtype="float64"),
-            ("left_value", "prod"): np.array([3, 2, 1], dtype="float64"),
-            ("left_value", "min"): [3.0, 2.0, np.nan],
-            ("left_value", "max"): [3.0, 2.0, np.nan],
+            ("left_value", "sum"): [3, 2, 0],
+            ("left_value", "prod"): [3, 2, 1],
+            ("left_value", "min"): pd.array([3, 2, pd.NA], dtype="Int64"),
+            ("left_value", "max"): pd.array([3, 2, pd.NA], dtype="Int64"),
             ("left_value", "count"): [1, 1, 0],
             ("left_value", "size"): [1, 1, 0],
         },
@@ -1427,7 +1430,7 @@ def test_duplicate_equi_reverse_aggregation_intersects_two_sorted_ranges():
 
     expected = pd.DataFrame(
         {
-            ("value", "sum"): np.array([0, 0, 9, 9], dtype="float64"),
+            ("value", "sum"): [0, 0, 9, 9],
             ("value", "size"): [0, 0, 1, 1],
         },
         index=pd.MultiIndex.from_tuples(
@@ -1504,7 +1507,7 @@ def test_equi_aggregation_supports_multiple_equi_columns():
 
     expected = pd.DataFrame(
         {
-            ("value", "sum"): np.array([30, 0], dtype="float64"),
+            ("value", "sum"): [30, 0],
             ("value", "size"): [2, 0],
         },
         index=pd.MultiIndex.from_tuples(

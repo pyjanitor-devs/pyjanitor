@@ -1107,6 +1107,13 @@ def join_agg(
     ``prod`` ignore null values and use ``0`` and ``1`` respectively for an
     output row with no contributing values. ``min`` and ``max`` ignore null
     values and return a missing value when no non-null value contributes.
+    Integer ``sum`` and ``prod`` results remain integer-valued: signed results
+    use ``int64`` and unsigned results use ``uint64``. Integer ``min`` and
+    ``max`` results use pandas nullable ``Int64``/``UInt64`` columns when an
+    unmatched output row needs ``pd.NA``; floating, datetime, and timedelta
+    results retain their corresponding source dtype. Use ``return_matched``
+    to distinguish an identity-valued unmatched ``sum``/``prod`` result from
+    a matched result with the same value.
     ``sum`` and ``prod`` require numeric source columns, while ``min`` and
     ``max`` support numeric, datetime, and timedelta columns. ``return_matched``
     reports whether any row pair matched; it is independent of whether

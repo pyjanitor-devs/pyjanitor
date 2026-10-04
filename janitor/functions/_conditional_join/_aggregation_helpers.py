@@ -23,8 +23,9 @@ Numerical contract:
     Signed integer ``sum`` and ``prod`` results use ``int64``; unsigned
     integer results use ``uint64``; ``float32`` results remain ``float32``;
     and ``float64`` results remain ``float64``. ``min`` and ``max`` preserve
-    the source dtype. Position, length, and allocation calculations remain
-    checked in Rust.
+    the source dtype where possible; integer results use nullable ``Int64`` or
+    ``UInt64`` when an unmatched output requires ``pd.NA``. Position, length,
+    and allocation calculations remain checked in Rust.
 
 Layout contract:
     ``indexer`` selects the exact calculation layout sent to Rust. It is not
@@ -254,11 +255,10 @@ def _materialize_aggregation_result(
     ``min`` and ``max`` use ``-1`` as Rust's internal no-value sentinel. The
     sentinel cannot be passed directly to ``Series.iloc`` because it would
     select the final row, so this function first replaces it with a safe
-    position and then restores those entries to ``pd.NA``. ``sum`` and
-    ``prod`` retain the pandas reduction dtype: signed integers are ``int64``,
-    unsigned integers are ``uint64``, and floating values retain ``float32``
-    or ``float64``. Nullable integer and floating extension dtypes are
-    reconstructed after the Rust-to-NumPy conversion.
+    position and then restores those entries to ``pd.NA``. Integer extrema
+    use nullable ``Int64``/``UInt64`` arrays when necessary; datetime and
+    timedelta extrema retain their pandas dtypes. ``sum`` and ``prod`` keep
+    integer identities as integers rather than promoting them to float.
 
     Args:
         result: Rust return value, either ``None`` or a tuple containing
@@ -340,18 +340,6 @@ def _materialize_aggregation_result(
                     values = pd.array(values, dtype="Int64")
             elif pd.api.types.is_float_dtype(series.dtype):
                 values = values.astype(series.dtype, copy=False)
-            elif (
-                operation in {"sum", "prod"}
-                and matched is not None
-                and not matched.all()
-                and pd.api.types.is_integer_dtype(series.dtype)
-            ):
-                # Rust uses the multiplicative identity (1) for an output
-                # row with no contributing values. Pandas represents the
-                # same reindexed NumPy-integer reduction as float64 when the
-                # output also contains unmatched rows. Keep nullable integer
-                # extension arrays on their existing Int64/UInt64 path above.
-                values = values.astype(np.float64, copy=False)
         if operation in {"min", "max"}:
             # Rust stores a physical source position for extrema and -1 when
             # an output row contains no non-null value. Replace the sentinel
@@ -360,16 +348,45 @@ def _materialize_aggregation_result(
             invalid = values == -1
             if series.empty:
                 # There is no safe physical position to use when the source
-                # side itself is empty. Preserve nullable extension dtypes;
-                # NumPy integer dtypes use floating missing values here.
-                if pd.api.types.is_extension_array_dtype(series.dtype):
+                # side itself is empty. Integer dtypes need pandas' nullable
+                # representation because NumPy integer arrays cannot hold
+                # the missing extrema marker.
+                if pd.api.types.is_integer_dtype(series.dtype):
+                    dtype = (
+                        series.dtype
+                        if pd.api.types.is_extension_array_dtype(series.dtype)
+                        else (
+                            "UInt64"
+                            if pd.api.types.is_unsigned_integer_dtype(series.dtype)
+                            else "Int64"
+                        )
+                    )
+                    values = pd.array([pd.NA] * len(values), dtype=dtype)
+                elif pd.api.types.is_extension_array_dtype(series.dtype):
                     values = pd.array([pd.NA] * len(values), dtype=series.dtype)
                 else:
                     values = np.full(len(values), np.nan)
             else:
                 safe_positions = np.where(invalid, 0, values)
-                # select the positions
-                # then mask
-                values = series.iloc[safe_positions].where(~invalid, pd.NA).array
+                selected = series.iloc[safe_positions]
+                if pd.api.types.is_integer_dtype(series.dtype):
+                    if invalid.any():
+                        dtype = (
+                            series.dtype
+                            if pd.api.types.is_extension_array_dtype(series.dtype)
+                            else (
+                                "UInt64"
+                                if pd.api.types.is_unsigned_integer_dtype(series.dtype)
+                                else "Int64"
+                            )
+                        )
+                        values = pd.array(selected, dtype=dtype)
+                        values[invalid] = pd.NA
+                    elif pd.api.types.is_extension_array_dtype(series.dtype):
+                        values = pd.array(selected, dtype=series.dtype)
+                    else:
+                        values = selected.to_numpy(copy=False)
+                else:
+                    values = selected.where(~invalid, pd.NA).array
         output[_build_agg_label(column_name, operation)] = values
     return pd.DataFrame(output, copy=False, index=index)

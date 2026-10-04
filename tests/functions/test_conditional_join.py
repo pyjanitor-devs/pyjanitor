@@ -56,6 +56,13 @@ def _with_aggregation_contract(expected, output_index):
         if isinstance(output_index, pd.MultiIndex)
         else output_index
     )
+    original_dtypes = {column: expected[column].dtype for column in expected.columns}
+    for column, dtype in original_dtypes.items():
+        if column[1] in {"sum", "prod"} and pd.api.types.is_integer_dtype(dtype):
+            integer_dtype = (
+                "UInt64" if pd.api.types.is_unsigned_integer_dtype(dtype) else "Int64"
+            )
+            expected[column] = pd.array(expected[column], dtype=integer_dtype)
     expected = expected.reindex(physical_index)
     size_column = next(column for column in expected.columns if column[1] == "size")
     matched = expected[size_column].notna().to_numpy()
@@ -63,10 +70,18 @@ def _with_aggregation_contract(expected, output_index):
         column = (column_name, operation)
         if operation in {"size", "sum"}:
             expected[column] = expected[column].fillna(0)
-            if operation == "size":
+            if operation == "size" or pd.api.types.is_integer_dtype(
+                original_dtypes[column]
+            ):
                 expected[column] = expected[column].astype("int64")
         elif operation == "prod":
             expected[column] = expected[column].fillna(1)
+            if pd.api.types.is_integer_dtype(original_dtypes[column]):
+                expected[column] = expected[column].astype("int64")
+        elif operation in {"min", "max"} and pd.api.types.is_integer_dtype(
+            original_dtypes[column]
+        ):
+            expected[column] = pd.array(expected[column], dtype="Int64")
     expected.index = pd.MultiIndex.from_arrays(
         [physical_index, matched],
         names=[None, "matched"],

@@ -183,6 +183,26 @@ def _create_multiindex_column(df: pd.DataFrame, right: pd.DataFrame) -> tuple:
     return df, right
 
 
+def _preserve_object_dtype(array: np.ndarray, dtype) -> np.ndarray | pd.Series:
+    """Guard a reindexed ``object``-dtype array against string inference.
+
+    ``pandas``'s ``future.infer_string`` option (default-on since pandas 3.0)
+    reinterprets a bare ``object`` ndarray of Python strings as the new
+    ``str`` dtype the moment it is handed to the ``pd.DataFrame`` constructor
+    — even though the source column was genuinely ``object`` (e.g. mixed
+    types, or a string column the caller deliberately kept as ``object``).
+    ``pd.merge`` never hits this because it reassigns dtypes at the block
+    level instead of rebuilding columns from raw arrays. Wrapping the array
+    in a dtype-tagged ``Series`` here is what makes a dict-of-arrays
+    ``pd.DataFrame(...)`` call respect that dtype the same way.
+
+    Non-object dtypes pass straight through unchanged.
+    """
+    if dtype == object:
+        return pd.Series(array, dtype=object, copy=False)
+    return array
+
+
 def _materialize_index_result(
     df: pd.DataFrame,
     right: pd.DataFrame,
@@ -274,9 +294,13 @@ def _materialize_index_result(
         """Build matched rows without creating intermediate frames."""
         dictionary = {}
         for key, value in df.items():
-            dictionary[key] = value._values[left_positions]
+            dictionary[key] = _preserve_object_dtype(
+                value._values[left_positions], value.dtype
+            )
         for key, value in right.items():
-            dictionary[key] = value._values[right_positions]
+            dictionary[key] = _preserve_object_dtype(
+                value._values[right_positions], value.dtype
+            )
         if indicator:
             name, values = _add_indicator(
                 indicator,
@@ -318,9 +342,11 @@ def _materialize_index_result(
                 )
             )
         if len(segments) == 1:
-            dictionary[key] = segments[0]
+            dictionary[key] = _preserve_object_dtype(segments[0], value.dtype)
         else:
-            dictionary[key] = concat_compat(segments)
+            dictionary[key] = _preserve_object_dtype(
+                concat_compat(segments), value.dtype
+            )
 
     for key, value in right.items():
         array = value._values
@@ -335,9 +361,11 @@ def _materialize_index_result(
         if right_unmatched.size:
             segments.append(array[right_unmatched])
         if len(segments) == 1:
-            dictionary[key] = segments[0]
+            dictionary[key] = _preserve_object_dtype(segments[0], value.dtype)
         else:
-            dictionary[key] = concat_compat(segments)
+            dictionary[key] = _preserve_object_dtype(
+                concat_compat(segments), value.dtype
+            )
 
     if indicator:
         labels = ["both"]

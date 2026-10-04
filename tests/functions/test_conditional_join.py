@@ -4162,7 +4162,6 @@ def test_multiple_eqs_col_syntax(df, right):
     assert_frame_equal(expected, actual)
 
 
-@pytest.mark.skip(reason="Flaky test - needs investigation")
 @pytest.mark.turtle
 @settings(deadline=None, max_examples=10)
 @given(df=conditional_df(), right=conditional_right())

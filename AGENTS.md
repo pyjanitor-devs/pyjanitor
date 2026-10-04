@@ -657,6 +657,18 @@ occurrences from the residual predicate list while preserving input order.
 loops, and explain both the duplicate-occurrence and original-order invariants
 when changing those loops.
 
+### [2026-10-04] Coordinated Rust/Python development sources
+
+When Pyjanitor and `janitor-rs` are developed together on stacked branches,
+use a temporary `[tool.uv.sources]` override in `pyproject.toml` to exercise
+the in-flight Rust package locally and in CI. Keep the `[project]` dependency
+on the published PyPI range unchanged.
+
+Prefer a pinned Rust commit SHA for reproducible installs. Update the SHA when
+the Rust branch moves, and remove the override before proposing the stack for
+merge into `dev`; the override is development infrastructure, not the
+published-package contract.
+
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol

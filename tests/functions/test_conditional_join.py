@@ -792,6 +792,21 @@ def test_check_force_type(dummy, series):
         dummy.conditional_join(series, ("id", "B", "<"), force=1)
 
 
+def test_force_checks_equality_dtype_before_non_equi_dispatch():
+    """Validate forced equality predicates before residual filtering."""
+    left = pd.DataFrame({"key": pd.Series([1, 2], dtype="int64"), "value": [1, 2]})
+    right = pd.DataFrame({"key": pd.Series([1, 2], dtype="int8"), "value": [0, 1]})
+
+    with pytest.raises(TypeError, match="Both columns should have the same type"):
+        jn.get_join_indices(
+            left,
+            right,
+            ("key", "key", "=="),
+            ("value", "value", ">"),
+            force=True,
+        )
+
+
 def test_check_how_value(dummy, series):
     """
     Raise ValueError if `how` is not one of

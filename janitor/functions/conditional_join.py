@@ -993,40 +993,61 @@ def get_join_indices(
 ) -> dict:
     """Return matching physical positions for an inner conditional join.
 
-    Unlike :func:`conditional_join`, this helper does not gather dataframe
-    rows. It returns zero-based physical positions in two parallel arrays;
-    ``left_index[i]`` and ``right_index[i]`` identify one matched pair. The
-    arrays are suitable for callers that need to perform their own material
-    or aggregation step. ``return_building_blocks`` is experimental: when set
-    to ``True``, the selected kernel may also return implementation-level range
-    windows such as ``starts`` and ``ends``. The shape and keys of this
-    building-block result are not a stable public API.
+    Unlike [`conditional_join`][janitor.functions.conditional_join], this
+    helper does not gather dataframe rows. It returns two parallel arrays of
+    zero-based physical positions. At position ``i``,
+    ``left_index[i]`` and ``right_index[i]`` identify one matching pair.
+
+    The result is useful when callers need to materialize rows or perform
+    additional processing themselves.
+
+    !!! info "New in version 0.27.0"
+
+    !!! abstract "Version changed"
+
+        - **0.29.0:** Added support for ragged array indices.
+        - **0.32.0:** Deprecated ragged array indices and changed the return
+          value to a dictionary.
+        - **0.32.9:** Deprecated ``use_numba``.
+        - **0.32.10:** Added the experimental ``return_building_blocks`` and
+          ``join_algorithm`` parameters.
+
+    !!! warning "Experimental parameter"
+
+        ``return_building_blocks=True`` may add implementation-level values,
+        such as range-window ``starts`` and ``ends``, to the result. The keys
+        and shape of this additional data are not part of the stable public
+        API.
 
     Args:
-        df: Left dataframe.
-        right: Right dataframe or named Series.
-        conditions: ``(left_column, right_column, operator)`` predicates.
+        df: Left DataFrame.
+        right: Right DataFrame or named Series.
+        conditions: Predicates of the form
+            ``(left_column, right_column, operator)``. The supported operators
+            are ``==``, ``!=``, ``<``, ``<=``, ``>``, and ``>=``.
         keep: Return all matches, or one ``first``, ``last``, or ``any`` match
             per left row.
         use_numba: Deprecated no-op retained for compatibility with older
             callers. Its value is ignored.
         force: If ``True``, force mixed equality/range joins to use the
-            non-equi path, with range predicates driving candidate generation
-            before equality predicates are applied. It has no effect on joins
-            that mix equality and ``!=`` predicates without a range predicate.
-        return_building_blocks: Return a possibly more extensive dictionary,
-            containing data that will be used to build the indices. This
-            feature exposes implementation-level data rather than a stable
-            public API.
-            !!! warning "This feature is experimental and may change without warning."
-        join_algorithm: Multi-range strategy: ``"default"`` uses the general
-            range-join implementation and ``"regions"`` uses the region-based
-            implementation. It is ignored when the join is not a multi-range
-            join.
+            non-equi path. Range predicates drive candidate generation before
+            equality predicates are applied. It has no effect on joins that
+            mix equality and ``!=`` predicates without a range predicate.
+        return_building_blocks: If ``True``, include implementation-level
+            values in the result. See the experimental-parameter warning
+            above.
+        join_algorithm: Strategy for multiple range predicates. ``"default"``
+            uses the general range-join implementation and ``"regions"`` uses
+            the region-based implementation. It is ignored for other joins.
 
     Returns:
-        A dictionary containing parallel physical-position arrays. The result
-        is empty when no pair satisfies every predicate.
+        A dictionary containing parallel physical-position arrays:
+
+        - ``left_index``: Physical positions from ``df``.
+        - ``right_index``: Physical positions from ``right``.
+
+        The arrays have equal length, and the result is empty when no pair
+        satisfies every predicate.
 
     Examples:
         >>> import pandas as pd

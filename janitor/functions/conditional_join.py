@@ -111,12 +111,6 @@ def conditional_join(
 
     The operator can be any of `==`, `!=`, `<=`, `<`, `>=`, `>`.
 
-    For a single `!=` condition with `keep="first"` or `keep="last"`,
-    matching positions are selected without materializing all unequal pairs.
-    For multiple all-`!=` conditions, candidate pairs are formed from the
-    first condition and then filtered by the remaining conditions before
-    applying `keep`.
-
     The join is done only on the columns.
 
     For non-equi joins, only numeric, timedelta and date columns are supported.
@@ -236,6 +230,19 @@ def conditional_join(
         2        3         2         4
         3        4         3         6
 
+        Get any match for each left row. The selected match is not ordered:
+        >>> df1.conditional_join(
+        ...     df2,
+        ...     ("value_1", "value_2A", ">"),
+        ...     ("value_1", "value_2B", "<"),
+        ...     keep="any",
+        ... )
+           value_1  value_2A  value_2B
+        0        2         1         3
+        1        5         3         6
+        2        3         2         4
+        3        4         3         5
+
         Add an indicator column:
         >>> df1.conditional_join(
         ...     df2,
@@ -310,7 +317,6 @@ def conditional_join(
             - Added support for timedelta dtype.
         - 0.28.0
             - `col` class is deprecated.
-        - 0.32.9
         - 0.32.10
             - Added `include_join_positions` parameter.
             - Added `join_algorithm` parameter.
@@ -342,7 +348,6 @@ def conditional_join(
             !!! warning "Deprecated in 0.33.0"
                 `right_columns` will be removed in a future release.
                 Select or rename columns directly on the DataFrame before calling `conditional_join`.
-            !!! warning "Deprecated in 0.33.0"
         keep: Choose whether to return the first match, last match, any match,
             or all matches.
         use_numba: Deprecated no-op retained for compatibility with older
@@ -993,40 +998,70 @@ def get_join_indices(
 ) -> dict:
     """Return matching physical positions for an inner conditional join.
 
-    Unlike :func:`conditional_join`, this helper does not gather dataframe
-    rows. It returns zero-based physical positions in two parallel arrays;
-    ``left_index[i]`` and ``right_index[i]`` identify one matched pair. The
-    arrays are suitable for callers that need to perform their own material
-    or aggregation step. ``return_building_blocks`` is experimental: when set
-    to ``True``, the selected kernel may also return implementation-level range
-    windows such as ``starts`` and ``ends``. The shape and keys of this
-    building-block result are not a stable public API.
+    Unlike [`conditional_join`][janitor.functions.conditional_join], this
+    helper does not gather dataframe rows. It returns two parallel arrays of
+    zero-based physical positions. At position ``i``,
+    ``left_index[i]`` and ``right_index[i]`` identify one matching pair.
+
+    The result is useful when callers need to materialize rows or perform
+    additional processing themselves.
+
+    !!! info "New in version 0.27.0"
+
+    !!! abstract "Version changed"
+
+        - **0.29.0:** Added support for ragged array indices.
+        - **0.32.0:** Deprecated ragged array indices and changed the return
+          value to a dictionary.
+        - **0.32.9:** Deprecated ``use_numba``.
+        - **0.32.10:** Added the experimental ``return_building_blocks`` and
+          ``join_algorithm`` parameters.
+
+    !!! warning "Experimental parameter"
+
+        ``return_building_blocks=True`` may add implementation-level values,
+        such as range-window ``starts`` and ``ends``, to the result. The keys
+        and shape of this additional data are not part of the stable public
+        API.
 
     Args:
-        df: Left dataframe.
-        right: Right dataframe or named Series.
-        conditions: ``(left_column, right_column, operator)`` predicates.
+        df: Left DataFrame.
+        right: Right DataFrame or named Series.
+        conditions: Predicates of the form
+            ``(left_column, right_column, operator)``. The supported operators
+            are ``==``, ``!=``, ``<``, ``<=``, ``>``, and ``>=``.
         keep: Return all matches, or one ``first``, ``last``, or ``any`` match
             per left row.
         use_numba: Deprecated no-op retained for compatibility with older
             callers. Its value is ignored.
         force: If ``True``, force mixed equality/range joins to use the
-            non-equi path, with range predicates driving candidate generation
-            before equality predicates are applied. It has no effect on joins
-            that mix equality and ``!=`` predicates without a range predicate.
-        return_building_blocks: Return a possibly more extensive dictionary,
-            containing data that will be used to build the indices. This
-            feature exposes implementation-level data rather than a stable
-            public API.
-            !!! warning "This feature is experimental and may change without warning."
-        join_algorithm: Multi-range strategy: ``"default"`` uses the general
-            range-join implementation and ``"regions"`` uses the region-based
-            implementation. It is ignored when the join is not a multi-range
-            join.
+            non-equi path. Range predicates drive candidate generation before
+            equality predicates are applied. It has no effect on joins that
+            mix equality and ``!=`` predicates without a range predicate.
+        return_building_blocks: If ``True``, include implementation-level
+            values in the result.
+            !!! warning "Experimental"
+                This parameter may add range-window ``starts`` and ``ends``
+                to the result. The keys and shape of this data are not part
+                of the stable public API and may change without warning.
+        join_algorithm: Strategy for multiple range predicates. ``"default"``
+            uses the general range-join implementation and ``"regions"`` uses
+            the region-based implementation. It is ignored for other joins.
 
     Returns:
-        A dictionary containing parallel physical-position arrays. The result
-        is empty when no pair satisfies every predicate.
+        dict: Matching physical-position arrays and optional building blocks.
+
+    !!! note "Return layout"
+
+        - ``left_index`` and ``right_index`` are one-dimensional NumPy arrays
+          of zero-based physical row positions from ``df`` and ``right``.
+        - The arrays have equal length; values at position ``i`` form one
+          matching pair.
+        - ``keep="all"`` returns every pair. ``keep="first"``, ``"last"``,
+          and ``"any"`` return at most one pair per left row.
+        - When there are no matches, both required arrays are empty.
+        - ``return_building_blocks=True`` may add experimental arrays such as
+          ``starts`` and ``ends``. Their keys and shape are not stable.
 
     Examples:
         >>> import pandas as pd
@@ -1094,71 +1129,75 @@ def join_agg(
     return_matched: bool = True,
     join_algorithm: str = "default",
 ) -> pd.DataFrame:
-    """Compute aggregations over rows matched by a conditional join.
+    """Aggregate values over rows matched by an inner conditional join.
 
     ``aggfunc`` contains ``(column, operation)`` pairs. Supported operations
-    are ``sum``, ``count``, ``size``, ``min``, ``max`` and ``prod``. The
-    result retains one row for every physical row in the aggregation domain;
-    when ``return_matched`` is true, its index also contains the match mask.
+    are ``sum``, ``prod``, ``size``, ``count``, ``min``, and ``max``.
 
-    Aggregation semantics follow the join matches rather than pandas group
-    labels. ``count`` counts matched, non-null source values; ``size`` counts
-    every matched row, including rows whose source value is null. ``sum`` and
-    ``prod`` ignore null values and use ``0`` and ``1`` respectively for an
-    output row with no contributing values. ``min`` and ``max`` ignore null
-    values and return a missing value when no non-null value contributes.
-    Integer ``sum`` and ``prod`` results remain integer-valued: signed results
-    use ``int64`` and unsigned results use ``uint64``. Integer ``min`` and
-    ``max`` results use pandas nullable ``Int64``/``UInt64`` columns when an
-    unmatched output row needs ``pd.NA``; floating, datetime, and timedelta
-    results retain their corresponding source dtype. Use ``return_matched``
-    to distinguish an identity-valued unmatched ``sum``/``prod`` result from
-    a matched result with the same value.
-    ``sum`` and ``prod`` require numeric source columns, while ``min`` and
-    ``max`` support numeric, datetime, and timedelta columns. ``return_matched``
-    reports whether any row pair matched; it is independent of whether
-    ``count`` is zero because all matched source values were null.
+    !!! info "Aggregation semantics"
 
-    Forward aggregation groups right-side values by left rows. Set
-    ``reverse=True`` to group left-side values by right rows. The aggregation
-    source arrays may be filtered or sorted internally, but their physical
-    position maps remain aligned so extrema and residual predicates refer to
-    the original dataframe rows.
+        | Operation | Match and null behavior |
+        | --- | --- |
+        | `count` | Counts matched, non-null source values. |
+        | `size` | Counts every matched source row, including null values. |
+        | `sum` | Ignores nulls; uses `0` when no value contributes. |
+        | `prod` | Ignores nulls; uses `1` when no value contributes. |
+        | `min`, `max` | Ignore nulls; missing if no non-null value contributes. |
+
+    !!! note "Dtypes and match status"
+
+        - `sum` and `prod` require numeric source columns. Signed integer
+          results use `int64`; unsigned results use `uint64`.
+        - `min` and `max` support numeric, datetime, and timedelta columns.
+          Integer results use nullable `Int64` or `UInt64` when an unmatched
+          output row needs `pd.NA`; other results retain their source dtype.
+        - `return_matched` identifies whether any row pair matched. This is
+          independent of `count`, which can be zero when all matched source
+          values are null.
+
+    By default, right-side values are aggregated for each left row. Set
+    ``reverse=True`` to aggregate left-side values for each right row.
+
+    !!! note "Output and matching"
+
+        The output contains one row for every physical row on the output
+        side. With ``return_matched=True``, the result index has a boolean
+        ``matched`` level so identity-valued unmatched results can be
+        distinguished from matched results with the same value.
 
     Args:
-        df: Left dataframe and reverse-aggregation source.
-        right: Right dataframe or named Series and forward-aggregation source.
+        df: Left DataFrame and reverse-aggregation source.
+        right: Right DataFrame or named Series and forward-aggregation source.
         conditions: Conditional-join predicate tuples.
         aggfunc: Non-empty ``(column, operation)`` requests.
         force: If ``True``, force mixed equality/range joins to use the
-            non-equi path, with range predicates driving candidate generation
-            before equality predicates are applied. It has no effect on joins
-            that mix equality and ``!=`` predicates without a range predicate.
-        reverse: Group left-side values into right-side output rows.
+            non-equi path. Range predicates drive candidate generation before
+            equality predicates are applied. It has no effect on joins that
+            mix equality and ``!=`` predicates without a range predicate.
+        reverse: Aggregate left-side values into right-side output rows.
         return_matched: Add a boolean ``matched`` level to the result index.
-        join_algorithm: Multi-range strategy: ``"default"`` uses the general
-            range-join implementation and ``"regions"`` uses the region-based
-            implementation. It is ignored when the join is not a multi-range
-            join.
+        join_algorithm: Strategy for multiple range predicates. ``"default"``
+            uses the general range-join implementation and ``"regions"`` uses
+            the region-based implementation. It is ignored for other joins.
 
     Returns:
-        A dataframe whose columns are labelled ``(column, operation)`` and
-        whose rows follow the physical output side.
+        pd.DataFrame: Aggregated values with one row per physical output row.
 
     Examples:
         >>> import pandas as pd
         >>> import janitor
         >>> left = pd.DataFrame({"key": [1, 2]})
         >>> right = pd.DataFrame({"key": [1, 2, 3], "amount": [10, 20, 30]})
-        >>> left.join_agg(
+        >>> result = left.join_agg(
         ...     right,
         ...     ("key", "key", "<"),
         ...     aggfunc=[("amount", "sum"), ("amount", "count")],
         ...     return_matched=True,
-        ... )  # doctest: +NORMALIZE_WHITESPACE
+        ... )
+        >>> print(result.to_string())  # doctest: +NORMALIZE_WHITESPACE
                   amount
                      sum count
-        matched
+              matched
         0 True        50     2
         1 True        30     1
 
@@ -1173,10 +1212,10 @@ def join_agg(
         ...     aggfunc=[("amount", "sum")],
         ...     return_matched=True,
         ... )
-        >>> print(partial.to_string())
+        >>> print(partial.to_string())  # doctest: +NORMALIZE_WHITESPACE
                   amount
                      sum
-        matched
+              matched
         0 True        12
         1 False        0
 
@@ -1185,13 +1224,14 @@ def join_agg(
 
         >>> left = pd.DataFrame({"key": [1, 2], "amount": [10, 20]})
         >>> right = pd.DataFrame({"key": [1, 2, 3]})
-        >>> left.join_agg(
+        >>> reverse_result = left.join_agg(
         ...     right,
         ...     ("key", "key", "<"),
         ...     aggfunc=[("amount", "sum")],
         ...     reverse=True,
         ...     return_matched=False,
         ... )
+        >>> print(reverse_result.to_string())
           amount
              sum
         0      0

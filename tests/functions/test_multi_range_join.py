@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 from janitor.functions._conditional_join._helpers import _normalize_conditions
-from janitor.functions._conditional_join._maybe_range_join import (
+from janitor.functions._conditional_join._multi_range_join import (
     _compute_multi_range_join,
 )
 

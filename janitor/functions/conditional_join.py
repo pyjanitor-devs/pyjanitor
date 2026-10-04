@@ -36,7 +36,7 @@ from janitor.utils import check, check_column, deprecated_kwargs
 
 from ._conditional_join import (
     _equi_join,
-    _maybe_range_join,
+    _multi_range_join,
     _not_equals_only,
     _regions,
     _single_range_predicate,
@@ -962,7 +962,7 @@ def _conditional_join_compute(
         )
 
     if (counter > 1) and aggfunc and (join_algorithm == "default"):
-        return _maybe_range_join._aggregate(
+        return _multi_range_join._aggregate(
             df=df,
             right=right,
             conditions=conditions,
@@ -971,7 +971,7 @@ def _conditional_join_compute(
             reverse=reverse,
         )
     if (counter > 1) and (join_algorithm == "default"):
-        return _maybe_range_join._compute_multi_range_join(
+        return _multi_range_join._compute_multi_range_join(
             df=df,
             right=right,
             conditions=conditions,

@@ -98,9 +98,10 @@ def conditional_join(
     operator is used to combine the results of the individual conditions.
 
     In some scenarios there might be performance gains if a mixed
-    equality/non-equality join uses the non-equi path. The non-equality
-    predicates drive candidate generation before the equality predicates are
-    applied as residual filters; pass ``force=True`` to request this.
+    equality/range join uses the non-equi path. The range predicates drive
+    candidate generation before the equality predicates are applied as
+    residual filters; pass ``force=True`` to request this. It has no effect on
+    joins that mix equality and ``!=`` predicates without a range predicate.
 
     ``join_algorithm`` selects the strategy for joins with multiple range
     predicates. ``"default"`` uses the general range-join implementation;
@@ -354,9 +355,10 @@ def conditional_join(
             `right_only` for observations whose merge key
             only appears in the right DataFrame, and `both` if the observation’s
             merge key is found in both DataFrames.
-        force: If ``True``, force mixed equality/non-equality joins to use the
-            non-equi path, with non-equality predicates driving candidate
-            generation before equality predicates are applied.
+        force: If ``True``, force mixed equality/range joins to use the
+            non-equi path, with range predicates driving candidate generation
+            before equality predicates are applied. It has no effect on joins
+            that mix equality and ``!=`` predicates without a range predicate.
         join_algorithm: Strategy for joins with multiple range predicates.
             ``"default"`` uses the general range-join implementation and
             ``"regions"`` uses the region-based implementation. The option is
@@ -564,9 +566,10 @@ def _conditional_join_preliminary_checks(
         right_columns: Deprecated right-column selection.
         keep: Match-selection policy.
         indicator: Whether to include a merge indicator column.
-        force: If ``True``, force mixed equality/non-equality joins to use the
-            non-equi path, with non-equality predicates driving candidate
-            generation before equality predicates are applied.
+        force: If ``True``, force mixed equality/range joins to use the
+            non-equi path, with range predicates driving candidate generation
+            before equality predicates are applied. It has no effect on joins
+            that mix equality and ``!=`` predicates without a range predicate.
         return_matching_indices: Whether callers want physical index arrays.
         aggfunc: Aggregation requests, when the caller is ``join_agg``.
         include_join_positions: Whether materialized inner-join output includes
@@ -754,9 +757,10 @@ def _conditional_join_compute(
         right_columns: Deprecated right output selection.
         keep: Match-selection policy.
         indicator: Indicator-column request.
-        force: If ``True``, force mixed equality/non-equality joins to use the
-            non-equi path, with non-equality predicates driving candidate
-            generation before equality predicates are applied.
+        force: If ``True``, force mixed equality/range joins to use the
+            non-equi path, with range predicates driving candidate generation
+            before equality predicates are applied. It has no effect on joins
+            that mix equality and ``!=`` predicates without a range predicate.
         return_matching_indices: Return physical index arrays instead of rows.
         aggfunc: Aggregation requests, or ``None`` for index output.
         include_join_positions: Include matched physical left/right row
@@ -1006,9 +1010,10 @@ def get_join_indices(
             per left row.
         use_numba: Deprecated no-op retained for compatibility with older
             callers. Its value is ignored.
-        force: If ``True``, force mixed equality/non-equality joins to use the
-            non-equi path, with non-equality predicates driving candidate
-            generation before equality predicates are applied.
+        force: If ``True``, force mixed equality/range joins to use the
+            non-equi path, with range predicates driving candidate generation
+            before equality predicates are applied. It has no effect on joins
+            that mix equality and ``!=`` predicates without a range predicate.
         return_building_blocks: Return a possibly more extensive dictionary,
             containing data that will be used to build the indices. This
             feature exposes implementation-level data rather than a stable
@@ -1118,8 +1123,10 @@ def join_agg(
         right: Right dataframe or named Series and forward-aggregation source.
         conditions: Conditional-join predicate tuples.
         aggfunc: Non-empty ``(column, operation)`` requests.
-        force: If ``True``, force the non-equi join conditions to execute
-            before the equi join.
+        force: If ``True``, force mixed equality/range joins to use the
+            non-equi path, with range predicates driving candidate generation
+            before equality predicates are applied. It has no effect on joins
+            that mix equality and ``!=`` predicates without a range predicate.
         reverse: Group left-side values into right-side output rows.
         return_matched: Add a boolean ``matched`` level to the result index.
         join_algorithm: Multi-range strategy: ``"default"`` uses the general

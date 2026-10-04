@@ -1056,7 +1056,7 @@ def get_join_indices(
             the region-based implementation. It is ignored for other joins.
 
     Returns:
-        A dictionary with these required keys:
+        dict: A dictionary with these required keys:
 
         - ``left_index``: A one-dimensional NumPy array of zero-based physical
           row positions from ``df``.

@@ -98,3 +98,10 @@ def test_clean_column_values():
     raw = pl.DataFrame({"raw": ["Abçdê fgí j"]})
     outcome = raw.with_columns(pl.col("raw").make_clean_names(strip_accents=True))
     assert list(outcome)[0][0] == "abcde_fgi_j"
+
+
+def test_clean_column_values_collapses_all_underscores():
+    """Every run of underscores is collapsed, not only the first one."""
+    raw = pl.DataFrame({"raw": ["a  b  c"]})
+    outcome = raw.with_columns(pl.col("raw").make_clean_names())
+    assert outcome["raw"].to_list() == ["a_b_c"]

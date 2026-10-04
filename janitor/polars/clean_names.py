@@ -315,7 +315,7 @@ def _clean_expr_names(
         obj = _remove_special_expr(obj=obj)
     if strip_accents:
         obj = _strip_accents_expr(obj=obj)
-    obj = obj.str.replace(pattern="_+", value="_", literal=False)
+    obj = obj.str.replace_all(pattern="_+", value="_", literal=False)
     obj = _strip_underscores_func_expr(
         obj,
         strip_underscores=strip_underscores,

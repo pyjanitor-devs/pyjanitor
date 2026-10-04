@@ -1046,8 +1046,11 @@ def get_join_indices(
             equality predicates are applied. It has no effect on joins that
             mix equality and ``!=`` predicates without a range predicate.
         return_building_blocks: If ``True``, include implementation-level
-            values in the result. See the experimental-parameter warning
-            above.
+            values in the result.
+            !!! warning "Experimental"
+                This parameter may add range-window ``starts`` and ``ends``
+                to the result. The keys and shape of this data are not part
+                of the stable public API and may change without warning.
         join_algorithm: Strategy for multiple range predicates. ``"default"``
             uses the general range-join implementation and ``"regions"`` uses
             the region-based implementation. It is ignored for other joins.

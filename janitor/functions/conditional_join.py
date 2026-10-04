@@ -36,7 +36,7 @@ from janitor.utils import check, check_column, deprecated_kwargs
 
 from ._conditional_join import (
     _equi_join,
-    _maybe_range_join,
+    _multi_range_join,
     _not_equals_only,
     _regions,
     _single_range_predicate,
@@ -962,7 +962,7 @@ def _conditional_join_compute(
         )
 
     if (counter > 1) and aggfunc and (join_algorithm == "default"):
-        return _maybe_range_join._aggregate(
+        return _multi_range_join._aggregate(
             df=df,
             right=right,
             conditions=conditions,
@@ -971,7 +971,7 @@ def _conditional_join_compute(
             reverse=reverse,
         )
     if (counter > 1) and (join_algorithm == "default"):
-        return _maybe_range_join._compute_multi_range_join(
+        return _multi_range_join._compute_multi_range_join(
             df=df,
             right=right,
             conditions=conditions,
@@ -1160,10 +1160,13 @@ def join_agg(
 
     !!! note "Output and matching"
 
-        The output contains one row for every physical row on the output
-        side. With ``return_matched=True``, the result index has a boolean
-        ``matched`` level so identity-valued unmatched results can be
-        distinguished from matched results with the same value.
+        The output contains one row for every eligible physical row on the
+        output side. Rows with null values in any join-condition column are
+        excluded. Eligible rows with no matching partner are retained with
+        identity values and ``matched=False``. With ``return_matched=True``,
+        the result index has a boolean ``matched`` level so identity-valued
+        unmatched results can be distinguished from matched results with the
+        same value.
 
     Args:
         df: Left DataFrame and reverse-aggregation source.
@@ -1181,7 +1184,9 @@ def join_agg(
             the region-based implementation. It is ignored for other joins.
 
     Returns:
-        pd.DataFrame: Aggregated values with one row per physical output row.
+        pd.DataFrame: Aggregated values with one row per eligible physical
+        output row. Null join-key rows are excluded; eligible unmatched rows
+        are retained with identity values.
 
     Examples:
         >>> import pandas as pd
@@ -1218,6 +1223,24 @@ def join_agg(
               matched
         0 True        12
         1 False        0
+
+        The same contract applies when no eligible row matches anywhere in
+        the call:
+
+        >>> left = pd.DataFrame({"key": [1, 2]})
+        >>> right = pd.DataFrame({"key": [3], "amount": [10]})
+        >>> all_unmatched = left.join_agg(
+        ...     right,
+        ...     ("key", "key", ">"),
+        ...     aggfunc=[("amount", "sum"), ("amount", "prod")],
+        ...     return_matched=True,
+        ... )
+        >>> print(all_unmatched.to_string())  # doctest: +NORMALIZE_WHITESPACE
+                  amount
+                     sum prod
+              matched
+        0 False         0    1
+        1 False         0    1
 
         Set ``reverse=True`` to aggregate left-side values into right-side
         output rows:

@@ -904,6 +904,92 @@ def test_all_not_equal_aggregation():
     assert_frame_equal(expected, actual)
 
 
+@pytest.mark.parametrize("join_algorithm", ["default", "regions"])
+def test_all_unmatched_aggregation_retains_prepared_output_rows(join_algorithm):
+    """Keep eligible rows when every multi-range candidate is rejected."""
+    left = pd.DataFrame({"left_key": [1, 2], "amount": [4, 5]})
+    right = pd.DataFrame({"right_key": [3], "amount": [10]})
+    conditions = [
+        ("left_key", "right_key", ">"),
+        ("amount", "amount", ">"),
+    ]
+    aggfunc = [
+        ("amount", "sum"),
+        ("amount", "prod"),
+        ("amount", "size"),
+        ("amount", "min"),
+    ]
+
+    actual = left.join_agg(
+        right,
+        *conditions,
+        aggfunc=aggfunc,
+        join_algorithm=join_algorithm,
+        return_matched=True,
+    )
+
+    assert len(actual) == len(left)
+    assert actual.index.get_level_values("matched").tolist() == [False, False]
+    assert actual[("amount", "sum")].tolist() == [0, 0]
+    assert actual[("amount", "prod")].tolist() == [1, 1]
+    assert actual[("amount", "size")].tolist() == [0, 0]
+    assert actual[("amount", "min")].isna().all()
+
+    reverse = left.join_agg(
+        right,
+        *conditions,
+        aggfunc=[("amount", "sum"), ("amount", "prod")],
+        join_algorithm=join_algorithm,
+        reverse=True,
+        return_matched=True,
+    )
+    assert len(reverse) == len(right)
+    assert reverse.index.get_level_values("matched").tolist() == [False]
+    assert reverse[("amount", "sum")].tolist() == [0]
+    assert reverse[("amount", "prod")].tolist() == [1]
+
+
+def test_all_unmatched_equi_and_not_equal_aggregation_retain_rows():
+    left = pd.DataFrame({"key": [1, 2], "amount": [4, 5]})
+    right = pd.DataFrame({"key": [3], "amount": [10]})
+
+    equi = left.join_agg(
+        right,
+        ("key", "key", "=="),
+        aggfunc=[("amount", "sum")],
+        return_matched=True,
+    )
+    assert len(equi) == len(left)
+    assert equi.index.get_level_values("matched").tolist() == [False, False]
+    assert equi[("amount", "sum")].tolist() == [0, 0]
+
+    not_equal = left.iloc[[0]].join_agg(
+        pd.DataFrame({"key": [1], "amount": [10]}),
+        ("key", "key", "!="),
+        aggfunc=[("amount", "sum")],
+        return_matched=True,
+    )
+    assert len(not_equal) == 1
+    assert not_equal.index.get_level_values("matched").tolist() == [False]
+    assert not_equal[("amount", "sum")].tolist() == [0]
+
+
+def test_all_unmatched_aggregation_excludes_null_join_keys():
+    left = pd.DataFrame({"key": [1, np.nan], "amount": [4, 5]})
+    right = pd.DataFrame({"key": [3.0], "amount": [10]})
+
+    actual = left.join_agg(
+        right,
+        ("key", "key", ">"),
+        aggfunc=[("amount", "sum")],
+        return_matched=True,
+    )
+
+    assert actual.index.get_level_values(0).tolist() == [0]
+    assert actual.index.get_level_values("matched").tolist() == [False]
+    assert actual[("amount", "sum")].tolist() == [0]
+
+
 def test_check_aggfunc_sub(dummy, series):
     """
     Raise TypeError if entry in `aggfunc` is not a tuple.

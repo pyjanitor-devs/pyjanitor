@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 from janitor.functions._conditional_join._helpers import _normalize_conditions
-from janitor.functions._conditional_join._maybe_range_join import (
+from janitor.functions._conditional_join._multi_range_join import (
     _compute_multi_range_join,
 )
 
@@ -127,3 +127,76 @@ def test_dual_range_extended_dispatch_applies_residual_predicates():
 
     np.testing.assert_array_equal(result["left_index"], [0])
     np.testing.assert_array_equal(result["right_index"], [2])
+
+
+def test_dual_range_uses_cumulative_envelope_for_unsorted_second_bound():
+    """Keep interval joins on the bounded-window path after right sorting."""
+    left = pd.DataFrame(
+        {
+            "start": [1, 4, 7],
+            "end": [2, 6, 9],
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "start": [2, 0, 4, 1],
+            "end": [3, 8, 5, 2],
+        }
+    )
+    # This is the usual interval shape, deliberately supplied in upper-bound
+    # first order. Sorting by right.start makes right.end non-monotonic.
+    conditions = _normalize_conditions(
+        [
+            ("start", "end", "<="),
+            ("end", "start", ">="),
+        ]
+    )
+
+    result = _compute_multi_range_join(left, right, conditions, "all", False)
+
+    expected = [
+        (left_row, right_row)
+        for left_row in range(len(left))
+        for right_row in range(len(right))
+        if left.iloc[left_row]["start"] <= right.iloc[right_row]["end"]
+        and left.iloc[left_row]["end"] >= right.iloc[right_row]["start"]
+    ]
+    actual = list(zip(result["left_index"], result["right_index"]))
+    assert sorted(actual) == sorted(expected)
+
+
+@pytest.mark.parametrize("reverse", [False, True])
+def test_dual_range_aggregation_rechecks_integer_sum_and_prod(reverse):
+    left = pd.DataFrame({"start": [1, 4, 7], "end": [2, 6, 9], "value": [2, 3, 4]})
+    right = pd.DataFrame(
+        {
+            "start": [2, 0, 4, 1],
+            "end": [3, 8, 5, 2],
+            "value": [5, 6, 7, 8],
+        }
+    )
+    conditions = [("start", "end", "<="), ("end", "start", ">=")]
+    aggregation = [("value", "sum"), ("value", "prod")]
+
+    actual = left.join_agg(right, *conditions, aggfunc=aggregation, reverse=reverse)
+
+    if reverse:
+        expected = pd.DataFrame(
+            [[9, 24], [2, 2], [2, 2], [3, 3]],
+            index=pd.MultiIndex.from_tuples(
+                [(1, True), (3, True), (0, True), (2, True)],
+                names=[None, "matched"],
+            ),
+            columns=pd.MultiIndex.from_tuples([("value", "sum"), ("value", "prod")]),
+        )
+    else:
+        expected = pd.DataFrame(
+            [[19, 240], [13, 42], [6, 6]],
+            index=pd.MultiIndex.from_tuples(
+                [(0, True), (1, True), (2, True)],
+                names=[None, "matched"],
+            ),
+            columns=pd.MultiIndex.from_tuples([("value", "sum"), ("value", "prod")]),
+        )
+
+    pd.testing.assert_frame_equal(actual.sort_index(), expected.sort_index())

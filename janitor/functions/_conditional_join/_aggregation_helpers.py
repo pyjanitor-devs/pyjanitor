@@ -12,17 +12,35 @@ positional representation back to pandas while preserving column labels,
 extension dtypes, null behavior, the trimmed output domain, and the matched
 flag as a ``MultiIndex`` level.
 
-The helpers receive aggregation arrays in the same trimmed calculation layout
-as the predicate arrays. Rust returns those arrays in that order; Python uses
-the already-prepared trimmed index directly and validates the returned
-positions to prevent cross-language layout drift.
+All range-family callers pass aggregation arrays in the prepared calculation
+layout used by their anchor values. That layout may be filtered and, for a
+sorted right anchor, value-sorted. Rust uses compact window offsets to read
+these aligned arrays and returns physical output positions separately. The
+not-equals family has its own split non-null/null layout contract, documented
+at its caller, but uses the same result materialization shape.
 
 Numerical contract:
     Signed integer ``sum`` and ``prod`` results use ``int64``; unsigned
     integer results use ``uint64``; ``float32`` results remain ``float32``;
     and ``float64`` results remain ``float64``. ``min`` and ``max`` preserve
-    the source dtype. Position, length, and allocation calculations remain
-    checked in Rust.
+    the source dtype where possible; integer results use nullable ``Int64`` or
+    ``UInt64`` when an unmatched output requires ``pd.NA``. Position, length,
+    and allocation calculations remain checked in Rust.
+
+Layout contract:
+    ``indexer`` selects the exact calculation layout sent to Rust. It is not
+    an output reorder instruction. For a forward aggregation, source values
+    are read from the right-side layout and written to left output slots. For
+    a reverse aggregation, source values are read from the left-side layout
+    and written to right output slots. The caller must build ``output_index``
+    from the same anchor layout so returned positions and pandas rows remain
+    aligned.
+
+Sentinel contract:
+    Rust extrema kernels return physical source positions and use ``-1`` for
+    an output slot with no valid value. This module resolves those positions
+    back to values and converts the sentinel to a pandas missing value; it
+    must never pass ``-1`` directly to ``Series.iloc``.
 """
 
 from collections.abc import Callable
@@ -32,6 +50,25 @@ import numpy as np
 import pandas as pd
 
 from janitor.functions._conditional_join._helpers import _convert_array_to_numpy
+
+
+def _nullable_integer_dtype(dtype):
+    """Return the pandas nullable dtype corresponding to an integer dtype.
+
+    NumPy integer dtypes cannot represent ``pd.NA``, so missing integer
+    extrema use pandas' nullable ``Int64``/``UInt64`` dtypes. Existing pandas
+    integer extension dtypes are preserved, including narrower widths.
+    """
+    if pd.api.types.is_extension_array_dtype(dtype):
+        return dtype
+    return "UInt64" if pd.api.types.is_unsigned_integer_dtype(dtype) else "Int64"
+
+
+def _integer_reduction_dtype(dtype):
+    """Return the promoted dtype used by integer sum/product reductions."""
+    if pd.api.types.is_extension_array_dtype(dtype):
+        return "UInt64" if pd.api.types.is_unsigned_integer_dtype(dtype) else "Int64"
+    return "uint64" if pd.api.types.is_unsigned_integer_dtype(dtype) else "int64"
 
 
 def _build_agg_label(column_name: Hashable, agg_name: str) -> tuple:
@@ -90,16 +127,19 @@ def _select_aggregation_kernel(
     return reverse_kernel if reverse else forward_kernel
 
 
-def _aggregation_inputs(source: pd.DataFrame, aggfunc: list[tuple]) -> list[tuple]:
+def _aggregation_inputs(
+    source: pd.DataFrame, aggfunc: list[tuple], indexer: pd.Index | slice = slice(None)
+) -> list[tuple]:
     """Prepare aggregation requests for the Rust input contract.
 
     Numeric value reductions are converted to
     ``(values, null_mask, operation)``. ``count`` is converted to
     ``("*", null_mask, "count")`` because its result depends only on the
     authoritative mask; ``size`` is converted to ``("*", "size")``.
-    Arrays and masks use the trimmed calculation layout supplied by the
-    caller. Every predicate position used by Rust must therefore index this
-    same source layout.
+    Arrays and masks use the layout selected by ``indexer``. For ordinary
+    single-range and range-first multi-predicate aggregation this is the
+    filtered/sorted compact layout. Rust receives physical position maps for
+    output labels, but its window offsets index the aligned arrays directly.
 
     Before crossing the Rust boundary, integer ``sum`` and ``prod`` values
     are promoted to the pandas/NumPy reduction dtype: signed integers become
@@ -116,6 +156,9 @@ def _aggregation_inputs(source: pd.DataFrame, aggfunc: list[tuple]) -> list[tupl
             operations are interpreted by the Rust aggregation parser, for
             example ``"sum"``, ``"count"``, ``"size"``, ``"prod"``,
             ``"min"``, and ``"max"``.
+        indexer: Pandas indexer selecting the layout exposed to Rust. It must
+            be a positional/label selection that produces arrays whose
+            positions match the Rust predicate contract.
 
     Returns:
         A list of Rust-facing aggregation tuples in the same order as
@@ -127,7 +170,7 @@ def _aggregation_inputs(source: pd.DataFrame, aggfunc: list[tuple]) -> list[tupl
     """
     result = []
     for column_name, operation in aggfunc:
-        series = source[column_name]
+        series = source.loc[indexer, column_name]
         null_mask = series.isna().to_numpy(dtype=bool)
         if operation == "size":
             result.append(("*", "size"))
@@ -154,8 +197,7 @@ def _aggregation_inputs(source: pd.DataFrame, aggfunc: list[tuple]) -> list[tupl
 
 
 def _empty_aggregation_result(
-    source: pd.DataFrame,
-    aggfunc: list[tuple],
+    source: pd.DataFrame, aggfunc: list[tuple], return_matched: bool = False
 ) -> pd.DataFrame:
     """Build the pandas result for a join with no surviving pairs.
 
@@ -167,6 +209,8 @@ def _empty_aggregation_result(
         source: Dataframe supplying the requested columns and their dtypes.
         aggfunc: ``(column_name, operation)`` requests whose output columns
             must be represented in the empty result.
+        return_matched: Preserve the standard ``matched`` MultiIndex level
+            even though the result contains no rows.
 
     Returns:
         An empty dataframe with one column per aggregation request.
@@ -184,24 +228,20 @@ def _empty_aggregation_result(
         elif operation in {"sum", "prod"} and pd.api.types.is_integer_dtype(
             series.dtype
         ):
-            if pd.api.types.is_extension_array_dtype(series.dtype):
-                dtype = (
-                    "UInt64"
-                    if pd.api.types.is_unsigned_integer_dtype(series.dtype)
-                    else "Int64"
-                )
-            else:
-                dtype = (
-                    "uint64"
-                    if pd.api.types.is_unsigned_integer_dtype(series.dtype)
-                    else "int64"
-                )
+            dtype = _integer_reduction_dtype(series.dtype)
         elif operation in {"sum", "prod"} and pd.api.types.is_float_dtype(series.dtype):
             dtype = series.dtype
         else:
             dtype = series.dtype
         result[_build_agg_label(column_name, operation)] = pd.array([], dtype=dtype)
-    return pd.DataFrame(result, copy=False)
+    if return_matched:
+        index = pd.MultiIndex.from_arrays(
+            [np.array([], dtype=np.intp), np.array([], dtype=bool)],
+            names=[None, "matched"],
+        )
+    else:
+        index = pd.RangeIndex(0)
+    return pd.DataFrame(result, copy=False, index=index)
 
 
 def _materialize_aggregation_result(
@@ -210,23 +250,23 @@ def _materialize_aggregation_result(
     source: pd.DataFrame,
     aggfunc: list[tuple],
     return_matched: bool,
+    source_index: pd.Index | slice = slice(None),
 ) -> pd.DataFrame:
     """Convert the common Rust aggregation result into a pandas dataframe.
 
-    Rust returns one accumulator slot per trimmed output position, including
-    trimmed rows that never matched. The returned positions identify those
-    physical output slots in the same order as the result arrays; they are
-    validated against the already-prepared trimmed index and never used to
-    reorder the arrays.
+    Rust returns one accumulator slot per output position, including output
+    rows that never matched. The output uses the prepared compact index for
+    the range-family call. The returned positions identify that exact output
+    layout and are validated; they are never used to reorder the aggregation
+    arrays.
 
     ``min`` and ``max`` use ``-1`` as Rust's internal no-value sentinel. The
     sentinel cannot be passed directly to ``Series.iloc`` because it would
     select the final row, so this function first replaces it with a safe
-    position and then restores those entries to ``pd.NA``. ``sum`` and
-    ``prod`` retain the pandas reduction dtype: signed integers are ``int64``,
-    unsigned integers are ``uint64``, and floating values retain ``float32``
-    or ``float64``. Nullable integer and floating extension dtypes are
-    reconstructed after the Rust-to-NumPy conversion.
+    position and then restores those entries to ``pd.NA``. Integer extrema
+    use nullable ``Int64``/``UInt64`` arrays when necessary; datetime and
+    timedelta extrema retain their pandas dtypes. ``sum`` and ``prod`` keep
+    integer identities as integers rather than promoting them to float.
 
     Args:
         result: Rust return value, either ``None`` or a tuple containing
@@ -235,12 +275,16 @@ def _materialize_aggregation_result(
             the prepared trimmed layout and must be in the same order as
             ``output_index``. The arrays must contain one result per request
             in ``aggfunc``.
-        output_index: Already-trimmed output index. It is left-aligned for
+        output_index: Already-prepared output index. It is left-aligned for
             forward aggregation and right-aligned for reverse aggregation.
         source: Dataframe containing the source columns and their original
             pandas dtypes. This is also used to resolve ``min``/``max`` row
             positions back to values.
         aggfunc: Requests in the same order used to create ``result[2]``.
+        return_matched: Whether ``result`` contains the matched mask between
+            output positions and aggregation arrays.
+        source_index: Selection used to recover source dtype and values for
+            ``min``/``max``. It matches the source layout sent to Rust.
 
     Returns:
         A pandas dataframe containing the trimmed output domain. Its index is
@@ -287,8 +331,7 @@ def _materialize_aggregation_result(
         if operation in {"count", "size"}:
             output[_build_agg_label(column_name, operation)] = values
             continue
-
-        series = source[column_name]
+        series = source.loc[source_index, column_name]
         if operation in {"sum", "prod"}:
             # Extension arrays are not limited to nullable floats; nullable
             # integer dtypes also enter this path. Integer reductions already
@@ -313,16 +356,32 @@ def _materialize_aggregation_result(
             invalid = values == -1
             if series.empty:
                 # There is no safe physical position to use when the source
-                # side itself is empty. Preserve nullable extension dtypes;
-                # NumPy integer dtypes use floating missing values here.
-                if pd.api.types.is_extension_array_dtype(series.dtype):
+                # side itself is empty. Integer dtypes need pandas' nullable
+                # representation because NumPy integer arrays cannot hold
+                # the missing extrema marker.
+                if pd.api.types.is_integer_dtype(series.dtype):
+                    values = pd.array(
+                        [pd.NA] * len(values),
+                        dtype=_nullable_integer_dtype(series.dtype),
+                    )
+                elif pd.api.types.is_extension_array_dtype(series.dtype):
                     values = pd.array([pd.NA] * len(values), dtype=series.dtype)
                 else:
                     values = np.full(len(values), np.nan)
             else:
                 safe_positions = np.where(invalid, 0, values)
-                # select the positions
-                # then mask
-                values = series.iloc[safe_positions].where(~invalid, pd.NA).array
+                selected = series.iloc[safe_positions]
+                if pd.api.types.is_integer_dtype(series.dtype):
+                    if invalid.any():
+                        values = pd.array(
+                            selected, dtype=_nullable_integer_dtype(series.dtype)
+                        )
+                        values[invalid] = pd.NA
+                    elif pd.api.types.is_extension_array_dtype(series.dtype):
+                        values = pd.array(selected, dtype=series.dtype)
+                    else:
+                        values = selected.to_numpy(copy=False)
+                else:
+                    values = selected.where(~invalid, pd.NA).array
         output[_build_agg_label(column_name, operation)] = values
     return pd.DataFrame(output, copy=False, index=index)

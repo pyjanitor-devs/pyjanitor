@@ -35,6 +35,10 @@ EXTENSION_DTYPES = [
 def _with_matched_level(expected, output_length, matched):
     """Expand expected aggregations to the complete output domain."""
     if output_length == 0:
+        expected.index = pd.MultiIndex.from_arrays(
+            [np.array([], dtype=np.intp), np.array([], dtype=bool)],
+            names=[None, "matched"],
+        )
         return expected
     original_dtypes = {column: expected[column].dtype for column in expected.columns}
     expected = expected.reindex(range(output_length))
@@ -58,6 +62,20 @@ def _with_matched_level(expected, output_length, matched):
             expected[(column_name, operation)] = expected[
                 (column_name, operation)
             ].astype(_reduction_dtype(original_dtypes[(column_name, operation)]))
+        elif operation in {"min", "max"} and pd.api.types.is_integer_dtype(
+            original_dtypes[(column_name, operation)]
+        ):
+            dtype = original_dtypes[(column_name, operation)]
+            if expected[(column_name, operation)].isna().any():
+                if not pd.api.types.is_extension_array_dtype(dtype):
+                    dtype = (
+                        "UInt64"
+                        if pd.api.types.is_unsigned_integer_dtype(dtype)
+                        else "Int64"
+                    )
+                expected[(column_name, operation)] = pd.array(
+                    expected[(column_name, operation)], dtype=dtype
+                )
     expected.index = pd.MultiIndex.from_arrays(
         [range(output_length), matched],
         names=[None, "matched"],
@@ -84,16 +102,6 @@ def _numeric_frames(dtype):
     return left, right
 
 
-def _apply_rust_integer_contract(expected, source, output_column):
-    """Keep pandas' promoted sum/product baseline unchanged.
-
-    Pandas/NumPy reductions promote signed integers to ``int64`` and unsigned
-    integers to ``uint64``. The helper remains as a named compatibility point
-    for the shared expected-result builders.
-    """
-    return expected
-
-
 def _reduction_dtype(dtype):
     """Return the pandas/NumPy dtype for a sum or product reduction."""
     dtype = pd.api.types.pandas_dtype(dtype)
@@ -106,12 +114,18 @@ def _reduction_dtype(dtype):
     return dtype
 
 
-def _expected_single(left, right, reverse):
+def _expected_single(left, right, reverse, operator="<"):
     """Compute the single-range expectation using an explicit cross join."""
     pairs = left.assign(_left=np.arange(len(left))).merge(
         right.assign(_right=np.arange(len(right))), how="cross"
     )
-    pairs = pairs.loc[pairs["key_x"] < pairs["key_y"]]
+    comparisons = {
+        "<": pairs["key_x"] < pairs["key_y"],
+        "<=": pairs["key_x"] <= pairs["key_y"],
+        ">": pairs["key_x"] > pairs["key_y"],
+        ">=": pairs["key_x"] >= pairs["key_y"],
+    }
+    pairs = pairs.loc[comparisons[operator]]
     if reverse:
         expected = pairs.groupby("_right", sort=True)["left_value"].agg(
             ["size", "sum", "prod", "min", "max"]
@@ -124,8 +138,6 @@ def _expected_single(left, right, reverse):
     expected.columns = pd.MultiIndex.from_tuples(
         [(output_column, operation) for operation in expected.columns]
     )
-    source = left["left_value"] if reverse else right["value"]
-    expected = _apply_rust_integer_contract(expected, source, output_column)
     output_length = len(right) if reverse else len(left)
     matched = expected.reindex(range(output_length))[(output_column, "size")].notna()
     return _with_matched_level(expected, output_length, matched.to_numpy())
@@ -259,8 +271,8 @@ def test_single_not_equal_aggregation_counts_duplicate_right_candidates():
     assert_frame_equal(expected, actual)
 
 
-def test_reverse_not_equal_aggregation_preserves_reordered_right_positions():
-    """Reverse ``!=`` aggregation stays aligned to physical right rows."""
+def test_reverse_not_equal_aggregation_uses_public_right_order():
+    """Reverse ``!=`` aggregation is returned in physical right-row order."""
     left = pd.DataFrame({"key": [1, 2], "left_value": [10, 20]})
     right = pd.DataFrame({"key": [3, 1, 2]})
 
@@ -273,11 +285,11 @@ def test_reverse_not_equal_aggregation_preserves_reordered_right_positions():
 
     expected = pd.DataFrame(
         {
-            ("left_value", "size"): pd.array([1, 1, 2], dtype="int64"),
-            ("left_value", "sum"): pd.array([20, 10, 30], dtype="int64"),
+            ("left_value", "size"): pd.array([2, 1, 1], dtype="int64"),
+            ("left_value", "sum"): pd.array([30, 20, 10], dtype="int64"),
         },
         index=pd.MultiIndex.from_arrays(
-            [[1, 2, 0], [True, True, True]], names=[None, "matched"]
+            [[0, 1, 2], [True, True, True]], names=[None, "matched"]
         ),
     )
     assert_frame_equal(expected, actual)
@@ -327,8 +339,6 @@ def _expected_extended(left, right, reverse):
     expected.columns = pd.MultiIndex.from_tuples(
         [(output_column, operation) for operation in expected.columns]
     )
-    source = left["left_value"] if reverse else right["value"]
-    expected = _apply_rust_integer_contract(expected, source, output_column)
     output_length = len(right) if reverse else len(left)
     matched = expected.reindex(range(output_length))[(output_column, "size")].notna()
     return _with_matched_level(expected, output_length, matched.to_numpy())
@@ -576,6 +586,116 @@ def test_single_range_aggregation_counts_duplicate_right_values():
     assert_frame_equal(expected, actual)
 
 
+@pytest.mark.parametrize("operator", ["<", "<=", ">", ">="])
+@pytest.mark.parametrize("reverse", [False, True])
+def test_single_range_aggregation_supports_every_range_operator(operator, reverse):
+    """Every single-range operator uses the correct optimized window."""
+    left = pd.DataFrame(
+        {
+            "key": [1, 4],
+            "left_value": [10, 40],
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "key": [1, 3, 5],
+            "value": [10, 30, 50],
+        }
+    )
+    column = "left_value" if reverse else "value"
+    actual = left.join_agg(
+        right,
+        ("key", "key", operator),
+        reverse=reverse,
+        aggfunc=[
+            (column, operation) for operation in ("size", "sum", "prod", "min", "max")
+        ],
+    )
+    expected = _expected_single(left, right, reverse, operator)
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.parametrize("reverse", [False, True])
+def test_single_range_aggregation_aligns_unsorted_right_source(reverse):
+    """Aggregation values follow the sorted predicate layout, not input order."""
+    left = pd.DataFrame(
+        {
+            "key": [4],
+            "left_value": [40],
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "key": [5, 1, 3],
+            "value": [50, 10, 30],
+        }
+    )
+    column = "left_value" if reverse else "value"
+    actual = left.join_agg(
+        right,
+        ("key", "key", "<"),
+        reverse=reverse,
+        aggfunc=[
+            (column, operation) for operation in ("size", "sum", "prod", "min", "max")
+        ],
+    )
+
+    if reverse:
+        expected = pd.DataFrame(
+            {
+                (column, "size"): [0, 0, 1],
+                (column, "sum"): [0, 0, 40],
+                (column, "prod"): [1, 1, 40],
+                (column, "min"): pd.array([pd.NA, pd.NA, 40], dtype="Int64"),
+                (column, "max"): pd.array([pd.NA, pd.NA, 40], dtype="Int64"),
+            },
+            index=pd.MultiIndex.from_arrays(
+                [[1, 2, 0], [False, False, True]],
+                names=[None, "matched"],
+            ),
+        )
+    else:
+        expected = pd.DataFrame(
+            {
+                (column, "size"): [1],
+                (column, "sum"): [50],
+                (column, "prod"): [50],
+                (column, "min"): [50],
+                (column, "max"): [50],
+            },
+            index=pd.MultiIndex.from_arrays([[0], [True]], names=[None, "matched"]),
+        )
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.parametrize("reverse", [False, True])
+def test_single_range_aggregation_all_null_predicate_side_is_empty(reverse):
+    """Null range anchors produce an empty aggregation schema."""
+    left = pd.DataFrame(
+        {
+            "key": pd.Series([pd.NA], dtype="Int64"),
+            "left_value": [10],
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "key": pd.Series([pd.NA], dtype="Int64"),
+            "value": [20],
+        }
+    )
+    column = "left_value" if reverse else "value"
+    actual = left.join_agg(
+        right,
+        ("key", "key", "<"),
+        reverse=reverse,
+        aggfunc=[(column, "size"), (column, "sum")],
+        return_matched=False,
+    )
+    assert actual.empty
+    assert list(actual.columns) == [(column, "size"), (column, "sum")]
+    assert isinstance(actual.index, pd.Index)
+
+
 def test_extended_aggregation_returns_empty_when_residual_rejects_all():
     """Residual filtering can remove every candidate from a range window."""
     left = pd.DataFrame({"key": [1], "residual": [5]})
@@ -633,22 +753,6 @@ def test_extended_aggregation_intersects_sorted_range_residuals():
     )
     expected = _with_matched_level(expected, len(actual), np.array([True]))
     assert_frame_equal(expected, actual)
-
-
-def test_all_not_equal_aggregation_rejects_regions_algorithm():
-    """Regions does not support fused all-``!=`` aggregation."""
-    left = pd.DataFrame({"left_key": [1, 2]})
-    right = pd.DataFrame({"right_key": [1, 2], "value": [10, 20]})
-    with pytest.raises(
-        NotImplementedError,
-        match="aggfunc is not supported for all-!= joins with the regions algorithm",
-    ):
-        left.join_agg(
-            right,
-            ("left_key", "right_key", "!="),
-            join_algorithm="regions",
-            aggfunc=[("value", "size")],
-        )
 
 
 def test_single_reverse_aggregation_tracks_unsorted_right_positions():
@@ -1222,8 +1326,8 @@ def test_unique_equi_aggregation_covers_forward_and_reverse_output_domains():
         {
             ("value", "sum"): [20, 10, 0],
             ("value", "prod"): [20, 10, 1],
-            ("value", "min"): [20.0, 10.0, np.nan],
-            ("value", "max"): [20.0, 10.0, np.nan],
+            ("value", "min"): pd.array([20, 10, pd.NA], dtype="Int64"),
+            ("value", "max"): pd.array([20, 10, pd.NA], dtype="Int64"),
             ("value", "count"): [1, 1, 0],
             ("value", "size"): [1, 1, 0],
         },
@@ -1254,8 +1358,8 @@ def test_unique_equi_aggregation_covers_forward_and_reverse_output_domains():
         {
             ("left_value", "sum"): [3, 2, 0],
             ("left_value", "prod"): [3, 2, 1],
-            ("left_value", "min"): [3.0, 2.0, np.nan],
-            ("left_value", "max"): [3.0, 2.0, np.nan],
+            ("left_value", "min"): pd.array([3, 2, pd.NA], dtype="Int64"),
+            ("left_value", "max"): pd.array([3, 2, pd.NA], dtype="Int64"),
             ("left_value", "count"): [1, 1, 0],
             ("left_value", "size"): [1, 1, 0],
         },
@@ -1402,7 +1506,10 @@ def test_equi_aggregation_supports_multiple_equi_columns():
     )
 
     expected = pd.DataFrame(
-        {("value", "sum"): [30, 0], ("value", "size"): [2, 0]},
+        {
+            ("value", "sum"): [30, 0],
+            ("value", "size"): [2, 0],
+        },
         index=pd.MultiIndex.from_tuples(
             [(0, True), (1, False)], names=[None, "matched"]
         ),

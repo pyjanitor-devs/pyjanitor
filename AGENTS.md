@@ -630,6 +630,45 @@ single-extended Rust kernel. Route confirmed dual-range calls through the
 range-join implementation; use the single-extended path for one anchor plus
 residual predicates.
 
+### [2026-10-02] Conditional-join index uniqueness is a Python-side invariant
+
+**Context**: Designing the single range-predicate Rust boundary.
+**Learning**: PyJanitor guarantees that the left and right physical index
+arrays contain unique positions. They are not necessarily ordered. Ordering
+must therefore be represented separately by the right-layout ordering flag and
+must not be inferred from uniqueness.
+
+**Recommendation**: Rust may rely on uniqueness for physical-position
+identity, but must use `right_index_is_ordered` when deciding whether sorted
+range boundaries can directly implement `first` or `last`. Otherwise, compute
+the extrema over the physical right positions in the candidate window.
+
+### [2026-10-04] Anchor selection must retain predicate occurrence positions
+
+**Context**: Documenting the `enumerate` calls used when selecting range
+anchors in the conditional-join dispatchers.
+**Learning**: Anchor selection tracks the original condition position, not only
+the condition value. Duplicate predicate tuples can be equal by value, so a
+condition object or value-based comparison cannot identify which occurrence
+was selected. The position is also used to remove exactly the selected anchor
+occurrences from the residual predicate list while preserving input order.
+
+**Recommendation**: Keep `enumerate` in anchor-selection and residual-filtering
+loops, and explain both the duplicate-occurrence and original-order invariants
+when changing those loops.
+
+### [2026-10-04] Coordinated Rust/Python development sources
+
+When Pyjanitor and `janitor-rs` are developed together on stacked branches,
+use a temporary `[tool.uv.sources]` override in `pyproject.toml` to exercise
+the in-flight Rust package locally and in CI. Keep the `[project]` dependency
+on the published PyPI range unchanged.
+
+Prefer a pinned Rust commit SHA for reproducible installs. Update the SHA when
+the Rust branch moves, and remove the override before proposing the stack for
+merge into `dev`; the override is development infrastructure, not the
+published-package contract.
+
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol

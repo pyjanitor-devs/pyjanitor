@@ -128,6 +128,12 @@ platforms = ["osx-arm64", "linux-64", "win-64"]
 [tool.pixi.pypi-dependencies]
 pyjanitor = { path = ".", editable = true }
 
+[tool.uv.sources]
+# Temporary source override for the coordinated issue-1737 stack. Keep the
+# published dependency above pointed at PyPI; remove this override before the
+# stack is proposed for merge into ``dev``.
+janitor-rs = { git = "https://github.com/pyjanitor-devs/janitor-rs", rev = "088db8cdecb3f6bc6ca061837111cf762da66a37" }
+
 [tool.pixi.dependencies]
 python = ">=3.10"
 pandas = "*"
@@ -153,7 +159,6 @@ matplotlib = ">=3.10.8,<4"
 openpyxl = ">=3.1.5,<4"
 rdkit = ">=2025.9.4,<2026"
 requests = ">=2.32.5,<3"
-numba = ">=0.63.1,<0.64"
 pyspark = ">=4.1.1,<5"
 
 [tool.pixi.feature.docs.dependencies]

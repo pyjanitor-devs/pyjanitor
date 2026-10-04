@@ -102,6 +102,12 @@ def conditional_join(
     predicates drive candidate generation before the equality predicates are
     applied as residual filters; pass ``force=True`` to request this.
 
+    ``join_algorithm`` selects the strategy for joins with multiple range
+    predicates. ``"default"`` uses the general range-join implementation;
+    ``"regions"`` uses the region-based implementation, which can be useful
+    when the predicates describe interval-like regions. The option is ignored
+    for equality-only, single-range, and all-``!=`` joins.
+
     The operator can be any of `==`, `!=`, `<=`, `<`, `>=`, `>`.
 
     For a single `!=` condition with `keep="first"` or `keep="last"`,
@@ -331,8 +337,10 @@ def conditional_join(
         force: If ``True``, force mixed equality/non-equality joins to use the
             non-equi path, with non-equality predicates driving candidate
             generation before equality predicates are applied.
-        join_algorithm: Determines what algorithm to use for multiple non-equi joins.
-            Currently limited to `default` and `regions`.
+        join_algorithm: Strategy for joins with multiple range predicates.
+            ``"default"`` uses the general range-join implementation and
+            ``"regions"`` uses the region-based implementation. The option is
+            ignored for equality-only, single-range, and all-``!=`` joins.
         include_join_positions: Determines if the join positions of the left and right DataFrame
             should be included as an index of the final dataframe.
 
@@ -542,7 +550,10 @@ def _conditional_join_preliminary_checks(
         return_building_blocks: Experimental. Whether to preserve kernel
             building blocks.
         reverse: Whether aggregation reads from the left side.
-        join_algorithm: Multi-range algorithm selection.
+        join_algorithm: Multi-range strategy: ``"default"`` uses the general
+            range-join implementation and ``"regions"`` uses the region-based
+            implementation. It is ignored when the join is not a multi-range
+            join.
         return_matched: Whether aggregation output includes a match mask.
 
     Returns:
@@ -727,7 +738,10 @@ def _conditional_join_compute(
         return_building_blocks: Experimental. Preserve starts/ends or
             equivalent kernel building blocks.
         reverse: Aggregate left values into right output rows.
-        join_algorithm: Multi-range algorithm, ``default`` or ``regions``.
+        join_algorithm: Multi-range strategy: ``"default"`` uses the general
+            range-join implementation and ``"regions"`` uses the region-based
+            implementation. It is ignored when the join is not a multi-range
+            join.
         return_matched: Include aggregation match metadata.
 
     Returns:
@@ -969,7 +983,10 @@ def get_join_indices(
             feature exposes implementation-level data rather than a stable
             public API.
             !!! warning "This feature is experimental and may change without warning."
-        join_algorithm: Algorithm for multiple range predicates.
+        join_algorithm: Multi-range strategy: ``"default"`` uses the general
+            range-join implementation and ``"regions"`` uses the region-based
+            implementation. It is ignored when the join is not a multi-range
+            join.
 
     Returns:
         A dictionary containing parallel physical-position arrays. The result
@@ -1067,7 +1084,10 @@ def join_agg(
             before the equi join.
         reverse: Group left-side values into right-side output rows.
         return_matched: Add a boolean ``matched`` level to the result index.
-        join_algorithm: Algorithm for multiple range predicates.
+        join_algorithm: Multi-range strategy: ``"default"`` uses the general
+            range-join implementation and ``"regions"`` uses the region-based
+            implementation. It is ignored when the join is not a multi-range
+            join.
 
     Returns:
         A dataframe whose columns are labelled ``(column, operation)`` and
@@ -1089,6 +1109,24 @@ def join_agg(
         matched
         0 True        50     2
         1 True        30     1
+
+        ``return_matched`` also distinguishes an unmatched row from a matched
+        row whose aggregate happens to be zero:
+
+        >>> left = pd.DataFrame({"key": [1, 3]})
+        >>> right = pd.DataFrame({"key": [2, 3], "amount": [5, 7]})
+        >>> partial = left.join_agg(
+        ...     right,
+        ...     ("key", "key", "<"),
+        ...     aggfunc=[("amount", "sum")],
+        ...     return_matched=True,
+        ... )
+        >>> print(partial.to_string())
+                  amount
+                     sum
+        matched
+        0 True        12
+        1 False        0
 
         Set ``reverse=True`` to aggregate left-side values into right-side
         output rows:

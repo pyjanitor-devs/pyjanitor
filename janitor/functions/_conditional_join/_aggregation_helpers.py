@@ -64,6 +64,13 @@ def _nullable_integer_dtype(dtype):
     return "UInt64" if pd.api.types.is_unsigned_integer_dtype(dtype) else "Int64"
 
 
+def _integer_reduction_dtype(dtype):
+    """Return the promoted dtype used by integer sum/product reductions."""
+    if pd.api.types.is_extension_array_dtype(dtype):
+        return "UInt64" if pd.api.types.is_unsigned_integer_dtype(dtype) else "Int64"
+    return "uint64" if pd.api.types.is_unsigned_integer_dtype(dtype) else "int64"
+
+
 def _build_agg_label(column_name: Hashable, agg_name: str) -> tuple:
     """Build the output label for one aggregation request.
 
@@ -221,18 +228,7 @@ def _empty_aggregation_result(
         elif operation in {"sum", "prod"} and pd.api.types.is_integer_dtype(
             series.dtype
         ):
-            if pd.api.types.is_extension_array_dtype(series.dtype):
-                dtype = (
-                    "UInt64"
-                    if pd.api.types.is_unsigned_integer_dtype(series.dtype)
-                    else "Int64"
-                )
-            else:
-                dtype = (
-                    "uint64"
-                    if pd.api.types.is_unsigned_integer_dtype(series.dtype)
-                    else "int64"
-                )
+            dtype = _integer_reduction_dtype(series.dtype)
         elif operation in {"sum", "prod"} and pd.api.types.is_float_dtype(series.dtype):
             dtype = series.dtype
         else:

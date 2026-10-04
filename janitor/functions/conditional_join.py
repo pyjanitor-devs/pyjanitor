@@ -342,7 +342,6 @@ def conditional_join(
             !!! warning "Deprecated in 0.33.0"
                 `right_columns` will be removed in a future release.
                 Select or rename columns directly on the DataFrame before calling `conditional_join`.
-            !!! warning "Deprecated in 0.33.0"
         keep: Choose whether to return the first match, last match, any match,
             or all matches.
         use_numba: Deprecated no-op retained for compatibility with older

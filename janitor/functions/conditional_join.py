@@ -1127,71 +1127,76 @@ def join_agg(
     return_matched: bool = True,
     join_algorithm: str = "default",
 ) -> pd.DataFrame:
-    """Compute aggregations over rows matched by a conditional join.
+    """Aggregate values over rows matched by an inner conditional join.
 
     ``aggfunc`` contains ``(column, operation)`` pairs. Supported operations
-    are ``sum``, ``count``, ``size``, ``min``, ``max`` and ``prod``. The
-    result retains one row for every physical row in the aggregation domain;
-    when ``return_matched`` is true, its index also contains the match mask.
+    are ``sum``, ``prod``, ``size``, ``count``, ``min``, and ``max``.
 
-    Aggregation semantics follow the join matches rather than pandas group
-    labels. ``count`` counts matched, non-null source values; ``size`` counts
-    every matched row, including rows whose source value is null. ``sum`` and
-    ``prod`` ignore null values and use ``0`` and ``1`` respectively for an
-    output row with no contributing values. ``min`` and ``max`` ignore null
-    values and return a missing value when no non-null value contributes.
-    Integer ``sum`` and ``prod`` results remain integer-valued: signed results
-    use ``int64`` and unsigned results use ``uint64``. Integer ``min`` and
-    ``max`` results use pandas nullable ``Int64``/``UInt64`` columns when an
-    unmatched output row needs ``pd.NA``; floating, datetime, and timedelta
-    results retain their corresponding source dtype. Use ``return_matched``
-    to distinguish an identity-valued unmatched ``sum``/``prod`` result from
-    a matched result with the same value.
-    ``sum`` and ``prod`` require numeric source columns, while ``min`` and
-    ``max`` support numeric, datetime, and timedelta columns. ``return_matched``
-    reports whether any row pair matched; it is independent of whether
-    ``count`` is zero because all matched source values were null.
+    !!! info "Aggregation semantics"
 
-    Forward aggregation groups right-side values by left rows. Set
-    ``reverse=True`` to group left-side values by right rows. The aggregation
-    source arrays may be filtered or sorted internally, but their physical
-    position maps remain aligned so extrema and residual predicates refer to
-    the original dataframe rows.
+        - ``count`` counts matched, non-null source values.
+        - ``size`` counts every matched source row, including null values.
+        - ``sum`` and ``prod`` ignore null values and use ``0`` and ``1`` as
+          the identity for an output row with no contributing values.
+        - ``min`` and ``max`` ignore null values and return a missing value
+          when no non-null value contributes.
+
+        Integer ``sum`` and ``prod`` results remain integer-valued. Signed
+        results use ``int64`` and unsigned results use ``uint64``. Integer
+        ``min`` and ``max`` use pandas nullable ``Int64`` or ``UInt64`` when
+        an unmatched output row needs ``pd.NA``. Floating, datetime, and
+        timedelta results retain their corresponding source dtype.
+
+    ``sum`` and ``prod`` require numeric source columns. ``min`` and ``max``
+    also support datetime and timedelta columns. ``return_matched`` reports
+    whether any row pair matched, independently of whether ``count`` is zero
+    because all matched source values were null.
+
+    By default, right-side values are aggregated for each left row. Set
+    ``reverse=True`` to aggregate left-side values for each right row.
+
+    !!! note "Output and matching"
+
+        The output contains one row for every physical row on the output
+        side. With ``return_matched=True``, the result index has a boolean
+        ``matched`` level so identity-valued unmatched results can be
+        distinguished from matched results with the same value.
 
     Args:
-        df: Left dataframe and reverse-aggregation source.
-        right: Right dataframe or named Series and forward-aggregation source.
+        df: Left DataFrame and reverse-aggregation source.
+        right: Right DataFrame or named Series and forward-aggregation source.
         conditions: Conditional-join predicate tuples.
         aggfunc: Non-empty ``(column, operation)`` requests.
         force: If ``True``, force mixed equality/range joins to use the
-            non-equi path, with range predicates driving candidate generation
-            before equality predicates are applied. It has no effect on joins
-            that mix equality and ``!=`` predicates without a range predicate.
-        reverse: Group left-side values into right-side output rows.
+            non-equi path. Range predicates drive candidate generation before
+            equality predicates are applied. It has no effect on joins that
+            mix equality and ``!=`` predicates without a range predicate.
+        reverse: Aggregate left-side values into right-side output rows.
         return_matched: Add a boolean ``matched`` level to the result index.
-        join_algorithm: Multi-range strategy: ``"default"`` uses the general
-            range-join implementation and ``"regions"`` uses the region-based
-            implementation. It is ignored when the join is not a multi-range
-            join.
+        join_algorithm: Strategy for multiple range predicates. ``"default"``
+            uses the general range-join implementation and ``"regions"`` uses
+            the region-based implementation. It is ignored for other joins.
 
     Returns:
-        A dataframe whose columns are labelled ``(column, operation)`` and
-        whose rows follow the physical output side.
+        A DataFrame whose columns are labelled ``(column, operation)`` and
+        whose rows follow the physical output side. When ``return_matched`` is
+        true, its index also includes the boolean ``matched`` level.
 
     Examples:
         >>> import pandas as pd
         >>> import janitor
         >>> left = pd.DataFrame({"key": [1, 2]})
         >>> right = pd.DataFrame({"key": [1, 2, 3], "amount": [10, 20, 30]})
-        >>> left.join_agg(
+        >>> result = left.join_agg(
         ...     right,
         ...     ("key", "key", "<"),
         ...     aggfunc=[("amount", "sum"), ("amount", "count")],
         ...     return_matched=True,
-        ... )  # doctest: +NORMALIZE_WHITESPACE
+        ... )
+        >>> print(result.to_string())  # doctest: +NORMALIZE_WHITESPACE
                   amount
                      sum count
-        matched
+              matched
         0 True        50     2
         1 True        30     1
 
@@ -1206,10 +1211,10 @@ def join_agg(
         ...     aggfunc=[("amount", "sum")],
         ...     return_matched=True,
         ... )
-        >>> print(partial.to_string())
+        >>> print(partial.to_string())  # doctest: +NORMALIZE_WHITESPACE
                   amount
                      sum
-        matched
+              matched
         0 True        12
         1 False        0
 
@@ -1218,13 +1223,14 @@ def join_agg(
 
         >>> left = pd.DataFrame({"key": [1, 2], "amount": [10, 20]})
         >>> right = pd.DataFrame({"key": [1, 2, 3]})
-        >>> left.join_agg(
+        >>> reverse_result = left.join_agg(
         ...     right,
         ...     ("key", "key", "<"),
         ...     aggfunc=[("amount", "sum")],
         ...     reverse=True,
         ...     return_matched=False,
         ... )
+        >>> print(reverse_result.to_string())
           amount
              sum
         0      0

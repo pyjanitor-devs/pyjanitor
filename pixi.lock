@@ -26021,7 +26021,7 @@ packages:
   - pandas-flavor>=0.8.1,<0.9
   - multipledispatch
   - scipy
-  - janitor-rs>=0.6.2,<0.7
+  - janitor-rs==0.6.2
   - pip-tools ; extra == 'dev'
   - pre-commit ; extra == 'dev'
   - isort>=4.3.18 ; extra == 'dev'

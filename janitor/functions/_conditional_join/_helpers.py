@@ -1,13 +1,32 @@
-# helper functions for conditional_join.py
+"""Shared Python-side contracts for conditional joins.
 
+This module is the boundary between the public pandas API and the specialised
+join dispatchers. The dispatchers may use different Rust kernels, but they
+all rely on the same conventions established here:
+
+* dataframe rows are addressed by zero-based physical positions after the
+  caller has reset the working indexes;
+* ``slice(None)`` means that the complete working layout is valid and should
+  not be eagerly materialised into an index array;
+* non-null filtering removes rows that cannot participate in ordinary range
+  predicates, while ``!=`` retains its separate null-mask semantics;
+* sorted value arrays must carry their physical positions with them; and
+* Rust results contain paired physical positions, never user-facing pandas
+  labels.
+
+The final materialisation helper converts those physical pairs into pandas
+rows. Keeping that conversion here prevents each Rust-backed path from
+implementing different outer-join, indicator, column-selection, or
+``include_join_positions`` behavior.
+"""
+
+from dataclasses import dataclass
 from enum import Enum
-from typing import Sequence
+from typing import Any, Hashable, Sequence
 
-import janitor_rs
 import numpy as np
 import pandas as pd
-
-from janitor.functions._conditional_join import _compare
+from pandas.core.dtypes.concat import concat_compat
 
 
 class _JoinOperator(Enum):
@@ -27,127 +46,433 @@ less_than_join_types = {
     _JoinOperator.LESS_THAN.value,
     _JoinOperator.LESS_THAN_OR_EQUAL.value,
 }
+
 greater_than_join_types = {
     _JoinOperator.GREATER_THAN.value,
     _JoinOperator.GREATER_THAN_OR_EQUAL.value,
 }
 
-operator_mapping = {">": 0, ">=": 1, "<": 2, "<=": 3, "==": 4, "!=": 5}
 
+def _empty_indices() -> dict[str, np.ndarray]:
+    """Return the standard empty conditional-join result.
 
-def _maybe_remove_nulls_from_dataframe(df: pd.DataFrame, columns: Sequence):
+    Returns:
+        A dictionary containing empty ``left_index`` and ``right_index``
+        arrays, matching the other conditional-join paths.
     """
-    Remove nulls if op is not !=;
-    """
-    any_nulls = df.loc[:, [*columns]].isna().any(axis=1)
-    if any_nulls.all():
-        return None
-    if any_nulls.any():
-        df = df.loc[~any_nulls]
-    return df
+    empty = np.array([], dtype=np.intp)
+    return {"left_index": empty, "right_index": empty}
 
 
-def _null_checks_cond_join(series: pd.Series) -> tuple | None:
+def _materialize_or_return_indices(
+    *,
+    result: dict[str, np.ndarray],
+    df: pd.DataFrame,
+    right: pd.DataFrame,
+    how: str,
+    df_columns: Any,
+    right_columns: Any,
+    indicator: bool | str,
+    include_join_positions: bool,
+    return_matching_indices: bool,
+    return_building_blocks: bool = False,
+) -> dict[str, np.ndarray] | pd.DataFrame:
+    """Return kernel output as indices or as a materialized join dataframe.
+
+    The Rust-facing conditional-join kernels always produce physical
+    ``left_index`` and ``right_index`` arrays. Public index helpers need that
+    dictionary, while dataframe joins need those positions gathered into the
+    requested join shape. Keeping this decision here ensures the single-range,
+    all-``!=``, and dual-range dispatchers expose the same contract.
+
+    Args:
+        result: Kernel result containing physical row positions. Building
+            blocks may add window arrays; those are never materialized.
+        df: Prepared left dataframe addressed by physical positions.
+        right: Prepared right dataframe addressed by physical positions.
+        how: Join shape passed to the dataframe materializer.
+        df_columns: Optional deprecated left-column selection.
+        right_columns: Optional deprecated right-column selection.
+        indicator: Whether to add the merge indicator column.
+        include_join_positions: Whether to expose matched positions in the
+            dataframe result index.
+        return_matching_indices: Return the physical-position dictionary when
+            true.
+        return_building_blocks: Return the dictionary unchanged when true,
+            even if dataframe output was otherwise requested.
+
+    Returns:
+        The physical index dictionary for index/building-block callers, or a
+        materialized pandas dataframe for ordinary conditional joins.
     """
-    Checks for nulls in the pandas series before conducting binary search.
-    """
-    any_nulls = series.isna()
-    if any_nulls.all():
-        return None
-    if any_nulls.any():
-        series = series[~any_nulls]
-    return series, any_nulls.any()
+    if return_matching_indices or return_building_blocks:
+        return result
+    return _materialize_index_result(
+        df=df,
+        right=right,
+        left_index=result["left_index"],
+        right_index=result["right_index"],
+        how=how,
+        df_columns=df_columns,
+        right_columns=right_columns,
+        indicator=indicator,
+        include_join_positions=include_join_positions,
+    )
 
 
-def _sort_if_not_monotonic(series: pd.Series) -> pd.Series | None:
+# copied from pandas/core/dtypes/missing.py
+# seems function was introduced in 2.2.2
+# we should support lesser versions - at least 2.0.0
+def construct_1d_array_from_inferred_fill_value(
+    value: object, length: int
+) -> np.ndarray:
+    """Create a repeated missing-value array using pandas' inferred dtype.
+
+    This mirrors pandas' internal fill-value construction for extension and
+    object dtypes. It is used when an outer join needs rows from one side to
+    be padded with a dtype-compatible missing value rather than a hard-coded
+    ``np.nan``.
+
+    Args:
+        value: Representative scalar or array-like value whose dtype should
+            determine the fill array.
+        length: Number of missing entries to create.
+
+    Returns:
+        A NumPy-compatible array containing ``length`` inferred missing
+        values.
     """
-    Sort the pandas `series` if it is not monotonic increasing
+    # Find our empty_value dtype by constructing an array
+    #  from our value and doing a .take on it
+    from pandas.core.algorithms import take_nd
+    from pandas.core.construction import sanitize_array
+    from pandas.core.indexes.base import Index
+
+    arr = sanitize_array(value, Index(range(1)), copy=False)
+    taker = -1 * np.ones(length, dtype=np.intp)
+    return take_nd(arr, taker)
+
+
+def _create_multiindex_column(df: pd.DataFrame, right: pd.DataFrame) -> tuple:
+    """Namespace overlapping columns under ``left`` and ``right``.
+
+    The helper mutates the two shallow working frames used during
+    materialization. A leading level distinguishes columns originating from
+    each side, while all original column levels remain unchanged beneath it.
+
+    Args:
+        df: Left working dataframe.
+        right: Right working dataframe.
+
+    Returns:
+        The same two dataframes with MultiIndex columns containing a source
+        namespace.
+    """
+    header = np.empty(df.columns.size, dtype="U4")
+    header[:] = "left"
+    header = [header]
+    columns = [df.columns.get_level_values(n) for n in range(df.columns.nlevels)]
+    header.extend(columns)
+    df.columns = pd.MultiIndex.from_arrays(header)
+    header = np.empty(right.columns.size, dtype="U5")
+    header[:] = "right"
+    header = [header]
+    columns = [right.columns.get_level_values(n) for n in range(right.columns.nlevels)]
+    header.extend(columns)
+    right.columns = pd.MultiIndex.from_arrays(header)
+    return df, right
+
+
+def _preserve_object_dtype(array: np.ndarray, dtype) -> np.ndarray | pd.Series:
+    """Guard a reindexed ``object``-dtype array against string inference.
+
+    ``pandas``'s ``future.infer_string`` option (default-on since pandas 3.0)
+    reinterprets a bare ``object`` ndarray of Python strings as the new
+    ``str`` dtype the moment it is handed to the ``pd.DataFrame`` constructor
+    — even though the source column was genuinely ``object`` (e.g. mixed
+    types, or a string column the caller deliberately kept as ``object``).
+    ``pd.merge`` never hits this because it reassigns dtypes at the block
+    level instead of rebuilding columns from raw arrays. Wrapping the array
+    in a dtype-tagged ``Series`` here is what makes a dict-of-arrays
+    ``pd.DataFrame(...)`` call respect that dtype the same way.
+
+    Non-object dtypes pass straight through unchanged.
+    """
+    if dtype == object:
+        return pd.Series(array, dtype=object, copy=False)
+    return array
+
+
+def _materialize_index_result(
+    df: pd.DataFrame,
+    right: pd.DataFrame,
+    left_index: np.ndarray,
+    right_index: np.ndarray,
+    how: str,
+    df_columns: Any,
+    right_columns: Any,
+    indicator: bool | str,
+    include_join_positions: bool,
+) -> pd.DataFrame:
+    """Materialize a conditional-join result from physical row positions.
+
+    The join kernels return zero-based physical positions, not pandas index
+    labels. This helper gathers matching rows, appends unmatched rows for
+    outer-style joins, preserves extension-array dtypes while creating
+    missing values, and optionally adds the merge indicator and matched
+    physical positions as the result index.
+
+    Args:
+        df: Prepared left dataframe whose rows are addressed by physical
+            positions.
+        right: Prepared right dataframe whose rows are addressed by physical
+            positions.
+        left_index: Physical left positions for matched pairs.
+        right_index: Physical right positions for matched pairs.
+        how: Join shape: ``"inner"``, ``"left"``, ``"right"``, or
+            ``"outer"``.
+        df_columns: Deprecated left-column selection.
+        right_columns: Deprecated right-column selection.
+        indicator: ``False`` to omit the indicator, ``True`` for ``"_merge"``,
+            or a custom indicator column name.
+        include_join_positions: If true, use matched physical positions as a
+            two-level result index. This is valid for inner joins only.
+
+    Returns:
+        The materialized joined dataframe.
+
+    Raises:
+        ValueError: If both deprecated column selectors are ``None`` or the
+            requested indicator name collides with an output column.
+    """
+    # TODO: deprecate df_columns and right_columns
+    # user can handle column renaming before the join
+    if (df_columns is None) and (right_columns is None):
+        raise ValueError("df_columns and right_columns cannot both be None.")
+    if (df_columns is not None) and (df_columns != slice(None)):
+        df = df.select_columns(df_columns)
+    if (right_columns is not None) and (right_columns != slice(None)):
+        right = right.select_columns(right_columns)
+    if df_columns is None:
+        df = pd.DataFrame([])
+    elif right_columns is None:
+        right = pd.DataFrame([])
+
+    if not df.columns.intersection(right.columns).empty:
+        df, right = _create_multiindex_column(df, right)
+
+    def _add_indicator(
+        indicator: bool | str,
+        labels: tuple[str, ...],
+        lengths: tuple[int, ...],
+        columns: pd.Index,
+    ) -> tuple[object, pd.Categorical]:
+        """Build one categorical indicator array for all output segments."""
+        name: object = "_merge" if isinstance(indicator, bool) else indicator
+        if name in columns:
+            raise ValueError(
+                "Cannot use name of an existing column for indicator column"
+            )
+        if columns.nlevels > 1:
+            name = tuple([name] + [""] * (columns.nlevels - 1))
+        categories = ["left_only", "right_only", "both"]
+        segments = []
+        for label, length in zip(labels, lengths):
+            if length:
+                segment = pd.Categorical([label], categories=categories).repeat(length)
+                segments.append(segment)
+        if not segments:
+            return name, pd.Categorical([], categories=categories)
+        if len(segments) == 1:
+            return name, segments[0]
+        return name, concat_compat(segments)
+
+    def _inner(
+        left_positions: np.ndarray,
+        right_positions: np.ndarray,
+    ) -> pd.DataFrame:
+        """Build matched rows without creating intermediate frames."""
+        dictionary = {}
+        for key, value in df.items():
+            dictionary[key] = _preserve_object_dtype(
+                value._values[left_positions], value.dtype
+            )
+        for key, value in right.items():
+            dictionary[key] = _preserve_object_dtype(
+                value._values[right_positions], value.dtype
+            )
+        if indicator:
+            name, values = _add_indicator(
+                indicator,
+                ("both",),
+                (left_positions.size,),
+                df.columns.union(right.columns),
+            )
+            dictionary[name] = values
+        if include_join_positions:
+            index = pd.MultiIndex.from_arrays([left_positions, right_positions])
+            return pd.DataFrame(dictionary, copy=False, index=index)
+        return pd.DataFrame(dictionary, copy=False)
+
+    if how == "inner":
+        return _inner(left_index, right_index)
+
+    left_unmatched = np.empty(0, dtype=np.intp)
+    right_unmatched = np.empty(0, dtype=np.intp)
+    if how in {"left", "outer"}:
+        left_matched = np.zeros(len(df), dtype=bool)
+        left_matched[left_index] = True
+        left_unmatched = np.flatnonzero(~left_matched)
+    if how in {"right", "outer"}:
+        right_matched = np.zeros(len(right), dtype=bool)
+        right_matched[right_index] = True
+        right_unmatched = np.flatnonzero(~right_matched)
+
+    dictionary = {}
+    for key, value in df.items():
+        array = value._values
+        segments = [array[left_index]]
+        if left_unmatched.size:
+            segments.append(array[left_unmatched])
+        if right_unmatched.size:
+            segments.append(
+                construct_1d_array_from_inferred_fill_value(
+                    value=array[:1],
+                    length=right_unmatched.size,
+                )
+            )
+        if len(segments) == 1:
+            dictionary[key] = _preserve_object_dtype(segments[0], value.dtype)
+        else:
+            dictionary[key] = _preserve_object_dtype(
+                concat_compat(segments), value.dtype
+            )
+
+    for key, value in right.items():
+        array = value._values
+        segments = [array[right_index]]
+        if left_unmatched.size:
+            segments.append(
+                construct_1d_array_from_inferred_fill_value(
+                    value=array[:1],
+                    length=left_unmatched.size,
+                )
+            )
+        if right_unmatched.size:
+            segments.append(array[right_unmatched])
+        if len(segments) == 1:
+            dictionary[key] = _preserve_object_dtype(segments[0], value.dtype)
+        else:
+            dictionary[key] = _preserve_object_dtype(
+                concat_compat(segments), value.dtype
+            )
+
+    if indicator:
+        labels = ["both"]
+        lengths = [left_index.size]
+        if left_unmatched.size:
+            labels.append("left_only")
+            lengths.append(left_unmatched.size)
+        if right_unmatched.size:
+            labels.append("right_only")
+            lengths.append(right_unmatched.size)
+        name, values = _add_indicator(
+            indicator,
+            tuple(labels),
+            tuple(lengths),
+            df.columns.union(right.columns),
+        )
+        dictionary[name] = values
+
+    return pd.DataFrame(dictionary, copy=False)
+
+
+@dataclass(frozen=True, slots=True)
+class JoinCondition:
+    """Normalized internal representation of one conditional-join predicate.
+
+    The public API continues to accept three-element tuples. PyJanitor converts
+    those tuples to this immutable object immediately after public validation,
+    so routing and preparation code can use descriptive attributes instead of
+    remembering whether field ``0``, ``1``, or ``2`` means the operator.
+
+    Args:
+        left: Left dataframe column label.
+        right: Right dataframe column label.
+        op: Comparison operator, such as ``"<"`` or ``"!="``.
+    """
+
+    left: Hashable
+    right: Hashable
+    op: str
+
+
+def _normalize_conditions(conditions: Sequence[tuple]) -> list[JoinCondition]:
+    """Convert validated public condition tuples to immutable objects.
+
+    Args:
+        conditions: Three-element public condition tuples, or conditions that
+            have already been normalized by an internal caller.
+
+    Returns:
+        A new list containing one :class:`JoinCondition` per input predicate.
+    """
+    return [
+        condition if isinstance(condition, JoinCondition) else JoinCondition(*condition)
+        for condition in conditions
+    ]
+
+
+def _sort_if_not_monotonic(series: pd.Series) -> tuple[pd.Series, bool]:
+    """Normalize a series to ascending order without losing row identity.
+
+    An already increasing series is returned unchanged. A decreasing series
+    is reversed, which preserves its values and index pairing without a full
+    sort. Other non-monotonic series use a stable sort so duplicate values
+    retain deterministic physical order. The returned pandas index is part of
+    the contract: callers must use it to select and reorder every dependent
+    right-side array, including residual predicates and aggregation inputs.
+
+    Args:
+        series: Non-null pandas series used as a Rust binary-search layout.
+
+    Returns:
+        ``(ordered_series, was_already_increasing)``. The boolean describes
+        the input ordering, not whether sorting was required by the caller.
     """
 
     is_sorted = series.is_monotonic_increasing
-    if not is_sorted:
-        series = series.sort_values(kind="stable")
-    return series, is_sorted
-
-
-def _keep_output(keep: str, left: np.ndarray, right: np.ndarray):
-    """return indices for left and right index based on the value of `keep`."""
-    if keep == "all":
-        return left, right
-    grouped = pd.Series(right).groupby(left, sort=False)
-    if keep == "first":
-        grouped = grouped.min()
-        return grouped.index, grouped._values
-    grouped = grouped.max()
-    return grouped.index, grouped._values
-
-
-def _accumulate_keep_positions(index: np.ndarray, keep: str) -> np.ndarray:
-    """Return the running first or last original row position."""
-    if keep == "first":
-        return np.minimum.accumulate(index)
-    return np.maximum.accumulate(index)
-
-
-def _separate_conditions_based_on_op(conditions: Sequence):
-    """
-    Create separate blocks (`equals`, `not_equals`, `le_or_ge`)
-    based on `op`
-    """
-    l_cols = set()
-    r_cols = set()
-    not_equals = []
-    le_or_ge = []
-    equals = []
-    for condition in conditions:
-        left_on, right_on, op = condition
-        l_cols.add(left_on)
-        r_cols.add(right_on)
-        if op == _JoinOperator.NOT_EQUAL.value:
-            not_equals.append(condition)
-        elif op == _JoinOperator.STRICTLY_EQUAL.value:
-            equals.append(condition)
-        else:
-            le_or_ge.append(condition)
-    # check for possibility of a range join
-    # keep the first match for le_lt or ge_gt
-    le_lt = None
-    ge_gt = None
-    for condition in conditions:
-        left_on, right_on, op = condition
-        if le_lt and ge_gt:
-            break
-        if (op in less_than_join_types) and not le_lt:
-            le_lt = (left_on, right_on, op)
-        elif (op in greater_than_join_types) and not ge_gt:
-            ge_gt = (left_on, right_on, op)
-    is_range_join = all((le_lt, ge_gt))
-    if is_range_join:
-        le_or_ge = [
-            condition for condition in le_or_ge if condition not in (ge_gt, le_lt)
-        ]
-    return {
-        "l_cols": l_cols,
-        "r_cols": r_cols,
-        "is_range_join": is_range_join,
-        "equals": equals,
-        "not_equals": not_equals,
-        "le_lt": le_lt,
-        "ge_gt": ge_gt,
-        "le_or_ge": le_or_ge,
-    }
+    if is_sorted:
+        return series, True
+    if series.is_monotonic_decreasing:
+        return series.iloc[::-1], False
+    return series.sort_values(kind="stable"), False
 
 
 def _convert_array_to_numpy(
     array: np.ndarray,
     na_value: int = 0,
 ) -> np.ndarray:
-    """
-    Ensure array is a numpy array.
+    """Convert pandas-backed values to the NumPy dtype expected by Rust.
+
+    Nullable extension arrays need an explicit ``na_value`` before they can
+    cross the PyO3 boundary. Datetime and timedelta values are viewed as their
+    int64 nanosecond representation so the numeric Rust kernels can compare
+    them without losing physical row alignment.
+
+    Args:
+        array: NumPy array, pandas extension array, or pandas-backed values.
+        na_value: Scalar used for missing entries in non-mask value arrays.
+
+    Returns:
+        A NumPy array suitable for a dtype-specialized kernel.
     """
     if pd.api.types.is_extension_array_dtype(array):
-        array_dtype = array.dtype.numpy_dtype
-        array = array.to_numpy(dtype=array_dtype, na_value=na_value, copy=False)
+        array_dtype = getattr(array.dtype, "numpy_dtype", None)
+        if array_dtype is None:
+            array = array.to_numpy(na_value=na_value, copy=False)
+        else:
+            array = array.to_numpy(dtype=array_dtype, na_value=na_value, copy=False)
     if pd.api.types.is_timedelta64_dtype(array):
         array = array.to_numpy(copy=False)
     if pd.api.types.is_datetime64_dtype(array) or pd.api.types.is_timedelta64_dtype(
@@ -157,382 +482,93 @@ def _convert_array_to_numpy(
     return array
 
 
-def _update_positions_no_range(
-    left: np.ndarray,
-    right: np.ndarray,
-    positions: np.ndarray,
-    op: str,
-    left_booleans: np.ndarray | None,
-    right_booleans: np.ndarray | None,
-    is_extension_array: bool,
-):
-    """
-    Compute positive matches for left vs right when there is no start/end
-    """
-    if (left_booleans is None) and (right_booleans is None):
-        positions, total = _compare._compare_no_ranges(
-            left=left,
-            right=right,
-            positions=positions,
-            op=operator_mapping[op],
-        )
-    else:
-        positions, total = _compare._compare_ne_no_ranges(
-            left=left,
-            right=right,
-            positions=positions,
-            left_booleans=left_booleans,
-            right_booleans=right_booleans,
-            is_extension_array=is_extension_array,
-            op=operator_mapping[op],
-        )
+def _build_residual_predicate(
+    left: pd.Series,
+    right: pd.Series,
+    operation: str,
+    left_index: pd.Index | slice = slice(None),
+    right_index: pd.Index | slice = slice(None),
+) -> tuple:
+    """Build one residual predicate in the Rust tuple format.
 
-    return positions, total
+    Residual arrays are already aligned to the anchor's physical layout. This
+    helper only converts their values and, for ``!=``, attaches authoritative
+    null masks; it does not sort, filter, or reset either series.
 
+    Args:
+        left: Left residual series in anchor-aligned physical order.
+        right: Right residual series in the same aligned order.
+        operation: String comparison operator.
+        right_index: Right index positions to align the right series to.
 
-def _update_positions_no_range_(
-    df: pd.DataFrame,
-    right: pd.DataFrame,
-    conditions: list,
-    positions: np.ndarray,
-):
+    Returns:
+        A three-element tuple containing ``left_array``, ``right_array``, and
+        ``operation`` for ordinary predicates. For null-aware ``!=``
+        predicates, returns a six-element tuple containing the two value
+        arrays, their null masks, the extension-array flag, and the operator
+        in the format expected by the Rust parser.
+
+    Position invariant:
+        ``left`` and ``right`` must already be in the anchor layout. This
+        helper converts values and masks; it does not sort or independently
+        align rows. The resulting arrays are indexed by the physical
+        positions returned by the selected Rust kernel.
     """
-    Update positions for conditions when there is no range
-    """
-
-    for left_on, right_on, op in conditions:
-        left_array = df[left_on]
-        right_array = right[right_on]
-        left_booleans, right_booleans, is_extension_array = _get_boolean_args_for_ne(
-            op=op, left=left_array, right=right_array
-        )
-        left_array = _convert_array_to_numpy(array=left_array._values)
-        right_array = _convert_array_to_numpy(array=right_array._values)
-        positions, total = _update_positions_no_range(
-            left=left_array,
-            right=right_array,
-            positions=positions,
-            op=op,
-            left_booleans=left_booleans,
-            right_booleans=right_booleans,
-            is_extension_array=is_extension_array,
-        )
-        if total == 0:
-            return None
-    return {
-        "positions": positions,
-        "total": total,
-    }
-
-
-def _get_positive_matches_positions(
-    left: np.ndarray,
-    right: np.ndarray,
-    positions: np.ndarray,
-    starts: np.ndarray,
-    ends: np.ndarray,
-    op: str,
-    left_booleans: np.ndarray | None,
-    right_booleans: np.ndarray | None,
-    is_extension_array: bool,
-):
-    """
-    Compute positive matches for left vs right
-    """
-    if (left_booleans is None) and (right_booleans is None):
-        positions, counts_array, total = _compare._compare_positions(
-            left=left,
-            right=right,
-            positions=positions,
-            starts=starts,
-            ends=ends,
-            op=operator_mapping[op],
-        )
-    else:
-        positions, counts_array, total = _compare._compare_positions_ne(
-            left=left,
-            right=right,
-            positions=positions,
-            starts=starts,
-            ends=ends,
-            left_booleans=left_booleans,
-            right_booleans=right_booleans,
-            is_extension_array=is_extension_array,
-            op=operator_mapping[op],
+    if left_index is None:
+        left_index = slice(None)
+    if right_index is None:
+        right_index = slice(None)
+    left = left.loc[left_index]
+    left_array = _convert_array_to_numpy(array=left._values)
+    right = right.loc[right_index]
+    right_array = _convert_array_to_numpy(array=right._values)
+    if operation != "!=":
+        return (
+            left_array,
+            right_array,
+            operation,
         )
 
-    return positions, counts_array, total
-
-
-def _get_positive_matches_conditions_posns(
-    df: pd.DataFrame,
-    right: pd.DataFrame,
-    conditions: list,
-    left_index: np.ndarray,
-    right_index: np.ndarray,
-    positions: np.ndarray,
-    starts: np.ndarray,
-    ends: np.ndarray,
-):
-    """
-    Get positive matches for conditions
-    """
-
-    (left_on, right_on, op), *rest = conditions
-    left_array = df.loc[left_index, left_on]
-    right_array = right.loc[right_index, right_on]
-    left_booleans, right_booleans, is_extension_array = _get_boolean_args_for_ne(
-        op=op, left=left_array, right=right_array
+    left_null_mask, right_null_mask, is_extension_array = _get_boolean_args_for_ne(
+        op=operation,
+        left=left,
+        right=right,
     )
-    left_array = _convert_array_to_numpy(array=left_array._values)
-    right_array = _convert_array_to_numpy(array=right_array._values)
-    positions, counts_array, total = _get_positive_matches_positions(
-        left=left_array,
-        right=right_array,
-        positions=positions,
-        starts=starts,
-        ends=ends,
-        op=op,
-        left_booleans=left_booleans,
-        right_booleans=right_booleans,
-        is_extension_array=is_extension_array,
+    if left_null_mask is None and right_null_mask is None:
+        return (
+            left_array,
+            right_array,
+            operation,
+        )
+    return (
+        left_array,
+        left_null_mask,
+        right_array,
+        right_null_mask,
+        bool(is_extension_array),
+        operation,
     )
-    if total == 0:
-        return None
-    for left_on, right_on, op in rest:
-        left_array = df.loc[left_index, left_on]
-        right_array = right.loc[right_index, right_on]
-        left_booleans, right_booleans, is_extension_array = _get_boolean_args_for_ne(
-            op=op, left=left_array, right=right_array
-        )
-        left_array = _convert_array_to_numpy(array=left_array._values)
-        right_array = _convert_array_to_numpy(array=right_array._values)
-        positions, counts_array, total = _get_positive_matches_positions(
-            left=left_array,
-            right=right_array,
-            positions=positions,
-            starts=starts,
-            ends=ends,
-            op=op,
-            left_booleans=left_booleans,
-            right_booleans=right_booleans,
-            is_extension_array=is_extension_array,
-        )
-        if total == 0:
-            return None
-    return {
-        "positions": positions,
-        "counts_array": counts_array,
-        "total": total,
-    }
-
-
-def _get_positive_matches(
-    left: np.ndarray,
-    right: np.ndarray,
-    starts: np.ndarray | None,
-    ends: np.ndarray | None,
-    counts_array: np.ndarray | None,
-    matches: np.ndarray | None,
-    op: str,
-    left_booleans: np.ndarray | None,
-    right_booleans: np.ndarray | None,
-    is_extension_array: bool,
-):
-    """
-    Compute positive matches for left vs right
-    """
-    if (starts is not None) and (ends is None) and (counts_array is None):
-        if (left_booleans is None) and (right_booleans is None):
-            matches, counts_array, total = _compare._compare_first_run_starts_only(
-                left=left,
-                right=right,
-                starts=starts,
-                op=operator_mapping[op],
-            )
-        else:
-            matches, counts_array, total = _compare._compare_ne_first_run_starts_only(
-                left=left,
-                right=right,
-                starts=starts,
-                left_booleans=left_booleans,
-                right_booleans=right_booleans,
-                is_extension_array=is_extension_array,
-                op=operator_mapping[op],
-            )
-    elif (starts is None) and (ends is not None) and (counts_array is None):
-        if (left_booleans is None) and (right_booleans is None):
-            matches, counts_array, total = _compare._compare_first_run_ends_only(
-                left=left,
-                right=right,
-                ends=ends,
-                op=operator_mapping[op],
-            )
-        else:
-            matches, counts_array, total = _compare._compare_ne_first_run_ends_only(
-                left=left,
-                right=right,
-                ends=ends,
-                left_booleans=left_booleans,
-                right_booleans=right_booleans,
-                is_extension_array=is_extension_array,
-                op=operator_mapping[op],
-            )
-    elif (starts is not None) and (ends is None) and (counts_array is not None):
-        if (left_booleans is None) and (right_booleans is None):
-            matches, counts_array, total = _compare._compare_starts_only(
-                left=left,
-                right=right,
-                starts=starts,
-                counts_array=counts_array,
-                matches=matches,
-                op=operator_mapping[op],
-            )
-        else:
-            matches, counts_array, total = _compare._compare_ne_starts_only(
-                left=left,
-                right=right,
-                starts=starts,
-                left_booleans=left_booleans,
-                right_booleans=right_booleans,
-                is_extension_array=is_extension_array,
-                counts_array=counts_array,
-                matches=matches,
-                op=operator_mapping[op],
-            )
-    elif (starts is None) and (ends is not None) and (counts_array is not None):
-        if (left_booleans is None) and (right_booleans is None):
-            matches, counts_array, total = _compare._compare_ends_only(
-                left=left,
-                right=right,
-                ends=ends,
-                counts_array=counts_array,
-                matches=matches,
-                op=operator_mapping[op],
-            )
-        else:
-            matches, counts_array, total = _compare._compare_ne_ends_only(
-                left=left,
-                right=right,
-                ends=ends,
-                left_booleans=left_booleans,
-                right_booleans=right_booleans,
-                is_extension_array=is_extension_array,
-                counts_array=counts_array,
-                matches=matches,
-                op=operator_mapping[op],
-            )
-    elif (starts is not None) and (ends is not None) and (counts_array is None):
-        if (left_booleans is None) and (right_booleans is None):
-            matches, counts_array, total = _compare._compare_first_run_starts_ends(
-                left=left,
-                right=right,
-                starts=starts,
-                ends=ends,
-                op=operator_mapping[op],
-            )
-        else:
-            matches, counts_array, total = _compare._compare_ne_first_run_starts_ends(
-                left=left,
-                right=right,
-                starts=starts,
-                ends=ends,
-                left_booleans=left_booleans,
-                right_booleans=right_booleans,
-                is_extension_array=is_extension_array,
-                op=operator_mapping[op],
-            )
-    elif (starts is not None) and (ends is not None) and (counts_array is not None):
-        if (left_booleans is None) and (right_booleans is None):
-            matches, counts_array, total = _compare._compare_starts_ends(
-                left=left,
-                right=right,
-                starts=starts,
-                ends=ends,
-                matches=matches,
-                op=operator_mapping[op],
-            )
-        else:
-            matches, counts_array, total = _compare._compare_ne_starts_ends(
-                left=left,
-                right=right,
-                starts=starts,
-                ends=ends,
-                left_booleans=left_booleans,
-                right_booleans=right_booleans,
-                is_extension_array=is_extension_array,
-                matches=matches,
-                op=operator_mapping[op],
-            )
-
-    return matches, counts_array, total
-
-
-def _get_positive_matches_conditions(
-    df: pd.DataFrame,
-    right: pd.DataFrame,
-    conditions: list,
-    left_index: np.ndarray,
-    starts: np.ndarray | None,
-    ends: np.ndarray | None,
-):
-    """
-    Get positive matches for conditions
-    """
-    counts_array = None
-    matches = None
-    (left_on, right_on, op), *rest = conditions
-    left_array = df.loc[left_index, left_on]
-    right_array = right[right_on]
-    left_booleans, right_booleans, is_extension_array = _get_boolean_args_for_ne(
-        op=op, left=left_array, right=right_array
-    )
-    left_array = _convert_array_to_numpy(array=left_array._values)
-    right_array = _convert_array_to_numpy(array=right_array._values)
-    matches, counts_array, total = _get_positive_matches(
-        left=left_array,
-        right=right_array,
-        starts=starts,
-        ends=ends,
-        counts_array=counts_array,
-        matches=matches,
-        op=op,
-        left_booleans=left_booleans,
-        right_booleans=right_booleans,
-        is_extension_array=is_extension_array,
-    )
-    if total == 0:
-        return None
-    for left_on, right_on, op in rest:
-        left_array = df.loc[left_index, left_on]
-        right_array = right[right_on]
-        left_booleans, right_booleans, is_extension_array = _get_boolean_args_for_ne(
-            op=op, left=left_array, right=right_array
-        )
-        left_array = _convert_array_to_numpy(array=left_array._values)
-        right_array = _convert_array_to_numpy(array=right_array._values)
-        matches, counts_array, total = _get_positive_matches(
-            left=left_array,
-            right=right_array,
-            starts=starts,
-            ends=ends,
-            counts_array=counts_array,
-            matches=matches,
-            op=op,
-            left_booleans=left_booleans,
-            right_booleans=right_booleans,
-            is_extension_array=is_extension_array,
-        )
-        if total == 0:
-            return None
-    return {"matches": matches, "counts_array": counts_array, "total": total}
 
 
 def _get_boolean_args_for_ne(
     op: str, left: np.ndarray | None, right: np.ndarray | None
 ) -> tuple:
-    """
-    Get boolean arguments for !=
+    """Build null masks and the extension-array flag for ``!=``.
+
+    Ordinary range predicates remove null rows before dispatch. ``!=`` is
+    different: NumPy-backed nulls match according to the dedicated all-`!=`
+    contract, while pandas extension-array nulls do not match. The returned
+    masks therefore travel with residual predicates so Rust can distinguish
+    missing values from converted numeric sentinels.
+
+    Args:
+        op: Predicate operator; only ``!=`` requests masks.
+        left: Left residual series or array-like values.
+        right: Right residual series or array-like values.
+
+    Returns:
+        ``(left_null_mask, right_null_mask, is_extension_array)``. When no
+        null is present, both masks are ``None`` and the flag is ``False``.
     """
     if op != "!=":
         return None, None, False
@@ -546,184 +582,36 @@ def _get_boolean_args_for_ne(
     return left_booleans, right_booleans, is_extension_array
 
 
-def _build_indices_positions(
-    left_index: np.ndarray,
-    right_index: np.ndarray,
-    positions: np.ndarray,
-    counts_array: np.ndarray,
-    total: int,
-    keep: str,
-    starts: np.ndarray | None = None,
-    ends: np.ndarray | None = None,
-):
-    """Build public positional indices from compact join candidates.
+def _get_indexer_for_non_null_rows(df, columns_and_ops):
+    """Return rows valid for ordinary range predicates.
 
-    ``left_index`` and ``right_index`` contain original dataframe index values.
-    ``starts``/``ends`` are optional half-open candidate boundaries and
-    ``positions`` maps each surviving candidate position into ``right_index``.
-    ``counts_array`` gives the surviving count for each left row; ``total`` is
-    the number of emitted pairs. The index arrays retain labels throughout;
-    only ``positions`` is positional indirection.
+    Null masks are combined with logical OR across the predicate columns: a
+    row is excluded when any ordinary predicate column is null. ``!=`` is
+    skipped because its null behavior is handled by its dedicated mask
+    contract. ``slice(None)`` represents a fully valid layout and avoids
+    allocating a full positional indexer; ``None`` means no usable row
+    remains.
+
+    Args:
+        df: Working dataframe whose rows are addressed by physical position.
+        columns_and_ops: ``(column_name, operator)`` pairs for one join side.
+
+    Returns:
+        ``None`` for an all-null usable side, ``slice(None)`` when no filtering
+        is needed, or an indexer selecting the valid physical rows.
     """
-    if keep == "all":
-        left_index = janitor_rs.repeat_index(
-            index=left_index, counts=counts_array, length=total
-        )
-        right_index = janitor_rs.build_positional_index(
-            index=right_index, positions=positions, length=total
-        )
-    elif keep == "first":
-        total = np.count_nonzero(counts_array)
-        left_index = janitor_rs.trim_index(
-            index=left_index, counts=counts_array, length=total
-        )
-        right_index = janitor_rs.build_positional_index_first(
-            index=right_index,
-            starts=starts,
-            ends=ends,
-            counts=counts_array,
-            positions=positions,
-            length=total,
-        )
-    else:
-        total = np.count_nonzero(counts_array)
-        left_index = janitor_rs.trim_index(
-            index=left_index, counts=counts_array, length=total
-        )
-        right_index = janitor_rs.build_positional_index_last(
-            index=right_index,
-            starts=starts,
-            ends=ends,
-            counts=counts_array,
-            positions=positions,
-            length=total,
-        )
-    return {"left_index": left_index, "right_index": right_index}
-
-
-def build_indices_matches(
-    left_index: np.ndarray,
-    right_index: np.ndarray,
-    counts_array: np.ndarray,
-    starts: np.ndarray | None,
-    ends: np.ndarray | None,
-    matches: np.ndarray,
-    total: int,
-    keep: str,
-) -> dict:
-    """Build indices while filtering candidates with a flat ``matches`` mask.
-
-    The mask is aligned with the candidate slices delimited by optional
-    ``starts`` and ``ends`` arrays (ends are exclusive). ``counts_array`` and
-    ``total`` describe surviving entries. The index arrays retain dataframe
-    labels while the mask and any positions tape remain positional. Empty
-    slices are valid and emit no pair.
-    """
-    if (keep == "all") and (starts is not None) and (ends is None):
-        left = janitor_rs.repeat_index(
-            index=left_index,
-            counts=counts_array,
-            length=total,
-        )
-        right = janitor_rs.index_starts_only(
-            index=right_index, starts=starts, matches=matches, length=total
-        )
-    elif (keep == "all") and (starts is None) and (ends is not None):
-        left = janitor_rs.repeat_index(
-            index=left_index,
-            counts=counts_array,
-            length=total,
-        )
-        right = janitor_rs.index_ends_only(
-            index=right_index, ends=ends, matches=matches, length=total
-        )
-    elif (keep == "all") and (starts is not None) and (ends is not None):
-        left = janitor_rs.repeat_index(
-            index=left_index,
-            counts=counts_array,
-            length=total,
-        )
-        right = janitor_rs.index_starts_and_ends(
-            index=right_index,
-            starts=starts,
-            ends=ends,
-            matches=matches,
-            length=total,
-        )
-
-    elif (keep == "first") and (starts is not None) and (ends is None):
-        total = np.count_nonzero(counts_array)
-        left = janitor_rs.trim_index(
-            index=left_index, counts=counts_array, length=total
-        )
-        right = janitor_rs.index_starts_only_keep_first(
-            index=right_index,
-            starts=starts,
-            counts=counts_array,
-            matches=matches,
-            length=total,
-        )
-    elif (keep == "first") and (starts is None) and (ends is not None):
-        total = np.count_nonzero(counts_array)
-        left = janitor_rs.trim_index(
-            index=left_index, counts=counts_array, length=total
-        )
-        right = janitor_rs.index_ends_only_keep_first(
-            index=right_index,
-            ends=ends,
-            counts=counts_array,
-            matches=matches,
-            length=total,
-        )
-    elif (keep == "first") and (starts is not None) and (ends is not None):
-        total = np.count_nonzero(counts_array)
-        left = janitor_rs.trim_index(
-            index=left_index, counts=counts_array, length=total
-        )
-        right = janitor_rs.index_starts_and_ends_keep_first(
-            index=right_index,
-            starts=starts,
-            ends=ends,
-            counts=counts_array,
-            matches=matches,
-            length=total,
-        )
-
-    elif (keep == "last") and (starts is not None) and (ends is None):
-        total = np.count_nonzero(counts_array)
-        left = janitor_rs.trim_index(
-            index=left_index, counts=counts_array, length=total
-        )
-        right = janitor_rs.index_starts_only_keep_last(
-            index=right_index,
-            starts=starts,
-            counts=counts_array,
-            matches=matches,
-            length=total,
-        )
-    elif (keep == "last") and (starts is None) and (ends is not None):
-        total = np.count_nonzero(counts_array)
-        left = janitor_rs.trim_index(
-            index=left_index, counts=counts_array, length=total
-        )
-        right = janitor_rs.index_ends_only_keep_last(
-            index=right_index,
-            ends=ends,
-            counts=counts_array,
-            matches=matches,
-            length=total,
-        )
-    elif (keep == "last") and (starts is not None) and (ends is not None):
-        total = np.count_nonzero(counts_array)
-        left = janitor_rs.trim_index(
-            index=left_index, counts=counts_array, length=total
-        )
-        right = janitor_rs.index_starts_and_ends_keep_last(
-            index=right_index,
-            starts=starts,
-            ends=ends,
-            matches=matches,
-            length=total,
-            counts=counts_array,
-        )
-    return {"left_index": left, "right_index": right}
+    booleans = None
+    for column, op in columns_and_ops:
+        if op == _JoinOperator.NOT_EQUAL.value:
+            continue
+        column = df[column]
+        new_booleans = column.isna()
+        if booleans is None:
+            booleans = new_booleans
+        else:
+            booleans = booleans | new_booleans
+    if booleans.all():
+        return None
+    if booleans.any():
+        return df.index[~booleans]
+    return slice(None)

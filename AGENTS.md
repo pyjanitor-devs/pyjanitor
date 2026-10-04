@@ -39,6 +39,24 @@ these into the main sections.
 - **Document**: Keep docstrings up-to-date using Google-style format.
 - **Lint Markdown**: Always run `markdownlint` on markdown files after editing.
 
+### Cross-repository compatibility gate (janitor-rs #225)
+
+Every janitor-rs change needs an explicit pyjanitor impact assessment before
+merge:
+
+- Rust-only internals, benchmarks, or refactors: document why no pyjanitor
+  change is needed and run the Rust test suite.
+- Python-visible behavior, signatures, dtypes, errors, or performance
+  contracts: use coordinated PRs or add explicit compatibility tests in both
+  repositories, linking janitor-rs #225.
+- Release-affecting changes: validate pyjanitor against the published
+  janitor-rs wheel before the pyjanitor change merges.
+
+The PR description must state the classification, the pyjanitor impact, and
+the validation evidence. A paired pyjanitor PR is required when the
+Python-visible contract changes; Rust-only work does not require a no-op
+pyjanitor PR.
+
 ---
 
 ## Project Overview
@@ -559,6 +577,115 @@ as source comments when they clarify non-obvious code or algorithms for
 maintainers.
 
 ---
+
+### [2026-09-23] Conditional inequality joins are delegated to Rust
+
+**Context**: Routing conditional-join inequality predicates through the
+janitor-rs single and extended kernels.
+**Learning**: Both single-condition and multiple-condition `!=` joins are
+now delegated to Rust. Single predicates use `single_non_equi_join.rs`. Multiple
+predicates use `single_non_equi_join_extended.rs`: mixed joins are seeded by a range
+predicate, while all-`!=` joins build flat candidate pairs before applying
+residual predicates.
+
+PyJanitor remains responsible for resetting both frames to unique
+`RangeIndex` values, filtering null rows from non-`!=` predicates,
+stably sorting right-hand values, preserving physical position maps, and
+providing authoritative null masks. Rust trusts those alignments and does not
+sort, infer nullness, or reconstruct dataframe positions.
+
+`return_building_blocks` is a PyJanitor-level request. Internally it asks
+the relevant Rust path to retain all surviving candidates; range paths may
+return compact windows, while `!=` paths return materialized pairs.
+
+**Recommendation**: Keep the Python/Rust boundary explicit. Use
+``single_non_equi_join.rs`` for one predicate, ``single_non_equi_join_extended.rs`` for multiple
+predicates, and apply residual predicates before final ``keep`` selection.
+
+### [2026-09-23] Conditional-join aggregation is fused at the Rust boundary
+
+**Context**: Adding aggregation support for single and extended non-equality
+conditional joins.
+**Learning**: `join_agg` sends supported single range, single `!=`, mixed
+range-led, and all-`!=` predicates directly to dedicated Rust aggregation
+kernels. Those kernels update aggregation state while comparing candidates and
+do not materialize left/right join-index pairs. Forward aggregation produces
+one result slot per matched left row; reverse aggregation produces one result
+slot per matched right row. The aggregation API has no `keep` parameter.
+
+PyJanitor still owns dataframe preparation: it resets both frames to physical
+`RangeIndex` positions, removes null rows from non-`!=` predicates, stably
+sorts the right-side range values, preserves the filtered-to-physical position
+maps, and supplies authoritative null masks for `!=`. Aggregation input arrays
+remain full-layout arrays for the side being aggregated, even when predicate
+values are filtered or sorted.
+
+**Recommendation**: Keep aggregation adapters in their own module and preserve
+the distinction between predicate layout and aggregation-source layout. When
+mapping Rust `min`/`max` results back to pandas, treat the returned positions as
+physical source positions and materialize the source values only after the
+aggregation result has been filtered by its matched mask.
+
+Numeric aggregation follows the pandas reduction contract. Signed integer
+`sum` and `prod` inputs are promoted to `int64`; unsigned integer inputs are
+promoted to `uint64`; `float32` and `float64` retain their respective dtypes;
+and `min`/`max` retain the source dtype. Boolean aggregation is out of scope.
+The wildcard `(*, "size")` and `(*, null_mask, "count")` contracts remain
+dtype-independent. The right-index ordering flag is relevant only to
+index-building selection; aggregation consumes all surviving candidates and
+does not use it.
+
+### [2026-09-25] Keep single-anchor and dual-range extended joins separate
+
+**Context**: Clarifying the multi-predicate range-join routing contract.
+**Learning**: The single-extended path uses the first range predicate as its
+only binary-search anchor and evaluates every later predicate as a residual
+filter. The dedicated range-join path is responsible for two confirmed range
+anchors and their intersected windows.
+
+**Recommendation**: Do not pass a second-range optimization flag to the
+single-extended Rust kernel. Route confirmed dual-range calls through the
+range-join implementation; use the single-extended path for one anchor plus
+residual predicates.
+
+### [2026-10-02] Conditional-join index uniqueness is a Python-side invariant
+
+**Context**: Designing the single range-predicate Rust boundary.
+**Learning**: PyJanitor guarantees that the left and right physical index
+arrays contain unique positions. They are not necessarily ordered. Ordering
+must therefore be represented separately by the right-layout ordering flag and
+must not be inferred from uniqueness.
+
+**Recommendation**: Rust may rely on uniqueness for physical-position
+identity, but must use `right_index_is_ordered` when deciding whether sorted
+range boundaries can directly implement `first` or `last`. Otherwise, compute
+the extrema over the physical right positions in the candidate window.
+
+### [2026-10-04] Anchor selection must retain predicate occurrence positions
+
+**Context**: Documenting the `enumerate` calls used when selecting range
+anchors in the conditional-join dispatchers.
+**Learning**: Anchor selection tracks the original condition position, not only
+the condition value. Duplicate predicate tuples can be equal by value, so a
+condition object or value-based comparison cannot identify which occurrence
+was selected. The position is also used to remove exactly the selected anchor
+occurrences from the residual predicate list while preserving input order.
+
+**Recommendation**: Keep `enumerate` in anchor-selection and residual-filtering
+loops, and explain both the duplicate-occurrence and original-order invariants
+when changing those loops.
+
+### [2026-10-04] Coordinated Rust/Python development sources
+
+When Pyjanitor and `janitor-rs` are developed together on stacked branches,
+use a temporary `[tool.uv.sources]` override in `pyproject.toml` to exercise
+the in-flight Rust package locally and in CI. Keep the `[project]` dependency
+on the published PyPI range unchanged.
+
+Prefer a pinned Rust commit SHA for reproducible installs. Update the SHA when
+the Rust branch moves, and remove the override before proposing the stack for
+merge into `dev`; the override is development infrastructure, not the
+published-package contract.
 
 ## Version History
 

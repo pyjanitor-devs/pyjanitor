@@ -97,9 +97,10 @@ def conditional_join(
     For multiple conditions, the and(`&`)
     operator is used to combine the results of the individual conditions.
 
-    In some scenarios there might be performance gains if the less than join,
-    or the greater than join condition, or the range condition
-    is executed before the equi join - pass `force=True` to force this.
+    In some scenarios there might be performance gains if a mixed
+    equality/non-equality join uses the non-equi path. The non-equality
+    predicates drive candidate generation before the equality predicates are
+    applied as residual filters; pass ``force=True`` to request this.
 
     The operator can be any of `==`, `!=`, `<=`, `<`, `>=`, `>`.
 
@@ -327,7 +328,9 @@ def conditional_join(
             `right_only` for observations whose merge key
             only appears in the right DataFrame, and `both` if the observation’s
             merge key is found in both DataFrames.
-        force: If `True`, force the non-equi join conditions to execute before the equi join.
+        force: If ``True``, force mixed equality/non-equality joins to use the
+            non-equi path, with non-equality predicates driving candidate
+            generation before equality predicates are applied.
         join_algorithm: Determines what algorithm to use for multiple non-equi joins.
             Currently limited to `default` and `regions`.
         include_join_positions: Determines if the join positions of the left and right DataFrame
@@ -529,13 +532,15 @@ def _conditional_join_preliminary_checks(
         right_columns: Deprecated right-column selection.
         keep: Match-selection policy.
         indicator: Whether to include a merge indicator column.
-        force: Whether equality predicates may be handled by the non-equi
-            preparation path.
+        force: If ``True``, force mixed equality/non-equality joins to use the
+            non-equi path, with non-equality predicates driving candidate
+            generation before equality predicates are applied.
         return_matching_indices: Whether callers want physical index arrays.
         aggfunc: Aggregation requests, when the caller is ``join_agg``.
         include_join_positions: Whether materialized output includes pair
             positions in its index.
-        return_building_blocks: Whether to preserve kernel building blocks.
+        return_building_blocks: Experimental. Whether to preserve kernel
+            building blocks.
         reverse: Whether aggregation reads from the left side.
         join_algorithm: Multi-range algorithm selection.
         return_matched: Whether aggregation output includes a match mask.
@@ -712,12 +717,15 @@ def _conditional_join_compute(
         right_columns: Deprecated right output selection.
         keep: Match-selection policy.
         indicator: Indicator-column request.
-        force: Whether equality conditions may use non-equi preparation.
+        force: If ``True``, force mixed equality/non-equality joins to use the
+            non-equi path, with non-equality predicates driving candidate
+            generation before equality predicates are applied.
         return_matching_indices: Return physical index arrays instead of rows.
         aggfunc: Aggregation requests, or ``None`` for index output.
         include_join_positions: Include physical pair positions in dataframe
             output.
-        return_building_blocks: Preserve starts/ends or equivalent blocks.
+        return_building_blocks: Experimental. Preserve starts/ends or
+            equivalent kernel building blocks.
         reverse: Aggregate left values into right output rows.
         join_algorithm: Multi-range algorithm, ``default`` or ``regions``.
         return_matched: Include aggregation match metadata.
@@ -942,8 +950,10 @@ def get_join_indices(
     rows. It returns zero-based physical positions in two parallel arrays;
     ``left_index[i]`` and ``right_index[i]`` identify one matched pair. The
     arrays are suitable for callers that need to perform their own material
-    or aggregation step. With ``return_building_blocks=True``, the selected
-    kernel may also return range windows such as ``starts`` and ``ends``.
+    or aggregation step. ``return_building_blocks`` is experimental: when set
+    to ``True``, the selected kernel may also return implementation-level range
+    windows such as ``starts`` and ``ends``. The shape and keys of this
+    building-block result are not a stable public API.
 
     Args:
         df: Left dataframe.
@@ -951,10 +961,14 @@ def get_join_indices(
         conditions: ``(left_column, right_column, operator)`` predicates.
         keep: Return all matches, or one ``first``, ``last``, or ``any`` match
             per left row.
-        force: Permit equality predicates to participate in a forced non-equi
-            preparation path.
-        return_building_blocks: Return the kernel's intermediate positional
-            representation instead of only materialized pairs.
+        force: If ``True``, force mixed equality/non-equality joins to use the
+            non-equi path, with non-equality predicates driving candidate
+            generation before equality predicates are applied.
+        return_building_blocks: Return a possibly more extensive dictionary,
+            containing data that will be used to build the indices. This
+            feature exposes implementation-level data rather than a stable
+            public API.
+            !!! warning "This feature is experimental and may change without warning."
         join_algorithm: Algorithm for multiple range predicates.
 
     Returns:
@@ -977,8 +991,9 @@ def get_join_indices(
         >>> all_matches["right_index"].tolist()
         [0, 1, 2, 1, 2, 2]
 
-        ``return_building_blocks`` exposes the range windows used by callers
-        that need to perform their own materialization:
+        ``return_building_blocks`` is experimental and exposes implementation
+        details—the range windows used by callers that need to perform their
+        own materialization:
 
         >>> blocks = janitor.get_join_indices(
         ...     left,
@@ -1048,7 +1063,8 @@ def join_agg(
         right: Right dataframe or named Series and forward-aggregation source.
         conditions: Conditional-join predicate tuples.
         aggfunc: Non-empty ``(column, operation)`` requests.
-        force: Permit equality predicates to use the forced non-equi path.
+        force: If ``True``, force the non-equi join conditions to execute
+            before the equi join.
         reverse: Group left-side values into right-side output rows.
         return_matched: Add a boolean ``matched`` level to the result index.
         join_algorithm: Algorithm for multiple range predicates.

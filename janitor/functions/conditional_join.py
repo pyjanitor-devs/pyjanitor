@@ -276,6 +276,26 @@ def conditional_join(
         >>> isinstance(regional.index, pd.MultiIndex)
         True
 
+        ``include_join_positions=True`` adds the physical left and right row
+        positions to the result index. These are zero-based positions, not the
+        original pandas index labels:
+
+        >>> left = pd.DataFrame({"value": [1, 2]})
+        >>> right = pd.DataFrame({"value": [2, 3]})
+        >>> positioned = left.conditional_join(
+        ...     right,
+        ...     ("value", "value", "<"),
+        ...     include_join_positions=True,
+        ... )
+        >>> print(positioned.to_string())
+             left right
+            value value
+        0 0     1     2
+          1     1     3
+        1 1     2     3
+        >>> positioned.index.tolist()
+        [(0, 0), (0, 1), (1, 1)]
+
     !!! abstract "Version Changed"
 
         - 0.24.0
@@ -341,8 +361,12 @@ def conditional_join(
             ``"default"`` uses the general range-join implementation and
             ``"regions"`` uses the region-based implementation. The option is
             ignored for equality-only, single-range, and all-``!=`` joins.
-        include_join_positions: Determines if the join positions of the left and right DataFrame
-            should be included as an index of the final dataframe.
+        include_join_positions: If ``True``, include the matched physical row
+            positions in the result index as a two-level ``MultiIndex``. The
+            first level contains zero-based positions from ``df`` and the
+            second contains zero-based positions from ``right``; these are
+            positions in the input row order, not the original index labels.
+            This option is available only for inner joins.
 
 
 
@@ -545,8 +569,10 @@ def _conditional_join_preliminary_checks(
             generation before equality predicates are applied.
         return_matching_indices: Whether callers want physical index arrays.
         aggfunc: Aggregation requests, when the caller is ``join_agg``.
-        include_join_positions: Whether materialized output includes pair
-            positions in its index.
+        include_join_positions: Whether materialized inner-join output includes
+            matched physical left/right row positions in a two-level
+            ``MultiIndex``. Positions are zero-based input-row positions, not
+            the original pandas index labels.
         return_building_blocks: Experimental. Whether to preserve kernel
             building blocks.
         reverse: Whether aggregation reads from the left side.
@@ -733,8 +759,10 @@ def _conditional_join_compute(
             generation before equality predicates are applied.
         return_matching_indices: Return physical index arrays instead of rows.
         aggfunc: Aggregation requests, or ``None`` for index output.
-        include_join_positions: Include physical pair positions in dataframe
-            output.
+        include_join_positions: Include matched physical left/right row
+            positions in a two-level ``MultiIndex`` on dataframe output.
+            Positions are zero-based input-row positions, not original pandas
+            index labels; this is valid only for inner joins.
         return_building_blocks: Experimental. Preserve starts/ends or
             equivalent kernel building blocks.
         reverse: Aggregate left values into right output rows.

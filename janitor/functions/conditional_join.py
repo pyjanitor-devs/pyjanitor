@@ -1193,9 +1193,10 @@ def join_agg(
             the region-based implementation. It is ignored for other joins.
 
     Returns:
-        A DataFrame whose columns are labelled ``(column, operation)`` and
-        whose rows follow the physical output side. When ``return_matched`` is
-        true, its index also includes the boolean ``matched`` level.
+        pd.DataFrame: Aggregated values whose columns are labelled
+            ``(column, operation)`` and whose rows follow the physical output
+            side. When ``return_matched`` is true, the index also includes
+            the boolean ``matched`` level.
 
     Examples:
         >>> import pandas as pd

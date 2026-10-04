@@ -844,6 +844,71 @@ def test_check_how_value(dummy, series):
         dummy.conditional_join(series, ("id", "B", "<"), how="INNER")
 
 
+@pytest.mark.parametrize("how", ["left_anti", "right_anti"])
+def test_anti_join_single_range_condition(how):
+    """Apply anti semantics to a single range predicate."""
+    left = pd.DataFrame({"value": [1, 5, 12]})
+    right = pd.DataFrame({"limit": [0, 6, 11]})
+    projection = (
+        {"df_columns": ["value"], "right_columns": None}
+        if how == "left_anti"
+        else {"df_columns": None, "right_columns": ["limit"]}
+    )
+
+    actual = left.conditional_join(
+        right,
+        ("value", "limit", "<"),
+        how=how,
+        **projection,
+    )
+
+    expected = (
+        left.iloc[[2]].reset_index(drop=True)
+        if how == "left_anti"
+        else right.iloc[[0]].reset_index(drop=True)
+    )
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.parametrize("how", ["left_anti", "right_anti"])
+def test_anti_join_checks_all_predicates_before_keep_any(how):
+    """One witness must satisfy the complete multi-condition conjunction."""
+    left = pd.DataFrame(
+        {
+            "group": [1, 1, 1, 2],
+            "value": [1, 5, 3, 3],
+            "tag": [0, 1, 0, 5],
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "group": [1, 1, 2, 2],
+            "lower": [0, 4, 0, 8],
+            "upper": [2, 6, 4, 10],
+            "tag": [1, 2, 6, 7],
+        }
+    )
+    conditions = [
+        ("group", "group", "=="),
+        ("value", "lower", ">="),
+        ("value", "upper", "<="),
+        ("tag", "tag", "!="),
+    ]
+    projection = (
+        {"df_columns": ["group", "value", "tag"], "right_columns": None}
+        if how == "left_anti"
+        else {"df_columns": None, "right_columns": ["group", "lower", "upper", "tag"]}
+    )
+
+    actual = left.conditional_join(right, *conditions, how=how, **projection)
+    expected = (
+        left.iloc[[2]].reset_index(drop=True)
+        if how == "left_anti"
+        else right.iloc[[3]].reset_index(drop=True)
+    )
+    assert_frame_equal(expected, actual)
+
+
 def test_check_aggfunc_type(dummy, series):
     """
     Raise TypeError if `aggfunc` is not a list.

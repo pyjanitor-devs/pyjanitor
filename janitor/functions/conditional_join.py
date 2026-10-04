@@ -23,6 +23,7 @@ from __future__ import annotations
 import warnings
 from typing import Any, Hashable, Literal, Optional
 
+import numpy as np
 import pandas as pd
 import pandas_flavor as pf
 from pandas.api.types import (
@@ -36,6 +37,7 @@ from janitor.utils import check, check_column, deprecated_kwargs
 
 from ._conditional_join import (
     _equi_join,
+    _helpers,
     _multi_range_join,
     _not_equals_only,
     _regions,
@@ -48,13 +50,24 @@ from ._conditional_join._helpers import (
     less_than_join_types,
 )
 
+_REVERSE_OPERATOR = {
+    "<": ">",
+    "<=": ">=",
+    ">": "<",
+    ">=": "<=",
+    "==": "==",
+    "!=": "!=",
+}
+
 
 @pf.register_dataframe_method
 def conditional_join(
     df: pd.DataFrame,
     right: pd.DataFrame | pd.Series,
     *conditions: tuple,
-    how: Literal["inner", "left", "right", "outer"] = "inner",
+    how: Literal[
+        "inner", "left", "right", "outer", "left_anti", "right_anti"
+    ] = "inner",
     df_columns: Optional[Any] = slice(None),
     right_columns: Optional[Any] = slice(None),
     keep: Literal["first", "last", "any", "all"] = "all",
@@ -115,7 +128,8 @@ def conditional_join(
 
     For non-equi joins, only numeric, timedelta and date columns are supported.
 
-    `inner`, `left`, `right` and `outer` joins are supported.
+    `inner`, `left`, `right`, `outer`, `left_anti` and `right_anti`
+    joins are supported.
 
     If the columns from `df` and `right` have nothing in common,
     a single index column is returned; else, a MultiIndex column
@@ -335,7 +349,11 @@ def conditional_join(
             the and(`&`) operator is used to combine the results
             of the individual conditions.
         how: Indicates the type of join to be performed.
-            It can be one of `inner`, `left`, `right` or `outer`.
+            It can be one of `inner`, `left`, `right`, `outer`,
+            `left_anti` or `right_anti`.
+            Anti joins retain only the requested side's rows that have no
+            matching partner. Set the other side's column selector to `None`
+            when only the preserved side is wanted.
         df_columns: Columns to select from `df` in the final output dataframe.
             Column selection is based on the
             [`select_columns`][janitor.functions.select.select_columns] syntax.
@@ -636,8 +654,16 @@ def _conditional_join_preliminary_checks(
 
     check("how", how, [str])
 
-    if how not in {"inner", "left", "right", "outer"}:
-        raise ValueError("'how' should be one of 'inner', 'left', 'right' or 'outer'.")
+    join_types = {"inner", "left", "right", "outer", "left_anti", "right_anti"}
+    if how not in join_types:
+        raise ValueError(
+            "'how' should be one of 'inner', 'left', 'right', 'outer', "
+            "'left_anti' or 'right_anti'."
+        )
+    if how == "left_anti" and df_columns is None:
+        raise ValueError("df_columns cannot be None for a left_anti join.")
+    if how == "right_anti" and right_columns is None:
+        raise ValueError("right_columns cannot be None for a right_anti join.")
 
     check("keep", keep, [str])
 
@@ -725,6 +751,98 @@ def _conditional_join_type_check(
         )
 
     return None
+
+
+def _compute_anti_join(
+    df: pd.DataFrame,
+    right: pd.DataFrame,
+    conditions: list,
+    how: str,
+    df_columns: Any,
+    right_columns: Any,
+    indicator: bool | str,
+    force: bool,
+    join_algorithm: str,
+    return_matching_indices: bool,
+) -> pd.DataFrame | dict[str, np.ndarray]:
+    """Return rows with no complete matching partner.
+
+    Anti joins are existence queries. The inner join is therefore executed
+    with ``keep="any"``: one valid pair is sufficient to mark a preserved row
+    as matched, while no pair means that no complete predicate conjunction
+    survived. ``right_anti`` swaps the driving side and reverses directional
+    operators so the same invariant applies per original right row.
+    """
+    anti_conditions = [
+        (condition.left, condition.right, condition.op) for condition in conditions
+    ]
+    if how == "right_anti":
+        match_df, match_right = right, df
+        anti_conditions = [
+            (right_on, left_on, _REVERSE_OPERATOR[op])
+            for left_on, right_on, op in anti_conditions
+        ]
+    else:
+        match_df, match_right = df, right
+
+    matches = _conditional_join_compute(
+        df=match_df,
+        right=match_right,
+        conditions=anti_conditions,
+        how="inner",
+        df_columns=slice(None),
+        right_columns=slice(None),
+        keep="any",
+        indicator=False,
+        force=force,
+        return_matching_indices=True,
+        aggfunc=None,
+        include_join_positions=False,
+        return_building_blocks=False,
+        join_algorithm=join_algorithm,
+        return_matched=False,
+    )
+    matched_positions = np.asarray(matches["left_index"], dtype=np.intp)
+    matched_positions = np.unique(matched_positions)
+    all_positions = np.arange(len(match_df), dtype=np.intp)
+    unmatched_positions = np.setdiff1d(
+        all_positions,
+        matched_positions,
+        assume_unique=True,
+    )
+    empty = np.array([], dtype=np.intp)
+
+    if return_matching_indices:
+        if how == "left_anti":
+            return {"left_index": unmatched_positions, "right_index": empty}
+        return {"left_index": empty, "right_index": unmatched_positions}
+
+    # Reuse the normal materializer with an empty opposite-side frame. This
+    # preserves column selection, inferred null dtypes, and indicator labels
+    # without manufacturing a fake matching pair.
+    if how == "left_anti":
+        return _helpers._materialize_index_result(
+            df=df.iloc[unmatched_positions],
+            right=right.iloc[:0],
+            left_index=empty,
+            right_index=empty,
+            how="left",
+            df_columns=df_columns,
+            right_columns=right_columns,
+            indicator=indicator,
+            include_join_positions=False,
+        )
+    return _helpers._materialize_index_result(
+        df=df.iloc[:0],
+        right=right.iloc[unmatched_positions],
+        left_index=empty,
+        right_index=empty,
+        how="right",
+        df_columns=df_columns,
+        right_columns=right_columns,
+        indicator=indicator,
+        include_join_positions=False,
+    )
 
 
 def _conditional_join_compute(
@@ -816,6 +934,20 @@ def _conditional_join_compute(
     # Rust receives physical row positions, never the caller's labels.
     df.index = pd.RangeIndex(len(df))
     right.index = pd.RangeIndex(len(right))
+
+    if how in {"left_anti", "right_anti"}:
+        return _compute_anti_join(
+            df=df,
+            right=right,
+            conditions=conditions,
+            how=how,
+            df_columns=df_columns,
+            right_columns=right_columns,
+            indicator=indicator,
+            force=force,
+            join_algorithm=join_algorithm,
+            return_matching_indices=return_matching_indices,
+        )
 
     index_result_kwargs = {
         "how": how,

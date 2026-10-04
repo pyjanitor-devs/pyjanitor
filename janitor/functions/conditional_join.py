@@ -317,7 +317,6 @@ def conditional_join(
             - Added support for timedelta dtype.
         - 0.28.0
             - `col` class is deprecated.
-        - 0.32.9
         - 0.32.10
             - Added `include_join_positions` parameter.
             - Added `join_algorithm` parameter.

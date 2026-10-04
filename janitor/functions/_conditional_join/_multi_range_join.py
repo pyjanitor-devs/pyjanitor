@@ -53,7 +53,6 @@ from janitor.functions._conditional_join._single_range_predicate import (
 
 _DUAL_RANGE_FUNCTION = janitor_rs.range_join_indices
 _DUAL_RANGE_EXTENDED_FUNCTION = janitor_rs.range_join_extended_indices
-_CUMULATIVE_BOUND_FUNCTION = getattr(janitor_rs, "range_join_cumulative_bound", None)
 _DUAL_RANGE_AGGREGATE_FUNCTIONS = {
     False: janitor_rs.range_join_aggregate,
     True: janitor_rs.range_join_aggregate_reverse,
@@ -267,10 +266,7 @@ def _preparatory_work(
             # because ``4 <= [8, 8, 8, 8]``. The original values only admit
             # positions 0 and 2 (``4 <= [8, 2, 5, 3]``), so Rust's residual
             # filter removes positions 1 and 3.
-            if _CUMULATIVE_BOUND_FUNCTION is None:
-                cumulative_right = second_right_column.cummax().to_numpy()
-            else:
-                cumulative_right = _CUMULATIVE_BOUND_FUNCTION(second_right_array, "max")
+            cumulative_right = second_right_column.cummax().to_numpy()
         elif (
             first_anchor[2] in _helpers.less_than_join_types
             and second_op in _helpers.greater_than_join_types
@@ -288,14 +284,9 @@ def _preparatory_work(
             # 2 because ``4 >= [1, 1, 1, 5]``. The original values admit only
             # positions 0 and 2 (``4 >= [2, 8, 1, 5]``); Rust removes position
             # 1 during the exact residual check.
-            if _CUMULATIVE_BOUND_FUNCTION is None:
-                cumulative_right = (
-                    second_right_column.iloc[::-1].cummin().iloc[::-1].to_numpy()
-                )
-            else:
-                cumulative_right = _CUMULATIVE_BOUND_FUNCTION(
-                    second_right_array, "reverse_min"
-                )
+            cumulative_right = (
+                second_right_column.iloc[::-1].cummin().iloc[::-1].to_numpy()
+            )
 
         if cumulative_right is None:
             # Same-direction range predicates do not have a generally safe

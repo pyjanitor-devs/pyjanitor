@@ -39,6 +39,24 @@ these into the main sections.
 - **Document**: Keep docstrings up-to-date using Google-style format.
 - **Lint Markdown**: Always run `markdownlint` on markdown files after editing.
 
+### Cross-repository compatibility gate (janitor-rs #225)
+
+Every janitor-rs change needs an explicit pyjanitor impact assessment before
+merge:
+
+- Rust-only internals, benchmarks, or refactors: document why no pyjanitor
+  change is needed and run the Rust test suite.
+- Python-visible behavior, signatures, dtypes, errors, or performance
+  contracts: use coordinated PRs or add explicit compatibility tests in both
+  repositories, linking janitor-rs #225.
+- Release-affecting changes: validate pyjanitor against the published
+  janitor-rs wheel before the pyjanitor change merges.
+
+The PR description must state the classification, the pyjanitor impact, and
+the validation evidence. A paired pyjanitor PR is required when the
+Python-visible contract changes; Rust-only work does not require a no-op
+pyjanitor PR.
+
 ---
 
 ## Project Overview

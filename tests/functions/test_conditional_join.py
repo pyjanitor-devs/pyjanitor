@@ -258,6 +258,19 @@ def test_use_numba_is_a_deprecated_noop(dummy, series):
     assert not result.empty
 
 
+def test_get_join_indices_use_numba_is_a_deprecated_noop(dummy, series):
+    """The index helper retains deprecated ``use_numba`` compatibility."""
+    with pytest.warns(DeprecationWarning, match="use_numba"):
+        result = jn.get_join_indices(
+            dummy,
+            series,
+            ("id", "B", ">"),
+            use_numba=True,
+        )
+
+    assert result["left_index"].size > 0
+
+
 def test_check_condition_type(dummy, series):
     """Raise TypeError if any condition in conditions is not a tuple."""
     with pytest.raises(TypeError, match="condition should be one of.+"):

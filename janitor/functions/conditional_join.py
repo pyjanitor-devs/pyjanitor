@@ -982,6 +982,7 @@ def get_join_indices(
     right: pd.DataFrame | pd.Series,
     *conditions: tuple,
     keep: Literal["first", "last", "any", "all"] = "all",
+    use_numba: bool | None = None,
     force: bool = False,
     return_building_blocks: bool = False,
     join_algorithm: str = "default",
@@ -1003,6 +1004,8 @@ def get_join_indices(
         conditions: ``(left_column, right_column, operator)`` predicates.
         keep: Return all matches, or one ``first``, ``last``, or ``any`` match
             per left row.
+        use_numba: Deprecated no-op retained for compatibility with older
+            callers. Its value is ignored.
         force: If ``True``, force mixed equality/non-equality joins to use the
             non-equi path, with non-equality predicates driving candidate
             generation before equality predicates are applied.
@@ -1049,6 +1052,13 @@ def get_join_indices(
         >>> sorted(blocks)
         ['ends', 'left_index', 'right_index', 'starts']
     """
+    if use_numba is not None:
+        warnings.warn(
+            "The 'use_numba' parameter is deprecated and has no effect.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
     return _conditional_join_compute(
         df=df,
         right=right,

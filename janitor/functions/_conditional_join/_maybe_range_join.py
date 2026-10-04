@@ -100,7 +100,9 @@ def _get_dual_range_aggregation_function(reverse: bool, extended: bool) -> objec
 
 
 def _preparatory_work(
-    df: pd.DataFrame, right: pd.DataFrame, conditions: list[tuple[str, str, str]]
+    df: pd.DataFrame,
+    right: pd.DataFrame,
+    conditions: list[_helpers.JoinCondition],
 ) -> tuple | None:
     """Prepare dual range anchors and residual predicates.
 
@@ -108,7 +110,9 @@ def _preparatory_work(
         df: Left dataframe; filtered rows retain left-row order.
         right: Right dataframe; the first anchor is sorted in ascending value
             order and its physical positions travel with that sort.
-        conditions: ``(left_column, right_column, operator)`` triples.
+        conditions: Validated, normalized :class:`JoinCondition` objects.
+            Public condition tuples are converted before this internal
+            preparation boundary is reached.
 
     Returns:
         ``(left_index, right_index, anchors, residuals,

@@ -891,6 +891,7 @@ def _compute_anti_join(
         how="inner",
         df_columns=slice(None),
         right_columns=slice(None),
+        output_columns=None,
         keep="any",
         indicator=False,
         force=force,

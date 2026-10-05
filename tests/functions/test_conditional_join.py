@@ -5908,3 +5908,29 @@ def test_conditional_join_columns_deprecation_warning(dummy):
 
     with pytest.warns(DeprecationWarning, match="right_columns"):
         dummy.conditional_join(dummy, ("id", "id", ">"), right_columns="id")
+
+
+def test_equi_dual_range_algorithms_agree_with_group_local_envelope():
+    """Duplicate equality groups use exact residual checks after envelopes."""
+    left = pd.DataFrame({"key": ["a", "a", "b"], "start": [2, 4, 0], "end": [4, 6, 2]})
+    right = pd.DataFrame(
+        {
+            "key": ["a", "a", "a", "b", "b", "unmatched"],
+            "start": [5, 1, 4, 0, 3, 0],
+            "end": [1, 2, 3, 2, 5, 1],
+        }
+    )
+    conditions = (
+        ("key", "key", "=="),
+        ("start", "end", "<="),
+        ("end", "start", ">="),
+    )
+    default = jn.get_join_indices(left, right, *conditions, join_algorithm="default")
+    regions = jn.get_join_indices(left, right, *conditions, join_algorithm="regions")
+    default_pairs = set(zip(default["left_index"], default["right_index"]))
+    region_pairs = set(zip(regions["left_index"], regions["right_index"]))
+    assert default_pairs == region_pairs
+    assert all(
+        right.iloc[right_position].key != "unmatched"
+        for _, right_position in region_pairs
+    )

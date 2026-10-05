@@ -974,6 +974,7 @@ def _conditional_join_compute(
             aggfunc=aggfunc,
             reverse=reverse,
             return_matched=return_matched,
+            join_algorithm=join_algorithm,
         )
     if use_equi_path:
         return _equi_join._compute_equi_join(
@@ -982,6 +983,7 @@ def _conditional_join_compute(
             conditions=conditions,
             keep=keep,
             return_building_blocks=return_building_blocks,
+            join_algorithm=join_algorithm,
             **index_result_kwargs,
         )
 

@@ -36,7 +36,7 @@ import janitor_rs
 import numpy as np
 import pandas as pd
 
-from janitor.functions._conditional_join import _helpers
+from janitor.functions._conditional_join import _equi_join, _helpers
 from janitor.functions._conditional_join._aggregation_helpers import (
     _aggregation_inputs,
     _empty_aggregation_result,
@@ -49,6 +49,8 @@ def _preparatory_work(
     df: pd.DataFrame,
     right: pd.DataFrame,
     conditions: list[tuple[str, str, str]],
+    *,
+    exclude_equality: bool = False,
 ) -> tuple[pd.Index, pd.Index, list[tuple], list[tuple]] | None:
     """Prepare the two region anchors and residual predicates.
 
@@ -166,6 +168,10 @@ def _preparatory_work(
         condition
         for position, condition in enumerate(conditions)
         if position not in primary_positions
+        and not (
+            exclude_equality
+            and condition.op == _helpers._JoinOperator.STRICTLY_EQUAL.value
+        )
     ]
     residual_predicates = []
 
@@ -182,6 +188,57 @@ def _preparatory_work(
     return left_index, right_index, anchor_predicates, residual_predicates
 
 
+def _preparatory_work_equi(
+    df: pd.DataFrame,
+    right: pd.DataFrame,
+    conditions: list[tuple[str, str, str]],
+):
+    """Prepare region anchors plus source-position equality codes."""
+    outcome = _preparatory_work(
+        df=df,
+        right=right,
+        conditions=conditions,
+        exclude_equality=True,
+    )
+    if outcome is None:
+        return None
+    left_index, right_index, anchors, residuals = outcome
+    if isinstance(left_index, slice):
+        left_index = df.index
+    if isinstance(right_index, slice):
+        right_index = right.index
+    equi_conditions = [
+        condition
+        for condition in conditions
+        if condition.op == _helpers._JoinOperator.STRICTLY_EQUAL.value
+    ]
+    left_keys, right_keys = _equi_join._build_equi_keys(
+        df=df,
+        right=right,
+        left_index=left_index,
+        right_index=right_index,
+        equi_conditions=equi_conditions,
+    )
+    mapping = _equi_join._build_equi_predicate(left_keys, right_keys)
+    if mapping is None or mapping[1] is None:
+        return None
+    left_indexer, right_codes = mapping
+    matched_codes = np.unique(left_indexer[left_indexer >= 0])
+    right_codes = np.where(np.isin(right_codes, matched_codes), right_codes, -1)
+    left_codes_by_source = np.full(len(df), -1, dtype=np.int64)
+    right_codes_by_source = np.full(len(right), -1, dtype=np.int64)
+    left_codes_by_source[np.asarray(left_index, dtype=np.int64)] = left_indexer
+    right_codes_by_source[np.asarray(right_index, dtype=np.int64)] = right_codes
+    return (
+        left_index,
+        right_index,
+        anchors,
+        residuals,
+        left_codes_by_source,
+        right_codes_by_source,
+    )
+
+
 def _compute_regions_join(
     *,
     df,
@@ -195,6 +252,7 @@ def _compute_regions_join(
     include_join_positions,
     return_matching_indices,
     return_building_blocks,
+    equi=False,
 ):
     """Normalize Rust pairs and choose the public return representation.
 
@@ -216,8 +274,29 @@ def _compute_regions_join(
         return_building_blocks: Preserve dictionary output for experimental
             building-block callers.
     """
-    outcome = _preparatory_work(df=df, right=right, conditions=conditions)
+    outcome = (
+        _preparatory_work_equi(df=df, right=right, conditions=conditions)
+        if equi
+        else _preparatory_work(df=df, right=right, conditions=conditions)
+    )
     if outcome is None:
+        if equi:
+            # Unique right equality keys and empty prepared layouts use the
+            # existing direct equi path; regions is only for duplicate groups.
+            return _equi_join._compute_equi_join(
+                df=df,
+                right=right,
+                conditions=conditions,
+                keep=keep,
+                how=how,
+                df_columns=df_columns,
+                right_columns=right_columns,
+                indicator=indicator,
+                include_join_positions=include_join_positions,
+                return_matching_indices=return_matching_indices,
+                return_building_blocks=return_building_blocks,
+                join_algorithm="default",
+            )
         result = _helpers._empty_indices()
         return _helpers._materialize_or_return_indices(
             result=result,
@@ -232,14 +311,32 @@ def _compute_regions_join(
             return_building_blocks=return_building_blocks,
         )
 
-    *_, anchor_predicates, residual_predicates = outcome
+    if equi:
+        (
+            _left_index,
+            _right_index,
+            anchor_predicates,
+            residual_predicates,
+            left_codes,
+            right_codes,
+        ) = outcome
+    else:
+        *_, anchor_predicates, residual_predicates = outcome
     predicates = [*anchor_predicates, *residual_predicates]
-    function = (
-        janitor_rs.region_indices
-        if not residual_predicates
-        else janitor_rs.region_indices_extended
-    )
-    result = function(predicates=predicates, keep=keep)
+    if equi:
+        result = janitor_rs.region_indices_equi(
+            predicates=predicates,
+            left_codes=left_codes,
+            right_codes=right_codes,
+            keep=keep,
+        )
+    else:
+        function = (
+            janitor_rs.region_indices
+            if not residual_predicates
+            else janitor_rs.region_indices_extended
+        )
+        result = function(predicates=predicates, keep=keep)
     if result is None:
         result = _helpers._empty_indices()
     return _helpers._materialize_or_return_indices(
@@ -284,6 +381,7 @@ def _aggregate(
     aggfunc: list[tuple],
     return_matched: bool,
     reverse: bool,
+    equi: bool = False,
 ) -> pd.DataFrame:
     """Compute region aggregation without materializing candidate pairs.
 
@@ -315,14 +413,28 @@ def _aggregate(
         physical layout.
     """
     aggregation_source = df if reverse else right
-    outcome = _preparatory_work(df=df, right=right, conditions=conditions)
+    outcome = (
+        _preparatory_work_equi(df=df, right=right, conditions=conditions)
+        if equi
+        else _preparatory_work(df=df, right=right, conditions=conditions)
+    )
     if outcome is None:
         return _empty_aggregation_result(
             source=aggregation_source,
             aggfunc=aggfunc,
             return_matched=return_matched,
         )
-    left_index, right_index, anchor_predicates, residual_predicates = outcome
+    if equi:
+        (
+            left_index,
+            right_index,
+            anchor_predicates,
+            residual_predicates,
+            left_codes,
+            right_codes,
+        ) = outcome
+    else:
+        left_index, right_index, anchor_predicates, residual_predicates = outcome
     if isinstance(left_index, slice):
         left_index = df.index
     if isinstance(right_index, slice):
@@ -336,17 +448,32 @@ def _aggregate(
         indexer=source_index,
     )
     extended = len(predicates) > 2
-    function = {
-        (False, False): janitor_rs.region_aggregate,
-        (True, False): janitor_rs.region_aggregate_reverse,
-        (False, True): janitor_rs.region_extended_aggregate,
-        (True, True): janitor_rs.region_extended_aggregate_reverse,
-    }[(reverse, extended)]
-    result = function(
-        predicates=predicates,
-        aggregations=aggregation_inputs,
-        return_matched=return_matched,
-    )
+    if equi:
+        function = {
+            (False, False): janitor_rs.region_aggregate_equi,
+            (True, False): janitor_rs.region_aggregate_equi_reverse,
+            (False, True): janitor_rs.region_extended_aggregate_equi,
+            (True, True): janitor_rs.region_extended_aggregate_equi_reverse,
+        }[(reverse, extended)]
+        result = function(
+            predicates=predicates,
+            left_codes=left_codes,
+            right_codes=right_codes,
+            aggregations=aggregation_inputs,
+            return_matched=return_matched,
+        )
+    else:
+        function = {
+            (False, False): janitor_rs.region_aggregate,
+            (True, False): janitor_rs.region_aggregate_reverse,
+            (False, True): janitor_rs.region_extended_aggregate,
+            (True, True): janitor_rs.region_extended_aggregate_reverse,
+        }[(reverse, extended)]
+        result = function(
+            predicates=predicates,
+            aggregations=aggregation_inputs,
+            return_matched=return_matched,
+        )
     if result is None:
         return _unmatched_aggregation_result(
             output_index=output_index,

@@ -59,6 +59,15 @@ def _build_equi_predicate(
     except pd.errors.InvalidIndexError:
         right_codes, uniques = right_keys.factorize(sort=False)
         left_indexer = uniques.get_indexer(left_keys)
+        matched_codes = np.unique(left_indexer[left_indexer >= 0])
+        if matched_codes.size:
+            code_remap = np.full(len(uniques), -1, dtype=np.int64)
+            code_remap[matched_codes] = np.arange(matched_codes.size)
+            left_indexer = np.where(left_indexer >= 0, code_remap[left_indexer], -1)
+            right_codes = np.where(right_codes >= 0, code_remap[right_codes], -1)
+        else:
+            left_indexer = np.full(left_indexer.shape, -1, dtype=np.int64)
+            right_codes = np.full(right_codes.shape, -1, dtype=np.int64)
         return left_indexer, right_codes
 
 
@@ -130,9 +139,10 @@ def _preparatory_work(
     2. The first suitable range predicate sorts the right dataframe when
        necessary. ``right_index`` records the resulting physical right-row
        layout.
-    3. A second range predicate is retained only when its right values are
-       monotonic in the first predicate's physical layout. Otherwise it is
-       evaluated later as a residual predicate.
+    3. A second range predicate is passed to Rust even when its right values
+       are not globally monotonic. The grouped Rust path can build a
+       per-equality-group envelope; the original predicate remains a residual
+       for exact checking in that case.
     4. Equality keys are built after any right-side layout change. Unique
        right keys use direct positions from ``get_indexer``; duplicate right
        keys use dense factorization codes and a code-to-right-position array.
@@ -249,22 +259,21 @@ def _preparatory_work(
                 range_maybe[1].op,
             )
             right_ = right.loc[right_.index, right_column]
-            if right_.is_monotonic_increasing:
-                left_array = _helpers._convert_array_to_numpy(
-                    array=df.loc[left_index, left_column]._values
-                )
-                right_array = _helpers._convert_array_to_numpy(array=right_._values)
-                range_predicate = (
-                    left_array,
-                    right_array,
-                    op,
-                )
-                range_predicates.append(range_predicate)
-            else:
+            left_array = _helpers._convert_array_to_numpy(
+                array=df.loc[left_index, left_column]._values
+            )
+            right_array = _helpers._convert_array_to_numpy(array=right_._values)
+            range_predicate = (
+                left_array,
+                right_array,
+                op,
+            )
+            range_predicates.append(range_predicate)
+            if not right_.is_monotonic_increasing:
                 range_positions = range_positions[:1]
                 selected_range_positions = set(range_positions)
-                # Track the fallback anchor by position so a duplicate of the
-                # same condition can remain a residual when appropriate.
+                # The second range remains in ``range_predicates`` for the
+                # grouped envelope, and in ``rest`` for exact checking.
                 rest = [
                     condition
                     for position, condition in enumerate(conditions)
@@ -326,6 +335,7 @@ def _compute_equi_join(
     indicator: bool | str = False,
     include_join_positions: bool = False,
     return_matching_indices: bool = True,
+    join_algorithm: str = "default",
 ) -> dict[str, np.ndarray] | pd.DataFrame:
     """Prepare and dispatch an equi-led conditional join.
 
@@ -352,6 +362,32 @@ def _compute_equi_join(
         dataframe when ``return_matching_indices`` is false. Building-block
         requests always retain the dictionary form.
     """
+    if (
+        join_algorithm == "regions"
+        and sum(
+            condition.op
+            in _helpers.less_than_join_types.union(_helpers.greater_than_join_types)
+            for condition in conditions
+        )
+        >= 2
+    ):
+        from janitor.functions._conditional_join import _regions
+
+        return _regions._compute_regions_join(
+            df=df,
+            right=right,
+            conditions=conditions,
+            keep=keep,
+            how=how,
+            df_columns=df_columns,
+            right_columns=right_columns,
+            indicator=indicator,
+            include_join_positions=include_join_positions,
+            return_matching_indices=return_matching_indices,
+            return_building_blocks=return_building_blocks,
+            equi=True,
+        )
+
     outcome = _preparatory_work(df, right, conditions)
     if outcome is None:
         result = _helpers._empty_indices()
@@ -444,6 +480,7 @@ def _aggregate(
     aggfunc: list[tuple],
     reverse: bool,
     return_matched: bool,
+    join_algorithm: str = "default",
 ) -> pd.DataFrame:
     """Aggregate an equi-led conditional join in the Rust fused kernel.
 
@@ -494,6 +531,27 @@ def _aggregate(
         right_index = right.index
     left_positions = _helpers._convert_array_to_numpy(array=left_index._values)
     index_right = _helpers._convert_array_to_numpy(array=right_index._values)
+
+    if (
+        join_algorithm == "regions"
+        and sum(
+            condition.op
+            in _helpers.less_than_join_types.union(_helpers.greater_than_join_types)
+            for condition in conditions
+        )
+        >= 2
+    ):
+        from janitor.functions._conditional_join import _regions
+
+        return _regions._aggregate(
+            df=df,
+            right=right,
+            conditions=conditions,
+            aggfunc=aggfunc,
+            return_matched=return_matched,
+            reverse=reverse,
+            equi=True,
+        )
 
     aggregation_source = df if reverse else right
     source_index = left_index if reverse else right_index

@@ -155,36 +155,6 @@ def construct_1d_array_from_inferred_fill_value(
     return take_nd(arr, taker)
 
 
-def _create_multiindex_column(df: pd.DataFrame, right: pd.DataFrame) -> tuple:
-    """Namespace overlapping columns under ``left`` and ``right``.
-
-    The helper mutates the two shallow working frames used during
-    materialization. A leading level distinguishes columns originating from
-    each side, while all original column levels remain unchanged beneath it.
-
-    Args:
-        df: Left working dataframe.
-        right: Right working dataframe.
-
-    Returns:
-        The same two dataframes with MultiIndex columns containing a source
-        namespace.
-    """
-    header = np.empty(df.columns.size, dtype="U4")
-    header[:] = "left"
-    header = [header]
-    columns = [df.columns.get_level_values(n) for n in range(df.columns.nlevels)]
-    header.extend(columns)
-    df.columns = pd.MultiIndex.from_arrays(header)
-    header = np.empty(right.columns.size, dtype="U5")
-    header[:] = "right"
-    header = [header]
-    columns = [right.columns.get_level_values(n) for n in range(right.columns.nlevels)]
-    header.extend(columns)
-    right.columns = pd.MultiIndex.from_arrays(header)
-    return df, right
-
-
 def _preserve_object_dtype(array: np.ndarray, dtype) -> np.ndarray | pd.Series:
     """Guard a reindexed ``object``-dtype array against string inference.
 

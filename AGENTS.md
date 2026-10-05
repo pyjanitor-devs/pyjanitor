@@ -576,6 +576,18 @@ arguments, limitations, and examples. Retain implementation-only explanations
 as source comments when they clarify non-obvious code or algorithms for
 maintainers.
 
+### [2026-09-18] conditional_join Indexes Are Row Positions, Not Labels
+
+**Context**: Correcting index-contract prose in `_helpers.py` and the
+`_conditional_join_compute` comment.
+**Learning**: `_conditional_join_compute` resets both frames with
+`df.index = pd.RangeIndex(len(df))` before join discovery, so `left_index` and
+`right_index` are 0-based row positions rather than original index labels.
+**Recommendation**: Before editing index prose under
+`janitor/functions/_conditional_join/`, check the index reset in
+`_conditional_join_compute`. Describe `left_index`/`right_index` as row
+positions, not dataframe labels.
+
 ---
 
 ### [2026-09-23] Conditional inequality joins are delegated to Rust

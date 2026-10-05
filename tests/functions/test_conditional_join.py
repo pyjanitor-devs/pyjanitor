@@ -905,6 +905,71 @@ def test_check_how_value(dummy, series):
         dummy.conditional_join(series, ("id", "B", "<"), how="INNER")
 
 
+@pytest.mark.parametrize("how", ["left_anti", "right_anti"])
+def test_anti_join_single_range_condition(how):
+    """Apply anti semantics to a single range predicate."""
+    left = pd.DataFrame({"value": [1, 5, 12]})
+    right = pd.DataFrame({"limit": [0, 6, 11]})
+    projection = (
+        {"df_columns": ["value"], "right_columns": None}
+        if how == "left_anti"
+        else {"df_columns": None, "right_columns": ["limit"]}
+    )
+
+    actual = left.conditional_join(
+        right,
+        ("value", "limit", "<"),
+        how=how,
+        **projection,
+    )
+
+    expected = (
+        left.iloc[[2]].reset_index(drop=True)
+        if how == "left_anti"
+        else right.iloc[[0]].reset_index(drop=True)
+    )
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.parametrize("how", ["left_anti", "right_anti"])
+def test_anti_join_checks_all_predicates_before_keep_any(how):
+    """One witness must satisfy the complete multi-condition conjunction."""
+    left = pd.DataFrame(
+        {
+            "group": [1, 1, 1, 2],
+            "value": [1, 5, 3, 3],
+            "tag": [0, 1, 0, 5],
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "group": [1, 1, 2, 2],
+            "lower": [0, 4, 0, 8],
+            "upper": [2, 6, 4, 10],
+            "tag": [1, 2, 6, 7],
+        }
+    )
+    conditions = [
+        ("group", "group", "=="),
+        ("value", "lower", ">="),
+        ("value", "upper", "<="),
+        ("tag", "tag", "!="),
+    ]
+    projection = (
+        {"df_columns": ["group", "value", "tag"], "right_columns": None}
+        if how == "left_anti"
+        else {"df_columns": None, "right_columns": ["group", "lower", "upper", "tag"]}
+    )
+
+    actual = left.conditional_join(right, *conditions, how=how, **projection)
+    expected = (
+        left.iloc[[2]].reset_index(drop=True)
+        if how == "left_anti"
+        else right.iloc[[3]].reset_index(drop=True)
+    )
+    assert_frame_equal(expected, actual)
+
+
 def test_check_aggfunc_type(dummy, series):
     """
     Raise TypeError if `aggfunc` is not a list.
@@ -963,6 +1028,92 @@ def test_all_not_equal_aggregation():
     )
     expected = _with_matched_level(expected)
     assert_frame_equal(expected, actual)
+
+
+@pytest.mark.parametrize("join_algorithm", ["default", "regions"])
+def test_all_unmatched_aggregation_retains_prepared_output_rows(join_algorithm):
+    """Keep eligible rows when every multi-range candidate is rejected."""
+    left = pd.DataFrame({"left_key": [1, 2], "amount": [4, 5]})
+    right = pd.DataFrame({"right_key": [3], "amount": [10]})
+    conditions = [
+        ("left_key", "right_key", ">"),
+        ("amount", "amount", ">"),
+    ]
+    aggfunc = [
+        ("amount", "sum"),
+        ("amount", "prod"),
+        ("amount", "size"),
+        ("amount", "min"),
+    ]
+
+    actual = left.join_agg(
+        right,
+        *conditions,
+        aggfunc=aggfunc,
+        join_algorithm=join_algorithm,
+        return_matched=True,
+    )
+
+    assert len(actual) == len(left)
+    assert actual.index.get_level_values("matched").tolist() == [False, False]
+    assert actual[("amount", "sum")].tolist() == [0, 0]
+    assert actual[("amount", "prod")].tolist() == [1, 1]
+    assert actual[("amount", "size")].tolist() == [0, 0]
+    assert actual[("amount", "min")].isna().all()
+
+    reverse = left.join_agg(
+        right,
+        *conditions,
+        aggfunc=[("amount", "sum"), ("amount", "prod")],
+        join_algorithm=join_algorithm,
+        reverse=True,
+        return_matched=True,
+    )
+    assert len(reverse) == len(right)
+    assert reverse.index.get_level_values("matched").tolist() == [False]
+    assert reverse[("amount", "sum")].tolist() == [0]
+    assert reverse[("amount", "prod")].tolist() == [1]
+
+
+def test_all_unmatched_equi_and_not_equal_aggregation_retain_rows():
+    left = pd.DataFrame({"key": [1, 2], "amount": [4, 5]})
+    right = pd.DataFrame({"key": [3], "amount": [10]})
+
+    equi = left.join_agg(
+        right,
+        ("key", "key", "=="),
+        aggfunc=[("amount", "sum")],
+        return_matched=True,
+    )
+    assert len(equi) == len(left)
+    assert equi.index.get_level_values("matched").tolist() == [False, False]
+    assert equi[("amount", "sum")].tolist() == [0, 0]
+
+    not_equal = left.iloc[[0]].join_agg(
+        pd.DataFrame({"key": [1], "amount": [10]}),
+        ("key", "key", "!="),
+        aggfunc=[("amount", "sum")],
+        return_matched=True,
+    )
+    assert len(not_equal) == 1
+    assert not_equal.index.get_level_values("matched").tolist() == [False]
+    assert not_equal[("amount", "sum")].tolist() == [0]
+
+
+def test_all_unmatched_aggregation_excludes_null_join_keys():
+    left = pd.DataFrame({"key": [1, np.nan], "amount": [4, 5]})
+    right = pd.DataFrame({"key": [3.0], "amount": [10]})
+
+    actual = left.join_agg(
+        right,
+        ("key", "key", ">"),
+        aggfunc=[("amount", "sum")],
+        return_matched=True,
+    )
+
+    assert actual.index.get_level_values(0).tolist() == [0]
+    assert actual.index.get_level_values("matched").tolist() == [False]
+    assert actual[("amount", "sum")].tolist() == [0]
 
 
 def test_check_aggfunc_sub(dummy, series):

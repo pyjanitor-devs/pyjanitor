@@ -23,6 +23,7 @@ from janitor.functions._conditional_join._aggregation_helpers import (
     _aggregation_inputs,
     _empty_aggregation_result,
     _materialize_aggregation_result,
+    _unmatched_aggregation_result,
 )
 
 _EQUI_BUILDING_BLOCKS_FUNCTION = janitor_rs.equi_join_building_blocks
@@ -54,14 +55,10 @@ def _build_equi_predicate(
     """
     try:
         left_indexer = right_keys.get_indexer(left_keys)
-        if np.all(left_indexer == -1):
-            return None
         return left_indexer, None
     except pd.errors.InvalidIndexError:
         right_codes, uniques = right_keys.factorize(sort=False)
         left_indexer = uniques.get_indexer(left_keys)
-        if np.all(left_indexer == -1):
-            return None
         return left_indexer, right_codes
 
 
@@ -157,8 +154,10 @@ def _preparatory_work(
             predicate must be an equality predicate.
 
     Returns:
-        ``None`` when either side has no usable rows or when no left equality
-        key matches any right equality key. Otherwise, a six-element tuple:
+        ``None`` when either side has no usable rows. A six-element tuple is
+        returned even when no equality key matches; in that case
+        ``left_indexer`` contains only ``-1`` sentinels so aggregation can
+        retain the prepared output domain as unmatched rows.
 
         * the physical left index shared by all prepared left arrays;
         * the physical right index shared by all prepared right arrays;
@@ -469,8 +468,8 @@ def _aggregate(
 
     Returns:
         A dataframe using the shared conditional-join aggregation contract.
-        When no candidate survives, an empty dataframe with the requested
-        aggregation schema is returned.
+        Eligible output rows are retained with identity values when no
+        candidate survives; only a missing eligible output domain is empty.
     """
 
     outcome = _preparatory_work(df, right, conditions)
@@ -515,7 +514,8 @@ def _aggregate(
         reverse,
     )
     if result is None:
-        return _empty_aggregation_result(
+        return _unmatched_aggregation_result(
+            output_index=output_index,
             source=aggregation_source,
             return_matched=return_matched,
             aggfunc=aggfunc,

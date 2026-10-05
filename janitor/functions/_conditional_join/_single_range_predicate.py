@@ -42,6 +42,7 @@ from janitor.functions._conditional_join._aggregation_helpers import (
     _aggregation_inputs,
     _empty_aggregation_result,
     _materialize_aggregation_result,
+    _unmatched_aggregation_result,
 )
 
 _SINGLE_RANGE_FUNCTIONS = {
@@ -368,6 +369,7 @@ def _aggregate_single_join(
     left_array = _helpers._convert_array_to_numpy(array=left_column._values)
     right_index = _helpers._convert_array_to_numpy(array=right_column.index._values)
     right_array = _helpers._convert_array_to_numpy(array=right_column._values)
+    output_index = right_column.index if reverse else left_column.index
     anchor_dtype = right_array.dtype
     aggregation_inputs = _aggregation_inputs(
         source=aggregation_source,
@@ -385,14 +387,14 @@ def _aggregate_single_join(
         return_matched=return_matched,
     )
     if result is None:
-        return _empty_aggregation_result(
+        return _unmatched_aggregation_result(
+            output_index=output_index,
             source=aggregation_source,
             aggfunc=aggfunc,
             return_matched=return_matched,
         )
     # for performance reasons the returned data may not be full length index
     # i.e output index len may be less than the original right index len
-    output_index = right_column.index if reverse else left_column.index
     return _materialize_aggregation_result(
         result=result,
         output_index=output_index,
@@ -653,7 +655,8 @@ def _aggregate_multiple_join(
         return_matched=return_matched,
     )
     if result is None:
-        return _empty_aggregation_result(
+        return _unmatched_aggregation_result(
+            output_index=output_index,
             source=aggregation_source,
             aggfunc=aggfunc,
             return_matched=return_matched,

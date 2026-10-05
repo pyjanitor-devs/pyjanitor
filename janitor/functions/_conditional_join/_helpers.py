@@ -264,7 +264,14 @@ def _materialize_index_result(
         )
 
     def _column_positions(frame: pd.DataFrame, selector: Any) -> np.ndarray:
-        """Resolve a select-columns selector to physical column positions."""
+        """Resolve a selector to exact physical column positions.
+
+        Positions are used instead of the selected labels when gathering
+        values because labels are not guaranteed to be unique. With duplicate
+        column labels, ``frame[label]`` can return multiple columns and cannot
+        identify which occurrence the selector selected; ``frame.iloc`` with a
+        positional indexer preserves that exact column identity.
+        """
         if selector is None:
             return np.empty(0, dtype=np.intp)
         if isinstance(selector, slice) and selector == slice(None):
@@ -276,6 +283,10 @@ def _materialize_index_result(
         indexer = _select_index([selector], frame, axis="columns")
         return _index_converter(indexer, frame.columns)
 
+    # Keep positions for value gathering and derive labels separately for the
+    # result schema. This distinction is essential for duplicate labels: the
+    # result can preserve two same-named columns while each source occurrence
+    # is still gathered independently.
     left_column_positions = _column_positions(df, df_columns)
     right_column_positions = _column_positions(right, right_columns)
     # ``take`` is metadata-only: it gives us the output names corresponding to

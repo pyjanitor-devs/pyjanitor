@@ -383,7 +383,7 @@ def conditional_join(
             - Added `join_algorithm` parameter.
         - 0.32.27
             - The `use_numba` parameter is deprecated and has no effect.
-        - 0.32.35
+        - 0.32.36
             - Added `output_columns` as the preferred side-aware output
               projection and deprecated `df_columns` and `right_columns`.
         - 0.33.0
@@ -409,13 +409,13 @@ def conditional_join(
         df_columns: Columns to select from `df` in the final output dataframe.
             Column selection is based on the
             [`select_columns`][janitor.functions.select.select_columns] syntax.
-            !!! warning "Deprecated in 0.32.35"
+            !!! warning "Deprecated in 0.32.36"
                 `df_columns` will be removed in 0.33.0.
                 Select or rename columns directly on the DataFrame before calling `conditional_join`.
         right_columns: Columns to select from `right` in the final output dataframe.
             Column selection is based on the
             [`select_columns`][janitor.functions.select.select_columns] syntax.
-            !!! warning "Deprecated in 0.32.35"
+            !!! warning "Deprecated in 0.32.36"
                 `right_columns` will be removed in 0.33.0.
                 Select or rename columns directly on the DataFrame before calling `conditional_join`.
         output_columns: Optional mapping of ``"left"`` and ``"right"`` output

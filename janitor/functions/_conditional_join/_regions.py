@@ -24,16 +24,29 @@ Preparation sequence:
 5. Keep every remaining predicate as a residual evaluated only after both
    region anchors pass.
 
-The aggregation path uses the same preparation. It adds output maps to the
-first anchor, selects forward or reverse Rust kernels, and passes aggregation
-arrays in the corresponding aligned source layout. It does not use range
-``starts``/``ends`` building blocks or a right-ordering flag.
+The aggregation path uses the same preparation. It selects forward or reverse
+Rust kernels and uses the first anchor's existing physical position maps for
+the output labels. It does not use range ``starts``/``ends`` building blocks
+or a right-ordering flag.
+
+Python-to-Rust call forms:
+
+``region_indices`` and ``region_indices_extended`` receive ``predicates``
+whose first two entries are five-field anchors:
+
+    (left_values, left_positions, right_values, right_positions, operator)
+
+The extended form appends residual tuples. Region aggregation receives the
+same predicate list, ``aggregations``, and ``return_matched``. Forward
+aggregation emits one slot per first-anchor left position; reverse aggregation
+emits one slot per first-anchor right position. Those position arrays are both
+the source maps and output labels; PyJanitor does not send separate output
+maps.
 """
 
 from __future__ import annotations
 
 import janitor_rs
-import numpy as np
 import pandas as pd
 
 from janitor.functions._conditional_join import _helpers
@@ -76,18 +89,16 @@ def _preparatory_work(
     if df.empty or right.empty:
         return None
 
-    left_columns_and_ops = [(condition.left, condition.op) for condition in conditions]
+    columns_and_ops = [(condition.left, condition.op) for condition in conditions]
     left_index = _helpers._get_indexer_for_non_null_rows(
-        df=df, columns_and_ops=left_columns_and_ops
+        df=df, columns_and_ops=columns_and_ops
     )
     if left_index is None:
         return None
 
-    right_columns_and_ops = [
-        (condition.right, condition.op) for condition in conditions
-    ]
+    columns_and_ops = [(condition.right, condition.op) for condition in conditions]
     right_index = _helpers._get_indexer_for_non_null_rows(
-        df=right, columns_and_ops=right_columns_and_ops
+        df=right, columns_and_ops=columns_and_ops
     )
     if right_index is None:
         return None
@@ -256,27 +267,6 @@ def _compute_regions_join(
     )
 
 
-def _aggregation_predicates(predicates: list[tuple]) -> list[tuple]:
-    """Attach output maps required by the region aggregation ABI.
-
-    The index kernels use five-field anchors. Aggregation additionally needs
-    the output labels for the compact first-anchor layout: forward results are
-    labeled by first-anchor left positions and reverse results by right
-    positions. These maps label outputs only; Rust still uses its internal
-    compact-to-source mappings for reading aggregation values.
-
-    The first four fields remain the normal region anchor fields. The
-    aggregation form inserts a boolean extension marker, then the left and
-    right output maps, and finally the operator. Residual tuples are preserved
-    unchanged after the augmented first anchor. The maps are copied from the
-    first anchor because that anchor defines the canonical output layout.
-    """
-    first = predicates[0]
-    left_output = np.asarray(first[1], dtype=np.int64)
-    right_output = np.asarray(first[3], dtype=np.int64)
-    return [(*first[:4], True, left_output, right_output, first[4]), *predicates[1:]]
-
-
 def _aggregate(
     df: pd.DataFrame,
     right: pd.DataFrame,
@@ -327,7 +317,7 @@ def _aggregate(
         left_index = df.index
     if isinstance(right_index, slice):
         right_index = right.index
-    predicates = _aggregation_predicates([*anchor_predicates, *residual_predicates])
+    predicates = [*anchor_predicates, *residual_predicates]
     source_index = left_index if reverse else right_index
     output_index = right_index if reverse else left_index
     aggregation_inputs = _aggregation_inputs(

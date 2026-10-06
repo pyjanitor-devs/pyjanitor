@@ -10,6 +10,18 @@ The first compatible range predicate may reorder the right dataframe. The
 resulting right-position array travels with every prepared predicate, so the
 equality mapping, residual filters, and aggregation source all refer to the
 same physical rows. Public pandas labels are restored only after dispatch.
+
+Python-to-Rust call forms:
+
+PyJanitor passes ``left_indexer`` as one dense equi-key code per eligible
+left row, ``right_codes`` as one code per eligible physical right row (or
+``None`` when right keys are unique), and ``right_index`` as the physical
+right positions to emit. Optional range anchors are three-field tuples,
+``(left_values, right_values, operator)``, with separate physical position
+arrays; residual predicates follow the same prepared layout. Aggregation calls
+add ``aggregations`` and ``return_matched``. Rust receives NumPy arrays and
+integer codes only; pandas indexes and factorization are restored after the
+result returns.
 """
 
 from __future__ import annotations

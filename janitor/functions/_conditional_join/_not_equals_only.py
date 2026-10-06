@@ -65,6 +65,17 @@ stable parsing.
 The Rust function selected by ``anchor_dtype`` is specialized only for the
 anchor comparison type. A call may still contain many aggregation requests;
 Rust parses and executes that request list inside one typed traversal.
+
+Function call forms:
+
+The direct index and aggregation functions receive compact non-null values,
+full physical positions, the non-null and null partitions, and the comparator
+as named arguments. Index calls also receive ``keep``; aggregation calls add
+``aggregations`` and ``return_matched``. Extended index calls receive
+``[anchor, *residuals]`` and ``keep``; extended aggregation calls receive that
+predicate list, ``aggregations``, and ``return_matched``. The anchor is
+exactly the ten-field tuple shown above, and residual tuples address full
+physical layouts.
 """
 
 from __future__ import annotations

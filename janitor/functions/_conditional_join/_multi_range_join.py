@@ -38,6 +38,16 @@ range anchor plus residual predicates and all-``!=`` candidate streams. Keeping
 these responsibilities separate is important: a single-anchor residual path
 may use an arbitrary later predicate, while this module may use two sorted
 right arrays to build one intersected window.
+
+Python-to-Rust call forms:
+
+The basic dual-range functions receive exactly two three-field anchors,
+``(left_values, right_values, operator)``, plus shared physical
+``left_index`` and ``right_index`` arrays. Extended functions append residual
+predicate tuples. Aggregation variants receive the same predicate list and
+position arrays, plus ``aggregations`` and ``return_matched``. Reverse
+variants aggregate left source arrays into right output rows. PyJanitor sorts
+and aligns all arrays before dispatch; Rust never repairs that layout.
 """
 
 from __future__ import annotations
@@ -50,55 +60,6 @@ from janitor.functions._conditional_join._single_range_predicate import (
     _get_multi_range_aggregation_function,
     _get_multi_range_function,
 )
-
-_DUAL_RANGE_FUNCTION = janitor_rs.range_join_indices
-_DUAL_RANGE_EXTENDED_FUNCTION = janitor_rs.range_join_extended_indices
-_DUAL_RANGE_AGGREGATE_FUNCTIONS = {
-    False: janitor_rs.range_join_aggregate,
-    True: janitor_rs.range_join_aggregate_reverse,
-}
-_DUAL_RANGE_EXTENDED_AGGREGATE_FUNCTIONS = {
-    False: janitor_rs.range_join_extended_aggregate,
-    True: janitor_rs.range_join_extended_aggregate_reverse,
-}
-
-
-def _get_dual_range_function() -> object:
-    """Return the basic dual-range index kernel.
-
-    The Rust function expects two three-field anchor tuples and shared
-    physical ``left_index`` and ``right_index`` arrays. The right-position
-    ordering flag is used only for ``first`` and ``last`` selection.
-    """
-    return _DUAL_RANGE_FUNCTION
-
-
-def _get_dual_range_extended_function() -> object:
-    """Return the dual-range index kernel that applies residual predicates.
-
-    Rust intersects the two anchor windows, evaluates residual predicates for
-    each candidate, and applies ``keep`` only after all predicates pass.
-    """
-    return _DUAL_RANGE_EXTENDED_FUNCTION
-
-
-def _get_dual_range_aggregation_function(reverse: bool, extended: bool) -> object:
-    """Select the dual-range aggregation kernel.
-
-    Args:
-        reverse: Aggregate left source values into right output slots when
-            true; otherwise aggregate right values into left output slots.
-        extended: Select the residual-aware kernel when true.
-
-    Returns:
-        The registered Rust PyO3 callable for the requested shape.
-    """
-    functions = (
-        _DUAL_RANGE_EXTENDED_AGGREGATE_FUNCTIONS
-        if extended
-        else _DUAL_RANGE_AGGREGATE_FUNCTIONS
-    )
-    return functions[bool(reverse)]
 
 
 def _preparatory_work(
@@ -138,17 +99,16 @@ def _preparatory_work(
 
     if df.empty or right.empty:
         return None
-    left_columns_and_ops = [(condition.left, condition.op) for condition in conditions]
+    columns_and_ops = [(condition.left, condition.op) for condition in conditions]
     left_index = _helpers._get_indexer_for_non_null_rows(
-        df=df, columns_and_ops=left_columns_and_ops
+        df=df, columns_and_ops=columns_and_ops
     )
     if left_index is None:
         return None
-    right_columns_and_ops = [
-        (condition.right, condition.op) for condition in conditions
-    ]
+
+    columns_and_ops = [(condition.right, condition.op) for condition in conditions]
     right_index = _helpers._get_indexer_for_non_null_rows(
-        df=right, columns_and_ops=right_columns_and_ops
+        df=right, columns_and_ops=columns_and_ops
     )
     if right_index is None:
         return None
@@ -451,8 +411,7 @@ def _compute_multi_range_join(
         # predicate is restored exactly.
         if return_building_blocks:
             keep = "all"
-        function = _get_dual_range_extended_function()
-        result = function(
+        result = janitor_rs.range_join_extended_indices(
             predicates=predicates,
             left_index=left_positions,
             right_index=right_positions,
@@ -463,8 +422,7 @@ def _compute_multi_range_join(
         # value arrays and operators; the shared maps and ordering flag are
         # passed once at the Rust boundary. Since no residual can reject a
         # candidate, the cheaper basic dual-range endpoint is sufficient.
-        function = _get_dual_range_function()
-        result = function(
+        result = janitor_rs.range_join_indices(
             predicates=predicates,
             left_index=left_positions,
             right_index=right_positions,
@@ -571,10 +529,12 @@ def _aggregate(
             second_operator,
         )
         predicates = [first_anchor, second_anchor, *residual_predicates]
-        function = _get_dual_range_aggregation_function(
-            reverse=reverse,
-            extended=bool(residual_predicates),
-        )
+        function = {
+            (False, False): janitor_rs.range_join_aggregate,
+            (True, False): janitor_rs.range_join_aggregate_reverse,
+            (False, True): janitor_rs.range_join_extended_aggregate,
+            (True, True): janitor_rs.range_join_extended_aggregate_reverse,
+        }[(bool(reverse), bool(residual_predicates))]
         result = function(
             predicates=predicates,
             left_index=left_positions,

@@ -29,6 +29,18 @@ There are two related ABI shapes:
     compact anchor values and the operator.  The physical position arrays are
     passed separately; aggregation receives arrays aligned to those compact
     layouts.
+
+Python-to-Rust call forms:
+
+* Direct index functions receive ``left_index, left, right_index, right,
+  right_index_is_ordered, operator, keep, return_building_blocks``.
+* Range-first index and aggregation functions receive ``predicates`` whose
+  first tuple is ``(left_values, right_values, operator)``, plus separate
+  physical ``left_index`` and ``right_index`` arrays. Later tuples are
+  residuals in the same compact layouts.
+* Aggregation functions additionally receive ``aggregations`` and
+  ``return_matched``. Each aggregation request contains typed values, a
+  boolean null mask, and an operation name.
 """
 
 from __future__ import annotations

@@ -198,7 +198,7 @@ def _preserve_object_dtype(array: np.ndarray, dtype) -> np.ndarray | pd.Series:
 
     Non-object dtypes pass straight through unchanged.
     """
-    if dtype == object:
+    if pd.api.types.is_object_dtype(dtype):
         return pd.Series(array, dtype=object, copy=False)
     return array
 
@@ -423,30 +423,41 @@ def _normalize_conditions(conditions: Sequence[tuple]) -> list[JoinCondition]:
     ]
 
 
-def _sort_if_not_monotonic(series: pd.Series) -> tuple[pd.Series, bool]:
-    """Normalize a series to ascending order without losing row identity.
+def _sort_if_not_monotonic(
+    series: pd.Series, ascending: bool = True
+) -> tuple[pd.Series, bool]:
+    """Normalize a series to the requested order without losing row identity.
 
-    An already increasing series is returned unchanged. A decreasing series
-    is reversed, which preserves its values and index pairing without a full
-    sort. Other non-monotonic series use a stable sort so duplicate values
-    retain deterministic physical order. The returned pandas index is part of
-    the contract: callers must use it to select and reorder every dependent
-    right-side array, including residual predicates and aggregation inputs.
+    An already ordered series is returned unchanged. A series in the opposite
+    monotonic order is reversed, which preserves its values and index pairing
+    without a full sort. Other non-monotonic series use a stable sort so
+    duplicate values retain deterministic physical order. The returned pandas
+    index is part of the contract: callers must use it to select and reorder
+    every dependent right-side array, including residual predicates and
+    aggregation inputs.
 
     Args:
         series: Non-null pandas series used as a Rust binary-search layout.
+        ascending: Whether the returned values should be ascending. Regions
+            use descending order for greater-than anchors.
 
     Returns:
-        ``(ordered_series, was_already_increasing)``. The boolean describes
-        the input ordering, not whether sorting was required by the caller.
+        ``(ordered_series, was_already_ordered)``. The boolean describes
+        whether the input already had the requested ordering.
     """
 
-    is_sorted = series.is_monotonic_increasing
+    is_sorted = (
+        series.is_monotonic_increasing if ascending else series.is_monotonic_decreasing
+    )
     if is_sorted:
         return series, True
-    if series.is_monotonic_decreasing:
+    is_opposite_sorted = (
+        series.is_monotonic_decreasing if ascending else series.is_monotonic_increasing
+    )
+    if is_opposite_sorted:
         return series.iloc[::-1], False
-    return series.sort_values(kind="stable"), False
+
+    return series.sort_values(ascending=ascending, kind="stable"), False
 
 
 def _convert_array_to_numpy(

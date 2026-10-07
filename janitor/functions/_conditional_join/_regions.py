@@ -141,8 +141,10 @@ def _preparatory_work(
     )
     left_column = df.loc[left_index, left_column]
     right_column = right.loc[right_index, right_column]
+    first_ascending = op in _helpers.less_than_join_types
     right_column, right_index_is_ordered = _helpers._sort_if_not_monotonic(
-        series=right_column
+        series=right_column,
+        ascending=first_ascending,
     )
     if not right_index_is_ordered:
         right_index = right_column.index
@@ -160,7 +162,11 @@ def _preparatory_work(
     )
     second_left_column = df.loc[left_index, second_left_column]
     second_right_column = right.loc[right_index, second_right_column]
-    second_right_column, _ = _helpers._sort_if_not_monotonic(series=second_right_column)
+    second_ascending = second_op in _helpers.less_than_join_types
+    second_right_column, _ = _helpers._sort_if_not_monotonic(
+        series=second_right_column,
+        ascending=second_ascending,
+    )
     second_anchor = (
         _helpers._convert_array_to_numpy(array=second_left_column._values),
         _helpers._convert_array_to_numpy(array=second_left_column.index._values),

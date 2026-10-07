@@ -7,6 +7,7 @@ import pytest
 from janitor.functions._conditional_join._helpers import _normalize_conditions
 from janitor.functions._conditional_join._multi_range_join import (
     _compute_multi_range_join,
+    _preparatory_work,
 )
 
 
@@ -163,6 +164,53 @@ def test_dual_range_uses_cumulative_envelope_for_unsorted_second_bound():
     ]
     actual = list(zip(result["left_index"], result["right_index"]))
     assert sorted(actual) == sorted(expected)
+
+
+@pytest.mark.parametrize(
+    "conditions",
+    [
+        [("start", "end", "<="), ("end", "start", ">=")],
+        [("end", "start", ">="), ("start", "end", "<=")],
+    ],
+)
+def test_dual_range_anchor_order_preserves_interval_matches(conditions):
+    """Both anchor orientations must preserve matches and use an envelope."""
+    left = pd.DataFrame({"start": [1, 4, 7], "end": [2, 6, 9]})
+    right = pd.DataFrame(
+        {"start": [2, 0, 4, 1], "end": [3, 8, 5, 2]},
+    )
+    normalized = _normalize_conditions(conditions)
+
+    prepared = _preparatory_work(left, right, normalized)
+    assert prepared is not None
+    first_anchor, second_anchor = prepared[2]
+    assert first_anchor[2] == conditions[0][2]
+    assert np.all(np.diff(second_anchor[1]) >= 0)
+
+    result = _compute_multi_range_join(left, right, normalized, "all", False)
+    actual = sorted(zip(result["left_index"], result["right_index"]))
+    expected = sorted(
+        (left_row, right_row)
+        for left_row in range(len(left))
+        for right_row in range(len(right))
+        if left.iloc[left_row]["start"] <= right.iloc[right_row]["end"]
+        and left.iloc[left_row]["end"] >= right.iloc[right_row]["start"]
+    )
+    assert actual == expected
+
+
+def test_dual_range_same_direction_fallback_keeps_first_two_range_predicates():
+    """Two predicates from one comparison family use the fallback pair."""
+    left = pd.DataFrame({"first": [1, 3], "second": [2, 4]})
+    right = pd.DataFrame({"first": [0, 2, 4], "second": [1, 3, 5]})
+    conditions = _normalize_conditions(
+        [("first", "first", "<="), ("second", "second", "<=")]
+    )
+
+    prepared = _preparatory_work(left, right, conditions)
+
+    assert prepared is not None
+    assert [predicate[2] for predicate in prepared[2]] == ["<=", "<="]
 
 
 @pytest.mark.parametrize("reverse", [False, True])

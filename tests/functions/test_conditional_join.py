@@ -192,6 +192,17 @@ def test_sort_if_not_monotonic_normalizes_order_and_preserves_index(
         assert actual.index.tolist() == [11, 13, 12, 10]
 
 
+def test_sort_if_not_monotonic_can_normalize_descending_order():
+    """Descending region anchors retain the sorted values' source positions."""
+    series = pd.Series([1, 3, 2], index=[10, 11, 12])
+
+    actual, is_ordered = _sort_if_not_monotonic(series=series, ascending=False)
+
+    assert actual.tolist() == [3, 2, 1]
+    assert actual.index.tolist() == [11, 12, 10]
+    assert is_ordered is False
+
+
 def test_multiple_sorted_range_predicates_match_cartesian_reference():
     """Intersecting sorted range windows preserves the Cartesian result."""
     left = pd.DataFrame({"first": [2, 4], "second": [3, 1], "payload": [10, 20]})

@@ -136,23 +136,29 @@ def _preparatory_work(
     # can mis-rank predicates and is intentionally not restored here. Revisit
     # this only with a representative user workload or a deterministic cost
     # estimate that is cheaper than constructing the join candidates.
-    range_positions = [
-        position
-        for position, condition in enumerate(conditions)
-        if condition.op in _helpers.greater_than_join_types
-    ][:1]
-    range_positions.extend(
-        position
-        for position, condition in enumerate(conditions)
-        if condition.op in _helpers.less_than_join_types
-    )
-    range_positions = range_positions[:2]
 
-    if len(range_positions) < 2:
+    # grab possible range join combo
+    range_positions = []
+    le_lt_count = 0
+    ge_gt_count = 0
+
+    # Store condition positions along with the selected anchors. Positions
+    # distinguish duplicate predicates and let residual construction exclude
+    # exactly the selected occurrences later.
+    for position, condition in enumerate(conditions):
+        if le_lt_count and ge_gt_count:
+            break
+        if (condition.op in _helpers.less_than_join_types) and not le_lt_count:
+            range_positions.append(position)
+            le_lt_count += 1
+        elif (condition.op in _helpers.greater_than_join_types) and not ge_gt_count:
+            range_positions.append(position)
+            ge_gt_count += 1
+
+    if (le_lt_count + ge_gt_count) < 2:
         range_positions = []
-        # ``enumerate`` is needed because the fallback also records which
-        # original condition slots became anchors; this remains unambiguous
-        # when duplicate predicates are present.
+        # The fallback still needs original positions so duplicate predicates
+        # are selected and removed by occurrence, without reordering anything.
         for position, condition in enumerate(conditions):
             if len(range_positions) == 2:
                 break

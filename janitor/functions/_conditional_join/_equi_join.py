@@ -38,11 +38,6 @@ from janitor.functions._conditional_join._aggregation_helpers import (
     _unmatched_aggregation_result,
 )
 
-_EQUI_BUILDING_BLOCKS_FUNCTION = janitor_rs.equi_join_building_blocks
-_EQUI_FUNCTION = janitor_rs.equi_join_indices
-_EQUI_FILTERED_FUNCTION = janitor_rs.equi_join_filtered_indices
-_EQUI_AGGREGATE_FUNCTION = janitor_rs.equi_join_aggregate
-
 
 def _build_equi_predicate(
     left_keys: pd.Index,
@@ -72,6 +67,32 @@ def _build_equi_predicate(
         right_codes, uniques = right_keys.factorize(sort=False)
         left_indexer = uniques.get_indexer(left_keys)
         return left_indexer, right_codes
+
+
+def _range_layout_is_sorted(
+    right_keys: pd.Index,
+    right_values: pd.Series,
+    ascending: bool,
+) -> bool:
+    """Return whether equality groups and their range values are ordered."""
+    if not right_keys.is_monotonic_increasing:
+        return False
+
+    group_start = 0
+    for position in range(1, len(right_keys) + 1):
+        if (
+            position != len(right_keys)
+            and right_keys[position] == right_keys[position - 1]
+        ):
+            continue
+        group_values = right_values.iloc[group_start:position]
+        if ascending:
+            if not group_values.is_monotonic_increasing:
+                return False
+        elif not group_values.is_monotonic_decreasing:
+            return False
+        group_start = position
+    return True
 
 
 def _build_equi_keys(
@@ -196,120 +217,90 @@ def _preparatory_work(
     )
     if right_index is None:
         return None
-    range_positions = []
-    le_lt_count = 0
-    ge_gt_count = 0
-    # Retain positions because duplicate range predicates need distinct anchor
-    # occurrences, and the chosen slots are removed from residuals below.
-    for position, condition in enumerate(conditions):
-        operator = condition.op
-        if operator in _helpers.less_than_join_types and not le_lt_count:
-            range_positions.append(position)
-            le_lt_count += 1
-        elif operator in _helpers.greater_than_join_types and not ge_gt_count:
-            range_positions.append(position)
-            ge_gt_count += 1
-        if len(range_positions) == 2:
-            break
-    if len(range_positions) < 2:
-        range_positions = []
-        # Record original slots as well as conditions; this distinguishes
-        # duplicate predicates when reconstructing the residual list.
-        for position, condition in enumerate(conditions):
-            if len(range_positions) == 2:
-                break
-            if condition.op in _helpers.less_than_join_types.union(
-                _helpers.greater_than_join_types
-            ):
-                range_positions.append(position)
-    range_maybe = [conditions[position] for position in range_positions]
-    selected_range_positions = set(range_positions)
-    # Exclude anchors by their original positions, including duplicate
-    # occurrences, and preserve the order of all remaining residuals.
-    rest = [
-        condition
+
+    if isinstance(left_index, slice):
+        left_index = df.index
+    if isinstance(right_index, slice):
+        right_index = right.index
+
+    equi_positions = [
+        position
         for position, condition in enumerate(conditions)
-        if position not in selected_range_positions
-        and condition.op != _helpers._JoinOperator.STRICTLY_EQUAL.value
+        if condition.op == _helpers._JoinOperator.STRICTLY_EQUAL.value
     ]
-    # Select at most two range predicates. A second range is retained only
-    # when its right values share the first range's physical permutation.
-    range_predicates = []
-    if range_maybe:
-        left_column, right_column, op = (
-            range_maybe[0].left,
-            range_maybe[0].right,
-            range_maybe[0].op,
-        )
-        right_, _ = _helpers._sort_if_not_monotonic(
-            series=right.loc[right_index, right_column]
-        )
-        left_array = _helpers._convert_array_to_numpy(
-            array=df.loc[left_index, left_column]._values
-        )
-        right_array = _helpers._convert_array_to_numpy(array=right_._values)
-        range_predicate = (
-            left_array,
-            right_array,
-            op,
-        )
-        range_predicates.append(range_predicate)
-        if len(range_maybe) > 1:
-            left_column, right_column, op = (
-                range_maybe[1].left,
-                range_maybe[1].right,
-                range_maybe[1].op,
-            )
-            right_ = right.loc[right_.index, right_column]
-            if right_.is_monotonic_increasing:
-                left_array = _helpers._convert_array_to_numpy(
-                    array=df.loc[left_index, left_column]._values
-                )
-                right_array = _helpers._convert_array_to_numpy(array=right_._values)
-                range_predicate = (
-                    left_array,
-                    right_array,
-                    op,
-                )
-                range_predicates.append(range_predicate)
-            else:
-                range_positions = range_positions[:1]
-                selected_range_positions = set(range_positions)
-                # Track the fallback anchor by position so a duplicate of the
-                # same condition can remain a residual when appropriate.
-                rest = [
-                    condition
-                    for position, condition in enumerate(conditions)
-                    if position not in selected_range_positions
-                    and condition.op != _helpers._JoinOperator.STRICTLY_EQUAL.value
-                ]
-        right_index = right_.index
+    range_positions = _helpers._get_range_positions_for_one_side(conditions=conditions)[
+        :1
+    ]
+
     left_keys, right_keys = _build_equi_keys(
         df=df,
         right=right,
         left_index=left_index,
         right_index=right_index,
-        equi_conditions=[
-            condition
-            for condition in conditions
-            if condition.op == _helpers._JoinOperator.STRICTLY_EQUAL.value
-        ],
+        equi_conditions=[conditions[position] for position in equi_positions],
     )
     equi_predicates = _build_equi_predicate(
         left_keys=left_keys,
         right_keys=right_keys,
     )
-
     if equi_predicates is None:
         return None
 
+    # Unique right keys already map each left row directly to one right row;
+    # sorting cannot make that lookup cheaper. Duplicate keys need a sorted
+    # equality-group/range layout for Rust's binary search, but retain the
+    # existing layout when it is already ordered.
+    if range_positions and equi_predicates[1] is not None:
+        sort_position = range_positions[0]
+        sort_ascending = conditions[sort_position].op in _helpers.less_than_join_types
+        range_values = right.loc[right_index, conditions[sort_position].right]
+        if not _range_layout_is_sorted(right_keys, range_values, sort_ascending):
+            sort_columns = [conditions[position].right for position in equi_positions]
+            sort_columns.append(conditions[sort_position].right)
+            ascending = [True] * len(equi_positions) + [sort_ascending]
+            right_index = (
+                right.loc[right_index]
+                .sort_values(
+                    by=sort_columns,
+                    ascending=ascending,
+                    kind="stable",
+                )
+                .index
+            )
+            left_keys, right_keys = _build_equi_keys(
+                df=df,
+                right=right,
+                left_index=left_index,
+                right_index=right_index,
+                equi_conditions=[conditions[position] for position in equi_positions],
+            )
+            equi_predicates = _build_equi_predicate(
+                left_keys=left_keys,
+                right_keys=right_keys,
+            )
+            if equi_predicates is None:
+                return None
+
     left_indexer, right_codes = equi_predicates
 
+    range_predicates = []
+    for position in range_positions:
+        left_array = _helpers._convert_array_to_numpy(
+            array=df.loc[left_index, conditions[position].left]._values
+        )
+        right_array = _helpers._convert_array_to_numpy(
+            array=right.loc[right_index, conditions[position].right]._values
+        )
+        range_predicates.append((left_array, right_array, conditions[position].op))
+
+    residual_positions = set(equi_positions).union(range_positions)
     residual_predicates = []
-    for condition in rest:
+    for position, condition in enumerate(conditions):
+        if position in residual_positions:
+            continue
         residual_predicate = _helpers._build_residual_predicate(
-            left=df[condition.left],
-            right=right[condition.right],
+            left=df.loc[left_index, condition.left],
+            right=right.loc[right_index, condition.right],
             operation=condition.op,
             left_index=left_index,
             right_index=right_index,
@@ -410,14 +401,14 @@ def _compute_equi_join(
         and not residual_predicates
         and return_building_blocks
     ):
-        result = _EQUI_BUILDING_BLOCKS_FUNCTION(
+        result = janitor_rs.equi_join_building_blocks(
             left_index,
             right_index,
             left_indexer,
             right_codes,
         )
     elif right_codes is not None and not range_predicates and not residual_predicates:
-        result = _EQUI_FUNCTION(
+        result = janitor_rs.equi_join_indices(
             left_index,
             right_index,
             left_indexer,
@@ -425,7 +416,7 @@ def _compute_equi_join(
             keep,
         )
     else:
-        result = _EQUI_FILTERED_FUNCTION(
+        result = janitor_rs.equi_join_filtered_indices(
             left_index,
             right_index,
             left_indexer,
@@ -510,7 +501,7 @@ def _aggregate(
     aggregation_source = df if reverse else right
     source_index = left_index if reverse else right_index
     output_index = right_index if reverse else left_index
-    result = _EQUI_AGGREGATE_FUNCTION(
+    result = janitor_rs.equi_join_aggregate(
         left_positions,
         index_right,
         left_indexer,

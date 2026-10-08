@@ -544,6 +544,57 @@ Add entries in the format:
 **Recommendation**: How to apply this learning
 -->
 
+### [2026-10-05] Materialize output projections lazily
+
+**Context**: Conditional-join output-column selection
+**Learning**: Resolve output column labels or indexers without creating
+filtered working DataFrames, then materialize only requested columns in a loop
+and concatenate once. Predicate columns must remain available during matching
+even when omitted from output.
+**Recommendation**: Keep projection selection at final materialization time.
+
+### [2026-10-05] Reuse normalized selector positions
+
+**Context**: Conditional-join output projection
+**Learning**: `_index_converter` already returns a NumPy positional indexer.
+An additional dtype conversion is unnecessary after selector normalization.
+**Recommendation**: Use the converted indexer directly unless a downstream
+API explicitly requires a different dtype.
+
+### [2026-10-05] Document public API changes at the implementation boundary
+
+**Context**: Adding `conditional_join(output_columns=...)`
+**Learning**: New public arguments need complete public argument definitions,
+examples, validation behavior, internal helper contracts, and comments at the
+boundary where the API is translated into implementation data.
+**Recommendation**: Treat documentation and explanatory comments as part of
+the implementation whenever a public signature or behavior changes.
+
+### [2026-10-05] Keep Version Changed sections release-aware
+
+**Context**: Adding or deprecating public API parameters
+**Learning**: A function's `Version Changed` section must identify the
+release that introduces the current behavior, not a later release planned to
+remove a compatibility alias. The intended release should be checked against
+the repository version and release metadata before documenting it.
+**Recommendation**: For every public API change, inspect the current project
+version, update the appropriate `Version Changed` entry, and document any
+future removal version separately in the deprecation warning.
+
+### [2026-10-05] Validate release versions from authoritative metadata
+
+**Context**: The PyPI project page can be stale or cached while the upstream
+repository has newer release tags.
+**Learning**: The published PyPI version and the latest repository release tag
+are separate facts. A PyPI HTML page must not be treated as authoritative for
+the repository's next release target.
+**Recommendation**: Check PyPI's machine-readable JSON metadata for the
+published version and `git ls-remote --tags origin` for upstream release tags.
+Record which one is being used: use the latest upstream tag to calculate the
+next repository release, and use the PyPI version only when discussing what is
+currently published. If the sources disagree, report the discrepancy and do
+not silently overwrite the project version based on a cached page.
+
 ### [2025-12-19] Always Run markdownlint
 
 **Context**: Editing AGENTS.md file

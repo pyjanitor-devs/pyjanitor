@@ -167,6 +167,54 @@ def test_multiple_conditions_preserve_non_condition_columns():
     assert_frame_equal(actual, expected)
 
 
+@pytest.mark.parametrize("how", ["inner", "left", "right", "outer"])
+def test_output_columns_materializes_only_requested_columns(how):
+    """Output projection retains predicate columns only for matching."""
+    left = pd.DataFrame({"key": [1, 4], "payload": ["a", "b"]})
+    right = pd.DataFrame({"key": [0, 2], "value": [0, 20]})
+
+    actual = left.conditional_join(
+        right,
+        ("key", "key", "<"),
+        how=how,
+        output_columns={"left": ["payload"], "right": "value"},
+    )
+
+    expected = {
+        "inner": pd.DataFrame({"payload": ["a"], "value": [20]}),
+        "left": pd.DataFrame({"payload": ["a", "b"], "value": [20, None]}),
+        "right": pd.DataFrame({"payload": ["a", None], "value": [20, 0]}),
+        "outer": pd.DataFrame({"payload": ["a", "b", None], "value": [20, None, 0]}),
+    }[how]
+    assert_frame_equal(actual, expected)
+
+
+def test_output_columns_can_omit_one_side_and_use_select_syntax():
+    """Output projection does not remove columns needed by the predicate."""
+    left = pd.DataFrame({"key": [1], "left_value": [10]})
+    right = pd.DataFrame({"key": [2], "right_value": [20], "extra": [30]})
+
+    actual = left.conditional_join(
+        right,
+        ("key", "key", "<"),
+        output_columns={"left": None, "right": "right*"},
+    )
+
+    expected = pd.DataFrame({"right_value": [20]})
+    assert_frame_equal(actual, expected)
+
+
+def test_output_columns_cannot_be_combined_with_legacy_selectors(dummy, series):
+    """The new projection API has an unambiguous compatibility boundary."""
+    with pytest.raises(ValueError, match="cannot be combined"):
+        dummy.conditional_join(
+            series,
+            ("id", "B", ">"),
+            df_columns="S",
+            output_columns={"left": "*", "right": None},
+        )
+
+
 @pytest.mark.parametrize(
     ("values", "expected_values", "expected_ordered"),
     [
@@ -223,11 +271,24 @@ def test_multiple_sorted_range_predicates_match_cartesian_reference():
     assert_frame_equal(expected.reset_index(drop=True), actual)
 
 
-def test_df_columns_right_columns_both_None(dummy, series):
-    """Raise if both df_columns and right_columns is None"""
+def test_output_columns_both_none(dummy, series):
+    """Raise if neither join side contributes output columns."""
     with pytest.raises(
         ValueError,
-        match="df_columns and right_columns cannot both be None.",
+        match="output_columns must select at least one column",
+    ):
+        dummy.conditional_join(
+            series,
+            ("id", "B", ">"),
+            output_columns={"left": None, "right": None},
+        )
+
+
+def test_legacy_output_selectors_both_none_still_raise(dummy, series):
+    """Legacy selectors retain the no-output validation."""
+    with pytest.raises(
+        ValueError,
+        match="output_columns must select at least one column",
     ):
         dummy.conditional_join(
             series, ("id", "B", ">"), df_columns=None, right_columns=None

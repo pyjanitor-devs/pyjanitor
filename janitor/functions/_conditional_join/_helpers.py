@@ -28,6 +28,8 @@ import numpy as np
 import pandas as pd
 from pandas.core.dtypes.concat import concat_compat
 
+from janitor.functions.select import _index_converter, _select_index
+
 
 class _JoinOperator(Enum):
     """
@@ -153,36 +155,6 @@ def construct_1d_array_from_inferred_fill_value(
     return take_nd(arr, taker)
 
 
-def _create_multiindex_column(df: pd.DataFrame, right: pd.DataFrame) -> tuple:
-    """Namespace overlapping columns under ``left`` and ``right``.
-
-    The helper mutates the two shallow working frames used during
-    materialization. A leading level distinguishes columns originating from
-    each side, while all original column levels remain unchanged beneath it.
-
-    Args:
-        df: Left working dataframe.
-        right: Right working dataframe.
-
-    Returns:
-        The same two dataframes with MultiIndex columns containing a source
-        namespace.
-    """
-    header = np.empty(df.columns.size, dtype="U4")
-    header[:] = "left"
-    header = [header]
-    columns = [df.columns.get_level_values(n) for n in range(df.columns.nlevels)]
-    header.extend(columns)
-    df.columns = pd.MultiIndex.from_arrays(header)
-    header = np.empty(right.columns.size, dtype="U5")
-    header[:] = "right"
-    header = [header]
-    columns = [right.columns.get_level_values(n) for n in range(right.columns.nlevels)]
-    header.extend(columns)
-    right.columns = pd.MultiIndex.from_arrays(header)
-    return df, right
-
-
 def _preserve_object_dtype(array: np.ndarray, dtype) -> np.ndarray | pd.Series:
     """Guard a reindexed ``object``-dtype array against string inference.
 
@@ -198,7 +170,7 @@ def _preserve_object_dtype(array: np.ndarray, dtype) -> np.ndarray | pd.Series:
 
     Non-object dtypes pass straight through unchanged.
     """
-    if dtype == object:
+    if pd.api.types.is_object_dtype(dtype):
         return pd.Series(array, dtype=object, copy=False)
     return array
 
@@ -222,6 +194,12 @@ def _materialize_index_result(
     missing values, and optionally adds the merge indicator and matched
     physical positions as the result index.
 
+    Projection is intentionally lazy. The input frames remain intact while
+    predicates are evaluated; this function resolves only the requested
+    output columns and gathers their values one column at a time. This avoids
+    constructing a filtered intermediate frame and ensures that predicate
+    columns can be omitted from the public result.
+
     Args:
         df: Prepared left dataframe whose rows are addressed by physical
             positions.
@@ -231,8 +209,12 @@ def _materialize_index_result(
         right_index: Physical right positions for matched pairs.
         how: Join shape: ``"inner"``, ``"left"``, ``"right"``, or
             ``"outer"``.
-        df_columns: Deprecated left-column selection.
-        right_columns: Deprecated right-column selection.
+        df_columns: Left output selector. Despite the historical name, this
+            may be the normalized selector supplied by ``output_columns``.
+            ``None`` omits the left side and ``slice(None)`` retains all left
+            columns.
+        right_columns: Right output selector with the same semantics as
+            ``df_columns``.
         indicator: ``False`` to omit the indicator, ``True`` for ``"_merge"``,
             or a custom indicator column name.
         include_join_positions: If true, use matched physical positions as a
@@ -242,24 +224,59 @@ def _materialize_index_result(
         The materialized joined dataframe.
 
     Raises:
-        ValueError: If both deprecated column selectors are ``None`` or the
-            requested indicator name collides with an output column.
+        KeyError: If a selector does not match any input column.
+        ValueError: If no output columns are selected or the requested
+            indicator name collides with an output column.
     """
-    # TODO: deprecate df_columns and right_columns
-    # user can handle column renaming before the join
     if (df_columns is None) and (right_columns is None):
-        raise ValueError("df_columns and right_columns cannot both be None.")
-    if (df_columns is not None) and (df_columns != slice(None)):
-        df = df.select_columns(df_columns)
-    if (right_columns is not None) and (right_columns != slice(None)):
-        right = right.select_columns(right_columns)
-    if df_columns is None:
-        df = pd.DataFrame([])
-    elif right_columns is None:
-        right = pd.DataFrame([])
+        raise ValueError(
+            "output_columns must select at least one column from 'left' or 'right'."
+        )
 
-    if not df.columns.intersection(right.columns).empty:
-        df, right = _create_multiindex_column(df, right)
+    def _column_positions(frame: pd.DataFrame, selector: Any) -> np.ndarray:
+        """Resolve a selector to exact physical column positions.
+
+        Positions are used instead of the selected labels when gathering
+        values because labels are not guaranteed to be unique. With duplicate
+        column labels, ``frame[label]`` can return multiple columns and cannot
+        identify which occurrence the selector selected; ``frame.iloc`` with a
+        positional indexer preserves that exact column identity.
+        """
+        if selector is None:
+            return np.empty(0, dtype=np.intp)
+        if isinstance(selector, slice) and selector == slice(None):
+            return np.arange(frame.columns.size, dtype=np.intp)
+        # Use pyjanitor's selector engine so glob, regex, callable, boolean,
+        # slice, and MultiIndex selectors have the same semantics as
+        # ``select_columns``. Positional selection is important here because
+        # duplicate labels must remain distinguishable during materialization.
+        indexer = _select_index([selector], frame, axis="columns")
+        return _index_converter(indexer, frame.columns)
+
+    # Keep positions for value gathering and derive labels separately for the
+    # result schema. This distinction is essential for duplicate labels: the
+    # result can preserve two same-named columns while each source occurrence
+    # is still gathered independently.
+    left_column_positions = _column_positions(df, df_columns)
+    right_column_positions = _column_positions(right, right_columns)
+    # ``take`` is metadata-only: it gives us the output names corresponding to
+    # the exact positions selected above without constructing filtered frames.
+    left_labels = df.columns.take(left_column_positions)
+    right_labels = right.columns.take(right_column_positions)
+    overlap = not left_labels.intersection(right_labels).empty
+
+    def _output_label(label: object, side: str) -> object:
+        """Add a side namespace when projected labels overlap."""
+        if not overlap:
+            return label
+        if isinstance(label, tuple):
+            return (side, *label)
+        return (side, label)
+
+    output_left_labels = [_output_label(label, "left") for label in left_labels]
+    output_right_labels = [_output_label(label, "right") for label in right_labels]
+    output_labels = output_left_labels + output_right_labels
+    output_column_index = pd.Index(output_labels)
 
     def _add_indicator(
         indicator: bool | str,
@@ -267,7 +284,23 @@ def _materialize_index_result(
         lengths: tuple[int, ...],
         columns: pd.Index,
     ) -> tuple[object, pd.Categorical]:
-        """Build one categorical indicator array for all output segments."""
+        """Build one categorical indicator array for all output segments.
+
+        Args:
+            indicator: ``True`` for the default ``"_merge"`` name or a
+                string containing a custom indicator name.
+            labels: Merge-status labels, in output row order.
+            lengths: Number of rows represented by each status label.
+            columns: Final output columns, used to detect name collisions and
+                preserve the column index depth for MultiIndex outputs.
+
+        Returns:
+            The indicator column name and its categorical values.
+
+        Raises:
+            ValueError: If the requested indicator name already exists in the
+                projected output columns.
+        """
         name: object = "_merge" if isinstance(indicator, bool) else indicator
         if name in columns:
             raise ValueError(
@@ -288,31 +321,55 @@ def _materialize_index_result(
         return name, concat_compat(segments)
 
     def _inner(
-        left_positions: np.ndarray,
-        right_positions: np.ndarray,
+        left_row_positions: np.ndarray,
+        right_row_positions: np.ndarray,
     ) -> pd.DataFrame:
-        """Build matched rows without creating intermediate frames."""
-        dictionary = {}
-        for key, value in df.items():
-            dictionary[key] = _preserve_object_dtype(
-                value._values[left_positions], value.dtype
+        """Build matched rows without creating intermediate frames.
+
+        Each requested source column is gathered by physical row position and
+        wrapped as a Series. The Series are concatenated once so duplicate
+        output labels and extension dtypes survive construction.
+        """
+        columns = []
+        for position, label in zip(left_column_positions, output_left_labels):
+            value = df.iloc[:, position]
+            columns.append(
+                pd.Series(
+                    _preserve_object_dtype(
+                        value._values[left_row_positions], value.dtype
+                    ),
+                    name=label,
+                )
             )
-        for key, value in right.items():
-            dictionary[key] = _preserve_object_dtype(
-                value._values[right_positions], value.dtype
+        for position, label in zip(right_column_positions, output_right_labels):
+            value = right.iloc[:, position]
+            columns.append(
+                pd.Series(
+                    _preserve_object_dtype(
+                        value._values[right_row_positions], value.dtype
+                    ),
+                    name=label,
+                )
             )
         if indicator:
             name, values = _add_indicator(
                 indicator,
                 ("both",),
-                (left_positions.size,),
-                df.columns.union(right.columns),
+                (left_row_positions.size,),
+                output_column_index,
             )
-            dictionary[name] = values
+            columns.append(pd.Series(values, name=name))
+        if not columns:
+            return pd.DataFrame(index=range(left_row_positions.size))
+        # Concatenating Series preserves duplicate/MultiIndex labels and each
+        # column's dtype. A dict-based DataFrame constructor would overwrite
+        # duplicate labels.
+        result = pd.concat(columns, axis=1)
         if include_join_positions:
-            index = pd.MultiIndex.from_arrays([left_positions, right_positions])
-            return pd.DataFrame(dictionary, copy=False, index=index)
-        return pd.DataFrame(dictionary, copy=False)
+            result.index = pd.MultiIndex.from_arrays(
+                [left_row_positions, right_row_positions]
+            )
+        return result
 
     if how == "inner":
         return _inner(left_index, right_index)
@@ -328,8 +385,9 @@ def _materialize_index_result(
         right_matched[right_index] = True
         right_unmatched = np.flatnonzero(~right_matched)
 
-    dictionary = {}
-    for key, value in df.items():
+    columns = []
+    for position, label in zip(left_column_positions, output_left_labels):
+        value = df.iloc[:, position]
         array = value._values
         segments = [array[left_index]]
         if left_unmatched.size:
@@ -342,13 +400,13 @@ def _materialize_index_result(
                 )
             )
         if len(segments) == 1:
-            dictionary[key] = _preserve_object_dtype(segments[0], value.dtype)
+            values = _preserve_object_dtype(segments[0], value.dtype)
         else:
-            dictionary[key] = _preserve_object_dtype(
-                concat_compat(segments), value.dtype
-            )
+            values = _preserve_object_dtype(concat_compat(segments), value.dtype)
+        columns.append(pd.Series(values, name=label))
 
-    for key, value in right.items():
+    for position, label in zip(right_column_positions, output_right_labels):
+        value = right.iloc[:, position]
         array = value._values
         segments = [array[right_index]]
         if left_unmatched.size:
@@ -361,11 +419,10 @@ def _materialize_index_result(
         if right_unmatched.size:
             segments.append(array[right_unmatched])
         if len(segments) == 1:
-            dictionary[key] = _preserve_object_dtype(segments[0], value.dtype)
+            values = _preserve_object_dtype(segments[0], value.dtype)
         else:
-            dictionary[key] = _preserve_object_dtype(
-                concat_compat(segments), value.dtype
-            )
+            values = _preserve_object_dtype(concat_compat(segments), value.dtype)
+        columns.append(pd.Series(values, name=label))
 
     if indicator:
         labels = ["both"]
@@ -380,11 +437,15 @@ def _materialize_index_result(
             indicator,
             tuple(labels),
             tuple(lengths),
-            df.columns.union(right.columns),
+            output_column_index,
         )
-        dictionary[name] = values
+        columns.append(pd.Series(values, name=name))
 
-    return pd.DataFrame(dictionary, copy=False)
+    if not columns:
+        return pd.DataFrame(
+            index=range(left_index.size + left_unmatched.size + right_unmatched.size)
+        )
+    return pd.concat(columns, axis=1)
 
 
 @dataclass(frozen=True, slots=True)

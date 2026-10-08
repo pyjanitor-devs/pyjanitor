@@ -1211,6 +1211,24 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "Rodrigo-Palma",
+      "name": "Rodrigo Stachlewski Palma",
+      "avatar_url": "https://avatars.githubusercontent.com/u/86628053?v=4",
+      "profile": "https://github.com/Rodrigo-Palma",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "VenishPaneliya",
+      "name": "Venish Paneliya",
+      "avatar_url": "https://avatars.githubusercontent.com/u/141703684?v=4",
+      "profile": "https://github.com/VenishPaneliya",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "badgeTemplate": "<img alt=\"All Contributors: {{contributorCount}}\" src=\"https://img.shields.io/github/all-contributors/{{projectOwner}}/{{projectName}}?color=ee8449&style=flat-square\">",

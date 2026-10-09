@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+- [DOC] Add usage examples to the `read_csvs` docstring. - Issue #1755 @iMalcolmS
 - [BUG] Fix `convert_unix_date` reading millisecond timestamps as seconds with pandas 3. - Issue #1756 @raashish1601
 - [DOC] Fix `_xlsx_cells` and `_expand_sorted_array` docstrings naming parameters the functions do not take (`path_is_workbook`, `region`, `num`); document `base_engine` and `load_factor` instead. - PR #1742 @VenishPaneliya
 - [BUG] Fix polars `make_clean_names` collapsing only the first run of underscores. - Issue #1740 @Rodrigo-Palma

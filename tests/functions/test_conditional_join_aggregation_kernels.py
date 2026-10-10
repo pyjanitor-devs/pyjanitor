@@ -1304,7 +1304,7 @@ def test_duplicate_equi_aggregation_applies_range_and_residual_filters():
 
 
 def test_unique_equi_aggregation_covers_forward_and_reverse_output_domains():
-    """Unique equi keys produce complete forward and reverse output domains."""
+    """Unique equi keys preserve the trimmed forward and reverse domains."""
     left = pd.DataFrame(
         {"key": ["b", "a", "c"], "left_value": [2, 3, 4]},
         index=pd.Index([10, 11, 12], name="left_id"),
@@ -1329,15 +1329,15 @@ def test_unique_equi_aggregation_covers_forward_and_reverse_output_domains():
     )
     expected_forward = pd.DataFrame(
         {
-            ("value", "sum"): [20, 10, 0],
-            ("value", "prod"): [20, 10, 1],
-            ("value", "min"): pd.array([20, 10, pd.NA], dtype="Int64"),
-            ("value", "max"): pd.array([20, 10, pd.NA], dtype="Int64"),
-            ("value", "count"): [1, 1, 0],
-            ("value", "size"): [1, 1, 0],
+            ("value", "sum"): [20, 10],
+            ("value", "prod"): [20, 10],
+            ("value", "min"): [20, 10],
+            ("value", "max"): [20, 10],
+            ("value", "count"): [1, 1],
+            ("value", "size"): [1, 1],
         },
         index=pd.MultiIndex.from_tuples(
-            [(0, True), (1, True), (2, False)],
+            [(0, True), (1, True)],
             names=[None, "matched"],
         ),
     )
@@ -1361,15 +1361,15 @@ def test_unique_equi_aggregation_covers_forward_and_reverse_output_domains():
     )
     expected_reverse = pd.DataFrame(
         {
-            ("left_value", "sum"): [3, 2, 0],
-            ("left_value", "prod"): [3, 2, 1],
-            ("left_value", "min"): pd.array([3, 2, pd.NA], dtype="Int64"),
-            ("left_value", "max"): pd.array([3, 2, pd.NA], dtype="Int64"),
-            ("left_value", "count"): [1, 1, 0],
-            ("left_value", "size"): [1, 1, 0],
+            ("left_value", "sum"): [2, 3],
+            ("left_value", "prod"): [2, 3],
+            ("left_value", "min"): [2, 3],
+            ("left_value", "max"): [2, 3],
+            ("left_value", "count"): [1, 1],
+            ("left_value", "size"): [1, 1],
         },
         index=pd.MultiIndex.from_tuples(
-            [(0, True), (1, True), (2, False)],
+            [(1, True), (0, True)],
             names=[None, "matched"],
         ),
     )
@@ -1586,12 +1586,10 @@ def test_equi_aggregation_supports_multiple_equi_columns():
 
     expected = pd.DataFrame(
         {
-            ("value", "sum"): [30, 0],
-            ("value", "size"): [2, 0],
+            ("value", "sum"): [30],
+            ("value", "size"): [2],
         },
-        index=pd.MultiIndex.from_tuples(
-            [(0, True), (1, False)], names=[None, "matched"]
-        ),
+        index=pd.MultiIndex.from_tuples([(0, True)], names=[None, "matched"]),
     )
     assert_frame_equal(expected, actual)
 

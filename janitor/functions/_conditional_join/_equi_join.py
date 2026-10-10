@@ -591,25 +591,6 @@ def _aggregate(
     aggregation_source = df if reverse else right
     source_index = left_index if reverse else right_index
     output_index = right_index if reverse else left_index
-    output_frame = right if reverse else df
-    output_columns = (
-        [(condition.right, condition.op) for condition in conditions]
-        if reverse
-        else [(condition.left, condition.op) for condition in conditions]
-    )
-    eligible_output_index = _helpers._get_indexer_for_non_null_rows(
-        df=output_frame,
-        columns_and_ops=output_columns,
-    )
-    if eligible_output_index is None:
-        return _unmatched_aggregation_result(
-            output_index=output_frame.index[:0],
-            source=aggregation_source,
-            return_matched=return_matched,
-            aggfunc=aggfunc,
-        )
-    if isinstance(eligible_output_index, slice):
-        eligible_output_index = output_frame.index
     result = janitor_rs.equi_aggregate(
         left_index=left_positions,
         right_index=index_right,
@@ -627,12 +608,12 @@ def _aggregate(
     )
     if result is None:
         return _unmatched_aggregation_result(
-            output_index=eligible_output_index,
+            output_index=output_index,
             source=aggregation_source,
             return_matched=return_matched,
             aggfunc=aggfunc,
         )
-    materialized = _materialize_aggregation_result(
+    return _materialize_aggregation_result(
         result=result,
         output_index=output_index,
         source=aggregation_source,
@@ -640,19 +621,3 @@ def _aggregate(
         return_matched=return_matched,
         source_index=source_index,
     )
-    if len(materialized) == len(eligible_output_index):
-        return materialized
-    unmatched = _unmatched_aggregation_result(
-        output_index=eligible_output_index,
-        source=aggregation_source,
-        return_matched=return_matched,
-        aggfunc=aggfunc,
-    )
-    if return_matched:
-        matched_positions = materialized.index.get_level_values(0)
-        unmatched = unmatched.loc[
-            ~unmatched.index.get_level_values(0).isin(matched_positions)
-        ]
-        return pd.concat([unmatched, materialized]).sort_index()
-    unmatched.loc[materialized.index, :] = materialized
-    return unmatched

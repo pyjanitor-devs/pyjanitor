@@ -198,7 +198,7 @@ def _preserve_object_dtype(array: np.ndarray, dtype) -> np.ndarray | pd.Series:
 
     Non-object dtypes pass straight through unchanged.
     """
-    if dtype is object:
+    if pd.api.types.is_object_dtype(dtype):
         return pd.Series(array, dtype=object, copy=False)
     return array
 
@@ -250,9 +250,23 @@ def _materialize_index_result(
     if (df_columns is None) and (right_columns is None):
         raise ValueError("df_columns and right_columns cannot both be None.")
     if (df_columns is not None) and (df_columns != slice(None)):
+        left_object_columns = {
+            column
+            for column, value in df.items()
+            if pd.api.types.is_object_dtype(value)
+        }
         df = df.select_columns(df_columns)
+        for column in left_object_columns.intersection(df.columns):
+            df[column] = df[column].astype(object)
     if (right_columns is not None) and (right_columns != slice(None)):
+        right_object_columns = {
+            column
+            for column, value in right.items()
+            if pd.api.types.is_object_dtype(value)
+        }
         right = right.select_columns(right_columns)
+        for column in right_object_columns.intersection(right.columns):
+            right[column] = right[column].astype(object)
     if df_columns is None:
         df = pd.DataFrame([])
     elif right_columns is None:
@@ -311,8 +325,10 @@ def _materialize_index_result(
             dictionary[name] = values
         if include_join_positions:
             index = pd.MultiIndex.from_arrays([left_positions, right_positions])
-            return pd.DataFrame(dictionary, copy=False, index=index)
-        return pd.DataFrame(dictionary, copy=False)
+            result = pd.DataFrame(dictionary, copy=False, index=index)
+        else:
+            result = pd.DataFrame(dictionary, copy=False)
+        return _restore_object_dtypes(result, df, right)
 
     if how == "inner":
         return _inner(left_index, right_index)
@@ -384,7 +400,28 @@ def _materialize_index_result(
         )
         dictionary[name] = values
 
-    return pd.DataFrame(dictionary, copy=False)
+    result = pd.DataFrame(dictionary, copy=False)
+    return _restore_object_dtypes(result, df, right)
+
+
+def _restore_object_dtypes(
+    result: pd.DataFrame,
+    *source_frames: pd.DataFrame,
+) -> pd.DataFrame:
+    """Restore source ``object`` columns after pandas constructs ``result``.
+
+    With ``future.infer_string`` enabled, ``DataFrame(dictionary)`` can infer
+    an object array of Python strings as ``StringDtype``. The source frames are
+    authoritative for this helper: only their object columns are restored,
+    leaving extension and numeric dtypes untouched.
+    """
+    for frame in source_frames:
+        for column, source in frame.items():
+            if pd.api.types.is_object_dtype(
+                source
+            ) and not pd.api.types.is_object_dtype(result[column]):
+                result[column] = result[column].astype(object)
+    return result
 
 
 @dataclass(frozen=True, slots=True)

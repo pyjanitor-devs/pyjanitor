@@ -4427,6 +4427,40 @@ def test_eq_strings(df, right):
     assert_frame_equal(expected, actual)
 
 
+def test_equi_join_preserves_explicit_object_string_columns():
+    """Column selection must not infer object strings as pandas ``str``."""
+    left = pd.DataFrame(
+        {
+            "key": pd.Series(["False"], dtype=object),
+            "value": [0],
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "right_key": pd.Series(["False", "False"], dtype=object),
+            "bound": [0, 0],
+        }
+    )
+
+    actual = left.conditional_join(
+        right,
+        ("key", "right_key", "=="),
+        ("value", "bound", ">="),
+        df_columns=["key", "value"],
+        right_columns=["right_key", "bound"],
+    )
+
+    expected = pd.DataFrame(
+        {
+            "key": pd.Series(["False", "False"], dtype=object),
+            "value": [0, 0],
+            "right_key": pd.Series(["False", "False"], dtype=object),
+            "bound": [0, 0],
+        }
+    )
+    assert_frame_equal(expected, actual)
+
+
 def test_extension_array_eq():
     """Extension arrays when matching on equality."""
     df1 = pd.DataFrame({"id": [1, 1, 1, 2, 2, 3], "value_1": [2, 5, 7, 1, 3, 4]})

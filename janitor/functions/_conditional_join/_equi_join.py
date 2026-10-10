@@ -591,6 +591,10 @@ def _aggregate(
     aggregation_source = df if reverse else right
     source_index = left_index if reverse else right_index
     output_index = right_index if reverse else left_index
+    if reverse and starts is None:
+        # Unique equality preparation aligns one right row with every left
+        # row; reverse aggregation emits one result per distinct right row.
+        output_index = pd.Index(pd.unique(right_index))
     result = janitor_rs.equi_aggregate(
         left_index=left_positions,
         right_index=index_right,

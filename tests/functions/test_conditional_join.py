@@ -223,6 +223,91 @@ def test_multiple_sorted_range_predicates_match_cartesian_reference():
     assert_frame_equal(expected.reset_index(drop=True), actual)
 
 
+@pytest.mark.parametrize(
+    ("keep", "expected_right"),
+    [
+        ("all", [1, 3]),
+        ("any", [1]),
+        ("first", [1]),
+        ("last", [3]),
+    ],
+)
+def test_equi_range_unordered_second_window_applies_keep(keep, expected_right):
+    """An unordered second range is filtered before applying ``keep``."""
+    left = pd.DataFrame({"key": [1], "lower": [5], "upper": [3]})
+    right = pd.DataFrame(
+        {
+            "key": [1, 1, 1, 1],
+            "lower_r": [1, 2, 3, 4],
+            "upper_r": [4, 1, 3, 2],
+        }
+    )
+
+    result = jn.get_join_indices(
+        left,
+        right,
+        ("key", "key", "=="),
+        ("lower", "lower_r", ">"),
+        ("upper", "upper_r", ">"),
+        keep=keep,
+    )
+
+    assert np.array_equal(result["left_index"], np.array([0] * len(expected_right)))
+    assert np.array_equal(result["right_index"], np.array(expected_right))
+
+
+@pytest.mark.parametrize("first_op", ["<", "<=", ">", ">="])
+@pytest.mark.parametrize("second_op", ["<", "<=", ">", ">="])
+def test_equi_two_ranges_match_bruteforce_reference(first_op, second_op):
+    """Two range windows and a residual match the Cartesian reference."""
+    left = pd.DataFrame(
+        {
+            "key": [1, 1, 2],
+            "first": [3, 6, 4],
+            "second": [2, 5, 1],
+            "tag": [10, 20, 30],
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "key": [1, 1, 1, 2, 2],
+            "first_r": [1, 3, 5, 2, 6],
+            "second_r": [4, 1, 3, 0, 2],
+            "tag_r": [10, 11, 20, 30, 31],
+        }
+    )
+    compare = {
+        "<": operator.lt,
+        "<=": operator.le,
+        ">": operator.gt,
+        ">=": operator.ge,
+    }
+    first_compare = compare[first_op]
+    second_compare = compare[second_op]
+    expected = [
+        (left_position, right_position)
+        for left_position, left_row in left.iterrows()
+        for right_position, right_row in right.iterrows()
+        if left_row["key"] == right_row["key"]
+        and first_compare(left_row["first"], right_row["first_r"])
+        and second_compare(left_row["second"], right_row["second_r"])
+        and left_row["tag"] != right_row["tag_r"]
+    ]
+
+    actual = jn.get_join_indices(
+        left,
+        right,
+        ("key", "key", "=="),
+        ("first", "first_r", first_op),
+        ("second", "second_r", second_op),
+        ("tag", "tag_r", "!="),
+        keep="all",
+    )
+    actual = sorted(zip(actual["left_index"], actual["right_index"]))
+
+    assert actual == sorted(expected)
+
+
 def test_df_columns_right_columns_both_None(dummy, series):
     """Raise if both df_columns and right_columns is None"""
     with pytest.raises(

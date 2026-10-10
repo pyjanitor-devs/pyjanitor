@@ -176,31 +176,7 @@ def _preparatory_work(
     # can mis-rank predicates and is intentionally not restored here. Revisit
     # this only with a representative user workload or a deterministic cost
     # estimate that is cheaper than constructing the join candidates.
-    range_positions = [
-        position
-        for position, condition in enumerate(conditions)
-        if condition.op in _helpers.greater_than_join_types
-    ][:1]
-    range_positions.extend(
-        position
-        for position, condition in enumerate(conditions)
-        if condition.op in _helpers.less_than_join_types
-    )
-    range_positions = range_positions[:2]
-
-    if len(range_positions) < 2:
-        range_positions = []
-        # ``enumerate`` is needed because the fallback also records which
-        # original condition slots became anchors; this remains unambiguous
-        # when duplicate predicates are present.
-        for position, condition in enumerate(conditions):
-            if len(range_positions) == 2:
-                break
-            if condition.op in _helpers.less_than_join_types.union(
-                _helpers.greater_than_join_types
-            ):
-                range_positions.append(position)
-
+    range_positions = _helpers._get_range_positions_for_one_side(conditions=conditions)
     first_anchor, second_anchor = (conditions[position] for position in range_positions)
     left_column, right_column, op = (
         first_anchor.left,
@@ -239,14 +215,6 @@ def _preparatory_work(
     second_right_array = _helpers._convert_array_to_numpy(
         array=second_right_column._values
     )
-    primary_positions = set(range_positions)
-    # Compare original positions so duplicate anchor predicates are excluded
-    # by their individual slots, while all remaining predicates stay ordered.
-    rest = [
-        condition
-        for position, condition in enumerate(conditions)
-        if position not in primary_positions
-    ]
     residual_predicates = []
     if second_right_column.is_monotonic_increasing:
         # Both real predicates are monotonic in the shared sorted layout, so
@@ -323,18 +291,17 @@ def _preparatory_work(
                     left=second_left_column,
                     right=second_right_column,
                     operation=second_op,
-                    left_index=left_index,
-                    right_index=right_index,
                 )
             )
-
-    for condition in rest:
+    # Compare original positions so duplicate anchor predicates are excluded
+    # by their individual slots, while all remaining predicates stay ordered.
+    for position, condition in enumerate(conditions):
+        if position in range_positions:
+            continue
         residual_predicate = _helpers._build_residual_predicate(
             left=df.loc[left_index, condition.left],
             right=right.loc[right_index, condition.right],
             operation=condition.op,
-            left_index=left_index,
-            right_index=right_index,
         )
         residual_predicates.append(residual_predicate)
 

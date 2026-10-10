@@ -198,7 +198,7 @@ def _preserve_object_dtype(array: np.ndarray, dtype) -> np.ndarray | pd.Series:
 
     Non-object dtypes pass straight through unchanged.
     """
-    if dtype == object:
+    if dtype is object:
         return pd.Series(array, dtype=object, copy=False)
     return array
 
@@ -486,8 +486,6 @@ def _build_residual_predicate(
     left: pd.Series,
     right: pd.Series,
     operation: str,
-    left_index: pd.Index | slice = slice(None),
-    right_index: pd.Index | slice = slice(None),
 ) -> tuple:
     """Build one residual predicate in the Rust tuple format.
 
@@ -514,13 +512,8 @@ def _build_residual_predicate(
         align rows. The resulting arrays are indexed by the physical
         positions returned by the selected Rust kernel.
     """
-    if left_index is None:
-        left_index = slice(None)
-    if right_index is None:
-        right_index = slice(None)
-    left = left.loc[left_index]
+
     left_array = _convert_array_to_numpy(array=left._values)
-    right = right.loc[right_index]
     right_array = _convert_array_to_numpy(array=right._values)
     if operation != "!=":
         return (
@@ -615,3 +608,33 @@ def _get_indexer_for_non_null_rows(df, columns_and_ops):
     if booleans.any():
         return df.index[~booleans]
     return slice(None)
+
+
+def _get_range_positions_for_one_side(conditions):
+    """Return the range positions for one side of the join."""
+    range_positions = []
+    le_lt_count = 0
+    ge_gt_count = 0
+    # Store condition positions along with the selected anchors. Positions
+    # distinguish duplicate predicates and let residual construction exclude
+    # exactly the selected occurrences later.
+    for position, condition in enumerate(conditions):
+        if le_lt_count and ge_gt_count:
+            break
+        if (condition.op in less_than_join_types) and not le_lt_count:
+            range_positions.append(position)
+            le_lt_count += 1
+        elif (condition.op in greater_than_join_types) and not ge_gt_count:
+            range_positions.append(position)
+            ge_gt_count += 1
+
+    if (le_lt_count + ge_gt_count) < 2:
+        range_positions = []
+        # The fallback still needs original positions so duplicate predicates
+        # are selected and removed by occurrence, without reordering anything.
+        for position, condition in enumerate(conditions):
+            if len(range_positions) == 2:
+                break
+            if condition.op in less_than_join_types.union(greater_than_join_types):
+                range_positions.append(position)
+    return range_positions

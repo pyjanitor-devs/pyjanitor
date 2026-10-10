@@ -92,36 +92,7 @@ def _preparatory_work(
     if right_index is None:
         return None
 
-    # grab possible range join combo
-    range_positions = []
-    le_lt_count = 0
-    ge_gt_count = 0
-
-    # Store condition positions along with the selected anchors. Positions
-    # distinguish duplicate predicates and let residual construction exclude
-    # exactly the selected occurrences later.
-    for position, condition in enumerate(conditions):
-        if le_lt_count and ge_gt_count:
-            break
-        if (condition.op in _helpers.less_than_join_types) and not le_lt_count:
-            range_positions.append(position)
-            le_lt_count += 1
-        elif (condition.op in _helpers.greater_than_join_types) and not ge_gt_count:
-            range_positions.append(position)
-            ge_gt_count += 1
-
-    if (le_lt_count + ge_gt_count) < 2:
-        range_positions = []
-        # The fallback still needs original positions so duplicate predicates
-        # are selected and removed by occurrence, without reordering anything.
-        for position, condition in enumerate(conditions):
-            if len(range_positions) == 2:
-                break
-            if condition.op in _helpers.less_than_join_types.union(
-                _helpers.greater_than_join_types
-            ):
-                range_positions.append(position)
-
+    range_positions = _helpers._get_range_positions_for_one_side(conditions=conditions)
     first_anchor, second_anchor = (conditions[position] for position in range_positions)
     left_column, right_column, op = (
         first_anchor.left,
@@ -159,23 +130,16 @@ def _preparatory_work(
     )
 
     anchor_predicates = [first_anchor, second_anchor]
-    primary_positions = set(range_positions)
     # Filter by original condition position: duplicate anchor occurrences have
     # already been handled by the regions kernel and must not run as residuals.
-    rest = [
-        condition
-        for position, condition in enumerate(conditions)
-        if position not in primary_positions
-    ]
     residual_predicates = []
-
-    for condition in rest:
+    for position, condition in enumerate(conditions):
+        if position in range_positions:
+            continue
         residual_predicate = _helpers._build_residual_predicate(
             left=df.loc[left_index, condition.left],
             right=right.loc[right_index, condition.right],
             operation=condition.op,
-            left_index=left_index,
-            right_index=right_index,
         )
         residual_predicates.append(residual_predicate)
 

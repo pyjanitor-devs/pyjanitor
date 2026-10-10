@@ -497,8 +497,6 @@ def _build_residual_predicate(
         left: Left residual series in anchor-aligned physical order.
         right: Right residual series in the same aligned order.
         operation: String comparison operator.
-        right_index: Right index positions to align the right series to.
-
     Returns:
         A three-element tuple containing ``left_array``, ``right_array``, and
         ``operation`` for ordinary predicates. For null-aware ``!=``

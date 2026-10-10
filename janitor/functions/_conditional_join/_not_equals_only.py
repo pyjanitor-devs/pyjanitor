@@ -349,8 +349,6 @@ def _preparatory_work(
             left=df[condition.left],
             right=right[condition.right],
             operation=condition.op,
-            left_index=slice(None),
-            right_index=slice(None),
         )
         residual_predicates.append(residual_predicate)
 

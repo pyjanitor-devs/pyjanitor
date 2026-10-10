@@ -1,5 +1,7 @@
 """Coverage for dtype-specific fused conditional-join aggregation kernels."""
 
+import operator
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -1468,6 +1470,80 @@ def test_duplicate_equi_aggregation_filters_incompatible_second_range_as_residua
         {("value", "sum"): [30], ("value", "size"): [1]},
         index=pd.MultiIndex.from_tuples([(0, True)], names=[None, "matched"]),
     )
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.parametrize("second_op", ["<", "<=", ">", ">="])
+@pytest.mark.parametrize("reverse", [False, True])
+def test_duplicate_equi_aggregation_unordered_second_range_matches_reference(
+    second_op, reverse
+):
+    """Unordered second ranges preserve aggregation semantics for every operator."""
+    left = pd.DataFrame(
+        {
+            "key": ["a", "a"],
+            "first": [3, 6],
+            "second": [5, 1],
+            "value": [100, 200],
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "key": ["a"] * 5,
+            "first": [1, 2, 4, 5, 7],
+            "second": [4, 1, 6, 0, 2],
+            "value": [10, 20, 30, 40, 50],
+        }
+    )
+    compare = {
+        "<": operator.lt,
+        "<=": operator.le,
+        ">": operator.gt,
+        ">=": operator.ge,
+    }[second_op]
+
+    expected_sums = []
+    expected_sizes = []
+    output = right if reverse else left
+    for output_position in range(len(output)):
+        matching_values = []
+        for left_position, left_row in left.iterrows():
+            for right_position, right_row in right.iterrows():
+                if (
+                    left_row["key"] == right_row["key"]
+                    and left_row["first"] < right_row["first"]
+                    and compare(left_row["second"], right_row["second"])
+                    and (right_position if reverse else left_position)
+                    == output_position
+                ):
+                    matching_values.append(
+                        left_row["value"] if reverse else right_row["value"]
+                    )
+        expected_sums.append(sum(matching_values))
+        expected_sizes.append(len(matching_values))
+
+    actual = left.join_agg(
+        right,
+        ("key", "key", "=="),
+        ("first", "first", "<"),
+        ("second", "second", second_op),
+        aggfunc=[
+            ("value", "sum"),
+            ("value", "size"),
+        ],
+        reverse=reverse,
+    )
+    matched = np.array(expected_sizes, dtype=bool)
+    expected = pd.DataFrame(
+        {
+            ("value", "sum"): expected_sums,
+            ("value", "size"): expected_sizes,
+        },
+        index=pd.MultiIndex.from_arrays(
+            [range(len(output)), matched], names=[None, "matched"]
+        ),
+    )
+
     assert_frame_equal(expected, actual)
 
 

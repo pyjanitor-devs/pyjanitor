@@ -92,49 +92,42 @@ def _preparatory_work(
     if right_index is None:
         return None
 
-    range_positions = _helpers._get_range_positions_for_one_side(conditions=conditions)
-    first_anchor, second_anchor = (conditions[position] for position in range_positions)
-    left_column, right_column, op = (
-        first_anchor.left,
-        first_anchor.right,
-        first_anchor.op,
-    )
-    left_column = df.loc[left_index, left_column]
-    right_column = right.loc[right_index, right_column]
-    right_column, right_index_is_ordered = _helpers._sort_if_not_monotonic(
-        series=right_column
-    )
-    if not right_index_is_ordered:
-        right_index = right_column.index
-    first_anchor = (
-        _helpers._convert_array_to_numpy(array=left_column._values),
-        _helpers._convert_array_to_numpy(array=left_column.index._values),
-        _helpers._convert_array_to_numpy(array=right_column._values),
-        _helpers._convert_array_to_numpy(array=right_column.index._values),
-        op,
-    )
-    second_left_column, second_right_column, second_op = (
-        second_anchor.left,
-        second_anchor.right,
-        second_anchor.op,
-    )
-    second_left_column = df.loc[left_index, second_left_column]
-    second_right_column = right.loc[right_index, second_right_column]
-    second_right_column, _ = _helpers._sort_if_not_monotonic(series=second_right_column)
-    second_anchor = (
-        _helpers._convert_array_to_numpy(array=second_left_column._values),
-        _helpers._convert_array_to_numpy(array=second_left_column.index._values),
-        _helpers._convert_array_to_numpy(array=second_right_column._values),
-        _helpers._convert_array_to_numpy(array=second_right_column.index._values),
-        second_op,
-    )
+    range_predicates = []
+    alignments = []
+    first_range_condition = False
+    for condition in conditions:
+        if condition.op not in _helpers.less_than_join_types.union(
+            _helpers.greater_than_join_types
+        ):
+            continue
+        left_column = df.loc[left_index, condition.left]
+        right_column = right.loc[right_index, condition.right]
+        if condition.op in _helpers.greater_than_join_types:
+            ascending = False
+        else:
+            ascending = True
+        right_column, _ = _helpers._sort_if_not_monotonic(
+            series=right_column, ascending=ascending
+        )
+        if not first_range_condition:
+            first_range_condition = True
+            right_index = right_column.index
+        else:
+            _align = right_column.index.get_indexer(right_index)
+            alignments.append(_align)
+        range_predicates.append(
+            (
+                _helpers._convert_array_to_numpy(array=left_column._values),
+                _helpers._convert_array_to_numpy(array=right_column._values),
+                condition.op,
+            )
+        )
 
-    anchor_predicates = [first_anchor, second_anchor]
-    # Filter by original condition position: duplicate anchor occurrences have
-    # already been handled by the regions kernel and must not run as residuals.
     residual_predicates = []
-    for position, condition in enumerate(conditions):
-        if position in range_positions:
+    for condition in conditions:
+        if condition.op in _helpers.less_than_join_types.union(
+            _helpers.greater_than_join_types
+        ):
             continue
         residual_predicate = _helpers._build_residual_predicate(
             left=df.loc[left_index, condition.left],
@@ -143,7 +136,7 @@ def _preparatory_work(
         )
         residual_predicates.append(residual_predicate)
 
-    return left_index, right_index, anchor_predicates, residual_predicates
+    return left_index, right_index, alignments, range_predicates, residual_predicates
 
 
 def _compute_regions_join(
@@ -196,16 +189,44 @@ def _compute_regions_join(
             return_building_blocks=return_building_blocks,
         )
 
-    *_, anchor_predicates, residual_predicates = outcome
-    predicates = [*anchor_predicates, *residual_predicates]
-    function = (
-        janitor_rs.region_indices
-        if not residual_predicates
-        else janitor_rs.region_indices_extended
-    )
-    result = function(predicates=predicates, keep=keep)
+    left_index, right_index, alignments, range_predicates, residual_predicates = outcome
+
+    if isinstance(left_index, slice):
+        left_index = df.index
+    if isinstance(right_index, slice):
+        right_index = right.index
+
+    if (len(range_predicates) == 2) and not residual_predicates:
+        first_predicate, second_predicate = range_predicates
+
+        result = janitor_rs.dual_regions_indices(
+            left_index=_helpers._convert_array_to_numpy(array=left_index._values),
+            right_index=_helpers._convert_array_to_numpy(array=right_index._values),
+            first_predicate=first_predicate,
+            second_predicate=second_predicate,
+            aligner=_helpers._convert_array_to_numpy(array=alignments[0]),
+            keep=keep,
+        )
+    elif len(range_predicates) == 2:
+        first_predicate, second_predicate = range_predicates
+
+        result = janitor_rs.dual_regions_and_residual_indices(
+            left_index=_helpers._convert_array_to_numpy(array=left_index._values),
+            right_index=_helpers._convert_array_to_numpy(array=right_index._values),
+            first_predicate=first_predicate,
+            second_predicate=second_predicate,
+            aligner=_helpers._convert_array_to_numpy(array=alignments[0]),
+            residual_predicates=residual_predicates,
+            keep=keep,
+        )
+    else:
+        raise NotImplementedError(
+            "TODO: implement single and multiple range predicates"
+        )
+
     if result is None:
         result = _helpers._empty_indices()
+
     return _helpers._materialize_or_return_indices(
         result=result,
         df=df,

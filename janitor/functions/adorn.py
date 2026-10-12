@@ -16,6 +16,47 @@ import pandas_flavor as pf
 from janitor.utils import check
 
 
+def _numeric_positions(df: pd.DataFrame) -> list[int]:
+    """Positions of the numeric columns of a DataFrame.
+
+    Columns are reported by position rather than by label, so that a frame
+    carrying duplicate column labels is described unambiguously, and a frame
+    with no columns yields an empty list rather than raising.
+
+    Args:
+        df: A pandas DataFrame.
+
+    Returns:
+        A list of integer column positions, in ascending order.
+    """
+    # Relabel a zero-row view by position, so `select_dtypes` reports
+    # positions instead of labels while keeping its dtype semantics.
+    probe = df.iloc[:0].set_axis(range(df.shape[1]), axis="columns")
+    return probe.select_dtypes(include=[np.number]).columns.tolist()
+
+
+def _numeric_data_positions(df: pd.DataFrame) -> list[int]:
+    """Positions of the numeric columns that the `adorn_*` functions modify.
+
+    Column position 0 holds the row identifier and is never adorned, even
+    when it is numeric. This mirrors R janitor, whose `adorn_*` functions
+    drop column index 1 from their numeric column set before adorning
+    (`numeric_cols <- setdiff(numeric_cols, 1)`).
+
+    The rule is positional, not by label: a frame whose first column label
+    repeats later on exempts only the first column itself. A frame with no
+    columns yields an empty list, so callers iterate zero times instead of
+    indexing into an empty axis.
+
+    Args:
+        df: A pandas DataFrame.
+
+    Returns:
+        A list of integer column positions, in ascending order.
+    """
+    return [pos for pos in _numeric_positions(df) if pos != 0]
+
+
 @pf.register_dataframe_method
 def adorn_totals(
     df: pd.DataFrame,
@@ -29,6 +70,12 @@ def adorn_totals(
     This function adds a row and/or column with sum totals for numeric
     columns. It is particularly useful when working with frequency tables
     (tabyls) but works on any DataFrame with numeric columns.
+
+    The column in position 0 is treated as the row identifier and is never
+    summed, even when it holds numeric data. This follows R janitor, whose
+    `adorn_*` functions drop column index 1 before adorning. On a DataFrame
+    that is not a frequency table, a numeric first column is therefore left
+    alone.
 
     Examples:
         Add a totals row to a DataFrame.
@@ -76,37 +123,37 @@ def adorn_totals(
 
     df = df.copy()
 
+    # Nothing to total, and no row identifier to label
+    if df.shape[1] == 0:
+        return df
+
     # Store original counts in attrs for adorn_ns to use later
     if "_original_counts" not in df.attrs:
         df.attrs["_original_counts"] = df.copy()
 
-    # Identify numeric columns, excluding the first column which is treated
-    # as a row identifier (consistent with R janitor's tabyl behavior)
-    first_col = df.columns[0]
-    numeric_cols = [
-        col
-        for col in df.select_dtypes(include=[np.number]).columns.tolist()
-        if col != first_col
-    ]
+    numeric_positions = _numeric_data_positions(df)
 
     if where in ("col", "both"):
         # Add totals column
-        df[name] = df[numeric_cols].sum(axis=1, skipna=na_rm)
+        df[name] = df.iloc[:, numeric_positions].sum(axis=1, skipna=na_rm)
+        # The new totals column is itself summed into the totals row
+        numeric_positions = _numeric_data_positions(df)
 
     if where in ("row", "both"):
         # Create totals row
-        totals_row = {}
-        for col in df.columns:
-            if col in numeric_cols or col == name:
-                totals_row[col] = df[col].sum(skipna=na_rm)
-            elif col == first_col:
-                # First column gets the totals row name (e.g., "Total")
-                totals_row[col] = name
+        numeric = set(numeric_positions)
+        totals_row = []
+        for pos in range(df.shape[1]):
+            if pos in numeric:
+                totals_row.append(df.iloc[:, pos].sum(skipna=na_rm))
+            elif pos == 0:
+                # Position 0 gets the totals row name (e.g., "Total")
+                totals_row.append(name)
             else:
                 # All other non-numeric columns get the fill value
-                totals_row[col] = fill
+                totals_row.append(fill)
 
-        totals_df = pd.DataFrame([totals_row])
+        totals_df = pd.DataFrame([totals_row], columns=df.columns)
         df = pd.concat([df, totals_df], ignore_index=True)
 
     return df
@@ -123,6 +170,12 @@ def adorn_percentages(
     This function converts numeric columns to percentages based on the
     specified denominator. It is particularly useful after creating
     frequency tables.
+
+    The column in position 0 is treated as the row identifier and is never
+    modified, even when it holds numeric data. This follows R janitor, whose
+    `adorn_*` functions drop column index 1 before adorning. On a DataFrame
+    that is not a frequency table, a numeric first column is therefore left
+    alone.
 
     Examples:
         Convert counts to row percentages.
@@ -170,32 +223,25 @@ def adorn_percentages(
     if "_original_counts" not in df.attrs:
         df.attrs["_original_counts"] = df.copy()
 
-    # Identify numeric columns, excluding the first column which is treated
-    # as a row identifier (consistent with R janitor's tabyl behavior)
-    first_col = df.columns[0]
-    numeric_cols = [
-        col
-        for col in df.select_dtypes(include=[np.number]).columns.tolist()
-        if col != first_col
-    ]
+    numeric_positions = _numeric_data_positions(df)
 
-    if not numeric_cols:
+    if not numeric_positions:
         return df
 
     if denominator == "row":
-        row_totals = df[numeric_cols].sum(axis=1, skipna=na_rm)
-        for col in numeric_cols:
-            df[col] = df[col] / row_totals
+        row_totals = df.iloc[:, numeric_positions].sum(axis=1, skipna=na_rm)
+        for pos in numeric_positions:
+            df.isetitem(pos, df.iloc[:, pos] / row_totals)
     elif denominator == "col":
-        for col in numeric_cols:
-            col_total = df[col].sum(skipna=na_rm)
+        for pos in numeric_positions:
+            col_total = df.iloc[:, pos].sum(skipna=na_rm)
             if col_total != 0:
-                df[col] = df[col] / col_total
+                df.isetitem(pos, df.iloc[:, pos] / col_total)
     else:  # "all"
-        grand_total = df[numeric_cols].sum(skipna=na_rm).sum()
+        grand_total = df.iloc[:, numeric_positions].sum(skipna=na_rm).sum()
         if grand_total != 0:
-            for col in numeric_cols:
-                df[col] = df[col] / grand_total
+            for pos in numeric_positions:
+                df.isetitem(pos, df.iloc[:, pos] / grand_total)
 
     return df
 
@@ -211,6 +257,12 @@ def adorn_pct_formatting(
 
     This function formats numeric columns (assumed to be proportions between
     0 and 1) as percentage strings with the specified number of decimal places.
+
+    The column in position 0 is treated as the row identifier and is never
+    formatted, even when it holds numeric data. This follows R janitor, whose
+    `adorn_*` functions drop column index 1 before adorning. On a DataFrame
+    that is not a frequency table, a numeric first column is therefore left
+    alone.
 
     Examples:
         Format percentages with default settings.
@@ -263,8 +315,7 @@ def adorn_pct_formatting(
     # Preserve original counts if they exist
     original_counts = df.attrs.get("_original_counts")
 
-    # Identify numeric columns
-    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    numeric_positions = _numeric_data_positions(df)
 
     rounding_mode = ROUND_HALF_EVEN if rounding == "half to even" else ROUND_HALF_UP
     quantize_str = f"0.{'0' * digits}" if digits > 0 else "0"
@@ -283,8 +334,8 @@ def adorn_pct_formatting(
             result += "%"
         return result
 
-    for col in numeric_cols:
-        df[col] = df[col].apply(format_pct)
+    for pos in numeric_positions:
+        df.isetitem(pos, df.iloc[:, pos].apply(format_pct))
 
     # Restore original counts in attrs
     if original_counts is not None:
@@ -306,6 +357,18 @@ def adorn_ns(
     converted to percentages. It requires either the original counts to be
     stored in the DataFrame's attrs (via prior use of adorn_percentages)
     or to be passed via the `ns` parameter.
+
+    The row identifier belongs to the frame being adorned, so it is the
+    column in position 0 of `df` that is left untouched, even when it holds
+    numeric data. Every numeric column of `ns` is read as a count, because a
+    counts frame supplied through `ns` need not repeat the identifier column.
+
+    Counts are matched to rows by position, so rows of `df` beyond the end of
+    `ns` (a totals row, for instance) are left as they are. Columns are
+    matched by position when `ns` shares the column axis of `df` -- the case
+    for counts stored by `adorn_percentages` -- and by label otherwise. A
+    label that repeats is matched occurrence by occurrence, so the k-th
+    column of `df` carrying a label reads the k-th count column carrying it.
 
     Examples:
         Add counts to formatted percentages.
@@ -366,26 +429,64 @@ def adorn_ns(
 
         format_func = _default_format_func
 
-    # Get numeric columns from the original counts
-    numeric_cols = ns.select_dtypes(include=[np.number]).columns.tolist()
+    # Every numeric column of the counts frame is a count. `ns` is not
+    # required to carry a row identifier, so nothing is dropped from it;
+    # the identifier is taken from `df` below.
+    ns_numeric = _numeric_positions(ns)
 
-    # Apply to matching columns
-    # Use positional indexing to handle cases where df has more rows than ns
-    # (e.g., after adorn_totals adds a totals row)
-    df_index_list = df.index.tolist()
-    for col in numeric_cols:
-        if col in df.columns:
-            for i, idx in enumerate(df_index_list):
-                # Only process rows that exist in the original counts
-                if i < len(ns):
-                    n_value = ns.iloc[i][col]
-                    formatted_n = format_func(n_value)
-                    current_value = df.loc[idx, col]
-                    if pd.notna(current_value) and formatted_n:
-                        if position == "rear":
-                            df.loc[idx, col] = f"{current_value} {formatted_n}"
-                        else:
-                            df.loc[idx, col] = f"{formatted_n} {current_value}"
+    # A counts frame that shares its column axis with `df` describes the very
+    # same columns, so it is matched straight across by position. This is the
+    # stored-counts path (`_original_counts` is a copy of the frame that
+    # `adorn_percentages` was handed), and matching it by label would be
+    # ambiguous the moment a label repeats.
+    aligned = df.columns.equals(ns.columns)
+    if aligned:
+        ns_numeric_set = set(ns_numeric)
+
+        def _count_position(pos: int, label) -> Optional[int]:
+            return pos if pos in ns_numeric_set else None
+
+    else:
+        # Otherwise counts are matched by label. A label that repeats in `ns`
+        # is consumed occurrence by occurrence, so the k-th column of `df`
+        # carrying a label reads the k-th count column carrying it, rather
+        # than every one of them re-reading the first.
+        ns_by_label: dict = {}
+        for ns_pos in ns_numeric:
+            ns_by_label.setdefault(ns.columns[ns_pos], []).append(ns_pos)
+        seen: dict = {}
+
+        def _count_position(pos: int, label) -> Optional[int]:
+            candidates = ns_by_label.get(label)
+            if candidates is None:
+                return None
+            occurrence = seen.get(label, 0)
+            seen[label] = occurrence + 1
+            if occurrence >= len(candidates):
+                return None
+            return candidates[occurrence]
+
+    # Column position 0 of `df` is the row identifier and is skipped.
+    # Rows are matched by position, so a `df` with more rows than `ns`
+    # (e.g., after adorn_totals adds a totals row) leaves the extras alone.
+    n_rows = min(len(df), len(ns))
+    for pos in range(1, df.shape[1]):
+        ns_pos = _count_position(pos, df.columns[pos])
+        if ns_pos is None:
+            continue
+        values = list(df.iloc[:, pos])
+        adorned = False
+        for i in range(n_rows):
+            formatted_n = format_func(ns.iat[i, ns_pos])
+            current_value = values[i]
+            if pd.notna(current_value) and formatted_n:
+                if position == "rear":
+                    values[i] = f"{current_value} {formatted_n}"
+                else:
+                    values[i] = f"{formatted_n} {current_value}"
+                adorned = True
+        if adorned:
+            df.isetitem(pos, values)
 
     return df
 
@@ -440,6 +541,10 @@ def adorn_title(
 
     df = df.copy()
 
+    # No columns means no row or column variable to name
+    if df.shape[1] == 0:
+        return df
+
     first_col = df.columns[0]
     if row_name is None:
         row_name = str(first_col)
@@ -470,8 +575,14 @@ def adorn_rounding(
 ) -> pd.DataFrame:
     """Round numeric columns with configurable rounding method.
 
-    This function rounds all numeric columns to the specified number of
+    This function rounds numeric columns to the specified number of
     decimal places using the specified rounding method.
+
+    The column in position 0 is treated as the row identifier and is never
+    rounded, even when it holds numeric data. This follows R janitor, whose
+    `adorn_*` functions drop column index 1 before adorning. On a DataFrame
+    that is not a frequency table, a numeric first column is therefore left
+    alone.
 
     Examples:
         Round numeric columns.
@@ -496,6 +607,14 @@ def adorn_rounding(
           category  value1  value2
         0        A     1.2     3.5
         1        B     2.6     4.6
+
+        A numeric first column is a row identifier, so it is not rounded.
+
+        >>> ordinary = pd.DataFrame({"year": [2020.4, 2021.6], "value": [1.234, 2.345]})
+        >>> ordinary.adorn_rounding(digits=1)
+             year  value
+        0  2020.4    1.2
+        1  2021.6    2.3
 
     Args:
         df: A pandas DataFrame.
@@ -523,8 +642,7 @@ def adorn_rounding(
     # Preserve original counts if they exist
     original_counts = df.attrs.get("_original_counts")
 
-    # Identify numeric columns
-    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    numeric_positions = _numeric_data_positions(df)
 
     rounding_mode = ROUND_HALF_EVEN if rounding == "half to even" else ROUND_HALF_UP
     quantize_str = f"0.{'0' * digits}" if digits > 0 else "0"
@@ -537,8 +655,8 @@ def adorn_rounding(
         )
         return float(rounded)
 
-    for col in numeric_cols:
-        df[col] = df[col].apply(round_value)
+    for pos in numeric_positions:
+        df.isetitem(pos, df.iloc[:, pos].apply(round_value))
 
     # Restore original counts in attrs
     if original_counts is not None:

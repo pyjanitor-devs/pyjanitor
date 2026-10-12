@@ -2,27 +2,31 @@
 
 The regions algorithm is selected for joins with at least two inequality
 predicates when ``join_algorithm="regions"``. PyJanitor owns null filtering,
-right-value sorting, and physical-position preservation. Rust then consumes
-two five-field primary anchors, aligns them by their physical positions, and
-performs the monotonic region sweep. Additional predicates remain residuals.
+right-value sorting, and physical-position preservation. Rust consumes either
+two primary range predicates or three-or-more range predicates, depending on
+the number of prepared range conditions. Additional non-range predicates are
+currently supported only on the two-range residual path.
 
-The first anchor establishes the canonical compact layout. Its left and right
+The first range establishes the canonical compact layout. Its left and right
 physical position arrays are also used to align aggregation inputs, so region
-coordinates never index an unrelated dataframe layout. The Rust index kernels
-return fully materialized pairs; unlike the ordinary range kernels, they do
-not expose ``starts``/``ends`` building blocks.
+coordinates never index an unrelated dataframe layout. Later right ranges are
+aligned to that layout before Rust sees them. The Rust index kernels return
+fully materialized pairs; unlike the ordinary range kernels, they do not
+expose ``starts``/``ends`` building blocks.
 
 Preparation sequence:
 
 1. Filter rows that are null for ordinary predicates, retaining their original
    physical row positions.
-2. Select two inequality predicates as region anchors, preferring one
-   less-than-family and one greater-than-family predicate when available.
-3. Sort each anchor's right values while carrying its physical positions.
-4. Let Rust align the independently prepared anchors by their unique physical
-   positions and construct the region labels.
-5. Keep every remaining predicate as a residual evaluated only after both
-   region anchors pass.
+2. Collect the inequality predicates in their prepared order.
+3. Sort every right range column in the direction required by its operator,
+   carrying its physical positions.
+4. Keep the first range's right order as the global layout. For every later
+   range, build an aligner where ``aligner[global_position]`` identifies the
+   source position in that range's sorted right values.
+5. Send exactly two ranges to the dual-region kernel. Send three-or-more
+   ranges to the n-region kernel, which checks all range paths together.
+6. Keep non-range predicates as residuals only for the two-range path.
 
 The aggregation path uses the same preparation. It adds output maps to the
 first anchor, selects forward or reverse Rust kernels, and passes aggregation
@@ -49,8 +53,17 @@ def _preparatory_work(
     df: pd.DataFrame,
     right: pd.DataFrame,
     conditions: list[tuple[str, str, str]],
-) -> tuple[pd.Index, pd.Index, list[tuple], list[tuple]] | None:
-    """Prepare the two region anchors and residual predicates.
+) -> (
+    tuple[
+        pd.Index,
+        pd.Index,
+        list[np.ndarray],
+        list[tuple],
+        list[tuple],
+    ]
+    | None
+):
+    """Prepare range predicates, right aligners, and residual predicates.
 
     Args:
         df: Reset-index left dataframe.
@@ -58,17 +71,18 @@ def _preparatory_work(
         conditions: Complete conditional-join predicate list.
 
     Returns:
-        ``(left_index, right_index, anchor_predicates,
-        residual_predicates)``. The anchor list always contains the two
-        region predicates; later predicates are residuals aligned to the
-        first anchor. Returns ``None`` when either side is empty or null
-        filtering leaves no usable rows.
+        ``(left_index, right_index, alignments, range_predicates,
+        residual_predicates)``. ``range_predicates`` contains every
+        inequality predicate in input order. ``alignments`` has one entry for
+        every range after the first, so its length is
+        ``len(range_predicates) - 1``. Returns ``None`` when either side is
+        empty or null filtering leaves no usable rows.
 
         The returned index objects identify physical rows in the reset-index
-        working dataframes. They are not sorted offsets. The first anchor's
-        right values are sorted together with its physical positions; the
-        second anchor is independently sorted and then reindexed to the first
-        anchor's physical layouts.
+        working dataframes. They are not sorted offsets. The first range's
+        right values establish the global right layout. Each later range is
+        independently sorted and its aligner maps a global position to the
+        corresponding position in that sorted array.
 
     Raises:
         ValueError: If fewer than two inequality predicates are available.
@@ -164,6 +178,8 @@ def _compute_regions_join(
     Args:
         df: Reset-index left dataframe.
         right: Reset-index right dataframe.
+        conditions: Complete conditional-join predicate list.
+        keep: Match-selection policy passed to Rust.
         how: Requested join shape.
         df_columns: Left columns to retain.
         right_columns: Right columns to retain.
@@ -217,6 +233,23 @@ def _compute_regions_join(
             second_predicate=second_predicate,
             aligner=_helpers._convert_array_to_numpy(array=alignments[0]),
             residual_predicates=residual_predicates,
+            keep=keep,
+        )
+    elif (len(range_predicates) > 2) and not residual_predicates:
+        # The first range defines the global right layout. Every later range
+        # is paired with the aligner produced for that same range, so keep
+        # these two lists parallel when crossing the Rust boundary.
+        first_predicate = range_predicates[0]
+        remaining_predicates = range_predicates[1:]
+        aligner_arrays = [
+            _helpers._convert_array_to_numpy(array=aligner) for aligner in alignments
+        ]
+        result = janitor_rs.n_region_indices(
+            left_index=_helpers._convert_array_to_numpy(array=left_index._values),
+            right_index=_helpers._convert_array_to_numpy(array=right_index._values),
+            first_predicate=first_predicate,
+            range_predicates=remaining_predicates,
+            aligners=aligner_arrays,
             keep=keep,
         )
     else:

@@ -504,6 +504,74 @@ def test_regions_dual_ranges_with_residual_matches_default(keep, residual_op):
     assert actual_pairs == expected_pairs
 
 
+@pytest.mark.parametrize("keep", ["all", "any", "first", "last"])
+def test_regions_three_ranges_with_independent_right_orders_match_default(keep):
+    """The n-region path preserves matches across independently sorted rights."""
+    left = pd.DataFrame(
+        {
+            "left_a": [2, 4, 6],
+            "left_b": [1, 3, 5],
+            "left_c": [10, 20, 30],
+        }
+    )
+    right = (
+        pd.DataFrame(
+            {
+                "right_a": [1, 3, 5, 7, 9],
+                "right_b": [0, 2, 4, 6, 8],
+                "right_c": [5, 15, 25, 35, 45],
+            }
+        )
+        .iloc[[2, 0, 4, 1, 3]]
+        .reset_index(drop=True)
+    )
+    conditions = (
+        ("left_a", "right_a", "<="),
+        ("left_b", "right_b", "<="),
+        ("left_c", "right_c", "<="),
+    )
+
+    expected = jn.get_join_indices(
+        left, right, *conditions, keep=keep, join_algorithm="default"
+    )
+    actual = jn.get_join_indices(
+        left, right, *conditions, keep=keep, join_algorithm="regions"
+    )
+
+    expected_pairs = sorted(zip(expected["left_index"], expected["right_index"]))
+    actual_pairs = sorted(zip(actual["left_index"], actual["right_index"]))
+    assert actual_pairs == expected_pairs
+
+
+def test_regions_three_ranges_with_residual_is_explicitly_unsupported():
+    """The n-region dispatcher currently accepts range predicates only."""
+    left = pd.DataFrame(
+        {
+            "left_a": [1],
+            "left_b": [1],
+            "left_c": [1],
+            "residual": [1],
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "right_a": [1],
+            "right_b": [1],
+            "right_c": [1],
+            "residual": [1],
+        }
+    )
+    conditions = (
+        ("left_a", "right_a", "<="),
+        ("left_b", "right_b", "<="),
+        ("left_c", "right_c", "<="),
+        ("residual", "residual", "!="),
+    )
+
+    with pytest.raises(NotImplementedError, match="single and multiple range"):
+        jn.get_join_indices(left, right, *conditions, join_algorithm="regions")
+
+
 def test_extended_range_then_not_equal_filters_windows():
     """Mixed joins keep the range-first window path and filter ``!=`` later."""
     left = pd.DataFrame({"range": [4], "residual": [4]})

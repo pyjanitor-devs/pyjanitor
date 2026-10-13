@@ -34,24 +34,23 @@ def read_csvs(
     one concatenated DataFrame.
 
     Examples:
-        >>> import os
-        >>> import shutil
         >>> import tempfile
+        >>> from pathlib import Path
         >>> import pandas as pd
         >>> from janitor import read_csvs
-        >>> folder = tempfile.mkdtemp()
+        >>> folder = Path(tempfile.mkdtemp())
         >>> pd.DataFrame({"id": [1, 2], "city": ["Lisbon", "Porto"]}).to_csv(
-        ...     os.path.join(folder, "sales_2024.csv"), index=False
+        ...     folder / "sales_2024.csv", index=False
         ... )
         >>> pd.DataFrame({"id": [3], "city": ["London"]}).to_csv(
-        ...     os.path.join(folder, "sales_2025.csv"), index=False
+        ...     folder / "sales_2025.csv", index=False
         ... )
 
         Read every file matching a glob pattern into a single DataFrame.
         Files are read in the order returned by `glob`, so sort the
         result if row order matters:
 
-        >>> df = read_csvs(os.path.join(folder, "sales_*.csv"))
+        >>> df = read_csvs(str(folder / "sales_*.csv"))
         >>> df.sort_values("id", ignore_index=True)
            id    city
         0   1  Lisbon
@@ -61,7 +60,7 @@ def read_csvs(
         Use `separate_df=True` to get a dictionary of DataFrames,
         keyed by file name:
 
-        >>> dfs = read_csvs(os.path.join(folder, "sales_*.csv"), separate_df=True)
+        >>> dfs = read_csvs(str(folder / "sales_*.csv"), separate_df=True)
         >>> sorted(dfs)
         ['sales_2024.csv', 'sales_2025.csv']
         >>> dfs["sales_2025.csv"]
@@ -72,16 +71,14 @@ def read_csvs(
         keyword arguments are passed on to `pandas.read_csv`:
 
         >>> paths = [
-        ...     os.path.join(folder, "sales_2025.csv"),
-        ...     os.path.join(folder, "sales_2024.csv"),
+        ...     folder / "sales_2025.csv",
+        ...     folder / "sales_2024.csv",
         ... ]
         >>> read_csvs(paths, usecols=["city"])
              city
         0  London
         1  Lisbon
         2   Porto
-
-        >>> shutil.rmtree(folder)
 
     Args:
         files_path: The filepath pattern matching the CSV files.

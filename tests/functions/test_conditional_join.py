@@ -543,8 +543,8 @@ def test_regions_three_ranges_with_independent_right_orders_match_default(keep):
     assert actual_pairs == expected_pairs
 
 
-def test_regions_three_ranges_with_residual_is_explicitly_unsupported():
-    """The n-region dispatcher currently accepts range predicates only."""
+def test_regions_three_ranges_with_residual_matches_default():
+    """The n-region residual branch agrees with the general implementation."""
     left = pd.DataFrame(
         {
             "left_a": [1],
@@ -568,8 +568,12 @@ def test_regions_three_ranges_with_residual_is_explicitly_unsupported():
         ("residual", "residual", "!="),
     )
 
-    with pytest.raises(NotImplementedError, match="single and multiple range"):
-        jn.get_join_indices(left, right, *conditions, join_algorithm="regions")
+    expected = jn.get_join_indices(left, right, *conditions, join_algorithm="default")
+    actual = jn.get_join_indices(left, right, *conditions, join_algorithm="regions")
+
+    assert sorted(zip(expected["left_index"], expected["right_index"])) == sorted(
+        zip(actual["left_index"], actual["right_index"])
+    )
 
 
 def test_extended_range_then_not_equal_filters_windows():

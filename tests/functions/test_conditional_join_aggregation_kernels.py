@@ -34,6 +34,67 @@ EXTENSION_DTYPES = [
 ]
 
 
+@pytest.mark.parametrize("range_count", [2, 3])
+@pytest.mark.parametrize("with_residual", [False, True])
+@pytest.mark.parametrize("reverse", [False, True])
+def test_region_aggregation_matches_default(range_count, with_residual, reverse):
+    """Region aggregation matches the general path for positive matches."""
+    left = pd.DataFrame(
+        {
+            "left_a": [2, 4, 6, 8],
+            "left_b": [8, 6, 4, 2],
+            "left_c": [5, 15, 25, 35],
+            "left_residual": [0, 1, 2, 3],
+            "value": [10, 20, 30, 40],
+        }
+    )
+    right = (
+        pd.DataFrame(
+            {
+                "right_a": [1, 3, 5, 7, 9],
+                "right_b": [9, 7, 5, 3, 1],
+                "right_c": [5, 15, 25, 35, 45],
+                "right_residual": [0, 2, 1, 4, 3],
+                "value": [100, 200, 300, 400, 500],
+            }
+        )
+        .iloc[[2, 0, 4, 1, 3]]
+        .reset_index(drop=True)
+    )
+    conditions = [
+        ("left_a", "right_a", "<="),
+        ("left_b", "right_b", ">="),
+        ("left_c", "right_c", "<="),
+    ][:range_count]
+    if with_residual:
+        conditions.append(("left_residual", "right_residual", "!="))
+    aggregations = [
+        ("value", "size"),
+        ("value", "sum"),
+        ("value", "prod"),
+        ("value", "min"),
+        ("value", "max"),
+    ]
+
+    expected = left.join_agg(
+        right,
+        *conditions,
+        aggfunc=aggregations,
+        reverse=reverse,
+        return_matched=True,
+    )
+    actual = left.join_agg(
+        right,
+        *conditions,
+        aggfunc=aggregations,
+        join_algorithm="regions",
+        reverse=reverse,
+        return_matched=True,
+    )
+
+    assert_frame_equal(expected.sort_index(), actual.sort_index())
+
+
 def _with_matched_level(expected, output_length, matched):
     """Expand expected aggregations to the complete output domain."""
     if output_length == 0:

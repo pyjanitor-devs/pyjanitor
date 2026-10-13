@@ -5,7 +5,7 @@ predicates when ``join_algorithm="regions"``. PyJanitor owns null filtering,
 right-value sorting, and physical-position preservation. Rust consumes either
 two primary range predicates or three-or-more range predicates, depending on
 the number of prepared range conditions. Additional non-range predicates are
-currently supported only on the two-range residual path.
+passed through the dual- or n-region residual path.
 
 The first range establishes the canonical compact layout. Its left and right
 physical position arrays are also used to align aggregation inputs, so region
@@ -26,12 +26,12 @@ Preparation sequence:
    source position in that range's sorted right values.
 5. Send exactly two ranges to the dual-region kernel. Send three-or-more
    ranges to the n-region kernel, which checks all range paths together.
-6. Keep non-range predicates as residuals only for the two-range path.
+6. Keep non-range predicates as residuals for the dual- or n-region path.
 
-The aggregation path uses the same preparation. It adds output maps to the
-first anchor, selects forward or reverse Rust kernels, and passes aggregation
-arrays in the corresponding aligned source layout. It does not use range
-``starts``/``ends`` building blocks or a right-ordering flag.
+The aggregation path uses the same preparation and selects the matching
+dual-region or n-region Rust kernel. Aggregation arrays are passed in the
+corresponding aligned source layout. It does not use range ``starts``/``ends``
+building blocks or a right-ordering flag.
 """
 
 from __future__ import annotations
@@ -253,8 +253,19 @@ def _compute_regions_join(
             keep=keep,
         )
     else:
-        raise NotImplementedError(
-            "TODO: implement single and multiple range predicates"
+        first_predicate = range_predicates[0]
+        remaining_predicates = range_predicates[1:]
+        aligner_arrays = [
+            _helpers._convert_array_to_numpy(array=aligner) for aligner in alignments
+        ]
+        result = janitor_rs.n_region_and_residual_indices(
+            left_index=_helpers._convert_array_to_numpy(array=left_index._values),
+            right_index=_helpers._convert_array_to_numpy(array=right_index._values),
+            first_predicate=first_predicate,
+            range_predicates=remaining_predicates,
+            aligners=aligner_arrays,
+            residual_predicates=residual_predicates,
+            keep=keep,
         )
 
     if result is None:
@@ -272,27 +283,6 @@ def _compute_regions_join(
         return_matching_indices=return_matching_indices,
         return_building_blocks=return_building_blocks,
     )
-
-
-def _aggregation_predicates(predicates: list[tuple]) -> list[tuple]:
-    """Attach output maps required by the region aggregation ABI.
-
-    The index kernels use five-field anchors. Aggregation additionally needs
-    the output labels for the compact first-anchor layout: forward results are
-    labeled by first-anchor left positions and reverse results by right
-    positions. These maps label outputs only; Rust still uses its internal
-    compact-to-source mappings for reading aggregation values.
-
-    The first four fields remain the normal region anchor fields. The
-    aggregation form inserts a boolean extension marker, then the left and
-    right output maps, and finally the operator. Residual tuples are preserved
-    unchanged after the augmented first anchor. The maps are copied from the
-    first anchor because that anchor defines the canonical output layout.
-    """
-    first = predicates[0]
-    left_output = np.asarray(first[1], dtype=np.int64)
-    right_output = np.asarray(first[3], dtype=np.int64)
-    return [(*first[:4], True, left_output, right_output, first[4]), *predicates[1:]]
 
 
 def _aggregate(
@@ -340,12 +330,17 @@ def _aggregate(
             aggfunc=aggfunc,
             return_matched=return_matched,
         )
-    left_index, right_index, anchor_predicates, residual_predicates = outcome
+    (
+        left_index,
+        right_index,
+        alignments,
+        anchor_predicates,
+        residual_predicates,
+    ) = outcome
     if isinstance(left_index, slice):
         left_index = df.index
     if isinstance(right_index, slice):
         right_index = right.index
-    predicates = _aggregation_predicates([*anchor_predicates, *residual_predicates])
     source_index = left_index if reverse else right_index
     output_index = right_index if reverse else left_index
     aggregation_inputs = _aggregation_inputs(
@@ -353,18 +348,80 @@ def _aggregate(
         aggfunc=aggfunc,
         indexer=source_index,
     )
-    extended = len(predicates) > 2
-    function = {
-        (False, False): janitor_rs.region_aggregate,
-        (True, False): janitor_rs.region_aggregate_reverse,
-        (False, True): janitor_rs.region_extended_aggregate,
-        (True, True): janitor_rs.region_extended_aggregate_reverse,
-    }[(reverse, extended)]
-    result = function(
-        predicates=predicates,
-        aggregations=aggregation_inputs,
-        return_matched=return_matched,
-    )
+    left_index_array = _helpers._convert_array_to_numpy(array=left_index._values)
+    right_index_array = _helpers._convert_array_to_numpy(array=right_index._values)
+    first_predicate = anchor_predicates[0]
+
+    if len(anchor_predicates) == 2:
+        second_predicate = anchor_predicates[1]
+        aligner = _helpers._convert_array_to_numpy(array=alignments[0])
+        if residual_predicates:
+            function = (
+                janitor_rs.dual_regions_and_residual_aggregate_reverse
+                if reverse
+                else janitor_rs.dual_regions_and_residual_aggregate
+            )
+            result = function(
+                left_index=left_index_array,
+                right_index=right_index_array,
+                first_predicate=first_predicate,
+                second_predicate=second_predicate,
+                aligner=aligner,
+                residual_predicates=residual_predicates,
+                aggregations=aggregation_inputs,
+                return_matched=return_matched,
+            )
+        else:
+            function = (
+                janitor_rs.dual_regions_aggregate_reverse
+                if reverse
+                else janitor_rs.dual_regions_aggregate
+            )
+            result = function(
+                left_index=left_index_array,
+                right_index=right_index_array,
+                first_predicate=first_predicate,
+                second_predicate=second_predicate,
+                aligner=aligner,
+                aggregations=aggregation_inputs,
+                return_matched=return_matched,
+            )
+    else:
+        remaining_predicates = anchor_predicates[1:]
+        aligner_arrays = [
+            _helpers._convert_array_to_numpy(array=aligner) for aligner in alignments
+        ]
+        if residual_predicates:
+            function = (
+                janitor_rs.n_region_and_residual_aggregate_reverse
+                if reverse
+                else janitor_rs.n_region_and_residual_aggregate
+            )
+            result = function(
+                left_index=left_index_array,
+                right_index=right_index_array,
+                first_predicate=first_predicate,
+                range_predicates=remaining_predicates,
+                aligners=aligner_arrays,
+                residual_predicates=residual_predicates,
+                aggregations=aggregation_inputs,
+                return_matched=return_matched,
+            )
+        else:
+            function = (
+                janitor_rs.n_region_aggregate_reverse
+                if reverse
+                else janitor_rs.n_region_aggregate
+            )
+            result = function(
+                left_index=left_index_array,
+                right_index=right_index_array,
+                first_predicate=first_predicate,
+                range_predicates=remaining_predicates,
+                aligners=aligner_arrays,
+                aggregations=aggregation_inputs,
+                return_matched=return_matched,
+            )
     if result is None:
         return _unmatched_aggregation_result(
             output_index=output_index,

@@ -16,6 +16,13 @@ Every dispatcher returns physical position arrays or an aggregation result.
 The shared helpers materialize those positions back into pandas rows, which
 keeps outer-join, indicator, column-selection, and positional-index behavior
 consistent across all algorithms.
+
+The order of ``conditions`` is significant and is preserved. This is
+particularly important for range joins: the range predicates are consumed in
+the order supplied, and the first range establishes the primary search layout
+for the regions algorithm. ``conditional_join`` does not reorder predicates
+to choose a different anchor or to optimize the join. Callers are responsible
+for supplying the predicates in the intended order.
 """
 
 from __future__ import annotations
@@ -109,6 +116,13 @@ def conditional_join(
 
     For multiple conditions, the and(`&`)
     operator is used to combine the results of the individual conditions.
+
+    The order in which conditions are supplied is preserved; conditions are
+    not reordered or rearranged by ``conditional_join``. This matters most
+    for joins with multiple range predicates, where the first range predicate
+    establishes the primary search layout and later range predicates are
+    aligned to it. Put the range predicates in the order intended for the
+    join, especially when using ``join_algorithm="regions"``.
 
     In some scenarios there might be performance gains if a mixed
     equality/range join uses the non-equi path. The range predicates drive
@@ -347,7 +361,12 @@ def conditional_join(
             The operator can be any of
             `==`, `!=`, `<=`, `<`, `>=`, `>`. For multiple conditions,
             the and(`&`) operator is used to combine the results
-            of the individual conditions.
+            of the individual conditions. Conditions are preserved in the
+            order supplied and are not reordered by ``conditional_join``.
+            This order is especially important for multiple range predicates:
+            the first range establishes the primary search layout for the
+            regions algorithm, so callers should provide the predicates in
+            their intended order.
         how: Indicates the type of join to be performed.
             It can be one of `inner`, `left`, `right`, `outer`,
             `left_anti` or `right_anti`.

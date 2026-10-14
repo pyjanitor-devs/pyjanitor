@@ -103,7 +103,7 @@ def conditional_join(
     possible using the
     [`select_columns`][janitor.functions.select.select_columns] syntax.
 
-    ``output_columns`` is a mapping with optional ``"left"`` and ``"right"``
+    ``output_columns`` is a dictionary with optional ``"left"`` and ``"right"``
     selectors. A value of ``None`` omits that side, while ``"*"`` retains all
     columns. Each selector accepts any form supported by
     [`select_columns`][janitor.functions.select.select_columns]. Selection is
@@ -117,9 +117,10 @@ def conditional_join(
     after matching, so a column used in a condition can be omitted from the
     result without being removed from the join inputs.
 
-    !!! warning
-        The `df_columns` and `right_columns` parameters are deprecated.
-        Select or rename columns on the DataFrame before calling `conditional_join`.
+    !!! warning "Deprecated in 0.32.36"
+        The `df_columns` and `right_columns` parameters are deprecated and will
+        be removed in 0.33.0. Use `output_columns={"left": ..., "right": ...}`
+        instead.
 
     Noticeable performance can be observed for range joins,
     if both join columns from the right dataframe
@@ -411,14 +412,14 @@ def conditional_join(
             [`select_columns`][janitor.functions.select.select_columns] syntax.
             !!! warning "Deprecated in 0.32.36"
                 `df_columns` will be removed in 0.33.0.
-                Select or rename columns directly on the DataFrame before calling `conditional_join`.
+                Use `output_columns` instead.
         right_columns: Columns to select from `right` in the final output dataframe.
             Column selection is based on the
             [`select_columns`][janitor.functions.select.select_columns] syntax.
             !!! warning "Deprecated in 0.32.36"
                 `right_columns` will be removed in 0.33.0.
-                Select or rename columns directly on the DataFrame before calling `conditional_join`.
-        output_columns: Optional mapping of ``"left"`` and ``"right"`` output
+                Use `output_columns` instead.
+        output_columns: Optional dictionary of ``"left"`` and ``"right"`` output
             selectors. ``None`` omits a side and ``"*"`` selects all columns.
             Each selector accepts any form supported by
             [`select_columns`][janitor.functions.select.select_columns].
@@ -762,7 +763,7 @@ def _normalize_output_columns(
     evaluation is deliberately deferred until final result materialization.
 
     Args:
-        output_columns: Mapping whose keys are ``"left"`` and/or ``"right"``
+        output_columns: Dictionary whose keys are ``"left"`` and/or ``"right"``
             and whose values are selectors accepted by ``select_columns``.
             ``None`` omits the corresponding side. A missing key has the same
             meaning as an explicit ``None`` value.
@@ -775,7 +776,7 @@ def _normalize_output_columns(
         A pair containing the normalized left and right selectors.
 
     Raises:
-        TypeError: If ``output_columns`` is not a mapping.
+        TypeError: If ``output_columns`` is not a dictionary.
         ValueError: If an unknown side is supplied or the new and legacy
             projection APIs are used together.
     """

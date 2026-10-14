@@ -95,6 +95,47 @@ def test_region_aggregation_matches_default(range_count, with_residual, reverse)
     assert_frame_equal(expected.sort_index(), actual.sort_index())
 
 
+def test_region_reverse_aggregation_handles_float_ranges_and_null_values():
+    """Regions preserve reverse aggregation semantics for float inputs."""
+    left = pd.DataFrame(
+        {
+            "left_a": [2.0, 4.0],
+            "left_b": [8.0, 6.0],
+            "value": [10.0, np.nan],
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "right_a": [1.0, 3.0, 5.0, 7.0, 9.0],
+            "right_b": [9.0, 7.0, 5.0, 3.0, 1.0],
+            "payload": [1.5, 2.5, np.nan, 4.5, 5.5],
+        }
+    )
+    conditions = (
+        ("left_a", "right_a", "<="),
+        ("left_b", "right_b", ">="),
+    )
+    aggregations = [("value", "size"), ("value", "sum")]
+
+    expected = left.join_agg(
+        right,
+        *conditions,
+        aggfunc=aggregations,
+        reverse=True,
+        return_matched=True,
+    )
+    actual = left.join_agg(
+        right,
+        *conditions,
+        aggfunc=aggregations,
+        join_algorithm="regions",
+        reverse=True,
+        return_matched=True,
+    )
+
+    assert_frame_equal(expected.sort_index(), actual.sort_index())
+
+
 def _with_matched_level(expected, output_length, matched):
     """Expand expected aggregations to the complete output domain."""
     if output_length == 0:

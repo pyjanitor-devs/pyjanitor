@@ -20,6 +20,7 @@ implementing different outer-join, indicator, column-selection, or
 ``include_join_positions`` behavior.
 """
 
+import itertools
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Hashable, Sequence
@@ -662,29 +663,11 @@ def _get_indexer_for_non_null_rows(df, columns_and_ops):
 
 def _get_range_positions_for_one_side(conditions):
     """Return the range positions for one side of the join."""
-    range_positions = []
-    le_lt_count = 0
-    ge_gt_count = 0
-    # Store condition positions along with the selected anchors. Positions
-    # distinguish duplicate predicates and let residual construction exclude
-    # exactly the selected occurrences later.
-    for position, condition in enumerate(conditions):
-        if le_lt_count and ge_gt_count:
-            break
-        if (condition.op in less_than_join_types) and not le_lt_count:
-            range_positions.append(position)
-            le_lt_count += 1
-        elif (condition.op in greater_than_join_types) and not ge_gt_count:
-            range_positions.append(position)
-            ge_gt_count += 1
-
-    if (le_lt_count + ge_gt_count) < 2:
-        range_positions = []
-        # The fallback still needs original positions so duplicate predicates
-        # are selected and removed by occurrence, without reordering anything.
-        for position, condition in enumerate(conditions):
-            if len(range_positions) == 2:
-                break
-            if condition.op in less_than_join_types.union(greater_than_join_types):
-                range_positions.append(position)
+    # onus is on user to pass conditions in the order to be used
+    range_positions = (
+        position
+        for position, condition in enumerate(conditions)
+        if condition.op in less_than_join_types.union(greater_than_join_types)
+    )
+    range_positions = list(itertools.islice(range_positions, 2))
     return range_positions

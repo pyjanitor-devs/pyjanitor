@@ -1608,6 +1608,44 @@ def test_duplicate_equi_aggregation_unordered_second_range_matches_reference(
     assert_frame_equal(expected, actual)
 
 
+def test_equi_aggregation_preserves_overlapping_second_range_windows():
+    """Aggregation keeps matches from overlapping first-range windows."""
+    left = pd.DataFrame(
+        {
+            "key": [1, 1],
+            "first": [0, 2],
+            "second": [50, 0],
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "key": [1, 1, 1, 1],
+            "first_r": [1, 2, 3, 4],
+            "second_r": [1, 100, 2, 3],
+            "value": [10, 20, 30, 40],
+        }
+    )
+
+    actual = left.join_agg(
+        right,
+        ("key", "key", "=="),
+        ("first", "first_r", "<"),
+        ("second", "second_r", "<"),
+        aggfunc=[("value", "sum"), ("value", "size")],
+    )
+    expected = pd.DataFrame(
+        {
+            ("value", "sum"): [20, 70],
+            ("value", "size"): [1, 2],
+        },
+        index=pd.MultiIndex.from_tuples(
+            [(0, True), (1, True)], names=[None, "matched"]
+        ),
+    )
+
+    assert_frame_equal(expected, actual)
+
+
 def test_equi_aggregation_preserves_not_equal_residual_semantics():
     """An equi candidate can be narrowed by the existing ``!=`` residual."""
     left = pd.DataFrame({"key": ["a"], "filter": [1]})

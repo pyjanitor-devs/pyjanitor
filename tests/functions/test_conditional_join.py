@@ -256,6 +256,46 @@ def test_equi_range_unordered_second_window_applies_keep(keep, expected_right):
     assert np.array_equal(result["right_index"], np.array(expected_right))
 
 
+@pytest.mark.parametrize("with_residual", [False, True])
+def test_equi_range_unordered_second_range_preserves_overlapping_windows(
+    with_residual,
+):
+    """Overlapping first-range windows do not overwrite second-range bounds."""
+    left = pd.DataFrame(
+        {
+            "key": [1, 1],
+            "first": [0, 2],
+            "second": [50, 0],
+            "payload": [7, 8],
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "key": [1, 1, 1, 1],
+            "first_r": [1, 2, 3, 4],
+            "second_r": [1, 100, 2, 3],
+            "payload_r": [0, 7, 8, 8],
+        }
+    )
+
+    conditions = [
+        ("key", "key", "=="),
+        ("first", "first_r", "<"),
+        ("second", "second_r", "<"),
+    ]
+    if with_residual:
+        conditions.append(("payload", "payload_r", "=="))
+    result = jn.get_join_indices(
+        left,
+        right,
+        *conditions,
+        keep="all",
+    )
+
+    assert np.array_equal(result["left_index"], np.array([0, 1, 1]))
+    assert np.array_equal(result["right_index"], np.array([1, 2, 3]))
+
+
 @pytest.mark.parametrize("first_op", ["<", "<=", ">", ">="])
 @pytest.mark.parametrize("second_op", ["<", "<=", ">", ">="])
 def test_equi_two_ranges_match_bruteforce_reference(first_op, second_op):

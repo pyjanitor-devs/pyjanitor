@@ -41,3 +41,11 @@ def test_fill_empty_generator(null_df):
     expected = null_df.fillna(3)
 
     assert result.equals(expected)
+
+
+@pytest.mark.functions
+def test_fill_empty_unsupported_type_raises():
+    """A scalar non-string column name has no `_fill_empty` dispatch."""
+    df = pd.DataFrame({2: [None, 1.0]})
+    with pytest.raises(NotImplementedError):
+        df.fill_empty(column_names=2, value=0)

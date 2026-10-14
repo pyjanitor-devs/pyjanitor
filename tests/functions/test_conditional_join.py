@@ -528,6 +528,31 @@ def test_single_range_building_blocks_materialize_all_matches():
     assert np.array_equal(matches["ends"], np.array([3]))
 
 
+def test_equi_building_blocks_index_numpy_arrays():
+    """Equality building blocks can index NumPy arrays directly."""
+    left = pd.DataFrame({"key": [1, 2, 1]})
+    right = pd.DataFrame({"key": [1, 1, 2]})
+
+    blocks = jn.get_join_indices(
+        left,
+        right,
+        ("key", "key", "=="),
+        return_building_blocks=True,
+    )
+    pairs = jn.get_join_indices(left, right, ("key", "key", "=="))
+
+    left_positions = np.arange(len(left))[blocks["left_index"]]
+    right_positions = np.arange(len(right))[blocks["right_index"]]
+    rebuilt = sorted(
+        (int(left_position), int(right_position))
+        for left_position, start, end in zip(
+            left_positions, blocks["starts"], blocks["ends"]
+        )
+        for right_position in right_positions[start:end]
+    )
+    assert rebuilt == sorted(zip(pairs["left_index"], pairs["right_index"]))
+
+
 def test_single_not_equal_building_blocks_materialize_all_matches():
     """Single ``!=`` building blocks override ``keep="first"``."""
     left = pd.DataFrame({"value": [1]})
@@ -1365,6 +1390,31 @@ def test_equi_aggregation_without_key_match_is_empty(
     assert actual.empty
     assert actual.columns.equals(matched.columns)
     assert actual.index.names == matched.index.names
+
+
+@pytest.mark.parametrize(
+    "dtype, sizes",
+    [("float64", [2, 3, 3]), ("Int64", [1, 0, 2]), ("Float64", [1, 0, 2])],
+)
+def test_not_equal_aggregation_keeps_null_rows(dtype, sizes):
+    """``!=``-only joins keep null rows and follow pandas ``!=`` semantics."""
+    left = pd.DataFrame({"key": pd.array([1, None, 3], dtype=dtype)})
+    right = pd.DataFrame(
+        {"key": pd.array([1, 2, None], dtype=dtype), "amount": [10, 20, 30]}
+    )
+
+    actual = left.join_agg(
+        right,
+        ("key", "key", "!="),
+        aggfunc=[("amount", "size")],
+        return_matched=True,
+    )
+
+    assert actual.index.get_level_values(0).tolist() == [0, 1, 2]
+    assert actual[("amount", "size")].tolist() == sizes
+    assert actual.index.get_level_values("matched").tolist() == [
+        size > 0 for size in sizes
+    ]
 
 
 def test_all_unmatched_not_equal_aggregation_retains_rows():

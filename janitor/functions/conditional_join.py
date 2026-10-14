@@ -1204,15 +1204,21 @@ def get_join_indices(
 
     !!! note "Return layout"
 
-        - ``left_index`` and ``right_index`` are one-dimensional NumPy arrays
-          of zero-based physical row positions from ``df`` and ``right``.
-        - The arrays have equal length; values at position ``i`` form one
-          matching pair.
+        - ``left_index`` and ``right_index`` hold zero-based physical row
+          positions from ``df`` and ``right``. Without building blocks, they
+          are one-dimensional NumPy arrays of equal length; values at
+          position ``i`` form one matching pair.
         - ``keep="all"`` returns every pair. ``keep="first"``, ``"last"``,
           and ``"any"`` return at most one pair per left row.
         - When there are no matches, both required arrays are empty.
         - ``return_building_blocks=True`` may add experimental arrays such as
-          ``starts`` and ``ends``. Their keys and shape are not stable.
+          ``starts`` and ``ends``. When they are present, the result is a
+          window layout rather than pairs: ``left_index`` has one entry per
+          window, and ``right_index[starts[i]:ends[i]]`` holds the right
+          positions matching ``left_index[i]``. ``left_index`` may be
+          ``slice(None)``, meaning every left row, and ``right_index`` may be
+          a pandas ``Index``; both can be used directly to index NumPy arrays
+          and pandas objects. Their keys and shape are not stable.
 
     Examples:
         >>> import pandas as pd
@@ -1315,13 +1321,18 @@ def join_agg(
         not its original labels; as with `pd.merge`, it should not be relied
         on to align results back to the input. Rows with null values in any
         join-condition column are excluded, except for joins that only use
-        ``!=``. Not every output-side row is guaranteed to appear: when an
+        ``!=``. Those joins keep null rows and follow pandas ``!=``: a NumPy
+        ``NaN`` is unequal to every value, while ``pd.NA`` never matches.
+        Not every output-side row is guaranteed to appear: when an
         equality predicate is present and no equality key matches, the
-        result is empty, as with `get_join_indices`. Rows that do appear
-        without a matching partner carry identity values and
-        ``matched=False``. With ``return_matched=True``, the result index
-        has a boolean ``matched`` level so identity-valued unmatched results
-        can be distinguished from matched results with the same value.
+        result is empty, as with `get_join_indices`. Forward results follow
+        left-row position. Reverse results follow the internal right-side
+        layout, which is usually sorted by join value, so their row order is
+        not guaranteed. Rows that do appear without a matching partner carry
+        identity values and ``matched=False``. With ``return_matched=True``,
+        the result index has a boolean ``matched`` level so identity-valued
+        unmatched results can be distinguished from matched results with the
+        same value.
 
     Args:
         df: Left DataFrame and reverse-aggregation source.

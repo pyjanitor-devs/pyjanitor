@@ -1735,10 +1735,10 @@ def test_equi_aggregation_supports_multiple_equi_columns():
 
 
 @pytest.mark.parametrize("return_matched", [True, False])
-def test_equi_aggregation_with_no_matches_retains_requested_output_shape(
+def test_equi_aggregation_with_no_matches_returns_empty_output_shape(
     return_matched,
 ):
-    """No equi match retains eligible rows in the requested index shape."""
+    """No equi match returns an empty result in the requested index shape."""
     left = pd.DataFrame({"key": [1]})
     right = pd.DataFrame({"key": [2], "value": [10]})
 
@@ -1751,13 +1751,13 @@ def test_equi_aggregation_with_no_matches_retains_requested_output_shape(
 
     expected = pd.DataFrame(
         {
-            ("value", "sum"): [0],
-            ("value", "size"): [0],
+            ("value", "sum"): np.array([], dtype="int64"),
+            ("value", "size"): np.array([], dtype="int64"),
         },
-        index=pd.RangeIndex(1),
+        index=pd.RangeIndex(0),
     )
     if return_matched:
-        expected = _with_matched_level(expected, 1, np.array([False]))
+        expected = _with_matched_level(expected, 0, np.array([], dtype=bool))
     else:
         assert isinstance(actual.index, pd.RangeIndex)
     assert_frame_equal(expected, actual)

@@ -7,15 +7,18 @@ on:
   pull_request:
     branches:
       - dev
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - closed
 
 permissions:
-  contents: write
-  pages: write
-  id-token: write
-  pull-requests: write
+  contents: read
 
 jobs:
   build-docs:
+    if: github.event_name != 'pull_request' || github.event.action != 'closed'
     runs-on: ubuntu-latest
     name: Build documentation
 
@@ -40,8 +43,35 @@ jobs:
       - name: Build docs
         run: pixi run build-docs
 
+      - name: Upload documentation artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation-site
+          path: ./site
+          if-no-files-found: error
+
+  deploy-website:
+    needs: build-docs
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    name: Deploy documentation website
+    permissions:
+      contents: read
+    concurrency:
+      group: gh-pages
+      cancel-in-progress: false
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Download documentation artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: documentation-site
+          path: ./site
+
       - name: Deploy website
-        if: github.ref_name == 'dev'
         uses: peaceiris/actions-gh-pages@v4
         with:
           # https://github.com/peaceiris/actions-gh-pages#%EF%B8%8F-set-personal-access-token-personal_token
@@ -53,11 +83,37 @@ jobs:
           force_orphan: true
           enable_jekyll: false
 
+  deploy-pr-preview:
+    needs: build-docs
+    if: >-
+      always() &&
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.base.ref == 'dev' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      (github.event.action == 'closed' || needs.build-docs.result == 'success')
+    runs-on: ubuntu-latest
+    name: Deploy documentation PR preview
+    permissions:
+      contents: write
+      pull-requests: write
+    concurrency:
+      group: gh-pages
+      cancel-in-progress: false
+
+    steps:
+      - name: Checkout trusted base repository
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+
+      - name: Download documentation artifact
+        if: github.event.action != 'closed'
+        uses: actions/download-artifact@v4
+        with:
+          name: documentation-site
+          path: ./site
+
       - name: Deploy PR Preview
-        if: >-
-          github.event_name == 'pull_request' &&
-          github.event.pull_request.base.ref == 'dev' &&
-          github.event.pull_request.head.repo.full_name == github.repository
         uses: rossjrw/pr-preview-action@v1.8.1
         with:
           source-dir: ./site

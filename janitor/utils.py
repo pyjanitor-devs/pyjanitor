@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib
+import inspect
 import os
 import socket
 import sys
@@ -209,6 +210,10 @@ def deprecated_kwargs(
 ) -> Callable:
     """Used as a decorator when deprecating function's keyword arguments.
 
+    An explicitly supplied value equal to the decorated function's default is
+    not treated as use of the deprecated behavior. This keeps deprecation
+    warnings precise for callers that pass defaults explicitly.
+
     Examples:
 
         ```python
@@ -241,10 +246,22 @@ def deprecated_kwargs(
     """
 
     def decorator(func):
+        signature = inspect.signature(func)
+
         @wraps(func)
         def wrapper(*args, **kwargs):
             for argument in arguments:
                 if argument in kwargs:
+                    parameter = signature.parameters.get(argument)
+                    if parameter is not None and (
+                        parameter.default is not inspect.Parameter.empty
+                    ):
+                        try:
+                            is_default = kwargs[argument] == parameter.default
+                        except (TypeError, ValueError):
+                            is_default = False
+                        if isinstance(is_default, (bool, np.bool_)) and is_default:
+                            continue
                     msg = message.format(
                         func_name=func.__name__,
                         argument=argument,

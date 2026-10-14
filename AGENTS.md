@@ -713,6 +713,22 @@ uses unreleased Rust exports; otherwise CI installs the published janitor-rs
 wheel and fails with missing-attribute errors. Remove the override and restore
 the release pin before merging the stack into `dev`.
 
+### [2026-10-14] join_agg Does Not Guarantee a Complete Output Row Set
+
+**Context**: Reviewing which rows `join_agg` returns across equality, range,
+and `!=` paths.
+**Learning**: The result is indexed by physical row positions and, like
+`pd.merge`, is not meant to be aligned back to the input. Rows with null
+join-condition values are excluded except in joins that use only `!=`.
+When an equality predicate is present and no key matches, the result is
+empty, matching `get_join_indices`. Otherwise, whether an unmatched row
+appears depends on the path: reverse aggregation with duplicate right keys
+can keep right rows whose key is absent on the left, while other equality
+paths drop them.
+**Recommendation**: Do not treat these differences as defects or add
+coverage-mask work to make every path return the same rows. Rows that do
+appear without a partner carry identity values and `matched=False`.
+
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol

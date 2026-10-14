@@ -560,14 +560,18 @@ def _aggregate(
 
     Returns:
         A dataframe using the shared conditional-join aggregation contract.
-        Eligible output rows are retained with identity values when no
-        candidate survives; only a missing eligible output domain is empty.
+        Output rows whose equality key matched are retained with identity
+        values when no range or residual candidate survives. The result is
+        empty when no equality key matches.
     """
 
     outcome = _preparatory_work(df, right, conditions)
     if outcome is None:
+        # No equality key matches: return an empty result, consistent with
+        # get_join_indices, rather than every row (including null keys).
+        output_index = right.index if reverse else df.index
         return _unmatched_aggregation_result(
-            output_index=right.index if reverse else df.index,
+            output_index=output_index[:0],
             source=df if reverse else right,
             return_matched=return_matched,
             aggfunc=aggfunc,

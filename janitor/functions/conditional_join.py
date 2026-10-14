@@ -1311,13 +1311,17 @@ def join_agg(
 
     !!! note "Output and matching"
 
-        The output contains one row for every eligible physical row on the
-        output side. Rows with null values in any join-condition column are
-        excluded. Eligible rows with no matching partner are retained with
-        identity values and ``matched=False``. With ``return_matched=True``,
-        the result index has a boolean ``matched`` level so identity-valued
-        unmatched results can be distinguished from matched results with the
-        same value.
+        The result index holds physical row positions of the output side,
+        not its original labels; as with `pd.merge`, it should not be relied
+        on to align results back to the input. Rows with null values in any
+        join-condition column are excluded, except for joins that only use
+        ``!=``. Not every output-side row is guaranteed to appear: when an
+        equality predicate is present and no equality key matches, the
+        result is empty, as with `get_join_indices`. Rows that do appear
+        without a matching partner carry identity values and
+        ``matched=False``. With ``return_matched=True``, the result index
+        has a boolean ``matched`` level so identity-valued unmatched results
+        can be distinguished from matched results with the same value.
 
     Args:
         df: Left DataFrame and reverse-aggregation source.
@@ -1335,9 +1339,9 @@ def join_agg(
             the region-based implementation. It is ignored for other joins.
 
     Returns:
-        pd.DataFrame: Aggregated values with one row per eligible physical
-        output row. Null join-key rows are excluded; eligible unmatched rows
-        are retained with identity values.
+        pd.DataFrame: Aggregated values indexed by physical output-row
+        position. Null join-key rows are excluded; unmatched rows that
+        appear carry identity values.
 
     Examples:
         >>> import pandas as pd
@@ -1375,8 +1379,8 @@ def join_agg(
         0 True        12
         1 False        0
 
-        The same contract applies when no eligible row matches anywhere in
-        the call:
+        A range-only join with no match anywhere in the call returns its
+        rows as unmatched:
 
         >>> left = pd.DataFrame({"key": [1, 2]})
         >>> right = pd.DataFrame({"key": [3], "amount": [10]})

@@ -1325,19 +1325,50 @@ def test_all_unmatched_aggregation_retains_prepared_output_rows(join_algorithm):
     assert reverse[("amount", "prod")].tolist() == [1]
 
 
-def test_all_unmatched_equi_and_not_equal_aggregation_retain_rows():
-    left = pd.DataFrame({"key": [1, 2], "amount": [4, 5]})
-    right = pd.DataFrame({"key": [3], "amount": [10]})
+@pytest.mark.parametrize("reverse", [False, True])
+@pytest.mark.parametrize("join_algorithm", ["default", "regions"])
+@pytest.mark.parametrize(
+    "conditions",
+    [
+        [("key", "key", "==")],
+        [("key", "key", "=="), ("time", "time", "<")],
+        [("key", "key", "=="), ("time", "time", "<"), ("time", "time", ">=")],
+    ],
+)
+def test_equi_aggregation_without_key_match_is_empty(
+    conditions, join_algorithm, reverse
+):
+    """No equality key match returns an empty result, like the indices."""
+    left = pd.DataFrame(
+        {"key": [1.0, 2.0, np.nan], "time": [1, 2, 3], "amount": [4, 5, 6]}
+    )
+    right = pd.DataFrame({"key": [3.0, 4.0], "time": [5, 6], "amount": [10, 20]})
+    aggfunc = [("amount", "sum"), ("amount", "min")]
 
-    equi = left.join_agg(
+    actual = left.join_agg(
         right,
-        ("key", "key", "=="),
-        aggfunc=[("amount", "sum")],
+        *conditions,
+        aggfunc=aggfunc,
+        join_algorithm=join_algorithm,
+        reverse=reverse,
         return_matched=True,
     )
-    assert len(equi) == len(left)
-    assert equi.index.get_level_values("matched").tolist() == [False, False]
-    assert equi[("amount", "sum")].tolist() == [0, 0]
+    matched = left.join_agg(
+        left,
+        *conditions,
+        aggfunc=aggfunc,
+        join_algorithm=join_algorithm,
+        reverse=reverse,
+        return_matched=True,
+    )
+
+    assert actual.empty
+    assert actual.columns.equals(matched.columns)
+    assert actual.index.names == matched.index.names
+
+
+def test_all_unmatched_not_equal_aggregation_retains_rows():
+    left = pd.DataFrame({"key": [1, 2], "amount": [4, 5]})
 
     not_equal = left.iloc[[0]].join_agg(
         pd.DataFrame({"key": [1], "amount": [10]}),

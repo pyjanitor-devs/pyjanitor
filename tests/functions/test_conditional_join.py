@@ -223,6 +223,80 @@ def test_multiple_sorted_range_predicates_match_cartesian_reference():
     assert_frame_equal(expected.reset_index(drop=True), actual)
 
 
+@pytest.mark.parametrize("keep", ["all", "any"])
+def test_range_only_regions_match_cartesian_reference(keep):
+    """Range-only regional joins match pandas, including ``keep='any'``."""
+    left = pd.DataFrame({"first": [2, 4], "second": [3, 1]})
+    right = pd.DataFrame(
+        {
+            "first_r": [1, 3, 5, 7],
+            "second_r": [0, 1, 2, 6],
+        }
+    )
+    expected = (
+        left.assign(left_position=np.arange(len(left)))
+        .merge(right.assign(right_position=np.arange(len(right))), how="cross")
+        .loc[lambda frame: frame.first < frame.first_r]
+        .loc[lambda frame: frame.second < frame.second_r]
+    )
+    expected_pairs = set(zip(expected.left_position, expected.right_position))
+
+    actual = jn.get_join_indices(
+        left,
+        right,
+        ("first", "first_r", "<"),
+        ("second", "second_r", "<"),
+        keep=keep,
+        join_algorithm="regions",
+    )
+    actual_pairs = list(zip(actual["left_index"], actual["right_index"]))
+
+    if keep == "all":
+        assert sorted(actual_pairs) == sorted(expected_pairs)
+    else:
+        assert len(actual_pairs) == len(left)
+        assert all(pair in expected_pairs for pair in actual_pairs)
+        assert {left_position for left_position, _ in actual_pairs} == {0, 1}
+
+
+def test_regional_residual_join_matches_cartesian_reference():
+    """Regional range candidates are filtered by residuals correctly."""
+    left = pd.DataFrame(
+        {
+            "first": [2, 4],
+            "second": [3, 1],
+            "tag": [10, 20],
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "first_r": [1, 3, 5, 7],
+            "second_r": [0, 1, 2, 6],
+            "tag_r": [10, 99, 20, 30],
+        }
+    )
+    expected = (
+        left.assign(left_position=np.arange(len(left)))
+        .merge(right.assign(right_position=np.arange(len(right))), how="cross")
+        .loc[lambda frame: frame.first < frame.first_r]
+        .loc[lambda frame: frame.second < frame.second_r]
+        .loc[lambda frame: frame.tag != frame.tag_r]
+    )
+
+    actual = jn.get_join_indices(
+        left,
+        right,
+        ("first", "first_r", "<"),
+        ("second", "second_r", "<"),
+        ("tag", "tag_r", "!="),
+        keep="all",
+        join_algorithm="regions",
+    )
+    actual_pairs = sorted(zip(actual["left_index"], actual["right_index"]))
+    expected_pairs = sorted(zip(expected.left_position, expected.right_position))
+    assert actual_pairs == expected_pairs
+
+
 @pytest.mark.parametrize(
     ("keep", "expected_right"),
     [

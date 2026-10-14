@@ -1276,6 +1276,27 @@ def test_all_unmatched_equi_and_not_equal_aggregation_retain_rows():
     assert not_equal[("amount", "sum")].tolist() == [0]
 
 
+@pytest.mark.parametrize("join_algorithm", ["default", "regions"])
+def test_equi_range_aggregation_skips_eliminated_windows(join_algorithm):
+    """An internally eliminated equality window is an unmatched row."""
+    left = pd.DataFrame({"key": [1, 1], "time": [2, 100]})
+    right = pd.DataFrame({"key": [1, 1], "time": [3, 4], "amount": [10, 13]})
+
+    actual = left.join_agg(
+        right,
+        ("key", "key", "=="),
+        ("time", "time", "<"),
+        aggfunc=[("amount", "sum"), ("amount", "size")],
+        join_algorithm=join_algorithm,
+        return_matched=True,
+    )
+
+    assert actual.index.get_level_values(0).tolist() == [0, 1]
+    assert actual.index.get_level_values("matched").tolist() == [True, False]
+    assert actual[("amount", "sum")].tolist() == [23, 0]
+    assert actual[("amount", "size")].tolist() == [2, 0]
+
+
 def test_all_unmatched_aggregation_excludes_null_join_keys():
     left = pd.DataFrame({"key": [1, np.nan], "amount": [4, 5]})
     right = pd.DataFrame({"key": [3.0], "amount": [10]})

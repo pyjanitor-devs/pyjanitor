@@ -951,8 +951,8 @@ def _conditional_join_compute(
         )
 
     # Rust receives physical row positions, never the caller's labels.
-    df.index = pd.RangeIndex(len(df))
-    right.index = pd.RangeIndex(len(right))
+    df.index = range(len(df))
+    right.index = range(len(right))
 
     if how in {"left_anti", "right_anti"}:
         return _compute_anti_join(

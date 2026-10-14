@@ -699,6 +699,20 @@ the Rust branch moves, and remove the override before proposing the stack for
 merge into `dev`; the override is development infrastructure, not the
 published-package contract.
 
+### [2026-10-14] Pixi CI must consume the paired janitor-rs PR
+
+When a pyjanitor change depends on unreleased Python-visible exports from a
+janitor-rs PR, add a matching Git source under
+`[tool.pixi.pypi-dependencies]`, pinned through the Rust PR branch and the
+generated `pixi.lock` commit. Keep the `[project]` dependency as a compatible
+published range (for example `>=0.6.2,<0.7`), rather than an exact old release,
+so Pixi can solve the Git package and CI can build the paired wheel.
+
+This override is required for every stacked pyjanitor/janitor-rs change that
+uses unreleased Rust exports; otherwise CI installs the published janitor-rs
+wheel and fails with missing-attribute errors. Remove the override and restore
+the release pin before merging the stack into `dev`.
+
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol

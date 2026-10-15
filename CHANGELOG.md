@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+- [BUG] Include the README in package metadata so PyPI renders the project description.
 - [PERF] Speed up equality-led `conditional_join`, `get_join_indices`, and `join_agg` calls with range predicates. With multiple range predicates, the first range predicate in the order supplied sets the search layout and is paired with the first later range predicate of the opposing direction; put the most selective range predicate first. - Issue #1752, PR #1765 @samukweku
 - [BUG] Fix equality joins with mixed-type object keys and duplicate right keys raising `TypeError`. - PR #1765 @samukweku
 - [ENH] `join_agg` with an equality predicate now omits output rows whose equality key has no match, and returns an empty result when no key matches, consistent with `get_join_indices`. Rows whose key matches but fail the other predicates are still returned with `matched=False`. - Issue #1752, PR #1765 @samukweku

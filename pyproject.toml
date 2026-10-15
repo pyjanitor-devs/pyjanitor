@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyjanitor"
-version = "0.32.37"
+version = "0.32.39"
 description = "Tools for cleaning pandas DataFrames"
 requires-python = ">=3.11"
 license = {text = "MIT"}
@@ -33,7 +33,7 @@ dependencies = [
     "pandas-flavor>=0.8.1,<0.9",
     "multipledispatch",
     "scipy",
-    "janitor-rs==0.6.2",
+    "janitor-rs==0.6.4",
 ]
 
 [project.optional-dependencies]

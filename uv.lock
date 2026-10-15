@@ -1601,7 +1601,7 @@ wheels = [
 
 [[package]]
 name = "pyjanitor"
-version = "0.32.36"
+version = "0.32.38"
 source = { editable = "." }
 dependencies = [
     { name = "janitor-rs" },

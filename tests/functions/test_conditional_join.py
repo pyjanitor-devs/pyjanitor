@@ -9,7 +9,11 @@ from pandas import Timedelta
 from pandas.testing import assert_frame_equal
 
 import janitor as jn
-from janitor.functions._conditional_join._helpers import _sort_if_not_monotonic
+from janitor.functions._conditional_join._helpers import (
+    _get_range_positions_for_one_side,
+    _normalize_conditions,
+    _sort_if_not_monotonic,
+)
 from janitor.testing_utils.strategies import (
     conditional_df,
     conditional_right,
@@ -551,6 +555,149 @@ def test_equi_building_blocks_index_numpy_arrays():
         for right_position in right_positions[start:end]
     )
     assert rebuilt == sorted(zip(pairs["left_index"], pairs["right_index"]))
+
+
+def test_equi_building_blocks_unique_keys_return_pair_layout():
+    """Unique right keys return None windows and a pair layout."""
+    left = pd.DataFrame({"key": [1, 2, 3]})
+    right = pd.DataFrame({"key": [2, 1, 4]})
+
+    blocks = jn.get_join_indices(
+        left,
+        right,
+        ("key", "key", "=="),
+        return_building_blocks=True,
+    )
+    pairs = jn.get_join_indices(left, right, ("key", "key", "=="))
+
+    assert blocks["starts"] is None
+    assert blocks["ends"] is None
+    left_positions = np.arange(len(left))[blocks["left_index"]]
+    right_positions = np.arange(len(right))[blocks["right_index"]]
+    assert sorted(zip(left_positions.tolist(), right_positions.tolist())) == sorted(
+        zip(pairs["left_index"].tolist(), pairs["right_index"].tolist())
+    )
+
+
+@pytest.mark.parametrize(
+    "conditions, expected",
+    [
+        ([("key", "key", "==")], [(0, 0), (0, 1), (1, 3), (2, 2)]),
+        (
+            [("key", "key", "=="), ("value", "value", ">=")],
+            [(0, 0), (0, 1), (2, 2)],
+        ),
+    ],
+)
+def test_equi_mixed_type_object_keys_with_duplicate_right_keys(conditions, expected):
+    """Duplicate object keys of mixed types do not need to be orderable."""
+    left = pd.DataFrame(
+        {"key": pd.Series(["x", "y", 3], dtype=object), "value": [1, 2, 3]}
+    )
+    right = pd.DataFrame(
+        {"key": pd.Series(["x", "x", 3, "y"], dtype=object), "value": [0, 1, 2, 3]}
+    )
+
+    result = jn.get_join_indices(left, right, *conditions)
+
+    actual = sorted(zip(result["left_index"].tolist(), result["right_index"].tolist()))
+    assert actual == expected
+
+
+def test_equi_mixed_type_object_keys_aggregation():
+    """Mixed-type object keys aggregate through the duplicate-key path."""
+    left = pd.DataFrame(
+        {"key": pd.Series(["x", "y", 3], dtype=object), "value": [1, 2, 3]}
+    )
+    right = pd.DataFrame(
+        {
+            "key": pd.Series(["x", "x", 3, "y"], dtype=object),
+            "value": [0, 1, 2, 3],
+            "amount": [10, 20, 30, 40],
+        }
+    )
+
+    result = left.join_agg(
+        right,
+        ("key", "key", "=="),
+        ("value", "value", ">="),
+        aggfunc=[("amount", "sum")],
+    )
+
+    sums = dict(
+        zip(
+            result.index.get_level_values(0).tolist(),
+            result[("amount", "sum")].tolist(),
+        )
+    )
+    assert sums[0] == 30
+    assert sums[2] == 30
+    assert sums.get(1, 0) == 0
+
+
+def test_range_anchor_selection_pairs_first_opposing_predicate():
+    """The second anchor is the first opposing range, not the next range."""
+    conditions = _normalize_conditions(
+        [
+            ("pos", "start", ">="),
+            ("x", "y", ">"),
+            ("k", "k", "=="),
+            ("pos", "end", "<="),
+            ("x", "z", "<"),
+        ]
+    )
+    assert _get_range_positions_for_one_side(conditions) == [0, 3]
+
+    same_direction = _normalize_conditions(
+        [("pos", "start", ">="), ("x", "y", ">"), ("x", "z", ">=")]
+    )
+    assert _get_range_positions_for_one_side(same_direction) == [0, 1]
+
+
+@pytest.mark.parametrize("with_equality", [False, True])
+def test_range_join_same_direction_first_matches_cross_join(with_equality):
+    """Ordering a same-direction range second does not change the result."""
+    rng = np.random.default_rng(1765)
+    left = pd.DataFrame(
+        {
+            "k": rng.integers(0, 3, 60),
+            "pos": rng.integers(0, 100, 60),
+            "x": rng.integers(0, 100, 60),
+        }
+    )
+    start = rng.integers(0, 100, 50)
+    right = pd.DataFrame(
+        {
+            "k": rng.integers(0, 3, 50),
+            "start": start,
+            "end": start + rng.integers(0, 30, 50),
+            "y": rng.integers(0, 100, 50),
+            "amount": rng.integers(1, 10, 50),
+        }
+    )
+    conditions = [
+        ("pos", "start", ">="),
+        ("x", "y", ">="),
+        ("pos", "end", "<="),
+    ]
+    query = "pos >= start and x >= y and pos <= end"
+    if with_equality:
+        conditions.append(("k", "k", "=="))
+        query += " and k_left == k_right"
+    cross = left.reset_index(names="l").merge(
+        right.reset_index(names="r"), how="cross", suffixes=("_left", "_right")
+    )
+    cross = cross.query(query)
+
+    result = jn.get_join_indices(left, right, *conditions)
+    actual = sorted(zip(result["left_index"].tolist(), result["right_index"].tolist()))
+    assert actual == sorted(zip(cross["l"].tolist(), cross["r"].tolist()))
+
+    aggregated = left.join_agg(right, *conditions, aggfunc=[("amount", "sum")])
+    matched = aggregated.xs(True, level="matched")[("amount", "sum")]
+    expected = cross.groupby("l")["amount"].sum()
+    assert matched.sort_index().tolist() == expected.sort_index().tolist()
+    assert matched.index.sort_values().tolist() == expected.index.tolist()
 
 
 def test_single_not_equal_building_blocks_materialize_all_matches():

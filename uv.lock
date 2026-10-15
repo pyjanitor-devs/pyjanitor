@@ -1701,7 +1701,7 @@ requires-dist = [
     { name = "ipython", marker = "extra == 'docs'", specifier = ">7.31.1" },
     { name = "isort", marker = "extra == 'all'", specifier = ">=4.3.18" },
     { name = "isort", marker = "extra == 'dev'", specifier = ">=4.3.18" },
-    { name = "janitor-rs", specifier = ">=0.6.4,<0.7" },
+    { name = "janitor-rs", specifier = "==0.6.4" },
     { name = "mkdocs", marker = "extra == 'all'" },
     { name = "mkdocs", marker = "extra == 'docs'" },
     { name = "mkdocs-material", marker = "extra == 'all'" },

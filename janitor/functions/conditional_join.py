@@ -17,12 +17,16 @@ The shared helpers materialize those positions back into pandas rows, which
 keeps outer-join, indicator, column-selection, and positional-index behavior
 consistent across all algorithms.
 
-The order of ``conditions`` is significant and is preserved. This is
-particularly important for range joins: the range predicates are consumed in
-the order supplied, and the first range establishes the primary search layout
-for the regions algorithm. ``conditional_join`` does not reorder predicates
-to choose a different anchor or to optimize the join. Callers are responsible
-for supplying the predicates in the intended order.
+The order of ``conditions`` is significant. The first range predicate in
+the order supplied establishes the primary search layout. For range-only
+joins on the default path and for equality joins combined with range
+predicates, the second range anchor is the first later range predicate of
+the opposing direction (falling back to the next range predicate when none
+exists); every other predicate is applied as a residual filter in its
+original order. The regions algorithm consumes every range predicate in the
+order supplied. No cost-based reordering is performed on any of these paths,
+so callers are responsible for putting the most selective range predicate
+first.
 """
 
 from __future__ import annotations
@@ -117,12 +121,15 @@ def conditional_join(
     For multiple conditions, the and(`&`)
     operator is used to combine the results of the individual conditions.
 
-    The order in which conditions are supplied is preserved; conditions are
-    not reordered or rearranged by ``conditional_join``. This matters most
-    for joins with multiple range predicates, where the first range predicate
+    The order in which conditions are supplied matters for performance, not
+    for the result. With multiple range predicates, the first range predicate
     establishes the primary search layout and later range predicates are
-    aligned to it. Put the range predicates in the order intended for the
-    join, especially when using ``join_algorithm="regions"``.
+    aligned to it. On the default path, the first later range predicate of
+    the opposing direction is paired with it to bound each search window.
+    No cost-based reordering is performed, so put the most selective range
+    predicate first. This applies to every join with multiple range
+    predicates: range-only joins, equality joins combined with range
+    predicates, and ``join_algorithm="regions"``.
 
     In some scenarios there might be performance gains if a mixed
     equality/range join uses the non-equi path. The range predicates drive
@@ -361,12 +368,10 @@ def conditional_join(
             The operator can be any of
             `==`, `!=`, `<=`, `<`, `>=`, `>`. For multiple conditions,
             the and(`&`) operator is used to combine the results
-            of the individual conditions. Conditions are preserved in the
-            order supplied and are not reordered by ``conditional_join``.
-            This order is especially important for multiple range predicates:
-            the first range establishes the primary search layout for the
-            regions algorithm, so callers should provide the predicates in
-            their intended order.
+            of the individual conditions. The order of conditions affects
+            performance, not the result: with multiple range predicates, the
+            first range predicate establishes the primary search layout, so
+            put the most selective range predicate first.
         how: Indicates the type of join to be performed.
             It can be one of `inner`, `left`, `right`, `outer`,
             `left_anti` or `right_anti`.
@@ -1212,13 +1217,17 @@ def get_join_indices(
           and ``"any"`` return at most one pair per left row.
         - When there are no matches, both required arrays are empty.
         - ``return_building_blocks=True`` may add experimental arrays such as
-          ``starts`` and ``ends``. When they are present, the result is a
+          ``starts`` and ``ends``. When they are arrays, the result is a
           window layout rather than pairs: ``left_index`` has one entry per
           window, and ``right_index[starts[i]:ends[i]]`` holds the right
-          positions matching ``left_index[i]``. ``left_index`` may be
-          ``slice(None)``, meaning every left row, and ``right_index`` may be
-          a pandas ``Index``; both can be used directly to index NumPy arrays
-          and pandas objects. Their keys and shape are not stable.
+          positions matching ``left_index[i]``. When they are ``None``, as
+          for an equality-only join whose right keys are unique, the result
+          is a pair layout: ``left_index[i]`` and ``right_index[i]`` form one
+          matching pair. Check the values rather than the presence of the
+          keys. ``left_index`` may be ``slice(None)``, meaning every left
+          row, and ``right_index`` may be a pandas ``Index``; both can be
+          used directly to index NumPy arrays and pandas objects. Their keys
+          and shape are not stable.
 
     Examples:
         >>> import pandas as pd

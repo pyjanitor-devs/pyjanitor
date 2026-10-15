@@ -184,7 +184,11 @@ def _get_equi_indexer(
         if sorter.is_monotonic_decreasing:
             sorter = sorter[::-1]
         elif not sorter.is_monotonic_increasing:
-            sorter = sorter.sort_values()
+            # Sort on level codes rather than values. Object equality keys
+            # may mix types that cannot be compared, and they only need to
+            # be contiguous. Range and position levels are always orderable,
+            # so their levels are sorted and their codes follow value order.
+            sorter = sorter.take(np.lexsort(sorter.codes[::-1]))
         if len(equi_positions) == 1:
             right_keys = sorter.get_level_values(0)
         else:

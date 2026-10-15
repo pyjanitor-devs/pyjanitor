@@ -20,7 +20,6 @@ implementing different outer-join, indicator, column-selection, or
 ``include_join_positions`` behavior.
 """
 
-import itertools
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Hashable, Sequence
@@ -662,12 +661,31 @@ def _get_indexer_for_non_null_rows(df, columns_and_ops):
 
 
 def _get_range_positions_for_one_side(conditions):
-    """Return the range positions for one side of the join."""
-    # onus is on user to pass conditions in the order to be used
-    range_positions = (
+    """Return the condition positions of up to two range anchors.
+
+    The first range predicate in caller order is always the primary anchor.
+    The second anchor is the first later range predicate whose direction
+    opposes the primary one, so a lower and an upper bound form one window.
+    When every range predicate shares the primary direction, the next range
+    predicate is used. Positions, not condition values, are returned so
+    duplicate predicates are identified by occurrence.
+    """
+    range_positions = [
         position
         for position, condition in enumerate(conditions)
         if condition.op in less_than_join_types.union(greater_than_join_types)
+    ]
+    if len(range_positions) < 2:
+        return range_positions
+    primary, *later = range_positions
+    primary_is_greater = conditions[primary].op in greater_than_join_types
+    # A same-direction second anchor is rarely monotonic in the primary
+    # layout, which demotes it to a residual and scans the whole primary
+    # window. An opposing predicate can always bound that window, either
+    # directly or through a cumulative envelope.
+    opposing = (
+        position
+        for position in later
+        if (conditions[position].op in greater_than_join_types) != primary_is_greater
     )
-    range_positions = list(itertools.islice(range_positions, 2))
-    return range_positions
+    return [primary, next(opposing, later[0])]

@@ -158,15 +158,16 @@ def _preparatory_work(
     # dataframes; retaining them is what lets Rust return original dataframe
     # positions after it searches the compact arrays.
 
-    # For opposing interval predicates, make the lower-bound predicate the
-    # primary anchor. Its sorted right array gives a compact prefix window;
-    # the upper-bound predicate can then use a cumulative envelope in that
-    # same layout, followed by an exact residual recheck.
-    # A lower-bound search (`right.start <= left.end`) produces a prefix. An
-    # upper-bound search (`left.start <= right.end`) can then be represented
-    # by an envelope in that same right-side ordering. Choosing the predicates
-    # in the opposite order loses this compact-window opportunity whenever
-    # the right endpoints are not monotonic after sorting by right.start.
+    # The first range predicate in caller order is the primary anchor; its
+    # sorted right array defines the search layout. The second anchor is the
+    # first later predicate of the opposing direction, so a lower and an
+    # upper bound form one window. When the second right array is not
+    # monotonic in the primary layout, it is replaced by a cumulative
+    # envelope (cummax for a prefix, reverse cummin for a suffix) and the
+    # original predicate is rechecked exactly as a residual. A same-direction
+    # second anchor has no safe envelope and would fall back to a residual,
+    # scanning the whole primary window, so it is chosen only when no
+    # opposing predicate exists.
     # Maintainer note: this selects the layout that supports the cumulative
     # envelope optimization; it is not a selectivity estimator. On skewed
     # data, the selected anchor can admit substantially more candidates than

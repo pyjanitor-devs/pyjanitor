@@ -490,8 +490,6 @@ def _preparatory_work_multi_join(
             left=df.loc[left_index, condition.left],
             right=right.loc[right_index, condition.right],
             operation=condition.op,
-            left_index=left_index,
-            right_index=right_index,
         )
         residual_predicates.append(residual_predicate)
 

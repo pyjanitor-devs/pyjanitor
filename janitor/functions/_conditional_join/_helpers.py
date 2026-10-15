@@ -198,7 +198,7 @@ def _preserve_object_dtype(array: np.ndarray, dtype) -> np.ndarray | pd.Series:
 
     Non-object dtypes pass straight through unchanged.
     """
-    if dtype == object:
+    if pd.api.types.is_object_dtype(dtype):
         return pd.Series(array, dtype=object, copy=False)
     return array
 
@@ -250,9 +250,23 @@ def _materialize_index_result(
     if (df_columns is None) and (right_columns is None):
         raise ValueError("df_columns and right_columns cannot both be None.")
     if (df_columns is not None) and (df_columns != slice(None)):
+        left_object_columns = {
+            column
+            for column, value in df.items()
+            if pd.api.types.is_object_dtype(value)
+        }
         df = df.select_columns(df_columns)
+        for column in left_object_columns.intersection(df.columns):
+            df[column] = df[column].astype(object)
     if (right_columns is not None) and (right_columns != slice(None)):
+        right_object_columns = {
+            column
+            for column, value in right.items()
+            if pd.api.types.is_object_dtype(value)
+        }
         right = right.select_columns(right_columns)
+        for column in right_object_columns.intersection(right.columns):
+            right[column] = right[column].astype(object)
     if df_columns is None:
         df = pd.DataFrame([])
     elif right_columns is None:
@@ -311,8 +325,10 @@ def _materialize_index_result(
             dictionary[name] = values
         if include_join_positions:
             index = pd.MultiIndex.from_arrays([left_positions, right_positions])
-            return pd.DataFrame(dictionary, copy=False, index=index)
-        return pd.DataFrame(dictionary, copy=False)
+            result = pd.DataFrame(dictionary, copy=False, index=index)
+        else:
+            result = pd.DataFrame(dictionary, copy=False)
+        return _restore_object_dtypes(result, df, right)
 
     if how == "inner":
         return _inner(left_index, right_index)
@@ -384,7 +400,28 @@ def _materialize_index_result(
         )
         dictionary[name] = values
 
-    return pd.DataFrame(dictionary, copy=False)
+    result = pd.DataFrame(dictionary, copy=False)
+    return _restore_object_dtypes(result, df, right)
+
+
+def _restore_object_dtypes(
+    result: pd.DataFrame,
+    *source_frames: pd.DataFrame,
+) -> pd.DataFrame:
+    """Restore source ``object`` columns after pandas constructs ``result``.
+
+    With ``future.infer_string`` enabled, ``DataFrame(dictionary)`` can infer
+    an object array of Python strings as ``StringDtype``. The source frames are
+    authoritative for this helper: only their object columns are restored,
+    leaving extension and numeric dtypes untouched.
+    """
+    for frame in source_frames:
+        for column, source in frame.items():
+            if pd.api.types.is_object_dtype(
+                source
+            ) and not pd.api.types.is_object_dtype(result[column]):
+                result[column] = result[column].astype(object)
+    return result
 
 
 @dataclass(frozen=True, slots=True)
@@ -423,30 +460,45 @@ def _normalize_conditions(conditions: Sequence[tuple]) -> list[JoinCondition]:
     ]
 
 
-def _sort_if_not_monotonic(series: pd.Series) -> tuple[pd.Series, bool]:
-    """Normalize a series to ascending order without losing row identity.
+def _sort_if_not_monotonic(
+    series: pd.Series, ascending: bool = True
+) -> tuple[pd.Series, bool]:
+    """Normalize a series to the requested order without losing row identity.
 
-    An already increasing series is returned unchanged. A decreasing series
-    is reversed, which preserves its values and index pairing without a full
-    sort. Other non-monotonic series use a stable sort so duplicate values
-    retain deterministic physical order. The returned pandas index is part of
-    the contract: callers must use it to select and reorder every dependent
-    right-side array, including residual predicates and aggregation inputs.
+    An already ordered series is returned unchanged. A series ordered in the
+    opposite direction is reversed, which preserves its values and index
+    pairing without a full sort. Other non-monotonic series use a stable sort
+    so duplicate values retain deterministic physical order. The returned
+    pandas index is part of the contract: callers must use it to select and
+    reorder every dependent right-side array, including residual predicates
+    and aggregation inputs.
 
     Args:
         series: Non-null pandas series used as a Rust binary-search layout.
+        ascending: Whether the requested layout should be ascending.
 
     Returns:
-        ``(ordered_series, was_already_increasing)``. The boolean describes
-        the input ordering, not whether sorting was required by the caller.
+        ``(ordered_series, was_already_ascending)``. The boolean is ``True``
+        only when the input was already increasing and the requested layout
+        was also ascending; it is ``False`` whenever the series is reversed
+        or sorted.
     """
 
     is_sorted = series.is_monotonic_increasing
-    if is_sorted:
+
+    if ascending and is_sorted:
         return series, True
+
+    if not ascending and series.is_monotonic_decreasing:
+        return series, False
+
+    if is_sorted:
+        return series.iloc[::-1], False
+
     if series.is_monotonic_decreasing:
         return series.iloc[::-1], False
-    return series.sort_values(kind="stable"), False
+
+    return series.sort_values(ascending=ascending, kind="stable"), False
 
 
 def _convert_array_to_numpy(
@@ -486,8 +538,6 @@ def _build_residual_predicate(
     left: pd.Series,
     right: pd.Series,
     operation: str,
-    left_index: pd.Index | slice = slice(None),
-    right_index: pd.Index | slice = slice(None),
 ) -> tuple:
     """Build one residual predicate in the Rust tuple format.
 
@@ -499,8 +549,6 @@ def _build_residual_predicate(
         left: Left residual series in anchor-aligned physical order.
         right: Right residual series in the same aligned order.
         operation: String comparison operator.
-        right_index: Right index positions to align the right series to.
-
     Returns:
         A three-element tuple containing ``left_array``, ``right_array``, and
         ``operation`` for ordinary predicates. For null-aware ``!=``
@@ -514,13 +562,8 @@ def _build_residual_predicate(
         align rows. The resulting arrays are indexed by the physical
         positions returned by the selected Rust kernel.
     """
-    if left_index is None:
-        left_index = slice(None)
-    if right_index is None:
-        right_index = slice(None)
-    left = left.loc[left_index]
+
     left_array = _convert_array_to_numpy(array=left._values)
-    right = right.loc[right_index]
     right_array = _convert_array_to_numpy(array=right._values)
     if operation != "!=":
         return (
@@ -615,3 +658,34 @@ def _get_indexer_for_non_null_rows(df, columns_and_ops):
     if booleans.any():
         return df.index[~booleans]
     return slice(None)
+
+
+def _get_range_positions_for_one_side(conditions):
+    """Return the condition positions of up to two range anchors.
+
+    The first range predicate in caller order is always the primary anchor.
+    The second anchor is the first later range predicate whose direction
+    opposes the primary one, so a lower and an upper bound form one window.
+    When every range predicate shares the primary direction, the next range
+    predicate is used. Positions, not condition values, are returned so
+    duplicate predicates are identified by occurrence.
+    """
+    range_positions = [
+        position
+        for position, condition in enumerate(conditions)
+        if condition.op in less_than_join_types.union(greater_than_join_types)
+    ]
+    if len(range_positions) < 2:
+        return range_positions
+    primary, *later = range_positions
+    primary_is_greater = conditions[primary].op in greater_than_join_types
+    # A same-direction second anchor is rarely monotonic in the primary
+    # layout, which demotes it to a residual and scans the whole primary
+    # window. An opposing predicate can always bound that window, either
+    # directly or through a cumulative envelope.
+    opposing = (
+        position
+        for position in later
+        if (conditions[position].op in greater_than_join_types) != primary_is_greater
+    )
+    return [primary, next(opposing, later[0])]

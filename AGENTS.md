@@ -699,6 +699,49 @@ the Rust branch moves, and remove the override before proposing the stack for
 merge into `dev`; the override is development infrastructure, not the
 published-package contract.
 
+### [2026-10-14] Pixi CI must consume the paired janitor-rs PR
+
+When a pyjanitor change depends on unreleased Python-visible exports from a
+janitor-rs PR, add a matching Git source under
+`[tool.pixi.pypi-dependencies]`, pinned through the Rust PR branch and the
+generated `pixi.lock` commit. Keep the `[project]` dependency as a compatible
+published range (for example `>=0.6.2,<0.7`), rather than an exact old release,
+so Pixi can solve the Git package and CI can build the paired wheel.
+
+This override is required for every stacked pyjanitor/janitor-rs change that
+uses unreleased Rust exports; otherwise CI installs the published janitor-rs
+wheel and fails with missing-attribute errors. Remove the override and restore
+the release pin before merging the stack into `dev`.
+
+### [2026-10-14] join_agg Does Not Guarantee a Complete Output Row Set
+
+**Context**: Reviewing which rows `join_agg` returns across equality, range,
+and `!=` paths.
+**Learning**: The result is indexed by physical row positions and, like
+`pd.merge`, is not meant to be aligned back to the input. Rows with null
+join-condition values are excluded except in joins that use only `!=`.
+When an equality predicate is present and no key matches, the result is
+empty, matching `get_join_indices`. Otherwise, whether an unmatched row
+appears depends on the path: reverse aggregation with duplicate right keys
+can keep right rows whose key is absent on the left, while other equality
+paths drop them.
+**Recommendation**: Do not treat these differences as defects or add
+coverage-mask work to make every path return the same rows. Rows that do
+appear without a partner carry identity values and `matched=False`.
+
+### [2026-10-15] Condition-order guidance covers every multi-range join
+
+**Context**: User correction while documenting range-anchor selection in
+`conditional_join`.
+**Learning**: The advice to put the most selective range predicate first is
+not specific to `join_algorithm="regions"`. The first range predicate sets the
+search layout for every join with multiple range predicates: range-only joins
+on the default path, equality joins combined with range predicates, and the
+regions algorithm.
+**Recommendation**: When documenting condition order, describe all three
+paths together. Do not phrase the guidance as applying "especially" to one
+algorithm.
+
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol

@@ -729,6 +729,19 @@ paths drop them.
 coverage-mask work to make every path return the same rows. Rows that do
 appear without a partner carry identity values and `matched=False`.
 
+### [2026-10-15] Condition-order guidance covers every multi-range join
+
+**Context**: User correction while documenting range-anchor selection in
+`conditional_join`.
+**Learning**: The advice to put the most selective range predicate first is
+not specific to `join_algorithm="regions"`. The first range predicate sets the
+search layout for every join with multiple range predicates: range-only joins
+on the default path, equality joins combined with range predicates, and the
+regions algorithm.
+**Recommendation**: When documenting condition order, describe all three
+paths together. Do not phrase the guidance as applying "especially" to one
+algorithm.
+
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol

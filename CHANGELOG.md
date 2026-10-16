@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+- [BUG] Include the README in package metadata so PyPI renders the project description.
 -   [BUG] Fix Polars *`make_clean_names`* not replacing `@` with an underscore in expressions. - Issue #1758 @sumangouda
 -   [BUG] Fix `convert_unix_date` reading millisecond timestamps as seconds with pandas 3. - Issue #1756 @raashish1601
 -   [DOC] Fix `_xlsx_cells` and `_expand_sorted_array` docstrings naming parameters the functions do not take (`path_is_workbook`, `region`, `num`); document `base_engine` and `load_factor` instead. - PR #1742 @VenishPaneliya

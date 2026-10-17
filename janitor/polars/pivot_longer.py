@@ -591,7 +591,7 @@ def _pivot_longer_dot_value(
         key = ["__pivot_longer_group__"]
         spec = spec.with_columns(pl.int_range(pl.len()).over(".value").alias(key[0]))
 
-    groups = spec.group_by(key, maintain_order=True).agg(".name", ".value")
+    groups = spec.group_by(key).agg(".name", ".value")
     if names_transform is not None:
         groups = groups.with_columns(names_transform)
 

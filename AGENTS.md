@@ -742,6 +742,16 @@ regions algorithm.
 paths together. Do not phrase the guidance as applying "especially" to one
 algorithm.
 
+### [2026-10-17] Polars pivot_longer does not guarantee row order
+
+**Context**: Reviewing the concat-per-group implementation for Polars
+`pivot_longer`.
+**Learning**: Output row order is not part of the `pivot_longer` contract, so
+grouping the eager spec does not need to preserve input order.
+
+**Recommendation**: Do not pay for `maintain_order=True` in the spec grouping;
+tests should compare results without relying on row order.
+
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol

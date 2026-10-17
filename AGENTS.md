@@ -763,6 +763,14 @@ mappings in Polars `pivot_longer`.
 `.value`-only specs are different because repeated values represent separate
 occurrences and need an occurrence group.
 
+### [2026-10-17] Every pull request needs a changelog entry
+
+**Context**: User correction while preparing PR #1772.
+**Learning**: Pull requests must update `CHANGELOG.md` under `[Unreleased]`.
+
+**Recommendation**: Add a concise categorized changelog entry to every PR and
+run Markdown validation after editing it.
+
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol

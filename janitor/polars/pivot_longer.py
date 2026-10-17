@@ -723,7 +723,8 @@ def _resolve_columns(df, schema, selection):
                     f"valid columns: {schema.names()}"
                 )
             return list(selection)
-    # Regex strings and expressions need Polars expansion. An eager frame's
-    # schema is already known; a lazy frame would re-resolve its whole plan.
+    # Regex strings, selectors, and expressions need Polars expansion. An eager
+    # frame's schema is already known; a lazy frame would re-resolve its whole
+    # plan.
     frame = df if isinstance(df, pl.DataFrame) else pl.LazyFrame(schema=schema)
     return frame.select(selection).collect_schema().names()

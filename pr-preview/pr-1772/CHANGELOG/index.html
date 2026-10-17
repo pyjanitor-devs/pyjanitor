@@ -1732,6 +1732,7 @@
 <h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
 <h2 id="unreleased"><a href="https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.3...HEAD">Unreleased</a><a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <ul>
+<li>[PERF] Speed up Polars <code>pivot_longer</code> <code>.value</code> paths and reduce schema resolution to one call per invocation. - Issue #1769, PR #1772 @samukweku</li>
 <li>[BUG] Include the README in package metadata so PyPI renders the project description.</li>
 <li>[BUG] Fix Polars <em><code>make_clean_names</code></em> not replacing <code>@</code> with an underscore in expressions. - Issue #1758 @sumangouda</li>
 <li>[BUG] Fix <code>convert_unix_date</code> reading millisecond timestamps as seconds with pandas 3. - Issue #1756 @raashish1601</li>

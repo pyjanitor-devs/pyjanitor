@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+- [DOC] Document introduction and undeprecation versions for selected APIs. - Issue #1188 @BALOGUN-DAVID
 - [BUG] Include the README in package metadata so PyPI renders the project description.
 -   [BUG] Fix Polars *`make_clean_names`* not replacing `@` with an underscore in expressions. - Issue #1758 @sumangouda
 -   [BUG] Fix `convert_unix_date` reading millisecond timestamps as seconds with pandas 3. - Issue #1756 @raashish1601

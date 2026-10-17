@@ -1,4 +1,5 @@
 from collections.abc import Iterable as abcIterable
+from collections.abc import Iterator
 from enum import Enum
 from operator import methodcaller
 from typing import Any, Hashable, Iterable, Union
@@ -177,6 +178,8 @@ def fill_empty(
         A pandas DataFrame with `NaN` values filled.
     """
 
+    if isinstance(column_names, Iterator):
+        column_names = list(column_names)
     check_column(df, column_names)
     return _fill_empty(df, column_names, value=value)
 

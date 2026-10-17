@@ -708,24 +708,24 @@ def _data_checks_pivot_longer(
 
 def _resolve_columns(df, schema, selection):
     """Resolve a column selection against an already-collected schema."""
-    schema_frame = (
-        pl.LazyFrame(schema=schema)
-        if isinstance(df, pl.LazyFrame)
-        else pl.DataFrame(schema=schema)
-    )
     if isinstance(selection, str):
         selection = [selection]
     if isinstance(selection, (list, tuple)) and all(
         isinstance(label, str) for label in selection
     ):
-        if any(label.startswith("^") and label.endswith("$") for label in selection):
-            return schema_frame.select(selection).collect_schema().names()
-        missing = [label for label in selection if label not in schema]
-        if missing:
-            raise pl.exceptions.ColumnNotFoundError(
-                f'unable to find column "{missing[0]}"; valid columns: {schema.names()}'
-            )
-        return list(selection)
-    if cs.is_selector(selection):
+        if not any(
+            label.startswith("^") and label.endswith("$") for label in selection
+        ):
+            missing = [label for label in selection if label not in schema]
+            if missing:
+                raise pl.exceptions.ColumnNotFoundError(
+                    f'unable to find column "{missing[0]}"; '
+                    f"valid columns: {schema.names()}"
+                )
+            return list(selection)
+    elif cs.is_selector(selection):
         return list(cs.expand_selector(schema, selection))
-    return schema_frame.select(selection).collect_schema().names()
+    # Regex strings and expressions need Polars expansion. An eager frame's
+    # schema is already known; a lazy frame would re-resolve its whole plan.
+    frame = df if isinstance(df, pl.DataFrame) else pl.LazyFrame(schema=schema)
+    return frame.select(selection).collect_schema().names()

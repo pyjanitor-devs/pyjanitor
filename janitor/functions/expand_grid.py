@@ -440,6 +440,8 @@ def cartesian_product(*inputs: tuple, sort: bool = False) -> pd.DataFrame:
     or a dictionary - the values of the dictionary should be
     a 1D array.
 
+    !!! info "New in version 0.28.0"
+
     Examples:
         >>> import pandas as pd
         >>> import janitor as jn

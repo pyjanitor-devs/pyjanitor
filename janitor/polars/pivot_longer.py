@@ -713,6 +713,8 @@ def _resolve_columns(df, schema, selection):
     if isinstance(selection, (list, tuple)) and all(
         isinstance(label, str) for label in selection
     ):
+        if any(label.startswith("^") and label.endswith("$") for label in selection):
+            return df.select(selection).collect_schema().names()
         missing = [label for label in selection if label not in schema]
         if missing:
             raise pl.exceptions.ColumnNotFoundError(

@@ -771,6 +771,16 @@ occurrences and need an occurrence group.
 **Recommendation**: Add a concise categorized changelog entry to every PR and
 run Markdown validation after editing it.
 
+### [2026-10-17] Preserve anchored regex string selections in Polars
+
+**Context**: User correction after reviewing the Phase 2 schema-resolution
+optimization.
+**Learning**: Polars treats anchored strings such as `^i.*$` as regex column
+selectors, so resolving every string as a literal changes existing behavior.
+
+**Recommendation**: Route anchored regex strings through `df.select(...)` while
+keeping ordinary string labels on the schema-only fast path.
+
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol

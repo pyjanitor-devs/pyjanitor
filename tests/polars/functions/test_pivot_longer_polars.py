@@ -590,3 +590,28 @@ def test_dot_value_regex_selector_and_many_groups():
     assert result.height == 40
     result = result.sort("group")
     assert result.get_column("measure").to_list() == list(range(40))
+
+
+def test_dot_value_regex_string_selection():
+    """Anchored regex strings retain Polars string-selection semantics."""
+    df = pl.DataFrame({"id": [1, 2], "x_1": [10, 20], "x_2": [11, 21]})
+
+    result = df.pivot_longer(
+        index="^i.*$",
+        names_to=(".value", "order"),
+        names_sep="_",
+    )
+
+    assert (
+        result.select("id", "order", "x")
+        .sort(by=pl.all())
+        .equals(
+            pl.DataFrame(
+                {
+                    "id": [1, 1, 2, 2],
+                    "order": ["1", "2", "1", "2"],
+                    "x": [10, 11, 20, 21],
+                }
+            ).sort(by=pl.all())
+        )
+    )

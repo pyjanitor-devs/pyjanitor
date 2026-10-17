@@ -752,6 +752,17 @@ grouping the eager spec does not need to preserve input order.
 **Recommendation**: Do not pay for `maintain_order=True` in the spec grouping;
 tests should compare results without relying on row order.
 
+### [2026-10-17] Validate duplicate Polars pivot_longer spec keys
+
+**Context**: Replacing grouped struct construction with per-group column
+mappings in Polars `pivot_longer`.
+**Learning**: A Python mapping silently overwrites duplicate `(non-.value,
+`.value`) spec keys, changing results without an error.
+
+**Recommendation**: Validate those composite keys before constructing mappings;
+`.value`-only specs are different because repeated values represent separate
+occurrences and need an occurrence group.
+
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol

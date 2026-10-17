@@ -566,3 +566,27 @@ def test_dot_value_lazy_preserves_lazyframe():
             }
         ).sort(by=pl.all()),
     )
+
+
+def test_dot_value_null_header_is_rejected():
+    """A null extracted .value cannot become an output column name."""
+    df = pl.DataFrame({"a_1": [1], "b": [2]})
+
+    with pytest.raises(ValueError, match="`.value` column cannot contain null"):
+        df.pivot_longer(names_to=("group", ".value"), names_sep="_")
+
+
+def test_dot_value_regex_selector_and_many_groups():
+    """Regex selection and a larger number of groups retain all values."""
+    df = pl.DataFrame({f"measure_{i}": [i] for i in range(40)})
+
+    result = df.pivot_longer(
+        column_names=cs.matches(r"measure_\d+"),
+        names_to=(".value", "group"),
+        names_sep="_",
+        names_transform=pl.col("group").cast(pl.Int64),
+    )
+
+    assert result.height == 40
+    result = result.sort("group")
+    assert result.get_column("measure").to_list() == list(range(40))

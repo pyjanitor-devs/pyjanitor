@@ -590,6 +590,16 @@ def _pivot_longer_dot_value(
     if not key:
         key = ["__pivot_longer_group__"]
         spec = spec.with_columns(pl.int_range(pl.len()).over(".value").alias(key[0]))
+    else:
+        keys = spec.select([*names_cols, ".value"]).rows()
+        if len(keys) != len(set(keys)):
+            raise ValueError(
+                "The combination of the `.value` column and additional "
+                "specification columns should be unique."
+            )
+
+    if spec.get_column(".value").is_null().any():
+        raise ValueError("The `.value` column cannot contain null values.")
 
     groups = spec.group_by(key).agg(".name", ".value")
     if names_transform is not None:
@@ -706,7 +716,7 @@ def _resolve_columns(df, schema, selection):
         missing = [label for label in selection if label not in schema]
         if missing:
             raise pl.exceptions.ColumnNotFoundError(
-                f"unable to find column {missing[0]!r}"
+                f'unable to find column "{missing[0]}"; valid columns: {schema.names()}'
             )
         return list(selection)
     if cs.is_selector(selection):

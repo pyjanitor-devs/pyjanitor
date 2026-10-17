@@ -536,3 +536,33 @@ def test_names_pattern_nulls_in_data(df_null):
     actual = pl.DataFrame(actual).sort(by=pl.all())
 
     assert_frame_equal(result, actual)
+
+
+def test_dot_value_lazy_preserves_lazyframe():
+    """The concat-per-group path preserves lazy execution."""
+    df = pl.DataFrame(
+        {
+            "id": [1, 2],
+            "x_1": [10, 20],
+            "x_2": [11, 21],
+            "y_1": ["a", "b"],
+            "y_2": ["c", "d"],
+        }
+    )
+
+    result = df.lazy().pivot_longer(
+        index="id", names_to=(".value", "order"), names_sep="_"
+    )
+
+    assert isinstance(result, pl.LazyFrame)
+    assert_frame_equal(
+        result.collect().sort(by=pl.all()),
+        pl.DataFrame(
+            {
+                "id": [1, 1, 2, 2],
+                "order": ["1", "2", "1", "2"],
+                "x": [10, 11, 20, 21],
+                "y": ["a", "c", "b", "d"],
+            }
+        ).sort(by=pl.all()),
+    )

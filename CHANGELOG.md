@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+- [PERF] Speed up Polars `pivot_longer` `.value` paths and reduce schema resolution to one call per invocation. - Issue #1769, PR #1772 @samukweku
 - [BUG] Include the README in package metadata so PyPI renders the project description.
 -   [BUG] Fix Polars *`make_clean_names`* not replacing `@` with an underscore in expressions. - Issue #1758 @sumangouda
 -   [BUG] Fix `convert_unix_date` reading millisecond timestamps as seconds with pandas 3. - Issue #1756 @raashish1601

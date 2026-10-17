@@ -536,3 +536,82 @@ def test_names_pattern_nulls_in_data(df_null):
     actual = pl.DataFrame(actual).sort(by=pl.all())
 
     assert_frame_equal(result, actual)
+
+
+def test_dot_value_lazy_preserves_lazyframe():
+    """The concat-per-group path preserves lazy execution."""
+    df = pl.DataFrame(
+        {
+            "id": [1, 2],
+            "x_1": [10, 20],
+            "x_2": [11, 21],
+            "y_1": ["a", "b"],
+            "y_2": ["c", "d"],
+        }
+    )
+
+    result = df.lazy().pivot_longer(
+        index="id", names_to=(".value", "order"), names_sep="_"
+    )
+
+    assert isinstance(result, pl.LazyFrame)
+    assert_frame_equal(
+        result.collect().sort(by=pl.all()),
+        pl.DataFrame(
+            {
+                "id": [1, 1, 2, 2],
+                "order": ["1", "2", "1", "2"],
+                "x": [10, 11, 20, 21],
+                "y": ["a", "c", "b", "d"],
+            }
+        ).sort(by=pl.all()),
+    )
+
+
+def test_dot_value_null_header_is_rejected():
+    """A null extracted .value cannot become an output column name."""
+    df = pl.DataFrame({"a_1": [1], "b": [2]})
+
+    with pytest.raises(ValueError, match="`.value` column cannot contain null"):
+        df.pivot_longer(names_to=("group", ".value"), names_sep="_")
+
+
+def test_dot_value_regex_selector_and_many_groups():
+    """Regex selection and a larger number of groups retain all values."""
+    df = pl.DataFrame({f"measure_{i}": [i] for i in range(40)})
+
+    result = df.pivot_longer(
+        column_names=cs.matches(r"measure_\d+"),
+        names_to=(".value", "group"),
+        names_sep="_",
+        names_transform=pl.col("group").cast(pl.Int64),
+    )
+
+    assert result.height == 40
+    result = result.sort("group")
+    assert result.get_column("measure").to_list() == list(range(40))
+
+
+def test_dot_value_regex_string_selection():
+    """Anchored regex strings retain Polars string-selection semantics."""
+    df = pl.DataFrame({"id": [1, 2], "x_1": [10, 20], "x_2": [11, 21]})
+
+    result = df.pivot_longer(
+        index="^i.*$",
+        names_to=(".value", "order"),
+        names_sep="_",
+    )
+
+    assert (
+        result.select("id", "order", "x")
+        .sort(by=pl.all())
+        .equals(
+            pl.DataFrame(
+                {
+                    "id": [1, 1, 2, 2],
+                    "order": ["1", "2", "1", "2"],
+                    "x": [10, 11, 20, 21],
+                }
+            ).sort(by=pl.all())
+        )
+    )

@@ -1,4 +1,5 @@
 import operator
+import warnings
 from itertools import permutations
 
 import numpy as np
@@ -189,6 +190,75 @@ def test_output_columns_materializes_only_requested_columns(how):
         "outer": pd.DataFrame({"payload": ["a", "b", None], "value": [20, None, 0]}),
     }[how]
     assert_frame_equal(actual, expected)
+
+
+def test_output_columns_dropped_side_preserves_non_inner_rows():
+    """Dropping one side does not change right-join row cardinality."""
+    left = pd.DataFrame({"key": [1, 4], "payload": ["a", "b"]})
+    right = pd.DataFrame({"key": [0, 2], "value": [0, 20]})
+    actual = left.conditional_join(
+        right,
+        ("key", "key", "<"),
+        how="right",
+        output_columns={"left": "payload", "right": None},
+    )
+    expected = pd.DataFrame({"payload": ["a", None]})
+    assert_frame_equal(actual, expected)
+
+
+def test_output_columns_dropped_side_preserves_empty_outer_rows():
+    """An outer join with an empty side still returns the other side's rows."""
+    left = pd.DataFrame(
+        {
+            "key": pd.Series(dtype="int64"),
+            "payload": pd.Series(dtype="int64"),
+        }
+    )
+    right = pd.DataFrame({"key": [1, 2, 3], "value": [10, 20, 30]})
+    actual = left.conditional_join(
+        right,
+        ("key", "key", "<"),
+        how="outer",
+        output_columns={"left": "payload", "right": None},
+    )
+    assert actual.shape == (3, 1)
+    assert actual["payload"].isna().all()
+
+
+def test_output_columns_rejects_empty_resolved_selection():
+    """Callable selectors that match no columns raise a clear error."""
+    left = pd.DataFrame({"key": [1], "payload": [10]})
+    right = pd.DataFrame({"key": [2]})
+    with pytest.raises(
+        ValueError, match="output_columns must select at least one column"
+    ):
+        left.conditional_join(
+            right,
+            ("key", "key", "<"),
+            output_columns={
+                "left": lambda frame: [False] * frame.shape[1],
+                "right": None,
+            },
+        )
+
+
+def test_internal_projection_helpers_do_not_emit_deprecation_warnings():
+    """Internal selector defaults do not trigger public deprecations."""
+    left = pd.DataFrame({"key": [1], "value": [10]})
+    right = pd.DataFrame({"key": [2], "value": [20]})
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        jn.get_join_indices(left, right, ("key", "key", "<"))
+        left.join_agg(
+            right,
+            ("key", "key", "<"),
+            aggfunc=[("value", "sum")],
+        )
+    assert not [
+        warning
+        for warning in caught
+        if issubclass(warning.category, DeprecationWarning)
+    ]
 
 
 def test_output_columns_missing_side_defaults_to_all_columns():

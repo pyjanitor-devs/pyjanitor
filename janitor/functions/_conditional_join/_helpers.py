@@ -259,6 +259,10 @@ def _materialize_index_result(
     # is still gathered independently.
     left_column_positions = _column_positions(df, df_columns)
     right_column_positions = _column_positions(right, right_columns)
+    if not left_column_positions.size and not right_column_positions.size:
+        raise ValueError(
+            "output_columns must select at least one column from 'left' or 'right'."
+        )
     # ``take`` is metadata-only: it gives us the output names corresponding to
     # the exact positions selected above without constructing filtered frames.
     left_labels = df.columns.take(left_column_positions)

@@ -171,6 +171,74 @@ def test_multiple_conditions_preserve_non_condition_columns():
     assert_frame_equal(actual, expected)
 
 
+@pytest.mark.parametrize("how", ["inner", "left", "right", "outer"])
+def test_output_columns_materializes_only_requested_columns(how):
+    """Output projection retains predicate columns only for matching."""
+    left = pd.DataFrame({"key": [1, 4], "payload": ["a", "b"]})
+    right = pd.DataFrame({"key": [0, 2], "value": [0, 20]})
+    actual = left.conditional_join(
+        right,
+        ("key", "key", "<"),
+        how=how,
+        output_columns={"left": ["payload"], "right": "value"},
+    )
+    expected = {
+        "inner": pd.DataFrame({"payload": ["a"], "value": [20]}),
+        "left": pd.DataFrame({"payload": ["a", "b"], "value": [20, None]}),
+        "right": pd.DataFrame({"payload": ["a", None], "value": [20, 0]}),
+        "outer": pd.DataFrame({"payload": ["a", "b", None], "value": [20, None, 0]}),
+    }[how]
+    assert_frame_equal(actual, expected)
+
+
+def test_output_columns_missing_side_defaults_to_all_columns():
+    """An omitted projection key retains that side's complete output."""
+    left = pd.DataFrame({"key": [1], "left_value": [10]})
+    right = pd.DataFrame({"key": [2], "right_value": [20]})
+    actual = left.conditional_join(
+        right,
+        ("key", "key", "<"),
+        output_columns={"left": ["left_value"]},
+    )
+    expected = pd.DataFrame({"left_value": [10], "key": [2], "right_value": [20]})
+    assert_frame_equal(actual, expected)
+
+
+@pytest.mark.parametrize(
+    ("how", "output_columns", "message"),
+    [
+        ("left_anti", {"left": None, "right": "value"}, r"output_columns\['left'\]"),
+        ("right_anti", {"left": "value", "right": None}, r"output_columns\['right'\]"),
+    ],
+)
+def test_output_columns_validate_anti_join_output_side(how, output_columns, message):
+    """Anti joins require output from their preserved side."""
+    left = pd.DataFrame({"key": [1, 4], "value": [10, 40]})
+    right = pd.DataFrame({"key": [0, 2], "value": [0, 20]})
+    with pytest.raises(ValueError, match=message):
+        left.conditional_join(
+            right,
+            ("key", "key", "<"),
+            how=how,
+            output_columns=output_columns,
+        )
+
+
+def test_output_columns_preserves_duplicate_selections():
+    """Projection by duplicate labels keeps each selected occurrence."""
+    left = pd.DataFrame([[1, 10]], columns=["key", "a"])
+    left = pd.concat([left, left[["a"]]], axis=1)
+    left.columns = ["key", "a", "a"]
+    right = pd.DataFrame({"key": [2]})
+    actual = left.conditional_join(
+        right,
+        ("key", "key", "<"),
+        output_columns={"left": ["a"], "right": None},
+    )
+    expected = pd.DataFrame([[10, 10]], columns=["a", "a"])
+    assert_frame_equal(actual, expected)
+
+
 @pytest.mark.parametrize(
     ("values", "expected_values", "expected_ordered"),
     [
@@ -6496,9 +6564,9 @@ def test_equi_le_ge_ge_ne_agg_rev(df, right):
 
 
 def test_conditional_join_columns_deprecation_warning(dummy):
-    """Test that using df_columns or right_columns triggers a DeprecationWarning."""
-    with pytest.warns(DeprecationWarning, match="df_columns"):
+    """Test that using df_columns or right_columns triggers a FutureWarning."""
+    with pytest.warns(FutureWarning, match="df_columns"):
         dummy.conditional_join(dummy, ("id", "id", ">"), df_columns="id")
 
-    with pytest.warns(DeprecationWarning, match="right_columns"):
+    with pytest.warns(FutureWarning, match="right_columns"):
         dummy.conditional_join(dummy, ("id", "id", ">"), right_columns="id")

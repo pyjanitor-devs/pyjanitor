@@ -243,6 +243,45 @@ def test_glob_multiindex_with_prefix():
     assert_frame_equal(dataframe.select_columns("a*"), dataframe.iloc[:, [0]])
 
 
+def test_literal_glob_label_is_exact_when_combined():
+    """A literal glob label remains exact when combined with selectors."""
+    dataframe = pd.DataFrame([[1, 2, 3]], columns=["*", "a", "b"])
+
+    assert list(dataframe.select_columns("*", DropLabel("b"))) == ["*"]
+    assert list(dataframe.select_columns("*", "b*")) == ["*", "b"]
+
+
+@pytest.mark.parametrize("label", ["a?", "x[1]"])
+def test_exact_glob_label_on_mixed_index(label):
+    """Exact glob-like labels win over glob matching on mixed indexes."""
+    dataframe = pd.DataFrame([[1, 2, 3]], columns=[label, "ab", 1])
+
+    assert list(dataframe.select_columns(label, 1)) == [label, 1]
+
+
+def test_glob_non_string_row_index():
+    """Glob selectors also work on non-string row indexes."""
+    dataframe = pd.DataFrame([[1], [2]], index=["a", 1], columns=["value"])
+
+    assert list(dataframe.select_rows("a*").index) == ["a"]
+    assert list(dataframe.select_rows("*").index) == ["a", 1]
+
+
+def test_glob_invert_on_non_string_columns():
+    """Inverting an all-columns glob selects no columns."""
+    dataframe = pd.DataFrame([[1, 2]], columns=[0, 1])
+
+    assert dataframe.select_columns("*", invert=True).empty
+
+
+def test_glob_multiindex_dict_level():
+    """Glob selectors work in dictionary-based MultiIndex selection."""
+    columns = pd.MultiIndex.from_tuples([("a", 1), ("b", 2), (1, 3)])
+    dataframe = pd.DataFrame([[1, 2, 3]], columns=columns)
+
+    assert_frame_equal(dataframe.select_columns({0: "a*"}), dataframe.iloc[:, [0]])
+
+
 def test_col_not_found3(df_dates):
     """
     Raise KeyError if the search value is not in df.columns,

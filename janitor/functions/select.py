@@ -611,6 +611,27 @@ def _select_regex(index, arg, source="regex"):
         raise KeyError(f"No match was returned for '{arg}'") from exc
 
 
+def _select_str(index, arg):
+    """Select an exact or glob string label from an index."""
+    try:
+        return index.get_loc(arg)
+    except KeyError:
+        if arg == "*":
+            return slice(None)
+        if _is_str_or_cat(index):
+            return _select_regex(index, (arg, fnmatch.translate(arg)), source="fnmatch")
+        matches = np.asarray(
+            [
+                isinstance(label, str) and fnmatch.fnmatchcase(label, arg)
+                for label in index
+            ],
+            dtype=bool,
+        )
+        if not matches.any():
+            raise KeyError(f"No match was returned for '{arg}'")
+        return matches
+
+
 def _select_callable(arg, func: Callable, axis=None):
     """
     Process a callable on a Pandas DataFrame/Index.
@@ -677,38 +698,7 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
     index = getattr(df, axis)
     if isinstance(index, pd.MultiIndex):
         index = index.get_level_values(0)
-    if arg == "*":
-        return slice(None)
-    if _is_str_or_cat(index) or is_datetime64_dtype(index):
-        try:
-            return index.get_loc(arg)
-        except KeyError as exc:
-            if _is_str_or_cat(index):
-                # label selection should be case sensitive
-                # fix for Github Issue 1160
-                # translating to regex solves the case sensitivity
-                # and also avoids the list comprehension
-                # not that list comprehension is bad - i'd say it is efficient
-                # however, the Pandas str.match method used in _select_regex
-                # could offer more performance, especially if the
-                # underlying array of the index is a PyArrow string array
-                return _select_regex(
-                    index, (arg, fnmatch.translate(arg)), source="fnmatch"
-                )
-            raise KeyError(f"No match was returned for '{arg}'") from exc
-    try:
-        matches = np.asarray(
-            [
-                isinstance(label, str) and fnmatch.fnmatchcase(label, arg)
-                for label in index
-            ],
-            dtype=bool,
-        )
-        if not matches.any():
-            raise KeyError(f"No match was returned for '{arg}'")
-        return matches
-    except TypeError as exc:
-        raise KeyError(f"No match was returned for '{arg}'") from exc
+    return _select_str(index, arg)
 
 
 @_select_index.register(re.Pattern)  # noqa: F811
@@ -828,6 +818,9 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
         elif isinstance(value, re.Pattern):
             indexer = index.get_level_values(key)
             value = _select_regex(indexer, value)
+        elif isinstance(value, str):
+            indexer = index.get_level_values(key)
+            value = _select_str(indexer, value)
         level_label[key] = value
 
     level_label = {

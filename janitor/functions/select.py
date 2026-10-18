@@ -820,7 +820,8 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
             value = _select_regex(indexer, value)
         elif isinstance(value, str):
             indexer = index.get_level_values(key)
-            value = _select_str(indexer, value)
+            if value not in indexer:
+                value = _select_str(indexer, value)
         level_label[key] = value
 
     level_label = {

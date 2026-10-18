@@ -282,6 +282,25 @@ def test_glob_multiindex_dict_level():
     assert_frame_equal(dataframe.select_columns({0: "a*"}), dataframe.iloc[:, [0]])
 
 
+@pytest.mark.parametrize(
+    "columns, selector, expected",
+    [
+        ([("a", 1), ("b", 2), ("c", 3)], {0: "b"}, [("b", 2)]),
+        ([("a", 1), ("b", 1), ("b", 2)], {0: "b"}, [("b", 1), ("b", 2)]),
+        ([("a", 1), ("b", 2), ("c", 3)], {"level": "b"}, [("b", 2)]),
+        ([("a", 1), ("b", 2), (1, 3)], {0: "b"}, [("b", 2)]),
+    ],
+)
+def test_multiindex_dict_exact_string_level(columns, selector, expected):
+    """Exact string labels in MultiIndex level selectors stay labels."""
+    dataframe = pd.DataFrame(
+        [range(len(columns))],
+        columns=pd.MultiIndex.from_tuples(columns, names=["level", "number"]),
+    )
+
+    assert_frame_equal(dataframe.select_columns(selector), dataframe.loc[:, expected])
+
+
 def test_col_not_found3(df_dates):
     """
     Raise KeyError if the search value is not in df.columns,

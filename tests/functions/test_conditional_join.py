@@ -5,7 +5,7 @@ from itertools import permutations
 import numpy as np
 import pandas as pd
 import pytest
-from hypothesis import given, settings
+from hypothesis import assume, given, settings
 from pandas import Timedelta
 from pandas.testing import assert_frame_equal
 
@@ -5059,6 +5059,8 @@ def test_multiple_eqs_col_syntax(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_eq_strings(df, right):
     """Test output for joins on strings."""
+    assume(not df["C"].str.contains("\x00").any())
+    assume(not right["Strings"].str.contains("\x00").any())
     columns = ["C", "A", "Strings", "Integers"]
     expected = df.merge(
         right,
@@ -5081,6 +5083,31 @@ def test_eq_strings(df, right):
     ).sort_values(columns, ignore_index=True)
 
     assert_frame_equal(expected, actual)
+
+
+@pytest.mark.xfail(
+    condition=pd.__version__ == "3.0.6",
+    reason=(
+        "pandas 3.0.6 factorize truncates strings at embedded NULs, causing "
+        "distinct equality keys to collapse in the conditional-join path."
+    ),
+    strict=True,
+)
+def test_eq_strings_embedded_nul():
+    """Pin pandas' embedded-NUL factorize regression."""
+    left = pd.DataFrame({"C": pd.Series(["", ""], dtype=object), "A": [0, 0]})
+    right = pd.DataFrame(
+        {
+            "Strings": pd.Series(["", "\x00"], dtype=object),
+            "Integers": [0, 0],
+        }
+    )
+    out = left.conditional_join(
+        right,
+        ("C", "Strings", "=="),
+        ("A", "Integers", ">="),
+    )
+    assert len(out) == 2
 
 
 def test_equi_join_preserves_explicit_object_string_columns():

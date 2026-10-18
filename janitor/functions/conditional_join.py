@@ -116,17 +116,19 @@ def conditional_join(
     possible using the
     [`select_columns`][janitor.functions.select.select_columns] syntax.
 
-    ``output_columns`` is a dictionary with optional ``"left"`` and ``"right"``
-    selectors. A value of ``None`` omits that side, while ``"*"`` retains all
-    columns. An omitted key is equivalent to ``"*"`` for that side. Each
-    selector accepts any form supported by
+    ``output_columns`` is a dictionary with optional ``"left"`` and ``"right``
+    selectors. A value of ``None`` omits that side. An omitted key, or the
+    default ``slice(None)``, retains all columns; the string ``"*"`` is a
+    wildcard selector for string-labeled columns. Each selector accepts any
+    form supported by
     [`select_columns`][janitor.functions.select.select_columns]. Selection is
     applied only while materializing the final result; predicate columns
     remain available during matching.
 
     For example, ``output_columns={"left": ["id", "value"],
     "right": "price"}`` retains two left columns and one right column. Use
-    ``None`` to omit a side, or ``"*"`` to retain every column on that side.
+    ``None`` to omit a side, or ``slice(None)`` to retain every column on that
+    side regardless of label type.
     At least one side must contribute a column. The projection is applied
     after matching, so a column used in a condition can be omitted from the
     result without being removed from the join inputs.
@@ -428,8 +430,9 @@ def conditional_join(
                 `right_columns` will be removed in 0.33.0.
                 Use `output_columns` instead.
         output_columns: Optional dictionary of ``"left"`` and ``"right"`` output
-            selectors. ``None`` omits a side and ``"*"`` selects all columns.
-            An omitted side selects all columns from that side.
+            selectors. ``None`` omits a side. An omitted side, or a
+            ``slice(None)`` selector, selects all columns from that side;
+            string ``"*"`` is a wildcard for string-labeled columns.
             Each selector accepts any form supported by
             [`select_columns`][janitor.functions.select.select_columns].
             Selectors may be exact labels, lists of labels, glob patterns,
@@ -807,7 +810,9 @@ def _normalize_output_columns(
         raise ValueError(
             "output_columns cannot be combined with df_columns or right_columns."
         )
-    return output_columns.get("left", "*"), output_columns.get("right", "*")
+    return output_columns.get("left", slice(None)), output_columns.get(
+        "right", slice(None)
+    )
 
 
 def _conditional_join_type_check(

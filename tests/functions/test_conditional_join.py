@@ -278,7 +278,12 @@ def test_output_columns_missing_side_defaults_to_all_columns():
 
 
 @pytest.mark.parametrize(
-    "output_columns", [None, {"left": slice(None), "right": slice(None)}]
+    "output_columns",
+    [
+        None,
+        {"left": slice(None), "right": slice(None)},
+        {"left": slice(None)},
+    ],
 )
 def test_overlapping_tuple_labels_remain_atomic_in_plain_index(output_columns):
     """Tuple-valued labels in a plain Index are not flattened as levels."""

@@ -301,6 +301,19 @@ def test_multiindex_dict_exact_string_level(columns, selector, expected):
     assert_frame_equal(dataframe.select_columns(selector), dataframe.loc[:, expected])
 
 
+def test_multiindex_dict_exact_string_uses_level_values():
+    """Exact labels absent from used rows keep base MultiIndex behavior."""
+    columns = pd.MultiIndex.from_product(
+        [["a", "b", "unused"], [1, 2]], names=["level", "number"]
+    )
+    dataframe = pd.DataFrame([[1, 2, 3, 4, 5, 6]], columns=columns).drop(
+        columns=[("unused", 1), ("unused", 2)]
+    )
+
+    with pytest.raises(KeyError):
+        dataframe.select_columns({0: "unused"})
+
+
 def test_col_not_found3(df_dates):
     """
     Raise KeyError if the search value is not in df.columns,

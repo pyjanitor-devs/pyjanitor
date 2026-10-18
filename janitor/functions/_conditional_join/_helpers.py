@@ -270,17 +270,21 @@ def _materialize_index_result(
     right_labels = right.columns.take(right_column_positions)
     overlap = not left_labels.intersection(right_labels).empty
 
+    source_has_multiindex_columns = isinstance(df.columns, pd.MultiIndex)
+
     def _output_label(label: object, side: str) -> object:
         """Add a side namespace when projected labels overlap."""
         if not overlap:
             return label
-        if isinstance(label, tuple):
+        if source_has_multiindex_columns:
             return (side, *label)
         return (side, label)
 
     output_left_labels = [_output_label(label, "left") for label in left_labels]
     output_right_labels = [_output_label(label, "right") for label in right_labels]
     output_labels = output_left_labels + output_right_labels
+    # Namespace overlapping labels as ``(side, label)`` while preserving the
+    # source column-index structure.
     output_column_index = pd.Index(output_labels)
 
     def _add_indicator(

@@ -273,6 +273,31 @@ def test_output_columns_missing_side_defaults_to_all_columns():
 
 
 @pytest.mark.parametrize(
+    "output_columns", [None, {"left": slice(None), "right": slice(None)}]
+)
+def test_overlapping_tuple_labels_remain_atomic_in_plain_index(output_columns):
+    """Tuple-valued labels in a plain Index are not flattened as levels."""
+    left = pd.DataFrame({"key": [1, 4], ("t", "u"): [1, 2]})
+    right = pd.DataFrame({"key": [0, 2], ("t", "u"): [5, 6]})
+
+    kwargs = {} if output_columns is None else {"output_columns": output_columns}
+    actual = left.conditional_join(right, ("key", "key", "<"), **kwargs)
+
+    expected = pd.DataFrame(
+        [[1, 1, 2, 6]],
+        columns=pd.MultiIndex.from_tuples(
+            [
+                ("left", "key"),
+                ("left", ("t", "u")),
+                ("right", "key"),
+                ("right", ("t", "u")),
+            ]
+        ),
+    )
+    assert_frame_equal(actual, expected)
+
+
+@pytest.mark.parametrize(
     ("how", "output_columns", "message"),
     [
         ("left_anti", {"left": None, "right": "value"}, r"output_columns\['left'\]"),

@@ -293,6 +293,21 @@ def test_slice_none_is_returned_unchanged(df_strings):
     assert _select_index(selector, df_strings, "columns") is selector
 
 
+def test_select_columns_slice_none_selects_all_duplicate_columns():
+    """An unbounded slice selects all columns without label validation."""
+    dataframe = pd.DataFrame([[1, 2, 3]], columns=["b", "a", "b"])
+
+    assert_frame_equal(dataframe.select_columns(slice(None)), dataframe)
+
+
+def test_select_rows_slice_none_selects_unsorted_datetime_index():
+    """An unbounded slice selects rows without sorting validation."""
+    index = pd.to_datetime(["2020-01-02", "2020-01-01"])
+    dataframe = pd.DataFrame({"value": [1, 2]}, index=index)
+
+    assert_frame_equal(dataframe.select_rows(slice(None)), dataframe)
+
+
 def test_unsorted_dates_slice(df_dates):
     """Raise Error if the date column is unsorted."""
     df_dates = df_dates.iloc[:, ::-1]

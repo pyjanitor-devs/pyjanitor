@@ -8,7 +8,7 @@ import pytest
 from pandas.api.types import is_numeric_dtype
 from pandas.testing import assert_frame_equal
 
-from janitor.functions.select import DropLabel
+from janitor.functions.select import DropLabel, _select_index
 from janitor.functions.utils import patterns
 
 
@@ -317,6 +317,13 @@ def test_slice_unique():
         match="Non-unique Index labels should be monotonic increasing.",
     ):
         not_unique.select_columns(slice("code", "code2"))
+
+
+def test_slice_none_is_returned_unchanged(df_strings):
+    """An unbounded slice is passed through without conversion."""
+    selector = slice(None)
+
+    assert _select_index(selector, df_strings, "columns") is selector
 
 
 def test_unsorted_dates_slice(df_dates):

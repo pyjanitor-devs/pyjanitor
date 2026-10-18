@@ -735,6 +735,9 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
 
     Returns a slice object.
     """
+    if arg.start is None and arg.stop is None and arg.step is None:
+        return arg
+
     index = getattr(df, axis)
     if not index.is_monotonic_increasing:
         if not index.is_unique:

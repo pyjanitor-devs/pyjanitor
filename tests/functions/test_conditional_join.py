@@ -10,6 +10,7 @@ from pandas import Timedelta
 from pandas.testing import assert_frame_equal
 
 import janitor as jn
+from janitor.functions._conditional_join._equi_join import _get_bounds_right
 from janitor.functions._conditional_join._helpers import (
     _get_range_positions_for_one_side,
     _normalize_conditions,
@@ -19,6 +20,10 @@ from janitor.testing_utils.strategies import (
     conditional_df,
     conditional_right,
 )
+
+_FACTORIZE_TRUNCATES_NUL = pd.factorize(pd.Series(["", "\x00"], dtype=object))[
+    0
+].tolist() == [0, 0]
 
 # ## turn on to view dataframes from failed tests
 # pd.set_option("display.max_columns", None)
@@ -5086,10 +5091,10 @@ def test_eq_strings(df, right):
 
 
 @pytest.mark.xfail(
-    condition=pd.__version__ == "3.0.6",
+    condition=_FACTORIZE_TRUNCATES_NUL,
     reason=(
-        "pandas 3.0.6 factorize truncates strings at embedded NULs, causing "
-        "distinct equality keys to collapse in the conditional-join path."
+        "pandas factorize truncates strings at embedded NULs, so distinct "
+        "equality keys collapse in the conditional-join path."
     ),
     strict=True,
 )
@@ -5102,6 +5107,8 @@ def test_eq_strings_embedded_nul():
             "Integers": [0, 0],
         }
     )
+    uniques, _, _ = _get_bounds_right(pd.Index(right["Strings"]))
+    assert len(uniques) == 2
     out = left.conditional_join(
         right,
         ("C", "Strings", "=="),

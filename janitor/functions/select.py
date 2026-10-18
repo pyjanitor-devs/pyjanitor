@@ -44,6 +44,11 @@ def select_columns(
 
     Optional ability to invert selection of columns available as well.
 
+    !!! abstract "Version Changed"
+
+        - 0.32.3
+            - The deprecation of `select_columns` was reversed.
+
     !!!note
 
         The preferred option when selecting columns or rows in a Pandas DataFrame
@@ -299,6 +304,11 @@ def select_rows(
 
 
     !!! info "New in version 0.24.0"
+
+    !!! abstract "Version Changed"
+
+        - 0.32.3
+            - The deprecation of `select_rows` was reversed.
 
     !!!note
 

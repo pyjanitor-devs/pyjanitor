@@ -12,6 +12,7 @@ import pandas_flavor as pf
 def alias(series: pd.Series, alias: Any = None) -> pd.Series:
     """Return a Series with a new name. Accepts either a scalar or a callable.
 
+    !!! info "New in version 0.31.0"
 
     Examples:
         >>> import pandas as pd

@@ -23,6 +23,8 @@ def explode_index(
 
     This method does not mutate the original DataFrame.
 
+    !!! info "New in version 0.27.0"
+
     Examples:
         >>> import pandas as pd
         >>> import janitor

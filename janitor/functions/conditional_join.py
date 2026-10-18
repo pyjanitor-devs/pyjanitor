@@ -941,6 +941,7 @@ def _compute_anti_join(
             right_columns=right_columns,
             indicator=indicator,
             include_join_positions=False,
+            anti_side=how,
         )
     return _helpers._materialize_index_result(
         df=df.iloc[:0],
@@ -952,6 +953,7 @@ def _compute_anti_join(
         right_columns=right_columns,
         indicator=indicator,
         include_join_positions=False,
+        anti_side=how,
     )
 
 
@@ -1040,9 +1042,7 @@ def _conditional_join_compute(
     ):
         if output_columns is None:
             raise ValueError("df_columns and right_columns cannot both be None.")
-        raise ValueError(
-            "output_columns must select at least one column from 'left' or 'right'."
-        )
+        raise ValueError("No output columns were selected.")
     df, right = _conditional_join_preliminary_checks(
         df=df,
         right=right,

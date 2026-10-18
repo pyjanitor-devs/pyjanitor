@@ -229,9 +229,7 @@ def test_output_columns_rejects_empty_resolved_selection():
     """Callable selectors that match no columns raise a clear error."""
     left = pd.DataFrame({"key": [1], "payload": [10]})
     right = pd.DataFrame({"key": [2]})
-    with pytest.raises(
-        ValueError, match="output_columns must select at least one column"
-    ):
+    with pytest.raises(ValueError, match="No output columns were selected"):
         left.conditional_join(
             right,
             ("key", "key", "<"),
@@ -286,6 +284,26 @@ def test_output_columns_validate_anti_join_output_side(how, output_columns, mess
     left = pd.DataFrame({"key": [1, 4], "value": [10, 40]})
     right = pd.DataFrame({"key": [0, 2], "value": [0, 20]})
     with pytest.raises(ValueError, match=message):
+        left.conditional_join(
+            right,
+            ("key", "key", "<"),
+            how=how,
+            output_columns=output_columns,
+        )
+
+
+@pytest.mark.parametrize(
+    ("how", "output_columns"),
+    [
+        ("left_anti", {"left": lambda frame: [False] * frame.shape[1]}),
+        ("right_anti", {"right": lambda frame: [False] * frame.shape[1]}),
+    ],
+)
+def test_output_columns_anti_join_rejects_empty_kept_side(how, output_columns):
+    """Anti joins reject selectors that match no kept-side columns."""
+    left = pd.DataFrame({"key": [1, 4], "value": [10, 40]})
+    right = pd.DataFrame({"key": [0, 2], "value": [0, 20]})
+    with pytest.raises(ValueError, match="kept side"):
         left.conditional_join(
             right,
             ("key", "key", "<"),

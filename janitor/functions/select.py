@@ -677,13 +677,13 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
     index = getattr(df, axis)
     if isinstance(index, pd.MultiIndex):
         index = index.get_level_values(0)
+    if arg == "*":
+        return slice(None)
     if _is_str_or_cat(index) or is_datetime64_dtype(index):
         try:
             return index.get_loc(arg)
         except KeyError as exc:
             if _is_str_or_cat(index):
-                if arg == "*":
-                    return slice(None)
                 # label selection should be case sensitive
                 # fix for Github Issue 1160
                 # translating to regex solves the case sensitivity
@@ -696,7 +696,19 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
                     index, (arg, fnmatch.translate(arg)), source="fnmatch"
                 )
             raise KeyError(f"No match was returned for '{arg}'") from exc
-    raise KeyError(f"No match was returned for '{arg}'")
+    try:
+        matches = np.asarray(
+            [
+                isinstance(label, str) and fnmatch.fnmatchcase(label, arg)
+                for label in index
+            ],
+            dtype=bool,
+        )
+        if not matches.any():
+            raise KeyError(f"No match was returned for '{arg}'")
+        return matches
+    except TypeError as exc:
+        raise KeyError(f"No match was returned for '{arg}'") from exc
 
 
 @_select_index.register(re.Pattern)  # noqa: F811

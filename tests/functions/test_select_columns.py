@@ -210,6 +210,39 @@ def test_col_not_found(numbers):
         numbers.select_columns("sam")
 
 
+@pytest.mark.parametrize(
+    "columns, selector, expected",
+    [
+        ([0, 1], "*", [0, 1]),
+        (["a", 1], "*", ["a", 1]),
+        (["a", 1], "a*", ["a"]),
+        (["a", ("t", "u")], "*", ["a", ("t", "u")]),
+        (["a", ("t", "u")], "a*", ["a"]),
+    ],
+)
+def test_glob_non_string_column_indexes(columns, selector, expected):
+    """Glob selectors handle non-string and mixed column labels."""
+    dataframe = pd.DataFrame([range(len(columns))], columns=columns)
+
+    assert_frame_equal(dataframe.select_columns(selector), dataframe.loc[:, expected])
+
+
+def test_glob_non_string_column_index_no_match():
+    """A glob with no matching string label raises KeyError."""
+    dataframe = pd.DataFrame([[1, 2]], columns=[0, 1])
+
+    with pytest.raises(KeyError, match="No match was returned for 'a\\*'"):
+        dataframe.select_columns("a*")
+
+
+def test_glob_multiindex_with_prefix():
+    """Glob selectors match string labels on the first MultiIndex level."""
+    columns = pd.MultiIndex.from_tuples([("a", 1), ("b", 2), (1, 3)])
+    dataframe = pd.DataFrame([[1, 2, 3]], columns=columns)
+
+    assert_frame_equal(dataframe.select_columns("a*"), dataframe.iloc[:, [0]])
+
+
 def test_col_not_found3(df_dates):
     """
     Raise KeyError if the search value is not in df.columns,

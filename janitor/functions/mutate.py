@@ -132,7 +132,7 @@ def ungroup(
     """
     warnings.warn(
         "This function is deprecated. Kindly use `jn.get_columns` instead.",
-        DeprecationWarning,
+        FutureWarning,
         stacklevel=find_stack_level(),
     )
     return df.obj

@@ -16,10 +16,7 @@ from janitor.functions._conditional_join._helpers import (
     _normalize_conditions,
     _sort_if_not_monotonic,
 )
-from janitor.testing_utils.strategies import (
-    conditional_df,
-    conditional_right,
-)
+from janitor.testing_utils.strategies import conditional_df, conditional_right
 
 _FACTORIZE_TRUNCATES_NUL = pd.factorize(pd.Series(["", "\x00"], dtype=object))[
     0
@@ -707,7 +704,7 @@ def test_check_conditions_exist(dummy, series):
 
 def test_use_numba_is_a_deprecated_noop(dummy, series):
     """Accept the historical keyword while warning that it has no effect."""
-    with pytest.warns(DeprecationWarning, match="use_numba"):
+    with pytest.warns(FutureWarning, match="use_numba"):
         result = dummy.conditional_join(series, ("id", "B", ">"), use_numba=True)
 
     assert not result.empty
@@ -715,7 +712,7 @@ def test_use_numba_is_a_deprecated_noop(dummy, series):
 
 def test_get_join_indices_use_numba_is_a_deprecated_noop(dummy, series):
     """The index helper retains deprecated ``use_numba`` compatibility."""
-    with pytest.warns(DeprecationWarning, match="use_numba"):
+    with pytest.warns(FutureWarning, match="use_numba"):
         result = jn.get_join_indices(
             dummy,
             series,
@@ -4453,10 +4450,12 @@ def test_multiple_non_equii(df, right):
             how="cross",
         )
         .loc[
-            lambda df: df.A.ge(df.Integers)
-            & df.E.le(df.Dates)
-            & df.B.lt(df.Floats)
-            & df.B.gt(df.Numeric),
+            lambda df: (
+                df.A.ge(df.Integers)
+                & df.E.le(df.Dates)
+                & df.B.lt(df.Floats)
+                & df.B.gt(df.Numeric)
+            ),
             columns,
         ]
         .sort_values(columns, ignore_index=True)
@@ -4492,10 +4491,12 @@ def test_multiple_non_equii_col_syntax(df, right):
             how="cross",
         )
         .loc[
-            lambda df: df.A.ge(df.Integers)
-            & df.E.le(df.Dates)
-            & df.B.lt(df.Floats)
-            & df.B.gt(df.Numeric),
+            lambda df: (
+                df.A.ge(df.Integers)
+                & df.E.le(df.Dates)
+                & df.B.lt(df.Floats)
+                & df.B.gt(df.Numeric)
+            ),
             columns,
         ]
         .sort_values(columns, ignore_index=True)

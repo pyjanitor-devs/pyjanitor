@@ -14,9 +14,9 @@ def simple_sum(alpha, beta):
 @pytest.mark.utils
 def test_old_aliases():
     """
-    Using old aliases should  result in `DeprecationWarning`
+    Using old aliases should  result in `FutureWarning`
     """
-    with pytest.warns(DeprecationWarning):
+    with pytest.warns(FutureWarning):
         simple_sum(a=2, b=6)
 
 

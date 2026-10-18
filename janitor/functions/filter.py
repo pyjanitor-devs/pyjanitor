@@ -13,8 +13,6 @@ from janitor.utils import (
     refactored_function,
 )
 
-warnings.simplefilter("always", DeprecationWarning)
-
 
 @pf.register_dataframe_method
 @deprecated_alias(column="column_name")
@@ -183,7 +181,7 @@ def filter_on(
     warnings.warn(
         "This function will be deprecated in a 1.x release. "
         "Kindly use `pd.DataFrame.query` instead.",
-        DeprecationWarning,
+        FutureWarning,
         stacklevel=find_stack_level(),
     )
 
@@ -377,7 +375,7 @@ def filter_column_isin(
     warnings.warn(
         "This function will be deprecated in a 1.x release. "
         "Kindly use `pd.DataFrame.query` or `pd.DataFrame.isin` instead.",
-        DeprecationWarning,
+        FutureWarning,
         stacklevel=find_stack_level(),
     )
 

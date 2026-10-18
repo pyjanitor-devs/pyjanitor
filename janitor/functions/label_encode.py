@@ -7,7 +7,11 @@ import pandas as pd
 import pandas_flavor as pf
 
 from janitor.functions.utils import _factorize
-from janitor.utils import deprecated_alias, refactored_function
+from janitor.utils import (
+    deprecated_alias,
+    find_stack_level,
+    refactored_function,
+)
 
 
 @pf.register_dataframe_method
@@ -77,7 +81,9 @@ def label_encode(
     """  # noqa: E501
     warnings.warn(
         "`label_encode` will be deprecated in a 1.x release. "
-        "Please use `factorize_columns` instead."
+        "Please use `factorize_columns` instead.",
+        FutureWarning,
+        stacklevel=find_stack_level(),
     )
     df = _factorize(df, column_names, "_enc")
     return df

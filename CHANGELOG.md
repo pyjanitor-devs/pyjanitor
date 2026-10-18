@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+- [BUG] Preserve user warning filters on import, use visible `FutureWarning` for deprecated APIs, and report warnings at the caller's location. - Issue #1775 @BALOGUN-DAVID
 - [ENH] Add `output_columns` to `conditional_join` as the preferred side-aware output projection while retaining `df_columns` and `right_columns` for compatibility. - Issue #1751
 - [BUG] Preserve duplicate columns selected by `conditional_join` output projections.
 - [BUG] Preserve unmatched rows when `conditional_join` drops one output side in non-inner joins.

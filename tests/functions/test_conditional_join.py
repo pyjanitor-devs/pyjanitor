@@ -5057,8 +5057,9 @@ def test_multiple_eqs_col_syntax(df, right):
 @pytest.mark.turtle
 @pytest.mark.xfail(
     reason=(
-        "janitor-rs 0.6.5 currently does not reliably support mixed "
-        "equality/range joins when the equality keys are strings."
+        "pandas 3.0.6 factorize truncates strings at embedded NULs, so the "
+        "equi-join path can collapse distinct string keys such as 'a' and "
+        "'a\\x00'; pandas merge handles them correctly."
     ),
     strict=False,
 )

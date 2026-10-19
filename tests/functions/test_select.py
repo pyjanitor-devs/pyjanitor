@@ -155,7 +155,20 @@ def test_empty_dict_selects_nothing_on_flat_and_multiindex_columns():
     multi.columns = pd.MultiIndex.from_tuples([("x", "a"), ("x", "b")])
 
     for frame in (flat, multi):
+        assert_frame_equal(frame.select_columns([]), frame.iloc[:, []])
+        assert_frame_equal(frame.select_columns(DropLabel([])), frame)
         assert_frame_equal(frame.select_columns({}), frame.iloc[:, []])
+
+
+def test_empty_tuple_keeps_label_semantics():
+    """An empty tuple remains a label selector, not an empty list-like."""
+    flat = pd.DataFrame({"a": [1, 2], "b": [3, 4]})
+    multi = flat.copy()
+    multi.columns = pd.MultiIndex.from_tuples([("x", "a"), ("x", "b")])
+
+    with pytest.raises(KeyError):
+        flat.select_columns(())
+    assert_frame_equal(multi.select_columns(()), multi)
 
 
 def test_empty_selectors_with_duplicate_labels_and_drop_label():

@@ -45,12 +45,17 @@ def select_columns(
 
     Optional ability to invert selection of columns available as well.
 
-    An empty list-like selector selects nothing. With ``invert=True``, it
-    selects everything. ``DropLabel([])`` drops nothing and therefore selects
-    everything unless ``invert=True`` is also passed.
+    An empty list, set, dict, array, Index, or Series selects nothing
+    (tuples are treated as labels). With `invert=True`, it selects everything.
+    `DropLabel([])` drops nothing and therefore selects everything unless
+    `invert=True` is also passed.
 
     !!! abstract "Version Changed"
 
+        - 0.32.44
+            - Empty list-like selectors now select nothing; tuples retain
+              their label semantics.
+            - Empty dictionaries select nothing on MultiIndex axes.
         - 0.32.3
             - The deprecation of `select_columns` was reversed.
 
@@ -309,15 +314,20 @@ def select_rows(
 
     Optional ability to invert selection of rows available as well.
 
-    An empty list-like selector selects nothing. With ``invert=True``, it
-    selects everything. ``DropLabel([])`` drops nothing and therefore selects
-    everything unless ``invert=True`` is also passed.
+    An empty list, set, dict, array, Index, or Series selects nothing
+    (tuples are treated as labels). With `invert=True`, it selects everything.
+    `DropLabel([])` drops nothing and therefore selects everything unless
+    `invert=True` is also passed.
 
 
     !!! info "New in version 0.24.0"
 
     !!! abstract "Version Changed"
 
+        - 0.32.44
+            - Empty list-like selectors now select nothing; tuples retain
+              their label semantics.
+            - Empty dictionaries select nothing on MultiIndex axes.
         - 0.32.3
             - The deprecation of `select_rows` was reversed.
 
@@ -401,9 +411,10 @@ def select(
 
     Optional ability to invert selection of index/columns available as well.
 
-    An empty list-like selector selects nothing. With ``invert=True``, it
-    selects everything. ``DropLabel([])`` drops nothing and therefore selects
-    everything unless ``invert=True`` is also passed.
+    An empty list, set, dict, array, Index, or Series selects nothing
+    (tuples are treated as labels). With `invert=True`, it selects everything.
+    `DropLabel([])` drops nothing and therefore selects everything unless
+    `invert=True` is also passed.
 
 
     !!! info "New in version 0.24.0"
@@ -422,6 +433,10 @@ def select(
 
     !!! abstract "Version Changed"
 
+        - 0.32.44
+            - Empty list-like selectors now select nothing; tuples retain
+              their label semantics.
+            - Empty dictionaries select nothing on MultiIndex axes.
         - 0.26.0
             - Added variable `args`, `invert` and `axis` parameters.
             - `rows` keyword deprecated in favour of `index`.

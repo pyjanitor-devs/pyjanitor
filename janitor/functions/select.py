@@ -36,6 +36,7 @@ def select_columns(
 
     It accepts a string, shell-like glob strings `(*string*)`,
     regex, slice, array-like object, or a list of the previous options.
+    Use `slice(None)` to select all columns.
 
     Selection on a MultiIndex on a level, or multiple levels,
     is possible with a dictionary.
@@ -266,6 +267,7 @@ def select_columns(
         *args: Valid inputs include: an exact column name to look for,
             a shell-style glob string (e.g. `*_thing_*`),
             a regular expression,
+            `slice(None)` to select all columns,
             a callable,
             or variable arguments of all the aforementioned.
             A sequence of booleans is also acceptable.
@@ -294,6 +296,7 @@ def select_rows(
 
     It accepts a string, shell-like glob strings `(*string*)`,
     regex, slice, array-like object, or a list of the previous options.
+    Use `slice(None)` to select all rows.
 
     Selection on a MultiIndex on a level, or multiple levels,
     is possible with a dictionary.
@@ -339,6 +342,7 @@ def select_rows(
         *args: Valid inputs include: an exact index name to look for,
             a shell-style glob string (e.g. `*_thing_*`),
             a regular expression,
+            `slice(None)` to select all rows,
             a callable,
             or variable arguments of all the aforementioned.
             A sequence of booleans is also acceptable.
@@ -723,6 +727,10 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
 
     Returns a slice object.
     """
+    # Preserve the canonical all-values selector for callers that pass it.
+    if arg.start is None and arg.stop is None and arg.step is None:
+        return arg
+
     index = getattr(df, axis)
     if not index.is_monotonic_increasing:
         if not index.is_unique:

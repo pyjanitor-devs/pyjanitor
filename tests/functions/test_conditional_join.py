@@ -289,6 +289,19 @@ def test_output_columns_none_requires_drop_label():
         )
 
 
+def test_output_columns_integer_array_selects_integer_labels():
+    """Integer-array selectors are labels, not internal positions."""
+    left = pd.DataFrame({"k": [1]})
+    right = pd.DataFrame({10: [0], 20: [2], 0: [3]})
+    actual = left.conditional_join(
+        right,
+        ("k", 10, ">"),
+        output_columns={"left": ["k"], "right": np.array([0])},
+    )
+    expected = pd.DataFrame({"k": [1], 0: [3]})
+    assert_frame_equal(actual, expected)
+
+
 @pytest.mark.parametrize(
     "output_columns",
     [
@@ -325,12 +338,12 @@ def test_overlapping_tuple_labels_remain_atomic_in_plain_index(output_columns):
         (
             "left_anti",
             {"left": jn.DropLabel(slice(None)), "right": "value"},
-            r"kept side",
+            r"output_columns\['left'\]",
         ),
         (
             "right_anti",
             {"left": "value", "right": jn.DropLabel(slice(None))},
-            r"kept side",
+            r"output_columns\['right'\]",
         ),
     ],
 )
@@ -358,7 +371,7 @@ def test_output_columns_anti_join_rejects_empty_kept_side(how, output_columns):
     """Anti joins reject selectors that match no kept-side columns."""
     left = pd.DataFrame({"key": [1, 4], "value": [10, 40]})
     right = pd.DataFrame({"key": [0, 2], "value": [0, 20]})
-    with pytest.raises(ValueError, match="kept side"):
+    with pytest.raises(ValueError, match=r"output_columns\['(left|right)'\]"):
         left.conditional_join(
             right,
             ("key", "key", "<"),

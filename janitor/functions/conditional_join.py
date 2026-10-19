@@ -128,13 +128,13 @@ def conditional_join(
 
     For example, ``output_columns={"left": ["id", "value"],
     "right": "price"}`` retains two left columns and one right column. Use
-    ``None`` to omit a side, or ``slice(None)`` to retain every column on that
-    side regardless of label type.
+    ``DropLabel(slice(None))`` to omit a side, or ``slice(None)`` to retain
+    every column on that side regardless of label type.
     At least one side must contribute a column. The projection is applied
     after matching, so a column used in a condition can be omitted from the
     result without being removed from the join inputs.
 
-    !!! warning "Deprecated in 0.32.43"
+    !!! warning "Deprecated in 0.32.44"
         The `df_columns` and `right_columns` parameters are deprecated and will
         be removed in 0.33.0. Use `output_columns={"left": ..., "right": ...}`
         instead.
@@ -394,7 +394,7 @@ def conditional_join(
             - Added `join_algorithm` parameter.
         - 0.32.27
             - The `use_numba` parameter is deprecated and has no effect.
-        - 0.32.43
+        - 0.32.44
             - Added `output_columns` as the preferred side-aware output
               projection and deprecated `df_columns` and `right_columns`.
 
@@ -416,22 +416,22 @@ def conditional_join(
             It can be one of `inner`, `left`, `right`, `outer`,
             `left_anti` or `right_anti`.
             Anti joins retain only the requested side's rows that have no
-            matching partner. Set the other side's column selector to `None`
-            when only the preserved side is wanted.
+            matching partner. Set the other side's column selector to
+            `DropLabel(slice(None))` when only the preserved side is wanted.
         df_columns: Columns to select from `df` in the final output dataframe.
             Column selection is based on the
             [`select_columns`][janitor.functions.select.select_columns] syntax.
-            !!! warning "Deprecated in 0.32.43"
+            !!! warning "Deprecated in 0.32.44"
                 `df_columns` will be removed in 0.33.0.
                 Use `output_columns` instead.
         right_columns: Columns to select from `right` in the final output dataframe.
             Column selection is based on the
             [`select_columns`][janitor.functions.select.select_columns] syntax.
-            !!! warning "Deprecated in 0.32.43"
+            !!! warning "Deprecated in 0.32.44"
                 `right_columns` will be removed in 0.33.0.
                 Use `output_columns` instead.
         output_columns: Optional dictionary of ``"left"`` and ``"right"`` output
-            selectors. ``None`` omits a side. An omitted side, or a
+            selectors. ``DropLabel(slice(None))`` omits a side. An omitted side, or a
             ``slice(None)`` selector, selects all columns from that side;
             string ``"*"`` is a wildcard for string-labeled columns.
             Each selector accepts any form supported by
@@ -1066,15 +1066,17 @@ def _conditional_join_compute(
         left_column_positions = _helpers._column_positions(df, df_columns)
         right_column_positions = _helpers._column_positions(right, right_columns)
         if how == "left_anti" and not left_column_positions.size:
-            raise ValueError("The kept side of an anti join must select columns.")
+            option = "output_columns['left']" if output_columns else "df_columns"
+            raise ValueError(f"{option} must select columns for a left_anti join.")
         if how == "right_anti" and not right_column_positions.size:
-            raise ValueError("The kept side of an anti join must select columns.")
+            option = "output_columns['right']" if output_columns else "right_columns"
+            raise ValueError(f"{option} must select columns for a right_anti join.")
         if not left_column_positions.size and not right_column_positions.size:
             if output_columns is None:
                 raise ValueError("df_columns and right_columns cannot both be None.")
             raise ValueError("No output columns were selected.")
-        df_columns = left_column_positions
-        right_columns = right_column_positions
+        df_columns = _helpers._ResolvedColumns(left_column_positions)
+        right_columns = _helpers._ResolvedColumns(right_column_positions)
     else:
         left_column_positions = right_column_positions = None
 

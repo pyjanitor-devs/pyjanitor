@@ -66,12 +66,17 @@ def _empty_indices() -> dict[str, np.ndarray]:
     return {"left_index": empty, "right_index": empty}
 
 
+@dataclass(frozen=True)
+class _ResolvedColumns:
+    """Internal marker for already-resolved column positions."""
+
+    positions: np.ndarray
+
+
 def _column_positions(frame: pd.DataFrame, selector: Any) -> np.ndarray:
     """Resolve a column selector to exact physical positions."""
-    if isinstance(selector, np.ndarray) and np.issubdtype(selector.dtype, np.integer):
-        return selector.astype(np.intp, copy=False)
-    if isinstance(selector, slice) and selector == slice(None):
-        return np.arange(frame.columns.size, dtype=np.intp)
+    if isinstance(selector, _ResolvedColumns):
+        return selector.positions
     indexer = _select_index([selector], frame, axis="columns")
     return _index_converter(indexer, frame.columns)
 
@@ -228,8 +233,8 @@ def _materialize_index_result(
             ``"outer"``.
         df_columns: Left output selector. Despite the historical name, this
             may be the normalized selector supplied by ``output_columns``.
-            ``None`` omits the left side and ``slice(None)`` retains all left
-            columns.
+            ``DropLabel(slice(None))`` omits the left side and ``slice(None)``
+            retains all left columns.
         right_columns: Right output selector with the same semantics as
             ``df_columns``.
         indicator: ``False`` to omit the indicator, ``True`` for ``"_merge"``,

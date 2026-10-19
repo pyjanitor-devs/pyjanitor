@@ -243,8 +243,6 @@ def _materialize_index_result(
         """
         if selector is None:
             return np.empty(0, dtype=np.intp)
-        if isinstance(selector, slice) and selector == slice(None):
-            return np.arange(frame.columns.size, dtype=np.intp)
         # Use pyjanitor's selector engine so glob, regex, callable, boolean,
         # slice, and MultiIndex selectors have the same semantics as
         # ``select_columns``. Positional selection is important here because

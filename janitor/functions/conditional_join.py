@@ -116,7 +116,7 @@ def conditional_join(
     possible using the
     [`select_columns`][janitor.functions.select.select_columns] syntax.
 
-    ``output_columns`` is a dictionary with optional ``"left"`` and ``"right``
+    ``output_columns`` is a dictionary with optional ``"left"`` and ``"right"``
     selectors. A value of ``None`` omits that side. An omitted key, or the
     default ``slice(None)``, retains all columns; the string ``"*"`` is a
     wildcard selector for string-labeled columns. Each selector accepts any
@@ -778,7 +778,7 @@ def _normalize_output_columns(
         output_columns: Dictionary whose keys are ``"left"`` and/or ``"right"``
             and whose values are selectors accepted by ``select_columns``.
             ``None`` omits the corresponding side. A missing key retains all
-            columns from that side, equivalent to ``"*"``.
+            columns from that side, equivalent to ``slice(None)``.
         df_columns: Legacy left-side output selector. It must retain its
             default value when ``output_columns`` is supplied.
         right_columns: Legacy right-side output selector. It must retain its

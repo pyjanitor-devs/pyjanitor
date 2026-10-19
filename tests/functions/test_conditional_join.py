@@ -270,7 +270,7 @@ def test_internal_projection_helpers_do_not_emit_deprecation_warnings():
     assert not [
         warning
         for warning in caught
-        if issubclass(warning.category, DeprecationWarning)
+        if issubclass(warning.category, (DeprecationWarning, FutureWarning))
     ]
 
 

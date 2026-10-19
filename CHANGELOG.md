@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+- [BUG] Count missing values in `drop_constant_columns` to preserve partially missing columns and remove all-missing columns. - Issue #1781
 - [ENH] Add `output_columns` to `conditional_join` as the preferred side-aware output projection while retaining `df_columns` and `right_columns` for compatibility. - Issue #1751
 - [BUG] Preserve duplicate columns selected by `conditional_join` output projections.
 - [BUG] Preserve unmatched rows when `conditional_join` drops one output side in non-inner joins.

@@ -1066,10 +1066,16 @@ def _conditional_join_compute(
         left_column_positions = _helpers._column_positions(df, df_columns)
         right_column_positions = _helpers._column_positions(right, right_columns)
         if how == "left_anti" and not left_column_positions.size:
-            option = "output_columns['left']" if output_columns else "df_columns"
+            option = (
+                "output_columns['left']" if output_columns is not None else "df_columns"
+            )
             raise ValueError(f"{option} must select columns for a left_anti join.")
         if how == "right_anti" and not right_column_positions.size:
-            option = "output_columns['right']" if output_columns else "right_columns"
+            option = (
+                "output_columns['right']"
+                if output_columns is not None
+                else "right_columns"
+            )
             raise ValueError(f"{option} must select columns for a right_anti join.")
         if not left_column_positions.size and not right_column_positions.size:
             if output_columns is None:

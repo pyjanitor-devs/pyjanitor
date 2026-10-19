@@ -197,6 +197,19 @@ def test_output_columns_materializes_only_requested_columns(how):
     assert_frame_equal(actual, expected)
 
 
+def test_output_columns_allows_empty_list_for_one_side():
+    """An empty side selector omits that side from the join result."""
+    left = pd.DataFrame({"key": [1, 4], "payload": ["a", "b"]})
+    right = pd.DataFrame({"key": [0, 2], "value": [0, 20]})
+    actual = left.conditional_join(
+        right,
+        ("key", "key", "<"),
+        output_columns={"left": [], "right": "value"},
+    )
+    expected = pd.DataFrame({"value": [20]})
+    assert_frame_equal(actual, expected)
+
+
 def test_output_columns_dropped_side_preserves_non_inner_rows():
     """Dropping one side does not change right-join row cardinality."""
     left = pd.DataFrame({"key": [1, 4], "payload": ["a", "b"]})

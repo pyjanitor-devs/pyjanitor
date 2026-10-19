@@ -6,7 +6,15 @@ import re
 import unicodedata
 import warnings
 from enum import Enum
-from typing import Any, Hashable, Iterable, List, Optional, Pattern, Union
+from typing import (
+    Any,
+    Hashable,
+    Iterable,
+    List,
+    Optional,
+    Pattern,
+    Union,
+)
 
 import numpy as np
 import pandas as pd
@@ -19,7 +27,12 @@ from pandas.api.types import (
 )
 
 from janitor.errors import JanitorError
-from janitor.utils import _expand_grid, check, check_column, find_stack_level
+from janitor.utils import (
+    _expand_grid,
+    check,
+    check_column,
+    find_stack_level,
+)
 
 
 def unionize_dataframe_categories(

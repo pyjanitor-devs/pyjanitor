@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import copy
-import warnings
 from functools import singledispatch
 
 import pandas as pd
@@ -13,7 +12,7 @@ from pandas.core.common import apply_if_callable
 from pandas.core.groupby.generic import DataFrameGroupBy
 
 from janitor.functions.select import get_index_labels
-from janitor.utils import find_stack_level, refactored_function
+from janitor.utils import refactored_function
 
 
 @pf.register_dataframe_groupby_method
@@ -130,11 +129,6 @@ def ungroup(
     Returns:
         A pandas DataFrame.
     """
-    warnings.warn(
-        "This function is deprecated. Kindly use `jn.get_columns` instead.",
-        FutureWarning,
-        stacklevel=find_stack_level(),
-    )
     return df.obj
 
 

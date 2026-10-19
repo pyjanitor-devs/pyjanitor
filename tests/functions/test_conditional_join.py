@@ -16,7 +16,10 @@ from janitor.functions._conditional_join._helpers import (
     _normalize_conditions,
     _sort_if_not_monotonic,
 )
-from janitor.testing_utils.strategies import conditional_df, conditional_right
+from janitor.testing_utils.strategies import (
+    conditional_df,
+    conditional_right,
+)
 
 _FACTORIZE_TRUNCATES_NUL = pd.factorize(pd.Series(["", "\x00"], dtype=object))[
     0
@@ -4450,12 +4453,10 @@ def test_multiple_non_equii(df, right):
             how="cross",
         )
         .loc[
-            lambda df: (
-                df.A.ge(df.Integers)
-                & df.E.le(df.Dates)
-                & df.B.lt(df.Floats)
-                & df.B.gt(df.Numeric)
-            ),
+            lambda df: df.A.ge(df.Integers)
+            & df.E.le(df.Dates)
+            & df.B.lt(df.Floats)
+            & df.B.gt(df.Numeric),
             columns,
         ]
         .sort_values(columns, ignore_index=True)
@@ -4491,12 +4492,10 @@ def test_multiple_non_equii_col_syntax(df, right):
             how="cross",
         )
         .loc[
-            lambda df: (
-                df.A.ge(df.Integers)
-                & df.E.le(df.Dates)
-                & df.B.lt(df.Floats)
-                & df.B.gt(df.Numeric)
-            ),
+            lambda df: df.A.ge(df.Integers)
+            & df.E.le(df.Dates)
+            & df.B.lt(df.Floats)
+            & df.B.gt(df.Numeric),
             columns,
         ]
         .sort_values(columns, ignore_index=True)

@@ -1,6 +1,5 @@
 """Implementation of `label_encode` function"""
 
-import warnings
 from typing import Hashable, Iterable, Union
 
 import pandas as pd
@@ -9,7 +8,6 @@ import pandas_flavor as pf
 from janitor.functions.utils import _factorize
 from janitor.utils import (
     deprecated_alias,
-    find_stack_level,
     refactored_function,
 )
 
@@ -79,11 +77,5 @@ def label_encode(
     Returns:
         A pandas DataFrame.
     """  # noqa: E501
-    warnings.warn(
-        "`label_encode` will be deprecated in a 1.x release. "
-        "Please use `factorize_columns` instead.",
-        FutureWarning,
-        stacklevel=find_stack_level(),
-    )
     df = _factorize(df, column_names, "_enc")
     return df

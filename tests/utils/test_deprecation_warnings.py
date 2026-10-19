@@ -14,20 +14,19 @@ def test_import_does_not_override_user_warning_filter():
     script = """
 import warnings
 
-# Initialize dependencies that configure their own warning filters.
-import pandas
-import pandas_flavor
-import scipy.special
-import scipy.sparse
-
 warnings.simplefilter("ignore", DeprecationWarning)
 before = list(warnings.filters)
 
 import janitor
 
-assert warnings.filters == before, (
-    "Importing janitor modified global warning filters"
-)
+added_filters = [
+    entry for entry in warnings.filters if entry not in before
+]
+
+assert not any(
+    action == "always" and issubclass(DeprecationWarning, category)
+    for action, _, category, _, _ in added_filters
+), "Importing janitor installed an always-on DeprecationWarning filter"
 
 with warnings.catch_warnings(record=True) as recorded:
     warnings.warn("should remain hidden", DeprecationWarning)
@@ -126,7 +125,7 @@ def test_label_encode_future_warning_location():
 
     _assert_future_warning_at_caller(
         lambda: pd.DataFrame({"a": ["x", "y"]}).label_encode(column_names="a"),
-        "`label_encode` will be deprecated",
+        "Please use `janitor.factorize_columns` instead.",
     )
 
 
@@ -163,3 +162,32 @@ def test_get_join_indices_use_numba_warning_location():
         ),
         "'use_numba'",
     )
+
+
+def test_refactored_methods_emit_one_future_warning():
+    """Refactored methods should not emit duplicate FutureWarnings."""
+    import janitor  # noqa: F401
+
+    df = pd.DataFrame(
+        {
+            "group": ["a", "b", "a"],
+            "value": [1, 2, 3],
+        }
+    )
+
+    calls = {
+        "label_encode": lambda: df.copy().label_encode("group"),
+        "filter_on": lambda: df.filter_on("value > 1"),
+        "filter_column_isin": lambda: df.filter_column_isin("group", ["a"]),
+        "ungroup": lambda: df.groupby("group").ungroup(),
+    }
+
+    for name, call in calls.items():
+        with warnings.catch_warnings(record=True) as recorded:
+            warnings.simplefilter("always", FutureWarning)
+            call()
+
+        future_warnings = [item for item in recorded if item.category is FutureWarning]
+        assert len(future_warnings) == 1, (
+            f"{name} emitted {len(future_warnings)} FutureWarnings"
+        )

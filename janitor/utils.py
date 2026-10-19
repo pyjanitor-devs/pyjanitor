@@ -234,7 +234,8 @@ def deprecated_kwargs(
             defaults input `func_name` and `argument`.
         error: If True, raises `ValueError`; otherwise emits a warning.
         category: Warning category used when ``error`` is False.
-        stacklevel: Stack level passed to :func:`warnings.warn`.
+        stacklevel: Stack level passed to :func:`warnings.warn`. If `None`,
+            the caller's stack level is determined by `find_stack_level()`.
 
     Raises:
         ValueError: If one of `arguments` is in the decorated function's

@@ -115,6 +115,39 @@ def test_select_columns_only(dataframe):
     assert_frame_equal(actual, expected)
 
 
+@pytest.mark.parametrize(
+    "selector",
+    [
+        [],
+        np.array([], dtype=object),
+        pd.Index([]),
+        pd.Series([], dtype=object),
+    ],
+)
+def test_empty_selectors(dataframe, selector):
+    """Empty list-like selectors select nothing on either axis."""
+    assert_frame_equal(dataframe.select_columns(selector), dataframe.iloc[:, []])
+    assert_frame_equal(dataframe.select_rows(selector), dataframe.iloc[[], :])
+    assert_frame_equal(dataframe.select(columns=selector), dataframe.iloc[:, []])
+    assert_frame_equal(dataframe.select(index=selector), dataframe.iloc[[], :])
+    assert_frame_equal(dataframe.select_columns(selector, invert=True), dataframe)
+    assert_frame_equal(dataframe.select_rows(selector, invert=True), dataframe)
+
+
+def test_empty_drop_label_selects_everything(dataframe):
+    """An empty DropLabel drops nothing on either axis."""
+    assert_frame_equal(dataframe.select_columns(DropLabel([])), dataframe)
+    assert_frame_equal(dataframe.select_rows(DropLabel([])), dataframe)
+    assert_frame_equal(
+        dataframe.select_columns(DropLabel([]), invert=True),
+        dataframe.iloc[:, []],
+    )
+    assert_frame_equal(
+        dataframe.select_rows(DropLabel([]), invert=True),
+        dataframe.iloc[[], :],
+    )
+
+
 def test_select_columns_only_args(dataframe):
     """Test output for columns only"""
     actual = dataframe.select("col1", "col2", axis="columns")

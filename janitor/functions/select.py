@@ -851,6 +851,8 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
                 f"{len(arg)} instead of {len(index)}"
             )
         return np.asanyarray(arg)
+    if len(arg) == 0:
+        return np.array([], dtype=np.intp)
     try:
         if isinstance(arg, pd.Series):
             arr = arg.array
@@ -908,6 +910,9 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
 
         return arg
 
+    if not arg:
+        return np.array([], dtype=np.intp)
+
     # shortcut for single unique dtype of scalars
     checks = (is_scalar(entry) for entry in arg)
     if all(checks):
@@ -925,6 +930,7 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
         else:
             outcome = _select_index(entry, df, axis)
             include.append(outcome)
+    has_exclude = bool(exclude)
     if exclude:
         if len(exclude) > 1:
             exclude = [entry.label for entry in exclude]
@@ -933,9 +939,11 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
             exclude = exclude[0]
         exclude = _select_index(exclude, df, axis)
     len_exclude = len(exclude)
-    if len_exclude and not include:
+    if not include:
         index_arr = np.arange(getattr(df, axis).size)
-        return np.delete(index_arr, exclude)
+        if has_exclude:
+            return np.delete(index_arr, exclude)
+        return np.array([], dtype=np.intp)
     if include and len_exclude:
         include = [_index_converter(arr, index) for arr in include]
         include = np.concatenate(include)

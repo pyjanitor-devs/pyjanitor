@@ -148,6 +148,27 @@ def test_empty_drop_label_selects_everything(dataframe):
     )
 
 
+def test_empty_dict_selects_nothing_on_flat_and_multiindex_columns():
+    """An empty dictionary selects nothing on either column index type."""
+    flat = pd.DataFrame({"a": [1, 2], "b": [3, 4]})
+    multi = flat.copy()
+    multi.columns = pd.MultiIndex.from_tuples([("x", "a"), ("x", "b")])
+
+    for frame in (flat, multi):
+        assert_frame_equal(frame.select_columns({}), frame.iloc[:, []])
+
+
+def test_empty_selectors_with_duplicate_labels_and_drop_label():
+    """Empty selectors preserve duplicate labels and combined selection."""
+    dataframe = pd.DataFrame([[1, 2], [3, 4]], columns=["a", "a"])
+    assert_frame_equal(dataframe.select_columns([]), dataframe.iloc[:, []])
+    assert_frame_equal(dataframe.select_columns(DropLabel([])), dataframe)
+    assert_frame_equal(
+        dataframe.select_columns(["a", DropLabel([])]),
+        dataframe,
+    )
+
+
 def test_select_columns_only_args(dataframe):
     """Test output for columns only"""
     actual = dataframe.select("col1", "col2", axis="columns")

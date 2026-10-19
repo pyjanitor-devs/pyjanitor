@@ -801,6 +801,8 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
     """
 
     index = getattr(df, axis)
+    if not arg:
+        return np.array([], dtype=np.intp)
     if not isinstance(index, pd.MultiIndex):
         return _select_index(list(arg), df, axis)
     all_str = (isinstance(entry, str) for entry in arg)
@@ -930,7 +932,6 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
         else:
             outcome = _select_index(entry, df, axis)
             include.append(outcome)
-    has_exclude = bool(exclude)
     if exclude:
         if len(exclude) > 1:
             exclude = [entry.label for entry in exclude]
@@ -941,9 +942,7 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
     len_exclude = len(exclude)
     if not include:
         index_arr = np.arange(getattr(df, axis).size)
-        if has_exclude:
-            return np.delete(index_arr, exclude)
-        return np.array([], dtype=np.intp)
+        return np.delete(index_arr, exclude)
     if include and len_exclude:
         include = [_index_converter(arr, index) for arr in include]
         include = np.concatenate(include)

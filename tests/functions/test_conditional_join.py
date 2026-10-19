@@ -1,14 +1,16 @@
 import operator
+import warnings
 from itertools import permutations
 
 import numpy as np
 import pandas as pd
 import pytest
-from hypothesis import given, settings
+from hypothesis import assume, given, settings
 from pandas import Timedelta
 from pandas.testing import assert_frame_equal
 
 import janitor as jn
+from janitor.functions._conditional_join._equi_join import _get_bounds_right
 from janitor.functions._conditional_join._helpers import (
     _get_range_positions_for_one_side,
     _normalize_conditions,
@@ -18,6 +20,10 @@ from janitor.testing_utils.strategies import (
     conditional_df,
     conditional_right,
 )
+
+_FACTORIZE_TRUNCATES_NUL = pd.factorize(pd.Series(["", "\x00"], dtype=object))[
+    0
+].tolist() == [0, 0]
 
 # ## turn on to view dataframes from failed tests
 # pd.set_option("display.max_columns", None)
@@ -168,6 +174,224 @@ def test_multiple_conditions_preserve_non_condition_columns():
         ("upper", "maximum", "<"),
     )
 
+    assert_frame_equal(actual, expected)
+
+
+@pytest.mark.parametrize("how", ["inner", "left", "right", "outer"])
+def test_output_columns_materializes_only_requested_columns(how):
+    """Output projection retains predicate columns only for matching."""
+    left = pd.DataFrame({"key": [1, 4], "payload": ["a", "b"]})
+    right = pd.DataFrame({"key": [0, 2], "value": [0, 20]})
+    actual = left.conditional_join(
+        right,
+        ("key", "key", "<"),
+        how=how,
+        output_columns={"left": ["payload"], "right": "value"},
+    )
+    expected = {
+        "inner": pd.DataFrame({"payload": ["a"], "value": [20]}),
+        "left": pd.DataFrame({"payload": ["a", "b"], "value": [20, None]}),
+        "right": pd.DataFrame({"payload": ["a", None], "value": [20, 0]}),
+        "outer": pd.DataFrame({"payload": ["a", "b", None], "value": [20, None, 0]}),
+    }[how]
+    assert_frame_equal(actual, expected)
+
+
+def test_output_columns_dropped_side_preserves_non_inner_rows():
+    """Dropping one side does not change right-join row cardinality."""
+    left = pd.DataFrame({"key": [1, 4], "payload": ["a", "b"]})
+    right = pd.DataFrame({"key": [0, 2], "value": [0, 20]})
+    actual = left.conditional_join(
+        right,
+        ("key", "key", "<"),
+        how="right",
+        output_columns={"left": "payload", "right": jn.DropLabel(slice(None))},
+    )
+    expected = pd.DataFrame({"payload": ["a", None]})
+    assert_frame_equal(actual, expected)
+
+
+def test_output_columns_dropped_side_preserves_empty_outer_rows():
+    """An outer join with an empty side still returns the other side's rows."""
+    left = pd.DataFrame(
+        {
+            "key": pd.Series(dtype="int64"),
+            "payload": pd.Series(dtype="int64"),
+        }
+    )
+    right = pd.DataFrame({"key": [1, 2, 3], "value": [10, 20, 30]})
+    actual = left.conditional_join(
+        right,
+        ("key", "key", "<"),
+        how="outer",
+        output_columns={"left": "payload", "right": jn.DropLabel(slice(None))},
+    )
+    assert actual.shape == (3, 1)
+    assert actual["payload"].isna().all()
+
+
+def test_output_columns_rejects_empty_resolved_selection():
+    """Callable selectors that match no columns raise a clear error."""
+    left = pd.DataFrame({"key": [1], "payload": [10]})
+    right = pd.DataFrame({"key": [2]})
+    with pytest.raises(ValueError, match="No output columns were selected"):
+        left.conditional_join(
+            right,
+            ("key", "key", "<"),
+            output_columns={
+                "left": lambda frame: [False] * frame.shape[1],
+                "right": jn.DropLabel(slice(None)),
+            },
+        )
+
+
+def test_internal_projection_helpers_do_not_emit_deprecation_warnings():
+    """Internal selector defaults do not trigger public deprecations."""
+    left = pd.DataFrame({"key": [1], "value": [10]})
+    right = pd.DataFrame({"key": [2], "value": [20]})
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        jn.get_join_indices(left, right, ("key", "key", "<"))
+        left.join_agg(
+            right,
+            ("key", "key", "<"),
+            aggfunc=[("value", "sum")],
+        )
+    assert not [
+        warning
+        for warning in caught
+        if issubclass(warning.category, DeprecationWarning)
+    ]
+
+
+def test_output_columns_missing_side_defaults_to_all_columns():
+    """An omitted projection key retains that side's complete output."""
+    left = pd.DataFrame({"key": [1], "left_value": [10]})
+    right = pd.DataFrame({"key": [2], "right_value": [20]})
+    actual = left.conditional_join(
+        right,
+        ("key", "key", "<"),
+        output_columns={"left": ["left_value"]},
+    )
+    expected = pd.DataFrame({"left_value": [10], "key": [2], "right_value": [20]})
+    assert_frame_equal(actual, expected)
+
+
+def test_output_columns_none_requires_drop_label():
+    """The public projection API uses DropLabel rather than None."""
+    left = pd.DataFrame({"key": [1]})
+    right = pd.DataFrame({"key": [2]})
+    with pytest.raises(ValueError, match="DropLabel"):
+        left.conditional_join(
+            right,
+            ("key", "key", "<"),
+            output_columns={"left": None},
+        )
+
+
+def test_output_columns_integer_array_selects_integer_labels():
+    """Integer-array selectors are labels, not internal positions."""
+    left = pd.DataFrame({"k": [1]})
+    right = pd.DataFrame({10: [0], 20: [2], 0: [3]})
+    actual = left.conditional_join(
+        right,
+        ("k", 10, ">"),
+        output_columns={"left": ["k"], "right": np.array([0])},
+    )
+    expected = pd.DataFrame({"k": [1], 0: [3]})
+    assert_frame_equal(actual, expected)
+
+
+@pytest.mark.parametrize(
+    "output_columns",
+    [
+        None,
+        {"left": slice(None), "right": slice(None)},
+        {"left": slice(None)},
+    ],
+)
+def test_overlapping_tuple_labels_remain_atomic_in_plain_index(output_columns):
+    """Tuple-valued labels in a plain Index are not flattened as levels."""
+    left = pd.DataFrame({"key": [1, 4], ("t", "u"): [1, 2]})
+    right = pd.DataFrame({"key": [0, 2], ("t", "u"): [5, 6]})
+
+    kwargs = {} if output_columns is None else {"output_columns": output_columns}
+    actual = left.conditional_join(right, ("key", "key", "<"), **kwargs)
+
+    expected = pd.DataFrame(
+        [[1, 1, 2, 6]],
+        columns=pd.MultiIndex.from_tuples(
+            [
+                ("left", "key"),
+                ("left", ("t", "u")),
+                ("right", "key"),
+                ("right", ("t", "u")),
+            ]
+        ),
+    )
+    assert_frame_equal(actual, expected)
+
+
+@pytest.mark.parametrize(
+    ("how", "output_columns", "message"),
+    [
+        (
+            "left_anti",
+            {"left": jn.DropLabel(slice(None)), "right": "value"},
+            r"output_columns\['left'\]",
+        ),
+        (
+            "right_anti",
+            {"left": "value", "right": jn.DropLabel(slice(None))},
+            r"output_columns\['right'\]",
+        ),
+    ],
+)
+def test_output_columns_validate_anti_join_output_side(how, output_columns, message):
+    """Anti joins require output from their preserved side."""
+    left = pd.DataFrame({"key": [1, 4], "value": [10, 40]})
+    right = pd.DataFrame({"key": [0, 2], "value": [0, 20]})
+    with pytest.raises(ValueError, match=message):
+        left.conditional_join(
+            right,
+            ("key", "key", "<"),
+            how=how,
+            output_columns=output_columns,
+        )
+
+
+@pytest.mark.parametrize(
+    ("how", "output_columns"),
+    [
+        ("left_anti", {"left": lambda frame: [False] * frame.shape[1]}),
+        ("right_anti", {"right": lambda frame: [False] * frame.shape[1]}),
+    ],
+)
+def test_output_columns_anti_join_rejects_empty_kept_side(how, output_columns):
+    """Anti joins reject selectors that match no kept-side columns."""
+    left = pd.DataFrame({"key": [1, 4], "value": [10, 40]})
+    right = pd.DataFrame({"key": [0, 2], "value": [0, 20]})
+    with pytest.raises(ValueError, match=r"output_columns\['(left|right)'\]"):
+        left.conditional_join(
+            right,
+            ("key", "key", "<"),
+            how=how,
+            output_columns=output_columns,
+        )
+
+
+def test_output_columns_preserves_duplicate_selections():
+    """Projection by duplicate labels keeps each selected occurrence."""
+    left = pd.DataFrame([[1, 10]], columns=["key", "a"])
+    left = pd.concat([left, left[["a"]]], axis=1)
+    left.columns = ["key", "a", "a"]
+    right = pd.DataFrame({"key": [2]})
+    actual = left.conditional_join(
+        right,
+        ("key", "key", "<"),
+        output_columns={"left": ["a"], "right": jn.DropLabel(slice(None))},
+    )
+    expected = pd.DataFrame([[10, 10]], columns=["a", "a"])
     assert_frame_equal(actual, expected)
 
 
@@ -4878,6 +5102,8 @@ def test_multiple_eqs_col_syntax(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_eq_strings(df, right):
     """Test output for joins on strings."""
+    assume(not df["C"].str.contains("\x00").any())
+    assume(not right["Strings"].str.contains("\x00").any())
     columns = ["C", "A", "Strings", "Integers"]
     expected = df.merge(
         right,
@@ -4900,6 +5126,33 @@ def test_eq_strings(df, right):
     ).sort_values(columns, ignore_index=True)
 
     assert_frame_equal(expected, actual)
+
+
+@pytest.mark.xfail(
+    condition=_FACTORIZE_TRUNCATES_NUL,
+    reason=(
+        "pandas factorize truncates strings at embedded NULs, so distinct "
+        "equality keys collapse in the conditional-join path."
+    ),
+    strict=True,
+)
+def test_eq_strings_embedded_nul():
+    """Pin pandas' embedded-NUL factorize regression."""
+    left = pd.DataFrame({"C": pd.Series(["", ""], dtype=object), "A": [0, 0]})
+    right = pd.DataFrame(
+        {
+            "Strings": pd.Series(["", "\x00"], dtype=object),
+            "Integers": [0, 0],
+        }
+    )
+    uniques, _, _ = _get_bounds_right(pd.Index(right["Strings"]))
+    assert len(uniques) == 2
+    out = left.conditional_join(
+        right,
+        ("C", "Strings", "=="),
+        ("A", "Integers", ">="),
+    )
+    assert len(out) == 2
 
 
 def test_equi_join_preserves_explicit_object_string_columns():
@@ -6496,9 +6749,9 @@ def test_equi_le_ge_ge_ne_agg_rev(df, right):
 
 
 def test_conditional_join_columns_deprecation_warning(dummy):
-    """Test that using df_columns or right_columns triggers a DeprecationWarning."""
-    with pytest.warns(DeprecationWarning, match="df_columns"):
+    """Test that using df_columns or right_columns triggers a FutureWarning."""
+    with pytest.warns(FutureWarning, match="df_columns"):
         dummy.conditional_join(dummy, ("id", "id", ">"), df_columns="id")
 
-    with pytest.warns(DeprecationWarning, match="right_columns"):
+    with pytest.warns(FutureWarning, match="right_columns"):
         dummy.conditional_join(dummy, ("id", "id", ">"), right_columns="id")

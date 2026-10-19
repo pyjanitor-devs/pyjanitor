@@ -45,6 +45,10 @@ def select_columns(
 
     Optional ability to invert selection of columns available as well.
 
+    An empty list-like selector selects nothing. With ``invert=True``, it
+    selects everything. ``DropLabel([])`` drops nothing and therefore selects
+    everything unless ``invert=True`` is also passed.
+
     !!! abstract "Version Changed"
 
         - 0.32.3
@@ -305,6 +309,10 @@ def select_rows(
 
     Optional ability to invert selection of rows available as well.
 
+    An empty list-like selector selects nothing. With ``invert=True``, it
+    selects everything. ``DropLabel([])`` drops nothing and therefore selects
+    everything unless ``invert=True`` is also passed.
+
 
     !!! info "New in version 0.24.0"
 
@@ -392,6 +400,10 @@ def select(
     Selection can be inverted with the `DropLabel` class.
 
     Optional ability to invert selection of index/columns available as well.
+
+    An empty list-like selector selects nothing. With ``invert=True``, it
+    selects everything. ``DropLabel([])`` drops nothing and therefore selects
+    everything unless ``invert=True`` is also passed.
 
 
     !!! info "New in version 0.24.0"

@@ -53,9 +53,10 @@ def select_columns(
     !!! abstract "Version Changed"
 
         - 0.32.44
-            - Empty list-like selectors now select nothing; tuples retain
-              their label semantics.
-            - Empty dictionaries select nothing on MultiIndex axes.
+            - Empty list-like selectors now select nothing; `DropLabel([])`
+              and `invert=True` follow the documented inverse semantics.
+            - Tuples retain their label semantics, and empty dictionaries
+              select nothing on MultiIndex axes.
         - 0.32.3
             - The deprecation of `select_columns` was reversed.
 
@@ -325,9 +326,10 @@ def select_rows(
     !!! abstract "Version Changed"
 
         - 0.32.44
-            - Empty list-like selectors now select nothing; tuples retain
-              their label semantics.
-            - Empty dictionaries select nothing on MultiIndex axes.
+            - Empty list-like selectors now select nothing; `DropLabel([])`
+              and `invert=True` follow the documented inverse semantics.
+            - Tuples retain their label semantics, and empty dictionaries
+              select nothing on MultiIndex axes.
         - 0.32.3
             - The deprecation of `select_rows` was reversed.
 
@@ -434,9 +436,10 @@ def select(
     !!! abstract "Version Changed"
 
         - 0.32.44
-            - Empty list-like selectors now select nothing; tuples retain
-              their label semantics.
-            - Empty dictionaries select nothing on MultiIndex axes.
+            - Empty list-like selectors now select nothing; `DropLabel([])`
+              and `invert=True` follow the documented inverse semantics.
+            - Tuples retain their label semantics, and empty dictionaries
+              select nothing on MultiIndex axes.
         - 0.26.0
             - Added variable `args`, `invert` and `axis` parameters.
             - `rows` keyword deprecated in favour of `index`.

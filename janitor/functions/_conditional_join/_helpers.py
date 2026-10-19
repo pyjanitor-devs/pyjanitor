@@ -66,6 +66,16 @@ def _empty_indices() -> dict[str, np.ndarray]:
     return {"left_index": empty, "right_index": empty}
 
 
+def _column_positions(frame: pd.DataFrame, selector: Any) -> np.ndarray:
+    """Resolve a column selector to exact physical positions."""
+    if isinstance(selector, np.ndarray) and np.issubdtype(selector.dtype, np.integer):
+        return selector.astype(np.intp, copy=False)
+    if isinstance(selector, slice) and selector == slice(None):
+        return np.arange(frame.columns.size, dtype=np.intp)
+    indexer = _select_index([selector], frame, axis="columns")
+    return _index_converter(indexer, frame.columns)
+
+
 def _materialize_or_return_indices(
     *,
     result: dict[str, np.ndarray],
@@ -78,6 +88,8 @@ def _materialize_or_return_indices(
     include_join_positions: bool,
     return_matching_indices: bool,
     return_building_blocks: bool = False,
+    left_column_positions: np.ndarray | None = None,
+    right_column_positions: np.ndarray | None = None,
 ) -> dict[str, np.ndarray] | pd.DataFrame:
     """Return kernel output as indices or as a materialized join dataframe.
 
@@ -119,6 +131,8 @@ def _materialize_or_return_indices(
         right_columns=right_columns,
         indicator=indicator,
         include_join_positions=include_join_positions,
+        left_column_positions=left_column_positions,
+        right_column_positions=right_column_positions,
     )
 
 
@@ -186,6 +200,8 @@ def _materialize_index_result(
     indicator: bool | str,
     include_join_positions: bool,
     anti_side: str | None = None,
+    left_column_positions: np.ndarray | None = None,
+    right_column_positions: np.ndarray | None = None,
 ) -> pd.DataFrame:
     """Materialize a conditional-join result from physical row positions.
 
@@ -229,33 +245,15 @@ def _materialize_index_result(
         ValueError: If no output columns are selected or the requested
             indicator name collides with an output column.
     """
-    if (df_columns is None) and (right_columns is None):
-        raise ValueError("No output columns were selected.")
-
-    def _column_positions(frame: pd.DataFrame, selector: Any) -> np.ndarray:
-        """Resolve a selector to exact physical column positions.
-
-        Positions are used instead of the selected labels when gathering
-        values because labels are not guaranteed to be unique. With duplicate
-        column labels, ``frame[label]`` can return multiple columns and cannot
-        identify which occurrence the selector selected; ``frame.iloc`` with a
-        positional indexer preserves that exact column identity.
-        """
-        if selector is None:
-            return np.empty(0, dtype=np.intp)
-        # Use pyjanitor's selector engine so glob, regex, callable, boolean,
-        # slice, and MultiIndex selectors have the same semantics as
-        # ``select_columns``. Positional selection is important here because
-        # duplicate labels must remain distinguishable during materialization.
-        indexer = _select_index([selector], frame, axis="columns")
-        return _index_converter(indexer, frame.columns)
 
     # Keep positions for value gathering and derive labels separately for the
     # result schema. This distinction is essential for duplicate labels: the
     # result can preserve two same-named columns while each source occurrence
     # is still gathered independently.
-    left_column_positions = _column_positions(df, df_columns)
-    right_column_positions = _column_positions(right, right_columns)
+    if left_column_positions is None:
+        left_column_positions = _column_positions(df, df_columns)
+    if right_column_positions is None:
+        right_column_positions = _column_positions(right, right_columns)
     if anti_side == "left_anti" and not left_column_positions.size:
         raise ValueError("The kept side of an anti join must select columns.")
     if anti_side == "right_anti" and not right_column_positions.size:

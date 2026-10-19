@@ -44,6 +44,7 @@ from pandas.api.types import (
     is_timedelta64_dtype,
 )
 
+from janitor.functions.select import DropLabel
 from janitor.utils import check, check_column, deprecated_kwargs
 
 from ._conditional_join import (
@@ -117,7 +118,7 @@ def conditional_join(
     [`select_columns`][janitor.functions.select.select_columns] syntax.
 
     ``output_columns`` is a dictionary with optional ``"left"`` and ``"right"``
-    selectors. A value of ``None`` omits that side. An omitted key, or the
+    selectors. An omitted key, or the
     default ``slice(None)``, retains all columns; the string ``"*"`` is a
     wildcard selector for string-labeled columns. Each selector accepts any
     form supported by
@@ -249,7 +250,7 @@ def conditional_join(
         ...     df2,
         ...     ("value_1", "value_2A", ">"),
         ...     ("value_1", "value_2B", "<"),
-        ...     output_columns={"left": None, "right": "value_2*"},
+        ...     output_columns={"left": DropLabel(slice(None)), "right": "value_2*"},
         ... )
            value_2A  value_2B
         0          1         3
@@ -263,7 +264,7 @@ def conditional_join(
         ...     df2,
         ...     ("value_1", "value_2A", ">"),
         ...     ("value_1", "value_2B", "<"),
-        ...     output_columns={"left": None, "right": "value_2B"},
+        ...     output_columns={"left": DropLabel(slice(None)), "right": "value_2B"},
         ...     how="left",
         ... )
            value_2B
@@ -720,11 +721,6 @@ def _conditional_join_preliminary_checks(
             "'how' should be one of 'inner', 'left', 'right', 'outer', "
             "'left_anti' or 'right_anti'."
         )
-    if how == "left_anti" and df_columns is None:
-        raise ValueError("df_columns cannot be None for a left_anti join.")
-    if how == "right_anti" and right_columns is None:
-        raise ValueError("right_columns cannot be None for a right_anti join.")
-
     check("keep", keep, [str])
 
     if keep not in {"all", "first", "last", "any"}:
@@ -777,8 +773,8 @@ def _normalize_output_columns(
     Args:
         output_columns: Dictionary whose keys are ``"left"`` and/or ``"right"``
             and whose values are selectors accepted by ``select_columns``.
-            ``None`` omits the corresponding side. A missing key retains all
-            columns from that side, equivalent to ``slice(None)``.
+            Use ``DropLabel(slice(None))`` to omit a side. A missing key
+            retains all columns from that side, equivalent to ``slice(None)``.
         df_columns: Legacy left-side output selector. It must retain its
             default value when ``output_columns`` is supplied.
         right_columns: Legacy right-side output selector. It must retain its
@@ -793,7 +789,10 @@ def _normalize_output_columns(
             projection APIs are used together.
     """
     if output_columns is None:
-        return df_columns, right_columns
+        return (
+            DropLabel(slice(None)) if df_columns is None else df_columns,
+            DropLabel(slice(None)) if right_columns is None else right_columns,
+        )
     if not isinstance(output_columns, dict):
         raise TypeError("output_columns should be a dictionary")
     unknown = set(output_columns).difference({"left", "right"})
@@ -810,9 +809,16 @@ def _normalize_output_columns(
         raise ValueError(
             "output_columns cannot be combined with df_columns or right_columns."
         )
-    return output_columns.get("left", slice(None)), output_columns.get(
-        "right", slice(None)
+    selectors = (
+        output_columns.get("left", slice(None)),
+        output_columns.get("right", slice(None)),
     )
+    if any(selector is None for selector in selectors):
+        raise ValueError(
+            "None is not valid in output_columns; use "
+            "DropLabel(slice(None)) to omit a side."
+        )
+    return selectors
 
 
 def _conditional_join_type_check(
@@ -878,6 +884,8 @@ def _compute_anti_join(
     force: bool,
     join_algorithm: str,
     return_matching_indices: bool,
+    left_column_positions: np.ndarray | None,
+    right_column_positions: np.ndarray | None,
 ) -> pd.DataFrame | dict[str, np.ndarray]:
     """Return rows with no complete matching partner.
 
@@ -947,6 +955,8 @@ def _compute_anti_join(
             indicator=indicator,
             include_join_positions=False,
             anti_side=how,
+            left_column_positions=left_column_positions,
+            right_column_positions=right_column_positions,
         )
     return _helpers._materialize_index_result(
         df=df.iloc[:0],
@@ -959,6 +969,8 @@ def _compute_anti_join(
         indicator=indicator,
         include_join_positions=False,
         anti_side=how,
+        left_column_positions=left_column_positions,
+        right_column_positions=right_column_positions,
     )
 
 
@@ -1029,25 +1041,6 @@ def _conditional_join_compute(
         df_columns=df_columns,
         right_columns=right_columns,
     )
-    if how == "left_anti" and materialize_df_columns is None:
-        option = (
-            "output_columns['left']" if output_columns is not None else "df_columns"
-        )
-        raise ValueError(f"{option} cannot be None for a left_anti join.")
-    if how == "right_anti" and materialize_right_columns is None:
-        option = (
-            "output_columns['right']" if output_columns is not None else "right_columns"
-        )
-        raise ValueError(f"{option} cannot be None for a right_anti join.")
-    if (
-        materialize_df_columns is None
-        and materialize_right_columns is None
-        and not return_matching_indices
-        and not aggfunc
-    ):
-        if output_columns is None:
-            raise ValueError("df_columns and right_columns cannot both be None.")
-        raise ValueError("No output columns were selected.")
     df, right = _conditional_join_preliminary_checks(
         df=df,
         right=right,
@@ -1068,6 +1061,23 @@ def _conditional_join_compute(
     )
     df_columns = materialize_df_columns
     right_columns = materialize_right_columns
+
+    if not return_matching_indices and not aggfunc:
+        left_column_positions = _helpers._column_positions(df, df_columns)
+        right_column_positions = _helpers._column_positions(right, right_columns)
+        if how == "left_anti" and not left_column_positions.size:
+            raise ValueError("The kept side of an anti join must select columns.")
+        if how == "right_anti" and not right_column_positions.size:
+            raise ValueError("The kept side of an anti join must select columns.")
+        if not left_column_positions.size and not right_column_positions.size:
+            if output_columns is None:
+                raise ValueError("df_columns and right_columns cannot both be None.")
+            raise ValueError("No output columns were selected.")
+        df_columns = left_column_positions
+        right_columns = right_column_positions
+    else:
+        left_column_positions = right_column_positions = None
+
     conditions = _normalize_conditions(conditions)
 
     for condition in conditions:
@@ -1094,6 +1104,8 @@ def _conditional_join_compute(
             force=force,
             join_algorithm=join_algorithm,
             return_matching_indices=return_matching_indices,
+            left_column_positions=left_column_positions,
+            right_column_positions=right_column_positions,
         )
 
     index_result_kwargs = {
@@ -1393,8 +1405,8 @@ def get_join_indices(
         right=right,
         conditions=conditions,
         how="inner",
-        df_columns=None,
-        right_columns=None,
+        df_columns=slice(None),
+        right_columns=slice(None),
         output_columns=None,
         keep=keep,
         indicator=False,
@@ -1565,8 +1577,8 @@ def join_agg(
         right=right,
         conditions=conditions,
         how="inner",
-        df_columns=None,
-        right_columns=None,
+        df_columns=slice(None),
+        right_columns=slice(None),
         output_columns=None,
         keep="all",
         indicator=False,

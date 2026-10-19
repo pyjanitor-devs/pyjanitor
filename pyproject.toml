@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyjanitor"
-version = "0.32.41"
+version = "0.32.45"
 description = "Tools for cleaning pandas DataFrames"
 readme = {file = "README.md", content-type = "text/markdown"}
 requires-python = ">=3.11"

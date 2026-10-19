@@ -44,6 +44,7 @@ from pandas.api.types import (
     is_timedelta64_dtype,
 )
 
+from janitor.functions.select import DropLabel
 from janitor.utils import check, check_column, deprecated_kwargs
 
 from ._conditional_join import (
@@ -72,6 +73,17 @@ _REVERSE_OPERATOR = {
 
 
 @pf.register_dataframe_method
+@deprecated_kwargs(
+    "df_columns",
+    "right_columns",
+    message=(
+        "The keyword argument {argument!r} of {func_name!r} is deprecated. "
+        "Use 'output_columns' instead."
+    ),
+    error=False,
+    category=FutureWarning,
+    stacklevel=3,
+)
 def conditional_join(
     df: pd.DataFrame,
     right: pd.DataFrame | pd.Series,
@@ -81,6 +93,7 @@ def conditional_join(
     ] = "inner",
     df_columns: Optional[Any] = slice(None),
     right_columns: Optional[Any] = slice(None),
+    output_columns: Optional[dict[str, Any]] = None,
     keep: Literal["first", "last", "any", "all"] = "all",
     use_numba: bool | None = None,
     indicator: Optional[bool | str] = False,
@@ -100,12 +113,31 @@ def conditional_join(
     There is also pandas' IntervalIndex, which is efficient for range joins,
     especially if the intervals do not overlap.
 
-    Column selection in `df_columns` and `right_columns` is possible using the
+    Column selection in `output_columns`, `df_columns` and `right_columns` is
+    possible using the
     [`select_columns`][janitor.functions.select.select_columns] syntax.
 
-    !!! warning
-        The `df_columns` and `right_columns` parameters are deprecated.
-        Select or rename columns on the DataFrame before calling `conditional_join`.
+    ``output_columns`` is a dictionary with optional ``"left"`` and ``"right"``
+    selectors. An omitted key, or the
+    default ``slice(None)``, retains all columns; the string ``"*"`` is a
+    wildcard selector for string-labeled columns. Each selector accepts any
+    form supported by
+    [`select_columns`][janitor.functions.select.select_columns]. Selection is
+    applied only while materializing the final result; predicate columns
+    remain available during matching.
+
+    For example, ``output_columns={"left": ["id", "value"],
+    "right": "price"}`` retains two left columns and one right column. Use
+    ``DropLabel(slice(None))`` to omit a side, or ``slice(None)`` to retain
+    every column on that side regardless of label type.
+    At least one side must contribute a column. The projection is applied
+    after matching, so a column used in a condition can be omitted from the
+    result without being removed from the join inputs.
+
+    !!! warning "Deprecated in 0.32.44"
+        The `df_columns` and `right_columns` parameters are deprecated and will
+        be removed in 0.33.0. Use `output_columns={"left": ..., "right": ...}`
+        instead.
 
     Noticeable performance can be observed for range joins,
     if both join columns from the right dataframe
@@ -199,45 +231,50 @@ def conditional_join(
         3        4         3         5
         4        4         3         6
 
-        Select specific columns, after the join:
+        Select specific output columns from both sides:
         >>> df1.conditional_join(
         ...     df2,
         ...     ("value_1", "value_2A", ">"),
         ...     ("value_1", "value_2B", "<"),
-        ...     right_columns="value_2B",
-        ...     how="left",
+        ...     output_columns={"left": "value_1", "right": "value_2B"},
         ... )
            value_1  value_2B
-        0        2       3.0
-        1        5       6.0
-        2        3       4.0
-        3        4       5.0
-        4        4       6.0
-        5        7       NaN
-        6        1       NaN
+        0        2         3
+        1        5         6
+        2        3         4
+        3        4         5
+        4        4         6
 
-        Rename columns, before the join:
-        >>> (
-        ...     df1.rename(columns={"value_1": "left_column"}).conditional_join(
-        ...         df2,
-        ...         ("left_column", "value_2A", ">"),
-        ...         ("left_column", "value_2B", "<"),
-        ...         right_columns="value_2B",
-        ...         how="outer",
-        ...     )
+        Omit the left side and select right-side columns with a glob:
+        >>> df1.conditional_join(
+        ...     df2,
+        ...     ("value_1", "value_2A", ">"),
+        ...     ("value_1", "value_2B", "<"),
+        ...     output_columns={"left": DropLabel(slice(None)), "right": "value_2*"},
         ... )
-            left_column  value_2B
-        0           2.0       3.0
-        1           5.0       6.0
-        2           3.0       4.0
-        3           4.0       5.0
-        4           4.0       6.0
-        5           7.0       NaN
-        6           1.0       NaN
-        7           NaN       1.0
-        8           NaN       9.0
-        9           NaN      15.0
-        10          NaN       1.0
+           value_2A  value_2B
+        0          1         3
+        1          3         6
+        2          2         4
+        3          3         5
+        4          3         6
+
+        Keep only the right-side upper bound in a left join:
+        >>> df1.conditional_join(
+        ...     df2,
+        ...     ("value_1", "value_2A", ">"),
+        ...     ("value_1", "value_2B", "<"),
+        ...     output_columns={"left": DropLabel(slice(None)), "right": "value_2B"},
+        ...     how="left",
+        ... )
+           value_2B
+        0       3.0
+        1       6.0
+        2       4.0
+        3       5.0
+        4       6.0
+        5       NaN
+        6       NaN
 
         Get the first match:
         >>> df1.conditional_join(
@@ -357,6 +394,9 @@ def conditional_join(
             - Added `join_algorithm` parameter.
         - 0.32.27
             - The `use_numba` parameter is deprecated and has no effect.
+        - 0.32.44
+            - Added `output_columns` as the preferred side-aware output
+              projection and deprecated `df_columns` and `right_columns`.
 
     Args:
         df: A pandas DataFrame.
@@ -376,20 +416,34 @@ def conditional_join(
             It can be one of `inner`, `left`, `right`, `outer`,
             `left_anti` or `right_anti`.
             Anti joins retain only the requested side's rows that have no
-            matching partner. Set the other side's column selector to `None`
-            when only the preserved side is wanted.
+            matching partner. Set the other side's column selector to
+            `DropLabel(slice(None))` when only the preserved side is wanted.
         df_columns: Columns to select from `df` in the final output dataframe.
             Column selection is based on the
             [`select_columns`][janitor.functions.select.select_columns] syntax.
-            !!! warning "Deprecated in 0.33.0"
-                `df_columns` will be removed in a future release.
-                Select or rename columns directly on the DataFrame before calling `conditional_join`.
+            !!! warning "Deprecated in 0.32.44"
+                `df_columns` will be removed in 0.33.0.
+                Use `output_columns` instead.
         right_columns: Columns to select from `right` in the final output dataframe.
             Column selection is based on the
             [`select_columns`][janitor.functions.select.select_columns] syntax.
-            !!! warning "Deprecated in 0.33.0"
-                `right_columns` will be removed in a future release.
-                Select or rename columns directly on the DataFrame before calling `conditional_join`.
+            !!! warning "Deprecated in 0.32.44"
+                `right_columns` will be removed in 0.33.0.
+                Use `output_columns` instead.
+        output_columns: Optional dictionary of ``"left"`` and ``"right"`` output
+            selectors. ``DropLabel(slice(None))`` omits a side. An omitted side, or a
+            ``slice(None)`` selector, selects all columns from that side;
+            string ``"*"`` is a wildcard for string-labeled columns.
+            Each selector accepts any form supported by
+            [`select_columns`][janitor.functions.select.select_columns].
+            Selectors may be exact labels, lists of labels, glob patterns,
+            regular expressions, slices, callables, boolean masks, or
+            MultiIndex selection dictionaries. At least one side must select
+            at least one column. Selection is resolved during final result
+            materialization and does not narrow either input before predicate
+            evaluation.
+            This is the preferred replacement for ``df_columns`` and
+            ``right_columns``.
         keep: Choose whether to return the first match, last match, any match,
             or all matches.
         use_numba: Deprecated no-op retained for compatibility with older
@@ -437,6 +491,7 @@ def conditional_join(
         how=how,
         df_columns=df_columns,
         right_columns=right_columns,
+        output_columns=output_columns,
         keep=keep,
         indicator=indicator,
         force=force,
@@ -646,24 +701,6 @@ def _conditional_join_preliminary_checks(
             raise ValueError("Unnamed Series are not supported for conditional_join.")
         right = right.to_frame()
 
-    if df_columns != slice(None):
-        warnings.warn(
-            "The 'df_columns' parameter is deprecated and will be removed in a "
-            "future release. Please select or rename columns on the left "
-            "DataFrame before calling conditional_join.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-
-    if right_columns != slice(None):
-        warnings.warn(
-            "The 'right_columns' parameter is deprecated and will be removed in a "
-            "future release. Please select or rename columns on the right "
-            "DataFrame before calling conditional_join.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-
     # Check MultiIndex column level mismatch first, before any column existence checks
     if df.columns.nlevels != right.columns.nlevels:
         raise ValueError(
@@ -684,11 +721,6 @@ def _conditional_join_preliminary_checks(
             "'how' should be one of 'inner', 'left', 'right', 'outer', "
             "'left_anti' or 'right_anti'."
         )
-    if how == "left_anti" and df_columns is None:
-        raise ValueError("df_columns cannot be None for a left_anti join.")
-    if how == "right_anti" and right_columns is None:
-        raise ValueError("right_columns cannot be None for a right_anti join.")
-
     check("keep", keep, [str])
 
     if keep not in {"all", "first", "last", "any"}:
@@ -723,6 +755,70 @@ def _conditional_join_preliminary_checks(
     # Only index and column metadata are reassigned downstream. Shallow copies
     # protect the caller's frames without duplicating every column buffer.
     return df.copy(deep=False), right.copy(deep=False)
+
+
+def _normalize_output_columns(
+    output_columns: Optional[dict[str, Any]],
+    df_columns: Any,
+    right_columns: Any,
+) -> tuple[Any, Any]:
+    """Normalize the public output projection to side-specific selectors.
+
+    ``output_columns`` is the public, side-aware API. The join dispatchers
+    still carry the historical ``df_columns`` and ``right_columns`` values,
+    so this helper translates the new mapping into those internal slots. It
+    does not evaluate selectors or create a narrowed DataFrame; selector
+    evaluation is deliberately deferred until final result materialization.
+
+    Args:
+        output_columns: Dictionary whose keys are ``"left"`` and/or ``"right"``
+            and whose values are selectors accepted by ``select_columns``.
+            Use ``DropLabel(slice(None))`` to omit a side. A missing key
+            retains all columns from that side, equivalent to ``slice(None)``.
+        df_columns: Legacy left-side output selector. It must retain its
+            default value when ``output_columns`` is supplied.
+        right_columns: Legacy right-side output selector. It must retain its
+            default value when ``output_columns`` is supplied.
+
+    Returns:
+        A pair containing the normalized left and right selectors.
+
+    Raises:
+        TypeError: If ``output_columns`` is not a dictionary.
+        ValueError: If an unknown side is supplied or the new and legacy
+            projection APIs are used together.
+    """
+    if output_columns is None:
+        return (
+            DropLabel(slice(None)) if df_columns is None else df_columns,
+            DropLabel(slice(None)) if right_columns is None else right_columns,
+        )
+    if not isinstance(output_columns, dict):
+        raise TypeError("output_columns should be a dictionary")
+    unknown = set(output_columns).difference({"left", "right"})
+    if unknown:
+        raise ValueError(
+            "output_columns may only contain 'left' and 'right' keys; "
+            f"got {sorted(unknown)!r}."
+        )
+
+    def is_default(selector: Any) -> bool:
+        return isinstance(selector, slice) and selector == slice(None)
+
+    if not is_default(df_columns) or not is_default(right_columns):
+        raise ValueError(
+            "output_columns cannot be combined with df_columns or right_columns."
+        )
+    selectors = (
+        output_columns.get("left", slice(None)),
+        output_columns.get("right", slice(None)),
+    )
+    if any(selector is None for selector in selectors):
+        raise ValueError(
+            "None is not valid in output_columns; use "
+            "DropLabel(slice(None)) to omit a side."
+        )
+    return selectors
 
 
 def _conditional_join_type_check(
@@ -788,6 +884,8 @@ def _compute_anti_join(
     force: bool,
     join_algorithm: str,
     return_matching_indices: bool,
+    left_column_positions: np.ndarray | None,
+    right_column_positions: np.ndarray | None,
 ) -> pd.DataFrame | dict[str, np.ndarray]:
     """Return rows with no complete matching partner.
 
@@ -816,6 +914,7 @@ def _compute_anti_join(
         how="inner",
         df_columns=slice(None),
         right_columns=slice(None),
+        output_columns=None,
         keep="any",
         indicator=False,
         force=force,
@@ -855,6 +954,9 @@ def _compute_anti_join(
             right_columns=right_columns,
             indicator=indicator,
             include_join_positions=False,
+            anti_side=how,
+            left_column_positions=left_column_positions,
+            right_column_positions=right_column_positions,
         )
     return _helpers._materialize_index_result(
         df=df.iloc[:0],
@@ -866,6 +968,9 @@ def _compute_anti_join(
         right_columns=right_columns,
         indicator=indicator,
         include_join_positions=False,
+        anti_side=how,
+        left_column_positions=left_column_positions,
+        right_column_positions=right_column_positions,
     )
 
 
@@ -876,6 +981,7 @@ def _conditional_join_compute(
     how: str,
     df_columns: Any,
     right_columns: Any,
+    output_columns: Optional[dict[str, Any]],
     keep: str,
     indicator: bool | str,
     force: bool,
@@ -902,6 +1008,9 @@ def _conditional_join_compute(
         how: Requested join shape.
         df_columns: Deprecated left output selection.
         right_columns: Deprecated right output selection.
+        output_columns: Public side-aware output projection. It is normalized
+            to the legacy selector slots before dispatch and evaluated only by
+            the final materializer.
         keep: Match-selection policy.
         indicator: Indicator-column request.
         force: If ``True``, force mixed equality/range joins to use the
@@ -927,13 +1036,18 @@ def _conditional_join_compute(
         A dataframe, physical-index dictionary, or kernel building-block
         dictionary depending on the requested mode.
     """
+    materialize_df_columns, materialize_right_columns = _normalize_output_columns(
+        output_columns=output_columns,
+        df_columns=df_columns,
+        right_columns=right_columns,
+    )
     df, right = _conditional_join_preliminary_checks(
         df=df,
         right=right,
         conditions=conditions,
         how=how,
-        df_columns=df_columns,
-        right_columns=right_columns,
+        df_columns=materialize_df_columns,
+        right_columns=materialize_right_columns,
         keep=keep,
         indicator=indicator,
         force=force,
@@ -945,6 +1059,33 @@ def _conditional_join_compute(
         join_algorithm=join_algorithm,
         return_matched=return_matched,
     )
+    df_columns = materialize_df_columns
+    right_columns = materialize_right_columns
+
+    if not return_matching_indices and not aggfunc:
+        left_column_positions = _helpers._column_positions(df, df_columns)
+        right_column_positions = _helpers._column_positions(right, right_columns)
+        if how == "left_anti" and not left_column_positions.size:
+            option = (
+                "output_columns['left']" if output_columns is not None else "df_columns"
+            )
+            raise ValueError(f"{option} must select columns for a left_anti join.")
+        if how == "right_anti" and not right_column_positions.size:
+            option = (
+                "output_columns['right']"
+                if output_columns is not None
+                else "right_columns"
+            )
+            raise ValueError(f"{option} must select columns for a right_anti join.")
+        if not left_column_positions.size and not right_column_positions.size:
+            if output_columns is None:
+                raise ValueError("df_columns and right_columns cannot both be None.")
+            raise ValueError("No output columns were selected.")
+        df_columns = _helpers._ResolvedColumns(left_column_positions)
+        right_columns = _helpers._ResolvedColumns(right_column_positions)
+    else:
+        left_column_positions = right_column_positions = None
+
     conditions = _normalize_conditions(conditions)
 
     for condition in conditions:
@@ -971,6 +1112,8 @@ def _conditional_join_compute(
             force=force,
             join_algorithm=join_algorithm,
             return_matching_indices=return_matching_indices,
+            left_column_positions=left_column_positions,
+            right_column_positions=right_column_positions,
         )
 
     index_result_kwargs = {
@@ -1270,8 +1413,9 @@ def get_join_indices(
         right=right,
         conditions=conditions,
         how="inner",
-        df_columns=None,
-        right_columns=None,
+        df_columns=slice(None),
+        right_columns=slice(None),
+        output_columns=None,
         keep=keep,
         indicator=False,
         force=force,
@@ -1441,8 +1585,9 @@ def join_agg(
         right=right,
         conditions=conditions,
         how="inner",
-        df_columns=None,
-        right_columns=None,
+        df_columns=slice(None),
+        right_columns=slice(None),
+        output_columns=None,
         keep="all",
         indicator=False,
         force=force,

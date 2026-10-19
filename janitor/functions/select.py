@@ -52,7 +52,7 @@ def select_columns(
 
     !!! abstract "Version Changed"
 
-        - 0.32.44
+        - 0.32.45
             - Empty list-like selectors now select nothing; `DropLabel([])`
               and `invert=True` follow the documented inverse semantics.
             - Tuples retain their label semantics, and empty dictionaries
@@ -325,7 +325,7 @@ def select_rows(
 
     !!! abstract "Version Changed"
 
-        - 0.32.44
+        - 0.32.45
             - Empty list-like selectors now select nothing; `DropLabel([])`
               and `invert=True` follow the documented inverse semantics.
             - Tuples retain their label semantics, and empty dictionaries
@@ -435,7 +435,7 @@ def select(
 
     !!! abstract "Version Changed"
 
-        - 0.32.44
+        - 0.32.45
             - Empty list-like selectors now select nothing; `DropLabel([])`
               and `invert=True` follow the documented inverse semantics.
             - Tuples retain their label semantics, and empty dictionaries

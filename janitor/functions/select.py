@@ -45,8 +45,18 @@ def select_columns(
 
     Optional ability to invert selection of columns available as well.
 
+    An empty list, set, dict, array, Index, or Series selects nothing
+    (tuples are treated as labels). With `invert=True`, it selects everything.
+    `DropLabel([])` drops nothing and therefore selects everything unless
+    `invert=True` is also passed.
+
     !!! abstract "Version Changed"
 
+        - 0.32.45
+            - Empty list-like selectors now select nothing; `DropLabel([])`
+              and `invert=True` follow the documented inverse semantics.
+            - Tuples retain their label semantics, and empty dictionaries
+              select nothing on MultiIndex axes.
         - 0.32.3
             - The deprecation of `select_columns` was reversed.
 
@@ -305,11 +315,21 @@ def select_rows(
 
     Optional ability to invert selection of rows available as well.
 
+    An empty list, set, dict, array, Index, or Series selects nothing
+    (tuples are treated as labels). With `invert=True`, it selects everything.
+    `DropLabel([])` drops nothing and therefore selects everything unless
+    `invert=True` is also passed.
+
 
     !!! info "New in version 0.24.0"
 
     !!! abstract "Version Changed"
 
+        - 0.32.45
+            - Empty list-like selectors now select nothing; `DropLabel([])`
+              and `invert=True` follow the documented inverse semantics.
+            - Tuples retain their label semantics, and empty dictionaries
+              select nothing on MultiIndex axes.
         - 0.32.3
             - The deprecation of `select_rows` was reversed.
 
@@ -393,6 +413,11 @@ def select(
 
     Optional ability to invert selection of index/columns available as well.
 
+    An empty list, set, dict, array, Index, or Series selects nothing
+    (tuples are treated as labels). With `invert=True`, it selects everything.
+    `DropLabel([])` drops nothing and therefore selects everything unless
+    `invert=True` is also passed.
+
 
     !!! info "New in version 0.24.0"
 
@@ -410,6 +435,11 @@ def select(
 
     !!! abstract "Version Changed"
 
+        - 0.32.45
+            - Empty list-like selectors now select nothing; `DropLabel([])`
+              and `invert=True` follow the documented inverse semantics.
+            - Tuples retain their label semantics, and empty dictionaries
+              select nothing on MultiIndex axes.
         - 0.26.0
             - Added variable `args`, `invert` and `axis` parameters.
             - `rows` keyword deprecated in favour of `index`.
@@ -801,6 +831,8 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
     """
 
     index = getattr(df, axis)
+    if not arg:
+        return np.array([], dtype=np.intp)
     if not isinstance(index, pd.MultiIndex):
         return _select_index(list(arg), df, axis)
     all_str = (isinstance(entry, str) for entry in arg)
@@ -851,6 +883,8 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
                 f"{len(arg)} instead of {len(index)}"
             )
         return np.asanyarray(arg)
+    if len(arg) == 0:
+        return np.array([], dtype=np.intp)
     try:
         if isinstance(arg, pd.Series):
             arr = arg.array
@@ -908,6 +942,9 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
 
         return arg
 
+    if not arg:
+        return np.array([], dtype=np.intp)
+
     # shortcut for single unique dtype of scalars
     checks = (is_scalar(entry) for entry in arg)
     if all(checks):
@@ -933,7 +970,7 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
             exclude = exclude[0]
         exclude = _select_index(exclude, df, axis)
     len_exclude = len(exclude)
-    if len_exclude and not include:
+    if not include:
         index_arr = np.arange(getattr(df, axis).size)
         return np.delete(index_arr, exclude)
     if include and len_exclude:

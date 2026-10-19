@@ -544,6 +544,13 @@ Add entries in the format:
 **Recommendation**: How to apply this learning
 -->
 
+### [2026-10-19] Empty selectors and DropLabel
+
+**Context**: Issue #1782 requires empty list-like selectors to select nothing.
+**Learning**: `DropLabel([])` has inverse semantics and must drop nothing,
+thereby selecting everything; it must be tested separately from a direct empty
+selector.
+
 ### [2025-12-19] Always Run markdownlint
 
 **Context**: Editing AGENTS.md file

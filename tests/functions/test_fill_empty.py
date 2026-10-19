@@ -44,8 +44,9 @@ def test_fill_empty_generator(null_df):
 
 
 @pytest.mark.functions
-def test_fill_empty_unsupported_type_raises():
-    """A scalar non-string column name has no `_fill_empty` dispatch."""
-    df = pd.DataFrame({2: [None, 1.0]})
-    with pytest.raises(NotImplementedError):
-        df.fill_empty(column_names=2, value=0)
+def test_fill_empty_hashable_label():
+    """A hashable scalar column name fills that column."""
+    df = pd.DataFrame({2: [None, 1.0], "b": [None, 2.0]})
+    result = df.fill_empty(column_names=2, value=0)
+    expected = pd.DataFrame({2: [0.0, 1.0], "b": [None, 2.0]})
+    assert result.equals(expected)

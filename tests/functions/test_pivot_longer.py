@@ -4,9 +4,11 @@ import numpy as np
 import pandas as pd
 import pytest
 from pandas import NA
+from pandas.api.types import is_datetime64_any_dtype
 from pandas.testing import assert_frame_equal
 
 from janitor.functions.pivot import _build_indexer_reorder_contents
+from janitor.functions.select import DropLabel
 
 df = [1, 2, 3]
 
@@ -60,6 +62,20 @@ def test_empty_column_names(df_checks):
     """Raise a clear error if no columns are selected for pivoting."""
     with pytest.raises(ValueError, match="at least one column to pivot"):
         df_checks.pivot_longer(column_names=[])
+
+
+def test_empty_column_name_selectors(df_checks):
+    """Raise a clear error when column selectors match no labels."""
+    selectors = [
+        is_datetime64_any_dtype,
+        [False] * len(df_checks.columns),
+        slice("birth", "famid"),
+        DropLabel(df_checks.columns),
+        [[]],
+    ]
+    for selector in selectors:
+        with pytest.raises(ValueError, match="at least one column to pivot"):
+            df_checks.pivot_longer(column_names=selector)
 
 
 def test_type_names_to(df_checks):

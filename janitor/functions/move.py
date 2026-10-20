@@ -5,7 +5,6 @@ from typing import Any
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
-from pandas.api.types import is_list_like
 
 from janitor.functions.select import _index_converter, _select_index
 
@@ -94,6 +93,7 @@ def move(
     Raises:
         ValueError: If `axis` is not `0` or `1`.
         ValueError: If `position` is not `before` or `after`.
+        ValueError: If `target` selects no labels.
 
     Returns:
         The dataframe with the Series moved.
@@ -120,10 +120,10 @@ def move(
         else:
             target = np.array([0])
     else:
-        if is_list_like(target) and len(target) == 0:
-            raise ValueError("`target` must select at least one label.")
         target = _select_index([target], df, mapping[axis])
         target = _index_converter(target, index)
+        if not target.size:
+            raise ValueError("`target` must select at least one label.")
     index = np.delete(index, source)
 
     if position == "before":

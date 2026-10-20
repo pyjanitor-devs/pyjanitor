@@ -7,7 +7,7 @@ from typing import Any
 
 import pandas as pd
 import pandas_flavor as pf
-from pandas.api.types import is_list_like, is_scalar
+from pandas.api.types import is_scalar
 from pandas.core.common import apply_if_callable
 from pandas.core.groupby.generic import DataFrameGroupBy
 
@@ -190,7 +190,8 @@ def summarise(
         args: Either a dictionary or a tuple.
 
     Raises:
-        ValueError: If a tuple is passed and the length is not 2.
+        ValueError: If a tuple is passed and the length is not 2, or its
+            selector selects no columns.
 
     Returns:
         A pandas DataFrame with aggregated columns.
@@ -267,9 +268,9 @@ def _(arg, df, by):
     if len(arg) != 2:
         raise ValueError("the tuple has to be a length of 2")
     column_name, aggfunc = arg
-    if is_list_like(column_name) and len(column_name) == 0:
-        raise ValueError("The selector in a summarise tuple cannot be empty.")
     column_names = get_index_labels(arg=[column_name], df=df, axis="columns")
+    if column_names.empty:
+        raise ValueError("The selector in a summarise tuple cannot be empty.")
     mapping = {column_name: aggfunc for column_name in column_names}
     return _aggfunc(mapping, df=df, by=by)
 

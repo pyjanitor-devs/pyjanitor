@@ -2,8 +2,10 @@ import numpy as np
 import pandas as pd
 import pytest
 from hypothesis import given, settings
+from pandas.api.types import is_datetime64_any_dtype
 from pandas.testing import assert_index_equal, assert_series_equal
 
+from janitor.functions.select import DropLabel
 from janitor.testing_utils.strategies import df_strategy
 
 
@@ -150,6 +152,21 @@ def test_move_invalid_args(dataframe):
         _ = dataframe.move("a", "__oops__", axis=1)
     with pytest.raises(ValueError, match="target.*at least one"):
         dataframe.move("a", [], axis=1)
+
+
+def test_move_empty_targets():
+    """Raise a clear error when a target selector matches no labels."""
+    dataframe = pd.DataFrame({column: [1] for column in "abcd"})
+    selectors = [
+        is_datetime64_any_dtype,
+        [False] * len(dataframe.columns),
+        slice("b", "a"),
+        DropLabel(dataframe.columns),
+        [[]],
+    ]
+    for selector in selectors:
+        with pytest.raises(ValueError, match="target.*at least one"):
+            dataframe.move("a", selector, axis=1)
 
 
 @pytest.mark.functions

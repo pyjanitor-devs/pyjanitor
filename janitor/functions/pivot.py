@@ -383,9 +383,13 @@ def pivot_longer(
         sort_by_appearance: Boolean value that determines
             the final look of the DataFrame. If `True`, the unpivoted DataFrame
             will be stacked in order of first appearance.
+
         ignore_index: If `True`,
             the original index is ignored. If `False`, the original index
             is retained and the index labels will be repeated as necessary.
+
+    Raises:
+        ValueError: If `column_names` selects no columns.
 
     Returns:
         A pandas DataFrame that has been unpivoted from wide to long
@@ -620,8 +624,10 @@ def _data_checks_pivot_longer(
             column_names = None
         index = df.columns[index]
 
-    if isinstance(column_names, np.ndarray) and not column_names.size:
-        raise ValueError("pivot_longer() requires at least one column to pivot.")
+    if column_names is not None:
+        column_names = _index_converter(column_names, df.columns)
+        if not column_names.size:
+            raise ValueError("pivot_longer() requires at least one column to pivot.")
 
     if column_names is None:
         return None
@@ -2176,6 +2182,10 @@ def pivot_wider(
         index_expand: Expand the index to show all the categories.
             Applies only if `index` is a categorical column.
 
+    Raises:
+        ValueError: If `names_from` selects no columns or no columns remain
+            to use as values.
+
     Returns:
         A pandas DataFrame that has been unpivoted from long to wide form.
     """  # noqa: E501
@@ -2386,7 +2396,7 @@ def _data_checks_pivot_wider(
     else:
         values_from = list(values_from)
     if not values_from:
-        raise ValueError("pivot_wider() requires at least one values_from column.")
+        raise ValueError("pivot_wider() found no columns left to use as values.")
     names_from = list(names_from)
     check("flatten_levels", flatten_levels, [bool])
     if names_sep is not None:

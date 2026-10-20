@@ -1,7 +1,10 @@
 import numpy as np
 import pandas as pd
 import pytest
+from pandas.api.types import is_datetime64_any_dtype
 from pandas.testing import assert_frame_equal
+
+from janitor.functions.select import DropLabel
 
 
 @pytest.fixture
@@ -114,6 +117,20 @@ def test_summarise_tuple_empty_selector(df_summarise):
     """Raise a clear error if a tuple selector is empty."""
     with pytest.raises(ValueError, match="selector.*cannot be empty"):
         df_summarise.summarise(([], "sum"))
+
+
+def test_summarise_tuple_empty_selectors(df_summarise):
+    """Raise a clear error when tuple selectors match no columns."""
+    selectors = [
+        is_datetime64_any_dtype,
+        [False] * len(df_summarise.columns),
+        slice(df_summarise.columns[-1], df_summarise.columns[0]),
+        DropLabel(df_summarise.columns),
+        [[]],
+    ]
+    for selector in selectors:
+        with pytest.raises(ValueError, match="selector.*cannot be empty"):
+            df_summarise.summarise((selector, "sum"))
 
 
 def test_summarise_df_tuple(df_summarise):

@@ -56,3 +56,60 @@ def test_drop_constant_columns_nullable_dtypes(dtype, values):
         }
     )
     assert_frame_equal(df.drop_constant_columns(), df[["value_with_missing"]])
+
+
+@pytest.mark.functions
+def test_drop_constant_columns_mixed_missing_sentinels():
+    """Different object-dtype null markers count as one missing value."""
+    df = pd.DataFrame(
+        {
+            "all_missing": pd.Series([None, float("nan"), pd.NA], dtype=object),
+            "value_with_missing": pd.Series(
+                ["A", None, float("nan")], dtype=object
+            ),
+            "constant": [1, 1, 1],
+            "varying": [1, 2, 3],
+        }
+    )
+    original = df.copy(deep=True)
+
+    assert_frame_equal(
+        df.drop_constant_columns(), df[["value_with_missing", "varying"]]
+    )
+    assert_frame_equal(df, original)
+
+
+@pytest.mark.functions
+def test_drop_constant_columns_empty_dataframe():
+    """Keep columns if no rows are available to establish constants."""
+    df = pd.DataFrame(columns=["a", "b"])
+
+    assert_frame_equal(df.drop_constant_columns(), df)
+
+
+@pytest.mark.functions
+@pytest.mark.parametrize(
+    "values, retain_object_column",
+    [
+        ([None, float("nan"), pd.NA], False),
+        ([pd.NaT, None, float("nan")], False),
+        ([None, None, None], False),
+        ([1, None, pd.NA], True),
+        (["a", float("nan"), None], True),
+        ([1, 2, pd.NA], True),
+    ],
+)
+def test_drop_constant_columns_object_null_semantics(values, retain_object_column):
+    """Treat every object-dtype null as one level without merging real values."""
+    df = pd.DataFrame(
+        {
+            "object_column": pd.Series(values, dtype=object),
+            "varying": [1, 2, 3],
+        }
+    )
+    original = df.copy(deep=True)
+    expected = df if retain_object_column else df[["varying"]]
+
+    assert_frame_equal(df.drop_constant_columns(), expected)
+    assert_frame_equal(df, original)
+

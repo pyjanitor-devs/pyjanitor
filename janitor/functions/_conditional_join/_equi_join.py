@@ -83,6 +83,119 @@ def _get_bounds_left(l_cols, uniques, starts, ends):
     return booleans, matched_starts, matched_ends
 
 
+def _get_duplicate_key_windows(
+    df,
+    right,
+    left_index,
+    right_index,
+    equi_conditions,
+    range_conditions,
+):
+    """Prepare duplicate-key equality windows with NumPy sorting.
+
+    This is the fast path of :func:`_get_equi_indexer`. It produces the same
+    layout as the ``MultiIndex`` path -- right rows grouped by equality key,
+    then ordered by each range key and finally by physical position -- but
+    sorts dense key codes and raw range arrays with ``np.lexsort`` instead of
+    factorizing every level of a ``MultiIndex``. Equality groups are
+    contiguous but may appear in a different group order, which no kernel
+    relies on; rows within a group keep the same order.
+
+    Args:
+        df: Left dataframe in its current physical layout.
+        right: Right dataframe in its current physical layout.
+        left_index: Compact physical left index, or ``slice(None)``.
+        right_index: Compact physical right index, or ``slice(None)``.
+        equi_conditions: Equality predicates, in their original order.
+        range_conditions: At most two selected range predicates.
+
+    Returns:
+        ``NotImplemented`` when the fast path does not apply (unique right
+        keys, a null key code, or a range column that is not a numeric NumPy
+        array), so the caller falls back to the ``MultiIndex`` path. ``None``
+        when no left key matches. Otherwise the same six-element tuple as
+        :func:`_get_equi_indexer`.
+    """
+    right_ranges = []
+    for condition in range_conditions:
+        values = _helpers._convert_array_to_numpy(
+            array=right.loc[right_index, condition.right]._values
+        )
+        if not isinstance(values, np.ndarray) or values.dtype.kind not in "iuf":
+            return NotImplemented
+        right_ranges.append(values)
+
+    # ELI5: give every distinct right key a small integer (its code), then
+    # look up each left key's code in that same dictionary. Several equality
+    # columns are combined into one code, like digits of one number.
+    right_codes = None
+    left_codes = None
+    for condition in equi_conditions:
+        codes, uniques = pd.factorize(right.loc[right_index, condition.right]._values)
+        if (codes < 0).any():
+            return NotImplemented
+        # Look up each distinct left key once instead of hashing every left
+        # row: factorize the left keys, map their uniques, then broadcast.
+        left_codes_raw, left_uniques = pd.factorize(
+            df.loc[left_index, condition.left]._values
+        )
+        mapped = pd.Index(uniques).get_indexer(left_uniques)
+        lookup = np.where(left_codes_raw >= 0, mapped[left_codes_raw], -1)
+        if right_codes is None:
+            right_codes, left_codes = codes.astype(np.int64, copy=False), lookup
+            continue
+        width = len(uniques)
+        if right_codes.max(initial=0) >= np.iinfo(np.int64).max // max(width, 1):
+            return NotImplemented
+        missing = (left_codes < 0) | (lookup < 0)
+        right_codes = right_codes * width + codes
+        left_codes = left_codes * width + lookup
+        left_codes[missing] = -1
+    if len(equi_conditions) > 1:
+        right_codes, uniques = pd.factorize(right_codes)
+        left_codes = pd.Index(uniques).get_indexer(left_codes)
+    counts = np.bincount(right_codes)
+    if counts.max(initial=0) <= 1:
+        # Unique right keys use the one-to-one get_indexer layout.
+        return NotImplemented
+
+    left_matched = left_codes >= 0
+    if not left_matched.any():
+        return None
+    positions = (right.index if isinstance(right_index, slice) else right_index)._values
+    # np.lexsort sorts by the last key first: equality code, then each range
+    # key in condition order, then physical position as the tie-break.
+    order = np.lexsort([positions, *right_ranges[::-1], right_codes])
+    group_starts = np.zeros(counts.size, dtype=np.int64)
+    np.cumsum(counts[:-1], out=group_starts[1:])
+    group_ends = group_starts + counts
+    starts = group_starts[left_codes[left_matched]]
+    ends = group_ends[left_codes[left_matched]]
+    if not left_matched.all():
+        if isinstance(left_index, slice):
+            left_index = df.index
+        left_index = left_index[left_matched]
+    right_index = pd.Index(positions[order])
+    range_predicates = [
+        (
+            _helpers._convert_array_to_numpy(
+                array=df.loc[left_index, condition.left]._values
+            ),
+            values[order],
+            condition.op,
+        )
+        for condition, values in zip(range_conditions, right_ranges)
+    ]
+    return (
+        left_index,
+        right_index,
+        starts,
+        ends,
+        range_predicates,
+        right_index.is_monotonic_increasing,
+    )
+
+
 def _get_equi_indexer(
     df,
     right,
@@ -125,6 +238,16 @@ def _get_equi_indexer(
         right_index_is_ordered)``. In the unique path, ``right_index`` is
         projected to the matched rows and ``starts``/``ends`` are ``None``.
     """
+    outcome = _get_duplicate_key_windows(
+        df=df,
+        right=right,
+        left_index=left_index,
+        right_index=right_index,
+        equi_conditions=equi_conditions,
+        range_conditions=range_conditions,
+    )
+    if outcome is not NotImplemented:
+        return outcome
     # ELI5: build one table whose columns contain every value Rust will need.
     # The final column is the original right position, so sorting this table
     # never loses the mapping back to the caller's dataframe rows.

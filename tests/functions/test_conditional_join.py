@@ -6768,3 +6768,62 @@ def test_conditional_join_columns_deprecation_warning(dummy):
 
     with pytest.warns(FutureWarning, match="right_columns"):
         dummy.conditional_join(dummy, ("id", "id", ">"), right_columns="id")
+
+
+@pytest.mark.parametrize("key_dtype", [object, "string[pyarrow]", "category"])
+@pytest.mark.parametrize("two_keys", [False, True])
+def test_equi_duplicate_key_fast_path_matches_multiindex_path(
+    monkeypatch, key_dtype, two_keys
+):
+    """The NumPy duplicate-key prep must match the MultiIndex prep exactly."""
+    from janitor.functions._conditional_join import _equi_join
+
+    rng = np.random.default_rng(42)
+    left = pd.DataFrame(
+        {
+            "key": pd.Series(rng.choice(["a", "b", "c", "z"], 200)).astype(key_dtype),
+            "k2": rng.integers(0, 2, 200),
+            "start": rng.integers(0, 50, 200),
+            "end": rng.integers(50, 100, 200),
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "key": pd.Series(rng.choice(["a", "b", "c"], 300)).astype(key_dtype),
+            "k2": rng.integers(0, 2, 300),
+            "start": rng.integers(0, 100, 300),
+            "end": rng.integers(0, 100, 300),
+            "value": rng.integers(0, 10, 300),
+        }
+    )
+    conditions = [("key", "key", "==")]
+    if two_keys:
+        conditions.append(("k2", "k2", "=="))
+    conditions += [("start", "end", "<="), ("end", "start", ">=")]
+
+    def run():
+        indices = jn.get_join_indices(left, right, *conditions)
+        pairs = sorted(zip(indices["left_index"], indices["right_index"]))
+        aggregate = left.join_agg(
+            right, *conditions, aggfunc=[("value", "sum"), ("value", "size")]
+        ).sort_index()
+        return pairs, aggregate
+
+    fast = _equi_join._get_duplicate_key_windows
+    calls = []
+
+    def counting(*args, **kwargs):
+        out = fast(*args, **kwargs)
+        calls.append(out is not NotImplemented)
+        return out
+
+    monkeypatch.setattr(_equi_join, "_get_duplicate_key_windows", counting)
+    fast_pairs, fast_aggregate = run()
+    assert calls and all(calls)
+
+    monkeypatch.setattr(
+        _equi_join, "_get_duplicate_key_windows", lambda *args, **kwargs: NotImplemented
+    )
+    slow_pairs, slow_aggregate = run()
+    assert fast_pairs == slow_pairs
+    assert_frame_equal(fast_aggregate, slow_aggregate)

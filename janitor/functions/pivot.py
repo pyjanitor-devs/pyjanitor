@@ -383,7 +383,6 @@ def pivot_longer(
         sort_by_appearance: Boolean value that determines
             the final look of the DataFrame. If `True`, the unpivoted DataFrame
             will be stacked in order of first appearance.
-
         ignore_index: If `True`,
             the original index is ignored. If `False`, the original index
             is retained and the index labels will be repeated as necessary.

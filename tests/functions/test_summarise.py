@@ -119,18 +119,21 @@ def test_summarise_tuple_empty_selector(df_summarise):
         df_summarise.summarise(([], "sum"))
 
 
-def test_summarise_tuple_empty_selectors(df_summarise):
+@pytest.mark.parametrize(
+    "selector_name",
+    ["dtype", "mask", "slice", "drop", "nested"],
+)
+def test_summarise_tuple_empty_selectors(df_summarise, selector_name):
     """Raise a clear error when tuple selectors match no columns."""
-    selectors = [
-        is_datetime64_any_dtype,
-        [False] * len(df_summarise.columns),
-        slice(df_summarise.columns[-1], df_summarise.columns[0]),
-        DropLabel(df_summarise.columns),
-        [[]],
-    ]
-    for selector in selectors:
-        with pytest.raises(ValueError, match="selector.*cannot be empty"):
-            df_summarise.summarise((selector, "sum"))
+    selectors = {
+        "dtype": is_datetime64_any_dtype,
+        "mask": [False] * len(df_summarise.columns),
+        "slice": slice(df_summarise.columns[-1], df_summarise.columns[0]),
+        "drop": DropLabel(df_summarise.columns),
+        "nested": [[]],
+    }
+    with pytest.raises(ValueError, match="selector.*cannot be empty"):
+        df_summarise.summarise((selectors[selector_name], "sum"))
 
 
 def test_summarise_df_tuple(df_summarise):

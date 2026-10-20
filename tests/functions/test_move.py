@@ -154,19 +154,22 @@ def test_move_invalid_args(dataframe):
         dataframe.move("a", [], axis=1)
 
 
-def test_move_empty_targets():
+@pytest.mark.parametrize(
+    "selector_name",
+    ["dtype", "mask", "slice", "drop", "nested"],
+)
+def test_move_empty_targets(selector_name):
     """Raise a clear error when a target selector matches no labels."""
     dataframe = pd.DataFrame({column: [1] for column in "abcd"})
-    selectors = [
-        is_datetime64_any_dtype,
-        [False] * len(dataframe.columns),
-        slice("b", "a"),
-        DropLabel(dataframe.columns),
-        [[]],
-    ]
-    for selector in selectors:
-        with pytest.raises(ValueError, match="target.*at least one"):
-            dataframe.move("a", selector, axis=1)
+    selectors = {
+        "dtype": is_datetime64_any_dtype,
+        "mask": [False] * len(dataframe.columns),
+        "slice": slice("b", "a"),
+        "drop": DropLabel(dataframe.columns),
+        "nested": [[]],
+    }
+    with pytest.raises(ValueError, match="target.*at least one"):
+        dataframe.move("a", selectors[selector_name], axis=1)
 
 
 @pytest.mark.functions

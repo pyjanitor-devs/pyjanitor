@@ -56,6 +56,12 @@ def test_type_column_names(df_checks):
         df_checks.pivot_longer(column_names=2007)
 
 
+def test_empty_column_names(df_checks):
+    """Raise a clear error if no columns are selected for pivoting."""
+    with pytest.raises(ValueError, match="at least one column to pivot"):
+        df_checks.pivot_longer(column_names=[])
+
+
 def test_type_names_to(df_checks):
     """Raise TypeError if wrong type is provided for names_to."""
     with pytest.raises(TypeError):

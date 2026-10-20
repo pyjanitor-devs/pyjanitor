@@ -5,6 +5,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 import pandas_flavor as pf
+from pandas.api.types import is_list_like
 
 from janitor.functions.select import _index_converter, _select_index
 
@@ -119,6 +120,8 @@ def move(
         else:
             target = np.array([0])
     else:
+        if is_list_like(target) and len(target) == 0:
+            raise ValueError("`target` must select at least one label.")
         target = _select_index([target], df, mapping[axis])
         target = _index_converter(target, index)
     index = np.delete(index, source)

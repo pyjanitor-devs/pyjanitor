@@ -148,6 +148,8 @@ def test_move_invalid_args(dataframe):
     with pytest.raises(KeyError):
         # invalid target column
         _ = dataframe.move("a", "__oops__", axis=1)
+    with pytest.raises(ValueError, match="target.*at least one"):
+        dataframe.move("a", [], axis=1)
 
 
 @pytest.mark.functions

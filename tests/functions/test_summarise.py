@@ -110,6 +110,12 @@ def test_summarise_tuple_count_not_eq_2(df_summarise):
         df_summarise.summarise(("avg_run",))
 
 
+def test_summarise_tuple_empty_selector(df_summarise):
+    """Raise a clear error if a tuple selector is empty."""
+    with pytest.raises(ValueError, match="selector.*cannot be empty"):
+        df_summarise.summarise(([], "sum"))
+
+
 def test_summarise_df_tuple(df_summarise):
     "Test output for a tuple"
     actual = df_summarise.summarise(("avg_run", "sum"))

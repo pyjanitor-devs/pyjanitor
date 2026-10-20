@@ -32,6 +32,18 @@ def test_names_from_none(df_checks_output):
         df_checks_output.pivot_wider(index="geoid", names_from=None)
 
 
+@pytest.mark.parametrize(
+    ("names_from", "values_from"),
+    [([], None), ("variable", [])],
+)
+def test_empty_pivot_selectors(df_checks_output, names_from, values_from):
+    """Raise clear errors for empty pivot selectors."""
+    with pytest.raises(ValueError, match="at least one"):
+        df_checks_output.pivot_wider(
+            index="geoid", names_from=names_from, values_from=values_from
+        )
+
+
 def test_presence_index1(df_checks_output):
     """Raise KeyError if labels in `index` do not exist."""
     with pytest.raises(KeyError, match="No match was returned.+"):

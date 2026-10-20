@@ -620,6 +620,9 @@ def _data_checks_pivot_longer(
             column_names = None
         index = df.columns[index]
 
+    if isinstance(column_names, np.ndarray) and not column_names.size:
+        raise ValueError("pivot_longer() requires at least one column to pivot.")
+
     if column_names is None:
         return None
     # ideally index names should be unique
@@ -2344,6 +2347,8 @@ def _data_checks_pivot_wider(
     if names_from is None:
         raise ValueError("pivot_wider() is missing 1 required argument: 'names_from'")
     names_from = get_index_labels([names_from], df, axis="columns")
+    if names_from.empty:
+        raise ValueError("pivot_wider() requires at least one names_from column.")
     try:
         # hack to align with pd.pivot
         # this means the user passed a scalar
@@ -2380,6 +2385,8 @@ def _data_checks_pivot_wider(
         values_from = values_from_
     else:
         values_from = list(values_from)
+    if not values_from:
+        raise ValueError("pivot_wider() requires at least one values_from column.")
     names_from = list(names_from)
     check("flatten_levels", flatten_levels, [bool])
     if names_sep is not None:

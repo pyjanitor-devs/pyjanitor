@@ -4,9 +4,11 @@ import numpy as np
 import pandas as pd
 import pytest
 from pandas import NA
+from pandas.api.types import is_datetime64_any_dtype
 from pandas.testing import assert_frame_equal
 
 from janitor.functions.pivot import _build_indexer_reorder_contents
+from janitor.functions.select import DropLabel
 
 df = [1, 2, 3]
 
@@ -54,6 +56,36 @@ def test_type_column_names(df_checks):
     """Raise TypeError if wrong type is provided for column_names."""
     with pytest.raises(TypeError):
         df_checks.pivot_longer(column_names=2007)
+
+
+def test_empty_column_names(df_checks):
+    """Raise a clear error if no columns are selected for pivoting."""
+    with pytest.raises(ValueError, match="at least one column to pivot"):
+        df_checks.pivot_longer(column_names=[])
+
+
+@pytest.mark.parametrize(
+    "selector_name",
+    ["dtype", "mask", "slice", "drop", "nested"],
+)
+def test_empty_column_name_selectors(df_checks, selector_name):
+    """Raise a clear error when column selectors match no labels."""
+    selectors = {
+        "dtype": is_datetime64_any_dtype,
+        "mask": [False] * len(df_checks.columns),
+        "slice": slice("birth", "famid"),
+        "drop": DropLabel(df_checks.columns),
+        "nested": [[]],
+    }
+    with pytest.raises(ValueError, match="at least one column to pivot"):
+        df_checks.pivot_longer(column_names=selectors[selector_name])
+
+
+def test_zero_column_dataframe_requires_columns_to_pivot():
+    """Raise a clear error when a zero-column frame is pivoted longer."""
+    dataframe = pd.DataFrame(index=[0, 1])
+    with pytest.raises(ValueError, match="at least one column to pivot"):
+        dataframe.pivot_longer()
 
 
 def test_type_names_to(df_checks):

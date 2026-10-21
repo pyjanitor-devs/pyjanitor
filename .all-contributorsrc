@@ -1229,6 +1229,33 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "raashish1601",
+      "name": "Raashish Aggarwal",
+      "avatar_url": "https://avatars.githubusercontent.com/u/94279692?v=4",
+      "profile": "https://github.com/raashish1601",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "BALOGUN-DAVID",
+      "name": "BALOGUN DAVID TAIWO",
+      "avatar_url": "https://avatars.githubusercontent.com/u/62438936?v=4",
+      "profile": "https://github.com/BALOGUN-DAVID",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "iMalcolmS",
+      "name": "Malcolm",
+      "avatar_url": "https://avatars.githubusercontent.com/u/168652527?v=4",
+      "profile": "https://github.com/iMalcolmS",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "badgeTemplate": "<img alt=\"All Contributors: {{contributorCount}}\" src=\"https://img.shields.io/github/all-contributors/{{projectOwner}}/{{projectName}}?color=ee8449&style=flat-square\">",

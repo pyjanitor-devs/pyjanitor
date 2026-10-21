@@ -2,6 +2,25 @@
 
 ## [Unreleased]
 - [BUG] Fix duplicate deprecation warnings when using the `by` argument in `complete`. - Issue #1788 @sumangouda
+- [BUG] Raise clear, API-specific errors when empty selectors, including zero-column frames, are passed to `move`, `pivot_longer`, `pivot_wider`, or tuple-based `summarise`. - Issue #1784
+- [ENH] Add `output_columns` to `conditional_join` as the preferred side-aware output projection while retaining `df_columns` and `right_columns` for compatibility. - Issue #1751
+- [BUG] Preserve duplicate columns selected by `conditional_join` output projections.
+- [BUG] Preserve unmatched rows when `conditional_join` drops one output side in non-inner joins.
+- [BUG] Avoid deprecation warnings from `get_join_indices` and `join_agg` internal projections.
+- [BUG] Empty list-like selectors in `select`, `select_columns`, and `select_rows` now select nothing; `DropLabel([])` drops nothing, and `invert=True` selects the complement. Empty dictionaries now select nothing on MultiIndex axes as well. - Issue #1782 @samukweku
+- [DOC] Document introduction and undeprecation versions for selected APIs. - Issue #1188 @BALOGUN-DAVID
+- [BUG] Include the README in package metadata so PyPI renders the project description.
+-   [BUG] Fix Polars *`make_clean_names`* not replacing `@` with an underscore in expressions. - Issue #1758 @sumangouda
+-   [BUG] Fix `convert_unix_date` reading millisecond timestamps as seconds with pandas 3. - Issue #1756 @raashish1601
+-   [DOC] Fix `_xlsx_cells` and `_expand_sorted_array` docstrings naming parameters the functions do not take (`path_is_workbook`, `region`, `num`); document `base_engine` and `load_factor` instead. - PR #1742 @VenishPaneliya
+-   [BUG] Fix polars `make_clean_names` collapsing only the first run of underscores. - Issue #1740 @Rodrigo-Palma
+-   [BUG] Fix `row_to_names` for slices without a start or a stop, in pandas and polars. - Issue #1738 @Rodrigo-Palma
+-   [DEP] Deprecate `df_columns` and `right_columns` parameters in `conditional_join`. - Issue #1712 @sumangouda
+-   [DOC] Add documentation explaining when cumulative-event aggregation is preferable to range join aggregations. - Issue #1702 @sumangouda
+- [PERF] Speed up equality-led `conditional_join`, `get_join_indices`, and `join_agg` calls with range predicates. With multiple range predicates, the first range predicate in the order supplied sets the search layout and is paired with the first later range predicate of the opposing direction; put the most selective range predicate first. - Issue #1752, PR #1765 @samukweku
+- [BUG] Fix equality joins with mixed-type object keys and duplicate right keys raising `TypeError`. - PR #1765 @samukweku
+- [ENH] `join_agg` with an equality predicate now omits output rows whose equality key has no match, and returns an empty result when no key matches, consistent with `get_join_indices`. Rows whose key matches but fail the other predicates are still returned with `matched=False`. - Issue #1752, PR #1765 @samukweku
+- [DOC] Add usage examples to the `read_csvs` docstring. - Issue #1755 @iMalcolmS
 - [BUG] Fix `convert_unix_date` reading millisecond timestamps as seconds with pandas 3. - Issue #1756 @raashish1601
 - [DOC] Fix `_xlsx_cells` and `_expand_sorted_array` docstrings naming parameters the functions do not take (`path_is_workbook`, `region`, `num`); document `base_engine` and `load_factor` instead. - PR #1742 @VenishPaneliya
 - [BUG] Fix polars `make_clean_names` collapsing only the first run of underscores. - Issue #1740 @Rodrigo-Palma

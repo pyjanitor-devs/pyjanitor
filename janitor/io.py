@@ -33,6 +33,53 @@ def read_csvs(
     """Read multiple CSV files and return a dictionary of DataFrames, or
     one concatenated DataFrame.
 
+    Examples:
+        >>> import tempfile
+        >>> from pathlib import Path
+        >>> import pandas as pd
+        >>> from janitor import read_csvs
+        >>> folder = Path(tempfile.mkdtemp())
+        >>> pd.DataFrame({"id": [1, 2], "city": ["Lisbon", "Porto"]}).to_csv(
+        ...     folder / "sales_2024.csv", index=False
+        ... )
+        >>> pd.DataFrame({"id": [3], "city": ["London"]}).to_csv(
+        ...     folder / "sales_2025.csv", index=False
+        ... )
+
+        Read every file matching a glob pattern into a single DataFrame.
+        Files are read in the order returned by `glob`, so sort the
+        result if row order matters:
+
+        >>> df = read_csvs(str(folder / "sales_*.csv"))
+        >>> df.sort_values("id", ignore_index=True)
+           id    city
+        0   1  Lisbon
+        1   2   Porto
+        2   3  London
+
+        Use `separate_df=True` to get a dictionary of DataFrames,
+        keyed by file name:
+
+        >>> dfs = read_csvs(str(folder / "sales_*.csv"), separate_df=True)
+        >>> sorted(dfs)
+        ['sales_2024.csv', 'sales_2025.csv']
+        >>> dfs["sales_2025.csv"]
+           id    city
+        0   3  London
+
+        Pass a list of file paths to control the read order. Extra
+        keyword arguments are passed on to `pandas.read_csv`:
+
+        >>> paths = [
+        ...     folder / "sales_2025.csv",
+        ...     folder / "sales_2024.csv",
+        ... ]
+        >>> read_csvs(paths, usecols=["city"])
+             city
+        0  London
+        1  Lisbon
+        2   Porto
+
     Args:
         files_path: The filepath pattern matching the CSV files.
             Accepts regular expressions, with or without `.csv` extension.

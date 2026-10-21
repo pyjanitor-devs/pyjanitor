@@ -1,5 +1,7 @@
 """Coverage for dtype-specific fused conditional-join aggregation kernels."""
 
+import operator
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -30,6 +32,108 @@ EXTENSION_DTYPES = [
     "Float32",
     "Float64",
 ]
+
+
+@pytest.mark.parametrize("range_count", [2, 3])
+@pytest.mark.parametrize("with_residual", [False, True])
+@pytest.mark.parametrize("reverse", [False, True])
+def test_region_aggregation_matches_default(range_count, with_residual, reverse):
+    """Region aggregation matches the general path for positive matches."""
+    left = pd.DataFrame(
+        {
+            "left_a": [2, 4, 6, 8],
+            "left_b": [8, 6, 4, 2],
+            "left_c": [5, 15, 25, 35],
+            "left_residual": [0, 1, 2, 3],
+            "value": [10, 20, 30, 40],
+        }
+    )
+    right = (
+        pd.DataFrame(
+            {
+                "right_a": [1, 3, 5, 7, 9],
+                "right_b": [9, 7, 5, 3, 1],
+                "right_c": [5, 15, 25, 35, 45],
+                "right_residual": [0, 2, 1, 4, 3],
+                "value": [100, 200, 300, 400, 500],
+            }
+        )
+        .iloc[[2, 0, 4, 1, 3]]
+        .reset_index(drop=True)
+    )
+    conditions = [
+        ("left_a", "right_a", "<="),
+        ("left_b", "right_b", ">="),
+        ("left_c", "right_c", "<="),
+    ][:range_count]
+    if with_residual:
+        conditions.append(("left_residual", "right_residual", "!="))
+    aggregations = [
+        ("value", "size"),
+        ("value", "sum"),
+        ("value", "prod"),
+        ("value", "min"),
+        ("value", "max"),
+    ]
+
+    expected = left.join_agg(
+        right,
+        *conditions,
+        aggfunc=aggregations,
+        reverse=reverse,
+        return_matched=True,
+    )
+    actual = left.join_agg(
+        right,
+        *conditions,
+        aggfunc=aggregations,
+        join_algorithm="regions",
+        reverse=reverse,
+        return_matched=True,
+    )
+
+    assert_frame_equal(expected.sort_index(), actual.sort_index())
+
+
+def test_region_reverse_aggregation_handles_float_ranges_and_null_values():
+    """Regions preserve reverse aggregation semantics for float inputs."""
+    left = pd.DataFrame(
+        {
+            "left_a": [2.0, 4.0],
+            "left_b": [8.0, 6.0],
+            "value": [10.0, np.nan],
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "right_a": [1.0, 3.0, 5.0, 7.0, 9.0],
+            "right_b": [9.0, 7.0, 5.0, 3.0, 1.0],
+            "payload": [1.5, 2.5, np.nan, 4.5, 5.5],
+        }
+    )
+    conditions = (
+        ("left_a", "right_a", "<="),
+        ("left_b", "right_b", ">="),
+    )
+    aggregations = [("value", "size"), ("value", "sum")]
+
+    expected = left.join_agg(
+        right,
+        *conditions,
+        aggfunc=aggregations,
+        reverse=True,
+        return_matched=True,
+    )
+    actual = left.join_agg(
+        right,
+        *conditions,
+        aggfunc=aggregations,
+        join_algorithm="regions",
+        reverse=True,
+        return_matched=True,
+    )
+
+    assert_frame_equal(expected.sort_index(), actual.sort_index())
 
 
 def _with_matched_level(expected, output_length, matched):
@@ -1302,7 +1406,7 @@ def test_duplicate_equi_aggregation_applies_range_and_residual_filters():
 
 
 def test_unique_equi_aggregation_covers_forward_and_reverse_output_domains():
-    """Unique equi keys produce complete forward and reverse output domains."""
+    """Unique equi keys preserve the trimmed forward and reverse domains."""
     left = pd.DataFrame(
         {"key": ["b", "a", "c"], "left_value": [2, 3, 4]},
         index=pd.Index([10, 11, 12], name="left_id"),
@@ -1327,15 +1431,15 @@ def test_unique_equi_aggregation_covers_forward_and_reverse_output_domains():
     )
     expected_forward = pd.DataFrame(
         {
-            ("value", "sum"): [20, 10, 0],
-            ("value", "prod"): [20, 10, 1],
-            ("value", "min"): pd.array([20, 10, pd.NA], dtype="Int64"),
-            ("value", "max"): pd.array([20, 10, pd.NA], dtype="Int64"),
-            ("value", "count"): [1, 1, 0],
-            ("value", "size"): [1, 1, 0],
+            ("value", "sum"): [20, 10],
+            ("value", "prod"): [20, 10],
+            ("value", "min"): [20, 10],
+            ("value", "max"): [20, 10],
+            ("value", "count"): [1, 1],
+            ("value", "size"): [1, 1],
         },
         index=pd.MultiIndex.from_tuples(
-            [(0, True), (1, True), (2, False)],
+            [(0, True), (1, True)],
             names=[None, "matched"],
         ),
     )
@@ -1359,15 +1463,15 @@ def test_unique_equi_aggregation_covers_forward_and_reverse_output_domains():
     )
     expected_reverse = pd.DataFrame(
         {
-            ("left_value", "sum"): [3, 2, 0],
-            ("left_value", "prod"): [3, 2, 1],
-            ("left_value", "min"): pd.array([3, 2, pd.NA], dtype="Int64"),
-            ("left_value", "max"): pd.array([3, 2, pd.NA], dtype="Int64"),
-            ("left_value", "count"): [1, 1, 0],
-            ("left_value", "size"): [1, 1, 0],
+            ("left_value", "sum"): [2, 3],
+            ("left_value", "prod"): [2, 3],
+            ("left_value", "min"): [2, 3],
+            ("left_value", "max"): [2, 3],
+            ("left_value", "count"): [1, 1],
+            ("left_value", "size"): [1, 1],
         },
         index=pd.MultiIndex.from_tuples(
-            [(0, True), (1, True), (2, False)],
+            [(1, True), (0, True)],
             names=[None, "matched"],
         ),
     )
@@ -1471,6 +1575,118 @@ def test_duplicate_equi_aggregation_filters_incompatible_second_range_as_residua
     assert_frame_equal(expected, actual)
 
 
+@pytest.mark.parametrize("second_op", ["<", "<=", ">", ">="])
+@pytest.mark.parametrize("reverse", [False, True])
+def test_duplicate_equi_aggregation_unordered_second_range_matches_reference(
+    second_op, reverse
+):
+    """Unordered second ranges preserve aggregation semantics for every operator."""
+    left = pd.DataFrame(
+        {
+            "key": ["a", "a"],
+            "first": [3, 6],
+            "second": [5, 1],
+            "value": [100, 200],
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "key": ["a"] * 5,
+            "first": [1, 2, 4, 5, 7],
+            "second": [4, 1, 6, 0, 2],
+            "value": [10, 20, 30, 40, 50],
+        }
+    )
+    compare = {
+        "<": operator.lt,
+        "<=": operator.le,
+        ">": operator.gt,
+        ">=": operator.ge,
+    }[second_op]
+
+    expected_sums = []
+    expected_sizes = []
+    output = right if reverse else left
+    for output_position in range(len(output)):
+        matching_values = []
+        for left_position, left_row in left.iterrows():
+            for right_position, right_row in right.iterrows():
+                if (
+                    left_row["key"] == right_row["key"]
+                    and left_row["first"] < right_row["first"]
+                    and compare(left_row["second"], right_row["second"])
+                    and (right_position if reverse else left_position)
+                    == output_position
+                ):
+                    matching_values.append(
+                        left_row["value"] if reverse else right_row["value"]
+                    )
+        expected_sums.append(sum(matching_values))
+        expected_sizes.append(len(matching_values))
+
+    actual = left.join_agg(
+        right,
+        ("key", "key", "=="),
+        ("first", "first", "<"),
+        ("second", "second", second_op),
+        aggfunc=[
+            ("value", "sum"),
+            ("value", "size"),
+        ],
+        reverse=reverse,
+    )
+    matched = np.array(expected_sizes, dtype=bool)
+    expected = pd.DataFrame(
+        {
+            ("value", "sum"): expected_sums,
+            ("value", "size"): expected_sizes,
+        },
+        index=pd.MultiIndex.from_arrays(
+            [range(len(output)), matched], names=[None, "matched"]
+        ),
+    )
+
+    assert_frame_equal(expected, actual)
+
+
+def test_equi_aggregation_preserves_overlapping_second_range_windows():
+    """Aggregation keeps matches from overlapping first-range windows."""
+    left = pd.DataFrame(
+        {
+            "key": [1, 1],
+            "first": [0, 2],
+            "second": [50, 0],
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "key": [1, 1, 1, 1],
+            "first_r": [1, 2, 3, 4],
+            "second_r": [1, 100, 2, 3],
+            "value": [10, 20, 30, 40],
+        }
+    )
+
+    actual = left.join_agg(
+        right,
+        ("key", "key", "=="),
+        ("first", "first_r", "<"),
+        ("second", "second_r", "<"),
+        aggfunc=[("value", "sum"), ("value", "size")],
+    )
+    expected = pd.DataFrame(
+        {
+            ("value", "sum"): [20, 70],
+            ("value", "size"): [1, 2],
+        },
+        index=pd.MultiIndex.from_tuples(
+            [(0, True), (1, True)], names=[None, "matched"]
+        ),
+    )
+
+    assert_frame_equal(expected, actual)
+
+
 def test_equi_aggregation_preserves_not_equal_residual_semantics():
     """An equi candidate can be narrowed by the existing ``!=`` residual."""
     left = pd.DataFrame({"key": ["a"], "filter": [1]})
@@ -1510,21 +1726,19 @@ def test_equi_aggregation_supports_multiple_equi_columns():
 
     expected = pd.DataFrame(
         {
-            ("value", "sum"): [30, 0],
-            ("value", "size"): [2, 0],
+            ("value", "sum"): [30],
+            ("value", "size"): [2],
         },
-        index=pd.MultiIndex.from_tuples(
-            [(0, True), (1, False)], names=[None, "matched"]
-        ),
+        index=pd.MultiIndex.from_tuples([(0, True)], names=[None, "matched"]),
     )
     assert_frame_equal(expected, actual)
 
 
 @pytest.mark.parametrize("return_matched", [True, False])
-def test_equi_aggregation_with_no_matches_retains_requested_output_shape(
+def test_equi_aggregation_with_no_matches_returns_empty_output_shape(
     return_matched,
 ):
-    """No equi match retains eligible rows in the requested index shape."""
+    """No equi match returns an empty result in the requested index shape."""
     left = pd.DataFrame({"key": [1]})
     right = pd.DataFrame({"key": [2], "value": [10]})
 
@@ -1537,13 +1751,13 @@ def test_equi_aggregation_with_no_matches_retains_requested_output_shape(
 
     expected = pd.DataFrame(
         {
-            ("value", "sum"): [0],
-            ("value", "size"): [0],
+            ("value", "sum"): np.array([], dtype="int64"),
+            ("value", "size"): np.array([], dtype="int64"),
         },
-        index=pd.RangeIndex(1),
+        index=pd.RangeIndex(0),
     )
     if return_matched:
-        expected = _with_matched_level(expected, 1, np.array([False]))
+        expected = _with_matched_level(expected, 0, np.array([], dtype=bool))
     else:
         assert isinstance(actual.index, pd.RangeIndex)
     assert_frame_equal(expected, actual)

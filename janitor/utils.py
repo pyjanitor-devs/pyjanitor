@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib
+import inspect
 import os
 import socket
 import sys
@@ -206,8 +207,14 @@ def deprecated_kwargs(
         "The keyword argument '{argument}' of '{func_name}' is deprecated."
     ),
     error: bool = True,
+    category: type[Warning] = DeprecationWarning,
+    stacklevel: int = 2,
 ) -> Callable:
     """Used as a decorator when deprecating function's keyword arguments.
+
+    An explicitly supplied value equal to the decorated function's default is
+    not treated as use of the deprecated behavior. This keeps deprecation
+    warnings precise for callers that pass defaults explicitly.
 
     Examples:
 
@@ -222,10 +229,12 @@ def deprecated_kwargs(
 
     Args:
         *arguments: The list of deprecated keyword arguments.
-        message: The message of `ValueError` or `DeprecationWarning`.
+        message: The message of `ValueError` or the selected warning category.
             It should be a string or a string template. If a string template
             defaults input `func_name` and `argument`.
-        error: If True, raises `ValueError` else returns `DeprecationWarning`.
+        error: If True, raises `ValueError`; otherwise emits a warning.
+        category: Warning category used when ``error`` is False.
+        stacklevel: Stack level passed to :func:`warnings.warn`.
 
     Raises:
         ValueError: If one of `arguments` is in the decorated function's
@@ -241,10 +250,22 @@ def deprecated_kwargs(
     """
 
     def decorator(func):
+        signature = inspect.signature(func)
+
         @wraps(func)
         def wrapper(*args, **kwargs):
             for argument in arguments:
                 if argument in kwargs:
+                    parameter = signature.parameters.get(argument)
+                    if parameter is not None and (
+                        parameter.default is not inspect.Parameter.empty
+                    ):
+                        try:
+                            is_default = kwargs[argument] == parameter.default
+                        except (TypeError, ValueError):
+                            is_default = False
+                        if isinstance(is_default, (bool, np.bool_)) and is_default:
+                            continue
                     msg = message.format(
                         func_name=func.__name__,
                         argument=argument,
@@ -252,7 +273,7 @@ def deprecated_kwargs(
                     if error:
                         raise ValueError(msg)
                     else:
-                        warn(msg, DeprecationWarning)
+                        warn(msg, category, stacklevel=stacklevel)
 
             return func(*args, **kwargs)
 

@@ -218,7 +218,7 @@ def test_output_columns_dropped_side_preserves_non_inner_rows():
         right,
         ("key", "key", "<"),
         how="right",
-        output_columns={"left": "payload", "right": jn.DropLabel(slice(None))},
+        output_columns={"left": "payload", "right": []},
     )
     expected = pd.DataFrame({"payload": ["a", None]})
     assert_frame_equal(actual, expected)
@@ -237,7 +237,7 @@ def test_output_columns_dropped_side_preserves_empty_outer_rows():
         right,
         ("key", "key", "<"),
         how="outer",
-        output_columns={"left": "payload", "right": jn.DropLabel(slice(None))},
+        output_columns={"left": "payload", "right": []},
     )
     assert actual.shape == (3, 1)
     assert actual["payload"].isna().all()
@@ -253,7 +253,7 @@ def test_output_columns_rejects_empty_resolved_selection():
             ("key", "key", "<"),
             output_columns={
                 "left": lambda frame: [False] * frame.shape[1],
-                "right": jn.DropLabel(slice(None)),
+                "right": [],
             },
         )
 
@@ -290,11 +290,11 @@ def test_output_columns_missing_side_defaults_to_all_columns():
     assert_frame_equal(actual, expected)
 
 
-def test_output_columns_none_requires_drop_label():
-    """The public projection API uses DropLabel rather than None."""
+def test_output_columns_none_requires_empty_list():
+    """The public projection API uses an empty list rather than None."""
     left = pd.DataFrame({"key": [1]})
     right = pd.DataFrame({"key": [2]})
-    with pytest.raises(ValueError, match="DropLabel"):
+    with pytest.raises(ValueError, match=r"use \[\]"):
         left.conditional_join(
             right,
             ("key", "key", "<"),
@@ -350,12 +350,12 @@ def test_overlapping_tuple_labels_remain_atomic_in_plain_index(output_columns):
     [
         (
             "left_anti",
-            {"left": jn.DropLabel(slice(None)), "right": "value"},
+            {"left": [], "right": "value"},
             r"output_columns\['left'\]",
         ),
         (
             "right_anti",
-            {"left": "value", "right": jn.DropLabel(slice(None))},
+            {"left": "value", "right": []},
             r"output_columns\['right'\]",
         ),
     ],
@@ -402,7 +402,7 @@ def test_output_columns_preserves_duplicate_selections():
     actual = left.conditional_join(
         right,
         ("key", "key", "<"),
-        output_columns={"left": ["a"], "right": jn.DropLabel(slice(None))},
+        output_columns={"left": ["a"], "right": []},
     )
     expected = pd.DataFrame([[10, 10]], columns=["a", "a"])
     assert_frame_equal(actual, expected)

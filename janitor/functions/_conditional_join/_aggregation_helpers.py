@@ -170,29 +170,38 @@ def _aggregation_inputs(
     """
     result = []
     for column_name, operation in aggfunc:
+        if operation == "size":
+            # ELI5: counting rows needs no column data at all; only check the
+            # column exists so a typo still raises. Selecting it in the
+            # Rust layout would copy every source row for nothing (1.6 GiB
+            # on a 51M-row right table).
+            source[column_name]
+            result.append(("*", "size"))
+            continue
+        if operation == "count":
+            # Only the null mask matters: take the boolean mask in the Rust
+            # layout instead of copying the values first.
+            null_mask = source[column_name].isna().loc[indexer].to_numpy(dtype=bool)
+            result.append(("*", null_mask, "count"))
+            continue
         series = source.loc[indexer, column_name]
         null_mask = series.isna().to_numpy(dtype=bool)
-        if operation == "size":
-            result.append(("*", "size"))
-        elif operation == "count":
-            result.append(("*", null_mask, "count"))
-        else:
-            # Keep values and masks in the same compact layout as the source
-            # dataframe. Rust indexes these arrays with local aggregation
-            # positions after translating physical != candidates.
-            values = _convert_array_to_numpy(array=series._values)
-            if operation in {"sum", "prod"}:
-                if pd.api.types.is_signed_integer_dtype(values.dtype):
-                    values = values.astype(np.int64, copy=False)
-                elif pd.api.types.is_unsigned_integer_dtype(values.dtype):
-                    values = values.astype(np.uint64, copy=False)
-            result.append(
-                (
-                    values,
-                    null_mask,
-                    operation,
-                )
+        # Keep values and masks in the same compact layout as the source
+        # dataframe. Rust indexes these arrays with local aggregation
+        # positions after translating physical != candidates.
+        values = _convert_array_to_numpy(array=series._values)
+        if operation in {"sum", "prod"}:
+            if pd.api.types.is_signed_integer_dtype(values.dtype):
+                values = values.astype(np.int64, copy=False)
+            elif pd.api.types.is_unsigned_integer_dtype(values.dtype):
+                values = values.astype(np.uint64, copy=False)
+        result.append(
+            (
+                values,
+                null_mask,
+                operation,
             )
+        )
     return result
 
 

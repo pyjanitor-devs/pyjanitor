@@ -1761,3 +1761,24 @@ def test_equi_aggregation_with_no_matches_returns_empty_output_shape(
     else:
         assert isinstance(actual.index, pd.RangeIndex)
     assert_frame_equal(expected, actual)
+
+
+def test_aggregation_inputs_size_and_count_use_only_the_mask():
+    """`size` passes no column data; `count` passes the mask in indexer order."""
+    from janitor.functions._conditional_join._aggregation_helpers import (
+        _aggregation_inputs,
+    )
+
+    source = pd.DataFrame(
+        {"a": pd.array([1, None, 3, None], dtype="Int64")}, index=[10, 11, 12, 13]
+    )
+    indexer = pd.Index([13, 10, 11])
+    size, count, total = _aggregation_inputs(
+        source, [("a", "size"), ("a", "count"), ("a", "sum")], indexer=indexer
+    )
+    assert size == ("*", "size")
+    assert count[0] == "*" and count[2] == "count"
+    np.testing.assert_array_equal(count[1], np.array([True, False, True]))
+    # Value reductions keep the values and mask in the same indexer order.
+    np.testing.assert_array_equal(total[1], count[1])
+    assert total[2] == "sum"

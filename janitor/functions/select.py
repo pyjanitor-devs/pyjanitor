@@ -25,13 +25,6 @@ from janitor.functions.utils import _is_str_or_cat
 from janitor.utils import check, deprecated_alias, refactored_function
 
 
-def _register_legacy_select_dataframe_method(method):
-    """Register ``select`` only when pandas does not provide it."""
-    if hasattr(pd.DataFrame, "select"):
-        return method
-    return pf.register_dataframe_method(method)
-
-
 @pf.register_dataframe_groupby_method
 @pf.register_dataframe_method
 def select_columns(
@@ -385,10 +378,6 @@ def select_rows(
     return _select(df, rows=list(args), invert=invert)
 
 
-@pf.register_dataframe_groupby_method
-@_register_legacy_select_dataframe_method
-@pf.register_series_groupby_method
-@pf.register_series_method
 @deprecated_alias(rows="index")
 @refactored_function(
     message=(
@@ -404,7 +393,7 @@ def select(
     axis: str = "columns",
     invert: bool = False,
 ) -> pd.DataFrame | pd.Series | DataFrameGroupBy:
-    """Method-chainable selection of rows and/or columns.
+    """Functional selection of rows and/or columns.
 
     It accepts a string, shell-like glob strings `(*string*)`,
     regex, slice, array-like object, or a list of the previous options.
@@ -412,7 +401,7 @@ def select(
     Selection on a MultiIndex on a level, or multiple levels,
     is possible with a dictionary.
 
-    This method does not mutate the original DataFrame or Series.
+    This function does not mutate the original DataFrame or Series.
 
     If the pandas object is a Series, selection is possible only on the index.
 
@@ -435,10 +424,18 @@ def select(
         is with `.loc` or `.iloc` methods, as they are generally performant.
         `select` is primarily for convenience.
 
-    !!!note
+    !!!warning
 
-        This function has been deprecated.
-        Kindly use `jn.select_columns` or `jn.select_rows`
+        This function is deprecated and is no longer registered as a pandas
+        DataFrame, Series, or GroupBy method. Use `jn.select_columns` or
+        `jn.select_rows` instead.
+
+        With pandas 3.1 or later, old calls such as
+        ``df.select(columns="a")``, ``df.select(index="x")``, and
+        ``df.select("a", axis="columns")`` invoke pandas' ``select`` API
+        and produce computed columns named ``columns``, ``index``, and
+        ``axis`` respectively. Update these calls rather than relying on
+        pandas to reject them.
 
     !!! abstract "Version Changed"
 

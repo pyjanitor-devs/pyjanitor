@@ -1,3 +1,7 @@
+import subprocess
+import sys
+import textwrap
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -22,16 +26,34 @@ def dataframe():
     )
 
 
-@pytest.mark.skipif(
-    tuple(int(part) for part in pd.__version__.split(".")[:2]) < (3, 1),
-    reason="DataFrame.select was added in pandas 3.1",
-)
-def test_pandas_select_is_not_overridden():
-    """Keep pandas' DataFrame.select when pyjanitor is imported."""
-    frame = pd.DataFrame({"col1": [1], "col2": [2]})
+def test_import_does_not_register_legacy_select():
+    """Do not override a pandas select method during janitor import."""
+    code = textwrap.dedent(
+        """
+        import warnings
 
-    assert pd.DataFrame.select.__module__.startswith("pandas.")
-    assert list(frame.select("col1").columns) == ["col1"]
+        import pandas as pd
+
+        def pandas_select(self, *args, **kwargs):
+            result = self.loc[:, list(args)].copy()
+            for name in kwargs:
+                result[name] = 0
+            return result
+
+        pd.DataFrame.select = pandas_select
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            import janitor
+
+        assert pd.DataFrame.select is pandas_select
+        assert not any("overriding" in str(warning.message) for warning in caught)
+
+        frame = pd.DataFrame({"a": [1], "b": [2]})
+        result = frame.select("a", computed=pd.col("b") * 2)
+        assert list(result.columns) == ["a", "computed"]
+        """
+    )
+    subprocess.run([sys.executable, "-c", code], check=True)
 
 
 def test_series_axis(dataframe):

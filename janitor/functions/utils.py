@@ -34,8 +34,6 @@ from janitor.utils import (
     find_stack_level,
 )
 
-warnings.simplefilter("always", DeprecationWarning)
-
 
 def unionize_dataframe_categories(
     *dataframes: Any,
@@ -154,7 +152,7 @@ def patterns(regex_pattern: Union[str, Pattern]) -> Pattern:
     """
     warnings.warn(
         "This function is deprecated. Kindly use `re.compile` instead.",
-        DeprecationWarning,
+        FutureWarning,
         stacklevel=find_stack_level(),
     )
     check("regular expression", regex_pattern, [str, Pattern])

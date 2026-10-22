@@ -1,7 +1,7 @@
 # Changelog
 
 ## [Unreleased]
-- [BUG] Stop registering deprecated `select` as a pandas DataFrame, Series, or GroupBy method to avoid collision with pandas 3.1 `DataFrame.select`; method-style calls on Series and GroupBy objects now raise `AttributeError`, while on pandas >=3.1 old `df.select(columns=...)`, `df.select(index=...)`, and `df.select(axis=...)` calls can silently create columns named `columns`, `index`, and `axis`. Use `jn.select_columns`/`jn.select_rows` or `df.select_columns`/`df.select_rows` instead. - Issue #1798
+- [BUG] Stop registering deprecated `select` as a pandas DataFrame, Series, or GroupBy method to avoid collision with pandas 3.1 `DataFrame.select`; method-style calls on Series and GroupBy objects now raise `AttributeError`, while on pandas >=3.1 old `df.select(columns=...)`, `df.select(index=...)`, and `df.select(axis=...)` calls can silently create columns named `columns`, `index`, and `axis`. Use `jn.select_columns`/`jn.select_rows` or `df.select_columns`/`df.select_rows` instead. - Issue #1798 @samukweku
 - [BUG] Preserve user warning filters on import, use visible `FutureWarning` for deprecated APIs, and report warnings at the caller's location. - Issue #1775 @BALOGUN-DAVID
 - [BUG] Raise clear, API-specific errors when empty selectors, including zero-column frames, are passed to `move`, `pivot_longer`, `pivot_wider`, or tuple-based `summarise`. - Issue #1784
 - [ENH] Add `output_columns` to `conditional_join` as the preferred side-aware output projection while retaining `df_columns` and `right_columns` for compatibility. - Issue #1751

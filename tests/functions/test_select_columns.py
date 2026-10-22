@@ -8,7 +8,7 @@ import pytest
 from pandas.api.types import is_numeric_dtype
 from pandas.testing import assert_frame_equal
 
-from janitor.functions.select import DropLabel, _select_index
+from janitor.functions.select import DropLabel, _select_index, select
 from janitor.functions.utils import patterns
 
 
@@ -60,7 +60,7 @@ def test_select_column_names_droplabel_mix():
 
     df = pd.DataFrame(data)
     selectors = [pd.api.types.is_numeric_dtype, DropLabel(["year", "rowid"])]
-    actual = df.select(selectors)
+    actual = df.select_columns(selectors)
     expected = df.select_dtypes("number").drop(columns=["year", "rowid"])
     assert_frame_equal(actual, expected)
 
@@ -496,7 +496,7 @@ def test_select_groupby(dataframe):
 def test_select_groupby_args(dataframe):
     """Test output on a grouped object"""
     expected = dataframe.select_dtypes("number").groupby(dataframe["a"]).sum()
-    actual = dataframe.groupby("a").select(is_numeric_dtype).sum()
+    actual = select(dataframe.groupby("a"), is_numeric_dtype).sum()
     assert_frame_equal(expected, actual)
 
 
@@ -504,7 +504,7 @@ def test_select_groupby_args(dataframe):
 def test_select_groupby_columns(dataframe):
     """Test output on a grouped object"""
     expected = dataframe.select_dtypes("number").groupby(dataframe["a"]).sum()
-    actual = dataframe.groupby("a").select(columns=is_numeric_dtype).sum()
+    actual = select(dataframe.groupby("a"), columns=is_numeric_dtype).sum()
     assert_frame_equal(expected, actual)
 
 

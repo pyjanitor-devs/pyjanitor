@@ -8,6 +8,7 @@
 - [BUG] Preserve unmatched rows when `conditional_join` drops one output side in non-inner joins.
 - [BUG] Avoid deprecation warnings from `get_join_indices` and `join_agg` internal projections.
 - [BUG] Empty list-like selectors in `select`, `select_columns`, and `select_rows` now select nothing; `DropLabel([])` drops nothing, and `invert=True` selects the complement. Empty dictionaries now select nothing on MultiIndex axes as well. - Issue #1782 @samukweku
+- [BUG] Keep backslashes in polars `make_clean_names`, as in the pandas `clean_names`. - Issue #1771 @Rodrigo-Palma
 - [DOC] Document introduction and undeprecation versions for selected APIs. - Issue #1188 @BALOGUN-DAVID
 - [BUG] Include the README in package metadata so PyPI renders the project description.
 -   [BUG] Fix Polars *`make_clean_names`* not replacing `@` with an underscore in expressions. - Issue #1758 @sumangouda

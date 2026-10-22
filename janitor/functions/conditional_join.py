@@ -44,7 +44,6 @@ from pandas.api.types import (
     is_timedelta64_dtype,
 )
 
-from janitor.functions.select import DropLabel
 from janitor.utils import (
     check,
     check_column,

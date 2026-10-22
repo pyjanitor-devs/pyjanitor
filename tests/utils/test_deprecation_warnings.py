@@ -24,9 +24,9 @@ added_filters = [
 ]
 
 assert not any(
-    action == "always" and issubclass(DeprecationWarning, category)
-    for action, _, category, _, _ in added_filters
-), "Importing janitor installed an always-on DeprecationWarning filter"
+    issubclass(category, (DeprecationWarning, FutureWarning))
+    for _, _, category, _, _ in added_filters
+), "Importing janitor installed a DeprecationWarning or FutureWarning filter"
 
 with warnings.catch_warnings(record=True) as recorded:
     warnings.warn("should remain hidden", DeprecationWarning)
@@ -165,7 +165,7 @@ def test_get_join_indices_use_numba_warning_location():
 
 
 def test_refactored_methods_emit_one_future_warning():
-    """Refactored methods should not emit duplicate FutureWarnings."""
+    """Refactored methods should emit exactly one deprecation warning."""
     import janitor  # noqa: F401
 
     df = pd.DataFrame(
@@ -184,10 +184,13 @@ def test_refactored_methods_emit_one_future_warning():
 
     for name, call in calls.items():
         with warnings.catch_warnings(record=True) as recorded:
-            warnings.simplefilter("always", FutureWarning)
+            warnings.simplefilter("always")
             call()
 
-        future_warnings = [item for item in recorded if item.category is FutureWarning]
-        assert len(future_warnings) == 1, (
-            f"{name} emitted {len(future_warnings)} FutureWarnings"
+        deprecations = [
+            item for item in recorded if "deprecat" in str(item.message).lower()
+        ]
+        assert len(deprecations) == 1, (
+            f"{name} emitted {len(deprecations)} deprecation warnings"
         )
+        assert deprecations[0].category is FutureWarning

@@ -382,7 +382,8 @@ def select_rows(
 @refactored_function(
     message=(
         "This function has been deprecated. "
-        "Kindly use `jn.select_columns` or `jn.select_rows` instead."
+        "Kindly use `jn.select_columns`/`jn.select_rows` or "
+        "`df.select_columns`/`df.select_rows` instead."
     )
 )
 def select(
@@ -427,8 +428,9 @@ def select(
     !!!warning
 
         This function is deprecated and is no longer registered as a pandas
-        DataFrame, Series, or GroupBy method. Use `jn.select_columns` or
-        `jn.select_rows` instead.
+        DataFrame, Series, or GroupBy method. Use
+        `jn.select_columns`/`jn.select_rows` or
+        `df.select_columns`/`df.select_rows` instead.
 
         With pandas 3.1 or later, old calls such as
         ``df.select(columns="a")``, ``df.select(index="x")``, and

@@ -8,6 +8,10 @@ import pandas_flavor as pf
 def drop_constant_columns(df: pd.DataFrame) -> pd.DataFrame:
     """Finds and drops the constant columns from a Pandas DataFrame.
 
+    Missing values count as a single distinct value, even across different
+    missing sentinels: a column with one non-null value and missing entries
+    is kept, while an all-missing column is dropped.
+
     Examples:
         >>> import pandas as pd
         >>> import janitor
@@ -36,4 +40,7 @@ def drop_constant_columns(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         The Pandas DataFrame with the constant columns dropped.
     """
-    return df.loc[:, df.nunique().ne(1)]
+    # Count missing sentinels as a single distinct level, even when a column
+    # mixes None, NaN, and pandas.NA in object dtype.
+    distinct_levels = df.nunique(dropna=True) + df.isna().any(axis=0).astype(int)
+    return df.loc[:, distinct_levels.ne(1)]

@@ -4,6 +4,7 @@
 - [BUG] Preserve user warning filters on import, use visible `FutureWarning` for deprecated APIs, and report warnings at the caller's location. - Issue #1775 @BALOGUN-DAVID
 - [BUG] Raise clear, API-specific errors when empty selectors, including zero-column frames, are passed to `move`, `pivot_longer`, `pivot_wider`, or tuple-based `summarise`. - Issue #1784
 - [ENH] Add `output_columns` to `conditional_join` as the preferred side-aware output projection while retaining `df_columns` and `right_columns` for compatibility. - Issue #1751
+- [BUG] Count missing values in `drop_constant_columns` to preserve partially missing columns and remove all-missing columns. - Issue #1781
 - [BUG] Preserve duplicate columns selected by `conditional_join` output projections.
 - [BUG] Preserve unmatched rows when `conditional_join` drops one output side in non-inner joins.
 - [BUG] Avoid deprecation warnings from `get_join_indices` and `join_agg` internal projections.

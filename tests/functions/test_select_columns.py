@@ -249,7 +249,7 @@ def test_patterns_warning(df_strings):
     """
     Check that warning is raised if `janitor.patterns` is used.
     """
-    with pytest.warns(DeprecationWarning):
+    with pytest.warns(FutureWarning):
         assert_frame_equal(
             df_strings.select_columns(patterns(r"\d$")),
             df_strings.filter(regex=r"\d$"),

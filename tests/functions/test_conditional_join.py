@@ -273,7 +273,7 @@ def test_internal_projection_helpers_do_not_emit_deprecation_warnings():
     assert not [
         warning
         for warning in caught
-        if issubclass(warning.category, DeprecationWarning)
+        if issubclass(warning.category, (DeprecationWarning, FutureWarning))
     ]
 
 
@@ -707,7 +707,7 @@ def test_check_conditions_exist(dummy, series):
 
 def test_use_numba_is_a_deprecated_noop(dummy, series):
     """Accept the historical keyword while warning that it has no effect."""
-    with pytest.warns(DeprecationWarning, match="use_numba"):
+    with pytest.warns(FutureWarning, match="use_numba"):
         result = dummy.conditional_join(series, ("id", "B", ">"), use_numba=True)
 
     assert not result.empty
@@ -715,7 +715,7 @@ def test_use_numba_is_a_deprecated_noop(dummy, series):
 
 def test_get_join_indices_use_numba_is_a_deprecated_noop(dummy, series):
     """The index helper retains deprecated ``use_numba`` compatibility."""
-    with pytest.warns(DeprecationWarning, match="use_numba"):
+    with pytest.warns(FutureWarning, match="use_numba"):
         result = jn.get_join_indices(
             dummy,
             series,

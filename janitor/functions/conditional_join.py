@@ -44,7 +44,12 @@ from pandas.api.types import (
     is_timedelta64_dtype,
 )
 
-from janitor.utils import check, check_column, deprecated_kwargs
+from janitor.utils import (
+    check,
+    check_column,
+    deprecated_kwargs,
+    find_stack_level,
+)
 
 from ._conditional_join import (
     _equi_join,
@@ -81,7 +86,6 @@ _REVERSE_OPERATOR = {
     ),
     error=False,
     category=FutureWarning,
-    stacklevel=3,
 )
 def conditional_join(
     df: pd.DataFrame,
@@ -479,8 +483,8 @@ def conditional_join(
     if use_numba is not None:
         warnings.warn(
             "The 'use_numba' parameter is deprecated and has no effect.",
-            DeprecationWarning,
-            stacklevel=2,
+            FutureWarning,
+            stacklevel=find_stack_level(),
         )
 
     return _conditional_join_compute(
@@ -1400,8 +1404,8 @@ def get_join_indices(
     if use_numba is not None:
         warnings.warn(
             "The 'use_numba' parameter is deprecated and has no effect.",
-            DeprecationWarning,
-            stacklevel=2,
+            FutureWarning,
+            stacklevel=find_stack_level(),
         )
 
     return _conditional_join_compute(

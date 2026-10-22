@@ -60,7 +60,7 @@ def test_select_column_names_droplabel_mix():
 
     df = pd.DataFrame(data)
     selectors = [pd.api.types.is_numeric_dtype, DropLabel(["year", "rowid"])]
-    actual = df.select(selectors)
+    actual = df.select_columns(selectors)
     expected = df.select_dtypes("number").drop(columns=["year", "rowid"])
     assert_frame_equal(actual, expected)
 

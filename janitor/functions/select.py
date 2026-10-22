@@ -25,6 +25,13 @@ from janitor.functions.utils import _is_str_or_cat
 from janitor.utils import check, deprecated_alias, refactored_function
 
 
+def _register_legacy_select_dataframe_method(method):
+    """Register ``select`` only when pandas does not provide it."""
+    if hasattr(pd.DataFrame, "select"):
+        return method
+    return pf.register_dataframe_method(method)
+
+
 @pf.register_dataframe_groupby_method
 @pf.register_dataframe_method
 def select_columns(
@@ -379,7 +386,7 @@ def select_rows(
 
 
 @pf.register_dataframe_groupby_method
-@pf.register_dataframe_method
+@_register_legacy_select_dataframe_method
 @pf.register_series_groupby_method
 @pf.register_series_method
 @deprecated_alias(rows="index")
@@ -461,13 +468,13 @@ def select(
         cobra               1       2
         viper               4       5
         sidewinder          7       8
-        >>> df.select(index="cobra", columns="shield")
+        >>> select(df, index="cobra", columns="shield")
                shield
         cobra       2
 
         Labels can be dropped with the `DropLabel` class:
 
-        >>> df.select(index=DropLabel("cobra"))
+        >>> select(df, index=DropLabel("cobra"))
                     max_speed  shield
         viper               4       5
         sidewinder          7       8

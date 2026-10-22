@@ -10,8 +10,6 @@ from pandas.core.common import apply_if_callable
 
 from janitor.utils import check, find_stack_level, refactored_function
 
-warnings.simplefilter("always", DeprecationWarning)
-
 
 @pf.register_dataframe_method
 @refactored_function(
@@ -158,7 +156,7 @@ def case_when(
                 "of boolean conditions and values, "
                 "and pass the default argument to the `default` "
                 "parameter instead.",
-                DeprecationWarning,
+                FutureWarning,
                 stacklevel=find_stack_level(),
             )
             *args, default = args

@@ -21,8 +21,6 @@ from janitor.utils import (
 
 from .errors import JanitorError
 
-warnings.simplefilter("always", DeprecationWarning)
-
 
 @deprecated_alias(seperate_df="separate_df", filespath="files_path")
 def read_csvs(
@@ -292,7 +290,7 @@ def xlsx_table(
     if sheetname:
         warnings.warn(
             "The keyword argument 'sheetname' of 'xlsx_tables' is deprecated.",
-            DeprecationWarning,
+            FutureWarning,
             stacklevel=find_stack_level(),
         )
     if engine not in {"pandas", "polars"}:

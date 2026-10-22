@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 - [PERF] Speed up Polars `pivot_longer` `.value` paths and reduce schema resolution to one call per invocation. - Issue #1769, PR #1772 @samukweku
+- [BUG] Fix Polars `pivot_longer` with `names_sep` raising on polars 2.0, which removed `list.to_struct(upper_bound=...)`. - PR #1772 @samukweku
 - [BUG] Preserve user warning filters on import, use visible `FutureWarning` for deprecated APIs, and report warnings at the caller's location. - Issue #1775 @BALOGUN-DAVID
 - [BUG] Raise clear, API-specific errors when empty selectors, including zero-column frames, are passed to `move`, `pivot_longer`, `pivot_wider`, or tuple-based `summarise`. - Issue #1784
 - [ENH] Add `output_columns` to `conditional_join` as the preferred side-aware output projection while retaining `df_columns` and `right_columns` for compatibility. - Issue #1751

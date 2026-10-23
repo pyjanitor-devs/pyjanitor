@@ -604,16 +604,22 @@ def _pivot_longer_dot_value(
         raise ValueError("The `.value` column cannot contain null values.")
 
     groups = spec.group_by(key).agg(".name", ".value")
+    if groups.height > _DOT_VALUE_GROUP_CONCAT_THRESHOLD:
+        variable_name = "__pivot_longer_group__"
+        legacy_spec = spec.select(
+            ".name",
+            ".value",
+            pl.struct(names_cols).alias(variable_name),
+        )
+        return _pivot_longer_dot_value_legacy(
+            df=df,
+            spec=legacy_spec,
+            index=index,
+            variable_name=variable_name,
+            names_transform=names_transform,
+        )
     if names_transform is not None:
         groups = groups.with_columns(names_transform)
-
-    if groups.height > _DOT_VALUE_GROUP_CONCAT_THRESHOLD:
-        return _pivot_longer_dot_value_unpivot(
-            df=df,
-            groups=groups,
-            index=index,
-            names_cols=names_cols,
-        )
 
     fields = spec.get_column(".value").unique(maintain_order=True).to_list()
     lazy = isinstance(df, pl.LazyFrame)
@@ -643,46 +649,47 @@ def _pivot_longer_dot_value(
     return outcome if lazy else outcome.collect()
 
 
-def _pivot_longer_dot_value_unpivot(
+def _pivot_longer_dot_value_legacy(
     df: pl.DataFrame | pl.LazyFrame,
-    groups: pl.DataFrame,
+    spec: pl.DataFrame,
     index: list[str],
-    names_cols: list[str],
+    variable_name: str,
+    names_transform: pl.Expr | None,
 ) -> pl.DataFrame | pl.LazyFrame:
-    """Use one wide plan when the per-group concat path would be too large."""
-    group_columns = []
+    """Use the packed-struct implementation for large group counts."""
+    spec = spec.group_by(variable_name).agg(pl.all())
+    group_spec = spec.get_column(variable_name)
     expressions = []
-    for position, (names, values) in enumerate(
-        zip(
-            groups.get_column(".name").to_list(),
-            groups.get_column(".value").to_list(),
-        )
+    for names, fields in zip(
+        spec.get_column(".name").to_list(),
+        spec.get_column(".value").to_list(),
     ):
-        headers = [
-            pl.lit(groups.get_column(label).slice(position, 1)).first().alias(label)
-            for label in names_cols
-        ]
-        value_struct = (
-            pl.struct(names).struct.rename_fields(names=values).alias("__values__")
-        )
-        group_name = f"__pivot_longer_group_{position}__"
-        group_columns.append(group_name)
-        expressions.append(pl.struct(*headers, value_struct).alias(group_name))
+        expressions.append(pl.struct(names).struct.rename_fields(names=fields))
 
-    frame = df if isinstance(df, pl.LazyFrame) else df.lazy()
+    expressions = [*index, *expressions]
+    lazy = isinstance(df, pl.LazyFrame)
+    frame = df if lazy else df.lazy()
     outcome = (
-        frame.select(*[pl.col(label) for label in index], *expressions)
+        frame.select(expressions)
+        .select(pl.all().implode())
         .unpivot(
             index=index,
-            on=group_columns,
-            variable_name="__group__",
-            value_name="__row__",
+            variable_name=variable_name,
+            value_name="__pivot_longer_values__",
         )
-        .unnest("__row__")
-        .drop("__group__")
-        .unnest("__values__")
+        .with_columns(group_spec)
     )
-    return outcome if isinstance(df, pl.LazyFrame) else outcome.collect()
+    outcome = outcome.unnest(variable_name)
+    if names_transform is not None:
+        outcome = outcome.with_columns(names_transform)
+    columns = [
+        label
+        for label in outcome.collect_schema().names()
+        if label not in group_spec.struct.fields
+    ]
+    outcome = outcome.explode(columns)
+    outcome = outcome.unnest("__pivot_longer_values__")
+    return outcome if lazy else outcome.collect()
 
 
 def _data_checks_pivot_longer(

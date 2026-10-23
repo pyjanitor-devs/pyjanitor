@@ -621,6 +621,7 @@ def test_dot_value_many_groups_uses_single_unpivot_path(lazy):
         result = result.collect()
 
     assert result.height == 300
+    assert result.columns == ["group", "x", "y"]
     assert result.sort("group").get_column("x").to_list() == list(range(300))
 
 

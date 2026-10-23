@@ -14,3 +14,14 @@ def test_convert_matlab_date():
     df = pd.DataFrame(mlab, columns=["dates"]).convert_matlab_date("dates")
 
     assert pd.api.types.is_datetime64_dtype(df["dates"])
+    expected = pd.to_datetime(
+        [
+            "2007-09-16",
+            "1996-05-14",
+            "2010-11-29",
+            "2018-08-27 13:31:08.805199120",
+            "2018-08-28",
+        ],
+        format="mixed",
+    )
+    assert (df["dates"] == expected).all()

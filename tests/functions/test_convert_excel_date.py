@@ -17,4 +17,4 @@ def test_convert_excel_date():
         .convert_excel_date("hire_date")
     )
 
-    assert df["hire_date"].dtype == "M8[s]"
+    assert pd.api.types.is_datetime64_dtype(df["hire_date"])

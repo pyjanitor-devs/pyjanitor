@@ -21,8 +21,6 @@ from janitor.utils import (
 
 from .errors import JanitorError
 
-warnings.simplefilter("always", DeprecationWarning)
-
 
 @deprecated_alias(seperate_df="separate_df", filespath="files_path")
 def read_csvs(
@@ -292,7 +290,7 @@ def xlsx_table(
     if sheetname:
         warnings.warn(
             "The keyword argument 'sheetname' of 'xlsx_tables' is deprecated.",
-            DeprecationWarning,
+            FutureWarning,
             stacklevel=find_stack_level(),
         )
     if engine not in {"pandas", "polars"}:
@@ -430,9 +428,9 @@ def xlsx_cells(
 
         Access cell formatting such as fill:
 
-        >>> out = xlsx_cells(filename, sheetnames="highlights", fill=True).select(
-        ...     "value", "fill", axis="columns"
-        ... )
+        >>> out = xlsx_cells(
+        ...     filename, sheetnames="highlights", fill=True
+        ... ).select_columns("value", "fill")
         >>> out
             value                                                                                                                                              fill
         0     Age     {'patternType': None, 'fgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}, 'bgColor': {'rgb': '00000000', 'type': 'rgb', 'tint': 0.0}}

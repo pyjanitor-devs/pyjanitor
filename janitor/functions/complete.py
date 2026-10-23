@@ -10,8 +10,6 @@ from pandas.core.groupby.generic import DataFrameGroupBy
 
 from janitor.utils import check, check_column, find_stack_level
 
-warnings.simplefilter("always", DeprecationWarning)
-
 
 @pf.register_dataframe_groupby_method
 @pf.register_dataframe_method
@@ -303,7 +301,7 @@ def _computations_complete(
             "The `by` argument is deprecated. "
             "Call the `complete` function "
             "on the grouped object instead.",
-            DeprecationWarning,
+            FutureWarning,
             stacklevel=find_stack_level(),
         )
         merge_columns = [*uniques.index.names]

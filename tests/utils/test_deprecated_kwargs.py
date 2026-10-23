@@ -79,7 +79,7 @@ def test_warning(arguments, message, func_kwargs, msg_expected):
     def simple_sum(alpha, beta, a=0, b=0):
         return alpha + beta
 
-    with pytest.warns(DeprecationWarning, match=msg_expected):
+    with pytest.warns(FutureWarning, match=msg_expected):
         simple_sum(1, 2, **func_kwargs)
 
 

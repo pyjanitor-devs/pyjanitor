@@ -67,7 +67,7 @@ def test_args_even_warning(dataframe):
     Raise Warning if `args` length
     is odd and `default` is None.
     """
-    with pytest.warns(DeprecationWarning):
+    with pytest.warns(FutureWarning):
         dataframe.case_when(
             dataframe.a < 10,
             "less_than_10",

@@ -6,8 +6,11 @@ from janitor.utils import check, import_message
 
 from .polars_flavor import register_dataframe_method, register_lazyframe_method
 
+_DOT_VALUE_GROUP_CONCAT_THRESHOLD = 256
+
 try:
     import polars as pl
+    import polars.selectors as cs
     from polars._typing import ColumnNameOrSelector
 except ImportError:
     import_message(
@@ -124,7 +127,7 @@ def pivot_longer_spec(
         A polars DataFrame/LazyFrame.
     """
     check("spec", spec, [pl.DataFrame])
-    spec_columns = spec.collect_schema().names()
+    spec_columns = spec.columns
     if ".name" not in spec_columns:
         raise KeyError("Kindly ensure the spec DataFrame has a `.name` column.")
     if ".value" not in spec_columns:
@@ -143,34 +146,11 @@ def pivot_longer_spec(
 
     index = [label for label in df_columns if label not in spec.get_column(".name")]
     others = [label for label in spec_columns if label not in {".name", ".value"}]
-    if others:
-        if (len(others) == 1) & (spec.get_column(others[0]).dtype == pl.String):
-            # shortcut that avoids the implode/explode approach - and is faster
-            # if the requirements are met
-            # inspired by https://github.com/pola-rs/polars/pull/18519#issue-2500860927
-            return _pivot_longer_dot_value_string(
-                df=df,
-                index=index,
-                spec=spec,
-                variable_name=others[0],
-            )
-        variable_name = "".join(df_columns + spec_columns)
-        variable_name = f"{variable_name}_"
-        dot_value_only = False
-        expression = pl.struct(others).alias(variable_name)
-        spec = spec.select(".name", ".value", expression)
-    else:
-        variable_name = "".join(df_columns + spec_columns)
-        variable_name = f"{variable_name}_"
-        dot_value_only = True
-        expression = pl.cum_count(".value").over(".value").alias(variable_name)
-        spec = spec.with_columns(expression)
     return _pivot_longer_dot_value(
         df=df,
         index=index,
-        spec=spec,
-        variable_name=variable_name,
-        dot_value_only=dot_value_only,
+        spec=spec.select(".name", ".value", *others),
+        names_cols=others,
         names_transform=None,
     )
 
@@ -435,8 +415,8 @@ def _pivot_longer(
             value_name=values_to,
         )
 
+    schema = df.collect_schema()
     (
-        df,
         index,
         column_names,
         names_to,
@@ -445,6 +425,7 @@ def _pivot_longer(
         names_pattern,
     ) = _data_checks_pivot_longer(
         df=df,
+        schema=schema,
         index=index,
         column_names=column_names,
         names_to=names_to,
@@ -453,7 +434,7 @@ def _pivot_longer(
         names_pattern=names_pattern,
     )
 
-    variable_name = "".join(df.collect_schema().names())
+    variable_name = "".join(schema.names())
     variable_name = f"{variable_name}_"
     spec = _pivot_longer_create_spec(
         column_names=column_names,
@@ -474,33 +455,13 @@ def _pivot_longer(
             variable_name=variable_name,
             names_transform=names_transform,
         )
-    if {".name", ".value"}.symmetric_difference(spec.collect_schema().names()):
-        # shortcut that avoids the implode/explode approach - and is faster
-        # if the requirements are met
-        # inspired by https://github.com/pola-rs/polars/pull/18519#issue-2500860927
-        data = spec.get_column(variable_name)
-        others = data.struct.fields
-        data = data.struct[others[0]]
-        if (len(others) == 1) & (data.dtype == pl.String) & (names_transform is None):
-            spec = spec.unnest(variable_name)
-            return _pivot_longer_dot_value_string(
-                df=df,
-                index=index,
-                spec=spec,
-                variable_name=others[0],
-            )
-        dot_value_only = False
-    else:
-        dot_value_only = True
-        expression = pl.cum_count(".value").over(".value").alias(variable_name)
-        spec = spec.with_columns(expression)
-
     return _pivot_longer_dot_value(
         df=df,
         index=index,
         spec=spec,
-        variable_name=variable_name,
-        dot_value_only=dot_value_only,
+        names_cols=[
+            label for label in spec.columns if label not in {".name", ".value"}
+        ],
         names_transform=names_transform,
     )
 
@@ -521,7 +482,7 @@ def _pivot_longer_create_spec(
         expression = (
             pl.col(".name")
             .str.split(by=names_sep)
-            .list.to_struct(upper_bound=len(names_to))
+            .list.to_struct(fields=[f"field_{i}" for i in range(len(names_to))])
             .alias(variable_name)
         )
     else:
@@ -561,37 +522,19 @@ def _pivot_longer_create_spec(
         spec = spec.get_column(variable_name)
         spec = spec.struct.rename_fields(names=names_to)
         return spec
-    if names_to.count(".value") == 1:
-        spec = spec.with_columns(
-            pl.col(variable_name).struct.rename_fields(names=names_to)
-        )
-        not_dot_value = [name for name in names_to if name != ".value"]
-        spec = spec.unnest(variable_name)
-        if not_dot_value:
-            return spec.select(
-                ".name",
-                ".value",
-                pl.struct(not_dot_value).alias(variable_name),
-            )
-        return spec.select(".name", ".value")
-    _spec = spec.get_column(variable_name)
-    _spec = _spec.struct.unnest()
-    fields = _spec.collect_schema().names()
-
-    if len(set(names_to)) == 1:
-        expression = pl.concat_str(fields).alias(".value")
-        dot_value = _spec.select(expression)
-        dot_value = dot_value.to_series(0)
-        return spec.select(".name", dot_value)
+    fields = spec.get_column(variable_name).struct.fields
+    parts = spec.get_column(variable_name).struct.unnest()
     dot_value = [field for field, label in zip(fields, names_to) if label == ".value"]
-    dot_value = pl.concat_str(dot_value).alias(".value")
     not_dot_value = [
         pl.col(field).alias(label)
         for field, label in zip(fields, names_to)
         if label != ".value"
     ]
-    not_dot_value = pl.struct(not_dot_value).alias(variable_name)
-    return _spec.select(spec.get_column(".name"), not_dot_value, dot_value)
+    return parts.select(
+        spec.get_column(".name"),
+        pl.concat_str(dot_value).alias(".value"),
+        *not_dot_value,
+    )
 
 
 def _pivot_longer_no_dot_value(
@@ -628,97 +571,130 @@ def _pivot_longer_no_dot_value(
     outcome = outcome.unnest(variable_name)
     if names_transform is not None:
         outcome = outcome.with_columns(names_transform)
-    columns = [
-        name for name in outcome.collect_schema().names() if name not in names_to
-    ]
-    outcome = outcome.explode(columns=columns)
-    return outcome
-
-
-def _pivot_longer_dot_value_string(
-    df: pl.DataFrame | pl.LazyFrame,
-    spec: pl.DataFrame,
-    index: ColumnNameOrSelector,
-    variable_name: str,
-) -> pl.DataFrame | pl.LazyFrame:
-    """
-    fastpath for .value - does not require implode/explode approach.
-    """
-    spec = spec.group_by(variable_name)
-    spec = spec.agg(pl.all())
-    expressions = []
-    for names, fields, header in zip(
-        spec.get_column(".name").to_list(),
-        spec.get_column(".value").to_list(),
-        spec.get_column(variable_name).to_list(),
-    ):
-        expression = pl.struct(names).struct.rename_fields(names=fields)
-        expression = expression.alias(header)
-        expressions.append(expression)
-    expressions = [*index, *expressions]
-    df = (
-        df.select(expressions)
-        .unpivot(index=index, variable_name=variable_name, value_name=".value")
-        .unnest(".value")
-    )
-    return df
+    return outcome.explode(cs.exclude(*names_to))
 
 
 def _pivot_longer_dot_value(
     df: pl.DataFrame | pl.LazyFrame,
     spec: pl.DataFrame,
     index: ColumnNameOrSelector,
-    variable_name: str,
-    dot_value_only: bool,
+    names_cols: list[str],
     names_transform: pl.Expr,
 ) -> pl.DataFrame | pl.LazyFrame:
     """
-    flip polars Frame to long form,
-    if .value in names_to.
+    Build one select per spec group and concatenate the resulting frames.
+
+    The spec is small and eager, while the user's frame may be lazy. Keeping
+    the grouping and header construction eager avoids the struct-pack,
+    unpivot, and unnest work used by the previous implementation.
     """
-    spec = spec.group_by(variable_name)
-    spec = spec.agg(pl.all())
+    key = names_cols
+    if not key:
+        key = ["__pivot_longer_group__"]
+        spec = spec.with_columns(pl.int_range(pl.len()).over(".value").alias(key[0]))
+    else:
+        duplicate_keys = spec.select([*names_cols, ".value"]).is_duplicated().any()
+        if duplicate_keys:
+            raise ValueError(
+                "The combination of the `.value` column and additional "
+                "specification columns should be unique."
+            )
+
+    if spec.get_column(".value").is_null().any():
+        raise ValueError("The `.value` column cannot contain null values.")
+
+    groups = spec.group_by(key).agg(".name", ".value")
+    if groups.height > _DOT_VALUE_GROUP_CONCAT_THRESHOLD:
+        variable_name = "__pivot_longer_group__"
+        legacy_spec = spec.select(
+            ".name",
+            ".value",
+            pl.struct(names_cols).alias(variable_name),
+        )
+        return _pivot_longer_dot_value_legacy(
+            df=df,
+            spec=legacy_spec,
+            index=index,
+            variable_name=variable_name,
+            names_transform=names_transform,
+        )
+    if names_transform is not None:
+        groups = groups.with_columns(names_transform)
+
+    fields = spec.get_column(".value").unique(maintain_order=True).to_list()
+    lazy = isinstance(df, pl.LazyFrame)
+    frame = df if lazy else df.lazy()
+    index_exprs = [pl.col(label) for label in index]
+    parts = []
+    for position, (names, values) in enumerate(
+        zip(
+            groups.get_column(".name").to_list(),
+            groups.get_column(".value").to_list(),
+        )
+    ):
+        mapping = dict(zip(values, names))
+        headers = [
+            pl.lit(groups.get_column(label).slice(position, 1)).first().alias(label)
+            for label in names_cols
+        ]
+        columns = [
+            pl.col(mapping[field]).alias(field)
+            if field in mapping
+            else pl.lit(None).alias(field)
+            for field in fields
+        ]
+        parts.append(frame.select(*index_exprs, *headers, *columns))
+
+    outcome = pl.concat(parts, how="vertical_relaxed")
+    return outcome if lazy else outcome.collect()
+
+
+def _pivot_longer_dot_value_legacy(
+    df: pl.DataFrame | pl.LazyFrame,
+    spec: pl.DataFrame,
+    index: list[str],
+    variable_name: str,
+    names_transform: pl.Expr | None,
+) -> pl.DataFrame | pl.LazyFrame:
+    """Use the packed-struct implementation for large group counts."""
+    spec = spec.group_by(variable_name).agg(pl.all())
+    group_spec = spec.get_column(variable_name)
     expressions = []
     for names, fields in zip(
         spec.get_column(".name").to_list(),
         spec.get_column(".value").to_list(),
     ):
-        expression = pl.struct(names).struct.rename_fields(names=fields)
-        expressions.append(expression)
+        expressions.append(pl.struct(names).struct.rename_fields(names=fields))
+
     expressions = [*index, *expressions]
-    spec = spec.get_column(variable_name)
-    if dot_value_only:
-        outcome = (
-            df.select(expressions)
-            .unpivot(index=index, variable_name=variable_name, value_name=".value")
-            .select(pl.exclude(variable_name))
-            .unnest(".value")
-        )
-        return outcome
-
+    lazy = isinstance(df, pl.LazyFrame)
+    frame = df if lazy else df.lazy()
     outcome = (
-        df.select(expressions)
+        frame.select(expressions)
         .select(pl.all().implode())
-        .unpivot(index=index, variable_name=variable_name, value_name=".value")
-        .with_columns(spec)
+        .unpivot(
+            index=index,
+            variable_name=variable_name,
+            value_name="__pivot_longer_values__",
+        )
+        .with_columns(group_spec)
     )
-
     outcome = outcome.unnest(variable_name)
     if names_transform is not None:
         outcome = outcome.with_columns(names_transform)
     columns = [
         label
         for label in outcome.collect_schema().names()
-        if label not in spec.struct.fields
+        if label not in group_spec.struct.fields
     ]
     outcome = outcome.explode(columns)
-    outcome = outcome.unnest(".value")
-
-    return outcome
+    outcome = outcome.unnest("__pivot_longer_values__")
+    return outcome if lazy else outcome.collect()
 
 
 def _data_checks_pivot_longer(
     df,
+    schema,
     index,
     column_names,
     names_to,
@@ -765,20 +741,21 @@ def _data_checks_pivot_longer(
     check("values_to", values_to, [str])
 
     if (index is None) and (column_names is None):
-        column_names = df.collect_schema().names()
+        column_names = schema.names()
         index = []
     elif (index is None) and (column_names is not None):
-        column_names = df.select(column_names).collect_schema().names()
-        index = df.select(pl.exclude(column_names)).collect_schema().names()
+        column_names = _resolve_columns(df, schema, column_names)
+        excluded = set(column_names)
+        index = [label for label in schema.names() if label not in excluded]
     elif (index is not None) and (column_names is None):
-        index = df.select(index).collect_schema().names()
-        column_names = df.select(pl.exclude(index)).collect_schema().names()
+        index = _resolve_columns(df, schema, index)
+        excluded = set(index)
+        column_names = [label for label in schema.names() if label not in excluded]
     else:
-        index = df.select(index).collect_schema().names()
-        column_names = df.select(column_names).collect_schema().names()
+        index = _resolve_columns(df, schema, index)
+        column_names = _resolve_columns(df, schema, column_names)
 
     return (
-        df,
         index,
         column_names,
         names_to,
@@ -786,3 +763,29 @@ def _data_checks_pivot_longer(
         names_sep,
         names_pattern,
     )
+
+
+def _resolve_columns(df, schema, selection):
+    """Resolve a column selection against an already-collected schema."""
+    if isinstance(selection, str):
+        selection = [selection]
+    if isinstance(selection, (list, tuple)) and all(
+        isinstance(label, str) for label in selection
+    ):
+        if len(selection) != len(set(selection)):
+            raise pl.exceptions.DuplicateError("column names must be unique")
+        if not any(
+            label.startswith("^") and label.endswith("$") for label in selection
+        ):
+            missing = [label for label in selection if label not in schema]
+            if missing:
+                raise pl.exceptions.ColumnNotFoundError(
+                    f'unable to find column "{missing[0]}"; '
+                    f"valid columns: {schema.names()}"
+                )
+            return list(selection)
+    # Regex strings, selectors, and expressions need Polars expansion. An eager
+    # frame's schema is already known; a lazy frame would re-resolve its whole
+    # plan.
+    frame = df if isinstance(df, pl.DataFrame) else pl.LazyFrame(schema=schema)
+    return frame.select(selection).collect_schema().names()

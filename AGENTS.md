@@ -749,6 +749,45 @@ regions algorithm.
 paths together. Do not phrase the guidance as applying "especially" to one
 algorithm.
 
+### [2026-10-17] Polars pivot_longer does not guarantee row order
+
+**Context**: Reviewing the concat-per-group implementation for Polars
+`pivot_longer`.
+**Learning**: Output row order is not part of the `pivot_longer` contract, so
+grouping the eager spec does not need to preserve input order.
+
+**Recommendation**: Do not pay for `maintain_order=True` in the spec grouping;
+tests should compare results without relying on row order.
+
+### [2026-10-17] Validate duplicate Polars pivot_longer spec keys
+
+**Context**: Replacing grouped struct construction with per-group column
+mappings in Polars `pivot_longer`.
+**Learning**: A Python mapping silently overwrites duplicate `(non-.value,
+`.value`) spec keys, changing results without an error.
+
+**Recommendation**: Validate those composite keys before constructing mappings;
+`.value`-only specs are different because repeated values represent separate
+occurrences and need an occurrence group.
+
+### [2026-10-17] Every pull request needs a changelog entry
+
+**Context**: User correction while preparing PR #1772.
+**Learning**: Pull requests must update `CHANGELOG.md` under `[Unreleased]`.
+
+**Recommendation**: Add a concise categorized changelog entry to every PR and
+run Markdown validation after editing it.
+
+### [2026-10-17] Preserve anchored regex string selections in Polars
+
+**Context**: User correction after reviewing the Phase 2 schema-resolution
+optimization.
+**Learning**: Polars treats anchored strings such as `^i.*$` as regex column
+selectors, so resolving every string as a literal changes existing behavior.
+
+**Recommendation**: Route anchored regex strings through `df.select(...)` while
+keeping ordinary string labels on the schema-only fast path.
+
 ### [2026-10-23] Datetime tests must assert converted values
 
 **Context**: A datetime-resolution compatibility fix changed an exact dtype

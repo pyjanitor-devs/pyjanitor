@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+- [PERF] Speed up Polars `pivot_longer` `.value` paths and reduce schema resolution to one call per invocation. - Issue #1769, PR #1772 @samukweku
+- [BUG] Fix Polars `pivot_longer` with `names_sep` raising on polars 2.0, which removed `list.to_struct(upper_bound=...)`. - PR #1772 @samukweku
 - [BUG] Stop registering deprecated `select` as a pandas DataFrame, Series, or GroupBy method to avoid collision with pandas 3.1 `DataFrame.select`; method-style calls on Series and GroupBy objects now raise `AttributeError`, while on pandas >=3.1 old `df.select(columns=...)`, `df.select(index=...)`, and `df.select(axis=...)` calls can silently create columns named `columns`, `index`, and `axis`. Use `jn.select_columns`/`jn.select_rows` or `df.select_columns`/`df.select_rows` instead. - Issue #1798 @samukweku
 - [BUG] Preserve user warning filters on import, use visible `FutureWarning` for deprecated APIs, and report warnings at the caller's location. - Issue #1775 @BALOGUN-DAVID
 - [BUG] Raise clear, API-specific errors when empty selectors, including zero-column frames, are passed to `move`, `pivot_longer`, `pivot_wider`, or tuple-based `summarise`. - Issue #1784

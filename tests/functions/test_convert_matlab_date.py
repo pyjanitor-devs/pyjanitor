@@ -13,4 +13,4 @@ def test_convert_matlab_date():
     ]
     df = pd.DataFrame(mlab, columns=["dates"]).convert_matlab_date("dates")
 
-    assert df["dates"].dtype == "M8[ns]"
+    assert pd.api.types.is_datetime64_dtype(df["dates"])

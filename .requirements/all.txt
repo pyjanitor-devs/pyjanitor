@@ -16,7 +16,7 @@ backcall==0.2.0
     # via ipython
 biopython==1.79
     # via -r .requirements/biology.in
-black==24.3.0
+black==26.10.1
     # via -r .requirements/dev.in
 cfgv==3.3.1
     # via pre-commit
@@ -148,7 +148,7 @@ pandas-vet==0.2.3
     # via -r .requirements/testing.in
 parso==0.8.3
     # via jedi
-pathspec==0.9.0
+pathspec==1.1.1
     # via black
 pep517==0.12.0
     # via pip-tools
@@ -218,6 +218,8 @@ python-dateutil==2.8.2
     #   pandas
 python-discovery==1.6.4
     # via virtualenv
+pytokens==0.4.1
+    # via black
 pytz==2021.3
     # via pandas
 pyyaml==6.0

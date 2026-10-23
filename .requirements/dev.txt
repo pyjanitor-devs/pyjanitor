@@ -4,7 +4,7 @@
 #
 #    pip-compile .requirements/dev.in
 #
-black==24.3.0
+black==26.10.1
     # via -r .requirements/dev.in
 cfgv==3.3.1
     # via pre-commit
@@ -37,7 +37,7 @@ packaging==26.3
     #   black
     #   virtualenv
     #   wheel
-pathspec==0.9.0
+pathspec==1.1.1
     # via black
 pep517==0.12.0
     # via pip-tools
@@ -57,6 +57,8 @@ pyflakes==2.4.0
     # via flake8
 python-discovery==1.6.4
     # via virtualenv
+pytokens==0.4.1
+    # via black
 pyyaml==6.0
     # via pre-commit
 setuptools==84.2.1

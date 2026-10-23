@@ -648,7 +648,7 @@ def test_explicit_(fill_df):
     and the columns used for the combination
     are reused in the fill_value.
     """
-    trimmed = fill_df.select("value*", axis="columns", invert=True)
+    trimmed = fill_df.select_columns("value*", invert=True)
     result = trimmed.complete(
         "group",
         ["item_id", "item_name"],

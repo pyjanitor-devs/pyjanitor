@@ -788,6 +788,19 @@ selectors, so resolving every string as a literal changes existing behavior.
 **Recommendation**: Route anchored regex strings through `df.select(...)` while
 keeping ordinary string labels on the schema-only fast path.
 
+### [2026-10-23] Datetime tests must assert converted values
+
+**Context**: A datetime-resolution compatibility fix changed an exact dtype
+assertion to a broad datetime-type check, which allowed an intentionally shifted
+MATLAB date conversion to pass.
+
+**Learning**: A dtype assertion only verifies the result type. Date-conversion
+tests must also assert the converted values so incorrect offsets remain visible.
+
+**Recommendation**: When loosening datetime-resolution assertions, retain or
+add value assertions, normalizing resolution only where the conversion contract
+does not require a specific precision.
+
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol

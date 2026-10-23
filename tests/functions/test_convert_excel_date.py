@@ -17,4 +17,25 @@ def test_convert_excel_date():
         .convert_excel_date("hire_date")
     )
 
-    assert df["hire_date"].dtype == "M8[s]"
+    assert pd.api.types.is_datetime64_dtype(df["hire_date"])
+    expected = pd.Series(
+        [
+            "2008-08-30",
+            "2008-08-30",
+            "2001-08-15",
+            "1975-05-01",
+            "2013-06-06",
+            "1930-03-20",
+            "1930-03-20",
+            None,
+            "1990-05-01",
+            "1976-06-08",
+            "2015-08-05",
+            "1995-01-01",
+            "2009-09-15",
+        ],
+        name="hire_date",
+    )
+    pd.testing.assert_series_equal(
+        df["hire_date"].dt.strftime("%Y-%m-%d"), expected, check_dtype=False
+    )

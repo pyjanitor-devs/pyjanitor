@@ -6,6 +6,8 @@ from janitor.utils import check, import_message
 
 from .polars_flavor import register_dataframe_method, register_lazyframe_method
 
+_DOT_VALUE_GROUP_CONCAT_THRESHOLD = 256
+
 try:
     import polars as pl
     import polars.selectors as cs
@@ -591,8 +593,8 @@ def _pivot_longer_dot_value(
         key = ["__pivot_longer_group__"]
         spec = spec.with_columns(pl.int_range(pl.len()).over(".value").alias(key[0]))
     else:
-        keys = spec.select([*names_cols, ".value"]).rows()
-        if len(keys) != len(set(keys)):
+        duplicate_keys = spec.select([*names_cols, ".value"]).is_duplicated().any()
+        if duplicate_keys:
             raise ValueError(
                 "The combination of the `.value` column and additional "
                 "specification columns should be unique."
@@ -604,6 +606,14 @@ def _pivot_longer_dot_value(
     groups = spec.group_by(key).agg(".name", ".value")
     if names_transform is not None:
         groups = groups.with_columns(names_transform)
+
+    if groups.height > _DOT_VALUE_GROUP_CONCAT_THRESHOLD:
+        return _pivot_longer_dot_value_unpivot(
+            df=df,
+            groups=groups,
+            index=index,
+            names_cols=names_cols,
+        )
 
     fields = spec.get_column(".value").unique(maintain_order=True).to_list()
     lazy = isinstance(df, pl.LazyFrame)
@@ -631,6 +641,48 @@ def _pivot_longer_dot_value(
 
     outcome = pl.concat(parts, how="vertical_relaxed")
     return outcome if lazy else outcome.collect()
+
+
+def _pivot_longer_dot_value_unpivot(
+    df: pl.DataFrame | pl.LazyFrame,
+    groups: pl.DataFrame,
+    index: list[str],
+    names_cols: list[str],
+) -> pl.DataFrame | pl.LazyFrame:
+    """Use one wide plan when the per-group concat path would be too large."""
+    group_columns = []
+    expressions = []
+    for position, (names, values) in enumerate(
+        zip(
+            groups.get_column(".name").to_list(),
+            groups.get_column(".value").to_list(),
+        )
+    ):
+        headers = [
+            pl.lit(groups.get_column(label).slice(position, 1)).first().alias(label)
+            for label in names_cols
+        ]
+        value_struct = (
+            pl.struct(names).struct.rename_fields(names=values).alias("__values__")
+        )
+        group_name = f"__pivot_longer_group_{position}__"
+        group_columns.append(group_name)
+        expressions.append(pl.struct(*headers, value_struct).alias(group_name))
+
+    frame = df if isinstance(df, pl.LazyFrame) else df.lazy()
+    outcome = (
+        frame.select(*[pl.col(label) for label in index], *expressions)
+        .unpivot(
+            index=index,
+            on=group_columns,
+            variable_name="__group__",
+            value_name="__row__",
+        )
+        .unnest("__row__")
+        .drop("__group__")
+        .unnest("__values__")
+    )
+    return outcome if isinstance(df, pl.LazyFrame) else outcome.collect()
 
 
 def _data_checks_pivot_longer(
@@ -713,6 +765,8 @@ def _resolve_columns(df, schema, selection):
     if isinstance(selection, (list, tuple)) and all(
         isinstance(label, str) for label in selection
     ):
+        if len(selection) != len(set(selection)):
+            raise pl.exceptions.DuplicateError("column names must be unique")
         if not any(
             label.startswith("^") and label.endswith("$") for label in selection
         ):

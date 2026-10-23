@@ -42,6 +42,18 @@ def test_duplicate_names_to(df_checks):
         df_checks.pivot_longer(names_to=["y", "y"], names_pattern="(.+)(.)")
 
 
+def test_duplicate_column_names_raise_duplicate_error():
+    """Duplicate explicit selections retain Polars' error behavior."""
+    df = pl.DataFrame({"id": [1, 2], "x_1": [1, 2], "x_2": [3, 4]})
+
+    with pytest.raises(pl.exceptions.DuplicateError):
+        df.pivot_longer(
+            column_names=["x_1", "x_1"],
+            names_to=("part", "number"),
+            names_sep="_",
+        )
+
+
 def test_both_names_sep_and_pattern(df_checks):
     """
     Raise ValueError if both names_sep
@@ -590,6 +602,26 @@ def test_dot_value_regex_selector_and_many_groups():
     assert result.height == 40
     result = result.sort("group")
     assert result.get_column("measure").to_list() == list(range(40))
+
+
+@pytest.mark.parametrize("lazy", [False, True])
+def test_dot_value_many_groups_uses_single_unpivot_path(lazy):
+    """Large group counts avoid constructing one lazy plan per group."""
+    df = pl.DataFrame(
+        {f"{value}_{group}": [group] for group in range(300) for value in ("x", "y")}
+    )
+    frame = df.lazy() if lazy else df
+
+    result = frame.pivot_longer(
+        names_to=(".value", "group"),
+        names_sep="_",
+        names_transform=pl.col("group").cast(pl.Int64),
+    )
+    if lazy:
+        result = result.collect()
+
+    assert result.height == 300
+    assert result.sort("group").get_column("x").to_list() == list(range(300))
 
 
 def test_dot_value_regex_string_selection():

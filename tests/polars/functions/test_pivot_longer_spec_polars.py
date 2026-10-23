@@ -133,3 +133,36 @@ def test_pivot_longer_spec_rejects_duplicate_keys(df_checks):
 
     with pytest.raises(ValueError, match="combination of the `.value` column"):
         pivot_longer_spec(df_checks, spec=duplicate_spec)
+
+
+@pytest.mark.parametrize(
+    "extra_values",
+    [
+        [[1], [2]],
+        [{"kind": "a"}, {"kind": "b"}],
+    ],
+)
+@pytest.mark.parametrize("lazy", [False, True])
+def test_pivot_longer_spec_supports_unhashable_extra_values(
+    df_checks, extra_values, lazy
+):
+    """List and Struct spec fields can be used as grouping keys."""
+    extra_name = "metadata"
+    unhashable_spec = pl.DataFrame(
+        {
+            ".name": ["ht1", "ht2"],
+            ".value": ["ht", "ht"],
+            extra_name: extra_values,
+        }
+    )
+
+    result = pivot_longer_spec(
+        df_checks.lazy() if lazy else df_checks,
+        spec=unhashable_spec,
+    )
+    if lazy:
+        result = result.collect()
+
+    assert result.height == len(df_checks) * 2
+    actual_values = result.get_column(extra_name).unique().to_list()
+    assert sorted(map(str, actual_values)) == sorted(map(str, extra_values))

@@ -81,12 +81,22 @@ def _column_positions(frame: pd.DataFrame, selector: Any) -> np.ndarray:
     return _index_converter(indexer, frame.columns)
 
 
+def _take_positions(array, positions):
+    """Select an array by physical row positions."""
+    if isinstance(positions, slice):
+        return array[positions]
+    return pd.api.extensions.take(array, positions._values, allow_fill=False)
+
+
 def _take_column(frame: pd.DataFrame, column: Hashable, positions):
     """Select a working-frame column by physical row positions."""
     series = frame[column]
+    values = _take_positions(series._values, positions)
     if isinstance(positions, slice):
-        return series.iloc[positions]
-    return series.take(positions._values)
+        index = series.index[positions]
+    else:
+        index = series.index.take(positions._values)
+    return pd.Series(values, index=index, name=series.name)
 
 
 def _materialize_or_return_indices(

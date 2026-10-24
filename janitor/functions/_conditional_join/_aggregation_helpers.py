@@ -49,7 +49,10 @@ from typing import Hashable
 import numpy as np
 import pandas as pd
 
-from janitor.functions._conditional_join._helpers import _convert_array_to_numpy
+from janitor.functions._conditional_join._helpers import (
+    _convert_array_to_numpy,
+    _take_positions,
+)
 
 
 def _nullable_integer_dtype(dtype):
@@ -127,13 +130,6 @@ def _select_aggregation_kernel(
     return reverse_kernel if reverse else forward_kernel
 
 
-def _take_aggregation_positions(array, indexer: pd.Index | slice):
-    """Select a prepared aggregation layout by physical row positions."""
-    if isinstance(indexer, slice):
-        return array[indexer]
-    return array.take(indexer._values)
-
-
 def _aggregation_inputs(
     source: pd.DataFrame, aggfunc: list[tuple], indexer: pd.Index | slice = slice(None)
 ) -> list[tuple]:
@@ -184,21 +180,18 @@ def _aggregation_inputs(
             # The working frames use physical row positions as their index.
             # Build the mask once, then take the compact Rust layout without
             # asking pandas to resolve every indexer label.
-            null_mask = _take_aggregation_positions(
+            null_mask = _take_positions(
                 source[column_name].isna().to_numpy(dtype=bool), indexer
             )
             result.append(("*", null_mask, "count"))
             continue
         series = source[column_name]
-        null_mask = _take_aggregation_positions(
-            series.isna().to_numpy(dtype=bool), indexer
-        )
+        selected = _take_positions(series._values, indexer)
+        null_mask = np.asarray(pd.isna(selected), dtype=bool)
         # Keep values and masks in the same compact layout as the source
         # dataframe. Rust indexes these arrays with local aggregation
         # positions after translating physical != candidates.
-        values = _convert_array_to_numpy(
-            array=_take_aggregation_positions(series._values, indexer)
-        )
+        values = _convert_array_to_numpy(array=selected)
         if operation in {"sum", "prod"}:
             if pd.api.types.is_signed_integer_dtype(values.dtype):
                 values = values.astype(np.int64, copy=False)

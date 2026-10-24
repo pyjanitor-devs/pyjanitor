@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [v0.32.55] - 2026-10-24
+
+-   No user-facing changes; see the generated release notes.
+-   [DOC] Clean up historical changelog entries to improve documentation clarity. - PR #1807 @samukweku
+
 ## [v0.32.54] - 2026-10-23
 
 -   [TST] Improve read_commandline test reliability by using pytest's tmp_path fixture instead of a shared temporary file. - PR #1767 @samukweku
@@ -652,7 +657,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.54...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.55...HEAD
+
+[v0.32.55]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.54...v0.32.55
 
 [v0.32.54]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.53...v0.32.54
 

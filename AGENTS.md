@@ -749,6 +749,20 @@ regions algorithm.
 paths together. Do not phrase the guidance as applying "especially" to one
 algorithm.
 
+### [2026-10-24] Install memray for benchmark memory checks
+
+**Context**: The AIList benchmark harness uses `scripts/mem_profile.py` for
+RSS and allocation-peak measurements. The default benchmark Pixi environment
+did not include `memray`, so memory checks failed even though timing and test
+commands worked.
+**Learning**: Add `memray` as a PyPI dependency in the benchmark workspace;
+the conda package is unavailable for every platform declared by that
+workspace.
+**Recommendation**: Verify the profiling environment with
+`pixi run python -c 'import memray; print(memray.__version__)'` before running
+`scripts/mem_profile.py`. Keep this benchmark-only dependency separate from
+the pyjanitor package dependencies.
+
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol

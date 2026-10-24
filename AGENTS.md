@@ -801,6 +801,22 @@ must preserve the existing changelog spacing conventions.
 entries, use the repository's three-space list marker style, and keep a blank
 line between comparison-link definitions.
 
+### [2026-10-25] Release-time checks must validate the tag range
+
+**Context**: Reviewing changelog validation for issue #1808 exposed that a
+pull-request check can remain green after a release rotates `[Unreleased]`
+before the PR merges. A later push to `dev` does not rerun pull-request checks.
+
+**Learning**: The release workflow must validate `previous_tag..HEAD` before
+rotating or publishing. Pull-request checks are useful early feedback but do
+not close this race. Path filters must also avoid causing a changelog-only
+push to trigger the test workflow that gates automatic releases.
+
+**Recommendation**: Use the merge ref's first parent as the PR base when
+checking a pull request, parse uncolored git diffs defensively, and allow
+paired edits within an existing historical section without allowing new
+entries to be smuggled in by matching text.
+
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol

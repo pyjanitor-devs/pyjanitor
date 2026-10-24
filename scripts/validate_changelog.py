@@ -1,4 +1,4 @@
-"""Validate that pull-request changelog entries are under ``[Unreleased]``."""
+"""Validate that changelog entries are added under ``[Unreleased]``."""
 
 from __future__ import annotations
 
@@ -7,40 +7,73 @@ import re
 import subprocess
 from typing import NamedTuple
 
-_HUNK = re.compile(r"^@@ -\d+(?:,\d+)? \+(?P<start>\d+)(?:,\d+)? @@")
+_HUNK = re.compile(r"^@@ -(?P<old>\d+)(?:,\d+)? \+(?P<new>\d+)(?:,\d+)? @@")
 _SECTION = re.compile(r"^## \[(?P<name>[^]]+)\]")
 _REFERENCE = re.compile(r"^\[[^]]+\]:\s*\S+")
+_VERSION_REFERENCE = re.compile(r"^\[(?P<name>v\d+\.\d+\.\d+)\]:\s*\S+")
+_ANSI = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 
 
-class AddedLine(NamedTuple):
-    """A line added to the changelog and its line number in the new file."""
+class ChangedLine(NamedTuple):
+    """A changed line and its line number in one side of a diff."""
 
     number: int
     text: str
 
 
-def _added_lines(diff: str) -> list[AddedLine]:
-    """Extract added lines and their new-file line numbers from a diff."""
+class DiffHunk(NamedTuple):
+    """Added and removed lines from one unified-diff hunk."""
 
-    added: list[AddedLine] = []
-    new_line = None
+    added: tuple[ChangedLine, ...]
+    removed: tuple[ChangedLine, ...]
+
+
+def _parse_diff(diff: str) -> list[DiffHunk]:
+    """Parse changelog hunks and fail closed for malformed colored diffs."""
+
+    if _ANSI.search(diff):
+        raise ValueError("refusing to parse a colored git diff")
+
+    hunks: list[DiffHunk] = []
+    added: list[ChangedLine] = []
+    removed: list[ChangedLine] = []
+    old_line = new_line = None
+
+    def finish_hunk() -> None:
+        """Store the current hunk before starting the next one."""
+
+        if old_line is not None:
+            hunks.append(DiffHunk(tuple(added), tuple(removed)))
+
     for line in diff.splitlines():
         hunk = _HUNK.match(line)
         if hunk:
-            new_line = int(hunk["start"])
+            finish_hunk()
+            added = []
+            removed = []
+            old_line = int(hunk["old"])
+            new_line = int(hunk["new"])
             continue
-        if new_line is None or line.startswith("\\"):
+        if line.startswith("+++") and old_line is None:
             continue
-        if line.startswith("+++"):
+        if old_line is None:
             continue
         if line.startswith("+"):
-            added.append(AddedLine(new_line, line[1:]))
+            added.append(ChangedLine(new_line, line[1:]))
             new_line += 1
         elif line.startswith("-"):
+            removed.append(ChangedLine(old_line, line[1:]))
+            old_line += 1
+        elif line.startswith("\\"):
             continue
         else:
+            old_line += 1
             new_line += 1
-    return added
+    finish_hunk()
+
+    if not hunks and any(line.startswith("+") for line in diff.splitlines()):
+        raise ValueError("could not parse added lines from the git diff")
+    return hunks
 
 
 def _section_at(lines: list[str], line_number: int) -> str | None:
@@ -56,63 +89,84 @@ def _section_at(lines: list[str], line_number: int) -> str | None:
     return section
 
 
-def _unreleased_content(text: str) -> set[str]:
-    """Return non-structural lines currently under ``[Unreleased]``."""
+def _structural_line(text: str) -> bool:
+    """Return whether a changed line is changelog structure, not an entry."""
 
-    lines = text.splitlines()
-    start = next(
-        (number for number, line in enumerate(lines) if line == "## [Unreleased]"),
-        None,
+    stripped = text.strip()
+    return (
+        not stripped
+        or stripped.startswith("#")
+        or _SECTION.match(stripped) is not None
+        or _REFERENCE.match(stripped) is not None
     )
-    if start is None:
-        return set()
-
-    content: set[str] = set()
-    for line in lines[start + 1 :]:
-        if _SECTION.match(line):
-            break
-        if line.strip() and not _REFERENCE.match(line):
-            content.add(line.strip())
-    return content
 
 
-def validate_changelog_diff(base: str, head: str, diff: str) -> list[str]:
-    """Return errors for new changelog entries outside ``[Unreleased]``.
+def validate_changelog_diff(
+    base: str,
+    head: str,
+    diff: str,
+    allow_generated_rotation: bool = False,
+) -> list[str]:
+    """Return errors for new entries outside ``[Unreleased]``.
 
-    Lines already present in the base revision's ``[Unreleased]`` section are
-    allowed to move into a versioned section. This accounts for release
-    rotation commits without allowing a new entry to bypass the guard.
+    A paired replacement in the same historical section is treated as an edit
+    to existing history, which permits typo fixes without permitting a new
+    entry to pass merely because it has matching text elsewhere.
     """
 
+    base_lines = base.splitlines()
     head_lines = head.splitlines()
-    previous_unreleased = _unreleased_content(base)
     errors = []
-    for added in _added_lines(diff):
-        stripped = added.text.strip()
-        if (
-            not stripped
-            or stripped.startswith("#")
-            or _SECTION.match(stripped)
-            or _REFERENCE.match(stripped)
-        ):
-            continue
-        section = _section_at(head_lines, added.number)
-        if section != "Unreleased" and stripped not in previous_unreleased:
-            section_name = section or "no section"
-            errors.append(
-                f"CHANGELOG.md:{added.number}: entry added under [{section_name}]; "
-                "new entries must be under [Unreleased]"
+    hunks = _parse_diff(diff)
+    added_text = [added.text.strip() for hunk in hunks for added in hunk.added]
+    added_versions = {
+        match["name"]
+        for text in added_text
+        if (match := _VERSION_REFERENCE.match(text))
+    }
+    generated_sections = {
+        match["name"]
+        for hunk in hunks
+        for added in hunk.added
+        if (match := _SECTION.match(added.text))
+        and match["name"] != "Unreleased"
+        and match["name"] in added_versions
+        and any(text.startswith("[Unreleased]:") for text in added_text)
+    }
+    for hunk in hunks:
+        for index, added in enumerate(hunk.added):
+            if _structural_line(added.text):
+                continue
+            section = _section_at(head_lines, added.number)
+            paired_removed = hunk.removed[index] if index < len(hunk.removed) else None
+            same_section_edit = (
+                paired_removed is not None
+                and _section_at(base_lines, paired_removed.number) == section
             )
+            generated_section = (
+                allow_generated_rotation and section in generated_sections
+            )
+            if (
+                section != "Unreleased"
+                and not same_section_edit
+                and not generated_section
+            ):
+                section_name = section or "no section"
+                errors.append(
+                    f"CHANGELOG.md:{added.number}: entry added under [{section_name}]; "
+                    "new entries must be under [Unreleased]"
+                )
     return errors
 
 
 def _git_diff(base: str, head: str) -> str:
-    """Return the changelog diff between two git revisions."""
+    """Return the uncolored changelog diff between two git revisions."""
 
     result = subprocess.run(
         [
             "git",
             "diff",
+            "--no-color",
             "--unified=0",
             "--no-ext-diff",
             base,
@@ -133,9 +187,14 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--base", required=True, help="base git revision")
     parser.add_argument("--head", default="HEAD", help="head git revision")
+    parser.add_argument(
+        "--allow-generated-rotation",
+        action="store_true",
+        help="allow entries under version sections added by release rotation",
+    )
     args = parser.parse_args()
 
-    result = subprocess.run(
+    head_result = subprocess.run(
         ["git", "show", f"{args.head}:CHANGELOG.md"],
         check=True,
         capture_output=True,
@@ -149,8 +208,9 @@ def main() -> None:
     )
     errors = validate_changelog_diff(
         base_result.stdout,
-        result.stdout,
+        head_result.stdout,
         _git_diff(args.base, args.head),
+        allow_generated_rotation=args.allow_generated_rotation,
     )
     if errors:
         raise SystemExit("\n".join(errors))

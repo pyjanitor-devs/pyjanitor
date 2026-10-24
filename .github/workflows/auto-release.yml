@@ -220,6 +220,14 @@ jobs:
           echo "version_name: ${{ env.VERSION_NAME }}"
           echo "version_number: v${{ env.version_number }}"
 
+      - name: Validate changelog entries since previous release
+        if: steps.check_release.outputs.already_released == 'false'
+        run: |
+          pixi run python scripts/validate_changelog.py \
+            --base "${{ env.previous_version }}" \
+            --head HEAD \
+            --allow-generated-rotation
+
       - name: Ensure repo status is clean
         if: steps.check_release.outputs.release_complete == 'false' && steps.check_release.outputs.existing_release_tag == 'false'
         run: git status

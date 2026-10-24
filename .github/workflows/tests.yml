@@ -10,8 +10,6 @@ on:
       - "tests/**"
       - "pyproject.toml"
       - "pixi.lock"
-      - "CHANGELOG.md"
-      - "scripts/validate_changelog.py"
       - ".github/workflows/tests.yml"
   pull_request:
     branches:
@@ -32,6 +30,7 @@ concurrency:
 jobs:
   validate-changelog:
     name: Validate changelog entries
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -47,10 +46,9 @@ jobs:
           cache-write: true
 
       - name: Validate pull-request changelog entries
-        if: github.event_name == 'pull_request'
         run: |
           pixi run python scripts/validate_changelog.py \
-            --base "${{ github.event.pull_request.base.sha }}" \
+            --base HEAD^1 \
             --head HEAD
 
   run-tests:

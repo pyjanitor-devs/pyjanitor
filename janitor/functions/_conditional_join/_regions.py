@@ -114,8 +114,8 @@ def _preparatory_work(
             _helpers.greater_than_join_types
         ):
             continue
-        left_column = df.loc[left_index, condition.left]
-        right_column = right.loc[right_index, condition.right]
+        left_column = _helpers._take_column(df, condition.left, left_index)
+        right_column = _helpers._take_column(right, condition.right, right_index)
         if condition.op in _helpers.greater_than_join_types:
             ascending = False
         else:
@@ -144,8 +144,8 @@ def _preparatory_work(
         ):
             continue
         residual_predicate = _helpers._build_residual_predicate(
-            left=df.loc[left_index, condition.left],
-            right=right.loc[right_index, condition.right],
+            left=_helpers._take_column(df, condition.left, left_index),
+            right=_helpers._take_column(right, condition.right, right_index),
             operation=condition.op,
         )
         residual_predicates.append(residual_predicate)

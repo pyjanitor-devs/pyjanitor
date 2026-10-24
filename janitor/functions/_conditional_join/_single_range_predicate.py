@@ -470,8 +470,8 @@ def _preparatory_work_multi_join(
         left_index = df.index
     if isinstance(right_index, slice):
         right_index = right.index
-    left_column = df.loc[left_index, left_column]
-    right_column = right.loc[right_index, right_column]
+    left_column = _helpers._take_column(df, left_column, left_index)
+    right_column = _helpers._take_column(right, right_column, right_index)
     right_column, right_index_is_ordered = _helpers._sort_if_not_monotonic(
         series=right_column
     )
@@ -487,8 +487,8 @@ def _preparatory_work_multi_join(
     residual_predicates = []
     for condition in rest:
         residual_predicate = _helpers._build_residual_predicate(
-            left=df.loc[left_index, condition.left],
-            right=right.loc[right_index, condition.right],
+            left=_helpers._take_column(df, condition.left, left_index),
+            right=_helpers._take_column(right, condition.right, right_index),
             operation=condition.op,
         )
         residual_predicates.append(residual_predicate)

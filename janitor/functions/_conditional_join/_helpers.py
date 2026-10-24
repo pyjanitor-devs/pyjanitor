@@ -81,6 +81,14 @@ def _column_positions(frame: pd.DataFrame, selector: Any) -> np.ndarray:
     return _index_converter(indexer, frame.columns)
 
 
+def _take_column(frame: pd.DataFrame, column: Hashable, positions):
+    """Select a working-frame column by physical row positions."""
+    series = frame[column]
+    if isinstance(positions, slice):
+        return series.iloc[positions]
+    return series.take(positions._values)
+
+
 def _materialize_or_return_indices(
     *,
     result: dict[str, np.ndarray],

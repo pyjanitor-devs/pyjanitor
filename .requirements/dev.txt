@@ -67,7 +67,7 @@ toml==0.10.2
     # via pre-commit
 tomli==2.0.1
     # via pep517
-virtualenv==21.14.9
+virtualenv==21.14.13
     # via pre-commit
 wheel==0.46.2
     # via pip-tools

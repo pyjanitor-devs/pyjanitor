@@ -145,13 +145,6 @@ jobs:
             exit 0
           fi
 
-          if [[ "${{ github.event_name }}" == workflow_dispatch && \
-            "${{ github.event.inputs.version_name }}" != patch ]]; then
-            echo "Cannot start a major/minor release while an earlier release is incomplete." >&2
-            echo "Retry the incomplete release with patch or finish it before dispatching this release." >&2
-            exit 1
-          fi
-
           echo "existing_release_tag=true" >> "$GITHUB_OUTPUT"
           echo "version_number=$version_number" >> "$GITHUB_OUTPUT"
           if [[ -z "$current_release_tag" ]]; then
@@ -167,6 +160,12 @@ jobs:
           else
             echo "release_complete=false" >> "$GITHUB_OUTPUT"
             echo "Release is incomplete and will be resumed."
+            if [[ "${{ github.event_name }}" == workflow_dispatch && \
+              "${{ github.event.inputs.version_name }}" != patch ]]; then
+              echo "Cannot start a major/minor release while an earlier release is incomplete." >&2
+              echo "Retry the incomplete release with patch or finish it before dispatching this release." >&2
+              exit 1
+            fi
           fi
 
       - name: Setup Python environment
@@ -355,9 +354,10 @@ jobs:
         run: |
           set -euo pipefail
           read -r -a missing_artifacts <<< "$MISSING_ARTIFACTS"
+          publish_paths=("${missing_artifacts[@]/#/dist/}")
           for attempt in {1..3}; do
             if uv publish --trusted-publishing always \
-              --check-url https://pypi.org/simple/ "${missing_artifacts[@]}"; then
+              --check-url https://pypi.org/simple/ "${publish_paths[@]}"; then
               exit 0
             fi
             if [[ "$attempt" -lt 3 ]]; then

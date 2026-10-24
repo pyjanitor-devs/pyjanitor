@@ -5,10 +5,10 @@ from __future__ import annotations
 import argparse
 import re
 import subprocess
-from typing import NamedTuple
+from typing import NamedTuple, Sequence
 
 _HUNK = re.compile(r"^@@ -(?P<old>\d+)(?:,\d+)? \+(?P<new>\d+)(?:,\d+)? @@")
-_SECTION = re.compile(r"^## \[(?P<name>[^]]+)\]")
+_SECTION = re.compile(r"^## \[(?P<name>[^]]+)\]", re.MULTILINE)
 _REFERENCE = re.compile(r"^\[[^]]+\]:\s*\S+")
 _ANSI = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 
@@ -105,6 +105,8 @@ def validate_changelog_diff(
     head: str,
     diff: str,
     section: str | None = None,
+    sections: Sequence[str] | None = None,
+    allow_recent_sections: bool = False,
 ) -> list[str]:
     """Return errors for new entries outside ``[Unreleased]``.
 
@@ -117,9 +119,18 @@ def validate_changelog_diff(
     head_lines = head.splitlines()
     errors = []
     hunks = _parse_diff(diff)
-    target_section = section.removeprefix("v") if section else None
-    if target_section:
-        target_section = f"v{target_section}"
+    protected_sections = {
+        f"v{value.removeprefix('v')}"
+        for value in ([section] if section else (sections or ()))
+    }
+    if protected_sections and not allow_recent_sections:
+        available_sections = {
+            match["name"] for match in _SECTION.finditer("\n".join(head_lines))
+        }
+        missing_sections = protected_sections - available_sections
+        if missing_sections:
+            missing = ", ".join(sorted(missing_sections))
+            raise ValueError(f"requested changelog section(s) not found: {missing}")
     for hunk in hunks:
         for index, added in enumerate(hunk.added):
             if _structural_line(added.text):
@@ -130,8 +141,13 @@ def validate_changelog_diff(
                 paired_removed is not None
                 and _section_at(base_lines, paired_removed.number) == section
             )
-            outside_target = target_section is not None and section != target_section
-            if section != "Unreleased" and not same_section_edit and not outside_target:
+            protected = section in protected_sections
+            if (
+                section != "Unreleased"
+                and not same_section_edit
+                and (not protected_sections or protected)
+                and not allow_recent_sections
+            ):
                 section_name = section or "no section"
                 errors.append(
                     f"CHANGELOG.md:{added.number}: entry added under [{section_name}]; "
@@ -172,6 +188,16 @@ def main() -> None:
         "--section",
         help="only validate entries added under this changelog section",
     )
+    parser.add_argument(
+        "--sections",
+        nargs="+",
+        help="validate entries added under these changelog sections",
+    )
+    parser.add_argument(
+        "--allow-recent-sections",
+        action="store_true",
+        help="allow new entries in protected recent release sections",
+    )
     args = parser.parse_args()
 
     head_result = subprocess.run(
@@ -191,6 +217,8 @@ def main() -> None:
         head_result.stdout,
         _git_diff(args.base, args.head),
         section=args.section,
+        sections=args.sections,
+        allow_recent_sections=args.allow_recent_sections,
     )
     if errors:
         raise SystemExit("\n".join(errors))

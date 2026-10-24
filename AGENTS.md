@@ -823,14 +823,15 @@ entries to be smuggled in by matching text.
 section can permanently block both automatic and manual releases after a
 legitimate changelog backfill is merged.
 
-**Learning**: The release race can only misassign a new entry to the newest
-version section created by the last rotation. Historical backfills should pass
-the release guard; pull-request validation may remain strict for early
-feedback.
+**Learning**: A long-lived pull request can span several release rotations.
+When it is finally merged, Git can place its entry in any recent historical
+section, not only the newest one. Historical backfills should remain possible,
+but the release guard must protect a bounded recent window so stale entries are
+not silently shipped.
 
-**Recommendation**: Scope the release-time check to the section named by the
-previous release tag. Do not retain broad generated-rotation exemptions that
-could allow new entries to bypass the newest-section check.
+**Recommendation**: Scope the release-time check to a bounded set of recent
+release sections, and provide an explicit manual override for intentional
+backfills. Fail closed when a requested section is absent from the changelog.
 
 ## Version History
 

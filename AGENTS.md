@@ -817,6 +817,21 @@ checking a pull request, parse uncolored git diffs defensively, and allow
 paired edits within an existing historical section without allowing new
 entries to be smuggled in by matching text.
 
+### [2026-10-25] Release guards must scope errors to the newest section
+
+**Context**: A tag-range guard that rejects every new line in every historical
+section can permanently block both automatic and manual releases after a
+legitimate changelog backfill is merged.
+
+**Learning**: The release race can only misassign a new entry to the newest
+version section created by the last rotation. Historical backfills should pass
+the release guard; pull-request validation may remain strict for early
+feedback.
+
+**Recommendation**: Scope the release-time check to the section named by the
+previous release tag. Do not retain broad generated-rotation exemptions that
+could allow new entries to bypass the newest-section check.
+
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol

@@ -10,7 +10,6 @@ from typing import NamedTuple
 _HUNK = re.compile(r"^@@ -(?P<old>\d+)(?:,\d+)? \+(?P<new>\d+)(?:,\d+)? @@")
 _SECTION = re.compile(r"^## \[(?P<name>[^]]+)\]")
 _REFERENCE = re.compile(r"^\[[^]]+\]:\s*\S+")
-_VERSION_REFERENCE = re.compile(r"^\[(?P<name>v\d+\.\d+\.\d+)\]:\s*\S+")
 _ANSI = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 
 
@@ -105,7 +104,7 @@ def validate_changelog_diff(
     base: str,
     head: str,
     diff: str,
-    allow_generated_rotation: bool = False,
+    section: str | None = None,
 ) -> list[str]:
     """Return errors for new entries outside ``[Unreleased]``.
 
@@ -118,21 +117,9 @@ def validate_changelog_diff(
     head_lines = head.splitlines()
     errors = []
     hunks = _parse_diff(diff)
-    added_text = [added.text.strip() for hunk in hunks for added in hunk.added]
-    added_versions = {
-        match["name"]
-        for text in added_text
-        if (match := _VERSION_REFERENCE.match(text))
-    }
-    generated_sections = {
-        match["name"]
-        for hunk in hunks
-        for added in hunk.added
-        if (match := _SECTION.match(added.text))
-        and match["name"] != "Unreleased"
-        and match["name"] in added_versions
-        and any(text.startswith("[Unreleased]:") for text in added_text)
-    }
+    target_section = section.removeprefix("v") if section else None
+    if target_section:
+        target_section = f"v{target_section}"
     for hunk in hunks:
         for index, added in enumerate(hunk.added):
             if _structural_line(added.text):
@@ -143,14 +130,8 @@ def validate_changelog_diff(
                 paired_removed is not None
                 and _section_at(base_lines, paired_removed.number) == section
             )
-            generated_section = (
-                allow_generated_rotation and section in generated_sections
-            )
-            if (
-                section != "Unreleased"
-                and not same_section_edit
-                and not generated_section
-            ):
+            outside_target = target_section is not None and section != target_section
+            if section != "Unreleased" and not same_section_edit and not outside_target:
                 section_name = section or "no section"
                 errors.append(
                     f"CHANGELOG.md:{added.number}: entry added under [{section_name}]; "
@@ -188,9 +169,8 @@ def main() -> None:
     parser.add_argument("--base", required=True, help="base git revision")
     parser.add_argument("--head", default="HEAD", help="head git revision")
     parser.add_argument(
-        "--allow-generated-rotation",
-        action="store_true",
-        help="allow entries under version sections added by release rotation",
+        "--section",
+        help="only validate entries added under this changelog section",
     )
     args = parser.parse_args()
 
@@ -210,7 +190,7 @@ def main() -> None:
         base_result.stdout,
         head_result.stdout,
         _git_diff(args.base, args.head),
-        allow_generated_rotation=args.allow_generated_rotation,
+        section=args.section,
     )
     if errors:
         raise SystemExit("\n".join(errors))

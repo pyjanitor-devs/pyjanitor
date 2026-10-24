@@ -226,7 +226,7 @@ jobs:
           pixi run python scripts/validate_changelog.py \
             --base "${{ env.previous_version }}" \
             --head HEAD \
-            --allow-generated-rotation
+            --section "${{ env.previous_version }}"
 
       - name: Ensure repo status is clean
         if: steps.check_release.outputs.release_complete == 'false' && steps.check_release.outputs.existing_release_tag == 'false'

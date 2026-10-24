@@ -71,26 +71,23 @@ def test_reproduces_release_race():
     ]
 
 
-def test_release_check_allows_generated_rotation_section():
-    """Allow entries in a version section introduced by release rotation."""
+def test_release_check_only_scans_newest_version_section():
+    """Ignore legitimate backfills in older release sections."""
 
-    base = "# Changelog\n\n## [Unreleased]\n"
-    head = (
-        base
-        + "\n## [v1.1.0] - 2026-10-25\n\n- entry1\n"
-        + "\n[Unreleased]: https://example.test/v1.1.0...HEAD\n"
-        + "[v1.1.0]: https://example.test/v1.0.0...v1.1.0\n"
+    base = (
+        "# Changelog\n\n## [Unreleased]\n\n## [v1.0.0] - 2026-01-01\n\n"
+        "- old entry\n\n## [v1.1.0] - 2026-10-25\n\n- current entry\n"
+    )
+    head = base.replace("- old entry\n", "- old entry\n- backfilled entry\n").replace(
+        "- current entry\n", "- current entry\n- stranded entry\n"
     )
 
-    assert (
-        validate_changelog_diff(
-            base,
-            head,
-            _diff(base, head),
-            allow_generated_rotation=True,
-        )
-        == []
-    )
+    errors = validate_changelog_diff(base, head, _diff(base, head), section="1.1.0")
+
+    assert errors == [
+        "CHANGELOG.md:13: entry added under [v1.1.0]; "
+        "new entries must be under [Unreleased]"
+    ]
 
 
 def test_allows_typo_fix_in_historical_section():

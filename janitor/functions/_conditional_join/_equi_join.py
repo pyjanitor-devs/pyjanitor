@@ -130,21 +130,23 @@ def _get_equi_indexer(
     # never loses the mapping back to the caller's dataframe rows.
     sorter = []
     for condition in equi_conditions:
-        series = right.loc[right_index, condition.right]._values
+        series = _helpers._take_column(right, condition.right, right_index)._values
         sorter.append(series)
     if range_conditions:
         for condition in range_conditions:
-            series = right.loc[right_index, condition.right]._values
+            series = _helpers._take_column(right, condition.right, right_index)._values
             sorter.append(series)
     _right_index = right.index if isinstance(right_index, slice) else right_index
     sorter.append(_right_index._values)
     sorter = pd.MultiIndex.from_arrays(sorter)
     if len(equi_conditions) == 1:
-        left_keys = df.loc[left_index, equi_conditions[0].left]._values
+        left_keys = _helpers._take_column(
+            df, equi_conditions[0].left, left_index
+        )._values
     else:
         left_keys = []
         for condition in equi_conditions:
-            series = df.loc[left_index, condition.left]._values
+            series = _helpers._take_column(df, condition.left, left_index)._values
             left_keys.append(series)
         left_keys = pd.MultiIndex.from_arrays(left_keys)
     uniqs = True
@@ -222,7 +224,8 @@ def _get_equi_indexer(
             range_arrays.append(_index)
         right_index = range_arrays[-1]
         left_arrays = [
-            df.loc[left_index, condition.left] for condition in range_conditions
+            _helpers._take_column(df, condition.left, left_index)
+            for condition in range_conditions
         ]
         range_ops = [condition.op for condition in range_conditions]
         range_predicates = zip(left_arrays, range_arrays[:-1], range_ops)
@@ -377,8 +380,8 @@ def _preparatory_work(
         if position in excluded:
             continue
         residual_predicate = _helpers._build_residual_predicate(
-            left=df.loc[left_index, condition.left],
-            right=right.loc[right_index, condition.right],
+            left=_helpers._take_column(df, condition.left, left_index),
+            right=_helpers._take_column(right, condition.right, right_index),
             operation=condition.op,
         )
         residual_predicates.append(residual_predicate)

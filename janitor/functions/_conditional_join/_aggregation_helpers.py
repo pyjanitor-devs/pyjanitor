@@ -49,7 +49,10 @@ from typing import Hashable
 import numpy as np
 import pandas as pd
 
-from janitor.functions._conditional_join._helpers import _convert_array_to_numpy
+from janitor.functions._conditional_join._helpers import (
+    _convert_array_to_numpy,
+    _take_positions,
+)
 
 
 def _nullable_integer_dtype(dtype):
@@ -156,9 +159,9 @@ def _aggregation_inputs(
             operations are interpreted by the Rust aggregation parser, for
             example ``"sum"``, ``"count"``, ``"size"``, ``"prod"``,
             ``"min"``, and ``"max"``.
-        indexer: Pandas indexer selecting the layout exposed to Rust. It must
-            be a positional/label selection that produces arrays whose
-            positions match the Rust predicate contract.
+        indexer: Positional indexer selecting the layout exposed to Rust. It
+            must produce arrays whose positions match the Rust predicate
+            contract.
 
     Returns:
         A list of Rust-facing aggregation tuples in the same order as
@@ -170,29 +173,37 @@ def _aggregation_inputs(
     """
     result = []
     for column_name, operation in aggfunc:
-        series = source.loc[indexer, column_name]
-        null_mask = series.isna().to_numpy(dtype=bool)
         if operation == "size":
             result.append(("*", "size"))
-        elif operation == "count":
-            result.append(("*", null_mask, "count"))
-        else:
-            # Keep values and masks in the same compact layout as the source
-            # dataframe. Rust indexes these arrays with local aggregation
-            # positions after translating physical != candidates.
-            values = _convert_array_to_numpy(array=series._values)
-            if operation in {"sum", "prod"}:
-                if pd.api.types.is_signed_integer_dtype(values.dtype):
-                    values = values.astype(np.int64, copy=False)
-                elif pd.api.types.is_unsigned_integer_dtype(values.dtype):
-                    values = values.astype(np.uint64, copy=False)
-            result.append(
-                (
-                    values,
-                    null_mask,
-                    operation,
-                )
+            continue
+        if operation == "count":
+            # The working frames use physical row positions as their index.
+            # Build the mask once, then take the compact Rust layout without
+            # asking pandas to resolve every indexer label.
+            null_mask = _take_positions(
+                source[column_name].isna().to_numpy(dtype=bool), indexer
             )
+            result.append(("*", null_mask, "count"))
+            continue
+        series = source[column_name]
+        selected = _take_positions(series._values, indexer)
+        null_mask = np.asarray(pd.isna(selected), dtype=bool)
+        # Keep values and masks in the same compact layout as the source
+        # dataframe. Rust indexes these arrays with local aggregation
+        # positions after translating physical != candidates.
+        values = _convert_array_to_numpy(array=selected)
+        if operation in {"sum", "prod"}:
+            if pd.api.types.is_signed_integer_dtype(values.dtype):
+                values = values.astype(np.int64, copy=False)
+            elif pd.api.types.is_unsigned_integer_dtype(values.dtype):
+                values = values.astype(np.uint64, copy=False)
+        result.append(
+            (
+                values,
+                null_mask,
+                operation,
+            )
+        )
     return result
 
 

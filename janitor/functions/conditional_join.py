@@ -624,6 +624,8 @@ def _check_aggfunc(
             )
 
         series = frame[column_name]
+        if not isinstance(series, pd.Series):
+            raise TypeError(f"{column_name} in aggfunc must select exactly one column")
         if agg in {"sum", "prod"} and not is_numeric_dtype(series):
             raise ValueError(f"{agg} is supported only for numeric columns")
         if (

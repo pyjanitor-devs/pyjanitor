@@ -1884,6 +1884,28 @@ def test_check_aggfunc_column(dummy, series):
         )
 
 
+@pytest.mark.parametrize(
+    "right",
+    [
+        pd.DataFrame([[1, 2, 3]], columns=["s", "v", "v"]),
+        pd.DataFrame(
+            [[1, 2, 3]],
+            columns=pd.MultiIndex.from_tuples([("s", "k"), ("v", "a"), ("v", "b")]),
+        ),
+    ],
+)
+def test_check_aggfunc_rejects_multi_column_selection(right):
+    """Aggregation must reject duplicate or partial column selections."""
+    if right.columns.nlevels > 1:
+        left = pd.DataFrame([[0]], columns=pd.MultiIndex.from_tuples([("s", "k")]))
+        condition = (("s", "k"), ("s", "k"), ">")
+    else:
+        left = pd.DataFrame({"s": [0]})
+        condition = ("s", "s", ">")
+    with pytest.raises(TypeError, match="must select exactly one column"):
+        left.join_agg(right, condition, aggfunc=[("v", "count")])
+
+
 def test_check_aggfunc_unsupported(dummy, series):
     """
     Raise Error if `aggfunc` is not in default aggs.

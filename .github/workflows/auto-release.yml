@@ -203,7 +203,9 @@ jobs:
 
       - name: Ensure tag creation
         if: steps.check_release.outputs.already_released == 'false'
-        run: git tag | grep ${{ env.version_number }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-list -n 1 "v${{ env.version_number }}")" = "$(git rev-parse HEAD)"
 
       - name: Build package
         if: steps.check_release.outputs.already_released == 'false'

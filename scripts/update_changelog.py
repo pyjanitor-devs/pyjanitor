@@ -42,7 +42,7 @@ def rotate_changelog(
     body_end = next_section.start() if next_section else len(text)
     body = text[unreleased.end() : body_end].strip("\n")
     if not body.strip():
-        body = "- No user-facing changes; see the generated release notes."
+        body = "-   No user-facing changes; see the generated release notes."
 
     replacement = f"## [Unreleased]\n\n{version_heading}\n"
     replacement += f"\n{body}\n\n"
@@ -60,7 +60,7 @@ def rotate_changelog(
     base_url = unreleased_link["url"].split("/compare/", 1)[0]
     compare_url = f"{base_url}/compare"
     links = (
-        f"[Unreleased]: {compare_url}/v{normalized_version}...HEAD\n"
+        f"[Unreleased]: {compare_url}/v{normalized_version}...HEAD\n\n"
         f"[v{normalized_version}]: "
         f"{compare_url}/v{previous_version}...v{normalized_version}"
     )

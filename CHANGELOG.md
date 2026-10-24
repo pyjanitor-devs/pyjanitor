@@ -4,7 +4,6 @@
 
 ## [v0.32.55] - 2026-10-24
 
--   No user-facing changes; see the generated release notes.
 -   [DOC] Clean up historical changelog entries to improve documentation clarity. - PR #1807 @samukweku
 
 ## [v0.32.54] - 2026-10-23

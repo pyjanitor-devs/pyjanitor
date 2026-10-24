@@ -44,7 +44,7 @@ def test_rotate_changelog_moves_entries_and_resets_unreleased(tmp_path: Path):
         "- [ENH] Add a pending feature.\n\n"
         "## [v0.1.0] - 2026-01-01\n"
         "- An older entry.\n\n"
-        "[Unreleased]: https://example.com/compare/v0.2.0...HEAD\n"
+        "[Unreleased]: https://example.com/compare/v0.2.0...HEAD\n\n"
         "[v0.2.0]: https://example.com/compare/v0.1.0...v0.2.0\n\n"
         "[v0.0.1]: https://example.com/compare/v0.0.0...v0.0.1\n"
     )
@@ -80,9 +80,9 @@ def test_rotate_changelog_records_empty_unreleased(tmp_path: Path):
         "# Changelog\n\n"
         "## [Unreleased]\n\n"
         "## [v0.2.0] - 2026-10-25\n\n"
-        "- No user-facing changes; see the generated release notes.\n\n"
+        "-   No user-facing changes; see the generated release notes.\n\n"
         "## [v0.1.0] - 2026-01-01\n\n"
-        "[Unreleased]: https://example.com/compare/v0.2.0...HEAD\n"
+        "[Unreleased]: https://example.com/compare/v0.2.0...HEAD\n\n"
         "[v0.2.0]: https://example.com/compare/v0.1.0...v0.2.0\n"
     )
 

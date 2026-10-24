@@ -817,21 +817,21 @@ checking a pull request, parse uncolored git diffs defensively, and allow
 paired edits within an existing historical section without allowing new
 entries to be smuggled in by matching text.
 
-### [2026-10-25] Release guards must scope errors to the newest section
+### [2026-10-25] Release guards must cover long-lived changelog backfills
 
-**Context**: A tag-range guard that rejects every new line in every historical
-section can permanently block both automatic and manual releases after a
-legitimate changelog backfill is merged.
+**Context**: A bounded recent-tag window missed stale entries from long-lived
+pull requests, while an invalid `git tag --match` invocation made the release
+check fail before validation could run.
 
 **Learning**: A long-lived pull request can span several release rotations.
-When it is finally merged, Git can place its entry in any recent historical
-section, not only the newest one. Historical backfills should remain possible,
-but the release guard must protect a bounded recent window so stale entries are
-not silently shipped.
+When it is finally merged, Git can place its entry in an older historical
+section. The release guard should validate the complete range since the
+previous release tag, while intentional backfills use the explicit manual
+override.
 
-**Recommendation**: Scope the release-time check to a bounded set of recent
-release sections, and provide an explicit manual override for intentional
-backfills. Fail closed when a requested section is absent from the changelog.
+**Recommendation**: Keep shell tag filtering out of the default guard unless
+it is needed for a separate purpose. When filtering tags with `git tag`, use
+`-l`, and test workflow shell commands as well as the Python validator.
 
 ## Version History
 

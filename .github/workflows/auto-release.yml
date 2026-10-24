@@ -44,7 +44,6 @@ concurrency:
 env:
   DEFAULT_VERSION_NAME: patch
   PACKAGE_NAME: pyjanitor
-  CHANGELOG_GUARD_TAG_COUNT: 5
 
 jobs:
   release:
@@ -231,24 +230,15 @@ jobs:
         run: |
           set -euo pipefail
           if [[ "${{ github.event.inputs.allow_changelog_backfill || 'false' }}" == true ]]; then
-            echo "Allowing recent changelog sections for a manual backfill."
+            echo "Allowing changelog backfill sections for a manual backfill."
             pixi run python scripts/validate_changelog.py \
               --base "${{ env.previous_version }}" \
               --head HEAD \
               --allow-recent-sections
           else
-            mapfile -t recent_sections < <(
-              git tag --merged HEAD --sort=-version:refname --match 'v*' \
-                | head -n "${CHANGELOG_GUARD_TAG_COUNT}"
-            )
-            if ((${#recent_sections[@]} == 0)); then
-              echo "No release tags found for changelog validation." >&2
-              exit 1
-            fi
             pixi run python scripts/validate_changelog.py \
               --base "${{ env.previous_version }}" \
-              --head HEAD \
-              --sections "${recent_sections[@]}"
+              --head HEAD
           fi
 
       - name: Ensure repo status is clean

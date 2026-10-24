@@ -42,7 +42,7 @@ def rotate_changelog(
     body_end = next_section.start() if next_section else len(text)
     body = text[unreleased.end() : body_end].strip("\n")
     if not body.strip():
-        return False
+        body = "- No user-facing changes; see the generated release notes."
 
     replacement = f"## [Unreleased]\n\n{version_heading}\n"
     replacement += f"\n{body}\n\n"

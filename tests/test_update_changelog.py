@@ -63,20 +63,28 @@ def test_rotate_changelog_rejects_duplicate_version(tmp_path: Path):
         rotate_changelog(changelog, "0.2.0", "2026-10-25")
 
 
-def test_rotate_changelog_skips_empty_unreleased(tmp_path: Path):
-    """Do not create a release heading when no entries are pending."""
+def test_rotate_changelog_records_empty_unreleased(tmp_path: Path):
+    """Create a release heading when no entries are pending."""
 
     changelog = tmp_path / "CHANGELOG.md"
-    original = (
+    changelog.write_text(
         "# Changelog\n\n"
         "## [Unreleased]\n\n"
         "## [v0.1.0] - 2026-01-01\n\n"
-        "[Unreleased]: https://example.com/compare/v0.1.0...HEAD\n"
+        "[Unreleased]: https://example.com/compare/v0.1.0...HEAD\n",
+        encoding="utf-8",
     )
-    changelog.write_text(original, encoding="utf-8")
 
-    assert not rotate_changelog(changelog, "0.2.0", "2026-10-25")
-    assert changelog.read_text(encoding="utf-8") == original
+    assert rotate_changelog(changelog, "0.2.0", "2026-10-25")
+    assert changelog.read_text(encoding="utf-8") == (
+        "# Changelog\n\n"
+        "## [Unreleased]\n\n"
+        "## [v0.2.0] - 2026-10-25\n\n"
+        "- No user-facing changes; see the generated release notes.\n\n"
+        "## [v0.1.0] - 2026-01-01\n\n"
+        "[Unreleased]: https://example.com/compare/v0.2.0...HEAD\n"
+        "[v0.2.0]: https://example.com/compare/v0.1.0...v0.2.0\n"
+    )
 
 
 def test_rotate_changelog_rejects_empty_previous_version(tmp_path: Path):

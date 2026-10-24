@@ -61,7 +61,7 @@ pytokens==0.4.1
     # via black
 pyyaml==6.0
     # via pre-commit
-setuptools==84.2.1
+setuptools==84.1.0
     # via pip-tools
 toml==0.10.2
     # via pre-commit

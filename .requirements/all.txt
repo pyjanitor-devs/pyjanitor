@@ -232,7 +232,7 @@ pyyaml-env-tag==0.1
     # via mkdocs
 scipy==1.10.0
     # via -r .requirements/base.in
-setuptools==84.2.1
+setuptools==84.1.0
     # via pip-tools
 six==1.16.0
     # via

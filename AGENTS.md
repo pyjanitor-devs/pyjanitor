@@ -779,6 +779,28 @@ Verify each entry against the target tag tree and final squashed diff: do not
 duplicate changes across releases, and do not retain generated summaries for
 test-only regressions or intermediate commits that were later removed.
 
+### [2026-10-25] Empty releases still need changelog sections
+
+**Context**: Reviewing automated changelog rotation for releases triggered by
+merges that add no `[Unreleased]` entries.
+**Learning**: Returning early for an empty `[Unreleased]` body leaves the
+version absent from `CHANGELOG.md` and stale comparison links, even though the
+release and generated `docs/releases/v*.md` file still exist.
+**Recommendation**: Always create the version heading and comparison links;
+use a clear placeholder when there are no user-facing changes, and test that
+path explicitly.
+
+### [2026-10-25] Release changelog entries need attribution and stable formatting
+
+**Context**: Repairing the `v0.32.55` changelog after release automation ran
+before changelog rotation was deployed.
+**Learning**: A release section must not retain the empty-release placeholder
+when it contains an attributed change. Generated bullets and comparison links
+must preserve the existing changelog spacing conventions.
+**Recommendation**: Treat the placeholder as mutually exclusive with real
+entries, use the repository's three-space list marker style, and keep a blank
+line between comparison-link definitions.
+
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol

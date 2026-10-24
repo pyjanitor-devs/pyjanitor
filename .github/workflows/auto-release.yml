@@ -107,6 +107,18 @@ jobs:
         if: steps.check_release.outputs.already_released == 'false'
         run: echo "version_number=$(uv version --bump ${{ env.VERSION_NAME }} --dry-run --short | tr -d ' \n')" >> $GITHUB_ENV
 
+      - name: Store previous version
+        if: steps.check_release.outputs.already_released == 'false'
+        run: |
+          set -euo pipefail
+          previous_version=$(git describe --tags --match 'v*' --abbrev=0)
+          test -n "$previous_version"
+          echo "previous_version=$previous_version" >> "$GITHUB_ENV"
+
+      - name: Store release date
+        if: steps.check_release.outputs.already_released == 'false'
+        run: echo "release_date=$(date -u +%F)" >> $GITHUB_ENV
+
       - name: Display new version number
         if: steps.check_release.outputs.already_released == 'false'
         run: |
@@ -133,16 +145,9 @@ jobs:
           pixi run pre-commit run --files pyproject.toml || \
             pixi run pre-commit run --files pyproject.toml
 
-      - name: Commit version bump and create tag
+      - name: Create candidate release tag
         if: steps.check_release.outputs.already_released == 'false'
-        run: |
-          git add pyproject.toml
-          git commit -m "Bump version to ${{ env.version_number }}"
-          git tag v${{ env.version_number }}
-
-      - name: Ensure tag creation
-        if: steps.check_release.outputs.already_released == 'false'
-        run: git tag | grep ${{ env.version_number }}
+        run: git tag v${{ env.version_number }}
 
       - name: Install llamabot package
         if: steps.check_release.outputs.already_released == 'false'
@@ -169,17 +174,38 @@ jobs:
           pixi run pre-commit run --files "$RELEASE_NOTES" || \
             pixi run pre-commit run --files "$RELEASE_NOTES"
 
-      - name: Commit release notes
+      - name: Rotate changelog
+        if: steps.check_release.outputs.already_released == 'false'
+        run: |
+          pixi run python scripts/update_changelog.py \
+            --version "${{ env.version_number }}" \
+            --date "${{ env.release_date }}" \
+            --previous-version "${{ env.previous_version }}"
+
+      - name: Validate changelog
+        if: steps.check_release.outputs.already_released == 'false'
+        run: |
+          pixi run pre-commit run --files CHANGELOG.md || \
+            pixi run pre-commit run --files CHANGELOG.md
+
+      - name: Commit version, changelog, and release notes
         if: steps.check_release.outputs.already_released == 'false'
         run: |
           set -euo pipefail
           RELEASE_NOTES="docs/releases/v${{ env.version_number }}.md"
+          git add pyproject.toml CHANGELOG.md
           git add --force -- "$RELEASE_NOTES"
-          if git diff --cached --quiet -- "$RELEASE_NOTES"; then
-            echo "Release notes are unchanged; no release-notes commit is needed."
-          else
-            git commit -m "Add release notes for ${{ env.version_number }}"
-          fi
+          git commit -m "Prepare release ${{ env.version_number }}"
+
+      - name: Move release tag to prepare commit
+        if: steps.check_release.outputs.already_released == 'false'
+        run: git tag -f v${{ env.version_number }}
+
+      - name: Ensure tag creation
+        if: steps.check_release.outputs.already_released == 'false'
+        run: |
+          set -euo pipefail
+          test "$(git rev-list -n 1 "v${{ env.version_number }}")" = "$(git rev-parse HEAD)"
 
       - name: Build package
         if: steps.check_release.outputs.already_released == 'false'

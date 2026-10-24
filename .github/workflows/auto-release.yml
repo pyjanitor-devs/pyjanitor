@@ -28,7 +28,7 @@ on:
           - minor
           - patch
       allow_changelog_backfill:
-        description: "Allow entries in recent release sections for a manual backfill"
+        description: "Allow an intentional changelog backfill"
         required: false
         default: false
         type: boolean
@@ -234,7 +234,7 @@ jobs:
             pixi run python scripts/validate_changelog.py \
               --base "${{ env.previous_version }}" \
               --head HEAD \
-              --allow-recent-sections
+              --allow-backfill
           else
             pixi run python scripts/validate_changelog.py \
               --base "${{ env.previous_version }}" \

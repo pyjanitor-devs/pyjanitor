@@ -71,63 +71,7 @@ def test_reproduces_release_race():
     ]
 
 
-def test_release_check_only_scans_newest_version_section():
-    """Ignore legitimate backfills in older release sections."""
-
-    base = (
-        "# Changelog\n\n## [Unreleased]\n\n## [v1.0.0] - 2026-01-01\n\n"
-        "- old entry\n\n## [v1.1.0] - 2026-10-25\n\n- current entry\n"
-    )
-    head = base.replace("- old entry\n", "- old entry\n- backfilled entry\n").replace(
-        "- current entry\n", "- current entry\n- stranded entry\n"
-    )
-
-    errors = validate_changelog_diff(base, head, _diff(base, head), section="1.1.0")
-
-    assert errors == [
-        "CHANGELOG.md:13: entry added under [v1.1.0]; "
-        "new entries must be under [Unreleased]"
-    ]
-
-
-def test_release_check_scans_multiple_recent_sections():
-    """Catch a stale entry after more than one release rotation."""
-
-    base = (
-        "# Changelog\n\n## [Unreleased]\n\n## [v1.0.0] - 2026-01-01\n\n"
-        "- entry1\n\n## [v1.1.0] - 2026-10-24\n\n- entry2\n\n"
-        "## [v1.2.0] - 2026-10-25\n\n- entry3\n"
-    )
-    head = base.replace("- entry1\n", "- entry1\n- stale entry\n")
-
-    errors = validate_changelog_diff(
-        base,
-        head,
-        _diff(base, head),
-        sections=["v1.2.0", "v1.1.0", "v1.0.0"],
-    )
-
-    assert errors == [
-        "CHANGELOG.md:8: entry added under [v1.0.0]; "
-        "new entries must be under [Unreleased]"
-    ]
-
-
-def test_release_check_reports_missing_section():
-    """Reject a guard configured with a section absent from the changelog."""
-
-    base = "# Changelog\n\n## [Unreleased]\n"
-
-    with pytest.raises(ValueError, match="v9.9.9"):
-        validate_changelog_diff(
-            base,
-            base,
-            "",
-            section="v9.9.9",
-        )
-
-
-def test_release_check_can_override_recent_sections():
+def test_allows_explicit_backfill_override():
     """Allow an explicit manual override for historical backfills."""
 
     base = "# Changelog\n\n## [Unreleased]\n\n## [v1.0.0] - 2026-01-01\n"
@@ -141,8 +85,7 @@ def test_release_check_can_override_recent_sections():
             base,
             head,
             _diff(base, head),
-            section="v1.0.0",
-            allow_recent_sections=True,
+            allow_backfill=True,
         )
         == []
     )

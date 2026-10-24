@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 import re
 import subprocess
-from typing import NamedTuple, Sequence
+from typing import NamedTuple
 
 _HUNK = re.compile(r"^@@ -(?P<old>\d+)(?:,\d+)? \+(?P<new>\d+)(?:,\d+)? @@")
 _SECTION = re.compile(r"^## \[(?P<name>[^]]+)\]", re.MULTILINE)
@@ -104,9 +104,7 @@ def validate_changelog_diff(
     base: str,
     head: str,
     diff: str,
-    section: str | None = None,
-    sections: Sequence[str] | None = None,
-    allow_recent_sections: bool = False,
+    allow_backfill: bool = False,
 ) -> list[str]:
     """Return errors for new entries outside ``[Unreleased]``.
 
@@ -119,18 +117,6 @@ def validate_changelog_diff(
     head_lines = head.splitlines()
     errors = []
     hunks = _parse_diff(diff)
-    protected_sections = {
-        f"v{value.removeprefix('v')}"
-        for value in ([section] if section else (sections or ()))
-    }
-    if protected_sections and not allow_recent_sections:
-        available_sections = {
-            match["name"] for match in _SECTION.finditer("\n".join(head_lines))
-        }
-        missing_sections = protected_sections - available_sections
-        if missing_sections:
-            missing = ", ".join(sorted(missing_sections))
-            raise ValueError(f"requested changelog section(s) not found: {missing}")
     for hunk in hunks:
         for index, added in enumerate(hunk.added):
             if _structural_line(added.text):
@@ -141,13 +127,7 @@ def validate_changelog_diff(
                 paired_removed is not None
                 and _section_at(base_lines, paired_removed.number) == section
             )
-            protected = section in protected_sections
-            if (
-                section != "Unreleased"
-                and not same_section_edit
-                and (not protected_sections or protected)
-                and not allow_recent_sections
-            ):
+            if section != "Unreleased" and not same_section_edit and not allow_backfill:
                 section_name = section or "no section"
                 errors.append(
                     f"CHANGELOG.md:{added.number}: entry added under [{section_name}]; "
@@ -185,18 +165,9 @@ def main() -> None:
     parser.add_argument("--base", required=True, help="base git revision")
     parser.add_argument("--head", default="HEAD", help="head git revision")
     parser.add_argument(
-        "--section",
-        help="only validate entries added under this changelog section",
-    )
-    parser.add_argument(
-        "--sections",
-        nargs="+",
-        help="validate entries added under these changelog sections",
-    )
-    parser.add_argument(
-        "--allow-recent-sections",
+        "--allow-backfill",
         action="store_true",
-        help="allow new entries in protected recent release sections",
+        help="allow intentional changelog backfills",
     )
     args = parser.parse_args()
 
@@ -216,9 +187,7 @@ def main() -> None:
         base_result.stdout,
         head_result.stdout,
         _git_diff(args.base, args.head),
-        section=args.section,
-        sections=args.sections,
-        allow_recent_sections=args.allow_recent_sections,
+        allow_backfill=args.allow_backfill,
     )
     if errors:
         raise SystemExit("\n".join(errors))

@@ -801,37 +801,20 @@ must preserve the existing changelog spacing conventions.
 entries, use the repository's three-space list marker style, and keep a blank
 line between comparison-link definitions.
 
-### [2026-10-25] Release-time checks must validate the tag range
+### [2026-10-25] Changelog release guards cover the complete tag range
 
-**Context**: Reviewing changelog validation for issue #1808 exposed that a
-pull-request check can remain green after a release rotates `[Unreleased]`
-before the PR merges. A later push to `dev` does not rerun pull-request checks.
+**Context**: Issue #1808 showed that PR checks can remain green after release
+rotation, and bounded or malformed tag selection can miss long-lived PRs or
+fail before validation runs.
 
-**Learning**: The release workflow must validate `previous_tag..HEAD` before
-rotating or publishing. Pull-request checks are useful early feedback but do
-not close this race. Path filters must also avoid causing a changelog-only
-push to trigger the test workflow that gates automatic releases.
+**Learning**: Validate `previous_tag..HEAD` before rotation or publishing.
+Use the merge ref's first parent for PR checks, parse uncolored diffs
+defensively, and allow paired historical edits without allowing new entries
+through text matching. Intentional backfills use the explicit manual override.
 
-**Recommendation**: Use the merge ref's first parent as the PR base when
-checking a pull request, parse uncolored git diffs defensively, and allow
-paired edits within an existing historical section without allowing new
-entries to be smuggled in by matching text.
-
-### [2026-10-25] Release guards must cover long-lived changelog backfills
-
-**Context**: A bounded recent-tag window missed stale entries from long-lived
-pull requests, while an invalid `git tag --match` invocation made the release
-check fail before validation could run.
-
-**Learning**: A long-lived pull request can span several release rotations.
-When it is finally merged, Git can place its entry in an older historical
-section. The release guard should validate the complete range since the
-previous release tag, while intentional backfills use the explicit manual
-override.
-
-**Recommendation**: Keep shell tag filtering out of the default guard unless
-it is needed for a separate purpose. When filtering tags with `git tag`, use
-`-l`, and test workflow shell commands as well as the Python validator.
+**Recommendation**: Avoid shell tag filtering in the default guard. If tag
+filtering is ever needed, use `git tag -l 'v[0-9]*'` and test it against stray
+non-version tags.
 
 ## Version History
 

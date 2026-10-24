@@ -7,6 +7,10 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal
 
+from janitor.functions._conditional_join._aggregation_helpers import (
+    _aggregation_inputs,
+)
+
 NUMERIC_DTYPES = [
     "int8",
     "int16",
@@ -1765,14 +1769,8 @@ def test_equi_aggregation_with_no_matches_returns_empty_output_shape(
 
 def test_aggregation_inputs_size_and_count_use_only_the_mask():
     """`size` passes no column data; `count` passes the mask in indexer order."""
-    from janitor.functions._conditional_join._aggregation_helpers import (
-        _aggregation_inputs,
-    )
-
-    source = pd.DataFrame(
-        {"a": pd.array([1, None, 3, None], dtype="Int64")}, index=[10, 11, 12, 13]
-    )
-    indexer = pd.Index([13, 10, 11])
+    source = pd.DataFrame({"a": pd.array([1, None, 3, None], dtype="Int64")})
+    indexer = pd.Index([3, 0, 1])
     size, count, total = _aggregation_inputs(
         source, [("a", "size"), ("a", "count"), ("a", "sum")], indexer=indexer
     )

@@ -156,9 +156,9 @@ def _aggregation_inputs(
             operations are interpreted by the Rust aggregation parser, for
             example ``"sum"``, ``"count"``, ``"size"``, ``"prod"``,
             ``"min"``, and ``"max"``.
-        indexer: Pandas indexer selecting the layout exposed to Rust. It must
-            be a positional/label selection that produces arrays whose
-            positions match the Rust predicate contract.
+        indexer: Positional indexer selecting the layout exposed to Rust. It
+            must produce arrays whose positions match the Rust predicate
+            contract.
 
     Returns:
         A list of Rust-facing aggregation tuples in the same order as
@@ -171,17 +171,17 @@ def _aggregation_inputs(
     result = []
     for column_name, operation in aggfunc:
         if operation == "size":
-            # ELI5: counting rows needs no column data at all; only check the
-            # column exists so a typo still raises. Selecting it in the
-            # Rust layout would copy every source row for nothing (1.6 GiB
-            # on a 51M-row right table).
-            source[column_name]
             result.append(("*", "size"))
             continue
         if operation == "count":
-            # Only the null mask matters: take the boolean mask in the Rust
-            # layout instead of copying the values first.
-            null_mask = source[column_name].isna().loc[indexer].to_numpy(dtype=bool)
+            # The working frames use physical row positions as their index.
+            # Build the mask once, then take the compact Rust layout without
+            # asking pandas to resolve every indexer label.
+            null_mask = source[column_name].isna().to_numpy(dtype=bool)
+            if isinstance(indexer, slice):
+                null_mask = null_mask[indexer]
+            else:
+                null_mask = np.take(null_mask, indexer._values)
             result.append(("*", null_mask, "count"))
             continue
         series = source.loc[indexer, column_name]

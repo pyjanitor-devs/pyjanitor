@@ -16,7 +16,7 @@ darglint==1.8.1
     # via -r .requirements/dev.in
 distlib==0.4.4
     # via virtualenv
-filelock==4.2.4
+filelock==4.2.1
     # via
     #   python-discovery
     #   virtualenv

@@ -42,7 +42,7 @@ execnet==1.9.0
     # via pytest-xdist
 executing==0.8.3
     # via stack-data
-filelock==4.2.4
+filelock==4.2.1
     # via
     #   python-discovery
     #   virtualenv

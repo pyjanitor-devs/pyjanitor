@@ -762,6 +762,23 @@ tests must also assert the converted values so incorrect offsets remain visible.
 add value assertions, normalizing resolution only where the conversion contract
 does not require a specific precision.
 
+### [2026-10-25] Changelog reconstruction must preserve authored entries
+
+**Context**: Reconstructing accumulated changelog entries from generated
+release notes and Git history for issue #1806.
+**Learning**: Generated release notes can summarize intermediate commits that
+were later reverted, omit hand-written issue/PR attribution, and collapse
+semantic changes into performance summaries. Historical changelog work must
+start from the original authored entries and verify generated summaries
+against the final squashed diff before assigning them to a release.
+**Recommendation**: Preserve original wording and contributor credits where
+available, keep issue and PR numbers accurate, separate behavior changes from
+performance notes, and check for reverted intermediate changes.
+
+Verify each entry against the target tag tree and final squashed diff: do not
+duplicate changes across releases, and do not retain generated summaries for
+test-only regressions or intermediate commits that were later removed.
+
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol

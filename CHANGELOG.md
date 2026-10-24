@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [BUG] Keep the sorted row order of polars `complete(sort=True)` on LazyFrames with polars 2.0, where left joins no longer preserve the left frame's order by default. - Issue #1797 @raams95
+
 ## [v0.32.56] - 2026-10-24
 
 -   No user-facing changes; see the generated release notes.

@@ -29,7 +29,8 @@ def test_rotate_changelog_moves_entries_and_resets_unreleased(tmp_path: Path):
 
     changelog.write_text(
         changelog.read_text(encoding="utf-8")
-        + "\n[Unreleased]: https://example.com/compare/v0.1.0...HEAD\n",
+        + "\n[Unreleased]: https://example.com/compare/v0.1.0...HEAD\n\n"
+        "[v0.0.1]: https://example.com/compare/v0.0.0...v0.0.1\n",
         encoding="utf-8",
     )
 
@@ -44,7 +45,8 @@ def test_rotate_changelog_moves_entries_and_resets_unreleased(tmp_path: Path):
         "## [v0.1.0] - 2026-01-01\n"
         "- An older entry.\n\n"
         "[Unreleased]: https://example.com/compare/v0.2.0...HEAD\n"
-        "[v0.2.0]: https://example.com/compare/v0.1.0...v0.2.0\n"
+        "[v0.2.0]: https://example.com/compare/v0.1.0...v0.2.0\n\n"
+        "[v0.0.1]: https://example.com/compare/v0.0.0...v0.0.1\n"
     )
 
 
@@ -75,3 +77,19 @@ def test_rotate_changelog_skips_empty_unreleased(tmp_path: Path):
 
     assert not rotate_changelog(changelog, "0.2.0", "2026-10-25")
     assert changelog.read_text(encoding="utf-8") == original
+
+
+def test_rotate_changelog_rejects_empty_previous_version(tmp_path: Path):
+    """Reject an empty previous version instead of writing a broken link."""
+
+    changelog = tmp_path / "CHANGELOG.md"
+    changelog.write_text(
+        "# Changelog\n\n"
+        "## [Unreleased]\n"
+        "- [BUG] Fix a pending issue.\n\n"
+        "[Unreleased]: https://example.com/compare/v0.1.0...HEAD\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="must not be empty"):
+        rotate_changelog(changelog, "0.2.0", "2026-10-25", "")

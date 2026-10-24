@@ -109,7 +109,11 @@ jobs:
 
       - name: Store previous version
         if: steps.check_release.outputs.already_released == 'false'
-        run: echo "previous_version=$(git describe --tags --match 'v*' --abbrev=0)" >> $GITHUB_ENV
+        run: |
+          set -euo pipefail
+          previous_version=$(git describe --tags --match 'v*' --abbrev=0)
+          test -n "$previous_version"
+          echo "previous_version=$previous_version" >> "$GITHUB_ENV"
 
       - name: Store release date
         if: steps.check_release.outputs.already_released == 'false'

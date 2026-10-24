@@ -9,7 +9,7 @@ from pathlib import Path
 
 _UNRELEASED = re.compile(r"^## \[Unreleased\]\s*$", re.MULTILINE)
 _SECTION = re.compile(r"^## \[.+?\].*$", re.MULTILINE)
-_UNRELEASED_LINK = re.compile(r"^\[Unreleased\]: (?P<url>\S+)\s*$", re.MULTILINE)
+_UNRELEASED_LINK = re.compile(r"^\[Unreleased\]: (?P<url>\S+)[ \t]*$", re.MULTILINE)
 
 
 def rotate_changelog(
@@ -54,7 +54,9 @@ def rotate_changelog(
 
     if previous_version is None:
         previous_version = _latest_version_from_url(unreleased_link["url"])
-    previous_version = previous_version.removeprefix("v")
+    previous_version = previous_version.strip().removeprefix("v")
+    if not previous_version:
+        raise ValueError("previous version must not be empty")
     base_url = unreleased_link["url"].split("/compare/", 1)[0]
     compare_url = f"{base_url}/compare"
     links = (

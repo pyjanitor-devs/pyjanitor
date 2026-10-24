@@ -107,6 +107,10 @@ jobs:
         if: steps.check_release.outputs.already_released == 'false'
         run: echo "version_number=$(uv version --bump ${{ env.VERSION_NAME }} --dry-run --short | tr -d ' \n')" >> $GITHUB_ENV
 
+      - name: Store previous version
+        if: steps.check_release.outputs.already_released == 'false'
+        run: echo "previous_version=$(git describe --tags --match 'v*' --abbrev=0)" >> $GITHUB_ENV
+
       - name: Store release date
         if: steps.check_release.outputs.already_released == 'false'
         run: echo "release_date=$(date -u +%F)" >> $GITHUB_ENV
@@ -136,6 +140,10 @@ jobs:
         run: |
           pixi run pre-commit run --files pyproject.toml || \
             pixi run pre-commit run --files pyproject.toml
+
+      - name: Create candidate release tag
+        if: steps.check_release.outputs.already_released == 'false'
+        run: git tag v${{ env.version_number }}
 
       - name: Install llamabot package
         if: steps.check_release.outputs.already_released == 'false'
@@ -167,7 +175,8 @@ jobs:
         run: |
           pixi run python scripts/update_changelog.py \
             --version "${{ env.version_number }}" \
-            --date "${{ env.release_date }}"
+            --date "${{ env.release_date }}" \
+            --previous-version "${{ env.previous_version }}"
 
       - name: Validate changelog
         if: steps.check_release.outputs.already_released == 'false'
@@ -184,9 +193,9 @@ jobs:
           git add --force -- "$RELEASE_NOTES"
           git commit -m "Prepare release ${{ env.version_number }}"
 
-      - name: Create release tag
+      - name: Move release tag to prepare commit
         if: steps.check_release.outputs.already_released == 'false'
-        run: git tag v${{ env.version_number }}
+        run: git tag -f v${{ env.version_number }}
 
       - name: Ensure tag creation
         if: steps.check_release.outputs.already_released == 'false'

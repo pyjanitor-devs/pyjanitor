@@ -1,13 +1,16 @@
 """Tests for the automated changelog rotation script."""
 
-import sys
+from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).parents[1]))
-
-from scripts.update_changelog import rotate_changelog
+_SCRIPT = Path(__file__).parents[1] / "scripts" / "update_changelog.py"
+_SPEC = spec_from_file_location("update_changelog", _SCRIPT)
+assert _SPEC is not None and _SPEC.loader is not None
+_MODULE = module_from_spec(_SPEC)
+_SPEC.loader.exec_module(_MODULE)
+rotate_changelog = _MODULE.rotate_changelog
 
 
 def test_rotate_changelog_moves_entries_and_resets_unreleased(tmp_path: Path):
@@ -24,7 +27,13 @@ def test_rotate_changelog_moves_entries_and_resets_unreleased(tmp_path: Path):
         encoding="utf-8",
     )
 
-    rotate_changelog(changelog, "v0.2.0", "2026-10-25")
+    changelog.write_text(
+        changelog.read_text(encoding="utf-8")
+        + "\n[Unreleased]: https://example.com/compare/v0.1.0...HEAD\n",
+        encoding="utf-8",
+    )
+
+    assert rotate_changelog(changelog, "v0.2.0", "2026-10-25")
 
     assert changelog.read_text(encoding="utf-8") == (
         "# Changelog\n\n"
@@ -33,7 +42,9 @@ def test_rotate_changelog_moves_entries_and_resets_unreleased(tmp_path: Path):
         "- [BUG] Fix a pending issue.\n"
         "- [ENH] Add a pending feature.\n\n"
         "## [v0.1.0] - 2026-01-01\n"
-        "- An older entry.\n"
+        "- An older entry.\n\n"
+        "[Unreleased]: https://example.com/compare/v0.2.0...HEAD\n"
+        "[v0.2.0]: https://example.com/compare/v0.1.0...v0.2.0\n"
     )
 
 
@@ -48,3 +59,19 @@ def test_rotate_changelog_rejects_duplicate_version(tmp_path: Path):
 
     with pytest.raises(ValueError, match="already exists"):
         rotate_changelog(changelog, "0.2.0", "2026-10-25")
+
+
+def test_rotate_changelog_skips_empty_unreleased(tmp_path: Path):
+    """Do not create a release heading when no entries are pending."""
+
+    changelog = tmp_path / "CHANGELOG.md"
+    original = (
+        "# Changelog\n\n"
+        "## [Unreleased]\n\n"
+        "## [v0.1.0] - 2026-01-01\n\n"
+        "[Unreleased]: https://example.com/compare/v0.1.0...HEAD\n"
+    )
+    changelog.write_text(original, encoding="utf-8")
+
+    assert not rotate_changelog(changelog, "0.2.0", "2026-10-25")
+    assert changelog.read_text(encoding="utf-8") == original

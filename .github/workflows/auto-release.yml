@@ -27,6 +27,11 @@ on:
           - major
           - minor
           - patch
+      allow_changelog_backfill:
+        description: "Allow an intentional changelog backfill"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -219,6 +224,22 @@ jobs:
         run: |
           echo "version_name: ${{ env.VERSION_NAME }}"
           echo "version_number: v${{ env.version_number }}"
+
+      - name: Validate changelog entries since previous release
+        if: steps.check_release.outputs.release_complete == 'false' && steps.check_release.outputs.existing_release_tag == 'false'
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event.inputs.allow_changelog_backfill || 'false' }}" == true ]]; then
+            echo "Allowing changelog backfill sections for a manual backfill."
+            pixi run python scripts/validate_changelog.py \
+              --base "${{ env.previous_version }}" \
+              --head HEAD \
+              --allow-backfill
+          else
+            pixi run python scripts/validate_changelog.py \
+              --base "${{ env.previous_version }}" \
+              --head HEAD
+          fi
 
       - name: Ensure repo status is clean
         if: steps.check_release.outputs.release_complete == 'false' && steps.check_release.outputs.existing_release_tag == 'false'

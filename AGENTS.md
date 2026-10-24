@@ -801,6 +801,21 @@ must preserve the existing changelog spacing conventions.
 entries, use the repository's three-space list marker style, and keep a blank
 line between comparison-link definitions.
 
+### [2026-10-25] Changelog release guards cover the complete tag range
+
+**Context**: Issue #1808 showed that PR checks can remain green after release
+rotation, and bounded or malformed tag selection can miss long-lived PRs or
+fail before validation runs.
+
+**Learning**: Validate `previous_tag..HEAD` before rotation or publishing.
+Use the merge ref's first parent for PR checks, parse uncolored diffs
+defensively, and allow paired historical edits without allowing new entries
+through text matching. Intentional backfills use the explicit manual override.
+
+**Recommendation**: Avoid shell tag filtering in the default guard. If tag
+filtering is ever needed, use `git tag -l 'v[0-9]*'` and test it against stray
+non-version tags.
+
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol

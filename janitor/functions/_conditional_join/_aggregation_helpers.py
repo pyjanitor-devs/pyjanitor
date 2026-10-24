@@ -127,6 +127,13 @@ def _select_aggregation_kernel(
     return reverse_kernel if reverse else forward_kernel
 
 
+def _take_aggregation_positions(array, indexer: pd.Index | slice):
+    """Select a prepared aggregation layout by physical row positions."""
+    if isinstance(indexer, slice):
+        return array[indexer]
+    return array.take(indexer._values)
+
+
 def _aggregation_inputs(
     source: pd.DataFrame, aggfunc: list[tuple], indexer: pd.Index | slice = slice(None)
 ) -> list[tuple]:
@@ -177,19 +184,21 @@ def _aggregation_inputs(
             # The working frames use physical row positions as their index.
             # Build the mask once, then take the compact Rust layout without
             # asking pandas to resolve every indexer label.
-            null_mask = source[column_name].isna().to_numpy(dtype=bool)
-            if isinstance(indexer, slice):
-                null_mask = null_mask[indexer]
-            else:
-                null_mask = np.take(null_mask, indexer._values)
+            null_mask = _take_aggregation_positions(
+                source[column_name].isna().to_numpy(dtype=bool), indexer
+            )
             result.append(("*", null_mask, "count"))
             continue
-        series = source.loc[indexer, column_name]
-        null_mask = series.isna().to_numpy(dtype=bool)
+        series = source[column_name]
+        null_mask = _take_aggregation_positions(
+            series.isna().to_numpy(dtype=bool), indexer
+        )
         # Keep values and masks in the same compact layout as the source
         # dataframe. Rust indexes these arrays with local aggregation
         # positions after translating physical != candidates.
-        values = _convert_array_to_numpy(array=series._values)
+        values = _convert_array_to_numpy(
+            array=_take_aggregation_positions(series._values, indexer)
+        )
         if operation in {"sum", "prod"}:
             if pd.api.types.is_signed_integer_dtype(values.dtype):
                 values = values.astype(np.int64, copy=False)

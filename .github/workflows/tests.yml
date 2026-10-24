@@ -10,6 +10,8 @@ on:
       - "tests/**"
       - "pyproject.toml"
       - "pixi.lock"
+      - "CHANGELOG.md"
+      - "scripts/validate_changelog.py"
       - ".github/workflows/tests.yml"
   pull_request:
     branches:
@@ -19,6 +21,8 @@ on:
       - "tests/**"
       - "pyproject.toml"
       - "pixi.lock"
+      - "CHANGELOG.md"
+      - "scripts/validate_changelog.py"
       - ".github/workflows/tests.yml"
 
 concurrency:
@@ -26,6 +30,29 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  validate-changelog:
+    name: Validate changelog entries
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup Pixi Environment
+        uses: prefix-dev/setup-pixi@v0.11.2
+        with:
+          pixi-version: latest
+          cache: true
+          cache-write: true
+
+      - name: Validate pull-request changelog entries
+        if: github.event_name == 'pull_request'
+        run: |
+          pixi run python scripts/validate_changelog.py \
+            --base "${{ github.event.pull_request.base.sha }}" \
+            --head HEAD
+
   run-tests:
     strategy:
       fail-fast: false

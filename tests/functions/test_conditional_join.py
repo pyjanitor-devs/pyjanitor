@@ -10,7 +10,6 @@ from pandas import Timedelta
 from pandas.testing import assert_frame_equal
 
 import janitor as jn
-from janitor.functions._conditional_join._equi_join import _get_bounds_right
 from janitor.functions._conditional_join._helpers import (
     _get_range_positions_for_one_side,
     _normalize_conditions,
@@ -5158,7 +5157,7 @@ def test_eq_strings_embedded_nul():
             "Integers": [0, 0],
         }
     )
-    uniques, _, _ = _get_bounds_right(pd.Index(right["Strings"]))
+    _, uniques = pd.Index(right["Strings"]).factorize()
     assert len(uniques) == 2
     out = left.conditional_join(
         right,

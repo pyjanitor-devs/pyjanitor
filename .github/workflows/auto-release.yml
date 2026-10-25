@@ -59,6 +59,8 @@ jobs:
 
     defaults:
       run:
+        # Existing setup/tooling steps retain the login shell; release control-flow
+        # steps override this with `bash {0}` below.
         shell: bash -l {0}
 
     steps:

@@ -149,9 +149,9 @@ def _multi_key_layout(df, right, left_index, right_index, conditions, range_valu
     # A new key block starts wherever any sorted level code changes.
     block_start = np.zeros(len(order), dtype=bool)
     block_start[0] = True
-    for codes in right_keys.codes:
-        codes = codes[order]
-        block_start[1:] |= codes[1:] != codes[:-1]
+    for level_codes in right_keys.codes:
+        sorted_codes = level_codes[order]
+        block_start[1:] |= sorted_codes[1:] != sorted_codes[:-1]
     starts = np.flatnonzero(block_start)
     ends = np.append(starts[1:], len(order))
     # One right row per block names that block's key; those keys are unique.

@@ -378,15 +378,12 @@ def select_rows(
     return _select(df, rows=list(args), invert=invert)
 
 
-@pf.register_dataframe_groupby_method
-@pf.register_dataframe_method
-@pf.register_series_groupby_method
-@pf.register_series_method
 @deprecated_alias(rows="index")
 @refactored_function(
     message=(
         "This function has been deprecated. "
-        "Kindly use `jn.select_columns` or `jn.select_rows` instead."
+        "Kindly use `jn.select_columns`/`jn.select_rows` or "
+        "`df.select_columns`/`df.select_rows` instead."
     )
 )
 def select(
@@ -397,7 +394,7 @@ def select(
     axis: str = "columns",
     invert: bool = False,
 ) -> pd.DataFrame | pd.Series | DataFrameGroupBy:
-    """Method-chainable selection of rows and/or columns.
+    """Functional selection of rows and/or columns.
 
     It accepts a string, shell-like glob strings `(*string*)`,
     regex, slice, array-like object, or a list of the previous options.
@@ -405,7 +402,7 @@ def select(
     Selection on a MultiIndex on a level, or multiple levels,
     is possible with a dictionary.
 
-    This method does not mutate the original DataFrame or Series.
+    This function does not mutate the original DataFrame or Series.
 
     If the pandas object is a Series, selection is possible only on the index.
 
@@ -428,10 +425,19 @@ def select(
         is with `.loc` or `.iloc` methods, as they are generally performant.
         `select` is primarily for convenience.
 
-    !!!note
+    !!!warning
 
-        This function has been deprecated.
-        Kindly use `jn.select_columns` or `jn.select_rows`
+        This function is deprecated and is no longer registered as a pandas
+        DataFrame, Series, or GroupBy method. Use
+        `jn.select_columns`/`jn.select_rows` or
+        `df.select_columns`/`df.select_rows` instead.
+
+        With pandas 3.1 or later, old calls such as
+        ``df.select(columns="a")``, ``df.select(index="x")``, and
+        ``df.select("a", axis="columns")`` invoke pandas' ``select`` API
+        and produce computed columns named ``columns``, ``index``, and
+        ``axis`` respectively. Update these calls rather than relying on
+        pandas to reject them.
 
     !!! abstract "Version Changed"
 
@@ -461,13 +467,13 @@ def select(
         cobra               1       2
         viper               4       5
         sidewinder          7       8
-        >>> df.select(index="cobra", columns="shield")
+        >>> select(df, index="cobra", columns="shield")
                shield
         cobra       2
 
         Labels can be dropped with the `DropLabel` class:
 
-        >>> df.select(index=DropLabel("cobra"))
+        >>> select(df, index=DropLabel("cobra"))
                     max_speed  shield
         viper               4       5
         sidewinder          7       8

@@ -44,8 +44,12 @@ from pandas.api.types import (
     is_timedelta64_dtype,
 )
 
-from janitor.functions.select import DropLabel
-from janitor.utils import check, check_column, deprecated_kwargs
+from janitor.utils import (
+    check,
+    check_column,
+    deprecated_kwargs,
+    find_stack_level,
+)
 
 from ._conditional_join import (
     _equi_join,
@@ -82,7 +86,6 @@ _REVERSE_OPERATOR = {
     ),
     error=False,
     category=FutureWarning,
-    stacklevel=3,
 )
 def conditional_join(
     df: pd.DataFrame,
@@ -128,8 +131,8 @@ def conditional_join(
 
     For example, ``output_columns={"left": ["id", "value"],
     "right": "price"}`` retains two left columns and one right column. Use
-    ``DropLabel(slice(None))`` to omit a side, or ``slice(None)`` to retain
-    every column on that side regardless of label type.
+    ``[]`` to omit a side, or ``slice(None)`` to retain every column on that
+    side regardless of label type.
     At least one side must contribute a column. The projection is applied
     after matching, so a column used in a condition can be omitted from the
     result without being removed from the join inputs.
@@ -250,7 +253,7 @@ def conditional_join(
         ...     df2,
         ...     ("value_1", "value_2A", ">"),
         ...     ("value_1", "value_2B", "<"),
-        ...     output_columns={"left": DropLabel(slice(None)), "right": "value_2*"},
+        ...     output_columns={"left": [], "right": "value_2*"},
         ... )
            value_2A  value_2B
         0          1         3
@@ -264,7 +267,7 @@ def conditional_join(
         ...     df2,
         ...     ("value_1", "value_2A", ">"),
         ...     ("value_1", "value_2B", "<"),
-        ...     output_columns={"left": DropLabel(slice(None)), "right": "value_2B"},
+        ...     output_columns={"left": [], "right": "value_2B"},
         ...     how="left",
         ... )
            value_2B
@@ -417,7 +420,7 @@ def conditional_join(
             `left_anti` or `right_anti`.
             Anti joins retain only the requested side's rows that have no
             matching partner. Set the other side's column selector to
-            `DropLabel(slice(None))` when only the preserved side is wanted.
+            `[]` when only the preserved side is wanted.
         df_columns: Columns to select from `df` in the final output dataframe.
             Column selection is based on the
             [`select_columns`][janitor.functions.select.select_columns] syntax.
@@ -431,7 +434,7 @@ def conditional_join(
                 `right_columns` will be removed in 0.33.0.
                 Use `output_columns` instead.
         output_columns: Optional dictionary of ``"left"`` and ``"right"`` output
-            selectors. ``DropLabel(slice(None))`` omits a side. An omitted side, or a
+            selectors. ``[]`` omits a side. An omitted side, or a
             ``slice(None)`` selector, selects all columns from that side;
             string ``"*"`` is a wildcard for string-labeled columns.
             Each selector accepts any form supported by
@@ -480,8 +483,8 @@ def conditional_join(
     if use_numba is not None:
         warnings.warn(
             "The 'use_numba' parameter is deprecated and has no effect.",
-            DeprecationWarning,
-            stacklevel=2,
+            FutureWarning,
+            stacklevel=find_stack_level(),
         )
 
     return _conditional_join_compute(
@@ -773,7 +776,7 @@ def _normalize_output_columns(
     Args:
         output_columns: Dictionary whose keys are ``"left"`` and/or ``"right"``
             and whose values are selectors accepted by ``select_columns``.
-            Use ``DropLabel(slice(None))`` to omit a side. A missing key
+            Use ``[]`` to omit a side. A missing key
             retains all columns from that side, equivalent to ``slice(None)``.
         df_columns: Legacy left-side output selector. It must retain its
             default value when ``output_columns`` is supplied.
@@ -790,8 +793,8 @@ def _normalize_output_columns(
     """
     if output_columns is None:
         return (
-            DropLabel(slice(None)) if df_columns is None else df_columns,
-            DropLabel(slice(None)) if right_columns is None else right_columns,
+            [] if df_columns is None else df_columns,
+            [] if right_columns is None else right_columns,
         )
     if not isinstance(output_columns, dict):
         raise TypeError("output_columns should be a dictionary")
@@ -814,10 +817,7 @@ def _normalize_output_columns(
         output_columns.get("right", slice(None)),
     )
     if any(selector is None for selector in selectors):
-        raise ValueError(
-            "None is not valid in output_columns; use "
-            "DropLabel(slice(None)) to omit a side."
-        )
+        raise ValueError("None is not valid in output_columns; use [] to omit a side.")
     return selectors
 
 
@@ -1404,8 +1404,8 @@ def get_join_indices(
     if use_numba is not None:
         warnings.warn(
             "The 'use_numba' parameter is deprecated and has no effect.",
-            DeprecationWarning,
-            stacklevel=2,
+            FutureWarning,
+            stacklevel=find_stack_level(),
         )
 
     return _conditional_join_compute(

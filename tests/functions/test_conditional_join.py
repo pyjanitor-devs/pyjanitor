@@ -10,7 +10,6 @@ from pandas import Timedelta
 from pandas.testing import assert_frame_equal
 
 import janitor as jn
-from janitor.functions._conditional_join._equi_join import _get_bounds_right
 from janitor.functions._conditional_join._helpers import (
     _get_range_positions_for_one_side,
     _normalize_conditions,
@@ -218,7 +217,7 @@ def test_output_columns_dropped_side_preserves_non_inner_rows():
         right,
         ("key", "key", "<"),
         how="right",
-        output_columns={"left": "payload", "right": jn.DropLabel(slice(None))},
+        output_columns={"left": "payload", "right": []},
     )
     expected = pd.DataFrame({"payload": ["a", None]})
     assert_frame_equal(actual, expected)
@@ -237,7 +236,7 @@ def test_output_columns_dropped_side_preserves_empty_outer_rows():
         right,
         ("key", "key", "<"),
         how="outer",
-        output_columns={"left": "payload", "right": jn.DropLabel(slice(None))},
+        output_columns={"left": "payload", "right": []},
     )
     assert actual.shape == (3, 1)
     assert actual["payload"].isna().all()
@@ -253,7 +252,7 @@ def test_output_columns_rejects_empty_resolved_selection():
             ("key", "key", "<"),
             output_columns={
                 "left": lambda frame: [False] * frame.shape[1],
-                "right": jn.DropLabel(slice(None)),
+                "right": [],
             },
         )
 
@@ -273,7 +272,7 @@ def test_internal_projection_helpers_do_not_emit_deprecation_warnings():
     assert not [
         warning
         for warning in caught
-        if issubclass(warning.category, DeprecationWarning)
+        if issubclass(warning.category, (DeprecationWarning, FutureWarning))
     ]
 
 
@@ -290,11 +289,11 @@ def test_output_columns_missing_side_defaults_to_all_columns():
     assert_frame_equal(actual, expected)
 
 
-def test_output_columns_none_requires_drop_label():
-    """The public projection API uses DropLabel rather than None."""
+def test_output_columns_none_requires_empty_list():
+    """The public projection API uses an empty list rather than None."""
     left = pd.DataFrame({"key": [1]})
     right = pd.DataFrame({"key": [2]})
-    with pytest.raises(ValueError, match="DropLabel"):
+    with pytest.raises(ValueError, match=r"use \[\]"):
         left.conditional_join(
             right,
             ("key", "key", "<"),
@@ -350,12 +349,12 @@ def test_overlapping_tuple_labels_remain_atomic_in_plain_index(output_columns):
     [
         (
             "left_anti",
-            {"left": jn.DropLabel(slice(None)), "right": "value"},
+            {"left": [], "right": "value"},
             r"output_columns\['left'\]",
         ),
         (
             "right_anti",
-            {"left": "value", "right": jn.DropLabel(slice(None))},
+            {"left": "value", "right": []},
             r"output_columns\['right'\]",
         ),
     ],
@@ -402,7 +401,7 @@ def test_output_columns_preserves_duplicate_selections():
     actual = left.conditional_join(
         right,
         ("key", "key", "<"),
-        output_columns={"left": ["a"], "right": jn.DropLabel(slice(None))},
+        output_columns={"left": ["a"], "right": []},
     )
     expected = pd.DataFrame([[10, 10]], columns=["a", "a"])
     assert_frame_equal(actual, expected)
@@ -707,7 +706,7 @@ def test_check_conditions_exist(dummy, series):
 
 def test_use_numba_is_a_deprecated_noop(dummy, series):
     """Accept the historical keyword while warning that it has no effect."""
-    with pytest.warns(DeprecationWarning, match="use_numba"):
+    with pytest.warns(FutureWarning, match="use_numba"):
         result = dummy.conditional_join(series, ("id", "B", ">"), use_numba=True)
 
     assert not result.empty
@@ -715,7 +714,7 @@ def test_use_numba_is_a_deprecated_noop(dummy, series):
 
 def test_get_join_indices_use_numba_is_a_deprecated_noop(dummy, series):
     """The index helper retains deprecated ``use_numba`` compatibility."""
-    with pytest.warns(DeprecationWarning, match="use_numba"):
+    with pytest.warns(FutureWarning, match="use_numba"):
         result = jn.get_join_indices(
             dummy,
             series,
@@ -5158,8 +5157,6 @@ def test_eq_strings_embedded_nul():
             "Integers": [0, 0],
         }
     )
-    uniques, _, _ = _get_bounds_right(pd.Index(right["Strings"]))
-    assert len(uniques) == 2
     out = left.conditional_join(
         right,
         ("C", "Strings", "=="),

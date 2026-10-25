@@ -127,7 +127,7 @@ def summarise(
 
         Aggregation on a DataFrame via a callable:
         >>> df.summarise(
-        ...     lambda df: df.select("avg*").mean().rename("mean")
+        ...     lambda df: df.select_columns("avg*").mean().rename("mean")
         ... )  # doctest: +NORMALIZE_WHITESPACE
                              mean
         avg_jump         2.833333
@@ -190,7 +190,8 @@ def summarise(
         args: Either a dictionary or a tuple.
 
     Raises:
-        ValueError: If a tuple is passed and the length is not 2.
+        ValueError: If a tuple is passed and the length is not 2, or its
+            selector selects no columns.
 
     Returns:
         A pandas DataFrame with aggregated columns.
@@ -268,6 +269,8 @@ def _(arg, df, by):
         raise ValueError("the tuple has to be a length of 2")
     column_name, aggfunc = arg
     column_names = get_index_labels(arg=[column_name], df=df, axis="columns")
+    if column_names.empty:
+        raise ValueError("The selector in a summarise tuple cannot be empty.")
     mapping = {column_name: aggfunc for column_name in column_names}
     return _aggfunc(mapping, df=df, by=by)
 

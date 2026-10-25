@@ -36,7 +36,7 @@ def test_check_sheetname():
 
 def test_check_sheetname_warning():
     """Raise Warning if sheetnameis provided."""
-    with pytest.warns(DeprecationWarning):
+    with pytest.warns(FutureWarning):
         io.xlsx_table(filename, sheetname="rar")
 
 

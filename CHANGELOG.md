@@ -1,58 +1,262 @@
 # Changelog
 
 ## [Unreleased]
-- [ENH] Add `output_columns` to `conditional_join` as the preferred side-aware output projection while retaining `df_columns` and `right_columns` for compatibility. - Issue #1751
-- [BUG] Count missing values in `drop_constant_columns` to preserve partially missing columns and remove all-missing columns. - Issue #1781
-- [BUG] Preserve duplicate columns selected by `conditional_join` output projections.
-- [BUG] Preserve unmatched rows when `conditional_join` drops one output side in non-inner joins.
-- [BUG] Avoid deprecation warnings from `get_join_indices` and `join_agg` internal projections.
-- [BUG] Empty list-like selectors in `select`, `select_columns`, and `select_rows` now select nothing; `DropLabel([])` drops nothing, and `invert=True` selects the complement. Empty dictionaries now select nothing on MultiIndex axes as well. - Issue #1782 @samukweku
-- [DOC] Document introduction and undeprecation versions for selected APIs. - Issue #1188 @BALOGUN-DAVID
-- [BUG] Include the README in package metadata so PyPI renders the project description.
--   [BUG] Fix Polars *`make_clean_names`* not replacing `@` with an underscore in expressions. - Issue #1758 @sumangouda
--   [BUG] Fix `convert_unix_date` reading millisecond timestamps as seconds with pandas 3. - Issue #1756 @raashish1601
--   [DOC] Fix `_xlsx_cells` and `_expand_sorted_array` docstrings naming parameters the functions do not take (`path_is_workbook`, `region`, `num`); document `base_engine` and `load_factor` instead. - PR #1742 @VenishPaneliya
--   [BUG] Fix polars `make_clean_names` collapsing only the first run of underscores. - Issue #1740 @Rodrigo-Palma
--   [BUG] Fix `row_to_names` for slices without a start or a stop, in pandas and polars. - Issue #1738 @Rodrigo-Palma
--   [DEP] Deprecate `df_columns` and `right_columns` parameters in `conditional_join`. - Issue #1712 @sumangouda
--   [DOC] Add documentation explaining when cumulative-event aggregation is preferable to range join aggregations. - Issue #1702 @sumangouda
-- [PERF] Speed up equality-led `conditional_join`, `get_join_indices`, and `join_agg` calls with range predicates. With multiple range predicates, the first range predicate in the order supplied sets the search layout and is paired with the first later range predicate of the opposing direction; put the most selective range predicate first. - Issue #1752, PR #1765 @samukweku
-- [BUG] Fix equality joins with mixed-type object keys and duplicate right keys raising `TypeError`. - PR #1765 @samukweku
-- [ENH] `join_agg` with an equality predicate now omits output rows whose equality key has no match, and returns an empty result when no key matches, consistent with `get_join_indices`. Rows whose key matches but fail the other predicates are still returned with `matched=False`. - Issue #1752, PR #1765 @samukweku
-- [DOC] Add usage examples to the `read_csvs` docstring. - Issue #1755 @iMalcolmS
-- [BUG] Fix `convert_unix_date` reading millisecond timestamps as seconds with pandas 3. - Issue #1756 @raashish1601
-- [DOC] Fix `_xlsx_cells` and `_expand_sorted_array` docstrings naming parameters the functions do not take (`path_is_workbook`, `region`, `num`); document `base_engine` and `load_factor` instead. - PR #1742 @VenishPaneliya
-- [BUG] Fix polars `make_clean_names` collapsing only the first run of underscores. - Issue #1740 @Rodrigo-Palma
-- [BUG] Fix `row_to_names` for slices without a start or a stop, in pandas and polars. - Issue #1738 @Rodrigo-Palma
-- [DEP] Deprecate `df_columns` and `right_columns` parameters in `conditional_join`. - Issue #1712 @sumangouda
-- [DOC] Add documentation explaining when cumulative-event aggregation is preferable to range join aggregations. - Issue #1702 @sumangouda
--   [ENH] Avoid materializing all unequal pairs in `conditional_join` with
-    `keep="first"` or `keep="last"`. - Issue #1651, PR #1681 @tunglambk
+
+-   [BUG] Treat mixed missing sentinels as one category in `drop_constant_columns`, preserving partially missing columns and removing all-missing columns. - Issue #1781 @senanurcetin
+
+## [v0.32.58] - 2026-10-25
+
+-   No user-facing changes; see the generated release notes.
+
+## [v0.32.57] - 2026-10-25
+
+-   [BUG] Keep the sorted row order of polars `complete(sort=True)` on LazyFrames with polars 2.0, where left joins no longer preserve the left frame's order by default. - Issue #1797 @raams95
+
+## [v0.32.56] - 2026-10-24
+
+-   No user-facing changes; see the generated release notes.
+
+## [v0.32.55] - 2026-10-24
+
+-   [DOC] Clean up historical changelog entries to improve documentation clarity. - PR #1807 @samukweku
+
+## [v0.32.54] - 2026-10-23
+
+-   [TST] Improve read_commandline test reliability by using pytest's tmp_path fixture instead of a shared temporary file. - PR #1767 @samukweku
+
+## [v0.32.53] - 2026-10-23
+
+-   [BUG] Fix datetime resolution assertions for pandas 3.1, including Excel and MATLAB date conversions. - @samukweku
+
+## [v0.32.52] - 2026-10-23
+
+-   [BUG] Update MultiIndex selector expectations for pandas 3.1 compatibility. - @samukweku
+-   [INF] Update the black dependency from 26.5.1 to 26.10.1. - @dependabot[bot]
+
+## [v0.32.51] - 2026-10-22
+
+-   [ENH] Preserve pandas DataFrame.select for compatibility. - @samukweku
+-   [BUG] Stop registering deprecated `select` as a pandas DataFrame, Series, or GroupBy method to avoid collision with pandas 3.1 `DataFrame.select`; method-style calls on Series and GroupBy objects now raise `AttributeError`, while on pandas >=3.1 old `df.select(columns=...)`, `df.select(index=...)`, and `df.select(axis=...)` calls can silently create columns named `columns`, `index`, and `axis`. Use `jn.select_columns`/`jn.select_rows` or `df.select_columns`/`df.select_rows` instead. - Issue #1798 @samukweku
+
+## [v0.32.50] - 2026-10-22
+
+-   [BUG] Keep backslashes in polars `make_clean_names`, as in the pandas `clean_names`. - Issue #1771 @Rodrigo-Palma
+-   [INF] Update certifi and virtualenv dependencies. - @dependabot[bot]
+
+## [v0.32.49] - 2026-10-22
+
+-   [BUG] Preserve user warning filters on import, use visible `FutureWarning` for deprecated APIs, and report warnings at the caller's location. - Issue #1775 @BALOGUN-DAVID
+
+## [v0.32.48] - 2026-10-20
+
+-   [BUG] Raise clear, API-specific errors when empty selectors, including zero-column frames, are passed to `move`, `pivot_longer`, `pivot_wider`, or tuple-based `summarise`. - Issue #1784
+
+## [v0.32.47] - 2026-10-20
+
+-   [BUG] Use empty lists as defaults for conditional-join projections. - @samukweku
+
+## [v0.32.46] - 2026-10-19
+
+-   [INF] Upgrade the janitor-rs dependency to 0.6.5. - @samukweku
+
+## [v0.32.45] - 2026-10-19
+
+-   [BUG] Empty list-like selectors in `select`, `select_columns`, and `select_rows` now select nothing; `DropLabel([])` drops nothing, and `invert=True` selects the complement. Empty dictionaries now select nothing on MultiIndex axes as well. - Issue #1782 @samukweku
+
+## [v0.32.44] - 2026-10-19
+
+-   [ENH] Add `output_columns` to `conditional_join` as the preferred side-aware output projection while retaining `df_columns` and `right_columns` for compatibility. - Issue #1751
+-   [BUG] Preserve duplicate columns selected by `conditional_join` output projections.
+-   [BUG] Preserve unmatched rows when `conditional_join` drops one output side in non-inner joins.
+-   [BUG] Avoid deprecation warnings from `get_join_indices` and `join_agg` internal projections.
+-   [INF] Update prefix-dev/setup-pixi from 0.11.0 to 0.11.2. - @dependabot[bot]
+
+## [v0.32.43] - 2026-10-19
+
+-   [DOC] Document `slice(None)` selection for all labels on any index, with end-to-end test coverage. - PR #1778 @samukweku
+
+## [v0.32.42] - 2026-10-18
+
+-   [DOC] Add missing version annotations throughout the documentation. - Issue #1188 @BALOGUN-DAVID
+
+## [v0.32.41] - 2026-10-16
+
+-   [BUG] Include the README in package metadata so PyPI renders the project description. - @samukweku
+
+## [v0.32.40] - 2026-10-16
+
+-   [BUG] Fix Polars make_clean_names handling of @ in column names. - Issue #1758 @sumangouda
+
+## [v0.32.39] - 2026-10-15
+
+-   [PERF] Speed up equality-led `conditional_join`, `get_join_indices`, and `join_agg` calls with range predicates. With multiple range predicates, the first range predicate in the order supplied sets the search layout and is paired with the first later range predicate of the opposing direction; put the most selective range predicate first. - Issue #1752, PR #1765 @samukweku
+-   [BUG] Fix equality joins with mixed-type object keys and duplicate right keys raising `TypeError`. - PR #1765 @samukweku
+-   [ENH] `join_agg` with an equality predicate now omits output rows whose equality key has no match, and returns an empty result when no key matches, consistent with `get_join_indices`. Rows whose key matches but fail the other predicates are still returned with `matched=False`. - Issue #1752, PR #1765 @samukweku
+
+## [v0.32.38] - 2026-10-15
+
+-   [DOC] Add usage examples to the read_csvs docstring. - Issue #1755 @iMalcolmS
+
+## [v0.32.37] - 2026-10-13
+
+-   [INF] Skip preview deployments for pull requests from forks and update prefix-dev/setup-pixi to 0.11.0. - @dependabot[bot]
+
+## [v0.32.36] - 2026-10-07
+
+-   [BUG] Fix millisecond timestamp detection in convert_unix_date for pandas 3. - Issue #1756 @raashish1601
+
+## [v0.32.35] - 2026-10-05
+
+-   [DOC] Clarify index normalization in join aggregation helpers and related documentation. - @tunglambk
+
+## [v0.32.34] - 2026-10-04
+
+-   [ENH] Add anti joins to conditional_join. - @samukweku
+
+## [v0.32.33] - 2026-10-04
+
+-   [ENH] Add cumulative envelopes and documentation for dual-range joins. - @samukweku
+-   [BUG] Fix cumulative datetime-bound normalization and all-unmatched join_agg output. - @samukweku
+
+## [v0.32.32] - 2026-10-04
+
+-   [DOC] Improve get_join_indices and join_agg reference documentation. - @samukweku
+
+## [v0.32.31] - 2026-10-04
+
+-   [ENH] Route conditional joins and join aggregations through Rust kernels and update janitor-rs to 0.6.2. - @samukweku
+-   [BUG] Preserve object-column dtypes in conditional-join results. - @samukweku
+-   [DEP] Deprecate the Numba-based conditional-join dispatch. - @samukweku
+
+## [v0.32.30] - 2026-10-04
+
+-   [DOC] Correct internal docstring parameter names and descriptions. - PR #1742 @VenishPaneliya
+
+## [v0.32.29] - 2026-10-02
+
+-   [BUG] Collapse every run of underscores in Polars make_clean_names. - Issue #1740 @Rodrigo-Palma
+
+## [v0.32.28] - 2026-10-01
+
+-   [BUG] Fix row_to_names for slices without a start or stop. - Issue #1738 @Rodrigo-Palma
+-   [DEP] Deprecate df_columns and right_columns in conditional_join. - Issue #1712 @sumangouda
+
+## [v0.32.27] - 2026-09-03
+
+-   [PERF] Avoid materializing not-equal pairs for conditional_join with keep=first or keep=last. - Issue #1651, PR #1681 @tunglambk
+
+## [v0.32.26] - 2026-09-02
+
+-   [BUG] Scope auto-release validation to generated files and improve release-note validation and formatting retries. - @samukweku
+-   [DOC] Reorganize and clarify conditional-join and join-aggregation documentation. - @samukweku
+
+## [v0.32.25] - 2026-08-31
+
 -   [PERF] Reduce peak memory in `_build_indexer_reorder_contents` for wide frames (reps >= 8) using single NumPy allocation; tall frames with few repetitions retain the original reshape path. - Issue #1655 @Anupam2400
 -   [ENH] `conditional_join` now picks the most selective `<`/`<=`/`>`/`>=` predicate as its binary-search anchor (instead of the first one supplied) when `keep` is `'first'` or `'last'`, fixing pathological slowdowns from unfavorable predicate ordering; the choice is estimated from a fixed-size sample so the selection cost no longer scales with input size; `keep='all'` output is unaffected. - Issue #1641 @samukweku
 -   [BUG] Fix `conditional_join` crash for `keep='last'` joins with a single `<`/`<=` window and multiple non-equi conditions - a missing `counts` argument to the Rust `index_starts_only_keep_last` call. - Issue #1641 @samukweku
--   [ENH] Avoid copying column data during `conditional_join` input
-    validation. - Issue #1645, PR #1642 @samukweku
--   [ENH] Limit `conditional_join` matching work to columns referenced by join
-    conditions. - Issue #1646, PR #1647 @samukweku
--   [ENH] Speed up `conditional_join` with an unsorted right join key and
-    `keep="first"` or `keep="last"`. - Issue #1125, PR #1644 @samukweku
+-   [ENH] Avoid copying column data during `conditional_join` input validation. - Issue #1645, PR #1642 @samukweku
+-   [ENH] Limit `conditional_join` matching work to columns referenced by join conditions. - Issue #1646, PR #1647 @samukweku
+-   [ENH] Speed up `conditional_join` with an unsorted right join key and `keep="first"` or `keep="last"`. - Issue #1125, PR #1644 @samukweku
 -   [ENH] Replace `axis=1` `.apply()` with vectorized operations in `compare_df_cols` for 4-7x performance improvement. - Issue #1630 @Anupam2400
+-   [DOC] Add documentation explaining when cumulative-event aggregation is preferable to range join aggregations. - Issue #1702 @sumangouda
+-   [INF] Automate contributor recognition: weekly workflow discovers new commit authors and regenerates the all-contributors table; backfilled 30 missing contributors. - Issue #1623
+
+## [v0.32.24] - 2026-08-17
+
 -   [ENH] Replace `.apply()` with `.map()` in `find_replace` for ~6x performance improvement. - Issue #1422 @Anupam2400
 -   [ENH] Add `drop_first` parameter to `expand_column`. - Issue #368 @manav252
--   [ENH] `conditional_join` now picks the most selective `<`/`<=`/`>`/`>=` predicate as its binary-search anchor (instead of the first one supplied) when `keep` is `'first'` or `'last'`, fixing pathological slowdowns from unfavorable predicate ordering; `keep='all'` output is unaffected. - Issue #1641 @samukweku
--   [BUG] Fix `conditional_join` crash for `keep='last'` joins with a single `<`/`<=` window and multiple non-equi conditions - a missing `counts` argument to the Rust `index_starts_only_keep_last` call. - Issue #1641 @samukweku
--   [ENH] Add `include_join_positions` parameter to `conditional_join`; added limited support for join aggregations via the `join_agg` function. - Issue #1497 @samukweku
--   [ENH] Added `rle_id` function for run-length encoding IDs - Issue #1435 @emmanuel-ferdman
--   [ENH] Add `scale_mad` for robust median/MAD scaling. - PR #1530 @ShachiMistry
--   [ENH] `summarise` deprecated. - Issue #1045 @samukweku
--   [ENH] Add `assign` method to groupby object. - Issue #1467 @samukweku
--   [ENH] Add `pd.col` support - Issue #1590 @samukweku
--   [ENH] Improve `polars.complete` and `polars.expand`, avoiding the potentially expensive schema computation on lazy
-frames. @samukweku
 -   [ENH] Add `strip_whitespace` to `clean_names` function. - Issue #1385
+-   [ENH] Improve `polars.complete` and `polars.expand`, avoiding the potentially expensive schema computation on lazy frames. @samukweku
 -   [TST] Fix 'HealthCheck' failure in 'test_ecdf_string' by adding missing '@settings' decorator. @mjsr84
--   [INF] Automate contributor recognition: weekly workflow discovers new commit authors and regenerates the all-contributors table; backfilled 30 missing contributors. - Issue #1623
+-   [INF] Update CI and development dependencies.
+
+## [v0.32.23] - 2026-04-07
+
+-   [INF] Update prefix-dev/setup-pixi and pygments dependencies.
+
+## [v0.32.22] - 2026-03-30
+
+-   [INF] Update codecov/codecov-action to version 6.
+
+## [v0.32.21] - 2026-03-28
+
+-   [ENH] Improve pandas pivot_longer behavior. - @samukweku
+
+## [v0.32.20] - 2026-02-18
+
+-   [ENH] Add by methods to groupby objects. - @samukweku
+
+## [v0.32.19] - 2026-02-11
+
+-   [ENH] Add `pd.col` support - Issue #1590 @samukweku
+
+## [v0.32.18] - 2026-02-08
+
+-   [ENH] Add `assign` method to groupby object. - Issue #1467 @samukweku
+
+## [v0.32.17] - 2026-02-08
+
+-   [DEP] Deprecate mutate and improve its warning message. - @samukweku
+
+## [v0.32.16] - 2026-02-07
+
+-   [ENH] Add `scale_mad` for robust median/MAD scaling. - PR #1530 @ShachiMistry
+
+## [v0.32.15] - 2026-02-07
+
+-   [ENH] Add DataFrame column comparison utilities and improve compare_df_cols performance. - @samukweku
+
+## [v0.32.14] - 2026-02-07
+
+-   [INF] Improve release versioning and clean up obsolete release marker files.
+
+## [v0.32.13] - 2026-02-07
+
+-   [INF] Correct version entries during the automated release transition.
+
+## [v0.32.12] - 2026-02-07
+
+-   [DEP] `summarise` deprecated. - Issue #1045 @samukweku
+
+## [v0.32.11] - 2026-02-07
+
+-   [ENH] Add R janitor utility functions, tabyl statistical tests, and mixed date/time conversion utilities.
+-   [BUG] Improve pandas 3.0 compatibility across date parsing, regex handling, and copy-on-write behavior.
+
+## [v0.32.10] - 2026-02-07
+
+-   [BUG] Fix the auto-release versioning workflow and prepare Python 3.8+ compatibility.
+-   [ENH] Improve equi joins and document the `rle_id` function.
+-   [ENH] Add `include_join_positions` parameter to `conditional_join`; added limited support for join aggregations via the `join_agg` function. - Issue #1497 @samukweku
+
+## [v0.32.9] - 2026-01-22
+
+-   [ENH] Add the rle_id function for run-length encoding. - Issue #1435 @emmanuel-ferdman
+-   [INF] Update CI and development dependencies.
+
+## [v0.32.8] - 2026-01-02
+
+-   [ENH] Add tabyl frequency tables. - Issue #1556 @samukweku
+
+## [v0.32.7] - 2025-12-30
+
+-   [ENH] Implement adorn functions for tabyl formatting.
+-   [BUG] Fix adorn_ns index alignment.
+
+## [v0.32.6] - 2025-12-25
+
+-   [ENH] Refactor conditional_join internals. - @samukweku
+
+## [v0.32.5] - 2025-12-24
+
+-   [ENH] Add currency symbol support to accounting cleaning style.
+-   [TST] Add coverage for additional currency symbols.
+
+## [v0.32.4] - 2025-12-23
+
+-   [TST] Isolate read_csvs tests with tmp_path for parallel execution.
+-   [INF] Enable automated patch releases on merges to dev and remove obsolete automation.
 
 ## [v0.32.3] - 2025-12-11
 
@@ -466,7 +670,117 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.3...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.58...HEAD
+
+[v0.32.58]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.57...v0.32.58
+
+[v0.32.57]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.56...v0.32.57
+
+[v0.32.56]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.55...v0.32.56
+
+[v0.32.55]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.54...v0.32.55
+
+[v0.32.54]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.53...v0.32.54
+
+[v0.32.53]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.52...v0.32.53
+
+[v0.32.52]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.51...v0.32.52
+
+[v0.32.51]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.50...v0.32.51
+
+[v0.32.50]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.49...v0.32.50
+
+[v0.32.49]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.48...v0.32.49
+
+[v0.32.48]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.47...v0.32.48
+
+[v0.32.47]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.46...v0.32.47
+
+[v0.32.46]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.45...v0.32.46
+
+[v0.32.45]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.44...v0.32.45
+
+[v0.32.44]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.43...v0.32.44
+
+[v0.32.43]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.42...v0.32.43
+
+[v0.32.42]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.41...v0.32.42
+
+[v0.32.41]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.40...v0.32.41
+
+[v0.32.40]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.39...v0.32.40
+
+[v0.32.39]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.38...v0.32.39
+
+[v0.32.38]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.37...v0.32.38
+
+[v0.32.37]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.36...v0.32.37
+
+[v0.32.36]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.35...v0.32.36
+
+[v0.32.35]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.34...v0.32.35
+
+[v0.32.34]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.33...v0.32.34
+
+[v0.32.33]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.32...v0.32.33
+
+[v0.32.32]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.31...v0.32.32
+
+[v0.32.31]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.30...v0.32.31
+
+[v0.32.30]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.29...v0.32.30
+
+[v0.32.29]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.28...v0.32.29
+
+[v0.32.28]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.27...v0.32.28
+
+[v0.32.27]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.26...v0.32.27
+
+[v0.32.26]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.25...v0.32.26
+
+[v0.32.25]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.24...v0.32.25
+
+[v0.32.24]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.23...v0.32.24
+
+[v0.32.23]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.22...v0.32.23
+
+[v0.32.22]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.21...v0.32.22
+
+[v0.32.21]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.20...v0.32.21
+
+[v0.32.20]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.19...v0.32.20
+
+[v0.32.19]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.18...v0.32.19
+
+[v0.32.18]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.17...v0.32.18
+
+[v0.32.17]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.16...v0.32.17
+
+[v0.32.16]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.15...v0.32.16
+
+[v0.32.15]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.14...v0.32.15
+
+[v0.32.14]: https://github.com/pyjanitor-devs/pyjanitor/compare/vpyjanitor0.32.12%3D...v0.32.14
+
+[v0.32.13]: https://github.com/pyjanitor-devs/pyjanitor/compare/vpyjanitor0.32.11%3D...vpyjanitor0.32.12%3D
+
+[v0.32.12]: https://github.com/pyjanitor-devs/pyjanitor/compare/vpyjanitor0.32.10%3D...vpyjanitor0.32.11%3D
+
+[v0.32.11]: https://github.com/pyjanitor-devs/pyjanitor/compare/vpyjanitor0.32.9%3D...vpyjanitor0.32.10%3D
+
+[v0.32.10]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.9...vpyjanitor0.32.9%3D
+
+[v0.32.9]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.8...v0.32.9
+
+[v0.32.8]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.7...v0.32.8
+
+[v0.32.7]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.6...v0.32.7
+
+[v0.32.6]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.5...v0.32.6
+
+[v0.32.5]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.4...v0.32.5
+
+[v0.32.4]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.3...v0.32.4
 
 [v0.32.3]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.2...v0.32.3
 

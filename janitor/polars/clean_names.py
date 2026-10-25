@@ -215,7 +215,12 @@ def _change_case_expr(
 
 def _normalize_expr(obj: pl.Expr) -> pl.Expr:
     """Perform normalization of labels in obj."""
-    FIXES = [(r"[ /:,?()\\.-]", "_"), (r"['’]", ""), (r"[\xa0]", "_"), (r"(\w)@(\w)", "${1}_${2}"),]
+    FIXES = [
+        (r"[ /:,?()\.-]", "_"),
+        (r"['’]", ""),
+        (r"[\xa0]", "_"),
+        (r"(\w)@(\w)", "${1}_${2}"),
+    ]
     for search, replace in FIXES:
         obj = obj.str.replace_all(pattern=search, value=replace, literal=False)
     return obj

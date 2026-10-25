@@ -1,7 +1,10 @@
 import numpy as np
 import pandas as pd
 import pytest
+from pandas.api.types import is_datetime64_any_dtype
 from pandas.testing import assert_frame_equal
+
+from janitor.functions.select import DropLabel
 
 
 @pytest.fixture
@@ -108,6 +111,29 @@ def test_summarise_tuple_count_not_eq_2(df_summarise):
     """Raise error if length of tuple is not 2"""
     with pytest.raises(ValueError, match="the tuple has to be a length of 2"):
         df_summarise.summarise(("avg_run",))
+
+
+def test_summarise_tuple_empty_selector(df_summarise):
+    """Raise a clear error if a tuple selector is empty."""
+    with pytest.raises(ValueError, match="selector.*cannot be empty"):
+        df_summarise.summarise(([], "sum"))
+
+
+@pytest.mark.parametrize(
+    "selector_name",
+    ["dtype", "mask", "slice", "drop", "nested"],
+)
+def test_summarise_tuple_empty_selectors(df_summarise, selector_name):
+    """Raise a clear error when tuple selectors match no columns."""
+    selectors = {
+        "dtype": is_datetime64_any_dtype,
+        "mask": [False] * len(df_summarise.columns),
+        "slice": slice(df_summarise.columns[-1], df_summarise.columns[0]),
+        "drop": DropLabel(df_summarise.columns),
+        "nested": [[]],
+    }
+    with pytest.raises(ValueError, match="selector.*cannot be empty"):
+        df_summarise.summarise((selectors[selector_name], "sum"))
 
 
 def test_summarise_df_tuple(df_summarise):

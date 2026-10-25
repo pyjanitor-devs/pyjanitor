@@ -390,7 +390,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/0b/2e/7eea398450457ecb54e18e9d10110993fa65561c4f3add5e8eccd2b9cd41/scipy-1.17.1-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
-      - pypi: https://files.pythonhosted.org/packages/15/27/66ce45f6e2dbd1e02edbb850cbcd50ce76ca1c2216d7277d604207f4f841/janitor_rs-0.6.5-cp314-cp314-manylinux_2_28_x86_64.whl
+      - pypi: https://files.pythonhosted.org/packages/24/3c/492f8b58bd066b275d5b88e9f9788c7c960ffc367e649103197a0369a86a/janitor_rs-0.6.6-cp314-cp314-manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/30/04/b57109ac39c90054ca8239daa61f619042b73406309c33df06d3b73a48a7/pandas_flavor-0.8.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/51/c0/00c9809d8b9346eb238a6bbd5f83e846a4ce4503da94a4c08cb7284c325b/multipledispatch-1.0.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/dc/83/6d810a8a9ebc9c307989b418840c20e46907c74d707beb67ab566773e6fc/xarray-2026.4.0-py3-none-any.whl
@@ -713,9 +713,9 @@ environments:
       - conda: https://prefix.dev/conda-forge/osx-arm64/zlib-ng-2.3.3-hed4e4f5_1.conda
       - conda: https://prefix.dev/conda-forge/osx-arm64/zstd-1.5.7-hbf9d68e_6.conda
       - pypi: ./
+      - pypi: https://files.pythonhosted.org/packages/2f/b1/ecb5cad254f736c5033d3f50fce81764526da0bdf0465047666dcee8daf7/janitor_rs-0.6.6-cp314-cp314-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/30/04/b57109ac39c90054ca8239daa61f619042b73406309c33df06d3b73a48a7/pandas_flavor-0.8.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/51/c0/00c9809d8b9346eb238a6bbd5f83e846a4ce4503da94a4c08cb7284c325b/multipledispatch-1.0.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/52/7d/b188c9b0ed5f85d134dfa8abffa457183b7e9d630b1d3082b015cadbc89c/janitor_rs-0.6.5-cp314-cp314-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/dc/83/6d810a8a9ebc9c307989b418840c20e46907c74d707beb67ab566773e6fc/xarray-2026.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/ed/a6/d05a85fd51daeb2e4ea71d102f15b34fedca8e931af02594193ae4fd25f7/scipy-1.17.1-cp314-cp314-macosx_12_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/ef/82/7a9d0550484a62c6da82858ee9419f3dd1ccc9aa1c26a1e43da3ecd20b0d/natsort-8.4.0-py3-none-any.whl
@@ -1037,12 +1037,12 @@ environments:
       - conda: https://prefix.dev/conda-forge/win-64/zlib-ng-2.3.3-h0261ad2_1.conda
       - conda: https://prefix.dev/conda-forge/win-64/zstd-1.5.7-h534d264_6.conda
       - pypi: ./
+      - pypi: https://files.pythonhosted.org/packages/0f/24/39afadd1022d7417a7a741b2ea67d1d5289040a3a5e95371c88f12e0a3d8/janitor_rs-0.6.6-cp314-cp314-win_amd64.whl
       - pypi: https://files.pythonhosted.org/packages/30/04/b57109ac39c90054ca8239daa61f619042b73406309c33df06d3b73a48a7/pandas_flavor-0.8.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/4b/39/f0e8ea762a764a9dc52aa7dabcfad51a354819de1f0d4652b6a1122424d6/scipy-1.17.1-cp314-cp314-win_amd64.whl
       - pypi: https://files.pythonhosted.org/packages/51/c0/00c9809d8b9346eb238a6bbd5f83e846a4ce4503da94a4c08cb7284c325b/multipledispatch-1.0.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/dc/83/6d810a8a9ebc9c307989b418840c20e46907c74d707beb67ab566773e6fc/xarray-2026.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/ef/82/7a9d0550484a62c6da82858ee9419f3dd1ccc9aa1c26a1e43da3ecd20b0d/natsort-8.4.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/f7/77/01484732176d861d7ff61615537622e418ed5ead0376c3b345e6db2e407b/janitor_rs-0.6.5-cp314-cp314-win_amd64.whl
   chemistry:
     channels:
     - url: https://prefix.dev/conda-forge/
@@ -1417,7 +1417,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/0b/2e/7eea398450457ecb54e18e9d10110993fa65561c4f3add5e8eccd2b9cd41/scipy-1.17.1-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
-      - pypi: https://files.pythonhosted.org/packages/15/27/66ce45f6e2dbd1e02edbb850cbcd50ce76ca1c2216d7277d604207f4f841/janitor_rs-0.6.5-cp314-cp314-manylinux_2_28_x86_64.whl
+      - pypi: https://files.pythonhosted.org/packages/24/3c/492f8b58bd066b275d5b88e9f9788c7c960ffc367e649103197a0369a86a/janitor_rs-0.6.6-cp314-cp314-manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/30/04/b57109ac39c90054ca8239daa61f619042b73406309c33df06d3b73a48a7/pandas_flavor-0.8.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/51/c0/00c9809d8b9346eb238a6bbd5f83e846a4ce4503da94a4c08cb7284c325b/multipledispatch-1.0.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/dc/83/6d810a8a9ebc9c307989b418840c20e46907c74d707beb67ab566773e6fc/xarray-2026.4.0-py3-none-any.whl
@@ -1740,9 +1740,9 @@ environments:
       - conda: https://prefix.dev/conda-forge/osx-arm64/zlib-ng-2.3.3-hed4e4f5_1.conda
       - conda: https://prefix.dev/conda-forge/osx-arm64/zstd-1.5.7-hbf9d68e_6.conda
       - pypi: ./
+      - pypi: https://files.pythonhosted.org/packages/2f/b1/ecb5cad254f736c5033d3f50fce81764526da0bdf0465047666dcee8daf7/janitor_rs-0.6.6-cp314-cp314-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/30/04/b57109ac39c90054ca8239daa61f619042b73406309c33df06d3b73a48a7/pandas_flavor-0.8.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/51/c0/00c9809d8b9346eb238a6bbd5f83e846a4ce4503da94a4c08cb7284c325b/multipledispatch-1.0.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/52/7d/b188c9b0ed5f85d134dfa8abffa457183b7e9d630b1d3082b015cadbc89c/janitor_rs-0.6.5-cp314-cp314-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/dc/83/6d810a8a9ebc9c307989b418840c20e46907c74d707beb67ab566773e6fc/xarray-2026.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/ed/a6/d05a85fd51daeb2e4ea71d102f15b34fedca8e931af02594193ae4fd25f7/scipy-1.17.1-cp314-cp314-macosx_12_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/ef/82/7a9d0550484a62c6da82858ee9419f3dd1ccc9aa1c26a1e43da3ecd20b0d/natsort-8.4.0-py3-none-any.whl
@@ -2064,12 +2064,12 @@ environments:
       - conda: https://prefix.dev/conda-forge/win-64/zlib-ng-2.3.3-h0261ad2_1.conda
       - conda: https://prefix.dev/conda-forge/win-64/zstd-1.5.7-h534d264_6.conda
       - pypi: ./
+      - pypi: https://files.pythonhosted.org/packages/0f/24/39afadd1022d7417a7a741b2ea67d1d5289040a3a5e95371c88f12e0a3d8/janitor_rs-0.6.6-cp314-cp314-win_amd64.whl
       - pypi: https://files.pythonhosted.org/packages/30/04/b57109ac39c90054ca8239daa61f619042b73406309c33df06d3b73a48a7/pandas_flavor-0.8.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/4b/39/f0e8ea762a764a9dc52aa7dabcfad51a354819de1f0d4652b6a1122424d6/scipy-1.17.1-cp314-cp314-win_amd64.whl
       - pypi: https://files.pythonhosted.org/packages/51/c0/00c9809d8b9346eb238a6bbd5f83e846a4ce4503da94a4c08cb7284c325b/multipledispatch-1.0.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/dc/83/6d810a8a9ebc9c307989b418840c20e46907c74d707beb67ab566773e6fc/xarray-2026.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/ef/82/7a9d0550484a62c6da82858ee9419f3dd1ccc9aa1c26a1e43da3ecd20b0d/natsort-8.4.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/f7/77/01484732176d861d7ff61615537622e418ed5ead0376c3b345e6db2e407b/janitor_rs-0.6.5-cp314-cp314-win_amd64.whl
   default:
     channels:
     - url: https://prefix.dev/conda-forge/
@@ -2443,7 +2443,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/0b/2e/7eea398450457ecb54e18e9d10110993fa65561c4f3add5e8eccd2b9cd41/scipy-1.17.1-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
-      - pypi: https://files.pythonhosted.org/packages/15/27/66ce45f6e2dbd1e02edbb850cbcd50ce76ca1c2216d7277d604207f4f841/janitor_rs-0.6.5-cp314-cp314-manylinux_2_28_x86_64.whl
+      - pypi: https://files.pythonhosted.org/packages/24/3c/492f8b58bd066b275d5b88e9f9788c7c960ffc367e649103197a0369a86a/janitor_rs-0.6.6-cp314-cp314-manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/30/04/b57109ac39c90054ca8239daa61f619042b73406309c33df06d3b73a48a7/pandas_flavor-0.8.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/51/c0/00c9809d8b9346eb238a6bbd5f83e846a4ce4503da94a4c08cb7284c325b/multipledispatch-1.0.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/dc/83/6d810a8a9ebc9c307989b418840c20e46907c74d707beb67ab566773e6fc/xarray-2026.4.0-py3-none-any.whl
@@ -2765,9 +2765,9 @@ environments:
       - conda: https://prefix.dev/conda-forge/osx-arm64/zlib-ng-2.3.3-hed4e4f5_1.conda
       - conda: https://prefix.dev/conda-forge/osx-arm64/zstd-1.5.7-hbf9d68e_6.conda
       - pypi: ./
+      - pypi: https://files.pythonhosted.org/packages/2f/b1/ecb5cad254f736c5033d3f50fce81764526da0bdf0465047666dcee8daf7/janitor_rs-0.6.6-cp314-cp314-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/30/04/b57109ac39c90054ca8239daa61f619042b73406309c33df06d3b73a48a7/pandas_flavor-0.8.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/51/c0/00c9809d8b9346eb238a6bbd5f83e846a4ce4503da94a4c08cb7284c325b/multipledispatch-1.0.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/52/7d/b188c9b0ed5f85d134dfa8abffa457183b7e9d630b1d3082b015cadbc89c/janitor_rs-0.6.5-cp314-cp314-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/dc/83/6d810a8a9ebc9c307989b418840c20e46907c74d707beb67ab566773e6fc/xarray-2026.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/ed/a6/d05a85fd51daeb2e4ea71d102f15b34fedca8e931af02594193ae4fd25f7/scipy-1.17.1-cp314-cp314-macosx_12_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/ef/82/7a9d0550484a62c6da82858ee9419f3dd1ccc9aa1c26a1e43da3ecd20b0d/natsort-8.4.0-py3-none-any.whl
@@ -3088,12 +3088,12 @@ environments:
       - conda: https://prefix.dev/conda-forge/win-64/zlib-ng-2.3.3-h0261ad2_1.conda
       - conda: https://prefix.dev/conda-forge/win-64/zstd-1.5.7-h534d264_6.conda
       - pypi: ./
+      - pypi: https://files.pythonhosted.org/packages/0f/24/39afadd1022d7417a7a741b2ea67d1d5289040a3a5e95371c88f12e0a3d8/janitor_rs-0.6.6-cp314-cp314-win_amd64.whl
       - pypi: https://files.pythonhosted.org/packages/30/04/b57109ac39c90054ca8239daa61f619042b73406309c33df06d3b73a48a7/pandas_flavor-0.8.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/4b/39/f0e8ea762a764a9dc52aa7dabcfad51a354819de1f0d4652b6a1122424d6/scipy-1.17.1-cp314-cp314-win_amd64.whl
       - pypi: https://files.pythonhosted.org/packages/51/c0/00c9809d8b9346eb238a6bbd5f83e846a4ce4503da94a4c08cb7284c325b/multipledispatch-1.0.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/dc/83/6d810a8a9ebc9c307989b418840c20e46907c74d707beb67ab566773e6fc/xarray-2026.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/ef/82/7a9d0550484a62c6da82858ee9419f3dd1ccc9aa1c26a1e43da3ecd20b0d/natsort-8.4.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/f7/77/01484732176d861d7ff61615537622e418ed5ead0376c3b345e6db2e407b/janitor_rs-0.6.5-cp314-cp314-win_amd64.whl
   docs:
     channels:
     - url: https://prefix.dev/conda-forge/
@@ -3300,8 +3300,8 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/0b/2e/7eea398450457ecb54e18e9d10110993fa65561c4f3add5e8eccd2b9cd41/scipy-1.17.1-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
-      - pypi: https://files.pythonhosted.org/packages/15/27/66ce45f6e2dbd1e02edbb850cbcd50ce76ca1c2216d7277d604207f4f841/janitor_rs-0.6.5-cp314-cp314-manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/16/e1/3079a9ff9b8e11b846c6ac5c8b5bfb7ff225eee721825310c91b3b50304f/tqdm-4.67.3-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/24/3c/492f8b58bd066b275d5b88e9f9788c7c960ffc367e649103197a0369a86a/janitor_rs-0.6.6-cp314-cp314-manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/30/04/b57109ac39c90054ca8239daa61f619042b73406309c33df06d3b73a48a7/pandas_flavor-0.8.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/43/e3/7d92a15f894aa0c9c4b49b8ee9ac9850d6e63b03c9c32c0367a13ae62209/mpmath-1.3.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/51/c0/00c9809d8b9346eb238a6bbd5f83e846a4ce4503da94a4c08cb7284c325b/multipledispatch-1.0.0-py3-none-any.whl
@@ -3514,10 +3514,10 @@ environments:
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/16/e1/3079a9ff9b8e11b846c6ac5c8b5bfb7ff225eee721825310c91b3b50304f/tqdm-4.67.3-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/26/3f/1ed27b0991697993c8f20bcc6b9b55a720993213e4a1aa4803b21366e11b/biopython-1.87-cp314-cp314-macosx_11_0_arm64.whl
+      - pypi: https://files.pythonhosted.org/packages/2f/b1/ecb5cad254f736c5033d3f50fce81764526da0bdf0465047666dcee8daf7/janitor_rs-0.6.6-cp314-cp314-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/30/04/b57109ac39c90054ca8239daa61f619042b73406309c33df06d3b73a48a7/pandas_flavor-0.8.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/43/e3/7d92a15f894aa0c9c4b49b8ee9ac9850d6e63b03c9c32c0367a13ae62209/mpmath-1.3.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/51/c0/00c9809d8b9346eb238a6bbd5f83e846a4ce4503da94a4c08cb7284c325b/multipledispatch-1.0.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/52/7d/b188c9b0ed5f85d134dfa8abffa457183b7e9d630b1d3082b015cadbc89c/janitor_rs-0.6.5-cp314-cp314-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/53/8a/889bfb9c7fe296e8f6224498d173442250b3ee4706d04d286971a348e07c/unyt-3.1.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/5d/47/846140d1fbdada68b467116c65845935eb82f5ac92884573b0906ae8fcb2/polars_runtime_32-1.41.1-cp310-abi3-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/5e/71/4dd20c69332a2a4bf7ece8a655c9da98e4bd9b6bcea235349c1a00399d57/pyspark-4.1.2.tar.gz
@@ -3727,6 +3727,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/win-64/zeromq-4.3.5-h3a581c9_11.conda
       - conda: https://prefix.dev/conda-forge/win-64/zstd-1.5.7-h534d264_6.conda
       - pypi: ./
+      - pypi: https://files.pythonhosted.org/packages/0f/24/39afadd1022d7417a7a741b2ea67d1d5289040a3a5e95371c88f12e0a3d8/janitor_rs-0.6.6-cp314-cp314-win_amd64.whl
       - pypi: https://files.pythonhosted.org/packages/16/e1/3079a9ff9b8e11b846c6ac5c8b5bfb7ff225eee721825310c91b3b50304f/tqdm-4.67.3-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/30/04/b57109ac39c90054ca8239daa61f619042b73406309c33df06d3b73a48a7/pandas_flavor-0.8.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/43/e3/7d92a15f894aa0c9c4b49b8ee9ac9850d6e63b03c9c32c0367a13ae62209/mpmath-1.3.0-py3-none-any.whl
@@ -3741,7 +3742,6 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/bd/db/ea0203e495be491c85af87b66e37acfd3bf756fd985f87e46fc5e3bf022c/py4j-0.10.9.9-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/dc/83/6d810a8a9ebc9c307989b418840c20e46907c74d707beb67ab566773e6fc/xarray-2026.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/ef/82/7a9d0550484a62c6da82858ee9419f3dd1ccc9aa1c26a1e43da3ecd20b0d/natsort-8.4.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/f7/77/01484732176d861d7ff61615537622e418ed5ead0376c3b345e6db2e407b/janitor_rs-0.6.5-cp314-cp314-win_amd64.whl
   engineering:
     channels:
     - url: https://prefix.dev/conda-forge/
@@ -4115,7 +4115,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/0b/2e/7eea398450457ecb54e18e9d10110993fa65561c4f3add5e8eccd2b9cd41/scipy-1.17.1-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
-      - pypi: https://files.pythonhosted.org/packages/15/27/66ce45f6e2dbd1e02edbb850cbcd50ce76ca1c2216d7277d604207f4f841/janitor_rs-0.6.5-cp314-cp314-manylinux_2_28_x86_64.whl
+      - pypi: https://files.pythonhosted.org/packages/24/3c/492f8b58bd066b275d5b88e9f9788c7c960ffc367e649103197a0369a86a/janitor_rs-0.6.6-cp314-cp314-manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/30/04/b57109ac39c90054ca8239daa61f619042b73406309c33df06d3b73a48a7/pandas_flavor-0.8.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/51/c0/00c9809d8b9346eb238a6bbd5f83e846a4ce4503da94a4c08cb7284c325b/multipledispatch-1.0.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/dc/83/6d810a8a9ebc9c307989b418840c20e46907c74d707beb67ab566773e6fc/xarray-2026.4.0-py3-none-any.whl
@@ -4437,9 +4437,9 @@ environments:
       - conda: https://prefix.dev/conda-forge/osx-arm64/zlib-ng-2.3.3-hed4e4f5_1.conda
       - conda: https://prefix.dev/conda-forge/osx-arm64/zstd-1.5.7-hbf9d68e_6.conda
       - pypi: ./
+      - pypi: https://files.pythonhosted.org/packages/2f/b1/ecb5cad254f736c5033d3f50fce81764526da0bdf0465047666dcee8daf7/janitor_rs-0.6.6-cp314-cp314-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/30/04/b57109ac39c90054ca8239daa61f619042b73406309c33df06d3b73a48a7/pandas_flavor-0.8.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/51/c0/00c9809d8b9346eb238a6bbd5f83e846a4ce4503da94a4c08cb7284c325b/multipledispatch-1.0.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/52/7d/b188c9b0ed5f85d134dfa8abffa457183b7e9d630b1d3082b015cadbc89c/janitor_rs-0.6.5-cp314-cp314-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/dc/83/6d810a8a9ebc9c307989b418840c20e46907c74d707beb67ab566773e6fc/xarray-2026.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/ed/a6/d05a85fd51daeb2e4ea71d102f15b34fedca8e931af02594193ae4fd25f7/scipy-1.17.1-cp314-cp314-macosx_12_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/ef/82/7a9d0550484a62c6da82858ee9419f3dd1ccc9aa1c26a1e43da3ecd20b0d/natsort-8.4.0-py3-none-any.whl
@@ -4760,12 +4760,12 @@ environments:
       - conda: https://prefix.dev/conda-forge/win-64/zlib-ng-2.3.3-h0261ad2_1.conda
       - conda: https://prefix.dev/conda-forge/win-64/zstd-1.5.7-h534d264_6.conda
       - pypi: ./
+      - pypi: https://files.pythonhosted.org/packages/0f/24/39afadd1022d7417a7a741b2ea67d1d5289040a3a5e95371c88f12e0a3d8/janitor_rs-0.6.6-cp314-cp314-win_amd64.whl
       - pypi: https://files.pythonhosted.org/packages/30/04/b57109ac39c90054ca8239daa61f619042b73406309c33df06d3b73a48a7/pandas_flavor-0.8.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/4b/39/f0e8ea762a764a9dc52aa7dabcfad51a354819de1f0d4652b6a1122424d6/scipy-1.17.1-cp314-cp314-win_amd64.whl
       - pypi: https://files.pythonhosted.org/packages/51/c0/00c9809d8b9346eb238a6bbd5f83e846a4ce4503da94a4c08cb7284c325b/multipledispatch-1.0.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/dc/83/6d810a8a9ebc9c307989b418840c20e46907c74d707beb67ab566773e6fc/xarray-2026.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/ef/82/7a9d0550484a62c6da82858ee9419f3dd1ccc9aa1c26a1e43da3ecd20b0d/natsort-8.4.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/f7/77/01484732176d861d7ff61615537622e418ed5ead0376c3b345e6db2e407b/janitor_rs-0.6.5-cp314-cp314-win_amd64.whl
   py311:
     channels:
     - url: https://prefix.dev/conda-forge/
@@ -5141,7 +5141,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/09/7d/af933f0f6e0767995b4e2d705a0665e454d1c19402aa7e895de3951ebb04/scipy-1.17.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/30/04/b57109ac39c90054ca8239daa61f619042b73406309c33df06d3b73a48a7/pandas_flavor-0.8.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/51/c0/00c9809d8b9346eb238a6bbd5f83e846a4ce4503da94a4c08cb7284c325b/multipledispatch-1.0.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/cb/ea/e05f4f5841f2e1b23e62225cf75f9be849b64626515aa3d0eaf337b50b02/janitor_rs-0.6.5-cp311-cp311-manylinux_2_28_x86_64.whl
+      - pypi: https://files.pythonhosted.org/packages/83/49/0e75105c504316328ab0849b6ec6e0dbc903d09ef1baf54c3b1cb77ff83c/janitor_rs-0.6.6-cp311-cp311-manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/dc/83/6d810a8a9ebc9c307989b418840c20e46907c74d707beb67ab566773e6fc/xarray-2026.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/ef/82/7a9d0550484a62c6da82858ee9419f3dd1ccc9aa1c26a1e43da3ecd20b0d/natsort-8.4.0-py3-none-any.whl
       osx-arm64:
@@ -5462,7 +5462,7 @@ environments:
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/30/04/b57109ac39c90054ca8239daa61f619042b73406309c33df06d3b73a48a7/pandas_flavor-0.8.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/51/c0/00c9809d8b9346eb238a6bbd5f83e846a4ce4503da94a4c08cb7284c325b/multipledispatch-1.0.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/bc/dc/e08d3bdfab5bf4eb683549ccacd65b261ffd27d89cea7a59610ff063ea83/janitor_rs-0.6.5-cp311-cp311-macosx_11_0_arm64.whl
+      - pypi: https://files.pythonhosted.org/packages/6e/50/b4ba50ef0886402265abb741894701107c711d1e0828453964e6786ccd51/janitor_rs-0.6.6-cp311-cp311-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/dc/83/6d810a8a9ebc9c307989b418840c20e46907c74d707beb67ab566773e6fc/xarray-2026.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/ef/82/7a9d0550484a62c6da82858ee9419f3dd1ccc9aa1c26a1e43da3ecd20b0d/natsort-8.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/f7/58/bccc2861b305abdd1b8663d6130c0b3d7cc22e8d86663edbc8401bfd40d4/scipy-1.17.1-cp311-cp311-macosx_12_0_arm64.whl
@@ -5784,8 +5784,8 @@ environments:
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/30/04/b57109ac39c90054ca8239daa61f619042b73406309c33df06d3b73a48a7/pandas_flavor-0.8.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/51/c0/00c9809d8b9346eb238a6bbd5f83e846a4ce4503da94a4c08cb7284c325b/multipledispatch-1.0.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/7d/9a/0d70f7443be0a8420205ab815d09bd91fa16d014338063706f018799136e/janitor_rs-0.6.5-cp311-cp311-win_amd64.whl
       - pypi: https://files.pythonhosted.org/packages/95/da/0d1df507cf574b3f224ccc3d45244c9a1d732c81dcb26b1e8a766ae271a8/scipy-1.17.1-cp311-cp311-win_amd64.whl
+      - pypi: https://files.pythonhosted.org/packages/db/7f/7210080a14a0b4e73acef01908ec48800dae82d911b53dc9472dc9fd922a/janitor_rs-0.6.6-cp311-cp311-win_amd64.whl
       - pypi: https://files.pythonhosted.org/packages/dc/83/6d810a8a9ebc9c307989b418840c20e46907c74d707beb67ab566773e6fc/xarray-2026.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/ef/82/7a9d0550484a62c6da82858ee9419f3dd1ccc9aa1c26a1e43da3ecd20b0d/natsort-8.4.0-py3-none-any.whl
   py312:
@@ -6163,7 +6163,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/01/8e/1e35281b8ab6d5d72ebe9911edcdffa3f36b04ed9d51dec6dd140396e220/scipy-1.17.1-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/30/04/b57109ac39c90054ca8239daa61f619042b73406309c33df06d3b73a48a7/pandas_flavor-0.8.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/51/c0/00c9809d8b9346eb238a6bbd5f83e846a4ce4503da94a4c08cb7284c325b/multipledispatch-1.0.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/b4/b5/7368db7c19ca651f531a6ed09d5c5230e661f939353a687cf394882f754b/janitor_rs-0.6.5-cp312-cp312-manylinux_2_28_x86_64.whl
+      - pypi: https://files.pythonhosted.org/packages/5d/c4/0e5e617b92ab02499234d36a5da9ff957be12d8b4d6c6a133cb33b82771b/janitor_rs-0.6.6-cp312-cp312-manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/dc/83/6d810a8a9ebc9c307989b418840c20e46907c74d707beb67ab566773e6fc/xarray-2026.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/ef/82/7a9d0550484a62c6da82858ee9419f3dd1ccc9aa1c26a1e43da3ecd20b0d/natsort-8.4.0-py3-none-any.whl
       osx-arm64:
@@ -6484,10 +6484,10 @@ environments:
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/30/04/b57109ac39c90054ca8239daa61f619042b73406309c33df06d3b73a48a7/pandas_flavor-0.8.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/51/c0/00c9809d8b9346eb238a6bbd5f83e846a4ce4503da94a4c08cb7284c325b/multipledispatch-1.0.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/a0/b4/2a0458e3ca9c4f97cf5d491878fe57c456d0abf32fa447118085b4d58113/janitor_rs-0.6.6-cp312-cp312-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/b2/02/cf107b01494c19dc100f1d0b7ac3cc08666e96ba2d64db7626066cee895e/scipy-1.17.1-cp312-cp312-macosx_12_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/dc/83/6d810a8a9ebc9c307989b418840c20e46907c74d707beb67ab566773e6fc/xarray-2026.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/ef/82/7a9d0550484a62c6da82858ee9419f3dd1ccc9aa1c26a1e43da3ecd20b0d/natsort-8.4.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/f3/70/74fcfbc3a44b66f03815838767193cf72af0a634dce4914e16ebe9ff68f8/janitor_rs-0.6.5-cp312-cp312-macosx_11_0_arm64.whl
       win-64:
       - conda: https://prefix.dev/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_2.conda
       - conda: https://prefix.dev/conda-forge/noarch/anyio-4.13.0-pyhcf101f3_0.conda
@@ -6804,9 +6804,9 @@ environments:
       - conda: https://prefix.dev/conda-forge/win-64/zlib-ng-2.3.3-h0261ad2_1.conda
       - conda: https://prefix.dev/conda-forge/win-64/zstd-1.5.7-h534d264_6.conda
       - pypi: ./
+      - pypi: https://files.pythonhosted.org/packages/1f/78/cc47ce26da79083b00815cfe0c73ce98f656805c75300bdbf260e904704e/janitor_rs-0.6.6-cp312-cp312-win_amd64.whl
       - pypi: https://files.pythonhosted.org/packages/30/04/b57109ac39c90054ca8239daa61f619042b73406309c33df06d3b73a48a7/pandas_flavor-0.8.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/51/c0/00c9809d8b9346eb238a6bbd5f83e846a4ce4503da94a4c08cb7284c325b/multipledispatch-1.0.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/9b/0f/14a1abb7276d5fe44ceba8c9279c2f399d7f28ecb6221536ac2346b2457a/janitor_rs-0.6.5-cp312-cp312-win_amd64.whl
       - pypi: https://files.pythonhosted.org/packages/a2/84/dc08d77fbf3d87d3ee27f6a0c6dcce1de5829a64f2eae85a0ecc1f0daa73/scipy-1.17.1-cp312-cp312-win_amd64.whl
       - pypi: https://files.pythonhosted.org/packages/dc/83/6d810a8a9ebc9c307989b418840c20e46907c74d707beb67ab566773e6fc/xarray-2026.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/ef/82/7a9d0550484a62c6da82858ee9419f3dd1ccc9aa1c26a1e43da3ecd20b0d/natsort-8.4.0-py3-none-any.whl
@@ -7183,7 +7183,7 @@ environments:
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/30/04/b57109ac39c90054ca8239daa61f619042b73406309c33df06d3b73a48a7/pandas_flavor-0.8.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/51/c0/00c9809d8b9346eb238a6bbd5f83e846a4ce4503da94a4c08cb7284c325b/multipledispatch-1.0.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/a3/5a/e43a3af60c6edad35709f3bffcdd0f352c5c932a4788be27c5ab65fc23a1/janitor_rs-0.6.5-cp313-cp313-manylinux_2_28_x86_64.whl
+      - pypi: https://files.pythonhosted.org/packages/60/92/f636d6b836ecb365505b736543eefbe7c618fdadf41f433dc10f803611cd/janitor_rs-0.6.6-cp313-cp313-manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/dc/83/6d810a8a9ebc9c307989b418840c20e46907c74d707beb67ab566773e6fc/xarray-2026.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/ef/82/7a9d0550484a62c6da82858ee9419f3dd1ccc9aa1c26a1e43da3ecd20b0d/natsort-8.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/f5/5f/f17563f28ff03c7b6799c50d01d5d856a1d55f2676f537ca8d28c7f627cd/scipy-1.17.1-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
@@ -7504,8 +7504,8 @@ environments:
       - conda: https://prefix.dev/conda-forge/osx-arm64/zstd-1.5.7-hbf9d68e_6.conda
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/30/04/b57109ac39c90054ca8239daa61f619042b73406309c33df06d3b73a48a7/pandas_flavor-0.8.1-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/4c/08/6be1e804f1f7dcf7e5dc329d8f932f4024b79ab296e8d0412e9961c989ca/janitor_rs-0.6.6-cp313-cp313-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/51/c0/00c9809d8b9346eb238a6bbd5f83e846a4ce4503da94a4c08cb7284c325b/multipledispatch-1.0.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/a3/24/4e944ade002f8c43a7e6effb8707e4c45d31269629e0a66d63a9d82ebced/janitor_rs-0.6.5-cp313-cp313-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/dc/83/6d810a8a9ebc9c307989b418840c20e46907c74d707beb67ab566773e6fc/xarray-2026.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/ec/ae/db19f8ab842e9b724bf5dbb7db29302a91f1e55bc4d04b1025d6d605a2c5/scipy-1.17.1-cp313-cp313-macosx_12_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/ef/82/7a9d0550484a62c6da82858ee9419f3dd1ccc9aa1c26a1e43da3ecd20b0d/natsort-8.4.0-py3-none-any.whl
@@ -7825,7 +7825,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/win-64/zlib-ng-2.3.3-h0261ad2_1.conda
       - conda: https://prefix.dev/conda-forge/win-64/zstd-1.5.7-h534d264_6.conda
       - pypi: ./
-      - pypi: https://files.pythonhosted.org/packages/0c/21/5b6b97ab6b47dd3edb8d0c33c0df9d87132671649c10273ad38d614746c3/janitor_rs-0.6.5-cp313-cp313-win_amd64.whl
+      - pypi: https://files.pythonhosted.org/packages/1d/43/85f228b1aeb4387ba6b9e7349941f60bc9a259e9b7a78be454cdce5ae12a/janitor_rs-0.6.6-cp313-cp313-win_amd64.whl
       - pypi: https://files.pythonhosted.org/packages/30/04/b57109ac39c90054ca8239daa61f619042b73406309c33df06d3b73a48a7/pandas_flavor-0.8.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/35/e5/d6d0e51fc888f692a35134336866341c08655d92614f492c6860dc45bb2c/scipy-1.17.1-cp313-cp313-win_amd64.whl
       - pypi: https://files.pythonhosted.org/packages/51/c0/00c9809d8b9346eb238a6bbd5f83e846a4ce4503da94a4c08cb7284c325b/multipledispatch-1.0.0-py3-none-any.whl
@@ -8204,7 +8204,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/0b/2e/7eea398450457ecb54e18e9d10110993fa65561c4f3add5e8eccd2b9cd41/scipy-1.17.1-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
-      - pypi: https://files.pythonhosted.org/packages/15/27/66ce45f6e2dbd1e02edbb850cbcd50ce76ca1c2216d7277d604207f4f841/janitor_rs-0.6.5-cp314-cp314-manylinux_2_28_x86_64.whl
+      - pypi: https://files.pythonhosted.org/packages/24/3c/492f8b58bd066b275d5b88e9f9788c7c960ffc367e649103197a0369a86a/janitor_rs-0.6.6-cp314-cp314-manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/30/04/b57109ac39c90054ca8239daa61f619042b73406309c33df06d3b73a48a7/pandas_flavor-0.8.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/51/c0/00c9809d8b9346eb238a6bbd5f83e846a4ce4503da94a4c08cb7284c325b/multipledispatch-1.0.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/dc/83/6d810a8a9ebc9c307989b418840c20e46907c74d707beb67ab566773e6fc/xarray-2026.4.0-py3-none-any.whl
@@ -8526,9 +8526,9 @@ environments:
       - conda: https://prefix.dev/conda-forge/osx-arm64/zlib-ng-2.3.3-hed4e4f5_1.conda
       - conda: https://prefix.dev/conda-forge/osx-arm64/zstd-1.5.7-hbf9d68e_6.conda
       - pypi: ./
+      - pypi: https://files.pythonhosted.org/packages/2f/b1/ecb5cad254f736c5033d3f50fce81764526da0bdf0465047666dcee8daf7/janitor_rs-0.6.6-cp314-cp314-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/30/04/b57109ac39c90054ca8239daa61f619042b73406309c33df06d3b73a48a7/pandas_flavor-0.8.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/51/c0/00c9809d8b9346eb238a6bbd5f83e846a4ce4503da94a4c08cb7284c325b/multipledispatch-1.0.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/52/7d/b188c9b0ed5f85d134dfa8abffa457183b7e9d630b1d3082b015cadbc89c/janitor_rs-0.6.5-cp314-cp314-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/dc/83/6d810a8a9ebc9c307989b418840c20e46907c74d707beb67ab566773e6fc/xarray-2026.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/ed/a6/d05a85fd51daeb2e4ea71d102f15b34fedca8e931af02594193ae4fd25f7/scipy-1.17.1-cp314-cp314-macosx_12_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/ef/82/7a9d0550484a62c6da82858ee9419f3dd1ccc9aa1c26a1e43da3ecd20b0d/natsort-8.4.0-py3-none-any.whl
@@ -8849,12 +8849,12 @@ environments:
       - conda: https://prefix.dev/conda-forge/win-64/zlib-ng-2.3.3-h0261ad2_1.conda
       - conda: https://prefix.dev/conda-forge/win-64/zstd-1.5.7-h534d264_6.conda
       - pypi: ./
+      - pypi: https://files.pythonhosted.org/packages/0f/24/39afadd1022d7417a7a741b2ea67d1d5289040a3a5e95371c88f12e0a3d8/janitor_rs-0.6.6-cp314-cp314-win_amd64.whl
       - pypi: https://files.pythonhosted.org/packages/30/04/b57109ac39c90054ca8239daa61f619042b73406309c33df06d3b73a48a7/pandas_flavor-0.8.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/4b/39/f0e8ea762a764a9dc52aa7dabcfad51a354819de1f0d4652b6a1122424d6/scipy-1.17.1-cp314-cp314-win_amd64.whl
       - pypi: https://files.pythonhosted.org/packages/51/c0/00c9809d8b9346eb238a6bbd5f83e846a4ce4503da94a4c08cb7284c325b/multipledispatch-1.0.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/dc/83/6d810a8a9ebc9c307989b418840c20e46907c74d707beb67ab566773e6fc/xarray-2026.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/ef/82/7a9d0550484a62c6da82858ee9419f3dd1ccc9aa1c26a1e43da3ecd20b0d/natsort-8.4.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/f7/77/01484732176d861d7ff61615537622e418ed5ead0376c3b345e6db2e407b/janitor_rs-0.6.5-cp314-cp314-win_amd64.whl
   tests:
     channels:
     - url: https://prefix.dev/conda-forge/
@@ -9228,7 +9228,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
       - pypi: ./
       - pypi: https://files.pythonhosted.org/packages/0b/2e/7eea398450457ecb54e18e9d10110993fa65561c4f3add5e8eccd2b9cd41/scipy-1.17.1-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
-      - pypi: https://files.pythonhosted.org/packages/15/27/66ce45f6e2dbd1e02edbb850cbcd50ce76ca1c2216d7277d604207f4f841/janitor_rs-0.6.5-cp314-cp314-manylinux_2_28_x86_64.whl
+      - pypi: https://files.pythonhosted.org/packages/24/3c/492f8b58bd066b275d5b88e9f9788c7c960ffc367e649103197a0369a86a/janitor_rs-0.6.6-cp314-cp314-manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/30/04/b57109ac39c90054ca8239daa61f619042b73406309c33df06d3b73a48a7/pandas_flavor-0.8.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/51/c0/00c9809d8b9346eb238a6bbd5f83e846a4ce4503da94a4c08cb7284c325b/multipledispatch-1.0.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/dc/83/6d810a8a9ebc9c307989b418840c20e46907c74d707beb67ab566773e6fc/xarray-2026.4.0-py3-none-any.whl
@@ -9550,9 +9550,9 @@ environments:
       - conda: https://prefix.dev/conda-forge/osx-arm64/zlib-ng-2.3.3-hed4e4f5_1.conda
       - conda: https://prefix.dev/conda-forge/osx-arm64/zstd-1.5.7-hbf9d68e_6.conda
       - pypi: ./
+      - pypi: https://files.pythonhosted.org/packages/2f/b1/ecb5cad254f736c5033d3f50fce81764526da0bdf0465047666dcee8daf7/janitor_rs-0.6.6-cp314-cp314-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/30/04/b57109ac39c90054ca8239daa61f619042b73406309c33df06d3b73a48a7/pandas_flavor-0.8.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/51/c0/00c9809d8b9346eb238a6bbd5f83e846a4ce4503da94a4c08cb7284c325b/multipledispatch-1.0.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/52/7d/b188c9b0ed5f85d134dfa8abffa457183b7e9d630b1d3082b015cadbc89c/janitor_rs-0.6.5-cp314-cp314-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/dc/83/6d810a8a9ebc9c307989b418840c20e46907c74d707beb67ab566773e6fc/xarray-2026.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/ed/a6/d05a85fd51daeb2e4ea71d102f15b34fedca8e931af02594193ae4fd25f7/scipy-1.17.1-cp314-cp314-macosx_12_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/ef/82/7a9d0550484a62c6da82858ee9419f3dd1ccc9aa1c26a1e43da3ecd20b0d/natsort-8.4.0-py3-none-any.whl
@@ -9873,12 +9873,12 @@ environments:
       - conda: https://prefix.dev/conda-forge/win-64/zlib-ng-2.3.3-h0261ad2_1.conda
       - conda: https://prefix.dev/conda-forge/win-64/zstd-1.5.7-h534d264_6.conda
       - pypi: ./
+      - pypi: https://files.pythonhosted.org/packages/0f/24/39afadd1022d7417a7a741b2ea67d1d5289040a3a5e95371c88f12e0a3d8/janitor_rs-0.6.6-cp314-cp314-win_amd64.whl
       - pypi: https://files.pythonhosted.org/packages/30/04/b57109ac39c90054ca8239daa61f619042b73406309c33df06d3b73a48a7/pandas_flavor-0.8.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/4b/39/f0e8ea762a764a9dc52aa7dabcfad51a354819de1f0d4652b6a1122424d6/scipy-1.17.1-cp314-cp314-win_amd64.whl
       - pypi: https://files.pythonhosted.org/packages/51/c0/00c9809d8b9346eb238a6bbd5f83e846a4ce4503da94a4c08cb7284c325b/multipledispatch-1.0.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/dc/83/6d810a8a9ebc9c307989b418840c20e46907c74d707beb67ab566773e6fc/xarray-2026.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/ef/82/7a9d0550484a62c6da82858ee9419f3dd1ccc9aa1c26a1e43da3ecd20b0d/natsort-8.4.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/f7/77/01484732176d861d7ff61615537622e418ed5ead0376c3b345e6db2e407b/janitor_rs-0.6.5-cp314-cp314-win_amd64.whl
 packages:
 - conda: https://prefix.dev/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
   build_number: 20
@@ -26021,7 +26021,7 @@ packages:
   - pandas-flavor>=0.8.1,<0.9
   - multipledispatch
   - scipy
-  - janitor-rs==0.6.5
+  - janitor-rs==0.6.6
   - pip-tools ; extra == 'dev'
   - pre-commit ; extra == 'dev'
   - isort>=4.3.18 ; extra == 'dev'
@@ -26206,15 +26206,10 @@ packages:
   - ruff>=0.12.0 ; extra == 'dev'
   - cython-lint>=0.12.2 ; extra == 'dev'
   requires_python: '>=3.11'
-- pypi: https://files.pythonhosted.org/packages/0c/21/5b6b97ab6b47dd3edb8d0c33c0df9d87132671649c10273ad38d614746c3/janitor_rs-0.6.5-cp313-cp313-win_amd64.whl
+- pypi: https://files.pythonhosted.org/packages/0f/24/39afadd1022d7417a7a741b2ea67d1d5289040a3a5e95371c88f12e0a3d8/janitor_rs-0.6.6-cp314-cp314-win_amd64.whl
   name: janitor-rs
-  version: 0.6.5
-  sha256: 6178179bb750482910d5f51b113a2685a81b7611910ffe793dba7c4c2a641257
-  requires_python: '>=3.11'
-- pypi: https://files.pythonhosted.org/packages/15/27/66ce45f6e2dbd1e02edbb850cbcd50ce76ca1c2216d7277d604207f4f841/janitor_rs-0.6.5-cp314-cp314-manylinux_2_28_x86_64.whl
-  name: janitor-rs
-  version: 0.6.5
-  sha256: eb5ccfeb8d14c686470d7d864278515e63bf1f85355c7e9f649724d2ae31a503
+  version: 0.6.6
+  sha256: 41368f60222065008e2d800d10205cb11b44c5def8f75a96bad9315ff5715f08
   requires_python: '>=3.11'
 - pypi: https://files.pythonhosted.org/packages/16/e1/3079a9ff9b8e11b846c6ac5c8b5bfb7ff225eee721825310c91b3b50304f/tqdm-4.67.3-py3-none-any.whl
   name: tqdm
@@ -26233,6 +26228,21 @@ packages:
   - requests ; extra == 'telegram'
   - ipywidgets>=6 ; extra == 'notebook'
   requires_python: '>=3.7'
+- pypi: https://files.pythonhosted.org/packages/1d/43/85f228b1aeb4387ba6b9e7349941f60bc9a259e9b7a78be454cdce5ae12a/janitor_rs-0.6.6-cp313-cp313-win_amd64.whl
+  name: janitor-rs
+  version: 0.6.6
+  sha256: 7945f68716cc334a2a220418ad92f99dd1942b278e293e638fe5f34458513a33
+  requires_python: '>=3.11'
+- pypi: https://files.pythonhosted.org/packages/1f/78/cc47ce26da79083b00815cfe0c73ce98f656805c75300bdbf260e904704e/janitor_rs-0.6.6-cp312-cp312-win_amd64.whl
+  name: janitor-rs
+  version: 0.6.6
+  sha256: bbde3c160690da66f797f2cc939eb3e347ad76781ff7cccef23e4739f29597fe
+  requires_python: '>=3.11'
+- pypi: https://files.pythonhosted.org/packages/24/3c/492f8b58bd066b275d5b88e9f9788c7c960ffc367e649103197a0369a86a/janitor_rs-0.6.6-cp314-cp314-manylinux_2_28_x86_64.whl
+  name: janitor-rs
+  version: 0.6.6
+  sha256: 14168c167ab4ddc45e2e2f484d87ca9b349250c06f17083491d0d04afd089b2f
+  requires_python: '>=3.11'
 - pypi: https://files.pythonhosted.org/packages/26/3f/1ed27b0991697993c8f20bcc6b9b55a720993213e4a1aa4803b21366e11b/biopython-1.87-cp314-cp314-macosx_11_0_arm64.whl
   name: biopython
   version: '1.87'
@@ -26240,6 +26250,11 @@ packages:
   requires_dist:
   - numpy
   requires_python: '>=3.10'
+- pypi: https://files.pythonhosted.org/packages/2f/b1/ecb5cad254f736c5033d3f50fce81764526da0bdf0465047666dcee8daf7/janitor_rs-0.6.6-cp314-cp314-macosx_11_0_arm64.whl
+  name: janitor-rs
+  version: 0.6.6
+  sha256: de235e8b656356b8bb227278e19cbbc5acb465ce88249fe15ea30129cc03d390
+  requires_python: '>=3.11'
 - pypi: https://files.pythonhosted.org/packages/30/04/b57109ac39c90054ca8239daa61f619042b73406309c33df06d3b73a48a7/pandas_flavor-0.8.1-py3-none-any.whl
   name: pandas-flavor
   version: 0.8.1
@@ -26349,15 +26364,15 @@ packages:
   - ruff>=0.12.0 ; extra == 'dev'
   - cython-lint>=0.12.2 ; extra == 'dev'
   requires_python: '>=3.11'
+- pypi: https://files.pythonhosted.org/packages/4c/08/6be1e804f1f7dcf7e5dc329d8f932f4024b79ab296e8d0412e9961c989ca/janitor_rs-0.6.6-cp313-cp313-macosx_11_0_arm64.whl
+  name: janitor-rs
+  version: 0.6.6
+  sha256: e24429dbdc158d2689709140ac3444a417d90c9530305f63c791897a0586585b
+  requires_python: '>=3.11'
 - pypi: https://files.pythonhosted.org/packages/51/c0/00c9809d8b9346eb238a6bbd5f83e846a4ce4503da94a4c08cb7284c325b/multipledispatch-1.0.0-py3-none-any.whl
   name: multipledispatch
   version: 1.0.0
   sha256: 0c53cd8b077546da4e48869f49b13164bebafd0c2a5afceb6bb6a316e7fb46e4
-- pypi: https://files.pythonhosted.org/packages/52/7d/b188c9b0ed5f85d134dfa8abffa457183b7e9d630b1d3082b015cadbc89c/janitor_rs-0.6.5-cp314-cp314-macosx_11_0_arm64.whl
-  name: janitor-rs
-  version: 0.6.5
-  sha256: c050fad1ac024a0f5fdffc7407013bc85600cf0e14f799ca37dab82e7971d679
-  requires_python: '>=3.11'
 - pypi: https://files.pythonhosted.org/packages/53/8a/889bfb9c7fe296e8f6224498d173442250b3ee4706d04d286971a348e07c/unyt-3.1.0-py3-none-any.whl
   name: unyt
   version: 3.1.0
@@ -26372,6 +26387,11 @@ packages:
   version: 1.41.1
   sha256: df0de10d152ebd2fb3cccd0a2a26db68138440bc44164e831a7c9a50f73adf8b
   requires_python: '>=3.10'
+- pypi: https://files.pythonhosted.org/packages/5d/c4/0e5e617b92ab02499234d36a5da9ff957be12d8b4d6c6a133cb33b82771b/janitor_rs-0.6.6-cp312-cp312-manylinux_2_28_x86_64.whl
+  name: janitor-rs
+  version: 0.6.6
+  sha256: 7b157775a1f9fc03553dae4fb9281fea7afea438263ab5e9cf589bc1175c404e
+  requires_python: '>=3.11'
 - pypi: https://files.pythonhosted.org/packages/5e/71/4dd20c69332a2a4bf7ece8a655c9da98e4bd9b6bcea235349c1a00399d57/pyspark-4.1.2.tar.gz
   name: pyspark
   version: 4.1.2
@@ -26402,6 +26422,11 @@ packages:
   - zstandard>=0.25.0 ; extra == 'pipelines'
   - pyyaml>=3.11 ; extra == 'pipelines'
   requires_python: '>=3.10'
+- pypi: https://files.pythonhosted.org/packages/60/92/f636d6b836ecb365505b736543eefbe7c618fdadf41f433dc10f803611cd/janitor_rs-0.6.6-cp313-cp313-manylinux_2_28_x86_64.whl
+  name: janitor-rs
+  version: 0.6.6
+  sha256: 7df802fc9a0622e5b2ab750f1c32899354c625806d510039751c20d61ae6b0f9
+  requires_python: '>=3.11'
 - pypi: https://files.pythonhosted.org/packages/68/ef/cdd8bf7e46e94c4cb8f7c092c9c2c731a734a2dc3076516a85e457845b92/polars-1.41.1-py3-none-any.whl
   name: polars
   version: 1.41.1
@@ -26439,10 +26464,15 @@ packages:
   - cudf-polars-cu12 ; extra == 'gpu'
   - polars[async,cloudpickle,database,deltalake,excel,fsspec,graph,iceberg,numpy,pandas,plot,pyarrow,pydantic,style,timezone] ; extra == 'all'
   requires_python: '>=3.10'
-- pypi: https://files.pythonhosted.org/packages/7d/9a/0d70f7443be0a8420205ab815d09bd91fa16d014338063706f018799136e/janitor_rs-0.6.5-cp311-cp311-win_amd64.whl
+- pypi: https://files.pythonhosted.org/packages/6e/50/b4ba50ef0886402265abb741894701107c711d1e0828453964e6786ccd51/janitor_rs-0.6.6-cp311-cp311-macosx_11_0_arm64.whl
   name: janitor-rs
-  version: 0.6.5
-  sha256: 31e3502662c0bb9422907dbb3ab461fff1a16bc6a11da2bdcc03d439ac683720
+  version: 0.6.6
+  sha256: 63b2bb3750cfa6468d60f7399512ee92b7a6964f03206631f7d742285211168c
+  requires_python: '>=3.11'
+- pypi: https://files.pythonhosted.org/packages/83/49/0e75105c504316328ab0849b6ec6e0dbc903d09ef1baf54c3b1cb77ff83c/janitor_rs-0.6.6-cp311-cp311-manylinux_2_28_x86_64.whl
+  name: janitor-rs
+  version: 0.6.6
+  sha256: 036fe8b85b47f9bde899203f77e93f4195148dc4e63c8364234de0838543ba7d
   requires_python: '>=3.11'
 - pypi: https://files.pythonhosted.org/packages/95/da/0d1df507cf574b3f224ccc3d45244c9a1d732c81dcb26b1e8a766ae271a8/scipy-1.17.1-cp311-cp311-win_amd64.whl
   name: scipy
@@ -26488,10 +26518,10 @@ packages:
   - ruff>=0.12.0 ; extra == 'dev'
   - cython-lint>=0.12.2 ; extra == 'dev'
   requires_python: '>=3.11'
-- pypi: https://files.pythonhosted.org/packages/9b/0f/14a1abb7276d5fe44ceba8c9279c2f399d7f28ecb6221536ac2346b2457a/janitor_rs-0.6.5-cp312-cp312-win_amd64.whl
+- pypi: https://files.pythonhosted.org/packages/a0/b4/2a0458e3ca9c4f97cf5d491878fe57c456d0abf32fa447118085b4d58113/janitor_rs-0.6.6-cp312-cp312-macosx_11_0_arm64.whl
   name: janitor-rs
-  version: 0.6.5
-  sha256: 0ba1bcfd059a56eaa79a86386c3b1fa76989ff0045d9a2d205b2cce829bfaa0f
+  version: 0.6.6
+  sha256: 7a9ae449ae54fd7b8a79fd6e4c4abc82c5079d7d622b66f11e077164c254d3b1
   requires_python: '>=3.11'
 - pypi: https://files.pythonhosted.org/packages/a2/09/77d55d46fd61b4a135c444fc97158ef34a095e5681d0a6c10b75bf356191/sympy-1.14.0-py3-none-any.whl
   name: sympy
@@ -26545,16 +26575,6 @@ packages:
   - pycodestyle ; extra == 'dev'
   - ruff>=0.12.0 ; extra == 'dev'
   - cython-lint>=0.12.2 ; extra == 'dev'
-  requires_python: '>=3.11'
-- pypi: https://files.pythonhosted.org/packages/a3/24/4e944ade002f8c43a7e6effb8707e4c45d31269629e0a66d63a9d82ebced/janitor_rs-0.6.5-cp313-cp313-macosx_11_0_arm64.whl
-  name: janitor-rs
-  version: 0.6.5
-  sha256: 4957c8af9b35eabae6ef379d9f9cd30b870ec56c68963c00dfb32620488be7cb
-  requires_python: '>=3.11'
-- pypi: https://files.pythonhosted.org/packages/a3/5a/e43a3af60c6edad35709f3bffcdd0f352c5c932a4788be27c5ab65fc23a1/janitor_rs-0.6.5-cp313-cp313-manylinux_2_28_x86_64.whl
-  name: janitor-rs
-  version: 0.6.5
-  sha256: 106f8809adf86a16dba8fd4faded18df58fd68972514d946d6d502f49dfe74ab
   requires_python: '>=3.11'
 - pypi: https://files.pythonhosted.org/packages/a3/e3/313d4002628ffec17745336ccfbfb59d746dec5a022ebd50a9b33c3113c6/biopython-1.87-cp314-cp314-win_amd64.whl
   name: biopython
@@ -26617,24 +26637,14 @@ packages:
   version: 1.41.1
   sha256: d279ad9036293592396988a46046d73cc340a3bd51fa82fa6993822632ed11f9
   requires_python: '>=3.10'
-- pypi: https://files.pythonhosted.org/packages/b4/b5/7368db7c19ca651f531a6ed09d5c5230e661f939353a687cf394882f754b/janitor_rs-0.6.5-cp312-cp312-manylinux_2_28_x86_64.whl
-  name: janitor-rs
-  version: 0.6.5
-  sha256: 826f671cae6933667988655fc3e0719bf5b626a9417adac386189bfa931cd2fa
-  requires_python: '>=3.11'
-- pypi: https://files.pythonhosted.org/packages/bc/dc/e08d3bdfab5bf4eb683549ccacd65b261ffd27d89cea7a59610ff063ea83/janitor_rs-0.6.5-cp311-cp311-macosx_11_0_arm64.whl
-  name: janitor-rs
-  version: 0.6.5
-  sha256: 063f36b6156d23e7005fe0740cd4cffdafa1f3bfbed8d29cf835f9108105c3fa
-  requires_python: '>=3.11'
 - pypi: https://files.pythonhosted.org/packages/bd/db/ea0203e495be491c85af87b66e37acfd3bf756fd985f87e46fc5e3bf022c/py4j-0.10.9.9-py2.py3-none-any.whl
   name: py4j
   version: 0.10.9.9
   sha256: c7c26e4158defb37b0bb124933163641a2ff6e3a3913f7811b0ddbe07ed61533
-- pypi: https://files.pythonhosted.org/packages/cb/ea/e05f4f5841f2e1b23e62225cf75f9be849b64626515aa3d0eaf337b50b02/janitor_rs-0.6.5-cp311-cp311-manylinux_2_28_x86_64.whl
+- pypi: https://files.pythonhosted.org/packages/db/7f/7210080a14a0b4e73acef01908ec48800dae82d911b53dc9472dc9fd922a/janitor_rs-0.6.6-cp311-cp311-win_amd64.whl
   name: janitor-rs
-  version: 0.6.5
-  sha256: 592d343df63f360047f50464c09955bda68a655a4d11ea04293eef4e51718d3a
+  version: 0.6.6
+  sha256: 0466381b5866866ab4e38aee45f4526f7d5adb38a3357835c6b19436df047d28
   requires_python: '>=3.11'
 - pypi: https://files.pythonhosted.org/packages/dc/83/6d810a8a9ebc9c307989b418840c20e46907c74d707beb67ab566773e6fc/xarray-2026.4.0-py3-none-any.whl
   name: xarray
@@ -26780,11 +26790,6 @@ packages:
   - fastnumbers>=2.0.0 ; extra == 'fast'
   - pyicu>=1.0.0 ; extra == 'icu'
   requires_python: '>=3.7'
-- pypi: https://files.pythonhosted.org/packages/f3/70/74fcfbc3a44b66f03815838767193cf72af0a634dce4914e16ebe9ff68f8/janitor_rs-0.6.5-cp312-cp312-macosx_11_0_arm64.whl
-  name: janitor-rs
-  version: 0.6.5
-  sha256: d7ca31e7733290b91984c66f0016a7a37eeb7f10918a63bcde45fb9694fd4407
-  requires_python: '>=3.11'
 - pypi: https://files.pythonhosted.org/packages/f5/26/9cade51cffba81b3c8dc314f146eb71c46c491d8092fef0f5bc4ccf3a66d/biopython-1.87-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
   name: biopython
   version: '1.87'
@@ -26879,9 +26884,4 @@ packages:
   - pycodestyle ; extra == 'dev'
   - ruff>=0.12.0 ; extra == 'dev'
   - cython-lint>=0.12.2 ; extra == 'dev'
-  requires_python: '>=3.11'
-- pypi: https://files.pythonhosted.org/packages/f7/77/01484732176d861d7ff61615537622e418ed5ead0376c3b345e6db2e407b/janitor_rs-0.6.5-cp314-cp314-win_amd64.whl
-  name: janitor-rs
-  version: 0.6.5
-  sha256: dcbbc5605880253361619e5428935af92a85a31045387dd8dfff6487a433587d
   requires_python: '>=3.11'

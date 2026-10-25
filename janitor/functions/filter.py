@@ -9,11 +9,8 @@ import pandas_flavor as pf
 
 from janitor.utils import (
     deprecated_alias,
-    find_stack_level,
     refactored_function,
 )
-
-warnings.simplefilter("always", DeprecationWarning)
 
 
 @pf.register_dataframe_method
@@ -179,13 +176,6 @@ def filter_on(
     Returns:
         A filtered pandas DataFrame.
     """
-
-    warnings.warn(
-        "This function will be deprecated in a 1.x release. "
-        "Kindly use `pd.DataFrame.query` instead.",
-        DeprecationWarning,
-        stacklevel=find_stack_level(),
-    )
 
     if complement:
         return df.query(f"not ({criteria})")
@@ -373,13 +363,6 @@ def filter_column_isin(
     Returns:
         A filtered pandas DataFrame.
     """  # noqa: E501
-
-    warnings.warn(
-        "This function will be deprecated in a 1.x release. "
-        "Kindly use `pd.DataFrame.query` or `pd.DataFrame.isin` instead.",
-        DeprecationWarning,
-        stacklevel=find_stack_level(),
-    )
 
     if len(iterable) == 0:
         raise ValueError(

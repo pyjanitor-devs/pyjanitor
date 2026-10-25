@@ -749,6 +749,73 @@ regions algorithm.
 paths together. Do not phrase the guidance as applying "especially" to one
 algorithm.
 
+### [2026-10-23] Datetime tests must assert converted values
+
+**Context**: A datetime-resolution compatibility fix changed an exact dtype
+assertion to a broad datetime-type check, which allowed an intentionally shifted
+MATLAB date conversion to pass.
+
+**Learning**: A dtype assertion only verifies the result type. Date-conversion
+tests must also assert the converted values so incorrect offsets remain visible.
+
+**Recommendation**: When loosening datetime-resolution assertions, retain or
+add value assertions, normalizing resolution only where the conversion contract
+does not require a specific precision.
+
+### [2026-10-25] Changelog reconstruction must preserve authored entries
+
+**Context**: Reconstructing accumulated changelog entries from generated
+release notes and Git history for issue #1806.
+**Learning**: Generated release notes can summarize intermediate commits that
+were later reverted, omit hand-written issue/PR attribution, and collapse
+semantic changes into performance summaries. Historical changelog work must
+start from the original authored entries and verify generated summaries
+against the final squashed diff before assigning them to a release.
+**Recommendation**: Preserve original wording and contributor credits where
+available, keep issue and PR numbers accurate, separate behavior changes from
+performance notes, and check for reverted intermediate changes.
+
+Verify each entry against the target tag tree and final squashed diff: do not
+duplicate changes across releases, and do not retain generated summaries for
+test-only regressions or intermediate commits that were later removed.
+
+### [2026-10-25] Empty releases still need changelog sections
+
+**Context**: Reviewing automated changelog rotation for releases triggered by
+merges that add no `[Unreleased]` entries.
+**Learning**: Returning early for an empty `[Unreleased]` body leaves the
+version absent from `CHANGELOG.md` and stale comparison links, even though the
+release and generated `docs/releases/v*.md` file still exist.
+**Recommendation**: Always create the version heading and comparison links;
+use a clear placeholder when there are no user-facing changes, and test that
+path explicitly.
+
+### [2026-10-25] Release changelog entries need attribution and stable formatting
+
+**Context**: Repairing the `v0.32.55` changelog after release automation ran
+before changelog rotation was deployed.
+**Learning**: A release section must not retain the empty-release placeholder
+when it contains an attributed change. Generated bullets and comparison links
+must preserve the existing changelog spacing conventions.
+**Recommendation**: Treat the placeholder as mutually exclusive with real
+entries, use the repository's three-space list marker style, and keep a blank
+line between comparison-link definitions.
+
+### [2026-10-25] Changelog release guards cover the complete tag range
+
+**Context**: Issue #1808 showed that PR checks can remain green after release
+rotation, and bounded or malformed tag selection can miss long-lived PRs or
+fail before validation runs.
+
+**Learning**: Validate `previous_tag..HEAD` before rotation or publishing.
+Use the merge ref's first parent for PR checks, parse uncolored diffs
+defensively, and allow paired historical edits without allowing new entries
+through text matching. Intentional backfills use the explicit manual override.
+
+**Recommendation**: Avoid shell tag filtering in the default guard. If tag
+filtering is ever needed, use `git tag -l 'v[0-9]*'` and test it against stray
+non-version tags.
+
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol

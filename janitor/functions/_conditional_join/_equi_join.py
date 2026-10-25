@@ -129,12 +129,13 @@ def _multi_key_layout(df, right, left_index, right_index, conditions, range_valu
     Returns:
         Same as :func:`_single_key_layout`.
     """
-    right_keys = pd.MultiIndex.from_arrays(
-        [right.loc[right_index, c.right]._values for c in conditions]
-    )
-    left_keys = pd.MultiIndex.from_arrays(
-        [df.loc[left_index, c.left]._values for c in conditions]
-    )
+    right_keys = []
+    left_keys = []
+    for condition in conditions:
+        right_keys.append(right.loc[right_index, condition.right]._values)
+        left_keys.append(df.loc[left_index, condition.left]._values)
+    right_keys = pd.MultiIndex.from_arrays(right_keys)
+    left_keys = pd.MultiIndex.from_arrays(left_keys)
     if right_keys.is_unique:
         outcome = _drop_unmatched_left(
             df, left_index, right_keys.get_indexer(left_keys)

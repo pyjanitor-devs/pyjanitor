@@ -218,7 +218,15 @@ def _get_equi_indexer(
         return None
     left_index, order, starts, ends = outcome
     _right_index = right.index if isinstance(right_index, slice) else right_index
-    right_index = _right_index[order]
+    if (
+        isinstance(_right_index, pd.RangeIndex)
+        and _right_index.start == 0
+        and _right_index.step == 1
+    ):
+        # Labels equal positions, so order already holds the right labels.
+        right_index = pd.Index(order, copy=False)
+    else:
+        right_index = _right_index[order]
     range_predicates = []
     for condition, values in zip(range_conditions, range_values):
         left_values = df.loc[left_index, condition.left]._values

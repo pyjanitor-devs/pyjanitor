@@ -34,6 +34,17 @@ def drop_constant_columns(df: pd.DataFrame) -> pd.DataFrame:
         1  2  leopard   Shanghai
         2  3     lion      Basel
 
+        All-missing columns are dropped, including mixed missing sentinels.
+        Columns containing one value plus missing entries are retained:
+
+        >>> mixed = pd.DataFrame({
+        ...     "all_missing": [None, float("nan"), pd.NA],
+        ...     "partly_missing": [1, None, 1],
+        ...     "varying": [1, 2, 3],
+        ... })
+        >>> mixed.drop_constant_columns().columns.tolist()
+        ['partly_missing', 'varying']
+
     Args:
         df: Input Pandas DataFrame
 

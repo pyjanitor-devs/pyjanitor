@@ -83,6 +83,76 @@ def _get_bounds_left(l_cols, uniques, starts, ends):
     return booleans, matched_starts, matched_ends
 
 
+def _get_equi_indexer_single_key(
+    df,
+    right,
+    left_index,
+    right_index,
+    condition,
+    range_conditions,
+):
+    """Prepare one equality key without a MultiIndex over the range columns.
+
+    Only the equality key is factorized. The range columns are converted to
+    NumPy once and sorted as raw values, so the same arrays feed both the
+    lexsort and the Rust kernel. Returns the same tuple as
+    :func:`_get_equi_indexer`.
+    """
+    _right_index = right.index if isinstance(right_index, slice) else right_index
+    right_keys = right.loc[right_index, condition.right]._values
+    codes, uniques = pd.factorize(right_keys, sort=False)
+    left_keys = df.loc[left_index, condition.left]._values
+    left_codes = pd.Index(uniques).get_indexer(left_keys)
+    booleans = left_codes != -1
+    if not booleans.any():
+        return None
+    if not booleans.all():
+        left_codes = left_codes[booleans]
+        if isinstance(left_index, slice):
+            left_index = df.index
+        left_index = left_index[booleans]
+    range_values = [
+        _helpers._convert_array_to_numpy(array=right.loc[right_index, c.right]._values)
+        for c in range_conditions
+    ]
+    if len(uniques) == len(codes):
+        # Unique right keys: sort=False codes are right positions, so the
+        # left codes select each left row's single right candidate.
+        order = left_codes
+        starts = None
+        ends = None
+    else:
+        # Stable lexsort keeps physical order on ties; only add the position
+        # key when physical order is not already label order.
+        sort_keys = [codes]
+        sort_keys.extend(range_values)
+        if not _right_index.is_monotonic_increasing:
+            sort_keys.append(_helpers._convert_array_to_numpy(_right_index._values))
+        order = np.lexsort(sort_keys[::-1])
+        counts = np.bincount(codes, minlength=len(uniques))
+        bounds_ends = counts.cumsum()
+        starts = (bounds_ends - counts)[left_codes]
+        ends = bounds_ends[left_codes]
+    right_index = _right_index[order]
+    range_predicates = [
+        (
+            _helpers._convert_array_to_numpy(array=df.loc[left_index, c.left]._values),
+            values[order],
+            c.op,
+        )
+        for c, values in zip(range_conditions, range_values)
+    ]
+    right_index_is_ordered = right_index.is_monotonic_increasing
+    return (
+        left_index,
+        right_index,
+        starts,
+        ends,
+        range_predicates,
+        right_index_is_ordered,
+    )
+
+
 def _get_equi_indexer(
     df,
     right,
@@ -125,6 +195,15 @@ def _get_equi_indexer(
         right_index_is_ordered)``. In the unique path, ``right_index`` is
         projected to the matched rows and ``starts``/``ends`` are ``None``.
     """
+    if len(equi_conditions) == 1:
+        return _get_equi_indexer_single_key(
+            df=df,
+            right=right,
+            left_index=left_index,
+            right_index=right_index,
+            condition=equi_conditions[0],
+            range_conditions=range_conditions,
+        )
     # ELI5: build one table whose columns contain every value Rust will need.
     # The final column is the original right position, so sorting this table
     # never loses the mapping back to the caller's dataframe rows.

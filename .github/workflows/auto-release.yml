@@ -95,81 +95,79 @@ jobs:
             echo "release_exists=false" >> "$GITHUB_OUTPUT"
             echo "release_complete=false" >> "$GITHUB_OUTPUT"
             echo "No release tag found. Preparing a new release."
-            exit 0
-          fi
-
-          version_number=${release_tag#v}
-          echo "Checking external release state for $release_tag."
-
-          set +e
-          package_http_status=$(curl --silent --show-error --location \
-            --output /dev/null --write-out '%{http_code}' \
-            "https://pypi.org/pypi/${PACKAGE_NAME}/${version_number}/json")
-          package_lookup_status=$?
-          set -e
-          if [[ "$package_lookup_status" -eq 0 && "$package_http_status" == 200 ]]; then
-            package_published=true
-          elif [[ "$package_http_status" == 404 ]]; then
-            package_published=false
           else
-            echo "Unable to determine PyPI publication state (HTTP ${package_http_status:-unknown})." >&2
-            exit 1
-          fi
-          echo "package_published=$package_published" >> "$GITHUB_OUTPUT"
+            version_number=${release_tag#v}
+            echo "Checking external release state for $release_tag."
 
-          release_lookup_file=$(mktemp)
-          set +e
-          gh api --include --silent \
-            "repos/${GITHUB_REPOSITORY}/releases/tags/${release_tag}" > "$release_lookup_file" 2>&1
-          release_lookup_status=$?
-          set -e
-          release_http_status=$(awk '/^HTTP\// { status=$2 } END { print status }' "$release_lookup_file")
-          if [[ "$release_lookup_status" -eq 0 && "$release_http_status" == 200 ]]; then
-            release_exists=true
-          elif [[ "$release_http_status" == 404 ]]; then
-            release_exists=false
-          else
-            cat "$release_lookup_file" >&2
-            echo "Unable to determine GitHub Release state (HTTP ${release_http_status:-unknown})." >&2
-            rm -f "$release_lookup_file"
-            exit 1
-          fi
-          rm -f "$release_lookup_file"
-          echo "release_exists=$release_exists" >> "$GITHUB_OUTPUT"
-
-          # A complete older release followed by new commits means a new
-          # release is needed. An incomplete latest tag must be resumed from
-          # that exact tagged commit, even if dev has advanced since then.
-          if [[ -z "$current_release_tag" && "$package_published" == true && "$release_exists" == true ]]; then
-            echo "existing_release_tag=false" >> "$GITHUB_OUTPUT"
-            echo "version_number=" >> "$GITHUB_OUTPUT"
-            echo "package_published=false" >> "$GITHUB_OUTPUT"
-            echo "release_exists=false" >> "$GITHUB_OUTPUT"
-            echo "release_complete=false" >> "$GITHUB_OUTPUT"
-            echo "Latest release is complete; preparing a new release."
-            exit 0
-          fi
-
-          echo "existing_release_tag=true" >> "$GITHUB_OUTPUT"
-          echo "version_number=$version_number" >> "$GITHUB_OUTPUT"
-          if [[ -z "$current_release_tag" ]]; then
-            git checkout --detach "$release_tag"
-            echo "Resuming incomplete release from $release_tag."
-          else
-            echo "Release tag $release_tag is at HEAD."
-          fi
-
-          if [[ "$package_published" == true && "$release_exists" == true ]]; then
-            echo "release_complete=true" >> "$GITHUB_OUTPUT"
-            echo "Package and GitHub release already exist."
-          else
-            echo "release_complete=false" >> "$GITHUB_OUTPUT"
-            echo "Release is incomplete and will be resumed."
-            if [[ "${{ github.event_name }}" == workflow_dispatch && \
-              "${{ github.event.inputs.version_name }}" != patch ]]; then
-              echo "Cannot start a major/minor release while an earlier release is incomplete." >&2
-              echo "Retry the incomplete release with patch or finish it before dispatching this release." >&2
+            set +e
+            package_http_status=$(curl --silent --show-error --location \
+              --output /dev/null --write-out '%{http_code}' \
+              "https://pypi.org/pypi/${PACKAGE_NAME}/${version_number}/json")
+            package_lookup_status=$?
+            set -e
+            if [[ "$package_lookup_status" -eq 0 && "$package_http_status" == 200 ]]; then
+              package_published=true
+            elif [[ "$package_http_status" == 404 ]]; then
+              package_published=false
+            else
+              echo "Unable to determine PyPI publication state (HTTP ${package_http_status:-unknown})." >&2
               exit 1
+            fi
+            echo "package_published=$package_published" >> "$GITHUB_OUTPUT"
+
+            release_lookup_file=$(mktemp)
+            set +e
+            gh api --include --silent \
+              "repos/${GITHUB_REPOSITORY}/releases/tags/${release_tag}" > "$release_lookup_file" 2>&1
+            release_lookup_status=$?
+            set -e
+            release_http_status=$(awk '/^HTTP\// { status=$2 } END { print status }' "$release_lookup_file")
+            if [[ "$release_lookup_status" -eq 0 && "$release_http_status" == 200 ]]; then
+              release_exists=true
+            elif [[ "$release_http_status" == 404 ]]; then
+              release_exists=false
+            else
+              cat "$release_lookup_file" >&2
+              echo "Unable to determine GitHub Release state (HTTP ${release_http_status:-unknown})." >&2
+              rm -f "$release_lookup_file"
+              exit 1
+            fi
+            rm -f "$release_lookup_file"
+            echo "release_exists=$release_exists" >> "$GITHUB_OUTPUT"
+
+            # A complete older release followed by new commits means a new
+            # release is needed. An incomplete latest tag must be resumed from
+            # that exact tagged commit, even if dev has advanced since then.
+            if [[ -z "$current_release_tag" && "$package_published" == true && "$release_exists" == true ]]; then
+              echo "existing_release_tag=false" >> "$GITHUB_OUTPUT"
+              echo "version_number=" >> "$GITHUB_OUTPUT"
+              echo "package_published=false" >> "$GITHUB_OUTPUT"
+              echo "release_exists=false" >> "$GITHUB_OUTPUT"
+              echo "release_complete=false" >> "$GITHUB_OUTPUT"
+              echo "Latest release is complete; preparing a new release."
+            else
+              echo "existing_release_tag=true" >> "$GITHUB_OUTPUT"
+              echo "version_number=$version_number" >> "$GITHUB_OUTPUT"
+              if [[ -z "$current_release_tag" ]]; then
+                git checkout --detach "$release_tag"
+                echo "Resuming incomplete release from $release_tag."
+              else
+                echo "Release tag $release_tag is at HEAD."
+              fi
+
+              if [[ "$package_published" == true && "$release_exists" == true ]]; then
+                echo "release_complete=true" >> "$GITHUB_OUTPUT"
+                echo "Package and GitHub release already exist."
+              else
+                echo "release_complete=false" >> "$GITHUB_OUTPUT"
+                echo "Release is incomplete and will be resumed."
+                if [[ "${{ github.event_name }}" == workflow_dispatch && \
+                  "${{ github.event.inputs.version_name }}" != patch ]]; then
+                  echo "Cannot start a major/minor release while an earlier release is incomplete." >&2
+                  echo "Retry the incomplete release with patch or finish it before dispatching this release." >&2
+                  exit 1
+                fi
+              fi
             fi
           fi
 

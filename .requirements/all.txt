@@ -4,125 +4,141 @@
 #
 #    pip-compile .requirements/all.in
 #
-asttokens==2.0.5
+asttokens==3.0.2
     # via stack-data
-attrs==21.4.0
+attrs==26.1.0
     # via
-    #   hypothesis
     #   interrogate
     #   pandas-vet
-    #   pytest
-backcall==0.2.0
-    # via ipython
-biopython==1.79
+babel==2.18.0
+    # via mkdocs-material
+backrefs==8.1
+    # via mkdocs-material
+biopython==1.88
     # via -r .requirements/biology.in
 black==26.10.1
     # via -r .requirements/dev.in
-cfgv==3.3.1
+build==1.6.1
+    # via pip-tools
+certifi==2026.10.23
+    # via requests
+cfgv==3.5.0
     # via pre-commit
-click==8.0.4
+charset-normalizer==3.5.2
+    # via requests
+click==8.5.0
     # via
     #   black
     #   interrogate
     #   mkdocs
     #   pip-tools
-colorama==0.4.4
+colorama==0.4.6
     # via
-    #   griffe
     #   interrogate
-coverage==6.3.2
+    #   mkdocs-material
+coverage[toml]==7.17.0
     # via pytest-cov
 darglint==1.8.1
     # via -r .requirements/dev.in
-decorator==5.1.1
-    # via ipython
 distlib==0.4.4
     # via virtualenv
-execnet==1.9.0
+execnet==2.1.2
     # via pytest-xdist
-executing==0.8.3
+executing==2.3.0
     # via stack-data
-filelock==4.2.1
+filelock==4.2.4
     # via
     #   python-discovery
     #   virtualenv
-flake8==4.0.1
+flake8==7.4.1
     # via
     #   -r .requirements/dev.in
     #   pandas-vet
-ghp-import==2.0.2
+ghp-import==2.1.0
     # via mkdocs
-griffe==0.25.4
+griffelib==2.4.1
     # via mkdocstrings-python
-hypothesis==6.39.3
+hypothesis==6.170.9
     # via -r .requirements/testing.in
-identify==2.4.11
+identify==2.6.20
     # via pre-commit
-importlib-metadata==4.11.2
-    # via mkdocs
-iniconfig==1.1.1
+idna==3.20
+    # via requests
+iniconfig==2.3.1
     # via pytest
-interrogate==1.5.0
+interrogate==1.7.0
     # via -r .requirements/testing.in
-ipython==8.10.0
+ipython==9.17.1
     # via -r .requirements/docs.in
-isort==5.10.1
+ipython-pygments-lexers==1.1.1
+    # via ipython
+isort==9.0.2
     # via -r .requirements/dev.in
-janitor-rs==0.5.0
+janitor-rs==0.6.6
     # via -r .requirements/base.in
-jedi==0.18.1
+jedi==0.20.1
     # via ipython
 jinja2==3.1.6
     # via
     #   mkdocs
     #   mkdocs-material
     #   mkdocstrings
-markdown==3.3.6
+markdown==3.11.2
     # via
     #   mkdocs
     #   mkdocs-autorefs
     #   mkdocs-material
     #   mkdocstrings
     #   pymdown-extensions
-markupsafe==2.1.0
+markupsafe==3.0.4
     # via
     #   jinja2
+    #   mkdocs
+    #   mkdocs-autorefs
     #   mkdocstrings
-matplotlib-inline==0.1.3
+matplotlib-inline==0.2.2
     # via ipython
-mccabe==0.6.1
+mccabe==0.7.0
     # via flake8
 mergedeep==1.3.4
-    # via mkdocs
-mkdocs==1.2.3
+    # via
+    #   mkdocs
+    #   mkdocs-get-deps
+mkdocs==1.6.1
     # via
     #   -r .requirements/docs.in
     #   mkdocs-autorefs
     #   mkdocs-material
     #   mkdocstrings
-mkdocs-autorefs==0.4.1
-    # via mkdocstrings
-mkdocs-material==8.2.5
+mkdocs-autorefs==1.4.5
+    # via
+    #   mkdocstrings
+    #   mkdocstrings-python
+mkdocs-get-deps==0.2.2
+    # via mkdocs
+mkdocs-material==9.8.0
     # via -r .requirements/docs.in
-mkdocs-material-extensions==1.0.3
+mkdocs-material-extensions==1.3.1
     # via mkdocs-material
-mkdocstrings==0.20.0
+mkdocstrings==1.0.8
     # via
     #   -r .requirements/docs.in
     #   mkdocstrings-python
-mkdocstrings-python==0.8.3
+mkdocstrings-python==2.0.10
     # via -r .requirements/docs.in
 mpmath==1.3.0
     # via sympy
-multipledispatch==0.6.0
+multipledispatch==1.0.0
     # via -r .requirements/base.in
-mypy-extensions==0.4.3
-    # via black
-natsort==8.1.0
+mypy-extensions==1.1.0
+    # via
+    #   black
+    #   isort
+natsort==8.4.0
     # via -r .requirements/base.in
-nodeenv==1.6.0
+nodeenv==1.11.0
     # via pre-commit
-numpy==1.22.3
+numpy==2.4.6
     # via
     #   biopython
     #   pandas
@@ -132,87 +148,94 @@ numpy==1.22.3
 packaging==26.3
     # via
     #   black
+    #   build
     #   mkdocs
     #   pytest
     #   unyt
     #   virtualenv
     #   wheel
     #   xarray
-pandas==1.4.1
+paginate==0.5.7
+    # via mkdocs-material
+pandas==3.1.0
     # via
     #   pandas-flavor
     #   xarray
-pandas-flavor==0.7.0
+pandas-flavor==0.8.1
     # via -r .requirements/base.in
-pandas-vet==0.2.3
+pandas-vet==2023.8.2
     # via -r .requirements/testing.in
-parso==0.8.3
+parso==0.8.7
     # via jedi
 pathspec==1.1.1
-    # via black
-pep517==0.12.0
-    # via pip-tools
-pexpect==4.8.0
+    # via
+    #   black
+    #   mkdocs
+pexpect==4.9.0
     # via ipython
-pickleshare==0.7.5
-    # via ipython
-pip==26.2.2
-    # via pip-tools
-pip-tools==6.5.1
+pip-tools==7.6.2
     # via -r .requirements/dev.in
 platformdirs==4.13.5
     # via
     #   black
+    #   mkdocs-get-deps
     #   virtualenv
-pluggy==1.0.0
-    # via pytest
-polars==1.1.0
+pluggy==1.7.0
+    # via
+    #   pytest
+    #   pytest-cov
+polars==2.0.0
     # via
     #   -r .requirements/docs.in
     #   -r .requirements/testing.in
-pre-commit==2.17.0
+polars-runtime-32==2.0.0
+    # via polars
+pre-commit==4.7.0
     # via -r .requirements/dev.in
-prompt-toolkit==3.0.39
+prompt-toolkit==3.0.53
+    # via ipython
+psutil==7.2.2
     # via ipython
 ptyprocess==0.7.0
     # via pexpect
-pure-eval==0.2.2
+pure-eval==0.2.4
     # via stack-data
 py==1.11.0
     # via
     #   -r .requirements/testing.in
     #   interrogate
-    #   pytest
-    #   pytest-forked
-py4j==0.10.9.7
+py4j==0.10.9.9
     # via pyspark
-pycodestyle==2.8.0
+pycodestyle==2.15.0
     # via flake8
-pyflakes==2.4.0
+pyflakes==4.0.3
     # via flake8
-pygments==2.20.0
+pygments==2.21.0
     # via
     #   ipython
+    #   ipython-pygments-lexers
     #   mkdocs-material
-pymdown-extensions==10.0
+    #   pytest
+pymdown-extensions==12.3
     # via
     #   mkdocs-material
     #   mkdocstrings
-pyspark==3.4.4
+pyproject-hooks==1.3.3
+    # via
+    #   build
+    #   pip-tools
+pyspark==4.2.0
     # via -r .requirements/spark.in
-pytest==7.0.1
+pytest==9.1.1
     # via
     #   -r .requirements/testing.in
     #   pytest-cov
-    #   pytest-forked
     #   pytest-xdist
-pytest-cov==3.0.0
+pytest-cov==7.1.0
     # via -r .requirements/testing.in
-pytest-forked==1.4.0
-    # via pytest-xdist
-pytest-xdist==2.5.0
+pytest-xdist==3.8.0
     # via -r .requirements/testing.in
-python-dateutil==2.8.2
+python-dateutil==3.0.0
     # via
     #   ghp-import
     #   pandas
@@ -220,59 +243,54 @@ python-discovery==1.6.4
     # via virtualenv
 pytokens==0.4.1
     # via black
-pytz==2021.3
-    # via pandas
-pyyaml==6.0
+pyyaml==6.0.3
     # via
     #   mkdocs
+    #   mkdocs-get-deps
     #   pre-commit
     #   pymdown-extensions
     #   pyyaml-env-tag
-pyyaml-env-tag==0.1
+pyyaml-env-tag==1.1
     # via mkdocs
-scipy==1.10.0
+requests==2.34.2
+    # via mkdocs-material
+scipy==1.17.1
     # via -r .requirements/base.in
-setuptools==84.1.0
-    # via pip-tools
-six==1.16.0
-    # via
-    #   asttokens
-    #   multipledispatch
-    #   python-dateutil
+six==1.17.0
+    # via python-dateutil
 sortedcontainers==2.4.0
     # via hypothesis
-stack-data==0.2.0
+stack-data==0.6.3
     # via ipython
-sympy==1.10
+sympy==1.14.0
     # via unyt
-tabulate==0.8.9
+tabulate==0.10.0
     # via interrogate
-toml==0.10.2
-    # via
-    #   interrogate
-    #   pre-commit
-tomli==2.0.1
-    # via
-    #   coverage
-    #   pep517
-    #   pytest
-tqdm==4.66.3
+tqdm==4.70.1
     # via -r .requirements/chemistry.in
-traitlets==5.1.1
+traitlets==5.16.1
     # via
     #   ipython
     #   matplotlib-inline
-unyt==3.0.4
+typing-extensions==4.16.0
+    # via ipython
+tzdata==2026.5
+    # via python-dateutil
+unyt==3.2.0
     # via -r .requirements/engineering.in
+urllib3==2.8.0
+    # via requests
 virtualenv==21.14.13
     # via pre-commit
-watchdog==2.1.6
+watchdog==6.0.0
     # via mkdocs
-wcwidth==0.2.5
+wcwidth==0.9.4
     # via prompt-toolkit
-wheel==0.46.2
+wheel==0.48.0
     # via pip-tools
-xarray==2022.3.0
+xarray==2026.9.0
     # via pandas-flavor
-zipp==3.19.1
-    # via importlib-metadata
+
+# The following packages are considered to be unsafe in a requirements file:
+# pip
+# setuptools

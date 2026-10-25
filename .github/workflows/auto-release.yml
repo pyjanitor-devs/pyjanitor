@@ -75,6 +75,8 @@ jobs:
 
       - name: Check if already released
         id: check_release
+        # Keep release control flow in a predictable, non-login Bash shell.
+        shell: bash {0}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -368,29 +370,36 @@ jobs:
 
       - name: Publish package (trusted publishing)
         if: steps.check_release.outputs.release_complete == 'false' && steps.package_state.outputs.publish_needed == 'true'
+        shell: bash {0}
         env:
           MISSING_ARTIFACTS: ${{ steps.package_state.outputs.missing_artifacts }}
         run: |
           set -euo pipefail
           read -r -a missing_artifacts <<< "$MISSING_ARTIFACTS"
           publish_paths=("${missing_artifacts[@]/#/dist/}")
+          published=false
           for attempt in {1..3}; do
             if uv publish --trusted-publishing always \
               --check-url https://pypi.org/simple/ "${publish_paths[@]}"; then
-              exit 0
+              published=true
+              break
             fi
             if [[ "$attempt" -lt 3 ]]; then
               sleep 10
             fi
           done
-          echo "Package publication failed after 3 attempts." >&2
-          exit 1
+          if [[ "$published" != true ]]; then
+            echo "Package publication failed after 3 attempts." >&2
+            exit 1
+          fi
 
       - name: Verify package publication
         if: steps.check_release.outputs.release_complete == 'false' && steps.package_state.outputs.publish_needed == 'true'
+        shell: bash {0}
         run: |
           set -euo pipefail
           package_url="https://pypi.org/pypi/${PACKAGE_NAME}/${version_number}/json"
+          verified=false
           for attempt in {1..12}; do
             if metadata=$(curl --fail --silent --show-error --location "$package_url"); then
               complete=true
@@ -402,13 +411,16 @@ jobs:
                 fi
               done < <(find dist -maxdepth 1 -type f \( -name '*.whl' -o -name '*.tar.gz' \) -print0 | xargs -0 -n1 basename)
               if [[ "$complete" == true ]]; then
-                exit 0
+                verified=true
+                break
               fi
             fi
             sleep 5
           done
-          echo "Published package was not visible on PyPI after 60 seconds." >&2
-          exit 1
+          if [[ "$verified" != true ]]; then
+            echo "Published package was not visible on PyPI after 60 seconds." >&2
+            exit 1
+          fi
 
       - name: Create release in GitHub repo
         if: steps.check_release.outputs.release_complete == 'false' && steps.check_release.outputs.release_exists == 'false'

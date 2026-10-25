@@ -44,7 +44,8 @@ def _sort_right_rows(key_codes, range_values, right_index):
     """
     sort_keys = [*key_codes, *range_values]
     if not right_index.is_monotonic_increasing:
-        sort_keys.append(_helpers._convert_array_to_numpy(array=right_index._values))
+        _array = _helpers._convert_array_to_numpy(array=right_index._values)
+        sort_keys.append(_array)
     return np.lexsort(sort_keys[::-1])
 
 
@@ -90,12 +91,10 @@ def _single_key_layout(df, right, left_index, right_index, condition, range_valu
         ``(left_index, order, starts, ends)``. ``order`` selects the prepared
         right rows; ``starts``/``ends`` are ``None`` for unique right keys.
     """
-    codes, uniques = pd.factorize(
-        right.loc[right_index, condition.right]._values, sort=False
-    )
-    left_codes = pd.Index(uniques).get_indexer(
-        df.loc[left_index, condition.left]._values
-    )
+    codes = right.loc[right_index, condition.right]._values
+    codes, uniques = pd.factorize(codes, sort=False)
+    left_codes = df.loc[left_index, condition.left]._values
+    left_codes = pd.Index(uniques).get_indexer(left_codes)
     outcome = _drop_unmatched_left(df, left_index, left_codes)
     if outcome is None:
         return None

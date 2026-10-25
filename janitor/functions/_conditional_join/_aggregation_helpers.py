@@ -166,7 +166,8 @@ def _aggregation_inputs(
         size use their dtype-independent wildcard forms.
 
     Raises:
-        KeyError: If a requested column is not present in ``source``.
+        KeyError: If an operation other than ``size`` requests a column that
+            is not present in ``source``.
     """
     result = []
     for column_name, operation in aggfunc:

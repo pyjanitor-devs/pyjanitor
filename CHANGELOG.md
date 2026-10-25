@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [v0.32.58] - 2026-10-25
+
+-   No user-facing changes; see the generated release notes.
+
 ## [v0.32.57] - 2026-10-25
 
 -   [BUG] Keep the sorted row order of polars `complete(sort=True)` on LazyFrames with polars 2.0, where left joins no longer preserve the left frame's order by default. - Issue #1797 @raams95
@@ -664,7 +668,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.57...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.58...HEAD
+
+[v0.32.58]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.57...v0.32.58
 
 [v0.32.57]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.56...v0.32.57
 

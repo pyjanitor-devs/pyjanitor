@@ -171,8 +171,6 @@ def _aggregation_inputs(
     result = []
     for column_name, operation in aggfunc:
         if operation == "size":
-            if column_name not in source.columns:
-                raise KeyError(column_name)
             result.append(("*", "size"))
             continue
         series = source.loc[indexer, column_name]

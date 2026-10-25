@@ -1941,3 +1941,33 @@ def test_reorder_contents_preserves_dtypes_sort_by_appearance():
     )
 
     assert_frame_equal(result, expected)
+
+
+@pytest.mark.parametrize("sort_by_appearance", [False, True])
+@pytest.mark.parametrize(
+    ("options", "value_column"),
+    [
+        ({"index": "id"}, "value"),
+        ({"index": "id", "names_to": ".value", "names_pattern": r"(x)\d"}, "x"),
+        (
+            {
+                "index": "id",
+                "names_to": (".value", "set"),
+                "names_pattern": r"(x)(\d)",
+            },
+            "x",
+        ),
+    ],
+)
+def test_pivot_longer_output_does_not_alias_input(
+    options, value_column, sort_by_appearance
+):
+    """Mutating reshaped data must not change the caller's DataFrame (GH#1770)."""
+    df = pd.DataFrame({"id": [1, 2], "x1": [10.0, 11.0], "x2": [20.0, 21.0]})
+    original = df.copy(deep=True)
+
+    result = df.pivot_longer(**options, sort_by_appearance=sort_by_appearance)
+    result.iloc[0, result.columns.get_loc(value_column)] = -1000.0
+
+    pd.testing.assert_frame_equal(df, original)
+    assert result.iloc[0][value_column] == -1000.0

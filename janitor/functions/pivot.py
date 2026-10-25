@@ -1947,7 +1947,13 @@ def _build_nulls(contents: dict, dropna: bool) -> np.ndarray | None:
 
 
 def _build_df(contents: dict, df_index: pd.Index | None) -> pd.DataFrame:
-    """Build the dataframe"""
+    """Build the dataframe without exposing views of the input buffers."""
+    contents = {
+        key: value.copy()
+        if isinstance(value, np.ndarray) and not value.flags.owndata
+        else value
+        for key, value in contents.items()
+    }
     if df_index is None:
         return pd.DataFrame(data=contents, copy=False)
     return pd.DataFrame(data=contents, index=df_index, copy=False)

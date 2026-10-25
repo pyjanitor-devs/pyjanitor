@@ -91,10 +91,10 @@ def _single_key_layout(df, right, left_index, right_index, condition, range_valu
         ``(left_index, order, starts, ends)``. ``order`` selects the prepared
         right rows; ``starts``/``ends`` are ``None`` for unique right keys.
     """
-    codes = right.loc[right_index, condition.right]._values
-    codes, uniques = pd.factorize(codes, sort=False)
-    left_codes = df.loc[left_index, condition.left]._values
-    left_codes = pd.Index(uniques).get_indexer(left_codes)
+    right_keys = right.loc[right_index, condition.right]._values
+    codes, uniques = pd.factorize(right_keys, sort=False)
+    left_keys = df.loc[left_index, condition.left]._values
+    left_codes = pd.Index(uniques).get_indexer(left_keys)
     outcome = _drop_unmatched_left(df, left_index, left_codes)
     if outcome is None:
         return None

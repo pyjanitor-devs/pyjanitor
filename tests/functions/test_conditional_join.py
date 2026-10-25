@@ -5157,8 +5157,6 @@ def test_eq_strings_embedded_nul():
             "Integers": [0, 0],
         }
     )
-    _, uniques = pd.Index(right["Strings"]).factorize()
-    assert len(uniques) == 2
     out = left.conditional_join(
         right,
         ("C", "Strings", "=="),

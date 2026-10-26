@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v0.32.59] - 2026-10-26
+
 -   [BUG] Treat mixed missing sentinels as one category in `drop_constant_columns`, preserving partially missing columns and removing all-missing columns. - Issue #1781 @senanurcetin
 
 ## [v0.32.58] - 2026-10-25
@@ -670,7 +672,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.58...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.59...HEAD
+
+[v0.32.59]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.58...v0.32.59
 
 [v0.32.58]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.57...v0.32.58
 

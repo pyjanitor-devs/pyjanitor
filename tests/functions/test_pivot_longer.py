@@ -1971,3 +1971,133 @@ def test_pivot_longer_output_does_not_alias_input(
 
     pd.testing.assert_frame_equal(df, original)
     assert result.iloc[0][value_column] == -1000.0
+
+
+@pytest.mark.parametrize("kind", ["datetime", "timedelta"])
+@pytest.mark.parametrize("target", ["id", "value"])
+@pytest.mark.parametrize("sort_by_appearance", [False, True])
+def test_pivot_longer_output_does_not_alias_temporal_columns(
+    kind, target, sort_by_appearance
+):
+    """Temporal value and index columns must not alias the input (GH#1770)."""
+    if kind == "datetime":
+        values = pd.to_datetime([0, 1], unit="D")
+        second = pd.to_datetime([10, 11], unit="D")
+    else:
+        values = pd.to_timedelta([0, 1], unit="D")
+        second = pd.to_timedelta([10, 11], unit="D")
+
+    if target == "id":
+        df = pd.DataFrame({"id": values, "x1": [10.0, 20.0]})
+    else:
+        df = pd.DataFrame({"id": [1, 2], "x1": values, "x2": second})
+    source = df.copy(deep=True)
+    result = df.pivot_longer(index="id", sort_by_appearance=sort_by_appearance)
+
+    result.loc[result.index[0], target] = result.loc[result.index[-1], target]
+
+    pd.testing.assert_frame_equal(df, source)
+
+
+@pytest.mark.parametrize("sort_by_appearance", [False, True])
+@pytest.mark.parametrize("target", ["id", "x"])
+@pytest.mark.parametrize(
+    "options",
+    [
+        {"names_to": ".value", "names_pattern": r"([xy])\d"},
+        {"names_to": (".value", "set"), "names_pattern": r"([xy])(\d)"},
+        {
+            "names_to": (".value", "set"),
+            "names_sep": "_",
+            "names_transform": {"set": int},
+        },
+    ],
+)
+def test_pivot_longer_multiple_value_labels_do_not_alias(
+    options, target, sort_by_appearance
+):
+    """Reshaping several .value labels must not mutate the source (GH#1770)."""
+    cols = {
+        "id": [1, 2],
+        "x1": [10.0, 20.0],
+        "x2": [11.0, 21.0],
+        "y1": [30.0, 40.0],
+        "y2": [31.0, 41.0],
+    }
+    if "names_sep" in options:
+        cols = {
+            name if name == "id" else f"{name[0]}_{name[1]}": value
+            for name, value in cols.items()
+        }
+    df = pd.DataFrame(cols)
+    source = df.copy(deep=True)
+    result = df.pivot_longer(
+        index="id", sort_by_appearance=sort_by_appearance, **options
+    )
+    result.iloc[0, result.columns.get_loc(target)] = -1000
+
+    pd.testing.assert_frame_equal(df, source)
+    assert result.iloc[0][target] == -1000
+
+
+@pytest.mark.parametrize("sort_by_appearance", [False, True])
+@pytest.mark.parametrize("target", ["id", "first"])
+def test_pivot_longer_sequence_values_to_does_not_alias(sort_by_appearance, target):
+    """Sequence values_to and multiple value columns keep the input intact."""
+    df = pd.DataFrame(
+        {
+            "id": [1, 2],
+            "a1": [10.0, 20.0],
+            "a2": [30.0, 40.0],
+            "b1": [50.0, 60.0],
+            "b2": [70.0, 80.0],
+        }
+    )
+    source = df.copy(deep=True)
+    result = df.pivot_longer(
+        index="id",
+        names_to=("category_a", "category_b"),
+        names_pattern=[r"a\d", r"b\d"],
+        values_to=("first", "second"),
+        sort_by_appearance=sort_by_appearance,
+    )
+    result.iloc[0, result.columns.get_loc(target)] = -1000
+
+    pd.testing.assert_frame_equal(df, source)
+    assert result.iloc[0][target] == -1000
+
+
+@pytest.mark.parametrize("kind", ["datetime", "timedelta"])
+@pytest.mark.parametrize("sort_by_appearance", [False, True])
+@pytest.mark.parametrize("multiple_labels", [False, True])
+def test_pivot_longer_multiple_temporal_values_do_not_alias(
+    kind, sort_by_appearance, multiple_labels
+):
+    """Datetime and timedelta values remain independent across .value paths."""
+    make_values = (
+        (lambda days: pd.to_datetime(days, unit="D"))
+        if kind == "datetime"
+        else (lambda days: pd.to_timedelta(days, unit="D"))
+    )
+    df = pd.DataFrame(
+        {
+            "id": [1, 2],
+            "x1": make_values([0, 1]),
+            "x2": make_values([10, 11]),
+            "y1": make_values([20, 21]),
+            "y2": make_values([30, 31]),
+        }
+    )
+    source = df.copy(deep=True)
+    if multiple_labels:
+        options = {"names_to": (".value", "set"), "names_pattern": r"([xy])(\d)"}
+    else:
+        options = {"names_to": ".value", "names_pattern": r"([xy])\d"}
+    result = df.pivot_longer(
+        index="id", sort_by_appearance=sort_by_appearance, **options
+    )
+    result.iloc[0, result.columns.get_loc("x")] = result.iloc[
+        -1, result.columns.get_loc("x")
+    ]
+
+    pd.testing.assert_frame_equal(df, source)

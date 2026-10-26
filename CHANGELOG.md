@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [BUG] Treat mixed missing sentinels as one category in `drop_constant_columns`, preserving partially missing columns and removing all-missing columns. - Issue #1781 @senanurcetin
+
 ## [v0.32.58] - 2026-10-25
 
 -   No user-facing changes; see the generated release notes.

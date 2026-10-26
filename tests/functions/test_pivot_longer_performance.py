@@ -15,11 +15,19 @@ pivot_module = importlib.import_module("janitor.functions.pivot")
 @pytest.mark.parametrize("with_other", [False, True])
 @pytest.mark.parametrize("arrangement", ["contiguous", "interleaved", "uneven"])
 @pytest.mark.parametrize("sort_by_appearance", [False, True])
+@pytest.mark.parametrize("dropna", [False, True])
+@pytest.mark.parametrize("ignore_index", [False, True])
 @pytest.mark.parametrize(
     "dtype", ["float64", "float32", "int64", "uint64", "bool", "object", "Int64"]
 )
 def test_fast_value_groups_equal_previous(
-    monkeypatch, with_other, arrangement, sort_by_appearance, dtype
+    monkeypatch,
+    with_other,
+    arrangement,
+    sort_by_appearance,
+    dropna,
+    ignore_index,
+    dtype,
 ):
     """Fast positional extraction must preserve the old output exactly."""
     groups = ["a", "a", "b", "b", "c", "c"]
@@ -49,7 +57,11 @@ def test_fast_value_groups_equal_previous(
     if with_other:
         spec["part"] = [parts[j] for j in order]
     base = frame.copy(deep=True)
-    options = {"sort_by_appearance": sort_by_appearance, "ignore_index": True}
+    options = {
+        "sort_by_appearance": sort_by_appearance,
+        "dropna": dropna,
+        "ignore_index": ignore_index,
+    }
     expected_factory = pivot_module._fast_numpy_value_matrix
     with monkeypatch.context() as patched:
         patched.setattr(pivot_module, "_fast_numpy_value_matrix", lambda df: None)
@@ -133,4 +145,34 @@ def test_names_transform_preserves_output_and_input(monkeypatch, sort_by_appeara
     assert_frame_equal(result, expected)
     assert result["part"].dtype == np.dtype("int64")
     result.loc[result.index[0], "v0"] = -500.0
+    assert_frame_equal(source, original)
+
+
+@pytest.mark.parametrize("with_other", [False, True])
+@pytest.mark.parametrize("sort_by_appearance", [False, True])
+def test_mixed_numpy_dtypes_use_legacy_path(
+    monkeypatch, with_other, sort_by_appearance
+):
+    """Different NumPy dtypes must never enter the homogeneous fast path."""
+    source = pd.DataFrame(
+        {
+            "a_1": pd.Series([1, 2, 3], dtype="int64"),
+            "a_2": pd.Series([1.5, 2.5, 3.5], dtype="float64"),
+            "b_1": pd.Series([4, 5, 6], dtype="int64"),
+            "b_2": pd.Series([4.5, 5.5, 6.5], dtype="float64"),
+        }
+    )
+    spec = pd.DataFrame({".name": list(source), ".value": ["a", "a", "b", "b"]})
+    if with_other:
+        spec["part"] = [1, 2, 1, 2]
+    original = source.copy(deep=True)
+
+    def refuse_fast_group(*args, **kwargs):
+        raise AssertionError("Mixed NumPy dtypes entered the homogeneous fast path")
+
+    with monkeypatch.context() as patched:
+        patched.setattr(pivot_module, "_fast_ravel_group", refuse_fast_group)
+        result = pivot_longer_spec(source, spec, sort_by_appearance=sort_by_appearance)
+    assert result.shape[0] > 0
+    result.iloc[0, result.columns.get_loc("a")] = -999
     assert_frame_equal(source, original)

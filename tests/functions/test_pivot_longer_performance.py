@@ -176,3 +176,50 @@ def test_mixed_numpy_dtypes_use_legacy_path(
     assert result.shape[0] > 0
     result.iloc[0, result.columns.get_loc("a")] = -999
     assert_frame_equal(source, original)
+
+@pytest.mark.parametrize(
+    ("kind", "scalars"),
+    [
+        ("strings", ["alpha", "beta", "gamma"]),
+        ("pandas_na", ["alpha", pd.NA, "gamma"]),
+        ("datetime_nat", [pd.Timestamp("2024-01-01"), pd.Timestamp("2024-01-02"), pd.NaT]),
+        ("mixed", [pd.NA, "value", 5.5]),
+        ("boolean_none", [True, False, None]),
+        ("bytes_none", [b"aa", b"bb", None]),
+    ],
+)
+@pytest.mark.parametrize("with_other", [False, True])
+@pytest.mark.parametrize("interleaved", [False, True])
+@pytest.mark.parametrize("dropna", [False, True])
+def test_object_value_groups_preserve_heterogeneous_scalars(
+    monkeypatch, kind, scalars, with_other, interleaved, dropna
+):
+    """Object fast path must preserve NA/NaT, Python scalars and source buffers."""
+    groups = ["a", "a", "b", "b", "c", "c"]
+    order = [0, 2, 4, 1, 3, 5] if interleaved else list(range(6))
+    names = [f"col_{idx}" for idx in order]
+    source = pd.DataFrame(
+        {
+            name: pd.Series(
+                [scalars[(idx + row) % len(scalars)] for row in range(3)],
+                dtype="object",
+            )
+            for idx, name in zip(order, names)
+        }
+    )
+    original = source.copy(deep=True)
+    spec = pd.DataFrame({".name": names, ".value": [groups[idx] for idx in order]})
+    if with_other:
+        spec["part"] = [idx % 2 for idx in order]
+
+    options = {"dropna": dropna}
+    with monkeypatch.context() as patched:
+        patched.setattr(pivot_module, "_fast_numpy_value_matrix", lambda df: None)
+        expected = pivot_longer_spec(source.copy(deep=True), spec.copy(), **options)
+
+    actual = pivot_longer_spec(source, spec.copy(), **options)
+    assert_frame_equal(actual, expected)
+    # Copy-on-Write does not detect raw NumPy buffer aliases; exercise a
+    # write to the returned value buffer and verify the source is unchanged.
+    actual.iloc[0, actual.columns.get_loc("a")] = "__output_only__"
+    assert_frame_equal(source, original)

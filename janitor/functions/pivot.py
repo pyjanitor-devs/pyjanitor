@@ -1429,9 +1429,9 @@ def _stack_dot_value_only_single_label(
     elif any_extension_array:
         contents = _build_content_extension_array(df=df)
     elif sort_by_appearance:
-        contents = df._values.ravel(order="C")
+        contents = _ravel_values(df, order="C")
     else:
-        contents = df._values.ravel(order="F")
+        contents = _ravel_values(df, order="F")
     key = spec._values[0]
     contents = {key: contents}
     nulls = _build_nulls(contents=contents, dropna=dropna)
@@ -1532,9 +1532,9 @@ def _stack_dot_value_only_multiple_labels(
         elif no_nulls and any_extension_array:
             frame = _build_content_extension_array(df=frame)
         elif no_nulls and sort_by_appearance:
-            frame = frame._values.ravel(order="C")
+            frame = _ravel_values(frame, order="C")
         elif no_nulls:
-            frame = frame._values.ravel(order="F")
+            frame = _ravel_values(frame, order="F")
         else:
             nulls_count = reps - counts.loc[label]
             nulls_count = len_df * nulls_count
@@ -1635,9 +1635,9 @@ def _stack_dot_value_single_label(
     elif any_extension_array:
         contents = _build_content_extension_array(df=df)
     elif sort_by_appearance:
-        contents = df._values.ravel(order="C")
+        contents = _ravel_values(df, order="C")
     else:
-        contents = df._values.ravel(order="F")
+        contents = _ravel_values(df, order="F")
     key = spec.pop(".value")
     key = key._values[0]
     contents = {key: contents}
@@ -1796,9 +1796,9 @@ def _stack_dot_value_multiple_labels(
         elif any_extension_array:
             frame = _build_content_extension_array(df=frame)
         elif sort_by_appearance:
-            frame = frame._values.ravel(order="C")
+            frame = _ravel_values(frame, order="C")
         else:
-            frame = frame._values.ravel(order="F")
+            frame = _ravel_values(frame, order="F")
         label = _value[label]
         contents[label] = frame
     nulls = _build_nulls(contents=contents, dropna=dropna)
@@ -1891,6 +1891,17 @@ def _build_content_extension_array_with_nulls(
     return df
 
 
+def _ravel_values(df: pd.DataFrame, order: str):
+    """Flatten values without exposing a view of the input frame."""
+    values = df._values
+    flat = values.ravel(order=order)
+    if np.may_share_memory(
+        getattr(flat, "_ndarray", flat), getattr(values, "_ndarray", values)
+    ):
+        flat = flat.copy()
+    return flat
+
+
 def _build_index(index: dict, len_df: int, reps: int, sort_by_appearance: bool) -> dict:
     """Build index dictionary"""
     if not index:
@@ -1909,7 +1920,12 @@ def _build_index(index: dict, len_df: int, reps: int, sort_by_appearance: bool) 
         elif sort_by_appearance:
             arr = arr.repeat(reps)
         else:
-            arr = np.tile(arr, reps)
+            tiled = np.tile(arr, reps)
+            if np.may_share_memory(
+                getattr(tiled, "_ndarray", tiled), getattr(arr, "_ndarray", arr)
+            ):
+                tiled = tiled.copy()
+            arr = tiled
         index_[arr_name] = arr
     return index_
 
@@ -1947,7 +1963,7 @@ def _build_nulls(contents: dict, dropna: bool) -> np.ndarray | None:
 
 
 def _build_df(contents: dict, df_index: pd.Index | None) -> pd.DataFrame:
-    """Build the dataframe"""
+    """Build the dataframe."""
     if df_index is None:
         return pd.DataFrame(data=contents, copy=False)
     return pd.DataFrame(data=contents, index=df_index, copy=False)

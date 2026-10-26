@@ -177,6 +177,7 @@ def test_mixed_numpy_dtypes_use_legacy_path(
     result.iloc[0, result.columns.get_loc("a")] = -999
     assert_frame_equal(source, original)
 
+
 @pytest.mark.parametrize(
     ("kind", "scalars"),
     [

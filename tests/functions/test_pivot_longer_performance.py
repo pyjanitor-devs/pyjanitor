@@ -221,5 +221,6 @@ def test_object_value_groups_preserve_heterogeneous_scalars(
     assert_frame_equal(actual, expected)
     # Copy-on-Write does not detect raw NumPy buffer aliases; exercise a
     # write to the returned value buffer and verify the source is unchanged.
-    actual.iloc[0, actual.columns.get_loc("a")] = "__output_only__"
+    replacement = pd.Timestamp("2030-01-01") if kind == "datetime_nat" else "__output_only__"
+    actual.iloc[0, actual.columns.get_loc("a")] = replacement
     assert_frame_equal(source, original)

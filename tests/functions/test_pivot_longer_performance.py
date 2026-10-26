@@ -182,7 +182,10 @@ def test_mixed_numpy_dtypes_use_legacy_path(
     [
         ("strings", ["alpha", "beta", "gamma"]),
         ("pandas_na", ["alpha", pd.NA, "gamma"]),
-        ("datetime_nat", [pd.Timestamp("2024-01-01"), pd.Timestamp("2024-01-02"), pd.NaT]),
+        (
+            "datetime_nat",
+            [pd.Timestamp("2024-01-01"), pd.Timestamp("2024-01-02"), pd.NaT],
+        ),
         ("mixed", [pd.NA, "value", 5.5]),
         ("boolean_none", [True, False, None]),
         ("bytes_none", [b"aa", b"bb", None]),
@@ -221,6 +224,8 @@ def test_object_value_groups_preserve_heterogeneous_scalars(
     assert_frame_equal(actual, expected)
     # Copy-on-Write does not detect raw NumPy buffer aliases; exercise a
     # write to the returned value buffer and verify the source is unchanged.
-    replacement = pd.Timestamp("2030-01-01") if kind == "datetime_nat" else "__output_only__"
+    replacement = (
+        pd.Timestamp("2030-01-01") if kind == "datetime_nat" else "__output_only__"
+    )
     actual.iloc[0, actual.columns.get_loc("a")] = replacement
     assert_frame_equal(source, original)

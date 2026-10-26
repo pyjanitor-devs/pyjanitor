@@ -1515,7 +1515,20 @@ def _stack_dot_value_only_multiple_labels(
     contents = {}
     indexer = None
     df.columns = spec
+    # Build the homogeneous value matrix once. Group indices are positional,
+    # avoiding repeated duplicate-label scans for each .value group.
+    fast_values = _fast_numpy_value_matrix(df)
+    group_positions = grouped.indices if fast_values is not None else None
     for label in counts.index:
+        positions = group_positions.get(label) if group_positions is not None else None
+        if positions is not None and len(positions):
+            contents[label] = _fast_ravel_group(
+                values=fast_values,
+                positions=positions,
+                reps=reps,
+                sort_by_appearance=sort_by_appearance,
+            )
+            continue
         frame = df.loc[:, [label]]
         no_nulls = frame.columns.size == reps
         any_extension_array = (
@@ -1780,7 +1793,20 @@ def _stack_dot_value_multiple_labels(
         df = df.sort_index(axis=1)
     contents = {}
     indexer = None
+    fast_values = _fast_numpy_value_matrix(df)
+    fast_codes = df.columns.codes[0] if fast_values is not None else None
     for label in range(_value.size):
+        if fast_values is not None:
+            start = fast_codes.searchsorted(label, side="left")
+            end = fast_codes.searchsorted(label, side="right")
+            if end > start:
+                contents[_value[label]] = _fast_ravel_group(
+                    values=fast_values,
+                    positions=np.arange(start, end),
+                    reps=reps,
+                    sort_by_appearance=sort_by_appearance,
+                )
+                continue
         frame = df.loc[:, [label]]
         any_extension_array = (
             frame.dtypes.map(is_extension_array_dtype).any(axis=None).item()
@@ -1898,6 +1924,60 @@ def _ravel_values(df: pd.DataFrame, order: str):
     if np.may_share_memory(
         getattr(flat, "_ndarray", flat), getattr(values, "_ndarray", values)
     ):
+        flat = flat.copy()
+    return flat
+
+
+def _fast_numpy_value_matrix(df: pd.DataFrame) -> np.ndarray | None:
+    """Return a homogeneous NumPy value matrix, or request the legacy path.
+
+    Extension and mixed dtypes retain their existing per-label behavior.
+    """
+    dtypes = df.dtypes
+    if dtypes.empty or dtypes.nunique() != 1:
+        return None
+    if not isinstance(dtypes.iloc[0], np.dtype):
+        return None
+    values = df._values
+    if not isinstance(values, np.ndarray):
+        return None
+    return values
+
+
+def _fast_ravel_group(
+    values: np.ndarray,
+    positions: np.ndarray,
+    reps: int,
+    sort_by_appearance: bool,
+) -> np.ndarray:
+    """Flatten one positional value group without retaining source views.
+
+    Contiguous column groups use a view prior to flattening; other groups
+    require a single positional gather. If some groups are shorter than the
+    widest group, pad their missing columns in the same order as the legacy
+    concat_compat path.
+    """
+    positions = np.asarray(positions, dtype=np.intp)
+    if positions.size == 1:
+        columns = values[:, positions[0] : positions[0] + 1]
+    elif np.all(np.diff(positions) == 1):
+        columns = values[:, positions[0] : positions[-1] + 1]
+    else:
+        columns = values[:, positions]
+
+    if positions.size < reps:
+        # concat_compat is essential here: boolean/integer columns combined
+        # with NaN can have a different dtype from numpy.concatenate.
+        parts = [columns[:, position] for position in range(columns.shape[1])]
+        parts.append(np.full(values.shape[0] * (reps - positions.size), np.nan))
+        flat = concat_compat(parts)
+        if sort_by_appearance:
+            flat = flat.reshape((values.shape[0], reps), order="F").ravel(order="C")
+    else:
+        flat = columns.ravel(order="C" if sort_by_appearance else "F")
+    # Pandas Copy-on-Write does not know about references taken via _values.
+    # Never pass an alias of the input's data to the output DataFrame.
+    if np.may_share_memory(flat, values):
         flat = flat.copy()
     return flat
 

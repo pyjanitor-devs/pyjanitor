@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [ENH] Speed up homogeneous NumPy `.value` groups in `pivot_longer` without extra copies for fragmented frames. - Issue #1821 @senanurcetin
+
 ## [v0.32.60] - 2026-10-26
 
 -   No user-facing changes; see the generated release notes.

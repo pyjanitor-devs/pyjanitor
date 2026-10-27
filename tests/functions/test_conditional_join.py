@@ -1513,14 +1513,92 @@ def test_check_op_correct(dummy, series):
         dummy.conditional_join(series, ("id", "B", "=!"))
 
 
-def test_equi_only(dummy):
-    """
-    Raise ValueError if only an equi-join is present.
-    """
-    with pytest.raises(ValueError, match="Equality only joins are not supported."):
-        dummy.conditional_join(
-            dummy.rename(columns={"S": "Strings"}), ("S", "Strings", "==")
+@pytest.mark.parametrize("how", ["inner", "left", "right", "outer"])
+@pytest.mark.parametrize("keep", ["all", "first", "last"])
+def test_equi_only(how, keep):
+    """Equality-only joins handle duplicates, nulls, join types, and keep."""
+    left = pd.DataFrame(
+        {
+            "key": [1, 1, np.nan, 2],
+            "left_payload": ["l1", "l2", "ln", "l3"],
+        }
+    ).assign(_left_pos=lambda frame: frame.index)
+    right = pd.DataFrame(
+        {
+            "key": [1, np.nan, 1, 3],
+            "right_payload": ["r1", "rn", "r2", "r3"],
+        }
+    ).assign(_right_pos=lambda frame: frame.index)
+
+    left_non_null = left.dropna(subset=["key"])
+    right_non_null = right.dropna(subset=["key"])
+    matches = pd.merge(
+        left_non_null,
+        right_non_null,
+        on="key",
+        how="inner",
+        sort=False,
+    )
+    if keep != "all":
+        grouped_matches = matches.groupby(
+            "_left_pos", sort=False, group_keys=False
         )
+        matches = (
+            grouped_matches.head(1)
+            if keep == "first"
+            else grouped_matches.tail(1)
+        )
+
+    matched_left = set(matches["_left_pos"])
+    matched_right = set(matches["_right_pos"])
+    rows = [
+        (row.key, row.left_payload, row.key, row.right_payload)
+        for row in matches.itertuples()
+    ]
+    if how in {"left", "outer"}:
+        rows.extend(
+            (key, left_payload, np.nan, np.nan)
+            for key, left_payload, left_pos in left.itertuples(
+                index=False, name=None
+            )
+            if left_pos not in matched_left
+        )
+    if how in {"right", "outer"}:
+        rows.extend(
+            (np.nan, np.nan, key, right_payload)
+            for key, right_payload, right_pos in right.itertuples(
+                index=False, name=None
+            )
+            if right_pos not in matched_right
+        )
+
+    expected = pd.DataFrame(
+        rows,
+        columns=["left_key", "left_payload", "right_key", "right_payload"],
+    )
+    expected = pd.concat(
+        {
+            "left": expected[["left_key", "left_payload"]].set_axis(
+                ["key", "left_payload"], axis=1
+            ),
+            "right": expected[["right_key", "right_payload"]].set_axis(
+                ["key", "right_payload"], axis=1
+            ),
+        },
+        axis=1,
+    )
+
+    actual = left.drop(columns="_left_pos").conditional_join(
+        right.drop(columns="_right_pos"),
+        ("key", "key", "=="),
+        how=how,
+        keep=keep,
+    )
+
+    sort_by = expected.columns.tolist()
+    actual = actual.sort_values(sort_by, ignore_index=True)
+    expected = expected.sort_values(sort_by, ignore_index=True)
+    assert_frame_equal(actual, expected)
 
 
 def test_check_how_type(dummy, series):

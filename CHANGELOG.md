@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+-   [ENH] Support equality-only joins in `conditional_join`; null keys never
+    match, unlike `pd.merge`.
+
 ## [v0.32.60] - 2026-10-26
 
 -   No user-facing changes; see the generated release notes.

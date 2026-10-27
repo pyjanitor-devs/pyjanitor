@@ -105,14 +105,13 @@ def conditional_join(
     include_join_positions: bool = False,
 ) -> pd.DataFrame:
     """The conditional_join function operates similarly to `pd.merge`,
-    but supports joins on inequality operators,
-    or a combination of equi and non-equi joins.
+    but supports equality joins, inequality joins,
+    and combinations of equi and non-equi joins.
 
-    Joins solely on equality are not supported.
+    Equality-only joins are supported. Unlike `pd.merge`, null keys never
+    match; for plain equality joins `pd.merge` is usually faster.
 
-    If the join is solely on equality, `pd.merge` function
-    covers that; if you are interested in nearest joins, asof joins,
-    or rolling joins, then `pd.merge_asof` covers that.
+    For nearest, asof, or rolling joins, see `pd.merge_asof`.
     There is also pandas' IntervalIndex, which is efficient for range joins,
     especially if the intervals do not overlap.
 
@@ -736,10 +735,6 @@ def _conditional_join_preliminary_checks(
     check("reverse", reverse, [bool])
 
     _check_aggfunc(df, right, aggfunc, reverse)
-    if all((op == _JoinOperator.STRICTLY_EQUAL.value for *_, op in conditions)):
-        if not (return_matching_indices or aggfunc):
-            raise ValueError("Equality only joins are not supported.")
-
     check("include_join_positions", include_join_positions, [bool])
     if include_join_positions and (how != "inner"):
         raise ValueError("include_join_positions is valid only if `how='inner'`")

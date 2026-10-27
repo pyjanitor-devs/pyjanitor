@@ -255,7 +255,7 @@ def test_object_value_groups_preserve_heterogeneous_scalars(
 def test_numpy_temporal_complex_padding_matches_legacy(
     monkeypatch, dtype, values, replacement, with_other, interleaved, dropna
 ):
-    """Non-basic NumPy dtypes preserve padding, nulls and input isolation."""
+    """Temporal extension fallback and NumPy dtypes retain padding and isolation."""
     groups = ["a", "a", "b", "b", "c"]
     order = [0, 2, 4, 1, 3] if interleaved else list(range(5))
     names = [f"col_{idx}" for idx in order]
@@ -282,3 +282,43 @@ def test_numpy_temporal_complex_padding_matches_legacy(
     assert_frame_equal(actual, expected)
     actual.iloc[0, actual.columns.get_loc("a")] = replacement
     assert_frame_equal(source, original)
+
+
+@pytest.mark.parametrize("with_other", [False, True])
+@pytest.mark.parametrize("interleaved", [False, True])
+@pytest.mark.parametrize("uneven", [False, True])
+@pytest.mark.parametrize("sort_by_appearance", [False, True])
+def test_fragmented_numpy_value_groups_match_legacy_without_aliasing(
+    monkeypatch, with_other, interleaved, uneven, sort_by_appearance
+):
+    """Multi-block source must not incur unnecessary second copies or alias input."""
+    groups = ["a", "a", "b", "b", "c"]
+    order = [0, 2, 4, 1, 3] if interleaved else list(range(5))
+    if not uneven:
+        order = [index for index in order if index != 4]
+    source = pd.DataFrame(index=range(4))
+    for index in order:
+        # Assign separately: this creates one pandas block per source column.
+        source[f"signal_{index}"] = np.arange(4, dtype=float) + index
+    assert source._mgr.nblocks > 1
+    source_before = source.copy(deep=True)
+    matrix = pivot_module._fast_numpy_value_matrix(source)
+    assert matrix is not None
+    assert not pivot_module._values_alias_input(matrix, source)
+    spec = pd.DataFrame(
+        {
+            ".name": list(source.columns),
+            ".value": [groups[index] for index in order],
+        }
+    )
+    if with_other:
+        spec["part"] = [index % 2 for index in order]
+    options = {"sort_by_appearance": sort_by_appearance}
+    with monkeypatch.context() as patched:
+        patched.setattr(pivot_module, "_fast_numpy_value_matrix", lambda _: None)
+        expected = pivot_longer_spec(source.copy(deep=True), spec.copy(), **options)
+    actual = pivot_longer_spec(source, spec.copy(), **options)
+    assert_frame_equal(actual, expected)
+    for column in ("a", "b"):
+        actual.loc[actual.index[0], column] = -999.0
+    assert_frame_equal(source, source_before)

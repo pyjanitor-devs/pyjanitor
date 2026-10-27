@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v0.32.61] - 2026-10-27
+
 -   [ENH] Support equality-only joins in `conditional_join`; null keys never
     match, unlike `pd.merge`.
 
@@ -679,7 +681,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.60...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.61...HEAD
+
+[v0.32.61]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.60...v0.32.61
 
 [v0.32.60]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.59...v0.32.60
 

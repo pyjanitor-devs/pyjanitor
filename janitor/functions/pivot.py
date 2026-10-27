@@ -1518,6 +1518,7 @@ def _stack_dot_value_only_multiple_labels(
     # Build the homogeneous value matrix once. Group indices are positional,
     # avoiding repeated duplicate-label scans for each .value group.
     fast_values = _fast_numpy_value_matrix(df)
+    values_alias_input = _values_alias_input(fast_values, df)
     group_positions = grouped.indices if fast_values is not None else None
     for label in counts.index:
         positions = group_positions.get(label) if group_positions is not None else None
@@ -1527,6 +1528,7 @@ def _stack_dot_value_only_multiple_labels(
                 positions=positions,
                 reps=reps,
                 sort_by_appearance=sort_by_appearance,
+                values_alias_input=values_alias_input,
             )
             continue
         frame = df.loc[:, [label]]
@@ -1794,6 +1796,7 @@ def _stack_dot_value_multiple_labels(
     contents = {}
     indexer = None
     fast_values = _fast_numpy_value_matrix(df)
+    values_alias_input = _values_alias_input(fast_values, df)
     fast_codes = df.columns.codes[0] if fast_values is not None else None
     for label in range(_value.size):
         if fast_values is not None:
@@ -1805,6 +1808,7 @@ def _stack_dot_value_multiple_labels(
                     positions=np.arange(start, end),
                     reps=reps,
                     sort_by_appearance=sort_by_appearance,
+                    values_alias_input=values_alias_input,
                 )
                 continue
         frame = df.loc[:, [label]]
@@ -1944,11 +1948,24 @@ def _fast_numpy_value_matrix(df: pd.DataFrame) -> np.ndarray | None:
     return values
 
 
+def _values_alias_input(values: np.ndarray | None, df: pd.DataFrame) -> bool:
+    """Whether the homogeneous NumPy matrix overlaps the input frame's blocks.
+
+    Consolidating fragmented pandas blocks creates a fresh array, so views
+    into that array do not mutate the original frame. Inspect once per input,
+    not once for every value group.
+    """
+    if values is None:
+        return False
+    return any(np.may_share_memory(values, block.values) for block in df._mgr.blocks)
+
+
 def _fast_ravel_group(
     values: np.ndarray,
     positions: np.ndarray,
     reps: int,
     sort_by_appearance: bool,
+    values_alias_input: bool = True,
 ) -> np.ndarray:
     """Flatten one positional value group without retaining source views.
 
@@ -1958,26 +1975,25 @@ def _fast_ravel_group(
     concat_compat path.
     """
     positions = np.asarray(positions, dtype=np.intp)
+    if positions.size < reps:
+        # concat_compat preserves the legacy dtype/padding semantics, and
+        # creates a fresh array. Avoid a needless positional gather first.
+        parts = [values[:, position] for position in positions]
+        parts.append(np.full(values.shape[0] * (reps - positions.size), np.nan))
+        flat = concat_compat(parts)
+        if sort_by_appearance:
+            flat = flat.reshape((values.shape[0], reps), order="F").ravel(order="C")
+        return flat
     if positions.size == 1:
         columns = values[:, positions[0] : positions[0] + 1]
     elif np.all(np.diff(positions) == 1):
         columns = values[:, positions[0] : positions[-1] + 1]
     else:
         columns = values[:, positions]
-
-    if positions.size < reps:
-        # concat_compat is essential here: boolean/integer columns combined
-        # with NaN can have a different dtype from numpy.concatenate.
-        parts = [columns[:, position] for position in range(columns.shape[1])]
-        parts.append(np.full(values.shape[0] * (reps - positions.size), np.nan))
-        flat = concat_compat(parts)
-        if sort_by_appearance:
-            flat = flat.reshape((values.shape[0], reps), order="F").ravel(order="C")
-    else:
-        flat = columns.ravel(order="C" if sort_by_appearance else "F")
-    # Pandas Copy-on-Write does not know about references taken via _values.
-    # Never pass an alias of the input's data to the output DataFrame.
-    if np.may_share_memory(flat, values):
+    flat = columns.ravel(order="C" if sort_by_appearance else "F")
+    # Pandas Copy-on-Write cannot guard raw NumPy views of its input blocks.
+    # Consolidated frames already own a separate matrix; do not copy twice.
+    if values_alias_input and np.may_share_memory(flat, values):
         flat = flat.copy()
     return flat
 

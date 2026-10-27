@@ -322,3 +322,16 @@ def test_fragmented_numpy_value_groups_match_legacy_without_aliasing(
     for column in ("a", "b"):
         actual.loc[actual.index[0], column] = -999.0
     assert_frame_equal(source, source_before)
+
+
+def test_single_block_value_matrix_guard_detects_source_alias():
+    """Pandas single-block views must still trigger defensive source copying."""
+    frame = pd.DataFrame(
+        np.arange(16, dtype="float64").reshape(4, 4),
+        columns=["a_1", "a_2", "b_1", "b_2"],
+    )
+    assert frame._mgr.nblocks == 1
+    matrix = pivot_module._fast_numpy_value_matrix(frame)
+    assert matrix is not None
+    assert pivot_module._values_alias_input(matrix, frame)
+    assert not pivot_module._values_alias_input(None, frame)

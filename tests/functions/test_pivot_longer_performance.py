@@ -230,3 +230,55 @@ def test_object_value_groups_preserve_heterogeneous_scalars(
     )
     actual.iloc[0, actual.columns.get_loc("a")] = replacement
     assert_frame_equal(source, original)
+
+
+@pytest.mark.parametrize(
+    ("dtype", "values", "replacement"),
+    [
+        (
+            "datetime64[ns]",
+            [pd.Timestamp("2024-01-01"), pd.Timestamp("2024-01-02"), pd.NaT],
+            pd.Timestamp("2030-01-01"),
+        ),
+        (
+            "timedelta64[ns]",
+            [pd.Timedelta(days=1), pd.Timedelta(days=2), pd.NaT],
+            pd.Timedelta(days=30),
+        ),
+        ("complex128", [1 + 2j, 3 - 4j, np.nan], 99 + 2j),
+        ("float16", [1.5, 2.5, np.nan], 99.0),
+    ],
+)
+@pytest.mark.parametrize("with_other", [False, True])
+@pytest.mark.parametrize("interleaved", [False, True])
+@pytest.mark.parametrize("dropna", [False, True])
+def test_numpy_temporal_complex_padding_matches_legacy(
+    monkeypatch, dtype, values, replacement, with_other, interleaved, dropna
+):
+    """Non-basic NumPy dtypes preserve padding, nulls and input isolation."""
+    groups = ["a", "a", "b", "b", "c"]
+    order = [0, 2, 4, 1, 3] if interleaved else list(range(5))
+    names = [f"col_{idx}" for idx in order]
+    source = pd.DataFrame(
+        {
+            name: pd.Series(
+                [values[(idx + row) % len(values)] for row in range(3)],
+                dtype=dtype,
+            )
+            for idx, name in zip(order, names)
+        }
+    )
+    original = source.copy(deep=True)
+    spec = pd.DataFrame({".name": names, ".value": [groups[idx] for idx in order]})
+    if with_other:
+        spec["part"] = [idx % 2 for idx in order]
+    options = {"dropna": dropna}
+
+    with monkeypatch.context() as patched:
+        patched.setattr(pivot_module, "_fast_numpy_value_matrix", lambda df: None)
+        expected = pivot_longer_spec(source.copy(deep=True), spec.copy(), **options)
+
+    actual = pivot_longer_spec(source, spec.copy(), **options)
+    assert_frame_equal(actual, expected)
+    actual.iloc[0, actual.columns.get_loc("a")] = replacement
+    assert_frame_equal(source, original)

@@ -7,8 +7,9 @@ Examples:
   Use --repeat 2 and --out result.json to save repeated measurements.
 
 Each variant runs in a fresh child process, avoiding cross-case lifetime
-allocation effects when reporting peak RSS. Python allocations are measured
-separately with tracemalloc; they do not include native NumPy memory.
+allocation effects when reporting peak RSS. Timing is measured with tracing
+disabled across repeated calls; a separate call with tracemalloc measures
+Python allocations. Native NumPy buffers are not included in traced memory.
 The baseline is the same branch with only the new fast-path entry disabled
 (not a separate upstream revision). Compare results only on the same machine.
 """
@@ -118,18 +119,22 @@ def _worker(args):
     frame, spec = _dataset(args.rows, args.groups, args.repeats)
     # NumPy buffers in frame are allocated before measurements for both modes.
     durations = []
-    tracer_peaks = []
     peak_start = _peak_rss_mib()
     for _ in range(args.repeat):
-        tracemalloc.start()
         start = time.perf_counter()
         result = _execute(
             frame, spec, args.case, args.mode, pivot_longer, pivot_longer_spec, module
         )
         durations.append(time.perf_counter() - start)
-        tracer_peaks.append(tracemalloc.get_traced_memory()[1] / (1024**2))
-        tracemalloc.stop()
         del result
+    # Measure memory separately: tracing inflates legacy per-label timings.
+    tracemalloc.start()
+    memory_result = _execute(
+        frame, spec, args.case, args.mode, pivot_longer, pivot_longer_spec, module
+    )
+    traced_peak = tracemalloc.get_traced_memory()[1] / (1024**2)
+    tracemalloc.stop()
+    del memory_result
     peak_after = _peak_rss_mib()
     print(
         json.dumps(
@@ -145,7 +150,7 @@ def _worker(args):
                 "baseline_process_rss_peak_mib": (
                     round(peak_start, 1) if peak_start is not None else None
                 ),
-                "peak_traced_python_mib": round(max(tracer_peaks), 1),
+                "peak_traced_python_mib": round(traced_peak, 1),
             }
         )
     )

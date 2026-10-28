@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v0.32.62] - 2026-10-28
+
 -   [ENH] Speed up homogeneous NumPy `.value` groups in `pivot_longer` without extra copies for fragmented frames. - Issue #1821 @senanurcetin
 
 ## [v0.32.61] - 2026-10-27
@@ -683,7 +685,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.61...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.62...HEAD
+
+[v0.32.62]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.61...v0.32.62
 
 [v0.32.61]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.60...v0.32.61
 

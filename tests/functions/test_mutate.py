@@ -188,3 +188,61 @@ def test_assign_expressions_by(df_mutate):
     actual = df_mutate.groupby("combine_id").assign(total=pd.col("avg_run").mul(2))
     expected = df_mutate.assign(total=pd.col("avg_run").mul(2))
     assert_frame_equal(actual.get_columns("*"), expected)
+
+
+def test_assign_by_after_aggregation(df_mutate):
+    """New columns are visible even if the groupby was already aggregated."""
+    grp = df_mutate.groupby("combine_id")
+    grp.sum()
+    actual = grp.assign(total=pd.col("avg_run").mul(2)).sum()
+    expected = (
+        df_mutate.assign(total=pd.col("avg_run").mul(2)).groupby("combine_id").sum()
+    )
+    assert_frame_equal(actual, expected)
+
+
+def test_assign_by_after_get_columns(df_mutate):
+    """Accessors used on the original groupby do not leak into the copy."""
+    grp = df_mutate.groupby("combine_id")
+    grp.get_columns("*")
+    actual = grp.assign(total=pd.col("avg_run").mul(2)).get_columns("*")
+    expected = df_mutate.assign(total=pd.col("avg_run").mul(2))
+    assert_frame_equal(actual, expected)
+
+
+def test_assign_by_chained(df_mutate):
+    """Chained assigns see columns created by earlier assigns."""
+    actual = (
+        df_mutate.groupby("combine_id")
+        .assign(total=pd.col("avg_run").mul(2))
+        .assign(total_sum=lambda df: df["total"].transform("sum"))
+    )
+    total = df_mutate["avg_run"].mul(2)
+    expected = df_mutate.assign(
+        total=total, total_sum=total.groupby(df_mutate["combine_id"]).transform("sum")
+    )
+    assert_frame_equal(actual.get_columns("*"), expected)
+    assert_frame_equal(actual.sum(), expected.groupby("combine_id").sum())
+
+
+def test_assign_by_aggregation_between_columns(df_mutate):
+    """A whole-frame callable does not hide columns assigned after it."""
+    actual = df_mutate.groupby("combine_id").assign(
+        jump_sum=lambda df: df.transform("sum")["avg_jump"],
+        total=pd.col("avg_run").mul(2),
+    )
+    expected = df_mutate.assign(
+        jump_sum=df_mutate.groupby("combine_id")["avg_jump"].transform("sum"),
+        total=pd.col("avg_run").mul(2),
+    )
+    assert_frame_equal(actual.get_columns("*"), expected)
+    assert_frame_equal(actual.sum(), expected.groupby("combine_id").sum())
+
+
+def test_assign_by_leaves_original_groupby(df_mutate):
+    """The original groupby and DataFrame are unchanged."""
+    grp = df_mutate.groupby("combine_id")
+    expected = grp.sum()
+    grp.assign(total=pd.col("avg_run").mul(2)).sum()
+    assert_frame_equal(grp.sum(), expected)
+    assert list(df_mutate.columns) == ["avg_jump", "avg_run", "combine_id"]

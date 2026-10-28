@@ -12,6 +12,7 @@ from pandas.core.common import apply_if_callable
 from pandas.core.groupby.generic import DataFrameGroupBy
 
 from janitor.functions.select import get_index_labels
+from janitor.functions.utils import _copy_groupby
 from janitor.utils import refactored_function
 
 
@@ -70,7 +71,7 @@ def assign(df: DataFrameGroupBy, **kwargs) -> DataFrameGroupBy:
     Returns:
         A pandas DataFrameGroupBy object.
     """
-    df = copy.copy(df)
+    df = _copy_groupby(df)
     df_ = df.obj.copy(deep=False)
     df.obj = df_
     for k, v in kwargs.items():
@@ -79,6 +80,8 @@ def assign(df: DataFrameGroupBy, **kwargs) -> DataFrameGroupBy:
         else:
             outcome = apply_if_callable(v, df)
         df.obj[k] = outcome
+        # a callable may have cached the frame before this column existed
+        df.__dict__.pop("_cache", None)
     return df
 
 

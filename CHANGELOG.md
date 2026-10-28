@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [BUG] Keep new columns visible on the groupby returned by `assign` and `rle_id`; reused groupbys and chained calls previously read the original frame's cached columns and pandas_flavor accessors.
+
 ## [v0.32.62] - 2026-10-28
 
 -   [ENH] Speed up homogeneous NumPy `.value` groups in `pivot_longer` without extra copies for fragmented frames. - Issue #1821 @senanurcetin

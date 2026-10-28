@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import re
 import unicodedata
 import warnings
@@ -25,6 +26,7 @@ from pandas.api.types import (
     is_string_dtype,
     union_categoricals,
 )
+from pandas.core.groupby.generic import DataFrameGroupBy
 
 from janitor.errors import JanitorError
 from janitor.utils import (
@@ -838,3 +840,24 @@ def _is_str_or_cat(index):
     if isinstance(index.dtype, pd.CategoricalDtype):
         return is_string_dtype(index.categories)
     return is_string_dtype(index)
+
+
+def _copy_groupby(grp: DataFrameGroupBy) -> DataFrameGroupBy:
+    """
+    Shallow copy a groupby object, reusing its grouper.
+
+    `copy.copy` also copies instance state tied to `grp`:
+    pandas' `cache_readonly` values (e.g. `_obj_with_exclusions`)
+    and pandas_flavor accessors bound to `grp`.
+    Both would keep referring to the original columns,
+    so they are dropped from the copy.
+    """
+    new = copy.copy(grp)
+    stale = [
+        key
+        for key, value in vars(new).items()
+        if key == "_cache" or getattr(value, "_obj", None) is grp
+    ]
+    for key in stale:
+        del new.__dict__[key]
+    return new

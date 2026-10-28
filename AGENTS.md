@@ -832,11 +832,11 @@ pandas_flavor `CachedAccessor`, whichever object it was bound to. Do not
 detect accessors by an `_obj` attribute: `getattr(frame, "_obj")` returns a
 column named `_obj`. Walk `type(grp).__mro__` checking `base.__dict__`
 (first hit wins); `inspect.getattr_static` gives the same answer but is ~5x
-slower per copy (25 vs 5 us). Mutating `obj` in place after the copy (as `assign` does
-per column) needs `_cache` cleared again. Deprecated functions that produce
-groupbys still go through the helper, because their output feeds live
-methods. Re-assigning a grouping column keeps the old groups (documented in
-`assign`).
+slower per copy (25 vs 5 us). Mutating `obj` in place after the copy (as
+`assign` does per column) needs `_cache` cleared again. Deprecated functions
+that produce groupbys still go through the helper, because their output feeds
+live methods. Re-assigning a grouping column keeps the old groups (documented
+in `assign`).
 
 **Recommendation**: Any new code that returns a modified groupby must call
 `_copy_groupby` and test reuse (original groupby already aggregated or

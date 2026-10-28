@@ -275,3 +275,20 @@ def test_assign_by_group_key_keeps_groups(df_mutate):
     actual = grp.assign(combine_id=0)["avg_run"].sum()
     expected = grp["avg_run"].sum()
     assert_series_equal(actual, expected)
+
+
+def test_mutate_by_whole_frame_callable_then_column(df_mutate):
+    """Columns added after a whole-frame callable reach aggregations."""
+    with pytest.warns(FutureWarning):
+        actual = df_mutate.groupby("combine_id").mutate(
+            lambda df: df.transform("sum").add_suffix("_s"),
+            {"run_sum": ("avg_run", "sum")},
+        )
+    grp = df_mutate.groupby("combine_id")
+    expected = df_mutate.assign(
+        avg_jump_s=grp["avg_jump"].transform("sum"),
+        avg_run_s=grp["avg_run"].transform("sum"),
+        run_sum=grp["avg_run"].transform("sum"),
+    )
+    assert_frame_equal(actual.obj, expected)
+    assert_frame_equal(actual.sum(), expected.groupby("combine_id").sum())

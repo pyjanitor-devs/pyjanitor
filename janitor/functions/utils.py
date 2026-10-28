@@ -856,6 +856,8 @@ def _copy_groupby(grp: DataFrameGroupBy) -> DataFrameGroupBy:
     Accessors are found by their class-level `CachedAccessor`,
     not by an `_obj` attribute on the value:
     `getattr(frame, "_obj")` returns a column named `_obj`.
+    `CachedAccessor` is pandas_flavor's own, non-exported class;
+    the `<0.9` pin in pyproject.toml covers that import.
     """
     new = copy.copy(grp)
     mro = type(grp).__mro__

@@ -280,6 +280,8 @@ def mutate(
         df.obj = df_
         for arg in args:
             df_ = _mutator(arg, df=df_, by=df)
+            # a whole-frame callable may have cached the frame before this column
+            df.__dict__.pop("_cache", None)
         return df
     df = df.copy(deep=None)
     for arg in args:

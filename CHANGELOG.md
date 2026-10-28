@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v0.32.63] - 2026-10-28
+
 -   [BUG] Keep new columns visible on the groupby returned by `assign` and `rle_id`; reused groupbys and chained calls previously read the original frame's cached columns and pandas_flavor accessors.
 
 ## [v0.32.62] - 2026-10-28
@@ -687,7 +689,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.62...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.63...HEAD
+
+[v0.32.63]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.62...v0.32.63
 
 [v0.32.62]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.61...v0.32.62
 

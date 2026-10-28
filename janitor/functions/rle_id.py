@@ -1,6 +1,5 @@
 """Implementation of the `rle_id` function."""
 
-import copy
 from typing import Hashable, Iterable, Union
 
 import pandas as pd
@@ -8,6 +7,7 @@ import pandas_flavor as pf
 from pandas.api.types import is_list_like
 from pandas.core.groupby.generic import DataFrameGroupBy
 
+from janitor.functions.utils import _copy_groupby
 from janitor.utils import check_column
 
 
@@ -110,7 +110,7 @@ def rle_id(
     """
     grp = None
     if isinstance(df, DataFrameGroupBy):
-        grp = copy.copy(df)
+        grp = _copy_groupby(df)
         group_keys = grp.keys
         df = grp.obj
     else:

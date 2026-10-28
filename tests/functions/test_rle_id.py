@@ -207,3 +207,49 @@ def test_rle_id_groupby_single_group():
     result = df.groupby("g").rle_id("v")
     expected = df.assign(rle_id=[1, 2])
     assert_frame_equal(result.obj, expected)
+
+
+@pytest.mark.functions
+def test_rle_id_groupby_reused():
+    """New column is visible on a groupby already used for other methods."""
+    df = pd.DataFrame(
+        {"group": ["X", "X", "Y", "Y"], "grp": ["A", "B", "A", "A"], "v": [1, 2, 3, 4]}
+    )
+    grouped = df.groupby("group")
+    grouped.sum()
+    grouped.get_columns("*")
+    result = grouped.rle_id("grp")
+    expected = df.assign(rle_id=[1, 2, 1, 1])
+    assert_frame_equal(result.get_columns("*"), expected)
+    assert_frame_equal(result.sum(), expected.groupby("group").sum())
+
+
+@pytest.mark.functions
+def test_rle_id_groupby_chained():
+    """Chained rle_id calls keep earlier new columns."""
+    df = pd.DataFrame(
+        {"group": ["X", "X", "Y", "Y"], "grp": ["A", "B", "A", "A"], "v": [1, 1, 2, 3]}
+    )
+    result = (
+        df.groupby("group")
+        .rle_id("grp")
+        .rle_id("v", new_column_name="rle_v")
+        .get_columns("*")
+    )
+    expected = df.assign(rle_id=[1, 2, 1, 1], rle_v=[1, 1, 1, 2])
+    assert_frame_equal(result, expected)
+
+
+@pytest.mark.functions
+def test_rle_id_groupby_after_mutate():
+    """Accessors cached before the deprecated mutate do not leak through."""
+    df = pd.DataFrame(
+        {"group": ["X", "X", "Y", "Y"], "grp": ["A", "B", "A", "A"], "v": [1, 2, 3, 4]}
+    )
+    grouped = df.groupby("group")
+    grouped.get_columns("*")
+    with pytest.warns(FutureWarning):
+        mutated = grouped.mutate({"v_sum": ("v", "sum")})
+    result = mutated.rle_id("grp").get_columns("*")
+    expected = df.assign(v_sum=[3, 3, 7, 7], rle_id=[1, 2, 1, 1])
+    assert_frame_equal(result, expected)

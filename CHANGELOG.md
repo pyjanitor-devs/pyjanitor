@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [ENH] Vectorise groupby `rle_id` (one pass over all groups instead of a Python function per group) and reuse the groupby's grouping, so `level=`, `dropna=False`, duplicate index labels and multi-key equally sized groups (e.g. a single row) give correct IDs. - Issue #1827
+
 ## [v0.32.63] - 2026-10-28
 
 -   [BUG] Keep new columns visible on the groupby returned by `assign` and `rle_id`; reused groupbys and chained calls previously read the original frame's cached columns and pandas_flavor accessors.

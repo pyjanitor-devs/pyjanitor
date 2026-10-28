@@ -111,10 +111,7 @@ def rle_id(
     grp = None
     if isinstance(df, DataFrameGroupBy):
         grp = _copy_groupby(df)
-        group_keys = grp.keys
         df = grp.obj
-    else:
-        group_keys = None
 
     if not is_list_like(column_names):
         column_names = [column_names]
@@ -126,30 +123,26 @@ def rle_id(
     check_column(df, column_names)
     check_column(df, [new_column_name], present=False)
 
-    def _values_changed(col):
-        prev = col.shift()
+    def _values_changed(col, prev):
         both_notna = col.notna() & prev.notna()
         return (both_notna & (col != prev)) | (col.isna() != prev.isna())
 
-    def _compute_rle(frame):
-        if len(column_names) == 1:
-            changed = _values_changed(frame[column_names[0]])
-        else:
-            changed = pd.Series(False, index=frame.index)
-            for col in column_names:
-                changed = changed | _values_changed(frame[col])
+    if grp is None:
+        changed = pd.Series(False, index=df.index)
+        for col in column_names:
+            changed = changed | _values_changed(df[col], df[col].shift())
         if len(changed) > 0:
             changed.iloc[0] = True
-        return changed.cumsum()
-
-    if group_keys is not None:
-        rle_ids = df.groupby(group_keys, group_keys=False).apply(
-            _compute_rle, include_groups=False
-        )
-        if isinstance(rle_ids, pd.DataFrame):
-            rle_ids = rle_ids.stack().droplevel(0)
+        rle_ids = changed.cumsum()
     else:
-        rle_ids = _compute_rle(df)
+        # reuse the grouping (also covers level=, Series keys and
+        # column-selected groupbys); one vectorised pass for all groups
+        grouper = grp._grouper
+        changed = df.index.to_series().groupby(grouper).cumcount() == 0
+        for col in column_names:
+            prev = df[col].groupby(grouper).shift()
+            changed = changed | _values_changed(df[col], prev)
+        rle_ids = changed.groupby(grouper).cumsum()
 
     result = df.assign(**{new_column_name: rle_ids})
     if grp is not None:

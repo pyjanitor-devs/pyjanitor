@@ -253,3 +253,88 @@ def test_rle_id_groupby_after_mutate():
     result = mutated.rle_id("grp").get_columns("*")
     expected = df.assign(v_sum=[3, 3, 7, 7], rle_id=[1, 2, 1, 1])
     assert_frame_equal(result, expected)
+
+
+@pytest.mark.functions
+def test_rle_id_groupby_level():
+    """Grouping by index level restarts IDs within each group."""
+    df = pd.DataFrame({"k": [1, 1, 1, 2, 2, 2], "v": [1, 1, 2, 3, 3, 3]})
+    df = df.set_index("k")
+    result = df.groupby(level=0).rle_id("v")
+    expected = df.assign(rle_id=[1, 1, 2, 1, 1, 1])
+    assert_frame_equal(result.obj, expected)
+
+
+@pytest.mark.functions
+def test_rle_id_groupby_series_key():
+    """Grouping by an external Series restarts IDs within each group."""
+    df = pd.DataFrame({"v": [1, 1, 2, 3, 3, 3]})
+    result = df.groupby(pd.Series([1, 1, 1, 2, 2, 2])).rle_id("v")
+    expected = df.assign(rle_id=[1, 1, 2, 1, 1, 1])
+    assert_frame_equal(result.obj, expected)
+
+
+@pytest.mark.functions
+def test_rle_id_groupby_column_selection():
+    """A column selection on the groupby does not limit `column_names`."""
+    df = pd.DataFrame({"k": [1, 1, 2], "v": [1, 2, 2], "w": [1, 1, 1]})
+    result = df.groupby("k")[["v"]].rle_id("w")
+    expected = df.assign(rle_id=[1, 1, 1])
+    assert_frame_equal(result.obj, expected)
+
+
+@pytest.mark.functions
+def test_rle_id_groupby_dropna_false():
+    """With dropna=False, missing keys form their own group."""
+    df = pd.DataFrame({"k": [1.0, np.nan, 1.0, np.nan], "v": [1, 1, 2, 2]})
+    result = df.groupby("k", dropna=False).rle_id("v")
+    expected = df.assign(rle_id=[1, 1, 2, 2])
+    assert_frame_equal(result.obj, expected)
+
+
+@pytest.mark.functions
+def test_rle_id_groupby_dropna_true():
+    """With dropna=True, rows with missing keys get a missing ID."""
+    df = pd.DataFrame({"k": [1.0, np.nan, 1.0], "v": [1, 1, 2]})
+    result = df.groupby("k").rle_id("v")
+    expected = df.assign(rle_id=[1.0, np.nan, 2.0])
+    assert_frame_equal(result.obj, expected)
+
+
+@pytest.mark.functions
+def test_rle_id_groupby_duplicate_index():
+    """IDs are placed by position, not by (duplicate) index labels."""
+    df = pd.DataFrame(
+        {"k": [1, 2, 1, 2, 1], "v": [1, 1, 2, 1, 2]}, index=[0, 0, 1, 1, 0]
+    )
+    result = df.groupby("k").rle_id("v")
+    expected = df.assign(rle_id=[1, 1, 2, 1, 2])
+    assert_frame_equal(result.obj, expected)
+
+
+@pytest.mark.functions
+@pytest.mark.parametrize("n", [1, 2])
+def test_rle_id_groupby_equal_size_groups(n):
+    """Multiple keys with equally sized groups (including one row) work."""
+    df = pd.DataFrame({"k": [1, 2] * n, "k2": [0, 0] * n, "v": list(range(2 * n))})
+    result = df.groupby(["k", "k2"]).rle_id("v")
+    expected = df.assign(rle_id=[i // 2 + 1 for i in range(2 * n)])
+    assert_frame_equal(result.obj, expected)
+
+
+@pytest.mark.functions
+def test_rle_id_groupby_single_row_multiple_keys():
+    """A single row grouped by multiple keys gets ID 1."""
+    df = pd.DataFrame({"k": [1.0], "k2": [0], "v": [2.0]})
+    result = df.groupby(["k", "k2"]).rle_id("v")
+    expected = df.assign(rle_id=[1])
+    assert_frame_equal(result.obj, expected)
+
+
+@pytest.mark.functions
+def test_rle_id_groupby_empty():
+    """An empty frame gets an empty integer ID column."""
+    df = pd.DataFrame({"k": pd.Series([], dtype=int), "v": pd.Series([], dtype=int)})
+    result = df.groupby("k").rle_id("v")
+    expected = df.assign(rle_id=pd.Series([], dtype="int64"))
+    assert_frame_equal(result.obj, expected)

@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [ENH] Speed up homogeneous NumPy `.value` groups in `pivot_longer` without extra copies for fragmented frames. - Issue #1821 @senanurcetin
+
 ## [v0.32.61] - 2026-10-27
 
 -   [ENH] Support equality-only joins in `conditional_join`; null keys never

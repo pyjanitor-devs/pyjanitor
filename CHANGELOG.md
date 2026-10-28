@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v0.32.64] - 2026-10-28
+
 -   [ENH] Vectorise groupby `rle_id` (one pass over all groups instead of a Python function per group) and reuse the groupby's grouping, so `level=`, `dropna=False`, duplicate index labels and multi-key equally sized groups (e.g. a single row) give correct IDs. The ID column is now always `int64` (`float64` when grouped rows with missing keys are dropped), including for `string[pyarrow]` columns, which previously raised, and `Int64`/`string[python]` columns, which gave `Int64` IDs. - Issue #1827 @samukweku
 
 ## [v0.32.63] - 2026-10-28
@@ -691,7 +693,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.63...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.64...HEAD
+
+[v0.32.64]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.63...v0.32.64
 
 [v0.32.63]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.62...v0.32.63
 

@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
--   [ENH] Vectorise groupby `rle_id` (one pass over all groups instead of a Python function per group) and reuse the groupby's grouping, so `level=`, `dropna=False`, duplicate index labels and multi-key equally sized groups (e.g. a single row) give correct IDs. - Issue #1827
+-   [ENH] Vectorise groupby `rle_id` (one pass over all groups instead of a Python function per group) and reuse the groupby's grouping, so `level=`, `dropna=False`, duplicate index labels and multi-key equally sized groups (e.g. a single row) give correct IDs. The ID column is now always `int64` (`float64` when grouped rows with missing keys are dropped), including for `string[pyarrow]` columns, which previously raised, and `Int64`/`string[python]` columns, which gave `Int64` IDs. - Issue #1827
 
 ## [v0.32.63] - 2026-10-28
 

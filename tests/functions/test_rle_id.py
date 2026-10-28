@@ -338,3 +338,60 @@ def test_rle_id_groupby_empty():
     result = df.groupby("k").rle_id("v")
     expected = df.assign(rle_id=pd.Series([], dtype="int64"))
     assert_frame_equal(result.obj, expected)
+
+
+@pytest.mark.functions
+def test_rle_id_groupby_grouper_freq_unsorted():
+    """pd.Grouper(freq=...) sorts by time; IDs follow that order."""
+    df = pd.DataFrame(
+        {
+            "t": pd.to_datetime(
+                [
+                    "2026-01-02 06:00",
+                    "2026-01-01 00:00",
+                    "2026-01-02 00:00",
+                    "2026-01-01 12:00",
+                    "2026-01-01 06:00",
+                ]
+            ),
+            "v": [1, 1, 2, 2, 1],
+        }
+    )
+    result = df.groupby(pd.Grouper(key="t", freq="D")).rle_id("v")
+    expected = df.loc[[1, 4, 3, 2, 0]].assign(rle_id=[1, 1, 2, 1, 2])
+    assert_frame_equal(result.obj, expected)
+
+
+@pytest.mark.functions
+@pytest.mark.parametrize("dtype", ["string[pyarrow]", "string[python]", "str"])
+def test_rle_id_string_dtypes(dtype):
+    """String columns, including pyarrow-backed ones, give int64 IDs."""
+    pytest.importorskip("pyarrow")
+    df = pd.DataFrame(
+        {"k": [1, 1, 2, 2], "w": pd.array(["x", "x", "y", None], dtype=dtype)}
+    )
+    assert_frame_equal(df.rle_id("w"), df.assign(rle_id=[1, 1, 2, 3]))
+    result = df.groupby("k").rle_id("w")
+    assert_frame_equal(result.obj, df.assign(rle_id=[1, 1, 1, 2]))
+
+
+@pytest.mark.functions
+def test_rle_id_nullable_values():
+    """Nullable integer columns give int64 IDs."""
+    df = pd.DataFrame(
+        {"k": [1, 1, 2, 2], "w": pd.array([1, 1, 2, None], dtype="Int64")}
+    )
+    assert_frame_equal(df.rle_id("w"), df.assign(rle_id=[1, 1, 2, 3]))
+    result = df.groupby("k").rle_id("w")
+    assert_frame_equal(result.obj, df.assign(rle_id=[1, 1, 1, 2]))
+
+
+@pytest.mark.functions
+def test_rle_id_groupby_nullable_key_dropped():
+    """Rows with a missing nullable key get a missing (float64) ID."""
+    df = pd.DataFrame(
+        {"k": pd.array([1, None, 1, 2], dtype="Int64"), "w": [1, 1, 2, 3]}
+    )
+    result = df.groupby("k").rle_id("w")
+    expected = df.assign(rle_id=[1.0, np.nan, 2.0, 1.0])
+    assert_frame_equal(result.obj, expected)

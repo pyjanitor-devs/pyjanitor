@@ -26,6 +26,10 @@ def rle_id(
 
     This method does not mutate the original DataFrame.
 
+    The ID column is `int64`, whatever the dtype of `column_names`.
+    On a GroupBy object, rows whose group keys are dropped
+    (`dropna=True`) get a missing ID, so the column is `float64`.
+
     Examples:
         Single column example:
 
@@ -133,16 +137,18 @@ def rle_id(
             changed = changed | _values_changed(df[col], df[col].shift())
         if len(changed) > 0:
             changed.iloc[0] = True
-        rle_ids = changed.cumsum()
+        # plain bool: int64 IDs whatever the value dtype
+        # (bool[pyarrow] has no cumsum)
+        rle_ids = changed.astype(bool).cumsum()
     else:
         # reuse the grouping (also covers level=, Series keys and
         # column-selected groupbys); one vectorised pass for all groups
         grouper = grp._grouper
-        changed = df.index.to_series().groupby(grouper).cumcount() == 0
+        changed = df[column_names[0]].groupby(grouper).cumcount() == 0
         for col in column_names:
             prev = df[col].groupby(grouper).shift()
             changed = changed | _values_changed(df[col], prev)
-        rle_ids = changed.groupby(grouper).cumsum()
+        rle_ids = changed.astype(bool).groupby(grouper).cumsum()
 
     result = df.assign(**{new_column_name: rle_ids})
     if grp is not None:

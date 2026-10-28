@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
-from pandas.testing import assert_frame_equal
+from pandas.testing import assert_frame_equal, assert_series_equal
 
 
 @pytest.fixture
@@ -246,3 +246,32 @@ def test_assign_by_leaves_original_groupby(df_mutate):
     grp.assign(total=pd.col("avg_run").mul(2)).sum()
     assert_frame_equal(grp.sum(), expected)
     assert list(df_mutate.columns) == ["avg_jump", "avg_run", "combine_id"]
+
+
+def test_assign_by_after_mutate(df_mutate):
+    """Groupbys returned by the deprecated mutate carry no stale accessors."""
+    grp = df_mutate.groupby("combine_id")
+    grp.assign(total=1)
+    with pytest.warns(FutureWarning):
+        mutated = grp.mutate({"run_sum": ("avg_run", "sum")})
+    actual = mutated.assign(total=pd.col("run_sum").add(1))
+    run_sum = df_mutate.groupby("combine_id")["avg_run"].transform("sum")
+    expected = df_mutate.assign(run_sum=run_sum, total=run_sum.add(1))
+    assert_frame_equal(actual.get_columns("*"), expected)
+
+
+def test_assign_by_column_named_obj():
+    """A column named `_obj` is not mistaken for a cached accessor."""
+    df = pd.DataFrame({"a": [1, 1, 2], "_obj": [1, 2, 3]})
+    actual = df.groupby("a").assign(total=pd.col("_obj").mul(2))
+    expected = df.assign(total=pd.col("_obj").mul(2))
+    assert_frame_equal(actual.get_columns("*"), expected)
+    assert_frame_equal(actual.sum(), expected.groupby("a").sum())
+
+
+def test_assign_by_group_key_keeps_groups(df_mutate):
+    """Re-assigning a grouping column keeps the existing groups."""
+    grp = df_mutate.groupby("combine_id")
+    actual = grp.assign(combine_id=0)["avg_run"].sum()
+    expected = grp["avg_run"].sum()
+    assert_series_equal(actual, expected)

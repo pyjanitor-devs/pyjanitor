@@ -816,6 +816,32 @@ through text matching. Intentional backfills use the explicit manual override.
 filtering is ever needed, use `git tag -l 'v[0-9]*'` and test it against stray
 non-version tags.
 
+### [2026-10-28] Never `copy.copy` a groupby; use `_copy_groupby`
+
+**Context**: PR #1826. Groupby `assign`, `rle_id` and the deprecated `mutate`
+shallow-copied a `DataFrameGroupBy` and swapped in a new `obj`. The copy
+shared pandas' `_cache` (stale `_obj_with_exclusions`) and pandas_flavor
+accessors cached on the instance (bound to the original groupby), so new
+columns were silently missing from whole-frame aggregations and
+`get_columns`, and chained calls raised `KeyError`/`ValueError`.
+
+**Learning**: `janitor.functions.utils._copy_groupby` keeps the grouper reuse
+(the reason `grp.assign(...)` + aggregation is 3-9x faster than regrouping)
+and drops `_cache` plus every instance entry that shadows a class-level
+pandas_flavor `CachedAccessor`, whichever object it was bound to. Do not
+detect accessors by an `_obj` attribute: `getattr(frame, "_obj")` returns a
+column named `_obj`. Walk `type(grp).__mro__` checking `base.__dict__`
+(first hit wins); `inspect.getattr_static` gives the same answer but is ~5x
+slower per copy (25 vs 5 us). Mutating `obj` in place after the copy (as `assign` does
+per column) needs `_cache` cleared again. Deprecated functions that produce
+groupbys still go through the helper, because their output feeds live
+methods. Re-assigning a grouping column keeps the old groups (documented in
+`assign`).
+
+**Recommendation**: Any new code that returns a modified groupby must call
+`_copy_groupby` and test reuse (original groupby already aggregated or
+accessed) and chaining, not only a fresh groupby.
+
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol

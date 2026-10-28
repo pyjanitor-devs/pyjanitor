@@ -238,3 +238,18 @@ def test_rle_id_groupby_chained():
     )
     expected = df.assign(rle_id=[1, 2, 1, 1], rle_v=[1, 1, 1, 2])
     assert_frame_equal(result, expected)
+
+
+@pytest.mark.functions
+def test_rle_id_groupby_after_mutate():
+    """Accessors cached before the deprecated mutate do not leak through."""
+    df = pd.DataFrame(
+        {"group": ["X", "X", "Y", "Y"], "grp": ["A", "B", "A", "A"], "v": [1, 2, 3, 4]}
+    )
+    grouped = df.groupby("group")
+    grouped.get_columns("*")
+    with pytest.warns(FutureWarning):
+        mutated = grouped.mutate({"v_sum": ("v", "sum")})
+    result = mutated.rle_id("grp").get_columns("*")
+    expected = df.assign(v_sum=[3, 3, 7, 7], rle_id=[1, 2, 1, 1])
+    assert_frame_equal(result, expected)

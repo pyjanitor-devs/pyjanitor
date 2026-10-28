@@ -27,6 +27,7 @@ from pandas.api.types import (
     union_categoricals,
 )
 from pandas.core.groupby.generic import DataFrameGroupBy
+from pandas_flavor.register import CachedAccessor
 
 from janitor.errors import JanitorError
 from janitor.utils import (
@@ -846,18 +847,28 @@ def _copy_groupby(grp: DataFrameGroupBy) -> DataFrameGroupBy:
     """
     Shallow copy a groupby object, reusing its grouper.
 
-    `copy.copy` also copies instance state tied to `grp`:
+    `copy.copy` also copies instance state tied to earlier objects:
     pandas' `cache_readonly` values (e.g. `_obj_with_exclusions`)
-    and pandas_flavor accessors bound to `grp`.
-    Both would keep referring to the original columns,
+    and pandas_flavor accessors cached on the instance.
+    Both would keep referring to old columns,
     so they are dropped from the copy.
+
+    Accessors are found by their class-level `CachedAccessor`,
+    not by an `_obj` attribute on the value:
+    `getattr(frame, "_obj")` returns a column named `_obj`.
     """
     new = copy.copy(grp)
-    stale = [
-        key
-        for key, value in vars(new).items()
-        if key == "_cache" or getattr(value, "_obj", None) is grp
-    ]
+    mro = type(grp).__mro__
+
+    def _is_accessor(key):
+        # first definition along the MRO wins, as in attribute lookup;
+        # cheaper than inspect.getattr_static
+        for base in mro:
+            if key in base.__dict__:
+                return isinstance(base.__dict__[key], CachedAccessor)
+        return False
+
+    stale = [key for key in vars(new) if key == "_cache" or _is_accessor(key)]
     for key in stale:
         del new.__dict__[key]
     return new

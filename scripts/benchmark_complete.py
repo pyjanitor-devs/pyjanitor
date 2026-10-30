@@ -8,6 +8,7 @@
 #   "pandas>=3.0.0",
 #   "pandas-flavor>=0.8.1,<0.9",
 #   "scipy",
+#   "typer>=0.12",
 #   "xarray",
 # ]
 # ///
@@ -29,7 +30,6 @@ process.
 
 from __future__ import annotations
 
-import argparse
 import gc
 import json
 import os
@@ -43,34 +43,7 @@ import time
 import warnings
 from pathlib import Path
 
-
-def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    """Parse command-line arguments.
-
-    Args:
-        argv: Arguments excluding the program name. Defaults to ``sys.argv``.
-
-    Returns:
-        Parsed arguments.
-    """
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--baseline", default="dev", help="Git ref for the baseline.")
-    parser.add_argument(
-        "--candidate",
-        default="HEAD",
-        help="Git ref for the candidate, or WORKTREE for the working tree.",
-    )
-    parser.add_argument(
-        "--out",
-        type=Path,
-        help="Optional path for the JSON results.",
-    )
-    parser.add_argument(
-        "--worker",
-        action="store_true",
-        help=argparse.SUPPRESS,
-    )
-    return parser.parse_args(argv)
+import typer
 
 
 def repo_root() -> Path:
@@ -472,24 +445,34 @@ def render(rows: list[dict], baseline_name: str, candidate_name: str) -> str:
     return "\n".join(lines)
 
 
-def main(argv: list[str] | None = None) -> None:
+def main(
+    baseline: str = typer.Option("dev", help="Git ref for the baseline."),
+    candidate: str = typer.Option(
+        "HEAD",
+        help="Git ref for the candidate, or WORKTREE for the working tree.",
+    ),
+    out: Path | None = typer.Option(None, help="Optional path for the JSON results."),
+    run_worker: bool = typer.Option(False, "--worker", hidden=True),
+) -> None:
     """Compare two revisions and print the table.
 
     Args:
-        argv: Arguments excluding the program name.
+        baseline: Git ref for the baseline.
+        candidate: Git ref for the candidate, or ``WORKTREE``.
+        out: Optional path for the JSON results.
+        run_worker: Run the benchmark worker when true.
     """
-    args = parse_args(argv)
-    if args.worker:
+    if run_worker:
         worker()
         return
     os.chdir(repo_root())
-    baseline = run_revision(args.baseline)
-    candidate = run_revision(args.candidate)
-    rows = combine(baseline, candidate)
-    print(render(rows, args.baseline, args.candidate))
-    if args.out:
-        args.out.write_text(json.dumps(rows, indent=2) + "\n", encoding="utf-8")
+    baseline_rows = run_revision(baseline)
+    candidate_rows = run_revision(candidate)
+    rows = combine(baseline_rows, candidate_rows)
+    print(render(rows, baseline, candidate))
+    if out:
+        out.write_text(json.dumps(rows, indent=2) + "\n", encoding="utf-8")
 
 
 if __name__ == "__main__":
-    main()
+    typer.run(main)

@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [INF] Match the Python trove classifiers and the ruff, black, and pixi minimum versions to the supported range, Python 3.11, 3.12, and 3.13.
+
 ## [v0.32.72] - 2026-11-03
 
 -   [DOC] Add `join_agg` tips for totalling overlapping date ranges per day (join and cumulative-sum forms) and for counting or summing overlaps by boundaries with `searchsorted`, with their limits. - PR #1850 @samukweku

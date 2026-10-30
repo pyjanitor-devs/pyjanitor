@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [ENH] Add `flag_outliers` to flag numeric outliers. The default threshold is 1.5 for the IQR method and 3 for the Z-score method. Missing values are ignored when computing the cutoff and are never flagged. - @Psycoder0611
+
 ## [v0.32.79] - 2026-11-17
 
 -   [BUG] `complete` accepts a one-column frame with `explicit=False`, and `complete` and `expand` accept non-string column labels such as integers, including on grouped frames. - Issue #1860, PR #1861 @ericmjl

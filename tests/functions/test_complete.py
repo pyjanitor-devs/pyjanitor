@@ -1,3 +1,6 @@
+import inspect
+import warnings
+from pathlib import Path
 from string import ascii_lowercase
 
 import numpy as np
@@ -809,3 +812,264 @@ def test_MI_1(MI):
     ).rename_axis(columns=[None, None])
     actual = MI.iloc[:2].complete({("a", "bar"): pd.Series(range(1, 5))})
     assert_frame_equal(actual, expected)
+
+
+def by_deprecation_warnings(recorded):
+    """Return FutureWarnings that announce deprecation of `by`."""
+    return [
+        item
+        for item in recorded
+        if item.category is FutureWarning
+        and "The `by` argument is deprecated" in str(item.message)
+    ]
+
+
+def test_complete_partial_fill_value(fill_df):
+    """A dictionary may fill some columns and leave the others missing."""
+    result = fill_df.complete(
+        "group",
+        ["item_id", "item_name"],
+        fill_value={"value2": 99},
+        sort=True,
+    )
+    expected = pd.DataFrame(
+        {
+            "group": [1, 1, 1, 1, 2, 2, 2, 2],
+            "item_id": [1, 2, 2, 3, 1, 2, 2, 3],
+            "item_name": ["a", "a", "b", "b", "a", "a", "b", "b"],
+            "value1": [1.0, np.nan, 3.0, np.nan, np.nan, np.nan, np.nan, 4.0],
+            "value2": [4.0, 99.0, 6.0, 99.0, 99.0, 5.0, 99.0, 7.0],
+        }
+    )
+    assert_frame_equal(result, expected)
+
+
+def test_complete_partial_fill_explicit_false():
+    """explicit=False fills only new rows, and only named columns."""
+    frame = pd.DataFrame(
+        {
+            "state": ["CA", "NY"],
+            "year": [2020, 2020],
+            "sales": [np.nan, 4.0],
+            "profit": [1.0, 2.0],
+        }
+    )
+    result = frame.complete(
+        "state",
+        {"year": [2020, 2021]},
+        fill_value={"sales": 0},
+        explicit=False,
+        sort=True,
+    )
+    expected = pd.DataFrame(
+        {
+            "state": ["CA", "CA", "NY", "NY"],
+            "year": [2020, 2021, 2020, 2021],
+            "sales": [np.nan, 0.0, 4.0, 0.0],
+            "profit": [1.0, np.nan, 2.0, np.nan],
+        }
+    )
+    assert_frame_equal(result, expected)
+
+    explicit = frame.complete(
+        "state",
+        {"year": [2020, 2021]},
+        fill_value={"sales": 0},
+        explicit=True,
+        sort=True,
+    )
+    original_sales = explicit.loc[
+        explicit["state"].eq("CA") & explicit["year"].eq(2020), "sales"
+    ]
+    added_profit = explicit.loc[
+        explicit["state"].eq("NY") & explicit["year"].eq(2021), "profit"
+    ]
+    assert original_sales.item() == 0
+    assert added_profit.isna().item()
+
+
+def test_complete_empty_fill_value_dict(fill_df):
+    """An empty dictionary fills nothing."""
+    actual = fill_df.complete(
+        "group",
+        ["item_id", "item_name"],
+        fill_value={},
+        sort=True,
+    )
+    expected = fill_df.complete("group", ["item_id", "item_name"], sort=True)
+    assert_frame_equal(actual, expected)
+
+
+def test_complete_fill_value_dict_is_not_mutated(fill_df):
+    """Filling must not change the dictionary the caller passed in."""
+    fill_value = {"value2": 99}
+    fill_df.complete(
+        "group",
+        ["item_id", "item_name"],
+        fill_value=fill_value,
+        sort=True,
+    )
+    assert fill_value == {"value2": 99}
+
+
+def test_complete_partial_fill_with_column_named_obj():
+    """A column named obj is data, including when it is left unfilled."""
+    frame = pd.DataFrame(
+        {
+            "state": ["CA", "NY"],
+            "year": [2020, 2020],
+            "sales": [3, 4],
+            "obj": [1, 2],
+        }
+    )
+    result = frame.complete(
+        "state",
+        {"year": [2020, 2021]},
+        fill_value={"sales": 0},
+        sort=True,
+    )
+    expected = pd.DataFrame(
+        {
+            "state": ["CA", "CA", "NY", "NY"],
+            "year": [2020, 2021, 2020, 2021],
+            "sales": [3.0, 0.0, 4.0, 0.0],
+            "obj": [1.0, np.nan, 2.0, np.nan],
+        }
+    )
+    assert_frame_equal(result, expected)
+
+
+def test_complete_groupby_partial_fill_value():
+    """Grouped complete accepts a partial fill dictionary and does not warn."""
+    frame = pd.DataFrame(
+        {
+            "state": ["CA", "CA", "HI", "HI", "HI", "NY", "NY"],
+            "year": [2010, 2013, 2010, 2012, 2016, 2009, 2013],
+            "value": [1, 3, 1, 2, 3, 2, 5],
+            "extra": [1, 1, 1, 1, 1, 1, 1],
+        }
+    )
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        result = frame.groupby("state").complete(
+            {"year": lambda group: range(group.year.min(), group.year.max() + 1)},
+            fill_value={"value": 0},
+            sort=True,
+        )
+
+    assert by_deprecation_warnings(recorded) == []
+    expected = (
+        frame.set_index("year")
+        .groupby("state")
+        .apply(
+            lambda group: group.reindex(
+                range(group.index.min(), group.index.max() + 1)
+            ),
+            include_groups=False,
+        )
+        .reset_index()
+    )
+    expected["value"] = expected["value"].fillna(0)
+    assert_frame_equal(result, expected)
+
+
+def test_complete_groupby_scalar_fill_value():
+    """A scalar fill on a grouped frame fills every added cell and does not warn."""
+    frame = pd.DataFrame(
+        {
+            "state": ["CA", "NY"],
+            "year": [2020, 2020],
+            "sales": [5, 6],
+            "profit": [1, 2],
+        }
+    )
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        result = frame.groupby("state").complete(
+            {"year": [2020, 2021]},
+            fill_value=0,
+            sort=True,
+        )
+
+    assert by_deprecation_warnings(recorded) == []
+    expected = pd.DataFrame(
+        {
+            "state": ["CA", "CA", "NY", "NY"],
+            "year": [2020, 2021, 2020, 2021],
+            "sales": [5.0, 0.0, 6.0, 0.0],
+            "profit": [1.0, 0.0, 2.0, 0.0],
+        }
+    )
+    assert_frame_equal(result, expected)
+
+
+def test_complete_groupby_unknown_fill_column():
+    """Unknown fill columns are rejected for grouped frames."""
+    frame = pd.DataFrame({"state": ["CA"], "year": [2020], "sales": [1]})
+    with pytest.raises(ValueError, match="not present in dataframe columns"):
+        frame.groupby("state").complete("year", fill_value={"missing": 0})
+
+
+def test_complete_groupby_fill_value_must_be_scalar():
+    """Grouped dictionary fills still require scalar values."""
+    frame = pd.DataFrame({"state": ["CA"], "year": [2020], "sales": [1]})
+    with pytest.raises(ValueError, match="The value for sales should be a scalar."):
+        frame.groupby("state").complete("year", fill_value={"sales": [0, 1]})
+
+
+@pytest.mark.parametrize("by", ["group", ["group"]])
+def test_complete_by_emits_one_future_warning(by):
+    """`by` emits one FutureWarning, and that warning names complete."""
+    frame = pd.DataFrame(
+        {
+            "group": [1, 1, 2],
+            "item": [1, 2, 1],
+            "value": [10, 20, 30],
+        }
+    )
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        lineno = inspect.currentframe().f_lineno + 1
+        result = frame.complete({"item": [1, 2, 3]}, by=by, sort=True)
+
+    matches = by_deprecation_warnings(recorded)
+    assert len(matches) == 1
+    message = str(matches[0].message)
+    assert "complete" in message
+    assert "expand" not in message
+    assert Path(matches[0].filename).resolve() == Path(__file__).resolve()
+    assert matches[0].lineno == lineno
+
+    expected = frame.groupby(
+        by=by,
+        sort=False,
+        dropna=False,
+        observed=True,
+    ).complete({"item": [1, 2, 3]}, sort=True)
+    assert_frame_equal(result, expected)
+
+
+def test_complete_by_warning_does_not_silence_expand():
+    """The filter around expand(by=...) does not leak to the caller."""
+    frame = pd.DataFrame({"group": [1, 1, 2], "item": [1, 2, 1]})
+    frame.complete("item", by="group")
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        frame.expand("item", by="group")
+
+    matches = [
+        item
+        for item in recorded
+        if item.category is FutureWarning and "expand" in str(item.message)
+    ]
+    assert len(matches) == 1
+    assert "complete" not in str(matches[0].message)
+
+
+def test_complete_by_rejects_invalid_groupers():
+    """Invalid `by` values still use expand's errors."""
+    frame = pd.DataFrame({"group": [1], "item": [1]})
+    with pytest.raises(TypeError, match="The argument to the by parameter"):
+        frame.complete("item", by={"group": 1})
+    with pytest.raises(ValueError, match="not present in dataframe columns"):
+        frame.complete("item", by="missing")

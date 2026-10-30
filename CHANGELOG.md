@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [BUG] Make `complete` safe for grouped frames and partial `fill_value` dictionaries, and emit one `FutureWarning` for the deprecated `by` argument. Grouped calls no longer warn that `by` was used, a dictionary that names only some columns no longer raises `KeyError`, and `complete(..., by=...)` no longer also warns about `expand`. - Issues #1669, #1788 @SumanGouda (#1700, #1790)
+
 ## [v0.32.65] - 2026-10-30
 
 -   [ENH] Change the `join_agg` default for `return_matched` from `True` to `False`; callers that need the boolean `matched` index level must now pass `return_matched=True`. - PR #1829 @samukweku

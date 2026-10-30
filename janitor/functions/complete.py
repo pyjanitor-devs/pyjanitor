@@ -177,6 +177,23 @@ def complete(
         6      2        2         b     0.0    99.0
         7      2        3         b     4.0     7.0
 
+        A dictionary may name only some columns. Omitted columns stay missing:
+        >>> df.complete(
+        ...     "group",
+        ...     ["item_id", "item_name"],
+        ...     fill_value={"value2": 99},
+        ...     sort=True,
+        ... )
+           group  item_id item_name  value1  value2
+        0      1        1         a     1.0     4.0
+        1      1        2         a     NaN    99.0
+        2      1        2         b     3.0     6.0
+        3      1        3         b     NaN    99.0
+        4      2        1         a     NaN    99.0
+        5      2        2         a     NaN     5.0
+        6      2        2         b     NaN    99.0
+        7      2        3         b     4.0     7.0
+
         Expose missing rows per group, using a callable:
         >>> df = pd.DataFrame(
         ...     {
@@ -248,8 +265,10 @@ def complete(
             The explicit missing rows are returned per group.
             !!! warning "Deprecated in 0.32.20"
         fill_value: Scalar value to use instead of NaN
-            for missing combinations. A dictionary, mapping columns names
-            to a scalar value is also accepted.
+            for missing combinations. A dictionary mapping column names
+            to scalar values is also accepted. Columns omitted from the
+            dictionary are left missing, including on rows that `complete`
+            adds.
         explicit: Determines if only implicitly missing values
             should be filled (`False`), or all nulls existing in the dataframe
             (`True`). `explicit` is applicable only
@@ -284,15 +303,30 @@ def _computations_complete(
     fill_value_check = is_scalar(fill_value), isinstance(fill_value, dict)
     if not any(fill_value_check):
         raise TypeError("fill_value should either be a dictionary or a scalar value.")
+    # GroupBy has no `.columns`. Check the underlying frame through the public
+    # GroupBy.obj attribute so a column named `obj` stays a column.
+    source = df.obj if isinstance(df, DataFrameGroupBy) else df
     if fill_value_check[-1]:
-        check_column(df, fill_value)
+        check_column(source, fill_value)
         for column_name, value in fill_value.items():
             if not is_scalar(value):
                 raise ValueError(f"The value for {column_name} should be a scalar.")
-    uniques = df.expand(*columns, by=by, sort=sort)
-    if (by is None) and isinstance(df, pd.DataFrame):
-        merge_columns = uniques.columns.tolist()
+    # `expand(by=...)` warns at the caller's line and names `expand`.
+    # Silence that warning here; `by` is still validated inside `expand`.
+    if by is not None and isinstance(df, pd.DataFrame):
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                # Matched against the start of the message, so the pattern
+                # has to include expand's full opening text.
+                message=("The `by` argument is deprecated. Call the `expand` function"),
+                category=FutureWarning,
+            )
+            uniques = df.expand(*columns, by=by, sort=sort)
     else:
+        uniques = df.expand(*columns, sort=sort)
+    # An already grouped frame did not pass `by`; only the argument is deprecated.
+    if by is not None:
         warnings.warn(
             "The `by` argument is deprecated. "
             "Call the `complete` function "
@@ -300,6 +334,9 @@ def _computations_complete(
             FutureWarning,
             stacklevel=find_stack_level(),
         )
+    if (by is None) and isinstance(df, pd.DataFrame):
+        merge_columns = uniques.columns.tolist()
+    else:
         merge_columns = [*uniques.index.names]
         merge_columns.extend(uniques.columns.tolist())
     if not isinstance(df, pd.DataFrame):
@@ -327,15 +364,23 @@ def _computations_complete(
     # keep only columns that are not part of column_checker
     # IOW, we are excluding columns that were not used
     # to generate the combinations
-    null_columns = out.columns.difference(merge_columns)
-    null_columns = [col for col in null_columns if out[col].hasnans]
+    non_merge_columns = out.columns.difference(merge_columns)
+    if isinstance(fill_value, dict):
+        # Intersect before scanning for nulls. A partial dictionary must not
+        # KeyError on columns it omits, and those columns are not inspected.
+        candidate_columns = [
+            column for column in non_merge_columns if column in fill_value
+        ]
+    else:
+        candidate_columns = non_merge_columns
+    null_columns = [column for column in candidate_columns if out[column].hasnans]
     if not null_columns:
         return out
     if is_scalar(fill_value):
         # faster when fillna operates on a Series basis
-        fill_value = {col: fill_value for col in null_columns}
+        fill_value = {column: fill_value for column in null_columns}
     else:
-        fill_value = {col: fill_value[col] for col in null_columns}
+        fill_value = {column: fill_value[column] for column in null_columns}
 
     if not fill_value:
         return out

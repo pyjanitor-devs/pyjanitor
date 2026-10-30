@@ -1283,6 +1283,15 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "Sarra99",
+      "name": "Sarra NEBLI",
+      "avatar_url": "https://avatars.githubusercontent.com/u/66265406?v=4",
+      "profile": "https://github.com/Sarra99",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "badgeTemplate": "<img alt=\"All Contributors: {{contributorCount}}\" src=\"https://img.shields.io/github/all-contributors/{{projectOwner}}/{{projectName}}?color=ee8449&style=flat-square\">",

@@ -842,6 +842,18 @@ in `assign`).
 `_copy_groupby` and test reuse (original groupby already aggregated or
 accessed) and chaining, not only a fresh groupby.
 
+### [2026-10-30] `read_archive` keeps `engine` for the dataframe library
+
+**Context**: Adding `read_archive` to `janitor.io` after review on #1440.
+**Learning**: IO readers take `engine="pandas"` or `engine="polars"` and
+forward `**kwargs` to the underlying reader. `engine` is not forwarded:
+pandas `read_csv` / `read_excel` and polars `read_excel` use the same
+parameter name for a different choice. Missing polars is reported with
+`import_message`, then re-raised as `ImportError`. Polars Excel reads need
+the fastexcel package because polars defaults to its calamine engine.
+**Recommendation**: Match `read_commandline` when adding another engine
+switch. Do not pass `engine` through in `**kwargs`.
+
 ### [2026-10-30] Public default changes require a full call-site and documentation audit
 
 **Context**: Changing the public `join_agg` default for `return_matched`.

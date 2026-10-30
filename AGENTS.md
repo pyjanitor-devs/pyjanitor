@@ -842,6 +842,20 @@ in `assign`).
 `_copy_groupby` and test reuse (original groupby already aggregated or
 accessed) and chaining, not only a fresh groupby.
 
+### [2026-10-30] `complete` groupby columns and `by` warnings
+
+**Context**: Combining the stalled `complete` fixes for grouped frames,
+partial `fill_value` dictionaries, and duplicate `by` deprecation warnings.
+**Learning**: `DataFrameGroupBy` has no `.columns`. Check columns on the
+public `GroupBy.obj` frame. `getattr(df, "obj", df)` is unsafe when a column
+is named `obj`. `warnings.filterwarnings` matches the start of the message,
+so a pattern that only contains the later words does not ignore `expand`'s
+warning. `complete(by=...)` must hide that inner warning; a grouped
+`complete` call must not warn, because the caller did not pass `by`.
+**Recommendation**: Keep `by` validation inside `expand`, silence only the
+warning whose text names `expand`, and warn from `complete` only when `by`
+is not `None`.
+
 ### [2026-10-30] Public default changes require a full call-site and documentation audit
 
 **Context**: Changing the public `join_agg` default for `return_matched`.

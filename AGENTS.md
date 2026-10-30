@@ -842,6 +842,18 @@ in `assign`).
 `_copy_groupby` and test reuse (original groupby already aggregated or
 accessed) and chaining, not only a fresh groupby.
 
+### [2026-10-30] Public default changes require a full call-site and documentation audit
+
+**Context**: Changing the public `join_agg` default for `return_matched`.
+**Learning**: A default change must update every test and example that relies
+on the old output shape. Tests that validate optional metadata must pass the
+flag explicitly, and property-test helpers must derive expected shape from
+that requested flag rather than from the result under test.
+
+**Recommendation**: Run all affected test modules, audit changelog and PR
+metadata, and strengthen the default-behavior regression test with an exact
+expected frame.
+
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol

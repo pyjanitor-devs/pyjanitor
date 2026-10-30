@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [ENH] Change the `join_agg` default for `return_matched` from `True` to `False`; callers that need the boolean `matched` index level must now pass `return_matched=True`. - PR #1829 @samukweku
+
 ## [v0.32.64] - 2026-10-28
 
 -   [ENH] Vectorise groupby `rle_id` (one pass over all groups instead of a Python function per group) and reuse the groupby's grouping, so `level=`, `dropna=False`, duplicate index labels and multi-key equally sized groups (e.g. a single row) give correct IDs. The ID column is now always `int64` (`float64` when grouped rows with missing keys are dropped), including for `string[pyarrow]` columns, which previously raised, and `Int64`/`string[python]` columns, which gave `Int64` IDs. - Issue #1827 @samukweku

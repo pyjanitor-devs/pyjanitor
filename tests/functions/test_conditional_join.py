@@ -58,7 +58,7 @@ def _with_matched_level(frame):
     return frame
 
 
-def _with_aggregation_contract(expected, output_index):
+def _with_aggregation_contract(expected, output_index, return_matched):
     """Expand a cross-join aggregation baseline to Rust's output contract."""
     physical_index = (
         output_index.get_level_values(0)
@@ -91,10 +91,13 @@ def _with_aggregation_contract(expected, output_index):
             original_dtypes[column]
         ):
             expected[column] = pd.array(expected[column], dtype="Int64")
-    expected.index = pd.MultiIndex.from_arrays(
-        [physical_index, matched],
-        names=[None, "matched"],
-    )
+    if return_matched:
+        expected.index = pd.MultiIndex.from_arrays(
+            [physical_index, matched],
+            names=[None, "matched"],
+        )
+    else:
+        expected.index = physical_index
     return expected
 
 
@@ -929,7 +932,12 @@ def test_range_join_same_direction_first_matches_cross_join(with_equality):
     actual = sorted(zip(result["left_index"].tolist(), result["right_index"].tolist()))
     assert actual == sorted(zip(cross["l"].tolist(), cross["r"].tolist()))
 
-    aggregated = left.join_agg(right, *conditions, aggfunc=[("amount", "sum")])
+    aggregated = left.join_agg(
+        right,
+        *conditions,
+        aggfunc=[("amount", "sum")],
+        return_matched=True,
+    )
     matched = aggregated.xs(True, level="matched")[("amount", "sum")]
     expected = cross.groupby("l")["amount"].sum()
     assert matched.sort_index().tolist() == expected.sort_index().tolist()
@@ -1540,13 +1548,9 @@ def test_equi_only(how, keep):
         sort=False,
     )
     if keep != "all":
-        grouped_matches = matches.groupby(
-            "_left_pos", sort=False, group_keys=False
-        )
+        grouped_matches = matches.groupby("_left_pos", sort=False, group_keys=False)
         matches = (
-            grouped_matches.head(1)
-            if keep == "first"
-            else grouped_matches.tail(1)
+            grouped_matches.head(1) if keep == "first" else grouped_matches.tail(1)
         )
 
     matched_left = set(matches["_left_pos"])
@@ -1558,9 +1562,7 @@ def test_equi_only(how, keep):
     if how in {"left", "outer"}:
         rows.extend(
             (key, left_payload, np.nan, np.nan)
-            for key, left_payload, left_pos in left.itertuples(
-                index=False, name=None
-            )
+            for key, left_payload, left_pos in left.itertuples(index=False, name=None)
             if left_pos not in matched_left
         )
     if how in {"right", "outer"}:
@@ -1721,7 +1723,6 @@ def test_check_aggfunc_ne(dummy, series):
         {("B", "sum"): [9, 9, 9, 7, 7, 6]},
         index=pd.RangeIndex(6),
     )
-    expected = _with_matched_level(expected)
     assert_frame_equal(expected, actual)
 
 
@@ -1745,7 +1746,6 @@ def test_all_not_equal_aggregation():
         },
         index=pd.RangeIndex(2),
     )
-    expected = _with_matched_level(expected)
     assert_frame_equal(expected, actual)
 
     actual = left.join_agg(
@@ -1762,12 +1762,32 @@ def test_all_not_equal_aggregation():
         },
         index=pd.RangeIndex(3),
     )
-    expected = _with_matched_level(expected)
+    assert_frame_equal(expected, actual)
+
+
+def test_join_agg_default_excludes_matched_level():
+    """Do not include the matched level unless explicitly requested."""
+    left = pd.DataFrame({"key": [1, 2]})
+    right = pd.DataFrame({"key": [1, 3], "amount": [10, 20]})
+
+    actual = left.join_agg(
+        right,
+        ("key", "key", "=="),
+        aggfunc=[("amount", "sum")],
+    )
+
+    expected = pd.DataFrame(
+        {("amount", "sum"): [10]},
+        index=pd.RangeIndex(1),
+    )
     assert_frame_equal(expected, actual)
 
 
 @pytest.mark.parametrize("join_algorithm", ["default", "regions"])
-def test_all_unmatched_aggregation_retains_prepared_output_rows(join_algorithm):
+@pytest.mark.parametrize("return_matched", [True, False])
+def test_all_unmatched_aggregation_retains_prepared_output_rows(
+    join_algorithm, return_matched
+):
     """Keep eligible rows when every multi-range candidate is rejected."""
     left = pd.DataFrame({"left_key": [1, 2], "amount": [4, 5]})
     right = pd.DataFrame({"right_key": [3], "amount": [10]})
@@ -1787,11 +1807,14 @@ def test_all_unmatched_aggregation_retains_prepared_output_rows(join_algorithm):
         *conditions,
         aggfunc=aggfunc,
         join_algorithm=join_algorithm,
-        return_matched=True,
+        return_matched=return_matched,
     )
 
     assert len(actual) == len(left)
-    assert actual.index.get_level_values("matched").tolist() == [False, False]
+    if return_matched:
+        assert actual.index.get_level_values("matched").tolist() == [False, False]
+    else:
+        assert isinstance(actual.index, pd.RangeIndex)
     assert actual[("amount", "sum")].tolist() == [0, 0]
     assert actual[("amount", "prod")].tolist() == [1, 1]
     assert actual[("amount", "size")].tolist() == [0, 0]
@@ -1803,16 +1826,20 @@ def test_all_unmatched_aggregation_retains_prepared_output_rows(join_algorithm):
         aggfunc=[("amount", "sum"), ("amount", "prod")],
         join_algorithm=join_algorithm,
         reverse=True,
-        return_matched=True,
+        return_matched=return_matched,
     )
     assert len(reverse) == len(right)
-    assert reverse.index.get_level_values("matched").tolist() == [False]
+    if return_matched:
+        assert reverse.index.get_level_values("matched").tolist() == [False]
+    else:
+        assert isinstance(reverse.index, pd.RangeIndex)
     assert reverse[("amount", "sum")].tolist() == [0]
     assert reverse[("amount", "prod")].tolist() == [1]
 
 
 @pytest.mark.parametrize("reverse", [False, True])
 @pytest.mark.parametrize("join_algorithm", ["default", "regions"])
+@pytest.mark.parametrize("return_matched", [True, False])
 @pytest.mark.parametrize(
     "conditions",
     [
@@ -1822,7 +1849,7 @@ def test_all_unmatched_aggregation_retains_prepared_output_rows(join_algorithm):
     ],
 )
 def test_equi_aggregation_without_key_match_is_empty(
-    conditions, join_algorithm, reverse
+    conditions, join_algorithm, reverse, return_matched
 ):
     """No equality key match returns an empty result, like the indices."""
     left = pd.DataFrame(
@@ -1837,7 +1864,7 @@ def test_equi_aggregation_without_key_match_is_empty(
         aggfunc=aggfunc,
         join_algorithm=join_algorithm,
         reverse=reverse,
-        return_matched=True,
+        return_matched=return_matched,
     )
     matched = left.join_agg(
         left,
@@ -1845,12 +1872,16 @@ def test_equi_aggregation_without_key_match_is_empty(
         aggfunc=aggfunc,
         join_algorithm=join_algorithm,
         reverse=reverse,
-        return_matched=True,
+        return_matched=return_matched,
     )
 
     assert actual.empty
     assert actual.columns.equals(matched.columns)
     assert actual.index.names == matched.index.names
+    if return_matched:
+        assert isinstance(actual.index, pd.MultiIndex)
+    else:
+        assert isinstance(actual.index, pd.RangeIndex)
 
 
 @pytest.mark.parametrize(
@@ -5508,8 +5539,9 @@ def test_single_condition_less_than_dates_agg(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5538,8 +5570,9 @@ def test_single_condition_greater_than_dates_agg(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5569,8 +5602,9 @@ def test_gt_ne_agg(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5600,8 +5634,9 @@ def test_lt_ne_agg(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5630,8 +5665,9 @@ def test_dual_gt_agg(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5660,8 +5696,9 @@ def test_dual_lt_agg(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5691,8 +5728,9 @@ def test_multiple__ge__agg(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5722,8 +5760,9 @@ def test_multiple__le__agg(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5753,8 +5792,9 @@ def test_multiple_range_aggs(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5785,8 +5825,9 @@ def test_multiple_range_ne_agg(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5815,8 +5856,9 @@ def test_range_only_agg(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5845,8 +5887,9 @@ def test_equi_agg(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5874,8 +5917,9 @@ def test_equi_only_agg(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5904,8 +5948,9 @@ def test_equi_ne_agg(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5935,8 +5980,9 @@ def test_equi_le_ne_agg(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5966,8 +6012,9 @@ def test_equi_ge_ne_agg(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5997,8 +6044,9 @@ def test_equi_le_ge_agg(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -6029,8 +6077,9 @@ def test_equi_le_ge_ne_agg(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -6061,8 +6110,9 @@ def test_equi_ge_ge_ne_agg(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -6093,8 +6143,9 @@ def test_equi_le_le_ne_agg(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -6130,8 +6181,9 @@ def test_equi_le_ge_ge_ne_agg(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -6200,8 +6252,9 @@ def test_single_condition_less_than_dates_agg_rev(df, right):
             ("A", "prod"),
             ("A", "sum"),
         ],
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -6239,8 +6292,9 @@ def test_single_condition_greater_than_dates_agg_rev(df, right):
             ("A", "prod"),
             ("A", "sum"),
         ],
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -6270,8 +6324,9 @@ def test_gt_ne_agg_rev(df, right):
             ("A", "sum"),
         ],
         reverse=True,
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -6301,8 +6356,9 @@ def test_lt_ne_agg_rev(df, right):
             ("A", "sum"),
         ],
         reverse=True,
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -6331,8 +6387,9 @@ def test_dual_gt_agg_rev(df, right):
             ("A", "sum"),
         ],
         reverse=True,
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -6361,8 +6418,9 @@ def test_dual_lt_agg_rev(df, right):
             ("A", "sum"),
         ],
         reverse=True,
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -6392,8 +6450,9 @@ def test_multiple__ge__agg_rev(df, right):
             ("A", "sum"),
         ],
         reverse=True,
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -6423,8 +6482,9 @@ def test_multiple__le__agg_rev(df, right):
             ("A", "sum"),
         ],
         reverse=True,
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -6454,8 +6514,9 @@ def test_multiple_range_aggs_rev(df, right):
             ("A", "sum"),
         ],
         reverse=True,
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -6486,8 +6547,9 @@ def test_multiple_range_ne_agg_rev(df, right):
             ("A", "sum"),
         ],
         reverse=True,
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -6516,8 +6578,9 @@ def test_range_only_agg_rev(df, right):
             ("A", "sum"),
         ],
         reverse=True,
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -6546,8 +6609,9 @@ def test_equi_agg_rev(df, right):
             ("A", "sum"),
         ],
         reverse=True,
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -6575,8 +6639,9 @@ def test_equi_only_agg_rev(df, right):
             ("A", "sum"),
         ],
         reverse=True,
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -6605,8 +6670,9 @@ def test_equi_ne_agg_rev(df, right):
             ("A", "sum"),
         ],
         reverse=True,
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -6636,8 +6702,9 @@ def test_equi_le_ne_agg_rev(df, right):
             ("A", "sum"),
         ],
         reverse=True,
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -6667,8 +6734,9 @@ def test_equi_ge_ne_agg_rev(df, right):
             ("A", "sum"),
         ],
         reverse=True,
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -6698,8 +6766,9 @@ def test_equi_le_ge_agg_rev(df, right):
             ("A", "sum"),
         ],
         reverse=True,
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -6730,8 +6799,9 @@ def test_equi_le_ge_ne_agg_rev(df, right):
             ("A", "sum"),
         ],
         reverse=True,
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -6762,8 +6832,9 @@ def test_equi_ge_ge_ne_agg_rev(df, right):
             ("A", "sum"),
         ],
         reverse=True,
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -6794,8 +6865,9 @@ def test_equi_le_le_ne_agg_rev(df, right):
             ("A", "sum"),
         ],
         reverse=True,
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -6831,8 +6903,9 @@ def test_equi_le_ge_ge_ne_agg_rev(df, right):
             ("A", "sum"),
         ],
         reverse=True,
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 

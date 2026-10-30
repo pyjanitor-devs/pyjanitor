@@ -1431,7 +1431,7 @@ def join_agg(
     aggfunc: list[tuple],
     force: bool = False,
     reverse: bool = False,
-    return_matched: bool = True,
+    return_matched: bool = False,
     join_algorithm: str = "default",
 ) -> pd.DataFrame:
     """Aggregate values over rows matched by an inner conditional join.
@@ -1456,9 +1456,9 @@ def join_agg(
         - `min` and `max` support numeric, datetime, and timedelta columns.
           Integer results use nullable `Int64` or `UInt64` when an unmatched
           output row needs `pd.NA`; other results retain their source dtype.
-        - `return_matched` identifies whether any row pair matched. This is
-          independent of `count`, which can be zero when all matched source
-          values are null.
+        - When `return_matched=True`, the `matched` index level identifies
+          whether any row pair matched. This is independent of `count`, which
+          can be zero when all matched source values are null.
 
     By default, right-side values are aggregated for each left row. Set
     ``reverse=True`` to aggregate left-side values for each right row.
@@ -1477,10 +1477,10 @@ def join_agg(
         left-row position. Reverse results follow the internal right-side
         layout, which is usually sorted by join value, so their row order is
         not guaranteed. Rows that do appear without a matching partner carry
-        identity values and ``matched=False``. With ``return_matched=True``,
-        the result index has a boolean ``matched`` level so identity-valued
-        unmatched results can be distinguished from matched results with the
-        same value.
+        identity values. When ``return_matched=True``, the result index also
+        has a boolean ``matched`` level, with ``matched=False`` for those
+        rows, so identity-valued unmatched results can be distinguished from
+        matched results with the same value.
 
     Args:
         df: Left DataFrame and reverse-aggregation source.
@@ -1493,14 +1493,16 @@ def join_agg(
             mix equality and ``!=`` predicates without a range predicate.
         reverse: Aggregate left-side values into right-side output rows.
         return_matched: Add a boolean ``matched`` level to the result index.
+            Defaults to ``False``.
         join_algorithm: Strategy for multiple range predicates. ``"default"``
             uses the general range-join implementation and ``"regions"`` uses
             the region-based implementation. It is ignored for other joins.
 
     Returns:
         pd.DataFrame: Aggregated values indexed by physical output-row
-        position. Null join-key rows are excluded; unmatched rows that
-        appear carry identity values.
+        position, optionally with a boolean ``matched`` level when
+        ``return_matched=True``. Null join-key rows are excluded; unmatched
+        rows that appear carry identity values.
 
     Examples:
         >>> import pandas as pd
@@ -1511,14 +1513,12 @@ def join_agg(
         ...     right,
         ...     ("key", "key", "<"),
         ...     aggfunc=[("amount", "sum"), ("amount", "count")],
-        ...     return_matched=True,
         ... )
         >>> print(result.to_string())  # doctest: +NORMALIZE_WHITESPACE
-                  amount
-                     sum count
-              matched
-        0 True        50     2
-        1 True        30     1
+           amount
+              sum count
+        0     50     2
+        1     30     1
 
         ``return_matched`` also distinguishes an unmatched row from a matched
         row whose aggregate happens to be zero:
@@ -1566,7 +1566,6 @@ def join_agg(
         ...     ("key", "key", "<"),
         ...     aggfunc=[("amount", "sum")],
         ...     reverse=True,
-        ...     return_matched=False,
         ... )
         >>> print(reverse_result.to_string())
           amount

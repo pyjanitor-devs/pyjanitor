@@ -178,7 +178,13 @@ def test_dual_range_aggregation_rechecks_integer_sum_and_prod(reverse):
     conditions = [("start", "end", "<="), ("end", "start", ">=")]
     aggregation = [("value", "sum"), ("value", "prod")]
 
-    actual = left.join_agg(right, *conditions, aggfunc=aggregation, reverse=reverse)
+    actual = left.join_agg(
+        right,
+        *conditions,
+        aggfunc=aggregation,
+        reverse=reverse,
+        return_matched=True,
+    )
 
     if reverse:
         expected = pd.DataFrame(

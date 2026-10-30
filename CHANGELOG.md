@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [ENH] Add `flag_outliers` to flag numeric outliers. The default threshold is 1.5 for the IQR method and 3 for the Z-score method. Missing values are ignored when computing the cutoff and are never flagged. - @Psycoder0611
+
 ## [v0.32.65] - 2026-10-30
 
 -   [ENH] Change the `join_agg` default for `return_matched` from `True` to `False`; callers that need the boolean `matched` index level must now pass `return_matched=True`. - PR #1829 @samukweku

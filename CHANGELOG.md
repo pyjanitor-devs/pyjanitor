@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v0.32.65] - 2026-10-30
+
 -   [ENH] Change the `join_agg` default for `return_matched` from `True` to `False`; callers that need the boolean `matched` index level must now pass `return_matched=True`. - PR #1829 @samukweku
 
 ## [v0.32.64] - 2026-10-28
@@ -695,7 +697,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.64...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.65...HEAD
+
+[v0.32.65]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.64...v0.32.65
 
 [v0.32.64]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.63...v0.32.64
 

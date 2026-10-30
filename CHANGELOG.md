@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [BUG] Leave a numeric first column unchanged in `adorn_pct_formatting`, `adorn_ns`, and `adorn_rounding`. Column position 0 is the row identifier, matching `adorn_totals` and `adorn_percentages`. Based on work by @dylanpulver (#1677) and @SumanGouda (#1696). - Issue #1676
+
 ## [v0.32.65] - 2026-10-30
 
 -   [ENH] Change the `join_agg` default for `return_matched` from `True` to `False`; callers that need the boolean `matched` index level must now pass `return_matched=True`. - PR #1829 @samukweku

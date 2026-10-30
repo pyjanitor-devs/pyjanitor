@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+-   [BUG] Leave a numeric first column unchanged in `adorn_pct_formatting`, `adorn_ns`, and `adorn_rounding`. Column position 0 is the row identifier, matching `adorn_totals` and `adorn_percentages`. Based on work by @dylanpulver (#1677) and @SumanGouda (#1696). - Issue #1676
 -   [ENH] Add `read_archive` to read CSV, JSON, Excel, Parquet, and other
     supported files from zip and tar archives with pandas or polars.
     Keyword arguments are passed through to the underlying reader.

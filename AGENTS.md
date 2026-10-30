@@ -866,6 +866,22 @@ that requested flag rather than from the result under test.
 metadata, and strengthen the default-behavior regression test with an exact
 expected frame.
 
+### [2026-10-30] adorn row identifier is column position 0
+
+**Context**: Issue #1676. `adorn_pct_formatting`, `adorn_ns`, and
+`adorn_rounding` formatted a numeric first column. `adorn_totals` and
+`adorn_percentages` already skipped it by comparing labels to `columns[0]`.
+**Learning**: The identifier is positional on the frame being adorned.
+A label comparison also skips later columns that reuse that name, and
+assigning with `df[label]` writes every column that shares the label.
+`adorn_ns` must read the identifier from `df`: column 0 of a caller-supplied
+`ns` can be a real count. Counts stored by `adorn_percentages` share `df`'s
+columns and have to be matched by position. `select_dtypes(include=[np.number])`
+includes nullable `Int64` and `Float64` columns and excludes booleans.
+**Recommendation**: Choose adorn targets with `adorn_data_positions` and
+assign with `DataFrame.isetitem`. Pair `adorn_ns` counts with
+`adorn_count_pairs`.
+
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol

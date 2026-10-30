@@ -1515,14 +1515,17 @@ def _stack_dot_value_only_multiple_labels(
     contents = {}
     indexer = None
     df.columns = spec
-    # Build the homogeneous value matrix once. Group indices are positional,
-    # avoiding repeated duplicate-label scans for each .value group.
     fast_values = _fast_numpy_value_matrix(df)
     values_alias_input = _values_alias_input(fast_values, df)
-    group_positions = grouped.indices if fast_values is not None else None
+    group_positions = grouped.indices
+    arrays = (
+        [arr._values for _, arr in df.items()]
+        if fast_values is None
+        else None
+    )
     for label in counts.index:
-        positions = group_positions.get(label) if group_positions is not None else None
-        if positions is not None and len(positions):
+        positions = group_positions[label]
+        if fast_values is not None:
             contents[label] = _fast_ravel_group(
                 values=fast_values,
                 positions=positions,
@@ -1531,17 +1534,17 @@ def _stack_dot_value_only_multiple_labels(
                 values_alias_input=values_alias_input,
             )
             continue
-        frame = df.loc[:, [label]]
+        frame = pd.DataFrame(
+            {position: arrays[position] for position in positions},
+            index=df.index,
+        )
         no_nulls = frame.columns.size == reps
         any_extension_array = (
             frame.dtypes.map(is_extension_array_dtype).any(axis=None).item()
         )
         if no_nulls and sort_by_appearance and any_extension_array:
             if indexer is None:
-                indexer = _build_indexer_reorder_contents(
-                    length=len_df,
-                    reps=reps,
-                )
+                indexer = _build_indexer_reorder_contents(length=len_df, reps=reps)
             frame = _build_content_extension_array(df=frame)
             frame = frame.take(indexer)
         elif no_nulls and any_extension_array:
@@ -1551,18 +1554,12 @@ def _stack_dot_value_only_multiple_labels(
         elif no_nulls:
             frame = _ravel_values(frame, order="F")
         else:
-            nulls_count = reps - counts.loc[label]
-            nulls_count = len_df * nulls_count
+            nulls_count = len_df * (reps - counts.loc[label])
             nulls_array = np.full(shape=nulls_count, fill_value=np.nan)
-            frame = _build_content_extension_array_with_nulls(
-                df=frame, nulls_array=nulls_array
-            )
+            frame = _build_content_extension_array_with_nulls(df=frame, nulls_array=nulls_array)
             if sort_by_appearance and any_extension_array:
                 if indexer is None:
-                    indexer = _build_indexer_reorder_contents(
-                        length=len_df,
-                        reps=reps,
-                    )
+                    indexer = _build_indexer_reorder_contents(length=len_df, reps=reps)
                 frame = frame.take(indexer)
             elif sort_by_appearance:
                 shape = (len_df, reps)
@@ -1794,43 +1791,40 @@ def _stack_dot_value_multiple_labels(
     if not df.columns.is_monotonic_increasing:
         df = df.sort_index(axis=1)
     contents = {}
-    indexer = None
+    reorder_indexer = None
+
     fast_values = _fast_numpy_value_matrix(df)
     values_alias_input = _values_alias_input(fast_values, df)
-    fast_codes = df.columns.codes[0] if fast_values is not None else None
+
+    # Cache each column's underlying array once. This avoids repeated
+    # DataFrame label lookups for extension and mixed dtypes.
+    arrays = ([arr._values for _, arr in df.items()] if fast_values is None else None)
+    fast_codes = df.columns.codes[0]
     for label in range(_value.size):
+        start = fast_codes.searchsorted(label, side="left")
+        end = fast_codes.searchsorted(label, side="right")
+        if end <= start:
+            contents[_value[label]] = np.full(len_df * reps, np.nan)
+            continue
+        positions = np.arange(start, end)
         if fast_values is not None:
-            start = fast_codes.searchsorted(label, side="left")
-            end = fast_codes.searchsorted(label, side="right")
-            if end > start:
-                contents[_value[label]] = _fast_ravel_group(
-                    values=fast_values,
-                    positions=np.arange(start, end),
-                    reps=reps,
-                    sort_by_appearance=sort_by_appearance,
-                    values_alias_input=values_alias_input,
-                )
-                continue
-        frame = df.loc[:, [label]]
-        any_extension_array = (
-            frame.dtypes.map(is_extension_array_dtype).any(axis=None).item()
-        )
-        if sort_by_appearance and any_extension_array:
-            frame = _build_content_extension_array(df=frame)
-            if indexer is None:
-                indexer = _build_indexer_reorder_contents(
+            contents[_value[label]] = _fast_ravel_group(
+                values=fast_values,
+                positions=positions,
+                reps=reps,
+                sort_by_appearance=sort_by_appearance,
+                values_alias_input=values_alias_input,
+            )
+            continue
+        content = concat_compat([arrays[position] for position in positions])
+        if sort_by_appearance:
+            if reorder_indexer is None:
+                reorder_indexer = _build_indexer_reorder_contents(
                     length=len_df,
                     reps=reps,
                 )
-            frame = frame.take(indexer)
-        elif any_extension_array:
-            frame = _build_content_extension_array(df=frame)
-        elif sort_by_appearance:
-            frame = _ravel_values(frame, order="C")
-        else:
-            frame = _ravel_values(frame, order="F")
-        label = _value[label]
-        contents[label] = frame
+            content = content.take(reorder_indexer)
+        contents[_value[label]] = content
     nulls = _build_nulls(contents=contents, dropna=dropna)
     index = _build_index(
         index=index,
@@ -2699,7 +2693,7 @@ def pivot_wider_spec(
         )
     if spec.columns.size == 2:
         raise ValueError(
-            "Kindly provide the column(s) to use to make new frame’s columns"
+            "Kindly provide the column(s) to use to make new frameâ€™s columns"
         )
     columns = spec.columns[2:]
     values = spec[".value"].unique()

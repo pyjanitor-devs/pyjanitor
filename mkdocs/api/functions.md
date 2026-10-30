@@ -35,6 +35,7 @@
         - filter
         - find_replace
         - flag_nulls
+        - flag_outliers
         - get_dupes
         - groupby_agg
         - groupby_topk

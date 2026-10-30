@@ -2,9 +2,9 @@
 
 ## [Unreleased]
 
-## [v0.32.76] - 2026-11-10
+-   [ENH] Add `flag_outliers` to flag numeric outliers. The default threshold is 1.5 for the IQR method and 3 for the Z-score method. Missing values are ignored when computing the cutoff and are never flagged. - @Psycoder0611
 
--   [INF] Require a `CHANGELOG.md` entry in every pull request and check for it in review: added to `AGENTS.md`, `CONTRIBUTING.md` and the PR template. - PR #1848 @samukweku
+## [v0.32.76] - 2026-11-10
 
 ## [v0.32.75] - 2026-11-04
 

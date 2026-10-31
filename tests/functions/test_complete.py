@@ -815,7 +815,7 @@ def test_complete_by_deprecation_warning():
     """Test that using `by` raises only the `complete` deprecation warning."""
     df = pd.DataFrame({"group": [1, 1, 2], "item": [1, 2, 1]})
 
-    with pytest.warns(DeprecationWarning) as warning_record:
+    with pytest.warns(FutureWarning) as warning_record:
         df.complete("item", by="group")
 
     assert len(warning_record) == 1

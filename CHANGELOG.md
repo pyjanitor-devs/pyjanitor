@@ -3,6 +3,9 @@
 ## [Unreleased]
 
 -   [ENH] Optimize pivot_longer with .value columns for mixed NumPy and pandas extension dtypes, avoiding repeated per-label DataFrame construction and improving performance on wide DataFrames. - Issue #1825 @sumangouda
+## [v0.32.66] - 2026-10-30
+
+-   [BUG] Leave a numeric first column unchanged in `adorn_pct_formatting`, `adorn_ns`, and `adorn_rounding`. Column position 0 is the row identifier, matching `adorn_totals` and `adorn_percentages`. Based on work by @dylanpulver (#1677) and @SumanGouda (#1696). - Issue #1676
 
 ## [v0.32.65] - 2026-10-30
 
@@ -699,7 +702,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.65...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.66...HEAD
+
+[v0.32.66]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.65...v0.32.66
 
 [v0.32.65]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.64...v0.32.65
 

@@ -338,6 +338,31 @@ def test_not_dot_value_sep2(not_dot_value):
     assert_frame_equal(result, actual)
 
 
+def test_names_sep_more_and_fewer_parts_than_names_to():
+    """Split fields are truncated to names_to and padded when shorter."""
+
+    frame = pl.DataFrame({"id": [1], "a_b_c": [10], "only": [20]})
+    result = (
+        frame.pivot_longer(
+            index="id",
+            names_to=("left", "right"),
+            names_sep="_",
+            values_to="value",
+        )
+        .select("id", "left", "right", "value")
+        .sort("left")
+    )
+    expected = pl.DataFrame(
+        {
+            "id": [1, 1],
+            "left": ["a", "only"],
+            "right": ["b", None],
+            "value": [10, 20],
+        }
+    )
+    assert_frame_equal(result, expected)
+
+
 def test_not_dot_value_pattern(not_dot_value):
     """Test output when names_pattern is a string and no dot_value"""
 

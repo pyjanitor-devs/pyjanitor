@@ -219,6 +219,28 @@ py311 = { features = ["tests", "setup", "py311"] }
 py312 = { features = ["tests", "setup", "py312"] }
 py313 = { features = ["tests", "setup", "py313"] }
 
+# The tests feature pins Polars 1.x. This environment omits that feature so
+# the Polars 2 pin is not unioned with >=1.37.1,<2.
+[tool.pixi.environments.py313-polars2]
+features = ["py313"]
+no-default-feature = true
+
+[tool.pixi.environments.py313-polars2.dependencies]
+pandas = ">=3"
+numpy = "*"
+scipy = "*"
+polars = ">=2,<3"
+pytest = ">=9.0.2,<10"
+pytest-xdist = ">=3.8.0,<4"
+
+[tool.pixi.environments.py313-polars2.pypi-dependencies]
+pyjanitor = { path = ".", editable = true }
+# pl.from_pandas on string columns needs PyArrow. pandas 3.1 constrains
+# pyarrow>=16. A wheel avoids a second conda-forge Arrow stack.
+# xarray is not a tests/polars import. pandas-flavor requires it, and
+# importing janitor loads janitor.xarray, so the editable install pulls it.
+pyarrow = ">=16"
+
 [tool.coverage.run]
 omit = [
     "tests/*",

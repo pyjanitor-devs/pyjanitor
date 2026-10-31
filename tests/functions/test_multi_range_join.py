@@ -1,9 +1,12 @@
 """Focused tests for the dual-range Python dispatch boundary."""
 
+import operator
+
 import numpy as np
 import pandas as pd
 import pytest
 
+import janitor
 from janitor.functions._conditional_join._helpers import _normalize_conditions
 from janitor.functions._conditional_join._range_join import (
     _compute_multi_range_join,
@@ -206,3 +209,54 @@ def test_dual_range_aggregation_rechecks_integer_sum_and_prod(reverse):
         )
 
     pd.testing.assert_frame_equal(actual.sort_index(), expected.sort_index())
+
+
+_ANY_OPS = {"<": operator.lt, "<=": operator.le, ">": operator.gt, ">=": operator.ge}
+
+
+@pytest.mark.parametrize("first_op", list(_ANY_OPS))
+@pytest.mark.parametrize("second_op", list(_ANY_OPS))
+@pytest.mark.parametrize("kind", ["int", "float", "datetime", "int_min", "uint_big"])
+def test_keep_any_two_ranges_every_direction(first_op, second_op, kind):
+    """keep="any" with two range predicates, including same-direction pairs
+    whose second right array is not monotonic (negated envelope),
+    must report exactly the left rows that have a match, each with a real one.
+    """
+    seed = sum(map(ord, first_op + second_op + kind))
+    rng = np.random.default_rng(seed)
+
+    def make(size):
+        base = rng.integers(0, 12, size)
+        if kind == "float":
+            return base.astype(float) / 2
+        if kind == "datetime":
+            return pd.Timestamp("2021-01-01") + pd.to_timedelta(base, "D")
+        if kind == "int_min":  # no positive twin: must fall back, not overflow
+            return np.where(base == 0, np.iinfo(np.int64).min, base)
+        if kind == "uint_big":  # too large to widen to int64
+            return base.astype(np.uint64) + np.uint64(2**63)
+        return base
+
+    left = pd.DataFrame({"x": make(80), "y": make(80)})
+    right = pd.DataFrame({"x": make(120), "y": make(120)})
+    # a second right array that is not monotonic in the first one's order
+    right = right.sort_values("x").reset_index(drop=True)
+    right["y"] = right["y"].to_numpy()[::-1]
+
+    actual = janitor.get_join_indices(
+        left,
+        right,
+        ("x", "x", first_op),
+        ("y", "y", second_op),
+        keep="any",
+    )
+    left_index, right_index = (np.asarray(v) for v in list(actual.values())[:2])
+
+    hits = _ANY_OPS[first_op](
+        left["x"].to_numpy()[:, None], right["x"].to_numpy()[None, :]
+    ) & _ANY_OPS[second_op](
+        left["y"].to_numpy()[:, None], right["y"].to_numpy()[None, :]
+    )
+    assert len(left_index) == len(set(left_index.tolist()))
+    assert set(left_index.tolist()) == set(np.flatnonzero(hits.any(axis=1)).tolist())
+    assert hits[left_index, right_index].all()

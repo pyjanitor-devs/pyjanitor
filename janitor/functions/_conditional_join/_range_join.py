@@ -43,6 +43,7 @@ right arrays to build one intersected window.
 from __future__ import annotations
 
 import janitor_rs
+import numpy as np
 import pandas as pd
 
 from janitor.functions._conditional_join import _aggregation_helpers, _helpers
@@ -101,10 +102,81 @@ def _get_dual_range_aggregation_function(reverse: bool, extended: bool) -> objec
     return functions[bool(reverse)]
 
 
+def _negatable(array: np.ndarray) -> np.ndarray | None:
+    """``array`` as a signed numeric array that can be negated, else ``None``.
+
+    Datetimes and timedeltas are viewed as int64 (nulls are already gone).
+    Unsigned integers are widened when they fit. The most negative integer has
+    no positive twin, so it also returns ``None``.
+    """
+    kind = array.dtype.kind
+    if kind == "f":
+        return array
+    if kind in "mM":
+        array = array.view(np.int64)
+    elif kind == "u":
+        if array.size and array.max() > np.iinfo(np.int64).max:
+            return None
+        array = array.astype(np.int64)
+    elif kind != "i":
+        return None
+    if array.size and array.min() == np.iinfo(array.dtype).min:
+        return None
+    return array
+
+
+_FLIPPED = {"<": ">", "<=": ">=", ">": "<", ">=": "<="}
+
+
+def _same_direction_envelope(
+    first_op: str,
+    second_op: str,
+    left_values: np.ndarray,
+    right_values: np.ndarray,
+) -> tuple | None:
+    """Ascending envelope anchor for two predicates that point the same way.
+
+    The first right array is sorted ascending. ``left.x < right.x`` makes each
+    window a suffix, and a second ``left.y < right.y`` then wants the largest
+    ``y`` in that suffix: a reverse running max, which FALLS with position.
+    ``left.x > right.x`` with ``left.y > right.y`` is the prefix/running-min
+    mirror. A falling array cannot be binary-searched as an ascending anchor,
+    so both sides are negated and the operator flips: ``left.y < envelope``
+    becomes ``-left.y > -envelope``, and ``-envelope`` rises.
+
+    The window is a superset of the true matches (the envelope is the extreme
+    over the whole prefix/suffix), and the caller keeps the original predicate
+    as an exact residual. The window's end row is always a genuine match,
+    which is what lets ``keep="any"`` stop without scanning.
+
+    Returns ``None`` when the two predicates do not point the same way or the
+    dtype cannot be negated safely; the caller then keeps the residual scan.
+    """
+    first_is_suffix = first_op in _helpers.less_than_join_types
+    first_is_prefix = first_op in _helpers.greater_than_join_types
+    second_wants_max = second_op in _helpers.less_than_join_types
+    second_wants_min = second_op in _helpers.greater_than_join_types
+    if not (
+        (first_is_suffix and second_wants_max)
+        or (first_is_prefix and second_wants_min)
+    ):
+        return None
+    left_values = _negatable(left_values)
+    right_values = _negatable(right_values)
+    if left_values is None or right_values is None:
+        return None
+    if first_is_suffix:
+        envelope = np.maximum.accumulate(right_values[::-1])[::-1]
+    else:
+        envelope = np.minimum.accumulate(right_values)
+    return (-left_values, -envelope, _FLIPPED[second_op])
+
+
 def _preparatory_work(
     df: pd.DataFrame,
     right: pd.DataFrame,
     conditions: list[_helpers.JoinCondition],
+    existence_only: bool = False,
 ) -> tuple | None:
     """Prepare dual range anchors and residual predicates.
 
@@ -127,6 +199,10 @@ def _preparatory_work(
         sorted right layout directly, its cumulative envelope is used for
         candidate generation and the original predicate is retained for exact
         residual filtering. Other incompatible predicates remain residuals.
+
+    ``existence_only`` is set for ``keep="any"`` index joins, which need one
+    match per left row. It lets a same-direction second range predicate use a
+    rank-space envelope (see below) instead of scanning the whole first window.
 
     Layout details:
         The first anchor's left layout remains in caller order. Its right
@@ -270,7 +346,29 @@ def _preparatory_work(
                 array=cumulative_right._values
             )
 
-        if cumulative_right is None:
+        same_direction_anchor = None
+        if cumulative_right is None and existence_only:
+            same_direction_anchor = _same_direction_envelope(
+                first_op=first_anchor[2],
+                second_op=second_op,
+                left_values=second_left_array,
+                right_values=second_right_array,
+            )
+
+        if same_direction_anchor is not None:
+            # keep="any" only needs one match per left row. The envelope is a
+            # running max/min that FALLS with position, so it cannot be an
+            # ascending anchor directly; it is passed in rank space instead,
+            # and the original predicate is rechecked exactly as a residual.
+            anchor_predicates = [first_anchor, same_direction_anchor]
+            residual_predicates.append(
+                _helpers._build_residual_predicate(
+                    left=second_left_column,
+                    right=second_right_column,
+                    operation=second_op,
+                )
+            )
+        elif cumulative_right is None:
             # Same-direction range predicates do not have a generally safe
             # opposing envelope. Keep the second predicate as a residual and
             # let the single-anchor extended kernel evaluate it exactly.
@@ -353,7 +451,12 @@ def _compute_multi_range_join(
         requests always retain the dictionary form.
     """
 
-    outcome = _preparatory_work(df=df, right=right, conditions=conditions)
+    outcome = _preparatory_work(
+        df=df,
+        right=right,
+        conditions=conditions,
+        existence_only=keep == "any" and not return_building_blocks,
+    )
     if outcome is None:
         result = _helpers._empty_indices()
         return _helpers._materialize_or_return_indices(

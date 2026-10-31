@@ -1904,6 +1904,10 @@ def test_reorder_contents_preserves_dtypes_sort_by_appearance():
             "id": [1, 2, 3],
             "int_2020": pd.array([10, 20, pd.NA], dtype="Int64"),
             "int_2021": pd.array([11, 21, 31], dtype="Int64"),
+            "float_2020": pd.array([1.5, 2.5, pd.NA], dtype="Float64"),
+            "float_2021": pd.array([3.5, 4.5, 5.5], dtype="Float64"),
+            "bool_2020": pd.array([True, False, pd.NA], dtype="boolean"),
+            "bool_2021": pd.array([False, True, True], dtype="boolean"),
             "str_2020": pd.array(["a", "b", "c"], dtype="string"),
             "str_2021": pd.array(["x", "y", "z"], dtype="string"),
             "cat_2020": pd.Categorical(["low", "med", "high"]),
@@ -1916,7 +1920,7 @@ def test_reorder_contents_preserves_dtypes_sort_by_appearance():
     result = df.pivot_longer(
         index="id",
         names_to=(".value", "year"),
-        names_pattern=r"(int|str|cat|date)_(\d+)",
+        names_pattern=r"(int|float|bool|str|cat|date)_(\d+)",
         sort_by_appearance=True,
     )
 
@@ -1925,6 +1929,8 @@ def test_reorder_contents_preserves_dtypes_sort_by_appearance():
             "id": [1, 1, 2, 2, 3, 3],
             "year": ["2020", "2021", "2020", "2021", "2020", "2021"],
             "int": pd.array([10, 11, 20, 21, pd.NA, 31], dtype="Int64"),
+            "float": pd.array([1.5, 3.5, 2.5, 4.5, pd.NA, 5.5], dtype="Float64"),
+            "bool": pd.array([True, False, False, True, pd.NA, True], dtype="boolean"),
             "str": pd.array(["a", "x", "b", "y", "c", "z"], dtype="string"),
             "cat": pd.Categorical(["low", "high", "med", "low", "high", "med"]),
             "date": pd.to_datetime(
@@ -1941,6 +1947,120 @@ def test_reorder_contents_preserves_dtypes_sort_by_appearance():
     )
 
     assert_frame_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    "value_2020, value_2021, expected",
+    [
+        pytest.param(
+            pd.Categorical(
+                ["low", "med"], categories=["low", "med", "high"]
+            ),
+            pd.Categorical(
+                ["high", "low"], categories=["high", "low"]
+            ),
+            ["low", "high", "med", "low"],
+            id="different-categorical-categories",
+        ),
+        pytest.param(
+            pd.date_range("2020-01-01", periods=2, tz="UTC"),
+            pd.date_range("2021-01-01", periods=2, tz="UTC"),
+            pd.DatetimeIndex(
+                [
+                    "2020-01-01",
+                    "2021-01-01",
+                    "2020-01-02",
+                    "2021-01-02",
+                ],
+                tz="UTC",
+            ),
+            id="timezone-aware-datetime",
+        ),
+        pytest.param(
+            pd.period_range("2020-01", periods=2, freq="M"),
+            pd.period_range("2021-01", periods=2, freq="M"),
+            pd.PeriodIndex(
+                ["2020-01", "2021-01", "2020-02", "2021-02"],
+                freq="M",
+            ),
+            id="period",
+        ),
+        pytest.param(
+            pd.interval_range(0, 2),
+            pd.interval_range(2, 4),
+            pd.IntervalIndex(
+                [pd.Interval(0, 1), pd.Interval(2, 3),
+                 pd.Interval(1, 2), pd.Interval(3, 4)]
+            ),
+            id="interval",
+        ),
+        pytest.param(
+            [1, 2],
+            [1.5, 2.5],
+            [1.0, 1.5, 2.0, 2.5],
+            id="mixed-integer-float",
+        ),
+        pytest.param(
+            [True, False],
+            [1, 0],
+            [True, 1, False, 0],
+            id="mixed-boolean-integer",
+        ),
+        pytest.param(
+            [1, 2],
+            pd.array([3, pd.NA], dtype="Int64"),
+            pd.array([1, 3, 2, pd.NA], dtype="Int64"),
+            id="mixed-numpy-integer-nullable-integer",
+        ),
+    ],
+)
+def test_pivot_longer_extension_dtype_compatibility(
+    value_2020, value_2021, expected
+):
+    df = pd.DataFrame(
+        {
+            "id": [1, 2],
+            "value_2020": value_2020,
+            "value_2021": value_2021,
+        }
+    )
+    result = df.pivot_longer(
+        index="id",
+        names_to=(".value", "year"),
+        names_pattern=r"(value)_(\d+)",
+        sort_by_appearance=True,
+    )
+    expected = pd.DataFrame(
+        {
+            "id": [1, 1, 2, 2],
+            "year": ["2020", "2021", "2020", "2021"],
+            "value": expected,
+        }
+    )
+    assert_frame_equal(result, expected)
+
+
+@pytest.mark.parametrize("sort_by_appearance", [False, True])
+def test_pivot_longer_extension_dtype_does_not_alias_input(
+    sort_by_appearance,
+):
+    """Extension dtype values must not alias the input DataFrame."""
+    df = pd.DataFrame(
+        {
+            "id": [1, 2],
+            "x1": pd.array([10, 20], dtype="Int64"),
+        }
+    )
+    original = df.copy(deep=True)
+    result = df.pivot_longer(
+        index="id",
+        names_to=".value",
+        names_pattern=r"(x)\d",
+        sort_by_appearance=sort_by_appearance,
+    )
+    result.loc[0, "x"] = 999
+    pd.testing.assert_frame_equal(df, original)
+    assert result.loc[0, "x"] == 999
 
 
 @pytest.mark.parametrize("sort_by_appearance", [False, True])

@@ -5,6 +5,7 @@
 ## [v0.32.76] - 2026-11-10
 
 -   [INF] Require a `CHANGELOG.md` entry in every pull request and check for it in review: added to `AGENTS.md`, `CONTRIBUTING.md` and the PR template. - PR #1848 @samukweku
+-   [DOC] Document how to sync a fork with upstream `dev`. - Issue #539, PR #1838 @ericmjl
 
 ## [v0.32.75] - 2026-11-04
 

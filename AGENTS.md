@@ -879,6 +879,8 @@ that requested flag rather than from the result under test.
 metadata, and strengthen the default-behavior regression test with an exact
 expected frame.
 
+### [2026-11-04] `CONTRIBUTING.md` is a symlink to `mkdocs/devguide.md`.
+
 ### [2026-10-31] The published introduction is the README symlink
 
 **Context**: Replacing deprecated calls in the basic example from issue #1442.

@@ -215,7 +215,12 @@ def _change_case_expr(
 
 def _normalize_expr(obj: pl.Expr) -> pl.Expr:
     """Perform normalization of labels in obj."""
-    FIXES = [(r"[ /:,?()\.-]", "_"), (r"['’]", ""), (r"[\xa0]", "_")]
+    FIXES = [
+        (r"[ /:,?()\.-]", "_"),
+        (r"['’]", ""),
+        (r"[\xa0]", "_"),
+        (r"(\w)@(\w)", "${1}_${2}"),
+    ]
     for search, replace in FIXES:
         obj = obj.str.replace_all(pattern=search, value=replace, literal=False)
     return obj
@@ -315,7 +320,7 @@ def _clean_expr_names(
         obj = _remove_special_expr(obj=obj)
     if strip_accents:
         obj = _strip_accents_expr(obj=obj)
-    obj = obj.str.replace(pattern="_+", value="_", literal=False)
+    obj = obj.str.replace_all(pattern="_+", value="_", literal=False)
     obj = _strip_underscores_func_expr(
         obj,
         strip_underscores=strip_underscores,

@@ -19,7 +19,6 @@
 #   - tqdm
 #   - unyt
 #   - xarray
-#   - numba
 #   # doc
 #   - mkdocs
 #   - mkdocs-material

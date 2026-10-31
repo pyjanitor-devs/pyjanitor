@@ -4,8 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyjanitor"
-version = "0.32.27"
+version = "0.32.66"
 description = "Tools for cleaning pandas DataFrames"
+readme = {file = "README.md", content-type = "text/markdown"}
 requires-python = ">=3.11"
 license = {text = "MIT"}
 authors = [
@@ -33,7 +34,7 @@ dependencies = [
     "pandas-flavor>=0.8.1,<0.9",
     "multipledispatch",
     "scipy",
-    "janitor-rs>=0.6.1,<0.7",
+    "janitor-rs==0.6.6",
 ]
 
 [project.optional-dependencies]
@@ -153,7 +154,6 @@ matplotlib = ">=3.10.8,<4"
 openpyxl = ">=3.1.5,<4"
 rdkit = ">=2025.9.4,<2026"
 requests = ">=2.32.5,<3"
-numba = ">=0.63.1,<0.64"
 pyspark = ">=4.1.1,<5"
 
 [tool.pixi.feature.docs.dependencies]

@@ -741,8 +741,12 @@ def convert_unix_date(df: pd.DataFrame, column_name: Hashable) -> pd.DataFrame:
         A pandas DataFrame with corrected dates.
     """
 
+    dates = pd.to_datetime(df[column_name], unit="s")
     try:
-        df[column_name] = pd.to_datetime(df[column_name], unit="s")
+        # pandas no longer overflows here on its own, since it keeps the
+        # seconds resolution; check against the nanosecond range instead.
+        dates.dt.as_unit("ns")
     except OutOfBoundsDatetime:  # Indicates time is in milliseconds.
-        df[column_name] = pd.to_datetime(df[column_name], unit="ms")
+        dates = pd.to_datetime(df[column_name], unit="ms")
+    df[column_name] = dates
     return df

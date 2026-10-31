@@ -1,7 +1,10 @@
 import numpy as np
 import pandas as pd
 import pytest
+from pandas.api.types import is_datetime64_any_dtype
 from pandas.testing import assert_frame_equal
+
+from janitor.functions.select import DropLabel
 
 
 @pytest.fixture
@@ -30,6 +33,61 @@ def test_names_from_none(df_checks_output):
         match=r"pivot_wider\(\) is missing 1 required argument.+",
     ):
         df_checks_output.pivot_wider(index="geoid", names_from=None)
+
+
+@pytest.mark.parametrize(
+    ("names_from", "values_from"),
+    [([], None), ("variable", [])],
+)
+def test_empty_pivot_selectors(df_checks_output, names_from, values_from):
+    """Raise clear errors for empty pivot selectors."""
+    with pytest.raises(ValueError, match="at least one|no columns left"):
+        df_checks_output.pivot_wider(
+            index="geoid", names_from=names_from, values_from=values_from
+        )
+
+
+@pytest.mark.parametrize(
+    "selector_name",
+    ["dtype", "mask", "slice", "drop"],
+)
+def test_empty_names_from_selectors(df_checks_output, selector_name):
+    """Raise a clear error when names_from selects no columns."""
+    selectors = {
+        "dtype": is_datetime64_any_dtype,
+        "mask": [False] * len(df_checks_output.columns),
+        "slice": slice("estimate", "geoid"),
+        "drop": DropLabel(df_checks_output.columns),
+    }
+    with pytest.raises(ValueError, match="at least one names_from column"):
+        df_checks_output.pivot_wider(index="geoid", names_from=selectors[selector_name])
+
+
+@pytest.mark.parametrize(
+    "selector_name",
+    ["dtype", "mask", "slice", "drop"],
+)
+def test_empty_values_from_selectors(df_checks_output, selector_name):
+    """Raise a clear error when values_from selects no columns."""
+    selectors = {
+        "dtype": is_datetime64_any_dtype,
+        "mask": [False] * len(df_checks_output.columns),
+        "slice": slice("error", "estimate"),
+        "drop": DropLabel(df_checks_output.columns),
+    }
+    with pytest.raises(ValueError, match="no columns left to use as values"):
+        df_checks_output.pivot_wider(
+            index="geoid", names_from="variable", values_from=selectors[selector_name]
+        )
+
+
+def test_no_columns_left_for_values(df_checks_output):
+    """Raise a clear error when implicit values_from has no columns."""
+    with pytest.raises(ValueError, match="no columns left to use as values"):
+        df_checks_output.pivot_wider(
+            index=["geoid", "name", "estimate", "error"],
+            names_from="variable",
+        )
 
 
 def test_presence_index1(df_checks_output):

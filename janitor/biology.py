@@ -7,6 +7,8 @@ from .utils import deprecated_alias, import_message
 
 try:
     from Bio import SeqIO
+    from Bio.Seq import Seq
+    from Bio.SeqRecord import SeqRecord
 except ImportError:
     import_message(
         submodule="biology",
@@ -80,4 +82,66 @@ def join_fasta(
     seqrecords = {x.id: x.seq.__str__() for x in SeqIO.parse(filename, "fasta")}
     seq_col = [seqrecords[i] for i in df[id_col]]
     df[column_name] = seq_col
+    return df
+
+
+@pf.register_dataframe_method
+def to_fasta(
+    df: pd.DataFrame,
+    identifier_column_name: str,
+    sequence_column_name: str,
+    filename: str,
+) -> pd.DataFrame:
+    """Convenience method to export a dataframe of sequences to a FASTA file.
+
+    This allows us to write out the string sequences stored in a column of
+    the dataframe to a FASTA file, using another column as each record's
+    FASTA header (id).
+
+    This method only writes out the string representation of a sequence.
+    Alphabet is also not stored, under the assumption that the data
+    scientist has domain knowledge of what kind of sequence is being
+    written out (nucleotide vs. amino acid.)
+
+    This method does not mutate the original DataFrame.
+
+    For more advanced functions, please use phylopandas.
+
+    Examples:
+        >>> import pandas as pd
+        >>> import janitor.biology
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "sequence_accession": ["SEQUENCE_1", "SEQUENCE_2"],
+        ...         "sequence": [
+        ...             "MTEITAAMVKELRESTGAGMMDCK",
+        ...             "SATVSEINSETDFVAKN",
+        ...         ],
+        ...     }
+        ... )
+        >>> df.to_fasta(  # doctest: +SKIP
+        ...     identifier_column_name="sequence_accession",
+        ...     sequence_column_name="sequence",
+        ...     filename="sequences.fasta",
+        ... )
+
+    Args:
+        df: A pandas DataFrame.
+        identifier_column_name: The column in the DataFrame that houses
+            sequence identifiers. These are used as each record's FASTA
+            header.
+        sequence_column_name: The column in the DataFrame that houses the
+            sequence data to be written out.
+        filename: Path to the FASTA file to write to.
+
+    Returns:
+        The original pandas DataFrame, unmodified.
+    """
+    seq_records = (
+        SeqRecord(Seq(sequence), id=str(identifier), description="")
+        for identifier, sequence in zip(
+            df[identifier_column_name], df[sequence_column_name]
+        )
+    )
+    SeqIO.write(seq_records, filename, format="fasta")
     return df

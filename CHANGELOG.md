@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+-   [TST] Run `tests/polars` in CI on Python 3.13 with Polars 2.x. The py311, py312, and py313 environments keep Polars 1.41.1. - Issue #1818
+-   [BUG] Build the Polars `pivot_longer` name spec with `list.to_struct(fields=...)`. Polars 2 removed the `upper_bound` argument. - Issue #1818
+
 ## [v0.32.66] - 2026-10-30
 
 -   [BUG] Leave a numeric first column unchanged in `adorn_pct_formatting`, `adorn_ns`, and `adorn_rounding`. Column position 0 is the row identifier, matching `adorn_totals` and `adorn_percentages`. Based on work by @dylanpulver (#1677) and @SumanGouda (#1696). - Issue #1676

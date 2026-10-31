@@ -75,6 +75,19 @@ def test_row_to_names_delete_above_slice(dataframe):
 
 
 @pytest.mark.functions
+def test_row_to_names_delete_above_open_slice(dataframe):
+    "Test output if row_numbers is a slice without a start or a stop"
+    df = dataframe.row_to_names(slice(None, 2), remove_rows_above=True)
+    assert len(df) == 9
+    df = dataframe.row_to_names(slice(-2, None), remove_rows_above=True)
+    assert len(df) == 2
+    df = dataframe.row_to_names(
+        slice(-2, None), remove_rows=True, remove_rows_above=True
+    )
+    assert df.empty
+
+
+@pytest.mark.functions
 def test_row_to_names_delete_above_delete_rows(dataframe):
     """
     Test output for remove_rows=True

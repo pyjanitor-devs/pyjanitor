@@ -204,7 +204,7 @@ def test_dict(multiindex):
     """Test output on a dict"""
     mapp = {"first": ["bar", "qux"], "second": "two"}
     expected = multiindex.select_rows(mapp)
-    actual = multiindex.loc(axis=0)[["bar", "qux"], "two"]
+    actual = multiindex.loc(axis=0)[["bar", "qux"], ["two"]]
     assert_frame_equal(expected, actual)
 
 

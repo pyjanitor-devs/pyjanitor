@@ -387,6 +387,9 @@ def pivot_longer(
             the original index is ignored. If `False`, the original index
             is retained and the index labels will be repeated as necessary.
 
+    Raises:
+        ValueError: If `column_names` selects no columns.
+
     Returns:
         A pandas DataFrame that has been unpivoted from wide to long
             format.
@@ -619,6 +622,11 @@ def _data_checks_pivot_longer(
         if not column_names.size:
             column_names = None
         index = df.columns[index]
+
+    if column_names is not None:
+        column_names = _index_converter(column_names, df.columns)
+        if not column_names.size:
+            raise ValueError("pivot_longer() requires at least one column to pivot.")
 
     if column_names is None:
         return None
@@ -1421,9 +1429,9 @@ def _stack_dot_value_only_single_label(
     elif any_extension_array:
         contents = _build_content_extension_array(df=df)
     elif sort_by_appearance:
-        contents = df._values.ravel(order="C")
+        contents = _ravel_values(df, order="C")
     else:
-        contents = df._values.ravel(order="F")
+        contents = _ravel_values(df, order="F")
     key = spec._values[0]
     contents = {key: contents}
     nulls = _build_nulls(contents=contents, dropna=dropna)
@@ -1507,7 +1515,22 @@ def _stack_dot_value_only_multiple_labels(
     contents = {}
     indexer = None
     df.columns = spec
+    # Build the homogeneous value matrix once. Group indices are positional,
+    # avoiding repeated duplicate-label scans for each .value group.
+    fast_values = _fast_numpy_value_matrix(df)
+    values_alias_input = _values_alias_input(fast_values, df)
+    group_positions = grouped.indices if fast_values is not None else None
     for label in counts.index:
+        positions = group_positions.get(label) if group_positions is not None else None
+        if positions is not None and len(positions):
+            contents[label] = _fast_ravel_group(
+                values=fast_values,
+                positions=positions,
+                reps=reps,
+                sort_by_appearance=sort_by_appearance,
+                values_alias_input=values_alias_input,
+            )
+            continue
         frame = df.loc[:, [label]]
         no_nulls = frame.columns.size == reps
         any_extension_array = (
@@ -1524,9 +1547,9 @@ def _stack_dot_value_only_multiple_labels(
         elif no_nulls and any_extension_array:
             frame = _build_content_extension_array(df=frame)
         elif no_nulls and sort_by_appearance:
-            frame = frame._values.ravel(order="C")
+            frame = _ravel_values(frame, order="C")
         elif no_nulls:
-            frame = frame._values.ravel(order="F")
+            frame = _ravel_values(frame, order="F")
         else:
             nulls_count = reps - counts.loc[label]
             nulls_count = len_df * nulls_count
@@ -1627,9 +1650,9 @@ def _stack_dot_value_single_label(
     elif any_extension_array:
         contents = _build_content_extension_array(df=df)
     elif sort_by_appearance:
-        contents = df._values.ravel(order="C")
+        contents = _ravel_values(df, order="C")
     else:
-        contents = df._values.ravel(order="F")
+        contents = _ravel_values(df, order="F")
     key = spec.pop(".value")
     key = key._values[0]
     contents = {key: contents}
@@ -1772,7 +1795,22 @@ def _stack_dot_value_multiple_labels(
         df = df.sort_index(axis=1)
     contents = {}
     indexer = None
+    fast_values = _fast_numpy_value_matrix(df)
+    values_alias_input = _values_alias_input(fast_values, df)
+    fast_codes = df.columns.codes[0] if fast_values is not None else None
     for label in range(_value.size):
+        if fast_values is not None:
+            start = fast_codes.searchsorted(label, side="left")
+            end = fast_codes.searchsorted(label, side="right")
+            if end > start:
+                contents[_value[label]] = _fast_ravel_group(
+                    values=fast_values,
+                    positions=np.arange(start, end),
+                    reps=reps,
+                    sort_by_appearance=sort_by_appearance,
+                    values_alias_input=values_alias_input,
+                )
+                continue
         frame = df.loc[:, [label]]
         any_extension_array = (
             frame.dtypes.map(is_extension_array_dtype).any(axis=None).item()
@@ -1788,9 +1826,9 @@ def _stack_dot_value_multiple_labels(
         elif any_extension_array:
             frame = _build_content_extension_array(df=frame)
         elif sort_by_appearance:
-            frame = frame._values.ravel(order="C")
+            frame = _ravel_values(frame, order="C")
         else:
-            frame = frame._values.ravel(order="F")
+            frame = _ravel_values(frame, order="F")
         label = _value[label]
         contents[label] = frame
     nulls = _build_nulls(contents=contents, dropna=dropna)
@@ -1883,6 +1921,83 @@ def _build_content_extension_array_with_nulls(
     return df
 
 
+def _ravel_values(df: pd.DataFrame, order: str):
+    """Flatten values without exposing a view of the input frame."""
+    values = df._values
+    flat = values.ravel(order=order)
+    if np.may_share_memory(
+        getattr(flat, "_ndarray", flat), getattr(values, "_ndarray", values)
+    ):
+        flat = flat.copy()
+    return flat
+
+
+def _fast_numpy_value_matrix(df: pd.DataFrame) -> np.ndarray | None:
+    """Return a homogeneous NumPy value matrix, or request the legacy path.
+
+    Extension and mixed dtypes retain their existing per-label behavior.
+    """
+    dtypes = df.dtypes
+    if dtypes.empty or dtypes.nunique() != 1:
+        return None
+    if not isinstance(dtypes.iloc[0], np.dtype):
+        return None
+    values = df._values
+    if not isinstance(values, np.ndarray):
+        return None
+    return values
+
+
+def _values_alias_input(values: np.ndarray | None, df: pd.DataFrame) -> bool:
+    """Whether the homogeneous NumPy matrix overlaps the input frame's blocks.
+
+    Consolidating fragmented pandas blocks creates a fresh array, so views
+    into that array do not mutate the original frame. Inspect once per input,
+    not once for every value group.
+    """
+    if values is None:
+        return False
+    return any(np.may_share_memory(values, block.values) for block in df._mgr.blocks)
+
+
+def _fast_ravel_group(
+    values: np.ndarray,
+    positions: np.ndarray,
+    reps: int,
+    sort_by_appearance: bool,
+    values_alias_input: bool = True,
+) -> np.ndarray:
+    """Flatten one positional value group without retaining source views.
+
+    Contiguous column groups use a view prior to flattening; other groups
+    require a single positional gather. If some groups are shorter than the
+    widest group, pad their missing columns in the same order as the legacy
+    concat_compat path.
+    """
+    positions = np.asarray(positions, dtype=np.intp)
+    if positions.size < reps:
+        # concat_compat preserves the legacy dtype/padding semantics, and
+        # creates a fresh array. Avoid a needless positional gather first.
+        parts = [values[:, position] for position in positions]
+        parts.append(np.full(values.shape[0] * (reps - positions.size), np.nan))
+        flat = concat_compat(parts)
+        if sort_by_appearance:
+            flat = flat.reshape((values.shape[0], reps), order="F").ravel(order="C")
+        return flat
+    if positions.size == 1:
+        columns = values[:, positions[0] : positions[0] + 1]
+    elif np.all(np.diff(positions) == 1):
+        columns = values[:, positions[0] : positions[-1] + 1]
+    else:
+        columns = values[:, positions]
+    flat = columns.ravel(order="C" if sort_by_appearance else "F")
+    # Pandas Copy-on-Write cannot guard raw NumPy views of its input blocks.
+    # Consolidated frames already own a separate matrix; do not copy twice.
+    if values_alias_input and np.may_share_memory(flat, values):
+        flat = flat.copy()
+    return flat
+
+
 def _build_index(index: dict, len_df: int, reps: int, sort_by_appearance: bool) -> dict:
     """Build index dictionary"""
     if not index:
@@ -1901,7 +2016,12 @@ def _build_index(index: dict, len_df: int, reps: int, sort_by_appearance: bool) 
         elif sort_by_appearance:
             arr = arr.repeat(reps)
         else:
-            arr = np.tile(arr, reps)
+            tiled = np.tile(arr, reps)
+            if np.may_share_memory(
+                getattr(tiled, "_ndarray", tiled), getattr(arr, "_ndarray", arr)
+            ):
+                tiled = tiled.copy()
+            arr = tiled
         index_[arr_name] = arr
     return index_
 
@@ -1939,7 +2059,7 @@ def _build_nulls(contents: dict, dropna: bool) -> np.ndarray | None:
 
 
 def _build_df(contents: dict, df_index: pd.Index | None) -> pd.DataFrame:
-    """Build the dataframe"""
+    """Build the dataframe."""
     if df_index is None:
         return pd.DataFrame(data=contents, copy=False)
     return pd.DataFrame(data=contents, index=df_index, copy=False)
@@ -2173,6 +2293,10 @@ def pivot_wider(
         index_expand: Expand the index to show all the categories.
             Applies only if `index` is a categorical column.
 
+    Raises:
+        ValueError: If `names_from` selects no columns or no columns remain
+            to use as values.
+
     Returns:
         A pandas DataFrame that has been unpivoted from long to wide form.
     """  # noqa: E501
@@ -2344,6 +2468,8 @@ def _data_checks_pivot_wider(
     if names_from is None:
         raise ValueError("pivot_wider() is missing 1 required argument: 'names_from'")
     names_from = get_index_labels([names_from], df, axis="columns")
+    if names_from.empty:
+        raise ValueError("pivot_wider() requires at least one names_from column.")
     try:
         # hack to align with pd.pivot
         # this means the user passed a scalar
@@ -2380,6 +2506,8 @@ def _data_checks_pivot_wider(
         values_from = values_from_
     else:
         values_from = list(values_from)
+    if not values_from:
+        raise ValueError("pivot_wider() found no columns left to use as values.")
     names_from = list(names_from)
     check("flatten_levels", flatten_levels, [bool])
     if names_sep is not None:

@@ -93,6 +93,7 @@ def move(
     Raises:
         ValueError: If `axis` is not `0` or `1`.
         ValueError: If `position` is not `before` or `after`.
+        ValueError: If `target` selects no labels.
 
     Returns:
         The dataframe with the Series moved.
@@ -121,6 +122,8 @@ def move(
     else:
         target = _select_index([target], df, mapping[axis])
         target = _index_converter(target, index)
+        if not target.size:
+            raise ValueError("`target` must select at least one label.")
     index = np.delete(index, source)
 
     if position == "before":

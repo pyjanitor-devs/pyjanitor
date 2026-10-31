@@ -40,7 +40,6 @@
         - groupby_topk
         - impute
         - jitter
-        - join_agg
         - join_apply
         - label_encode
         - limit_column_characters

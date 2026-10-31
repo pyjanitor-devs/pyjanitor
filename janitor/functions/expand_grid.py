@@ -17,9 +17,12 @@ from pandas.core.dtypes.concat import concat_compat
 from pandas.core.groupby.generic import DataFrameGroupBy
 
 from janitor.functions.utils import _computations_expand_grid
-from janitor.utils import check, check_column, find_stack_level, refactored_function
-
-warnings.simplefilter("always", DeprecationWarning)
+from janitor.utils import (
+    check,
+    check_column,
+    find_stack_level,
+    refactored_function,
+)
 
 
 @pf.register_dataframe_method
@@ -358,7 +361,7 @@ def expand(
     warnings.warn(
         "The `by` argument is deprecated. Call the `expand` function "
         "on the grouped object instead.",
-        DeprecationWarning,
+        FutureWarning,
         stacklevel=find_stack_level(),
     )
     if not is_scalar(by) and not isinstance(by, list):
@@ -439,6 +442,8 @@ def cartesian_product(*inputs: tuple, sort: bool = False) -> pd.DataFrame:
     The input argument should be a pandas Index/Series/DataFrame,
     or a dictionary - the values of the dictionary should be
     a 1D array.
+
+    !!! info "New in version 0.28.0"
 
     Examples:
         >>> import pandas as pd

@@ -1,3 +1,5 @@
+import warnings
+
 import pytest
 
 from janitor.utils import deprecated_kwargs
@@ -77,7 +79,7 @@ def test_warning(arguments, message, func_kwargs, msg_expected):
     def simple_sum(alpha, beta, a=0, b=0):
         return alpha + beta
 
-    with pytest.warns(DeprecationWarning, match=msg_expected):
+    with pytest.warns(FutureWarning, match=msg_expected):
         simple_sum(1, 2, **func_kwargs)
 
 
@@ -97,3 +99,17 @@ def test_without_error(arguments, func_args, expected):
         return alpha + beta
 
     assert simple_sum(*func_args) == expected
+
+
+@pytest.mark.utils
+def test_explicit_default_does_not_warn():
+    """Explicitly passing a deprecated parameter's default is quiet."""
+
+    @deprecated_kwargs("old", error=False)
+    def function(old=slice(None)):
+        return old
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        assert function(old=slice(None)) == slice(None)
+    assert not caught

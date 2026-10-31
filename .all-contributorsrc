@@ -1202,6 +1202,96 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "tunglambk",
+      "name": "Tung Lam",
+      "avatar_url": "https://avatars.githubusercontent.com/u/53996158?v=4",
+      "profile": "https://github.com/tunglambk",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "Rodrigo-Palma",
+      "name": "Rodrigo Stachlewski Palma",
+      "avatar_url": "https://avatars.githubusercontent.com/u/86628053?v=4",
+      "profile": "https://github.com/Rodrigo-Palma",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "VenishPaneliya",
+      "name": "Venish Paneliya",
+      "avatar_url": "https://avatars.githubusercontent.com/u/141703684?v=4",
+      "profile": "https://github.com/VenishPaneliya",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "raashish1601",
+      "name": "Raashish Aggarwal",
+      "avatar_url": "https://avatars.githubusercontent.com/u/94279692?v=4",
+      "profile": "https://github.com/raashish1601",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "BALOGUN-DAVID",
+      "name": "BALOGUN DAVID TAIWO",
+      "avatar_url": "https://avatars.githubusercontent.com/u/62438936?v=4",
+      "profile": "https://github.com/BALOGUN-DAVID",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "iMalcolmS",
+      "name": "Malcolm",
+      "avatar_url": "https://avatars.githubusercontent.com/u/168652527?v=4",
+      "profile": "https://github.com/iMalcolmS",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "senanurcetin",
+      "name": "Senanur Çetin",
+      "avatar_url": "https://avatars.githubusercontent.com/u/253597344?v=4",
+      "profile": "https://github.com/senanurcetin",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "raams95",
+      "name": "raams95",
+      "avatar_url": "https://avatars.githubusercontent.com/u/341781521?v=4",
+      "profile": "https://github.com/raams95",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "dylanpulver",
+      "name": "Dylan Pulver",
+      "avatar_url": "https://avatars.githubusercontent.com/u/35541198?v=4",
+      "profile": "https://github.com/dylanpulver",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "Sarra99",
+      "name": "Sarra NEBLI",
+      "avatar_url": "https://avatars.githubusercontent.com/u/66265406?v=4",
+      "profile": "https://github.com/Sarra99",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "badgeTemplate": "<img alt=\"All Contributors: {{contributorCount}}\" src=\"https://img.shields.io/github/all-contributors/{{projectOwner}}/{{projectName}}?color=ee8449&style=flat-square\">",

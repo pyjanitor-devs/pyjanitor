@@ -518,10 +518,16 @@ def _pivot_longer_create_spec(
     """
     spec = pl.DataFrame({".name": column_names})
     if names_sep is not None:
+        # Polars 2 removed list.to_struct(upper_bound=...). A fields list
+        # of the same length keeps Polars 1 truncation and null-padding.
+        # field_{i} only has to be unique and stable. The spec renames these
+        # fields to names_to below, so the placeholders are not Polars names.
         expression = (
             pl.col(".name")
             .str.split(by=names_sep)
-            .list.to_struct(upper_bound=len(names_to))
+            .list.to_struct(
+                fields=[f"field_{index}" for index in range(len(names_to))]
+            )
             .alias(variable_name)
         )
     else:

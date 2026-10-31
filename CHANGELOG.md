@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+-   [TST] Run `tests/polars` and `janitor/polars` doctests in CI on Python 3.13 with Polars 2.x. The py311, py312, and py313 environments keep Polars 1.41.1. - Issue #1818, PR #1839 @ericmjl
+-   [BUG] Build the Polars `pivot_longer` name spec with `list.to_struct(fields=...)`. Polars 2 removed the `upper_bound` argument. - Issue #1818, PR #1839 @ericmjl
+
 ## [v0.32.75] - 2026-11-04
 
 -   [DOC] Rewrite the introductory example to chain `clean_names`, `remove_empty`, and `encode_categorical`, so copying it does not emit `FutureWarning`. - Issue #1442

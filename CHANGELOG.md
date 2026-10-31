@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [DOC] Document how to sync a fork with upstream `dev`. - Issue #539
+
 ## [v0.32.66] - 2026-10-30
 
 -   [BUG] Leave a numeric first column unchanged in `adorn_pct_formatting`, `adorn_ns`, and `adorn_rounding`. Column position 0 is the row identifier, matching `adorn_totals` and `adorn_percentages`. Based on work by @dylanpulver (#1677) and @SumanGouda (#1696). - Issue #1676

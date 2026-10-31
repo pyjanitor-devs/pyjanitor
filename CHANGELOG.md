@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [ENH] Added `flag_in_range` function to flag values that fall within a given range (`1` if in range, `0` otherwise). - Issue #708 @naseem173
+
 ## [v0.32.66] - 2026-10-30
 
 -   [BUG] Leave a numeric first column unchanged in `adorn_pct_formatting`, `adorn_ns`, and `adorn_rounding`. Column position 0 is the row identifier, matching `adorn_totals` and `adorn_percentages`. Based on work by @dylanpulver (#1677) and @SumanGouda (#1696). - Issue #1676
@@ -198,7 +200,6 @@
 -   [ENH] Replace `.apply()` with `.map()` in `find_replace` for ~6x performance improvement. - Issue #1422 @Anupam2400
 -   [ENH] Add `drop_first` parameter to `expand_column`. - Issue #368 @manav252
 -   [ENH] Add `strip_whitespace` to `clean_names` function. - Issue #1385
--   [ENH] Added `flag_in_range` function to flag values outside a given range. - Issue #708 @naseem173
 -   [ENH] Improve `polars.complete` and `polars.expand`, avoiding the potentially expensive schema computation on lazy frames. @samukweku
 -   [TST] Fix 'HealthCheck' failure in 'test_ecdf_string' by adding missing '@settings' decorator. @mjsr84
 -   [INF] Update CI and development dependencies.

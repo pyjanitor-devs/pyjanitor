@@ -87,3 +87,30 @@ jobs:
         with:
           # fail_ci_if_error: true # optional (default = false)
           verbose: true # optional (default = false)
+
+  run-polars2-tests:
+    name: Run polars tests (Python 3.13, Polars 2)
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: bash -l {0}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Pixi Environment
+        uses: prefix-dev/setup-pixi@v0.11.2
+        with:
+          pixi-version: latest
+          cache: true
+          cache-write: true
+          environments: py313-polars2
+
+      - name: Confirm Polars 2 and pandas 3
+        run: |
+          pixi run -e py313-polars2 python -c "import pandas, polars; print('pandas', pandas.__version__); print('polars', polars.__version__); assert polars.__version__.split('.')[0] == '2', polars.__version__; assert int(pandas.__version__.split('.')[0]) >= 3, pandas.__version__"
+
+      - name: Run polars unit tests
+        run: pixi run -e py313-polars2 pytest -v -r a -n auto --color=yes --durations=0 tests/polars

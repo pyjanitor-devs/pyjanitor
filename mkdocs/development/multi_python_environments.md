@@ -40,9 +40,10 @@ In `pyproject.toml`, we define environments that combine Python version features
 
 ```toml
 [tool.pixi.environments]
-py311 = { features = ["tests", "setup", "py311"] }
-py312 = { features = ["tests", "setup", "py312"] }
-py313 = { features = ["tests", "setup", "py313"] }
+py311 = { features = ["tests", "setup", "py311", "polars1"] }
+py312 = { features = ["tests", "setup", "py312", "polars1"] }
+py313 = { features = ["tests", "setup", "py313", "polars1"] }
+py313-polars2 = { features = ["tests", "setup", "py313", "polars2"] }
 ```
 
 Each environment includes:
@@ -50,6 +51,7 @@ Each environment includes:
 - **`tests`**: Testing dependencies (pytest, pytest-cov, hypothesis, etc.)
 - **`setup`**: Development setup tools (pre-commit hooks)
 - **`py311/py312/py313`**: The specific Python version
+- **`polars1` or `polars2`**: The Polars major version for that environment
 
 When pixi creates an environment, it:
 
@@ -148,6 +150,14 @@ To add support for a new Python version (e.g., Python 3.14):
    ```
 
 That's it! Pixi and GitHub Actions will handle the rest automatically.
+
+## Polars 2 coverage
+
+Polars 1.x and 2.x cannot share one Pixi environment: Pixi combines every
+feature's requirements, and `>=1.37.1,<2` conflicts with `>=2,<3`. The
+`polars1` and `polars2` features hold those pins. `py311`, `py312`, and
+`py313` include `polars1` (locked at 1.41.1). `py313-polars2` includes
+`polars2`, and CI runs `tests/polars` in that environment.
 
 ## Troubleshooting
 

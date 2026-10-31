@@ -116,7 +116,8 @@ pixi run <command>
 | `chemistry` | Chemistry module development | rdkit, tqdm |
 | `engineering` | Engineering module development | unyt |
 | `spark` | PySpark development | pyspark |
-| `py311`/`py312`/`py313` | Python version testing | Specific Python versions |
+| `py311`/`py312`/`py313` | Python version testing | Polars 1.x |
+| `py313-polars2` | Polars 2.x test coverage | Python 3.13, Polars 2.x |
 
 To run commands in a specific environment:
 
@@ -869,6 +870,17 @@ includes nullable `Int64` and `Float64` columns and excludes booleans.
 **Recommendation**: Choose adorn targets with `adorn_data_positions` and
 assign with `DataFrame.isetitem`. Pair `adorn_ns` counts with
 `adorn_count_pairs`.
+
+### [2026-10-31] Polars major versions are separate Pixi features
+
+**Context**: Adding CI coverage for Polars 2.x (issue #1818).
+**Learning**: Pixi unions dependency requirements from every feature in an
+environment. An environment-level Polars 2 pin does not override the tests
+feature's `polars>=1.37.1,<2` constraint, so the solve fails. Polars 1.x and
+2.x have to be separate features, and each environment includes exactly one.
+**Recommendation**: Keep `polars1` on the existing test environments so they
+stay on the locked Polars 1.41.1 line, and run `tests/polars` in
+`py313-polars2`.
 
 ## Version History
 

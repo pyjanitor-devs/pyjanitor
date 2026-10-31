@@ -147,7 +147,6 @@ pytest-xdist = ">=3.8.0,<4"
 hypothesis = ">=6.151.2,<7"
 interrogate = ">=1.7.0,<2"
 pandas-vet = ">=2023.8.2,<2024"
-polars = ">=1.37.1,<2"
 py = ">=1.11.0,<2"
 unyt = ">=3.1.0,<4"
 matplotlib = ">=3.10.8,<4"
@@ -185,6 +184,16 @@ python = "3.12.*"
 [tool.pixi.feature.py313.dependencies]
 python = "3.13.*"
 
+# Polars 1.x and 2.x constraints conflict, so each environment picks one.
+# pandas>=3 is repeated on polars2 because a fresh solve of pandas="*"
+# can select pandas 2, which pyjanitor's dependency rejects.
+[tool.pixi.feature.polars1.dependencies]
+polars = ">=1.37.1,<2"
+
+[tool.pixi.feature.polars2.dependencies]
+polars = ">=2,<3"
+pandas = ">=3"
+
 [tool.pixi.tasks]
 start = "pre-commit install"
 format = "pre-commit run ruff-format --all-files"
@@ -209,16 +218,17 @@ setup = "pre-commit autoupdate && pre-commit install --install-hooks"
 update = "pre-commit autoupdate"
 
 [tool.pixi.environments]
-default = { features = ["tests", "setup"] }
+default = { features = ["tests", "setup", "polars1"] }
 docs = { features = ["docs"] }
-tests = { features = ["tests", "setup"] }
-biology = { features = ["tests", "setup", "biology"] }
-chemistry = { features = ["tests", "setup", "chemistry"] }
-engineering = { features = ["tests", "setup", "engineering"] }
-spark = { features = ["tests", "setup", "spark"] }
-py311 = { features = ["tests", "setup", "py311"] }
-py312 = { features = ["tests", "setup", "py312"] }
-py313 = { features = ["tests", "setup", "py313"] }
+tests = { features = ["tests", "setup", "polars1"] }
+biology = { features = ["tests", "setup", "biology", "polars1"] }
+chemistry = { features = ["tests", "setup", "chemistry", "polars1"] }
+engineering = { features = ["tests", "setup", "engineering", "polars1"] }
+spark = { features = ["tests", "setup", "spark", "polars1"] }
+py311 = { features = ["tests", "setup", "py311", "polars1"] }
+py312 = { features = ["tests", "setup", "py312", "polars1"] }
+py313 = { features = ["tests", "setup", "py313", "polars1"] }
+py313-polars2 = { features = ["tests", "setup", "py313", "polars2"] }
 
 [tool.coverage.run]
 omit = [

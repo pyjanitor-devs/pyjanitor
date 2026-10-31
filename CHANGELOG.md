@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [BUG] Leave already-numeric columns unchanged in `currency_column_to_numeric`, so calling it again on a converted column no longer raises. An invalid `cleaning_style` raises `ValueError` before that numeric pass-through, including when the column is already numeric. - Issue #197
+
 ## [v0.32.73] - 2026-11-03
 
 -   [INF] Match the Python trove classifiers and the ruff, black, and pixi minimum versions to the supported range, Python 3.11, 3.12, and 3.13.

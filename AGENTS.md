@@ -854,6 +854,18 @@ that requested flag rather than from the result under test.
 metadata, and strengthen the default-behavior regression test with an exact
 expected frame.
 
+### [2026-10-31] The published introduction is the README symlink
+
+**Context**: Replacing deprecated calls in the basic example from issue #1442.
+**Learning**: `README.md` is a symlink to `mkdocs/index.md`, and
+`mkdocs/CHANGELOG.md` is a symlink to `CHANGELOG.md`. PyPI uses that README,
+so the Python samples before `## Installation` are what a new user copies.
+`remove_columns`, `rename_column`, and `add_column` emit `FutureWarning`.
+**Recommendation**: Edit `mkdocs/index.md` for README changes. Keep that
+introduction on current methods such as `clean_names`, and execute the snippet
+from `tests/test_readme_example.py` with `FutureWarning` and
+`DeprecationWarning` set to errors.
+
 ### [2026-10-30] adorn row identifier is column position 0
 
 **Context**: Issue #1676. `adorn_pct_formatting`, `adorn_ns`, and

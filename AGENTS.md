@@ -870,6 +870,16 @@ includes nullable `Int64` and `Float64` columns and excludes booleans.
 assign with `DataFrame.isetitem`. Pair `adorn_ns` counts with
 `adorn_count_pairs`.
 
+### [2026-10-31] `idempotent` cannot compare DataFrames
+
+**Context**: Checking that `currency_column_to_numeric` satisfies
+`f(f(df)) == f(df)`.
+**Learning**: `janitor.utils.idempotent` evaluates `not (left == right)`.
+DataFrame `==` returns a boolean frame, so this raises `ValueError` about an
+ambiguous truth value. NaNs also compare unequal under `==`.
+**Recommendation**: Use `pandas.testing.assert_frame_equal` for DataFrame
+idempotence checks. Keep `idempotent` for scalar functions.
+
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol

@@ -2,7 +2,6 @@
 
 from typing import Hashable, Optional, Union
 
-import numpy as np
 import pandas as pd
 import pandas_flavor as pf
 
@@ -19,11 +18,11 @@ def flag_in_range(
     flag_column_name: Optional[Hashable] = "in_range_flag",
 ) -> pd.DataFrame:
     """Creates a new column to indicate whether values in a column fall
-    within (or outside) a given range.
+    within a given range.
 
     A flag value of `1` indicates the row's value in `column_name` falls
-    outside the `[low, high]` range; `0` indicates it falls within range,
-    consistent with the convention used by `flag_nulls`.
+    within the `[low, high]` range; `0` indicates it falls outside the
+    range. Missing values are never in range, so they are flagged `0`.
 
     This method does not mutate the original DataFrame.
 
@@ -33,11 +32,11 @@ def flag_in_range(
         >>> df = pd.DataFrame({"a": [1, 5, 10, 15, 20]})
         >>> df.flag_in_range(column_name="a", low=5, high=15)
            a  in_range_flag
-        0   1              1
-        1   5              0
-        2  10              0
-        3  15              0
-        4  20              1
+        0   1              0
+        1   5              1
+        2  10              1
+        3  15              1
+        4  20              0
 
     Args:
         df: Input pandas DataFrame.
@@ -70,8 +69,6 @@ def flag_in_range(
     else:
         in_range = (series > low) & (series < high)
 
-    out_of_range = np.logical_not(in_range)
-
     df = df.copy()
-    df[flag_column_name] = out_of_range.astype(int)
+    df[flag_column_name] = in_range.astype(int)
     return df

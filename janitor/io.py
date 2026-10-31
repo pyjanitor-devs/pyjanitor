@@ -3,11 +3,14 @@ from __future__ import annotations
 import inspect
 import os
 import subprocess
+import tarfile
 import warnings
+import zipfile
 from collections import defaultdict
 from glob import glob
-from io import StringIO
+from io import BytesIO, StringIO
 from itertools import chain
+from pathlib import PurePosixPath
 from typing import IO, TYPE_CHECKING, Any, Iterable, Mapping, Union
 
 import pandas as pd
@@ -189,6 +192,353 @@ def read_commandline(cmd: str, engine: str = "pandas", **kwargs: Any) -> Mapping
             )
         return pl.read_csv(StringIO(outcome.stdout), **kwargs)
     return pd.read_csv(StringIO(outcome.stdout), **kwargs)
+
+
+def read_archive(
+    path: str | os.PathLike[str],
+    filenames: str | list[str] | tuple[str, ...] | None = None,
+    engine: str = "pandas",
+    archive_format: str | None = None,
+    interactive: bool = False,
+    **kwargs: Any,
+) -> pd.DataFrame | dict[str, pd.DataFrame]:
+    """Read data files stored inside a zip or tar archive.
+
+    Supported member extensions are `.csv`, `.tsv`, `.json`, `.jsonl`,
+    `.ndjson`, `.xlsx`, `.xlsm`, `.parquet`, and `.pq`. Other members are
+    ignored unless a name is requested explicitly. Directory entries and
+    macOS `__MACOSX` metadata are ignored. Nested archives are not opened;
+    pass the archive-relative name, such as `nested/sales.csv`, to read a
+    file in a subdirectory.
+
+    A single selected file is returned as one DataFrame. Several files are
+    returned as a dictionary keyed by member name, in archive order when
+    every supported file is read and in the requested order when `filenames`
+    is a list or tuple. A list or tuple always returns a dictionary, even
+    when it contains one name. Tab-separated files use a tab separator
+    unless one is already present in `kwargs` (`sep` for pandas, `separator`
+    for polars).
+
+    `engine` chooses pandas or polars and is not forwarded to the reader.
+    Pandas `read_csv`, pandas `read_excel`, and polars `read_excel` also
+    take an `engine` argument; those values cannot be set through this
+    function. Polars Excel reads use polars' default spreadsheet engine
+    and require the fastexcel package.
+    Keyword arguments are forwarded to every reader, so select members that
+    share a reader when passing format-specific options.
+
+    Examples:
+        >>> import tempfile
+        >>> import zipfile
+        >>> from pathlib import Path
+        >>> import pandas as pd
+        >>> from janitor import read_archive
+        >>> folder = Path(tempfile.mkdtemp())
+        >>> sales = folder / "sales.csv"
+        >>> pd.DataFrame({"id": [1, 2], "city": ["Lisbon", "Porto"]}).to_csv(
+        ...     sales, index=False
+        ... )
+        >>> archive_path = folder / "sales.zip"
+        >>> with zipfile.ZipFile(archive_path, mode="w") as archive:
+        ...     archive.write(sales, arcname="sales.csv")
+        ...     archive.writestr("notes.txt", "ignore me")
+
+        One supported file is returned as a DataFrame. `notes.txt` is
+        skipped:
+
+        >>> read_archive(archive_path)
+           id    city
+        0   1  Lisbon
+        1   2   Porto
+
+        Keyword arguments are passed through to the underlying reader:
+
+        >>> read_archive(archive_path, usecols=["city"])
+             city
+        0  Lisbon
+        1   Porto
+
+        Several data files are returned as a dictionary of DataFrames:
+
+        >>> pd.DataFrame({"id": [1], "city": ["Lisbon"]}).to_csv(
+        ...     folder / "east.csv", index=False
+        ... )
+        >>> pd.DataFrame({"id": [3], "city": ["London"]}).to_csv(
+        ...     folder / "west.csv", index=False
+        ... )
+        >>> with zipfile.ZipFile(folder / "regions.zip", mode="w") as archive:
+        ...     archive.write(folder / "east.csv", arcname="east.csv")
+        ...     archive.write(folder / "west.csv", arcname="west.csv")
+        >>> frames = read_archive(folder / "regions.zip")
+        >>> sorted(frames)
+        ['east.csv', 'west.csv']
+        >>> frames["west.csv"]
+           id    city
+        0   3  London
+
+        `engine="polars"` returns polars objects:
+
+        >>> frame = read_archive(archive_path, engine="polars")
+        >>> frame.columns
+        ['id', 'city']
+        >>> frame.get_column("id").to_list()
+        [1, 2]
+
+    Args:
+        path: Path of a zip or tar archive. Gzip, bzip2, and xz compressed
+            tar archives are detected from the name (`.tar.gz`, `.tgz`,
+            `.tar.bz2`, `.tbz2`, `.tar.xz`, `.txz`) or by reading the file.
+        filenames: Member to read, or a list or tuple of members. A string
+            returns one DataFrame. A list or tuple returns a dictionary.
+            `None` reads every supported data file.
+        engine: DataFrame library used to parse each member. Either
+            `"pandas"` or `"polars"`. Defaults to `"pandas"`.
+        archive_format: `"zip"` or `"tar"` when the file name does not use
+            a recognized extension. Tar compression is detected from the
+            file itself.
+        interactive: When `True` and `filenames` is omitted, prompt for the
+            members to read. The prompt lists supported files and expects
+            comma-separated numbers such as `1,2`.
+        **kwargs: Keyword arguments forwarded to the underlying reader
+            (`pandas.read_csv`, `polars.read_csv`, and the matching reader
+            for each other extension).
+
+    Raises:
+        ValueError: If the archive type, `engine`, or `archive_format` is
+            unsupported, the archive is empty, no supported data file is
+            present, a requested member is missing or has an unsupported
+            extension, or interactive selection is empty or combined with
+            `filenames`.
+        ImportError: If `engine` is `"polars"` and polars is not installed.
+
+    Returns:
+        A pandas or polars DataFrame when one member is read, or a
+        dictionary of DataFrames keyed by member name.
+    """
+
+    supported_suffixes = {
+        ".csv",
+        ".tsv",
+        ".json",
+        ".jsonl",
+        ".ndjson",
+        ".xlsx",
+        ".xlsm",
+        ".parquet",
+        ".pq",
+    }
+
+    def member_suffix(name: str) -> str:
+        """Return the lowercase extension of an archive member."""
+
+        return PurePosixPath(name).suffix.lower()
+
+    def is_metadata(name: str) -> bool:
+        """Return whether a member is macOS archive metadata."""
+
+        return "__MACOSX" in PurePosixPath(name).parts
+
+    def infer_archive_format() -> str:
+        """Return `zip` or `tar` from an explicit value or the file name."""
+
+        if archive_format is not None:
+            return archive_format
+        name = os.fspath(path).lower()
+        if name.endswith(".zip"):
+            return "zip"
+        tar_suffixes = (
+            ".tar",
+            ".tar.gz",
+            ".tgz",
+            ".tar.bz2",
+            ".tbz2",
+            ".tar.xz",
+            ".txz",
+        )
+        if name.endswith(tar_suffixes):
+            return "tar"
+        raise ValueError(
+            "Unsupported archive type. Expected a zip or tar archive "
+            "(including gz, bz2, and xz). Pass archive_format='zip' or "
+            "archive_format='tar' when the name has no recognized extension."
+        )
+
+    def list_member_names(kind: str) -> list[str]:
+        """Return regular file names stored in the archive."""
+
+        if kind == "zip":
+            with zipfile.ZipFile(path) as archive:
+                names = [
+                    info.filename
+                    for info in archive.infolist()
+                    if not info.is_dir() and not is_metadata(info.filename)
+                ]
+        else:
+            with tarfile.open(path, mode="r:*") as archive:
+                names = [
+                    member.name
+                    for member in archive.getmembers()
+                    if member.isfile() and not is_metadata(member.name)
+                ]
+        duplicates = [name for name in dict.fromkeys(names) if names.count(name) > 1]
+        if duplicates:
+            rendered = ", ".join(repr(name) for name in duplicates)
+            raise ValueError(
+                f"The archive contains duplicate member names: {rendered}."
+            )
+        return names
+
+    def choose_interactively(candidates: list[str]) -> list[str]:
+        """Prompt for member numbers and return the chosen names."""
+
+        print("Compatible files found in the archive:")
+        for index, name in enumerate(candidates, start=1):
+            print(f"{index}. {name}")
+        raw = input(
+            "Enter the numbers of the files to read, "
+            "separated by commas (e.g., 1,2,3): "
+        )
+        chosen_names: list[str] = []
+        for token in raw.split(","):
+            text = token.strip()
+            if not text.isdigit() or not 0 < int(text) <= len(candidates):
+                raise ValueError("No valid files selected.")
+            chosen_names.append(candidates[int(text) - 1])
+        if not chosen_names or len(chosen_names) != len(set(chosen_names)):
+            raise ValueError("No valid files selected.")
+        return chosen_names
+
+    def resolve_selection(names: list[str]) -> tuple[list[str], bool]:
+        """Return the members to read and whether to unwrap one frame.
+
+        A caller-supplied list or tuple stays a dictionary. A string, an
+        interactive choice of one file, or a single supported member is
+        unwrapped.
+        """
+
+        if not names:
+            raise ValueError("The archive is empty.")
+        if filenames is not None:
+            requested = [filenames] if isinstance(filenames, str) else list(filenames)
+            if not requested:
+                raise ValueError("No files selected.")
+            if len(requested) != len(set(requested)):
+                raise ValueError("filenames contains duplicate names.")
+            missing = [name for name in requested if name not in names]
+            if missing:
+                rendered = ", ".join(repr(name) for name in missing)
+                raise ValueError(f"File not found in the archive: {rendered}.")
+            unsupported = [
+                name
+                for name in requested
+                if member_suffix(name) not in supported_suffixes
+            ]
+            if unsupported:
+                rendered = ", ".join(repr(name) for name in unsupported)
+                raise ValueError(f"Unsupported data file {rendered}.")
+            return requested, isinstance(filenames, str)
+
+        supported_names = [
+            name for name in names if member_suffix(name) in supported_suffixes
+        ]
+        if not supported_names:
+            raise ValueError("No supported data files found in the archive.")
+        if interactive:
+            chosen_names = choose_interactively(supported_names)
+            return chosen_names, len(chosen_names) == 1
+        return supported_names, len(supported_names) == 1
+
+    def read_member_bytes(kind: str, selected: list[str]) -> dict[str, bytes]:
+        """Read the selected members into memory."""
+
+        if kind == "zip":
+            with zipfile.ZipFile(path) as archive:
+                return {name: archive.read(name) for name in selected}
+        payloads: dict[str, bytes] = {}
+        with tarfile.open(path, mode="r:*") as archive:
+            for name in selected:
+                extracted = archive.extractfile(name)
+                if extracted is None:
+                    raise ValueError(f"File not found in the archive: {name!r}.")
+                payloads[name] = extracted.read()
+        return payloads
+
+    def read_payload(payload: bytes, suffix: str):
+        """Parse one member with the selected dataframe engine."""
+
+        # Copy per member so a default separator cannot leak across files
+        # or back to the caller.
+        buffer = BytesIO(payload)
+        options = dict(kwargs)
+        if engine == "pandas":
+            if suffix == ".tsv":
+                options.setdefault("sep", "\t")
+                return pd.read_csv(buffer, **options)
+            if suffix in {".jsonl", ".ndjson"}:
+                options.setdefault("lines", True)
+                return pd.read_json(buffer, **options)
+            if suffix in {".xlsx", ".xlsm"}:
+                return pd.read_excel(buffer, **options)
+            if suffix in {".parquet", ".pq"}:
+                return pd.read_parquet(buffer, **options)
+            if suffix == ".json":
+                return pd.read_json(buffer, **options)
+            return pd.read_csv(buffer, **options)
+
+        if suffix == ".tsv":
+            options.setdefault("separator", "\t")
+            return pl.read_csv(buffer, **options)
+        if suffix in {".jsonl", ".ndjson"}:
+            return pl.read_ndjson(buffer, **options)
+        if suffix in {".xlsx", ".xlsm"}:
+            return pl.read_excel(buffer, **options)
+        if suffix in {".parquet", ".pq"}:
+            return pl.read_parquet(buffer, **options)
+        if suffix == ".json":
+            return pl.read_json(buffer, **options)
+        return pl.read_csv(buffer, **options)
+
+    check("path", path, [str, os.PathLike])
+    check("engine", engine, [str])
+    check("interactive", interactive, [bool])
+    if engine not in {"pandas", "polars"}:
+        raise ValueError("engine should be either pandas or polars.")
+    if filenames is not None:
+        check("filenames", filenames, [str, list, tuple])
+        if isinstance(filenames, (list, tuple)):
+            for index, entry in enumerate(filenames):
+                check(f"filenames[{index}]", entry, [str])
+    if archive_format is not None:
+        check("archive_format", archive_format, [str])
+        archive_format = archive_format.lower()
+        if archive_format not in {"zip", "tar"}:
+            raise ValueError("archive_format should be either 'zip' or 'tar'.")
+    if interactive and filenames is not None:
+        raise ValueError("Pass either filenames or interactive=True, not both.")
+
+    pl = None
+    if engine == "polars":
+        try:
+            import polars as pl
+        except ImportError as error:
+            import_message(
+                submodule="polars",
+                package="polars",
+                conda_channel="conda-forge",
+                pip_install=True,
+            )
+            raise ImportError("polars is required when engine='polars'.") from error
+
+    kind = infer_archive_format()
+    names = list_member_names(kind)
+    chosen, unwrap = resolve_selection(names)
+    payloads = read_member_bytes(kind, chosen)
+    frames = {
+        name: read_payload(payloads[name], member_suffix(name)) for name in chosen
+    }
+    if unwrap:
+        return next(iter(frames.values()))
+    return frames
 
 
 if TYPE_CHECKING:

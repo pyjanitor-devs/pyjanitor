@@ -625,6 +625,26 @@ def test_dot_value_many_groups_uses_single_unpivot_path(lazy):
     assert result.sort("group").get_column("x").to_list() == list(range(300))
 
 
+@pytest.mark.parametrize("lazy", [False, True])
+def test_dot_value_boundary_group_count(lazy):
+    """The packed path remains correct at the concat dispatch boundary."""
+    df = pl.DataFrame(
+        {f"{value}_{group}": [group] for group in range(32) for value in ("x", "y")}
+    )
+    frame = df.lazy() if lazy else df
+
+    result = frame.pivot_longer(
+        names_to=(".value", "group"),
+        names_sep="_",
+        names_transform=pl.col("group").cast(pl.Int64),
+    )
+    if lazy:
+        result = result.collect()
+
+    assert result.height == 32
+    assert result.sort("group").get_column("x").to_list() == list(range(32))
+
+
 def test_dot_value_regex_string_selection():
     """Anchored regex strings retain Polars string-selection semantics."""
     df = pl.DataFrame({"id": [1, 2], "x_1": [10, 20], "x_2": [11, 21]})

@@ -6,7 +6,9 @@ from janitor.utils import check, import_message
 
 from .polars_flavor import register_dataframe_method, register_lazyframe_method
 
-_DOT_VALUE_GROUP_CONCAT_THRESHOLD = 256
+# On Polars 2.x, the per-group concat plan becomes more expensive than the
+# packed single-plan path at around 32 groups for typical wide reshapes.
+_DOT_VALUE_GROUP_CONCAT_THRESHOLD = 32
 
 try:
     import polars as pl
@@ -604,7 +606,7 @@ def _pivot_longer_dot_value(
         raise ValueError("The `.value` column cannot contain null values.")
 
     groups = spec.group_by(key).agg(".name", ".value")
-    if groups.height > _DOT_VALUE_GROUP_CONCAT_THRESHOLD:
+    if groups.height >= _DOT_VALUE_GROUP_CONCAT_THRESHOLD:
         variable_name = "__pivot_longer_group__"
         legacy_spec = spec.select(
             ".name",

@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [ENH] Re-enable convert_currency using keyless ECB reference rates from Frankfurter (configurable base URL); honour from_currency and name the new column correctly; api_key is deprecated and ignored. Based on work by @cahthuranag (#1836). - Issue #829
+
 ## [v0.32.75] - 2026-11-04
 
 -   [DOC] Rewrite the introductory example to chain `clean_names`, `remove_empty`, and `encode_categorical`, so copying it does not emit `FutureWarning`. - Issue #1442

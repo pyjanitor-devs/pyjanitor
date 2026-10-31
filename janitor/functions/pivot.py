@@ -2674,7 +2674,7 @@ def pivot_wider_spec(
         )
     if spec.columns.size == 2:
         raise ValueError(
-            "Kindly provide the column(s) to use to make new frame's columns"
+            "Kindly provide the column(s) to use to make new frame’s columns"
         )
     columns = spec.columns[2:]
     values = spec[".value"].unique()

@@ -544,6 +544,15 @@ Add entries in the format:
 **Recommendation**: How to apply this learning
 -->
 
+### [2026-10-31] Contributor guide is one file
+
+**Context**: Adding fork-sync instructions for issue #539.
+**Learning**: `CONTRIBUTING.md` is a symlink to `mkdocs/devguide.md`.
+The development guide and the contributing doc are the same file, and
+`mkdocs/CHANGELOG.md` is a symlink to `CHANGELOG.md`.
+**Recommendation**: Edit `mkdocs/devguide.md` for contributor workflow
+changes. Do not copy the same section into a second file.
+
 ### [2026-10-19] Empty selectors and DropLabel
 
 **Context**: Issue #1782 requires empty list-like selectors to select nothing.

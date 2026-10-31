@@ -169,7 +169,9 @@ def _same_direction_envelope(
         envelope = np.maximum.accumulate(right_values[::-1])[::-1]
     else:
         envelope = np.minimum.accumulate(right_values)
-    return (-left_values, -envelope, _FLIPPED[second_op])
+    # The accumulate output is a fresh array, so negate it in place.
+    np.negative(envelope, out=envelope)
+    return (-left_values, envelope, _FLIPPED[second_op])
 
 
 def _preparatory_work(
@@ -241,9 +243,11 @@ def _preparatory_work(
     # monotonic in the primary layout, it is replaced by a cumulative
     # envelope (cummax for a prefix, reverse cummin for a suffix) and the
     # original predicate is rechecked exactly as a residual. A same-direction
-    # second anchor has no safe envelope and would fall back to a residual,
-    # scanning the whole primary window, so it is chosen only when no
-    # opposing predicate exists.
+    # second anchor has no safe envelope for keep="all"/"first"/"last" and
+    # falls back to a residual that scans the whole primary window, so it is
+    # chosen only when no opposing predicate exists. keep="any" is the
+    # exception: _same_direction_envelope gives it a negated envelope whose
+    # window end is a genuine match.
     # Maintainer note: this selects the layout that supports the cumulative
     # envelope optimization; it is not a selectivity estimator. On skewed
     # data, the selected anchor can admit substantially more candidates than
@@ -358,8 +362,9 @@ def _preparatory_work(
         if same_direction_anchor is not None:
             # keep="any" only needs one match per left row. The envelope is a
             # running max/min that FALLS with position, so it cannot be an
-            # ascending anchor directly; it is passed in rank space instead,
-            # and the original predicate is rechecked exactly as a residual.
+            # ascending anchor directly; both sides are negated and the
+            # operator flipped instead, and the original predicate is
+            # rechecked exactly as a residual.
             anchor_predicates = [first_anchor, same_direction_anchor]
             residual_predicates.append(
                 _helpers._build_residual_predicate(
@@ -369,8 +374,8 @@ def _preparatory_work(
                 )
             )
         elif cumulative_right is None:
-            # Same-direction range predicates do not have a generally safe
-            # opposing envelope. Keep the second predicate as a residual and
+            # Outside keep="any", same-direction range predicates have no
+            # safe envelope. Keep the second predicate as a residual and
             # let the single-anchor extended kernel evaluate it exactly.
             residual_predicates.append(
                 (second_left_array, second_right_array, second_op)

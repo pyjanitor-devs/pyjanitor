@@ -854,6 +854,19 @@ that requested flag rather than from the result under test.
 metadata, and strengthen the default-behavior regression test with an exact
 expected frame.
 
+### [2026-10-30] No new private helpers, and nullable comparisons keep NA
+
+**Context**: Replacing the `flag_outliers` draft, which added `_check_column`.
+**Learning**: New code should call `janitor.utils.check_column` and `check`
+instead of copying them, and should not introduce leading-underscore private
+names. Comparisons on pandas nullable dtypes yield `pd.NA` rather than
+`False`, so a boolean flag has to `fillna(False)` before it is stored as
+`bool`. Assign the resulting NumPy array so duplicate index labels stay
+positional.
+**Recommendation**: Reuse `check_column` for presence and absence. When a
+nullable series is compared, fill missing results before converting to
+`bool`, and assign with `.to_numpy()`.
+
 ### [2026-10-30] adorn row identifier is column position 0
 
 **Context**: Issue #1676. `adorn_pct_formatting`, `adorn_ns`, and

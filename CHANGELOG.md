@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [ENH] Add `flag_outliers` to flag numeric outliers. The default threshold is 1.5 for the IQR method and 3 for the Z-score method. Missing values are ignored when computing the cutoff and are never flagged. - PR #1835 @Psycoder0611
+
 ## [v0.32.66] - 2026-10-30
 
 -   [BUG] Leave a numeric first column unchanged in `adorn_pct_formatting`, `adorn_ns`, and `adorn_rounding`. Column position 0 is the row identifier, matching `adorn_totals` and `adorn_percentages`. Based on work by @dylanpulver (#1677) and @SumanGouda (#1696). - Issue #1676

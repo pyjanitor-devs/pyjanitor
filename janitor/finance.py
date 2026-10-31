@@ -1,17 +1,17 @@
 """Finance-specific data cleaning functions."""
 
 import json
-from datetime import date
+import os
+from datetime import date, datetime
 from functools import lru_cache
 from typing import Optional
+from warnings import warn
 
 import pandas as pd
 import pandas_flavor as pf
 import requests
 
-from janitor.errors import JanitorError
-
-from .utils import check, deprecated_alias, is_connected
+from .utils import check, deprecated_alias, find_stack_level, is_connected
 
 currency_set = {
     "AUD",
@@ -343,195 +343,206 @@ def _check_wb_years(year: int):
         raise ValueError("year value must be 1960 or later")
 
 
-# @lru_cache(maxsize=32)
-# def _convert_currency(
-#     api_key: str,
-#     from_currency: str = None,
-#     to_currency: str = None,
-#     historical_date: Optional[date] = None,
-# ) -> float:
-#     """
-#     Currency conversion for Pandas DataFrame column.
+# Frankfurter v2 (https://api.frankfurter.dev). Currency filters are
+# `base` and `quotes`; `from` and `to` bound a date range. Official ECB
+# reference rates come from the provider route below.
+# JANITOR_CURRENCY_API_URL replaces the whole URL.
+FRANKFURTER_API_URL = "https://api.frankfurter.dev/v2/providers/ecb/rates"
 
-#     Helper function for `convert_currency` method.
 
-#     The API used is https://exchangeratesapi.io/.
-#     """
+def currency_api_url() -> str:
+    """Return the exchange-rate endpoint used by ``convert_currency``.
 
-#     url = "http://api.exchangeratesapi.io"
+    The default is Frankfurter's ECB provider route. Set the
+    ``JANITOR_CURRENCY_API_URL`` environment variable to use another
+    endpoint that accepts the same ``base``, ``quotes``, and ``date``
+    query parameters and returns a JSON list of objects with ``quote``
+    and ``rate`` fields.
 
-#     if historical_date:
-#         check("historical_date", historical_date, [datetime, date])
-#         if isinstance(historical_date, datetime):
-#             if historical_date < datetime(1999, 1, 4):
-#                 raise ValueError(
-#                     "historical_date:datetime must be later than 1999-01-04!"
-#                 )
-#             string_date = str(historical_date)[:10]
-#         else:
-#             if historical_date < date(1999, 1, 4):
-#                 raise ValueError(
-#                     "historical_date:date must be later than 1999-01-04!"
-#                 )
-#             string_date = str(historical_date)
-#         url = url + "/%s" % string_date
-#     else:
-#         url = url + "/latest"
+    Returns:
+        The rates endpoint URL.
+    """
+    configured = os.environ.get("JANITOR_CURRENCY_API_URL")
+    if configured:
+        return configured
+    return FRANKFURTER_API_URL
 
-#     _check_currency(from_currency)
-#     _check_currency(to_currency)
 
-#     payload = {
-#         # "base": from_currency,
-#         "symbols": to_currency,
-#         "access_key": api_key,
-#     }
+@lru_cache(maxsize=32)
+def fetch_exchange_rate(
+    from_currency: Optional[str] = None,
+    to_currency: Optional[str] = None,
+    historical_date: Optional[date] = None,
+    api_url: str = FRANKFURTER_API_URL,
+) -> float:
+    """Fetch one ECB reference rate from Frankfurter.
 
-#     result = requests.get(url, params=payload)
+    [Frankfurter](https://www.frankfurter.app) republishes European
+    Central Bank reference rates without an API key. The series starts
+    on 1999-01-04. A date with no published observation, such as a
+    weekend or a TARGET holiday, uses the previous published rate.
 
-#     if result.status_code != 200:
-#         raise ConnectionError(
-#             "Exchange Rate API failed to receive a 200 "
-#             "response from the server. "
-#             "Please try again later."
-#         )
+    Args:
+        from_currency: Currency code to convert from.
+        to_currency: Currency code to convert to.
+        historical_date: Rate date. ``datetime`` values use the
+            calendar date and ignore the time. Omit it for the latest
+            rate.
+        api_url: Rates endpoint. Defaults to ``FRANKFURTER_API_URL``.
+            ``convert_currency`` passes ``currency_api_url``, which
+            honors ``JANITOR_CURRENCY_API_URL``.
 
-#     currency_dict = json.loads(result.text)
-#     rate = currency_dict["rates"][to_currency]
-#     return rate
+    Returns:
+        Units of ``to_currency`` per one unit of ``from_currency``.
+
+    Raises:
+        TypeError: If ``historical_date`` is not a ``date`` or
+            ``datetime``.
+        ValueError: If a currency code is unsupported, the date is
+            before 1999-01-04, or the response has no rate.
+        ConnectionError: If the server does not return HTTP 200 or
+            returns a body that is not JSON.
+    """
+    quote_date = None
+    if historical_date is not None:
+        check("historical_date", historical_date, [datetime, date])
+        # datetime subclasses date, so the datetime check has to come first.
+        if isinstance(historical_date, datetime):
+            if historical_date < datetime(1999, 1, 4):
+                raise ValueError("historical_date must be on or after 1999-01-04.")
+            quote_date = historical_date.date().isoformat()
+        else:
+            if historical_date < date(1999, 1, 4):
+                raise ValueError("historical_date must be on or after 1999-01-04.")
+            quote_date = historical_date.isoformat()
+
+    _check_currency(from_currency)
+    _check_currency(to_currency)
+    if from_currency == to_currency:
+        return 1.0
+
+    params = {"base": from_currency, "quotes": to_currency}
+    if quote_date is not None:
+        params["date"] = quote_date
+
+    result = requests.get(api_url, params=params, timeout=30)
+    if result.status_code != 200:
+        raise ConnectionError(
+            "Exchange Rate API failed to receive a 200 "
+            "response from the server. "
+            "Please try again later."
+        )
+
+    try:
+        payload = json.loads(result.text)
+    except json.JSONDecodeError as exc:
+        raise ConnectionError(
+            "Exchange Rate API returned a response that is not valid JSON."
+        ) from exc
+
+    published = quote_date or "the latest date"
+    if isinstance(payload, list):
+        for row in payload:
+            if not isinstance(row, dict):
+                continue
+            if row.get("date"):
+                published = row["date"]
+            if row.get("quote") == to_currency and row.get("rate") is not None:
+                return float(row["rate"])
+
+    raise ValueError(
+        f"No {from_currency}/{to_currency} rate was published for {published}."
+    )
 
 
 @pf.register_dataframe_method
 @deprecated_alias(colname="column_name")
 def convert_currency(
     df: pd.DataFrame,
-    api_key: str,
-    column_name: str = None,
-    from_currency: str = None,
-    to_currency: str = None,
-    historical_date: date = None,
+    column_name: Optional[str] = None,
+    from_currency: Optional[str] = None,
+    to_currency: Optional[str] = None,
+    historical_date: Optional[date] = None,
     make_new_column: bool = False,
+    api_key: Optional[str] = None,
 ) -> pd.DataFrame:
-    """Deprecated function.
+    """Convert a column from one currency to another.
 
-    <!--
-    # noqa: DAR101
-    # noqa: DAR401
-    -->
+    Rates are European Central Bank reference rates, fetched without an
+    API key from [Frankfurter](https://www.frankfurter.app). The series
+    starts on 1999-01-04. When a date has no published observation
+    (weekends and TARGET holidays), the previous published rate is used.
+
+    Set ``JANITOR_CURRENCY_API_URL`` to replace the default endpoint,
+    ``FRANKFURTER_API_URL``. The replacement must accept ``base``,
+    ``quotes``, and an optional ``date`` query parameter, and return a
+    JSON list of objects with ``quote`` and ``rate`` fields.
+
+    The returned DataFrame is a copy. The input is left unchanged.
+
+    Examples:
+        >>> import pandas as pd
+        >>> import janitor.finance
+        >>> from datetime import date
+        >>> df = pd.DataFrame({"price": [10.0, 20.0, 30.0]})
+        >>> df.convert_currency(
+        ...     column_name="price",
+        ...     from_currency="USD",
+        ...     to_currency="EUR",
+        ...     historical_date=date(2018, 1, 2),
+        ...     make_new_column=True,
+        ... )  # doctest: +SKIP
+           price  price_EUR
+        0   10.0     8.2884
+        1   20.0    16.5768
+        2   30.0    24.8652
+
+    Args:
+        df: A pandas DataFrame.
+        column_name: Name of the column containing monetary values
+            to convert.
+        from_currency: The base currency to convert from. Must be a
+            member of ``currency_set``.
+        to_currency: The target currency to convert to. Must be a
+            member of ``currency_set``.
+        historical_date: Exchange-rate date. Omit it for the latest
+            rate. ``datetime`` values use the calendar date. Rates go
+            back to 1999-01-04.
+        make_new_column: When True, store the converted values in
+            ``{column_name}_{to_currency}``. When False, replace
+            ``column_name`` on the returned copy.
+        api_key: Deprecated and ignored. Frankfurter does not require
+            a key.
+
+    Returns:
+        A DataFrame with the converted currency column.
+
+    Raises:
+        TypeError: If ``historical_date`` is not a ``date`` or
+            ``datetime``.
+        ValueError: If a currency code is unsupported, the date is
+            before 1999-01-04, or no rate was published.
+        ConnectionError: If the rates endpoint does not return HTTP 200
+            or returns a body that is not JSON.
     """
-    raise JanitorError(
-        "The `convert_currency` function has been temporarily disabled due to "
-        "exchangeratesapi.io disallowing free pinging of its API. "
-        "(Our tests started to fail due to this issue.) "
-        "There is no easy way around this problem "
-        "except to find a new API to call on."
-        "Please comment on issue #829 "
-        "(https://github.com/pyjanitor-devs/pyjanitor/issues/829) "
-        "if you know of an alternative API that we can call on, "
-        "otherwise the function will be removed in pyjanitor's 1.0 release."
+    if api_key is not None:
+        warn(
+            "The `api_key` argument of `convert_currency` is deprecated "
+            "and ignored. It will be removed in a future release.",
+            FutureWarning,
+            stacklevel=find_stack_level(),
+        )
+
+    rate = fetch_exchange_rate(
+        from_currency,
+        to_currency,
+        historical_date,
+        currency_api_url(),
     )
-
-
-# @pf.register_dataframe_method
-# @deprecated_alias(colname="column_name")
-# def convert_currency(
-#     df: pd.DataFrame,
-#     api_key: str,
-#     column_name: str = None,
-#     from_currency: str = None,
-#     to_currency: str = None,
-#     historical_date: date = None,
-#     make_new_column: bool = False,
-# ) -> pd.DataFrame:
-#     """
-#     Converts a column from one currency to another, with an option to
-#     convert based on historical exchange values.
-
-#     On April 10 2021,
-#     we discovered that there was no more free API available.
-#     Thus, an API key is required to perform currency conversion.
-#     API keys should be set as an environment variable,
-#     for example, `EXCHANGE_RATE_API_KEY``,
-#     and then passed into the function
-#     by calling on `os.getenv("EXCHANGE_RATE_APIKEY")``.
-
-#     :param df: A pandas dataframe.
-#     :param api_key: exchangeratesapi.io API key.
-#     :param column_name: Name of the new column. Should be a string, in order
-#         for the column name to be compatible with the Feather binary
-#         format (this is a useful thing to have).
-#     :param from_currency: The base currency to convert from.
-#         May be any of: currency_set = {"AUD", "BGN", "BRL", "CAD", "CHF",
-#         "CNY", "CZK", "DKK", "EUR", "GBP", "HKD", "HRK", "HUF", "IDR",
-#         "ILS", "INR", "ISK", "JPY", "KRW", "MXN", "MYR", "NOK", "NZD",
-#         "PHP", "PLN", "RON", "RUB", "SEK", "SGD", "THB", "TRY", "USD",
-#         "ZAR"}
-#     :param to_currency: The target currency to convert to.
-#         May be any of: currency_set = {"AUD", "BGN", "BRL", "CAD", "CHF",
-#         "CNY", "CZK", "DKK", "EUR", "GBP", "HKD", "HRK", "HUF", "IDR",
-#         "ILS", "INR", "ISK", "JPY", "KRW", "MXN", "MYR", "NOK", "NZD",
-#         "PHP", "PLN", "RON", "RUB", "SEK", "SGD", "THB", "TRY", "USD",
-#         "ZAR"}
-#     :param historical_date: If supplied,
-#         get exchange rate on a certain date.
-#         If not supplied, get the latest exchange rate.
-#         The exchange rates go back to Jan. 4, 1999.
-#     :param make_new_column: Generates new column
-#         for converted currency if True,
-#         otherwise, converts currency in place.
-#     :returns: The dataframe with converted currency column.
-
-#     .. code-block:: python
-
-#         import pandas as pd
-#         import janitor
-#         from datetime import date
-
-#         data_dict = {
-#             "a": [1.23452345, 2.456234, 3.2346125] * 3,
-#             "Bell__Chart": [1/3, 2/7, 3/2] * 3,
-#             "decorated-elephant": [1/234, 2/13, 3/167] * 3,
-#             "animals": ["rabbit", "leopard", "lion"] * 3,
-#             "cities": ["Cambridge", "Shanghai", "Basel"] * 3,
-#         }
-
-#         example_dataframe = pd.DataFrame(data_dict)
-
-#     Example: Converting a column from one currency to another
-#     using rates from 01/01/2018.
-
-#     .. code-block:: python
-
-#         example_dataframe.convert_currency('a', from_currency='USD',
-#         to_currency='EUR', historical_date=date(2018,1,1))
-
-#     Output:
-
-#     .. code-block:: python
-
-#                     a  Bell__Chart  decorated-elephant  animals     cities
-#         0  1.029370     0.333333            0.004274   rabbit  Cambridge
-#         1  2.048056     0.285714            0.153846  leopard   Shanghai
-#         2  2.697084     1.500000            0.017964     lion      Basel
-#         3  1.029370     0.333333            0.004274   rabbit  Cambridge
-#         4  2.048056     0.285714            0.153846  leopard   Shanghai
-#         5  2.697084     1.500000            0.017964     lion      Basel
-#         6  1.029370     0.333333            0.004274   rabbit  Cambridge
-#         7  2.048056     0.285714            0.153846  leopard   Shanghai
-#         8  2.697084     1.500000            0.017964     lion      Basel
-#     """
-
-#     rate = _convert_currency(
-#         api_key, from_currency, to_currency, historical_date
-#     )
-
-#     if make_new_column:
-#         # new_column_name = column_name + "_" + to_currency
-#         column_name = column_name + "_" + to_currency
-
-#     df = df.assign(column_name=df[column_name] * rate)
-
-#     return df
+    new_column_name = column_name
+    if make_new_column:
+        new_column_name = f"{column_name}_{to_currency}"
+    return df.assign(**{new_column_name: df[column_name] * rate})
 
 
 @lru_cache(maxsize=32)

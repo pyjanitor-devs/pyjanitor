@@ -105,3 +105,16 @@ def test_clean_column_values_collapses_all_underscores():
     raw = pl.DataFrame({"raw": ["a  b  c"]})
     outcome = raw.with_columns(pl.col("raw").make_clean_names())
     assert outcome["raw"].to_list() == ["a_b_c"]
+
+
+def test_make_clean_names_at_symbol():
+    df = pl.DataFrame({"s": ["email@address"]})
+    result = df.with_columns(pl.col("s").make_clean_names())
+    assert result["s"].to_list() == ["email_address"]
+
+
+def test_make_clean_names_keeps_backslash():
+    """A backslash is left alone, as in the pandas `clean_names`."""
+    df = pl.DataFrame({"s": ["a\\b"]})
+    result = df.with_columns(pl.col("s").make_clean_names())
+    assert result["s"].to_list() == ["a\\b"]

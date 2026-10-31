@@ -1,19 +1,28 @@
 import operator
+import warnings
 from itertools import permutations
 
 import numpy as np
 import pandas as pd
 import pytest
-from hypothesis import given, settings
+from hypothesis import assume, given, settings
 from pandas import Timedelta
 from pandas.testing import assert_frame_equal
 
 import janitor as jn
-from janitor.functions._conditional_join._helpers import _sort_if_not_monotonic
+from janitor.functions._conditional_join._helpers import (
+    _get_range_positions_for_one_side,
+    _normalize_conditions,
+    _sort_if_not_monotonic,
+)
 from janitor.testing_utils.strategies import (
     conditional_df,
     conditional_right,
 )
+
+_FACTORIZE_TRUNCATES_NUL = pd.factorize(pd.Series(["", "\x00"], dtype=object))[
+    0
+].tolist() == [0, 0]
 
 # ## turn on to view dataframes from failed tests
 # pd.set_option("display.max_columns", None)
@@ -49,7 +58,7 @@ def _with_matched_level(frame):
     return frame
 
 
-def _with_aggregation_contract(expected, output_index):
+def _with_aggregation_contract(expected, output_index, return_matched):
     """Expand a cross-join aggregation baseline to Rust's output contract."""
     physical_index = (
         output_index.get_level_values(0)
@@ -82,10 +91,13 @@ def _with_aggregation_contract(expected, output_index):
             original_dtypes[column]
         ):
             expected[column] = pd.array(expected[column], dtype="Int64")
-    expected.index = pd.MultiIndex.from_arrays(
-        [physical_index, matched],
-        names=[None, "matched"],
-    )
+    if return_matched:
+        expected.index = pd.MultiIndex.from_arrays(
+            [physical_index, matched],
+            names=[None, "matched"],
+        )
+    else:
+        expected.index = physical_index
     return expected
 
 
@@ -167,6 +179,237 @@ def test_multiple_conditions_preserve_non_condition_columns():
     assert_frame_equal(actual, expected)
 
 
+@pytest.mark.parametrize("how", ["inner", "left", "right", "outer"])
+def test_output_columns_materializes_only_requested_columns(how):
+    """Output projection retains predicate columns only for matching."""
+    left = pd.DataFrame({"key": [1, 4], "payload": ["a", "b"]})
+    right = pd.DataFrame({"key": [0, 2], "value": [0, 20]})
+    actual = left.conditional_join(
+        right,
+        ("key", "key", "<"),
+        how=how,
+        output_columns={"left": ["payload"], "right": "value"},
+    )
+    expected = {
+        "inner": pd.DataFrame({"payload": ["a"], "value": [20]}),
+        "left": pd.DataFrame({"payload": ["a", "b"], "value": [20, None]}),
+        "right": pd.DataFrame({"payload": ["a", None], "value": [20, 0]}),
+        "outer": pd.DataFrame({"payload": ["a", "b", None], "value": [20, None, 0]}),
+    }[how]
+    assert_frame_equal(actual, expected)
+
+
+def test_output_columns_allows_empty_list_for_one_side():
+    """An empty side selector omits that side from the join result."""
+    left = pd.DataFrame({"key": [1, 4], "payload": ["a", "b"]})
+    right = pd.DataFrame({"key": [0, 2], "value": [0, 20]})
+    actual = left.conditional_join(
+        right,
+        ("key", "key", "<"),
+        output_columns={"left": [], "right": "value"},
+    )
+    expected = pd.DataFrame({"value": [20]})
+    assert_frame_equal(actual, expected)
+
+
+def test_output_columns_dropped_side_preserves_non_inner_rows():
+    """Dropping one side does not change right-join row cardinality."""
+    left = pd.DataFrame({"key": [1, 4], "payload": ["a", "b"]})
+    right = pd.DataFrame({"key": [0, 2], "value": [0, 20]})
+    actual = left.conditional_join(
+        right,
+        ("key", "key", "<"),
+        how="right",
+        output_columns={"left": "payload", "right": []},
+    )
+    expected = pd.DataFrame({"payload": ["a", None]})
+    assert_frame_equal(actual, expected)
+
+
+def test_output_columns_dropped_side_preserves_empty_outer_rows():
+    """An outer join with an empty side still returns the other side's rows."""
+    left = pd.DataFrame(
+        {
+            "key": pd.Series(dtype="int64"),
+            "payload": pd.Series(dtype="int64"),
+        }
+    )
+    right = pd.DataFrame({"key": [1, 2, 3], "value": [10, 20, 30]})
+    actual = left.conditional_join(
+        right,
+        ("key", "key", "<"),
+        how="outer",
+        output_columns={"left": "payload", "right": []},
+    )
+    assert actual.shape == (3, 1)
+    assert actual["payload"].isna().all()
+
+
+def test_output_columns_rejects_empty_resolved_selection():
+    """Callable selectors that match no columns raise a clear error."""
+    left = pd.DataFrame({"key": [1], "payload": [10]})
+    right = pd.DataFrame({"key": [2]})
+    with pytest.raises(ValueError, match="No output columns were selected"):
+        left.conditional_join(
+            right,
+            ("key", "key", "<"),
+            output_columns={
+                "left": lambda frame: [False] * frame.shape[1],
+                "right": [],
+            },
+        )
+
+
+def test_internal_projection_helpers_do_not_emit_deprecation_warnings():
+    """Internal selector defaults do not trigger public deprecations."""
+    left = pd.DataFrame({"key": [1], "value": [10]})
+    right = pd.DataFrame({"key": [2], "value": [20]})
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        jn.get_join_indices(left, right, ("key", "key", "<"))
+        left.join_agg(
+            right,
+            ("key", "key", "<"),
+            aggfunc=[("value", "sum")],
+        )
+    assert not [
+        warning
+        for warning in caught
+        if issubclass(warning.category, (DeprecationWarning, FutureWarning))
+    ]
+
+
+def test_output_columns_missing_side_defaults_to_all_columns():
+    """An omitted projection key retains that side's complete output."""
+    left = pd.DataFrame({"key": [1], "left_value": [10]})
+    right = pd.DataFrame({"key": [2], "right_value": [20]})
+    actual = left.conditional_join(
+        right,
+        ("key", "key", "<"),
+        output_columns={"left": ["left_value"]},
+    )
+    expected = pd.DataFrame({"left_value": [10], "key": [2], "right_value": [20]})
+    assert_frame_equal(actual, expected)
+
+
+def test_output_columns_none_requires_empty_list():
+    """The public projection API uses an empty list rather than None."""
+    left = pd.DataFrame({"key": [1]})
+    right = pd.DataFrame({"key": [2]})
+    with pytest.raises(ValueError, match=r"use \[\]"):
+        left.conditional_join(
+            right,
+            ("key", "key", "<"),
+            output_columns={"left": None},
+        )
+
+
+def test_output_columns_integer_array_selects_integer_labels():
+    """Integer-array selectors are labels, not internal positions."""
+    left = pd.DataFrame({"k": [1]})
+    right = pd.DataFrame({10: [0], 20: [2], 0: [3]})
+    actual = left.conditional_join(
+        right,
+        ("k", 10, ">"),
+        output_columns={"left": ["k"], "right": np.array([0])},
+    )
+    expected = pd.DataFrame({"k": [1], 0: [3]})
+    assert_frame_equal(actual, expected)
+
+
+@pytest.mark.parametrize(
+    "output_columns",
+    [
+        None,
+        {"left": slice(None), "right": slice(None)},
+        {"left": slice(None)},
+    ],
+)
+def test_overlapping_tuple_labels_remain_atomic_in_plain_index(output_columns):
+    """Tuple-valued labels in a plain Index are not flattened as levels."""
+    left = pd.DataFrame({"key": [1, 4], ("t", "u"): [1, 2]})
+    right = pd.DataFrame({"key": [0, 2], ("t", "u"): [5, 6]})
+
+    kwargs = {} if output_columns is None else {"output_columns": output_columns}
+    actual = left.conditional_join(right, ("key", "key", "<"), **kwargs)
+
+    expected = pd.DataFrame(
+        [[1, 1, 2, 6]],
+        columns=pd.MultiIndex.from_tuples(
+            [
+                ("left", "key"),
+                ("left", ("t", "u")),
+                ("right", "key"),
+                ("right", ("t", "u")),
+            ]
+        ),
+    )
+    assert_frame_equal(actual, expected)
+
+
+@pytest.mark.parametrize(
+    ("how", "output_columns", "message"),
+    [
+        (
+            "left_anti",
+            {"left": [], "right": "value"},
+            r"output_columns\['left'\]",
+        ),
+        (
+            "right_anti",
+            {"left": "value", "right": []},
+            r"output_columns\['right'\]",
+        ),
+    ],
+)
+def test_output_columns_validate_anti_join_output_side(how, output_columns, message):
+    """Anti joins require output from their preserved side."""
+    left = pd.DataFrame({"key": [1, 4], "value": [10, 40]})
+    right = pd.DataFrame({"key": [0, 2], "value": [0, 20]})
+    with pytest.raises(ValueError, match=message):
+        left.conditional_join(
+            right,
+            ("key", "key", "<"),
+            how=how,
+            output_columns=output_columns,
+        )
+
+
+@pytest.mark.parametrize(
+    ("how", "output_columns"),
+    [
+        ("left_anti", {"left": lambda frame: [False] * frame.shape[1]}),
+        ("right_anti", {"right": lambda frame: [False] * frame.shape[1]}),
+    ],
+)
+def test_output_columns_anti_join_rejects_empty_kept_side(how, output_columns):
+    """Anti joins reject selectors that match no kept-side columns."""
+    left = pd.DataFrame({"key": [1, 4], "value": [10, 40]})
+    right = pd.DataFrame({"key": [0, 2], "value": [0, 20]})
+    with pytest.raises(ValueError, match=r"output_columns\['(left|right)'\]"):
+        left.conditional_join(
+            right,
+            ("key", "key", "<"),
+            how=how,
+            output_columns=output_columns,
+        )
+
+
+def test_output_columns_preserves_duplicate_selections():
+    """Projection by duplicate labels keeps each selected occurrence."""
+    left = pd.DataFrame([[1, 10]], columns=["key", "a"])
+    left = pd.concat([left, left[["a"]]], axis=1)
+    left.columns = ["key", "a", "a"]
+    right = pd.DataFrame({"key": [2]})
+    actual = left.conditional_join(
+        right,
+        ("key", "key", "<"),
+        output_columns={"left": ["a"], "right": []},
+    )
+    expected = pd.DataFrame([[10, 10]], columns=["a", "a"])
+    assert_frame_equal(actual, expected)
+
+
 @pytest.mark.parametrize(
     ("values", "expected_values", "expected_ordered"),
     [
@@ -223,6 +466,205 @@ def test_multiple_sorted_range_predicates_match_cartesian_reference():
     assert_frame_equal(expected.reset_index(drop=True), actual)
 
 
+@pytest.mark.parametrize("keep", ["all", "any"])
+def test_range_only_regions_match_cartesian_reference(keep):
+    """Range-only regional joins match pandas, including ``keep='any'``."""
+    left = pd.DataFrame({"first": [2, 4], "second": [3, 1]})
+    right = pd.DataFrame(
+        {
+            "first_r": [1, 3, 5, 7],
+            "second_r": [0, 1, 2, 6],
+        }
+    )
+    expected = (
+        left.assign(left_position=np.arange(len(left)))
+        .merge(right.assign(right_position=np.arange(len(right))), how="cross")
+        .loc[lambda frame: frame.first < frame.first_r]
+        .loc[lambda frame: frame.second < frame.second_r]
+    )
+    expected_pairs = set(zip(expected.left_position, expected.right_position))
+
+    actual = jn.get_join_indices(
+        left,
+        right,
+        ("first", "first_r", "<"),
+        ("second", "second_r", "<"),
+        keep=keep,
+        join_algorithm="regions",
+    )
+    actual_pairs = list(zip(actual["left_index"], actual["right_index"]))
+
+    if keep == "all":
+        assert sorted(actual_pairs) == sorted(expected_pairs)
+    else:
+        assert len(actual_pairs) == len(left)
+        assert all(pair in expected_pairs for pair in actual_pairs)
+        assert {left_position for left_position, _ in actual_pairs} == {0, 1}
+
+
+def test_regional_residual_join_matches_cartesian_reference():
+    """Regional range candidates are filtered by residuals correctly."""
+    left = pd.DataFrame(
+        {
+            "first": [2, 4],
+            "second": [3, 1],
+            "tag": [10, 20],
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "first_r": [1, 3, 5, 7],
+            "second_r": [0, 1, 2, 6],
+            "tag_r": [10, 99, 20, 30],
+        }
+    )
+    expected = (
+        left.assign(left_position=np.arange(len(left)))
+        .merge(right.assign(right_position=np.arange(len(right))), how="cross")
+        .loc[lambda frame: frame.first < frame.first_r]
+        .loc[lambda frame: frame.second < frame.second_r]
+        .loc[lambda frame: frame.tag != frame.tag_r]
+    )
+
+    actual = jn.get_join_indices(
+        left,
+        right,
+        ("first", "first_r", "<"),
+        ("second", "second_r", "<"),
+        ("tag", "tag_r", "!="),
+        keep="all",
+        join_algorithm="regions",
+    )
+    actual_pairs = sorted(zip(actual["left_index"], actual["right_index"]))
+    expected_pairs = sorted(zip(expected.left_position, expected.right_position))
+    assert actual_pairs == expected_pairs
+
+
+@pytest.mark.parametrize(
+    ("keep", "expected_right"),
+    [
+        ("all", [1, 3]),
+        ("any", [1]),
+        ("first", [1]),
+        ("last", [3]),
+    ],
+)
+def test_equi_range_unordered_second_window_applies_keep(keep, expected_right):
+    """An unordered second range is filtered before applying ``keep``."""
+    left = pd.DataFrame({"key": [1], "lower": [5], "upper": [3]})
+    right = pd.DataFrame(
+        {
+            "key": [1, 1, 1, 1],
+            "lower_r": [1, 2, 3, 4],
+            "upper_r": [4, 1, 3, 2],
+        }
+    )
+
+    result = jn.get_join_indices(
+        left,
+        right,
+        ("key", "key", "=="),
+        ("lower", "lower_r", ">"),
+        ("upper", "upper_r", ">"),
+        keep=keep,
+    )
+
+    assert np.array_equal(result["left_index"], np.array([0] * len(expected_right)))
+    assert np.array_equal(result["right_index"], np.array(expected_right))
+
+
+@pytest.mark.parametrize("with_residual", [False, True])
+def test_equi_range_unordered_second_range_preserves_overlapping_windows(
+    with_residual,
+):
+    """Overlapping first-range windows do not overwrite second-range bounds."""
+    left = pd.DataFrame(
+        {
+            "key": [1, 1],
+            "first": [0, 2],
+            "second": [50, 0],
+            "payload": [7, 8],
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "key": [1, 1, 1, 1],
+            "first_r": [1, 2, 3, 4],
+            "second_r": [1, 100, 2, 3],
+            "payload_r": [0, 7, 8, 8],
+        }
+    )
+
+    conditions = [
+        ("key", "key", "=="),
+        ("first", "first_r", "<"),
+        ("second", "second_r", "<"),
+    ]
+    if with_residual:
+        conditions.append(("payload", "payload_r", "=="))
+    result = jn.get_join_indices(
+        left,
+        right,
+        *conditions,
+        keep="all",
+    )
+
+    assert np.array_equal(result["left_index"], np.array([0, 1, 1]))
+    assert np.array_equal(result["right_index"], np.array([1, 2, 3]))
+
+
+@pytest.mark.parametrize("first_op", ["<", "<=", ">", ">="])
+@pytest.mark.parametrize("second_op", ["<", "<=", ">", ">="])
+def test_equi_two_ranges_match_bruteforce_reference(first_op, second_op):
+    """Two range windows and a residual match the Cartesian reference."""
+    left = pd.DataFrame(
+        {
+            "key": [1, 1, 2],
+            "first": [3, 6, 4],
+            "second": [2, 5, 1],
+            "tag": [10, 20, 30],
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "key": [1, 1, 1, 2, 2],
+            "first_r": [1, 3, 5, 2, 6],
+            "second_r": [4, 1, 3, 0, 2],
+            "tag_r": [10, 11, 20, 30, 31],
+        }
+    )
+    compare = {
+        "<": operator.lt,
+        "<=": operator.le,
+        ">": operator.gt,
+        ">=": operator.ge,
+    }
+    first_compare = compare[first_op]
+    second_compare = compare[second_op]
+    expected = [
+        (left_position, right_position)
+        for left_position, left_row in left.iterrows()
+        for right_position, right_row in right.iterrows()
+        if left_row["key"] == right_row["key"]
+        and first_compare(left_row["first"], right_row["first_r"])
+        and second_compare(left_row["second"], right_row["second_r"])
+        and left_row["tag"] != right_row["tag_r"]
+    ]
+
+    actual = jn.get_join_indices(
+        left,
+        right,
+        ("key", "key", "=="),
+        ("first", "first_r", first_op),
+        ("second", "second_r", second_op),
+        ("tag", "tag_r", "!="),
+        keep="all",
+    )
+    actual = sorted(zip(actual["left_index"], actual["right_index"]))
+
+    assert actual == sorted(expected)
+
+
 def test_df_columns_right_columns_both_None(dummy, series):
     """Raise if both df_columns and right_columns is None"""
     with pytest.raises(
@@ -267,7 +709,7 @@ def test_check_conditions_exist(dummy, series):
 
 def test_use_numba_is_a_deprecated_noop(dummy, series):
     """Accept the historical keyword while warning that it has no effect."""
-    with pytest.warns(DeprecationWarning, match="use_numba"):
+    with pytest.warns(FutureWarning, match="use_numba"):
         result = dummy.conditional_join(series, ("id", "B", ">"), use_numba=True)
 
     assert not result.empty
@@ -275,7 +717,7 @@ def test_use_numba_is_a_deprecated_noop(dummy, series):
 
 def test_get_join_indices_use_numba_is_a_deprecated_noop(dummy, series):
     """The index helper retains deprecated ``use_numba`` compatibility."""
-    with pytest.warns(DeprecationWarning, match="use_numba"):
+    with pytest.warns(FutureWarning, match="use_numba"):
         result = jn.get_join_indices(
             dummy,
             series,
@@ -329,6 +771,179 @@ def test_single_range_building_blocks_materialize_all_matches():
     assert np.array_equal(matches["ends"], np.array([3]))
 
 
+def test_equi_building_blocks_index_numpy_arrays():
+    """Equality building blocks can index NumPy arrays directly."""
+    left = pd.DataFrame({"key": [1, 2, 1]})
+    right = pd.DataFrame({"key": [1, 1, 2]})
+
+    blocks = jn.get_join_indices(
+        left,
+        right,
+        ("key", "key", "=="),
+        return_building_blocks=True,
+    )
+    pairs = jn.get_join_indices(left, right, ("key", "key", "=="))
+
+    left_positions = np.arange(len(left))[blocks["left_index"]]
+    right_positions = np.arange(len(right))[blocks["right_index"]]
+    rebuilt = sorted(
+        (int(left_position), int(right_position))
+        for left_position, start, end in zip(
+            left_positions, blocks["starts"], blocks["ends"]
+        )
+        for right_position in right_positions[start:end]
+    )
+    assert rebuilt == sorted(zip(pairs["left_index"], pairs["right_index"]))
+
+
+def test_equi_building_blocks_unique_keys_return_pair_layout():
+    """Unique right keys return None windows and a pair layout."""
+    left = pd.DataFrame({"key": [1, 2, 3]})
+    right = pd.DataFrame({"key": [2, 1, 4]})
+
+    blocks = jn.get_join_indices(
+        left,
+        right,
+        ("key", "key", "=="),
+        return_building_blocks=True,
+    )
+    pairs = jn.get_join_indices(left, right, ("key", "key", "=="))
+
+    assert blocks["starts"] is None
+    assert blocks["ends"] is None
+    left_positions = np.arange(len(left))[blocks["left_index"]]
+    right_positions = np.arange(len(right))[blocks["right_index"]]
+    assert sorted(zip(left_positions.tolist(), right_positions.tolist())) == sorted(
+        zip(pairs["left_index"].tolist(), pairs["right_index"].tolist())
+    )
+
+
+@pytest.mark.parametrize(
+    "conditions, expected",
+    [
+        ([("key", "key", "==")], [(0, 0), (0, 1), (1, 3), (2, 2)]),
+        (
+            [("key", "key", "=="), ("value", "value", ">=")],
+            [(0, 0), (0, 1), (2, 2)],
+        ),
+    ],
+)
+def test_equi_mixed_type_object_keys_with_duplicate_right_keys(conditions, expected):
+    """Duplicate object keys of mixed types do not need to be orderable."""
+    left = pd.DataFrame(
+        {"key": pd.Series(["x", "y", 3], dtype=object), "value": [1, 2, 3]}
+    )
+    right = pd.DataFrame(
+        {"key": pd.Series(["x", "x", 3, "y"], dtype=object), "value": [0, 1, 2, 3]}
+    )
+
+    result = jn.get_join_indices(left, right, *conditions)
+
+    actual = sorted(zip(result["left_index"].tolist(), result["right_index"].tolist()))
+    assert actual == expected
+
+
+def test_equi_mixed_type_object_keys_aggregation():
+    """Mixed-type object keys aggregate through the duplicate-key path."""
+    left = pd.DataFrame(
+        {"key": pd.Series(["x", "y", 3], dtype=object), "value": [1, 2, 3]}
+    )
+    right = pd.DataFrame(
+        {
+            "key": pd.Series(["x", "x", 3, "y"], dtype=object),
+            "value": [0, 1, 2, 3],
+            "amount": [10, 20, 30, 40],
+        }
+    )
+
+    result = left.join_agg(
+        right,
+        ("key", "key", "=="),
+        ("value", "value", ">="),
+        aggfunc=[("amount", "sum")],
+    )
+
+    sums = dict(
+        zip(
+            result.index.get_level_values(0).tolist(),
+            result[("amount", "sum")].tolist(),
+        )
+    )
+    assert sums[0] == 30
+    assert sums[2] == 30
+    assert sums.get(1, 0) == 0
+
+
+def test_range_anchor_selection_pairs_first_opposing_predicate():
+    """The second anchor is the first opposing range, not the next range."""
+    conditions = _normalize_conditions(
+        [
+            ("pos", "start", ">="),
+            ("x", "y", ">"),
+            ("k", "k", "=="),
+            ("pos", "end", "<="),
+            ("x", "z", "<"),
+        ]
+    )
+    assert _get_range_positions_for_one_side(conditions) == [0, 3]
+
+    same_direction = _normalize_conditions(
+        [("pos", "start", ">="), ("x", "y", ">"), ("x", "z", ">=")]
+    )
+    assert _get_range_positions_for_one_side(same_direction) == [0, 1]
+
+
+@pytest.mark.parametrize("with_equality", [False, True])
+def test_range_join_same_direction_first_matches_cross_join(with_equality):
+    """Ordering a same-direction range second does not change the result."""
+    rng = np.random.default_rng(1765)
+    left = pd.DataFrame(
+        {
+            "k": rng.integers(0, 3, 60),
+            "pos": rng.integers(0, 100, 60),
+            "x": rng.integers(0, 100, 60),
+        }
+    )
+    start = rng.integers(0, 100, 50)
+    right = pd.DataFrame(
+        {
+            "k": rng.integers(0, 3, 50),
+            "start": start,
+            "end": start + rng.integers(0, 30, 50),
+            "y": rng.integers(0, 100, 50),
+            "amount": rng.integers(1, 10, 50),
+        }
+    )
+    conditions = [
+        ("pos", "start", ">="),
+        ("x", "y", ">="),
+        ("pos", "end", "<="),
+    ]
+    query = "pos >= start and x >= y and pos <= end"
+    if with_equality:
+        conditions.append(("k", "k", "=="))
+        query += " and k_left == k_right"
+    cross = left.reset_index(names="l").merge(
+        right.reset_index(names="r"), how="cross", suffixes=("_left", "_right")
+    )
+    cross = cross.query(query)
+
+    result = jn.get_join_indices(left, right, *conditions)
+    actual = sorted(zip(result["left_index"].tolist(), result["right_index"].tolist()))
+    assert actual == sorted(zip(cross["l"].tolist(), cross["r"].tolist()))
+
+    aggregated = left.join_agg(
+        right,
+        *conditions,
+        aggfunc=[("amount", "sum")],
+        return_matched=True,
+    )
+    matched = aggregated.xs(True, level="matched")[("amount", "sum")]
+    expected = cross.groupby("l")["amount"].sum()
+    assert matched.sort_index().tolist() == expected.sort_index().tolist()
+    assert matched.index.sort_values().tolist() == expected.index.tolist()
+
+
 def test_single_not_equal_building_blocks_materialize_all_matches():
     """Single ``!=`` building blocks override ``keep="first"``."""
     left = pd.DataFrame({"value": [1]})
@@ -377,6 +992,118 @@ def test_extended_range_filters_before_keep_and_building_blocks():
     # fallback and returns materialized pairs.
     assert np.array_equal(building_blocks["left_index"], np.array([0, 0]))
     assert np.array_equal(building_blocks["right_index"], np.array([2, 3]))
+
+
+@pytest.mark.parametrize("keep", ["all", "any", "first", "last"])
+@pytest.mark.parametrize("residual_op", ["!=", "=="])
+def test_regions_dual_ranges_with_residual_matches_default(keep, residual_op):
+    """The two-range residual branch agrees with the general implementation."""
+    left = pd.DataFrame(
+        {
+            "left_a": [2, 4, 6, 8],
+            "left_b": [8, 6, 4, 2],
+            "left_residual": [0, 1, 2, 3],
+        }
+    )
+    right = (
+        pd.DataFrame(
+            {
+                "right_a": [1, 3, 5, 7, 9],
+                "right_b": [9, 7, 5, 3, 1],
+                "right_residual": [0, 2, 1, 4, 3],
+            }
+        )
+        .iloc[[2, 0, 4, 1, 3]]
+        .reset_index(drop=True)
+    )
+    conditions = (
+        ("left_a", "right_a", "<="),
+        ("left_b", "right_b", ">="),
+        ("left_residual", "right_residual", residual_op),
+    )
+
+    expected = jn.get_join_indices(
+        left, right, *conditions, keep=keep, join_algorithm="default"
+    )
+    actual = jn.get_join_indices(
+        left, right, *conditions, keep=keep, join_algorithm="regions"
+    )
+
+    expected_pairs = sorted(zip(expected["left_index"], expected["right_index"]))
+    actual_pairs = sorted(zip(actual["left_index"], actual["right_index"]))
+    assert actual_pairs == expected_pairs
+
+
+@pytest.mark.parametrize("keep", ["all", "any", "first", "last"])
+def test_regions_three_ranges_with_independent_right_orders_match_default(keep):
+    """The n-region path preserves matches across independently sorted rights."""
+    left = pd.DataFrame(
+        {
+            "left_a": [2, 4, 6],
+            "left_b": [1, 3, 5],
+            "left_c": [10, 20, 30],
+        }
+    )
+    right = (
+        pd.DataFrame(
+            {
+                "right_a": [1, 3, 5, 7, 9],
+                "right_b": [0, 2, 4, 6, 8],
+                "right_c": [5, 15, 25, 35, 45],
+            }
+        )
+        .iloc[[2, 0, 4, 1, 3]]
+        .reset_index(drop=True)
+    )
+    conditions = (
+        ("left_a", "right_a", "<="),
+        ("left_b", "right_b", "<="),
+        ("left_c", "right_c", "<="),
+    )
+
+    expected = jn.get_join_indices(
+        left, right, *conditions, keep=keep, join_algorithm="default"
+    )
+    actual = jn.get_join_indices(
+        left, right, *conditions, keep=keep, join_algorithm="regions"
+    )
+
+    expected_pairs = sorted(zip(expected["left_index"], expected["right_index"]))
+    actual_pairs = sorted(zip(actual["left_index"], actual["right_index"]))
+    assert actual_pairs == expected_pairs
+
+
+def test_regions_three_ranges_with_residual_matches_default():
+    """The n-region residual branch agrees with the general implementation."""
+    left = pd.DataFrame(
+        {
+            "left_a": [1],
+            "left_b": [1],
+            "left_c": [1],
+            "residual": [1],
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "right_a": [1],
+            "right_b": [1],
+            "right_c": [1],
+            "residual": [1],
+        }
+    )
+    conditions = (
+        ("left_a", "right_a", "<="),
+        ("left_b", "right_b", "<="),
+        ("left_c", "right_c", "<="),
+        ("residual", "residual", "!="),
+    )
+
+    expected = jn.get_join_indices(left, right, *conditions, join_algorithm="default")
+    actual = jn.get_join_indices(left, right, *conditions, join_algorithm="regions")
+
+    assert sorted(zip(expected["left_index"], expected["right_index"])) == sorted(
+        zip(actual["left_index"], actual["right_index"])
+    )
 
 
 def test_extended_range_then_not_equal_filters_windows():
@@ -794,14 +1521,86 @@ def test_check_op_correct(dummy, series):
         dummy.conditional_join(series, ("id", "B", "=!"))
 
 
-def test_equi_only(dummy):
-    """
-    Raise ValueError if only an equi-join is present.
-    """
-    with pytest.raises(ValueError, match="Equality only joins are not supported."):
-        dummy.conditional_join(
-            dummy.rename(columns={"S": "Strings"}), ("S", "Strings", "==")
+@pytest.mark.parametrize("how", ["inner", "left", "right", "outer"])
+@pytest.mark.parametrize("keep", ["all", "first", "last"])
+def test_equi_only(how, keep):
+    """Equality-only joins handle duplicates, nulls, join types, and keep."""
+    left = pd.DataFrame(
+        {
+            "key": [1, 1, np.nan, 2],
+            "left_payload": ["l1", "l2", "ln", "l3"],
+        }
+    ).assign(_left_pos=lambda frame: frame.index)
+    right = pd.DataFrame(
+        {
+            "key": [1, np.nan, 1, 3],
+            "right_payload": ["r1", "rn", "r2", "r3"],
+        }
+    ).assign(_right_pos=lambda frame: frame.index)
+
+    left_non_null = left.dropna(subset=["key"])
+    right_non_null = right.dropna(subset=["key"])
+    matches = pd.merge(
+        left_non_null,
+        right_non_null,
+        on="key",
+        how="inner",
+        sort=False,
+    )
+    if keep != "all":
+        grouped_matches = matches.groupby("_left_pos", sort=False, group_keys=False)
+        matches = (
+            grouped_matches.head(1) if keep == "first" else grouped_matches.tail(1)
         )
+
+    matched_left = set(matches["_left_pos"])
+    matched_right = set(matches["_right_pos"])
+    rows = [
+        (row.key, row.left_payload, row.key, row.right_payload)
+        for row in matches.itertuples()
+    ]
+    if how in {"left", "outer"}:
+        rows.extend(
+            (key, left_payload, np.nan, np.nan)
+            for key, left_payload, left_pos in left.itertuples(index=False, name=None)
+            if left_pos not in matched_left
+        )
+    if how in {"right", "outer"}:
+        rows.extend(
+            (np.nan, np.nan, key, right_payload)
+            for key, right_payload, right_pos in right.itertuples(
+                index=False, name=None
+            )
+            if right_pos not in matched_right
+        )
+
+    expected = pd.DataFrame(
+        rows,
+        columns=["left_key", "left_payload", "right_key", "right_payload"],
+    )
+    expected = pd.concat(
+        {
+            "left": expected[["left_key", "left_payload"]].set_axis(
+                ["key", "left_payload"], axis=1
+            ),
+            "right": expected[["right_key", "right_payload"]].set_axis(
+                ["key", "right_payload"], axis=1
+            ),
+        },
+        axis=1,
+    )
+
+    actual = left.drop(columns="_left_pos").conditional_join(
+        right.drop(columns="_right_pos"),
+        ("key", "key", "=="),
+        how=how,
+        keep=keep,
+    )
+
+    sort_by = expected.columns.tolist()
+    actual = actual.sort_values(sort_by, ignore_index=True)
+    expected = expected.sort_values(sort_by, ignore_index=True)
+    assert_frame_equal(actual, expected)
 
 
 def test_check_how_type(dummy, series):
@@ -924,7 +1723,6 @@ def test_check_aggfunc_ne(dummy, series):
         {("B", "sum"): [9, 9, 9, 7, 7, 6]},
         index=pd.RangeIndex(6),
     )
-    expected = _with_matched_level(expected)
     assert_frame_equal(expected, actual)
 
 
@@ -948,7 +1746,6 @@ def test_all_not_equal_aggregation():
         },
         index=pd.RangeIndex(2),
     )
-    expected = _with_matched_level(expected)
     assert_frame_equal(expected, actual)
 
     actual = left.join_agg(
@@ -965,12 +1762,32 @@ def test_all_not_equal_aggregation():
         },
         index=pd.RangeIndex(3),
     )
-    expected = _with_matched_level(expected)
+    assert_frame_equal(expected, actual)
+
+
+def test_join_agg_default_excludes_matched_level():
+    """Do not include the matched level unless explicitly requested."""
+    left = pd.DataFrame({"key": [1, 2]})
+    right = pd.DataFrame({"key": [1, 3], "amount": [10, 20]})
+
+    actual = left.join_agg(
+        right,
+        ("key", "key", "=="),
+        aggfunc=[("amount", "sum")],
+    )
+
+    expected = pd.DataFrame(
+        {("amount", "sum"): [10]},
+        index=pd.RangeIndex(1),
+    )
     assert_frame_equal(expected, actual)
 
 
 @pytest.mark.parametrize("join_algorithm", ["default", "regions"])
-def test_all_unmatched_aggregation_retains_prepared_output_rows(join_algorithm):
+@pytest.mark.parametrize("return_matched", [True, False])
+def test_all_unmatched_aggregation_retains_prepared_output_rows(
+    join_algorithm, return_matched
+):
     """Keep eligible rows when every multi-range candidate is rejected."""
     left = pd.DataFrame({"left_key": [1, 2], "amount": [4, 5]})
     right = pd.DataFrame({"right_key": [3], "amount": [10]})
@@ -990,11 +1807,14 @@ def test_all_unmatched_aggregation_retains_prepared_output_rows(join_algorithm):
         *conditions,
         aggfunc=aggfunc,
         join_algorithm=join_algorithm,
-        return_matched=True,
+        return_matched=return_matched,
     )
 
     assert len(actual) == len(left)
-    assert actual.index.get_level_values("matched").tolist() == [False, False]
+    if return_matched:
+        assert actual.index.get_level_values("matched").tolist() == [False, False]
+    else:
+        assert isinstance(actual.index, pd.RangeIndex)
     assert actual[("amount", "sum")].tolist() == [0, 0]
     assert actual[("amount", "prod")].tolist() == [1, 1]
     assert actual[("amount", "size")].tolist() == [0, 0]
@@ -1006,27 +1826,91 @@ def test_all_unmatched_aggregation_retains_prepared_output_rows(join_algorithm):
         aggfunc=[("amount", "sum"), ("amount", "prod")],
         join_algorithm=join_algorithm,
         reverse=True,
-        return_matched=True,
+        return_matched=return_matched,
     )
     assert len(reverse) == len(right)
-    assert reverse.index.get_level_values("matched").tolist() == [False]
+    if return_matched:
+        assert reverse.index.get_level_values("matched").tolist() == [False]
+    else:
+        assert isinstance(reverse.index, pd.RangeIndex)
     assert reverse[("amount", "sum")].tolist() == [0]
     assert reverse[("amount", "prod")].tolist() == [1]
 
 
-def test_all_unmatched_equi_and_not_equal_aggregation_retain_rows():
-    left = pd.DataFrame({"key": [1, 2], "amount": [4, 5]})
-    right = pd.DataFrame({"key": [3], "amount": [10]})
+@pytest.mark.parametrize("reverse", [False, True])
+@pytest.mark.parametrize("join_algorithm", ["default", "regions"])
+@pytest.mark.parametrize("return_matched", [True, False])
+@pytest.mark.parametrize(
+    "conditions",
+    [
+        [("key", "key", "==")],
+        [("key", "key", "=="), ("time", "time", "<")],
+        [("key", "key", "=="), ("time", "time", "<"), ("time", "time", ">=")],
+    ],
+)
+def test_equi_aggregation_without_key_match_is_empty(
+    conditions, join_algorithm, reverse, return_matched
+):
+    """No equality key match returns an empty result, like the indices."""
+    left = pd.DataFrame(
+        {"key": [1.0, 2.0, np.nan], "time": [1, 2, 3], "amount": [4, 5, 6]}
+    )
+    right = pd.DataFrame({"key": [3.0, 4.0], "time": [5, 6], "amount": [10, 20]})
+    aggfunc = [("amount", "sum"), ("amount", "min")]
 
-    equi = left.join_agg(
+    actual = left.join_agg(
         right,
-        ("key", "key", "=="),
-        aggfunc=[("amount", "sum")],
+        *conditions,
+        aggfunc=aggfunc,
+        join_algorithm=join_algorithm,
+        reverse=reverse,
+        return_matched=return_matched,
+    )
+    matched = left.join_agg(
+        left,
+        *conditions,
+        aggfunc=aggfunc,
+        join_algorithm=join_algorithm,
+        reverse=reverse,
+        return_matched=return_matched,
+    )
+
+    assert actual.empty
+    assert actual.columns.equals(matched.columns)
+    assert actual.index.names == matched.index.names
+    if return_matched:
+        assert isinstance(actual.index, pd.MultiIndex)
+    else:
+        assert isinstance(actual.index, pd.RangeIndex)
+
+
+@pytest.mark.parametrize(
+    "dtype, sizes",
+    [("float64", [2, 3, 3]), ("Int64", [1, 0, 2]), ("Float64", [1, 0, 2])],
+)
+def test_not_equal_aggregation_keeps_null_rows(dtype, sizes):
+    """``!=``-only joins keep null rows and follow pandas ``!=`` semantics."""
+    left = pd.DataFrame({"key": pd.array([1, None, 3], dtype=dtype)})
+    right = pd.DataFrame(
+        {"key": pd.array([1, 2, None], dtype=dtype), "amount": [10, 20, 30]}
+    )
+
+    actual = left.join_agg(
+        right,
+        ("key", "key", "!="),
+        aggfunc=[("amount", "size")],
         return_matched=True,
     )
-    assert len(equi) == len(left)
-    assert equi.index.get_level_values("matched").tolist() == [False, False]
-    assert equi[("amount", "sum")].tolist() == [0, 0]
+
+    assert actual.index.get_level_values(0).tolist() == [0, 1, 2]
+    assert actual[("amount", "size")].tolist() == sizes
+    assert actual.index.get_level_values("matched").tolist() == [
+        size > 0 for size in sizes
+    ]
+
+
+def test_all_unmatched_not_equal_aggregation_retains_rows():
+    left = pd.DataFrame({"key": [1, 2], "amount": [4, 5]})
 
     not_equal = left.iloc[[0]].join_agg(
         pd.DataFrame({"key": [1], "amount": [10]}),
@@ -1037,6 +1921,27 @@ def test_all_unmatched_equi_and_not_equal_aggregation_retain_rows():
     assert len(not_equal) == 1
     assert not_equal.index.get_level_values("matched").tolist() == [False]
     assert not_equal[("amount", "sum")].tolist() == [0]
+
+
+@pytest.mark.parametrize("join_algorithm", ["default", "regions"])
+def test_equi_range_aggregation_skips_eliminated_windows(join_algorithm):
+    """An internally eliminated equality window is an unmatched row."""
+    left = pd.DataFrame({"key": [1, 1], "time": [2, 100]})
+    right = pd.DataFrame({"key": [1, 1], "time": [3, 4], "amount": [10, 13]})
+
+    actual = left.join_agg(
+        right,
+        ("key", "key", "=="),
+        ("time", "time", "<"),
+        aggfunc=[("amount", "sum"), ("amount", "size")],
+        join_algorithm=join_algorithm,
+        return_matched=True,
+    )
+
+    assert actual.index.get_level_values(0).tolist() == [0, 1]
+    assert actual.index.get_level_values("matched").tolist() == [True, False]
+    assert actual[("amount", "sum")].tolist() == [23, 0]
+    assert actual[("amount", "size")].tolist() == [2, 0]
 
 
 def test_all_unmatched_aggregation_excludes_null_join_keys():
@@ -4318,6 +5223,8 @@ def test_multiple_eqs_col_syntax(df, right):
 @given(df=conditional_df(), right=conditional_right())
 def test_eq_strings(df, right):
     """Test output for joins on strings."""
+    assume(not df["C"].str.contains("\x00").any())
+    assume(not right["Strings"].str.contains("\x00").any())
     columns = ["C", "A", "Strings", "Integers"]
     expected = df.merge(
         right,
@@ -4339,6 +5246,65 @@ def test_eq_strings(df, right):
         right_columns=["Strings", "Integers"],
     ).sort_values(columns, ignore_index=True)
 
+    assert_frame_equal(expected, actual)
+
+
+@pytest.mark.xfail(
+    condition=_FACTORIZE_TRUNCATES_NUL,
+    reason=(
+        "pandas factorize truncates strings at embedded NULs, so distinct "
+        "equality keys collapse in the conditional-join path."
+    ),
+    strict=True,
+)
+def test_eq_strings_embedded_nul():
+    """Pin pandas' embedded-NUL factorize regression."""
+    left = pd.DataFrame({"C": pd.Series(["", ""], dtype=object), "A": [0, 0]})
+    right = pd.DataFrame(
+        {
+            "Strings": pd.Series(["", "\x00"], dtype=object),
+            "Integers": [0, 0],
+        }
+    )
+    out = left.conditional_join(
+        right,
+        ("C", "Strings", "=="),
+        ("A", "Integers", ">="),
+    )
+    assert len(out) == 2
+
+
+def test_equi_join_preserves_explicit_object_string_columns():
+    """Column selection must not infer object strings as pandas ``str``."""
+    left = pd.DataFrame(
+        {
+            "key": pd.Series(["False"], dtype=object),
+            "value": [0],
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "right_key": pd.Series(["False", "False"], dtype=object),
+            "bound": [0, 0],
+        }
+    )
+
+    actual = left.conditional_join(
+        right,
+        ("key", "right_key", "=="),
+        ("value", "bound", ">="),
+        df_columns=["key", "value"],
+        right_columns=["right_key", "bound"],
+    )
+
+    expected = pd.DataFrame(
+        {
+            "key": pd.Series(["False", "False"], dtype=object),
+            "value": [0, 0],
+            "right_key": pd.Series(["False", "False"], dtype=object),
+            "bound": [0, 0],
+        }
+    )
     assert_frame_equal(expected, actual)
 
 
@@ -4573,8 +5539,9 @@ def test_single_condition_less_than_dates_agg(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -4603,8 +5570,9 @@ def test_single_condition_greater_than_dates_agg(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -4634,8 +5602,9 @@ def test_gt_ne_agg(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -4665,8 +5634,9 @@ def test_lt_ne_agg(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -4695,8 +5665,9 @@ def test_dual_gt_agg(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -4725,8 +5696,9 @@ def test_dual_lt_agg(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -4756,8 +5728,9 @@ def test_multiple__ge__agg(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -4787,8 +5760,9 @@ def test_multiple__le__agg(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -4818,8 +5792,9 @@ def test_multiple_range_aggs(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -4850,8 +5825,9 @@ def test_multiple_range_ne_agg(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -4880,8 +5856,9 @@ def test_range_only_agg(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -4910,8 +5887,9 @@ def test_equi_agg(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -4939,8 +5917,9 @@ def test_equi_only_agg(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -4969,8 +5948,9 @@ def test_equi_ne_agg(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5000,8 +5980,9 @@ def test_equi_le_ne_agg(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5031,8 +6012,9 @@ def test_equi_ge_ne_agg(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5062,8 +6044,9 @@ def test_equi_le_ge_agg(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5094,8 +6077,9 @@ def test_equi_le_ge_ne_agg(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5126,8 +6110,9 @@ def test_equi_ge_ge_ne_agg(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5158,8 +6143,9 @@ def test_equi_le_le_ne_agg(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5195,8 +6181,9 @@ def test_equi_le_ge_ge_ne_agg(df, right):
             ("Integers", "prod"),
             ("Integers", "sum"),
         ],
+        return_matched=True,
     )
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5265,8 +6252,9 @@ def test_single_condition_less_than_dates_agg_rev(df, right):
             ("A", "prod"),
             ("A", "sum"),
         ],
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5304,8 +6292,9 @@ def test_single_condition_greater_than_dates_agg_rev(df, right):
             ("A", "prod"),
             ("A", "sum"),
         ],
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5335,8 +6324,9 @@ def test_gt_ne_agg_rev(df, right):
             ("A", "sum"),
         ],
         reverse=True,
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5366,8 +6356,9 @@ def test_lt_ne_agg_rev(df, right):
             ("A", "sum"),
         ],
         reverse=True,
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5396,8 +6387,9 @@ def test_dual_gt_agg_rev(df, right):
             ("A", "sum"),
         ],
         reverse=True,
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5426,8 +6418,9 @@ def test_dual_lt_agg_rev(df, right):
             ("A", "sum"),
         ],
         reverse=True,
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5457,8 +6450,9 @@ def test_multiple__ge__agg_rev(df, right):
             ("A", "sum"),
         ],
         reverse=True,
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5488,8 +6482,9 @@ def test_multiple__le__agg_rev(df, right):
             ("A", "sum"),
         ],
         reverse=True,
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5519,8 +6514,9 @@ def test_multiple_range_aggs_rev(df, right):
             ("A", "sum"),
         ],
         reverse=True,
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5551,8 +6547,9 @@ def test_multiple_range_ne_agg_rev(df, right):
             ("A", "sum"),
         ],
         reverse=True,
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5581,8 +6578,9 @@ def test_range_only_agg_rev(df, right):
             ("A", "sum"),
         ],
         reverse=True,
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5611,8 +6609,9 @@ def test_equi_agg_rev(df, right):
             ("A", "sum"),
         ],
         reverse=True,
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5640,8 +6639,9 @@ def test_equi_only_agg_rev(df, right):
             ("A", "sum"),
         ],
         reverse=True,
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5670,8 +6670,9 @@ def test_equi_ne_agg_rev(df, right):
             ("A", "sum"),
         ],
         reverse=True,
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5701,8 +6702,9 @@ def test_equi_le_ne_agg_rev(df, right):
             ("A", "sum"),
         ],
         reverse=True,
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5732,8 +6734,9 @@ def test_equi_ge_ne_agg_rev(df, right):
             ("A", "sum"),
         ],
         reverse=True,
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5763,8 +6766,9 @@ def test_equi_le_ge_agg_rev(df, right):
             ("A", "sum"),
         ],
         reverse=True,
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5795,8 +6799,9 @@ def test_equi_le_ge_ne_agg_rev(df, right):
             ("A", "sum"),
         ],
         reverse=True,
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5827,8 +6832,9 @@ def test_equi_ge_ge_ne_agg_rev(df, right):
             ("A", "sum"),
         ],
         reverse=True,
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5859,8 +6865,9 @@ def test_equi_le_le_ne_agg_rev(df, right):
             ("A", "sum"),
         ],
         reverse=True,
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
@@ -5896,15 +6903,16 @@ def test_equi_le_ge_ge_ne_agg_rev(df, right):
             ("A", "sum"),
         ],
         reverse=True,
+        return_matched=True,
     ).sort_index()
-    expected = _with_aggregation_contract(expected, actual.index)
+    expected = _with_aggregation_contract(expected, actual.index, return_matched=True)
     assert_frame_equal(expected, actual)
 
 
 def test_conditional_join_columns_deprecation_warning(dummy):
-    """Test that using df_columns or right_columns triggers a DeprecationWarning."""
-    with pytest.warns(DeprecationWarning, match="df_columns"):
+    """Test that using df_columns or right_columns triggers a FutureWarning."""
+    with pytest.warns(FutureWarning, match="df_columns"):
         dummy.conditional_join(dummy, ("id", "id", ">"), df_columns="id")
 
-    with pytest.warns(DeprecationWarning, match="right_columns"):
+    with pytest.warns(FutureWarning, match="right_columns"):
         dummy.conditional_join(dummy, ("id", "id", ">"), right_columns="id")

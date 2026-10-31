@@ -27,13 +27,23 @@ on:
           - major
           - minor
           - patch
+      allow_changelog_backfill:
+        description: "Allow an intentional changelog backfill"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
   id-token: write
 
+concurrency:
+  group: pyjanitor-auto-release
+  cancel-in-progress: false
+
 env:
   DEFAULT_VERSION_NAME: patch
+  PACKAGE_NAME: pyjanitor
 
 jobs:
   release:
@@ -49,6 +59,8 @@ jobs:
 
     defaults:
       run:
+        # Existing setup/tooling steps retain the login shell; release control-flow
+        # steps override this with `bash {0}` below.
         shell: bash -l {0}
 
     steps:
@@ -65,91 +77,202 @@ jobs:
 
       - name: Check if already released
         id: check_release
+        # Keep release control flow in a predictable, non-login Bash shell.
+        shell: bash {0}
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
           CURRENT_COMMIT=$(git rev-parse HEAD)
           echo "Current commit: $CURRENT_COMMIT"
-          if git tag --points-at $CURRENT_COMMIT | grep -q "^v"; then
-            echo "already_released=true" >> $GITHUB_OUTPUT
-            echo "This commit already has a release tag. Will skip release."
-            git tag --points-at $CURRENT_COMMIT
+
+          current_release_tag=$(git tag --points-at "$CURRENT_COMMIT" | grep '^v' | head -n 1 || true)
+          latest_release_tag=$(git describe --tags --match 'v*' --abbrev=0 2>/dev/null || true)
+          release_tag="$current_release_tag"
+          if [[ -z "$release_tag" ]]; then
+            release_tag="$latest_release_tag"
+          fi
+
+          if [[ -z "$release_tag" ]]; then
+            echo "existing_release_tag=false" >> "$GITHUB_OUTPUT"
+            echo "package_published=false" >> "$GITHUB_OUTPUT"
+            echo "release_exists=false" >> "$GITHUB_OUTPUT"
+            echo "release_complete=false" >> "$GITHUB_OUTPUT"
+            echo "No release tag found. Preparing a new release."
           else
-            echo "already_released=false" >> $GITHUB_OUTPUT
-            echo "No release tag found. Proceeding with release."
+            version_number=${release_tag#v}
+            echo "Checking external release state for $release_tag."
+
+            set +e
+            package_http_status=$(curl --silent --show-error --location \
+              --output /dev/null --write-out '%{http_code}' \
+              "https://pypi.org/pypi/${PACKAGE_NAME}/${version_number}/json")
+            package_lookup_status=$?
+            set -e
+            if [[ "$package_lookup_status" -eq 0 && "$package_http_status" == 200 ]]; then
+              package_published=true
+            elif [[ "$package_http_status" == 404 ]]; then
+              package_published=false
+            else
+              echo "Unable to determine PyPI publication state (HTTP ${package_http_status:-unknown})." >&2
+              exit 1
+            fi
+            echo "package_published=$package_published" >> "$GITHUB_OUTPUT"
+
+            release_lookup_file=$(mktemp)
+            set +e
+            gh api --include --silent \
+              "repos/${GITHUB_REPOSITORY}/releases/tags/${release_tag}" > "$release_lookup_file" 2>&1
+            release_lookup_status=$?
+            set -e
+            release_http_status=$(awk '/^HTTP\// { status=$2 } END { print status }' "$release_lookup_file")
+            if [[ "$release_lookup_status" -eq 0 && "$release_http_status" == 200 ]]; then
+              release_exists=true
+            elif [[ "$release_http_status" == 404 ]]; then
+              release_exists=false
+            else
+              cat "$release_lookup_file" >&2
+              echo "Unable to determine GitHub Release state (HTTP ${release_http_status:-unknown})." >&2
+              rm -f "$release_lookup_file"
+              exit 1
+            fi
+            rm -f "$release_lookup_file"
+            echo "release_exists=$release_exists" >> "$GITHUB_OUTPUT"
+
+            # A complete older release followed by new commits means a new
+            # release is needed. An incomplete latest tag must be resumed from
+            # that exact tagged commit, even if dev has advanced since then.
+            if [[ -z "$current_release_tag" && "$package_published" == true && "$release_exists" == true ]]; then
+              echo "existing_release_tag=false" >> "$GITHUB_OUTPUT"
+              echo "version_number=" >> "$GITHUB_OUTPUT"
+              echo "package_published=false" >> "$GITHUB_OUTPUT"
+              echo "release_exists=false" >> "$GITHUB_OUTPUT"
+              echo "release_complete=false" >> "$GITHUB_OUTPUT"
+              echo "Latest release is complete; preparing a new release."
+            else
+              echo "existing_release_tag=true" >> "$GITHUB_OUTPUT"
+              echo "version_number=$version_number" >> "$GITHUB_OUTPUT"
+              if [[ -z "$current_release_tag" ]]; then
+                git checkout --detach "$release_tag"
+                echo "Resuming incomplete release from $release_tag."
+              else
+                echo "Release tag $release_tag is at HEAD."
+              fi
+
+              if [[ "$package_published" == true && "$release_exists" == true ]]; then
+                echo "release_complete=true" >> "$GITHUB_OUTPUT"
+                echo "Package and GitHub release already exist."
+              else
+                echo "release_complete=false" >> "$GITHUB_OUTPUT"
+                echo "Release is incomplete and will be resumed."
+                if [[ "${{ github.event_name }}" == workflow_dispatch && \
+                  "${{ github.event.inputs.version_name }}" != patch ]]; then
+                  echo "Cannot start a major/minor release while an earlier release is incomplete." >&2
+                  echo "Retry the incomplete release with patch or finish it before dispatching this release." >&2
+                  exit 1
+                fi
+              fi
+            fi
           fi
 
       - name: Setup Python environment
-        if: steps.check_release.outputs.already_released == 'false'
+        if: steps.check_release.outputs.release_complete == 'false'
         uses: actions/setup-python@v7
         with:
           python-version: 3.13
 
       - name: Install uv
-        if: steps.check_release.outputs.already_released == 'false'
+        if: steps.check_release.outputs.release_complete == 'false'
         uses: astral-sh/setup-uv@v7
 
       - name: Setup Pixi Environment
-        if: steps.check_release.outputs.already_released == 'false'
-        uses: prefix-dev/setup-pixi@v0.10.2
+        if: steps.check_release.outputs.release_complete == 'false'
+        uses: prefix-dev/setup-pixi@v0.11.2
         with:
           pixi-version: latest
           cache: true
           cache-write: true
 
       - name: Set version name
-        if: steps.check_release.outputs.already_released == 'false'
+        if: steps.check_release.outputs.release_complete == 'false' && steps.check_release.outputs.existing_release_tag == 'false'
         run: echo "VERSION_NAME=${{ github.event.inputs.version_name || env.DEFAULT_VERSION_NAME }}" >> $GITHUB_ENV
 
       - name: Dry run uv version bump
-        if: steps.check_release.outputs.already_released == 'false'
+        if: steps.check_release.outputs.release_complete == 'false' && steps.check_release.outputs.existing_release_tag == 'false'
         run: uv version --bump ${{ env.VERSION_NAME }} --dry-run --short
 
       - name: Store new version number
-        if: steps.check_release.outputs.already_released == 'false'
+        if: steps.check_release.outputs.release_complete == 'false' && steps.check_release.outputs.existing_release_tag == 'false'
         run: echo "version_number=$(uv version --bump ${{ env.VERSION_NAME }} --dry-run --short | tr -d ' \n')" >> $GITHUB_ENV
 
+      - name: Reuse existing release version
+        if: steps.check_release.outputs.release_complete == 'false' && steps.check_release.outputs.existing_release_tag == 'true'
+        run: echo "version_number=${{ steps.check_release.outputs.version_number }}" >> "$GITHUB_ENV"
+
+      - name: Store previous version
+        if: steps.check_release.outputs.release_complete == 'false' && steps.check_release.outputs.existing_release_tag == 'false'
+        run: |
+          set -euo pipefail
+          previous_version=$(git describe --tags --match 'v*' --abbrev=0)
+          test -n "$previous_version"
+          echo "previous_version=$previous_version" >> "$GITHUB_ENV"
+
+      - name: Store release date
+        if: steps.check_release.outputs.release_complete == 'false' && steps.check_release.outputs.existing_release_tag == 'false'
+        run: echo "release_date=$(date -u +%F)" >> $GITHUB_ENV
+
       - name: Display new version number
-        if: steps.check_release.outputs.already_released == 'false'
+        if: steps.check_release.outputs.release_complete == 'false'
         run: |
           echo "version_name: ${{ env.VERSION_NAME }}"
           echo "version_number: v${{ env.version_number }}"
 
+      - name: Validate changelog entries since previous release
+        if: steps.check_release.outputs.release_complete == 'false' && steps.check_release.outputs.existing_release_tag == 'false'
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event.inputs.allow_changelog_backfill || 'false' }}" == true ]]; then
+            echo "Allowing changelog backfill sections for a manual backfill."
+            pixi run python scripts/validate_changelog.py \
+              --base "${{ env.previous_version }}" \
+              --head HEAD \
+              --allow-backfill
+          else
+            pixi run python scripts/validate_changelog.py \
+              --base "${{ env.previous_version }}" \
+              --head HEAD
+          fi
+
       - name: Ensure repo status is clean
-        if: steps.check_release.outputs.already_released == 'false'
+        if: steps.check_release.outputs.release_complete == 'false' && steps.check_release.outputs.existing_release_tag == 'false'
         run: git status
 
       - name: Configure Git
-        if: steps.check_release.outputs.already_released == 'false'
+        if: steps.check_release.outputs.release_complete == 'false' && steps.check_release.outputs.existing_release_tag == 'false'
         run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
 
       - name: Run uv version bump
-        if: steps.check_release.outputs.already_released == 'false'
+        if: steps.check_release.outputs.release_complete == 'false' && steps.check_release.outputs.existing_release_tag == 'false'
         run: uv version --bump ${{ env.VERSION_NAME }} --frozen
 
       - name: Validate version metadata
-        if: steps.check_release.outputs.already_released == 'false'
+        if: steps.check_release.outputs.release_complete == 'false' && steps.check_release.outputs.existing_release_tag == 'false'
         run: |
           pixi run pre-commit run --files pyproject.toml || \
             pixi run pre-commit run --files pyproject.toml
 
-      - name: Commit version bump and create tag
-        if: steps.check_release.outputs.already_released == 'false'
-        run: |
-          git add pyproject.toml
-          git commit -m "Bump version to ${{ env.version_number }}"
-          git tag v${{ env.version_number }}
-
-      - name: Ensure tag creation
-        if: steps.check_release.outputs.already_released == 'false'
-        run: git tag | grep ${{ env.version_number }}
+      - name: Create candidate release tag
+        if: steps.check_release.outputs.release_complete == 'false' && steps.check_release.outputs.existing_release_tag == 'false'
+        run: git tag v${{ env.version_number }}
 
       - name: Install llamabot package
-        if: steps.check_release.outputs.already_released == 'false'
+        if: steps.check_release.outputs.release_complete == 'false' && steps.check_release.outputs.existing_release_tag == 'false'
         run: pixi run pip install llamabot[cli]
 
       - name: Write release notes
-        if: steps.check_release.outputs.already_released == 'false'
+        if: steps.check_release.outputs.release_complete == 'false' && steps.check_release.outputs.existing_release_tag == 'false'
         env:
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -158,7 +281,7 @@ jobs:
           llamabot git write-release-notes
 
       - name: Validate generated release notes
-        if: steps.check_release.outputs.already_released == 'false'
+        if: steps.check_release.outputs.release_complete == 'false' && steps.check_release.outputs.existing_release_tag == 'false'
         run: |
           set -euo pipefail
           RELEASE_NOTES="docs/releases/v${{ env.version_number }}.md"
@@ -169,33 +292,140 @@ jobs:
           pixi run pre-commit run --files "$RELEASE_NOTES" || \
             pixi run pre-commit run --files "$RELEASE_NOTES"
 
-      - name: Commit release notes
-        if: steps.check_release.outputs.already_released == 'false'
+      - name: Rotate changelog
+        if: steps.check_release.outputs.release_complete == 'false' && steps.check_release.outputs.existing_release_tag == 'false'
+        run: |
+          pixi run python scripts/update_changelog.py \
+            --version "${{ env.version_number }}" \
+            --date "${{ env.release_date }}" \
+            --previous-version "${{ env.previous_version }}"
+
+      - name: Validate changelog
+        if: steps.check_release.outputs.release_complete == 'false' && steps.check_release.outputs.existing_release_tag == 'false'
+        run: |
+          pixi run pre-commit run --files CHANGELOG.md || \
+            pixi run pre-commit run --files CHANGELOG.md
+
+      - name: Commit version, changelog, and release notes
+        if: steps.check_release.outputs.release_complete == 'false' && steps.check_release.outputs.existing_release_tag == 'false'
         run: |
           set -euo pipefail
           RELEASE_NOTES="docs/releases/v${{ env.version_number }}.md"
+          git add pyproject.toml CHANGELOG.md
           git add --force -- "$RELEASE_NOTES"
-          if git diff --cached --quiet -- "$RELEASE_NOTES"; then
-            echo "Release notes are unchanged; no release-notes commit is needed."
-          else
-            git commit -m "Add release notes for ${{ env.version_number }}"
-          fi
+          git commit -m "Prepare release ${{ env.version_number }}"
+
+      - name: Move release tag to prepare commit
+        if: steps.check_release.outputs.release_complete == 'false' && steps.check_release.outputs.existing_release_tag == 'false'
+        run: git tag -f v${{ env.version_number }}
+
+      - name: Ensure tag creation
+        if: steps.check_release.outputs.release_complete == 'false' && steps.check_release.outputs.existing_release_tag == 'false'
+        run: |
+          set -euo pipefail
+          test "$(git rev-list -n 1 "v${{ env.version_number }}")" = "$(git rev-parse HEAD)"
 
       - name: Build package
-        if: steps.check_release.outputs.already_released == 'false'
+        if: steps.check_release.outputs.release_complete == 'false'
         run: uv build
 
-      - name: Publish package (trusted publishing)
-        if: steps.check_release.outputs.already_released == 'false'
-        run: uv publish --trusted-publishing always
+      - name: Check package artifacts
+        id: package_state
+        if: steps.check_release.outputs.release_complete == 'false'
+        run: |
+          set -euo pipefail
+          package_url="https://pypi.org/pypi/${PACKAGE_NAME}/${version_number}/json"
+          missing_artifacts=()
+
+          if [[ "${{ steps.check_release.outputs.package_published }}" == true ]]; then
+            metadata_file=$(mktemp)
+            if curl --fail --silent --show-error --location "$package_url" > "$metadata_file"; then
+              while IFS= read -r artifact; do
+                if ! jq -e --arg artifact "$artifact" \
+                  'any(.urls[]; .filename == $artifact)' "$metadata_file" >/dev/null; then
+                  missing_artifacts+=("$artifact")
+                fi
+              done < <(find dist -maxdepth 1 -type f \( -name '*.whl' -o -name '*.tar.gz' \) -print0 | xargs -0 -n1 basename)
+            else
+              echo "Unable to read the existing PyPI package metadata." >&2
+              rm -f "$metadata_file"
+              exit 1
+            fi
+            rm -f "$metadata_file"
+          else
+            missing_artifacts=($(find dist -maxdepth 1 -type f \( -name '*.whl' -o -name '*.tar.gz' \) -print0 | xargs -0 -n1 basename))
+          fi
+
+          if ((${#missing_artifacts[@]})); then
+            echo "publish_needed=true" >> "$GITHUB_OUTPUT"
+            echo "missing_artifacts=${missing_artifacts[*]}" >> "$GITHUB_OUTPUT"
+            echo "Missing package artifacts: ${missing_artifacts[*]}"
+          else
+            echo "publish_needed=false" >> "$GITHUB_OUTPUT"
+            echo "missing_artifacts=" >> "$GITHUB_OUTPUT"
+            echo "All package artifacts are already published."
+          fi
 
       - name: Push changes with tags
-        if: steps.check_release.outputs.already_released == 'false'
+        if: steps.check_release.outputs.release_complete == 'false' && steps.check_release.outputs.existing_release_tag == 'false'
+        run: git push --atomic origin HEAD:dev "refs/tags/v${{ env.version_number }}"
+
+      - name: Publish package (trusted publishing)
+        if: steps.check_release.outputs.release_complete == 'false' && steps.package_state.outputs.publish_needed == 'true'
+        shell: bash {0}
+        env:
+          MISSING_ARTIFACTS: ${{ steps.package_state.outputs.missing_artifacts }}
         run: |
-          git push && git push --tags
+          set -euo pipefail
+          read -r -a missing_artifacts <<< "$MISSING_ARTIFACTS"
+          publish_paths=("${missing_artifacts[@]/#/dist/}")
+          published=false
+          for attempt in {1..3}; do
+            if uv publish --trusted-publishing always \
+              --check-url https://pypi.org/simple/ "${publish_paths[@]}"; then
+              published=true
+              break
+            fi
+            if [[ "$attempt" -lt 3 ]]; then
+              sleep 10
+            fi
+          done
+          if [[ "$published" != true ]]; then
+            echo "Package publication failed after 3 attempts." >&2
+            exit 1
+          fi
+
+      - name: Verify package publication
+        if: steps.check_release.outputs.release_complete == 'false' && steps.package_state.outputs.publish_needed == 'true'
+        shell: bash {0}
+        run: |
+          set -euo pipefail
+          package_url="https://pypi.org/pypi/${PACKAGE_NAME}/${version_number}/json"
+          verified=false
+          for attempt in {1..12}; do
+            if metadata=$(curl --fail --silent --show-error --location "$package_url"); then
+              complete=true
+              while IFS= read -r artifact; do
+                if ! jq -e --arg artifact "$artifact" \
+                  'any(.urls[]; .filename == $artifact)' <<< "$metadata" >/dev/null; then
+                  complete=false
+                  break
+                fi
+              done < <(find dist -maxdepth 1 -type f \( -name '*.whl' -o -name '*.tar.gz' \) -print0 | xargs -0 -n1 basename)
+              if [[ "$complete" == true ]]; then
+                verified=true
+                break
+              fi
+            fi
+            sleep 5
+          done
+          if [[ "$verified" != true ]]; then
+            echo "Published package was not visible on PyPI after 60 seconds." >&2
+            exit 1
+          fi
 
       - name: Create release in GitHub repo
-        if: steps.check_release.outputs.already_released == 'false'
+        if: steps.check_release.outputs.release_complete == 'false' && steps.check_release.outputs.release_exists == 'false'
         uses: ncipollo/release-action@v1
         with:
           bodyFile: "docs/releases/v${{ env.version_number }}.md"
@@ -203,5 +433,5 @@ jobs:
           tag: v${{ env.version_number }}
 
       - name: Ensure complete
-        if: steps.check_release.outputs.already_released == 'false'
+        if: steps.check_release.outputs.release_complete == 'false'
         run: echo "Auto-release complete!"

@@ -21,81 +21,225 @@ import pandas as pd
 from janitor.functions._conditional_join import _helpers
 from janitor.functions._conditional_join._aggregation_helpers import (
     _aggregation_inputs,
-    _empty_aggregation_result,
     _materialize_aggregation_result,
     _unmatched_aggregation_result,
 )
 
-_EQUI_BUILDING_BLOCKS_FUNCTION = janitor_rs.equi_join_building_blocks
-_EQUI_FUNCTION = janitor_rs.equi_join_indices
-_EQUI_FILTERED_FUNCTION = janitor_rs.equi_join_filtered_indices
-_EQUI_AGGREGATE_FUNCTION = janitor_rs.equi_join_aggregate
 
+def _sort_right_rows(key_codes, range_values, right_index):
+    """Order right rows by equality-key codes, then raw range values.
 
-def _build_equi_predicate(
-    left_keys: pd.Index,
-    right_keys: pd.Index,
-) -> tuple[np.ndarray, np.ndarray | None] | None:
-    """Build the left-to-right equi-key mapping.
-
-    get_indexer is used when the right keys are unique. When duplicate right
-    keys make get_indexer invalid, the right keys are factorized. In that
-    case, left_indexer contains dense right-key codes and right_codes maps
-    every physical right position back to its code.
+    Equality keys only need to be contiguous, so they sort on their codes.
+    Range values are already NumPy and orderable, so they sort as is. The
+    lexsort is stable, so the right labels join the sort keys only when
+    physical order is not already label order.
 
     Args:
-        left_keys: Equi-key values for the left rows.
-        right_keys: Equi-key values for the right rows in their current
-            physical layout.
+        key_codes: One integer code array per equality key, primary first.
+        range_values: Right range arrays in the selected predicate order.
+        right_index: Physical right labels for the eligible rows.
 
     Returns:
-        A pair of arrays for unique or duplicate right keys, or None when no
-        left key matches any right key. Unmatched left rows have -1 in
-        left_indexer.
+        Positions that sort the eligible right rows.
     """
-    try:
-        left_indexer = right_keys.get_indexer(left_keys)
-        return left_indexer, None
-    except pd.errors.InvalidIndexError:
-        right_codes, uniques = right_keys.factorize(sort=False)
-        left_indexer = uniques.get_indexer(left_keys)
-        return left_indexer, right_codes
+    sort_keys = [*key_codes, *range_values]
+    if not right_index.is_monotonic_increasing:
+        _array = _helpers._convert_array_to_numpy(array=right_index._values)
+        sort_keys.append(_array)
+    return np.lexsort(sort_keys[::-1])
 
 
-def _build_equi_keys(
-    df: pd.DataFrame,
-    right: pd.DataFrame,
-    left_index: pd.Index | slice,
-    right_index: pd.Index | slice,
-    equi_conditions: list[tuple[str, str, str]],
-) -> tuple[pd.Index, pd.Index]:
-    """Build aligned single- or multi-column equi keys.
+def _drop_unmatched_left(df, left_index, left_positions):
+    """Remove left rows whose equality key has no right match.
 
     Args:
-        df: Full left working dataframe.
-        right: Full right working dataframe.
-        left_index: Physical left positions that survive ordinary null
-            filtering.
-        right_index: Physical right positions that survive ordinary null
-            filtering and any right-side sort.
-        equi_conditions: Equi predicates as column/operator tuples.
+        df: Left dataframe in its current physical layout.
+        left_index: Compact physical left index, or ``slice(None)``.
+        left_positions: Per-left-row lookup result; ``-1`` marks no match.
 
     Returns:
-        A pair of aligned pandas indexes. Multiple equi columns are
-        represented as MultiIndex values.
+        ``None`` when nothing matches, else ``(left_index, left_positions)``
+        restricted to the matched left rows.
     """
-    l_cols = []
-    r_cols = []
-    for condition in equi_conditions:
-        l_cols.append(df.loc[left_index, condition.left]._values)
-        r_cols.append(right.loc[right_index, condition.right]._values)
-    if len(l_cols) > 1:
-        l_cols = pd.MultiIndex.from_arrays(l_cols)
-        r_cols = pd.MultiIndex.from_arrays(r_cols)
+    booleans = left_positions != -1
+    if not booleans.any():
+        return None
+    if not booleans.all():
+        left_positions = left_positions[booleans]
+        if isinstance(left_index, slice):
+            left_index = df.index
+        left_index = left_index[booleans]
+    return left_index, left_positions
+
+
+def _single_key_layout(df, right, left_index, right_index, condition, range_values):
+    """Order the right rows for one equality key.
+
+    Only the key is factorized. ``sort=False`` codes are assigned by hashing,
+    so object keys with mixed types never need comparing.
+
+    Args:
+        df: Left dataframe in its current physical layout.
+        right: Right dataframe in its current physical layout.
+        left_index: Compact physical left index, or ``slice(None)``.
+        right_index: Compact physical right index, or ``slice(None)``.
+        condition: The equality predicate.
+        range_values: Right range arrays, converted to NumPy.
+
+    Returns:
+        ``None`` when no left key matches, else
+        ``(left_index, order, starts, ends)``. ``order`` selects the prepared
+        right rows; ``starts``/``ends`` are ``None`` for unique right keys.
+    """
+    right_keys = right.loc[right_index, condition.right]._values
+    codes, uniques = pd.factorize(right_keys, sort=False)
+    left_keys = df.loc[left_index, condition.left]._values
+    left_codes = pd.Index(uniques).get_indexer(left_keys)
+    outcome = _drop_unmatched_left(df, left_index, left_codes)
+    if outcome is None:
+        return None
+    left_index, left_codes = outcome
+    if len(uniques) == len(codes):
+        # Unique right keys: sort=False codes are right positions, so the
+        # left codes select each left row's single right candidate.
+        return left_index, left_codes, None, None
+    _right_index = right.index if isinstance(right_index, slice) else right_index
+    order = _sort_right_rows([codes], range_values, _right_index)
+    counts = np.bincount(codes, minlength=len(uniques))
+    ends = counts.cumsum()
+    starts = ends - counts
+    return left_index, order, starts[left_codes], ends[left_codes]
+
+
+def _multi_key_layout(df, right, left_index, right_index, conditions, range_values):
+    """Order the right rows for several equality keys.
+
+    The MultiIndex holds only the equality keys; its level codes drive the
+    sort, and the range columns stay raw.
+
+    Args:
+        df: Left dataframe in its current physical layout.
+        right: Right dataframe in its current physical layout.
+        left_index: Compact physical left index, or ``slice(None)``.
+        right_index: Compact physical right index, or ``slice(None)``.
+        conditions: The equality predicates, in their original order.
+        range_values: Right range arrays, converted to NumPy.
+
+    Returns:
+        Same as :func:`_single_key_layout`.
+    """
+    right_keys = []
+    left_keys = []
+    for condition in conditions:
+        right_keys.append(right.loc[right_index, condition.right]._values)
+        left_keys.append(df.loc[left_index, condition.left]._values)
+    right_keys = pd.MultiIndex.from_arrays(right_keys)
+    left_keys = pd.MultiIndex.from_arrays(left_keys)
+    if right_keys.is_unique:
+        outcome = _drop_unmatched_left(
+            df, left_index, right_keys.get_indexer(left_keys)
+        )
+        if outcome is None:
+            return None
+        left_index, left_indexer = outcome
+        return left_index, left_indexer, None, None
+    _right_index = right.index if isinstance(right_index, slice) else right_index
+    order = _sort_right_rows(right_keys.codes, range_values, _right_index)
+    # A new key block starts wherever any sorted level code changes.
+    block_start = np.zeros(len(order), dtype=bool)
+    block_start[0] = True
+    for level_codes in right_keys.codes:
+        sorted_codes = level_codes[order]
+        block_start[1:] |= sorted_codes[1:] != sorted_codes[:-1]
+    starts = np.flatnonzero(block_start)
+    ends = np.append(starts[1:], len(order))
+    # One right row per block names that block's key; those keys are unique.
+    block_keys = right_keys.take(order[starts])
+    outcome = _drop_unmatched_left(df, left_index, block_keys.get_indexer(left_keys))
+    if outcome is None:
+        return None
+    left_index, left_blocks = outcome
+    return left_index, order, starts[left_blocks], ends[left_blocks]
+
+
+def _get_equi_indexer(
+    df,
+    right,
+    left_index,
+    right_index,
+    equi_conditions,
+    range_conditions,
+):
+    """Prepare the equality mapping and aligned range arrays.
+
+    The right rows are ordered by equality key, then by the selected range
+    columns, then by physical right label. Only the equality keys are
+    factorized: the range columns are converted to NumPy once and sorted as
+    raw values, so the same arrays feed both the sort and the Rust kernel.
+
+    Unique right equality keys select one right row per left row; this path
+    returns ``starts = ends = None``. Duplicate right equality keys use sorted
+    contiguous windows and return ``starts``/``ends`` for the surviving left
+    rows.
+
+    Args:
+        df: Left dataframe in its current physical layout.
+        right: Right dataframe in its current physical layout.
+        left_index: Compact physical left index, or ``slice(None)`` when all
+            left rows are eligible.
+        right_index: Compact physical right index, or ``slice(None)`` when all
+            right rows are eligible.
+        equi_conditions: Equality predicates, in their original condition
+            order.
+        range_conditions: At most two selected range predicates whose right
+            values should be aligned to the prepared right layout.
+
+    Returns:
+        ``None`` when no left equality key matches. Otherwise returns
+        ``(left_index, right_index, starts, ends, range_predicates,
+        right_index_is_ordered)``. In the unique path, ``right_index`` is
+        projected to the matched rows and ``starts``/``ends`` are ``None``.
+    """
+    range_values = []
+    for condition in range_conditions:
+        values = right.loc[right_index, condition.right]._values
+        range_values.append(_helpers._convert_array_to_numpy(array=values))
+    layout = _single_key_layout if len(equi_conditions) == 1 else _multi_key_layout
+    outcome = layout(
+        df,
+        right,
+        left_index,
+        right_index,
+        equi_conditions[0] if len(equi_conditions) == 1 else equi_conditions,
+        range_values,
+    )
+    if outcome is None:
+        return None
+    left_index, order, starts, ends = outcome
+    _right_index = right.index if isinstance(right_index, slice) else right_index
+    if (
+        isinstance(_right_index, pd.RangeIndex)
+        and _right_index.start == 0
+        and _right_index.step == 1
+    ):
+        # Labels equal positions, so order already holds the right labels.
+        right_index = pd.Index(order, copy=False)
     else:
-        l_cols = pd.Index(l_cols[0])
-        r_cols = pd.Index(r_cols[0])
-    return l_cols, r_cols
+        right_index = _right_index[order]
+    range_predicates = []
+    for condition, values in zip(range_conditions, range_values):
+        left_values = df.loc[left_index, condition.left]._values
+        left_values = _helpers._convert_array_to_numpy(array=left_values)
+        range_predicates.append((left_values, values[order], condition.op))
+    right_index_is_ordered = right_index.is_monotonic_increasing
+    return (
+        left_index,
+        right_index,
+        starts,
+        ends,
+        range_predicates,
+        right_index_is_ordered,
+    )
 
 
 def _preparatory_work(
@@ -106,10 +250,11 @@ def _preparatory_work(
     tuple[
         pd.Index | slice,
         pd.Index | slice,
-        np.ndarray,
+        np.ndarray | None,
         np.ndarray | None,
         list[tuple],
         list[tuple],
+        bool,
     ]
     | None
 ):
@@ -127,15 +272,18 @@ def _preparatory_work(
        columns are excluded because their null semantics are represented
        explicitly in their residual predicate tuples. The working dataframes
        remain full-length; the indexers carry the compact layout.
-    2. The first suitable range predicate sorts the right dataframe when
-       necessary. ``right_index`` records the resulting physical right-row
+    2. The right dataframe's working rows are ordered lexicographically by
+       equality keys, selected range keys, and their physical positions.
+       Consequently, the first range key is monotonic within each equality
+       group. ``right_index`` records the resulting physical right-row
        layout.
-    3. A second range predicate is retained only when its right values are
-       monotonic in the first predicate's physical layout. Otherwise it is
-       evaluated later as a residual predicate.
+    3. A second range predicate is prepared as a candidate in that layout.
+       Its usability relative to the first range predicate is decided by the
+       downstream join kernel.
     4. Equality keys are built after any right-side layout change. Unique
-       right keys use direct positions from ``get_indexer``; duplicate right
-       keys use dense factorization codes and a code-to-right-position array.
+       right keys use direct positions from ``get_indexer`` and project the
+       right layout to aligned rows; duplicate right keys use contiguous
+       windows from the sorted equality layout.
     5. Every remaining non-equality predicate is converted to a Rust residual
        tuple. Its right values are aligned to ``right_index`` so Rust can use
        one physical coordinate system for all predicates.
@@ -143,8 +291,8 @@ def _preparatory_work(
     The returned coordinates are physical positions, not public dataframe
     labels. Public labels are restored later by the caller or by the Rust
     aggregation materializer. ``right_index`` is always populated in a
-    successful return; when no range reorders the right side, it is the
-    current right dataframe index.
+    successful return; without range predicates, it is still the equality-
+    sorted physical right-row layout.
 
     Args:
         df: Left dataframe in its current physical row layout.
@@ -154,19 +302,20 @@ def _preparatory_work(
             predicate must be an equality predicate.
 
     Returns:
-        ``None`` when either side has no usable rows. A six-element tuple is
-        returned even when no equality key matches; in that case
-        ``left_indexer`` contains only ``-1`` sentinels so aggregation can
-        retain the prepared output domain as unmatched rows.
+        ``None`` when either side has no usable rows or when no left equality
+        key matches a right equality key. Otherwise, a seven-element tuple is
+        returned.
 
         * the physical left index shared by all prepared left arrays;
         * the physical right index shared by all prepared right arrays;
-        * ``left_indexer``, containing direct right positions for unique keys
-          or dense right-key codes for duplicate keys, with ``-1`` for
-          unmatched left rows;
-        * ``right_codes``, or ``None`` when right equality keys are unique;
-        * up to two aligned range predicate tuples; and
-        * residual predicate tuples for all remaining conditions.
+        * ``starts`` and ``ends``, containing right-row bounds for each
+          matching left equality key, or both ``None`` when right equality
+          keys are unique. In the unique case the right index and range
+          arrays are already projected to one-to-one matching rows;
+        * up to two aligned candidate range predicate tuples, represented as
+          ``(left_values, right_values, operator)`` arrays;
+        * residual predicate tuples for all remaining conditions; and
+        * whether the prepared right index is monotonic increasing.
     """
     left_columns_and_ops = [(condition.left, condition.op) for condition in conditions]
     left_index = _helpers._get_indexer_for_non_null_rows(
@@ -184,132 +333,56 @@ def _preparatory_work(
     )
     if right_index is None:
         return None
-    range_positions = []
-    le_lt_count = 0
-    ge_gt_count = 0
-    # Retain positions because duplicate range predicates need distinct anchor
-    # occurrences, and the chosen slots are removed from residuals below.
-    for position, condition in enumerate(conditions):
-        operator = condition.op
-        if operator in _helpers.less_than_join_types and not le_lt_count:
-            range_positions.append(position)
-            le_lt_count += 1
-        elif operator in _helpers.greater_than_join_types and not ge_gt_count:
-            range_positions.append(position)
-            ge_gt_count += 1
-        if len(range_positions) == 2:
-            break
-    if len(range_positions) < 2:
-        range_positions = []
-        # Record original slots as well as conditions; this distinguishes
-        # duplicate predicates when reconstructing the residual list.
-        for position, condition in enumerate(conditions):
-            if len(range_positions) == 2:
-                break
-            if condition.op in _helpers.less_than_join_types.union(
-                _helpers.greater_than_join_types
-            ):
-                range_positions.append(position)
-    range_maybe = [conditions[position] for position in range_positions]
-    selected_range_positions = set(range_positions)
-    # Exclude anchors by their original positions, including duplicate
-    # occurrences, and preserve the order of all remaining residuals.
-    rest = [
-        condition
+    equi_positions = [
+        position
         for position, condition in enumerate(conditions)
-        if position not in selected_range_positions
-        and condition.op != _helpers._JoinOperator.STRICTLY_EQUAL.value
+        if condition.op == _helpers._JoinOperator.STRICTLY_EQUAL.value
     ]
-    # Select at most two range predicates. A second range is retained only
-    # when its right values share the first range's physical permutation.
-    range_predicates = []
-    if range_maybe:
-        left_column, right_column, op = (
-            range_maybe[0].left,
-            range_maybe[0].right,
-            range_maybe[0].op,
-        )
-        right_, _ = _helpers._sort_if_not_monotonic(
-            series=right.loc[right_index, right_column]
-        )
-        left_array = _helpers._convert_array_to_numpy(
-            array=df.loc[left_index, left_column]._values
-        )
-        right_array = _helpers._convert_array_to_numpy(array=right_._values)
-        range_predicate = (
-            left_array,
-            right_array,
-            op,
-        )
-        range_predicates.append(range_predicate)
-        if len(range_maybe) > 1:
-            left_column, right_column, op = (
-                range_maybe[1].left,
-                range_maybe[1].right,
-                range_maybe[1].op,
-            )
-            right_ = right.loc[right_.index, right_column]
-            if right_.is_monotonic_increasing:
-                left_array = _helpers._convert_array_to_numpy(
-                    array=df.loc[left_index, left_column]._values
-                )
-                right_array = _helpers._convert_array_to_numpy(array=right_._values)
-                range_predicate = (
-                    left_array,
-                    right_array,
-                    op,
-                )
-                range_predicates.append(range_predicate)
-            else:
-                range_positions = range_positions[:1]
-                selected_range_positions = set(range_positions)
-                # Track the fallback anchor by position so a duplicate of the
-                # same condition can remain a residual when appropriate.
-                rest = [
-                    condition
-                    for position, condition in enumerate(conditions)
-                    if position not in selected_range_positions
-                    and condition.op != _helpers._JoinOperator.STRICTLY_EQUAL.value
-                ]
-        right_index = right_.index
-    left_keys, right_keys = _build_equi_keys(
+    equi_conditions = [
+        condition
+        for condition in conditions
+        if condition.op == _helpers._JoinOperator.STRICTLY_EQUAL.value
+    ]
+    range_positions = _helpers._get_range_positions_for_one_side(conditions=conditions)
+    range_conditions = [conditions[position] for position in range_positions]
+    outcome = _get_equi_indexer(
         df=df,
         right=right,
         left_index=left_index,
         right_index=right_index,
-        equi_conditions=[
-            condition
-            for condition in conditions
-            if condition.op == _helpers._JoinOperator.STRICTLY_EQUAL.value
-        ],
+        equi_conditions=equi_conditions,
+        range_conditions=range_conditions,
     )
-    equi_predicates = _build_equi_predicate(
-        left_keys=left_keys,
-        right_keys=right_keys,
-    )
-
-    if equi_predicates is None:
+    if outcome is None:
         return None
-
-    left_indexer, right_codes = equi_predicates
+    (
+        left_index,
+        right_index,
+        starts,
+        ends,
+        range_predicates,
+        right_index_is_ordered,
+    ) = outcome
 
     residual_predicates = []
-    for condition in rest:
+    excluded = set(equi_positions).union(range_positions)
+    for position, condition in enumerate(conditions):
+        if position in excluded:
+            continue
         residual_predicate = _helpers._build_residual_predicate(
-            left=df[condition.left],
-            right=right[condition.right],
+            left=df.loc[left_index, condition.left],
+            right=right.loc[right_index, condition.right],
             operation=condition.op,
-            left_index=left_index,
-            right_index=right_index,
         )
         residual_predicates.append(residual_predicate)
     return (
         left_index,
         right_index,
-        left_indexer,
-        right_codes,
+        starts,
+        ends,
         range_predicates,
         residual_predicates,
+        right_index_is_ordered,
     )
 
 
@@ -342,10 +415,9 @@ def _compute_equi_join(
         conditions: Join conditions as
             (left_column, right_column, operator) tuples.
         keep: Match-selection mode for materialized Rust paths.
-        return_building_blocks: For duplicate-right, pure-equi joins, return
-            Rust's building-block dictionary with left_index, right_index,
-            left_indexer, offsets, and positions. It has no effect on unique
-            or predicate-filtered paths.
+        return_building_blocks: For pure-equi joins, return the prepared
+            building-block dictionary with left_index, right_index, starts,
+            and ends. It has no effect on predicate-filtered paths.
 
     Returns:
         A physical-index dictionary for index callers or a materialized
@@ -367,60 +439,77 @@ def _compute_equi_join(
             return_matching_indices=return_matching_indices,
             return_building_blocks=return_building_blocks,
         )
+
     (
         left_index,
         right_index,
-        left_indexer,
-        right_codes,
+        starts,
+        ends,
         range_predicates,
         residual_predicates,
+        right_index_is_ordered,
     ) = outcome
 
+    if not range_predicates and not residual_predicates and return_building_blocks:
+        return {
+            "left_index": left_index,
+            "right_index": right_index,
+            "starts": starts,
+            "ends": ends,
+        }
     if isinstance(left_index, slice):
         left_index = df.index
     if isinstance(right_index, slice):
         right_index = right.index
-    left_index = _helpers._convert_array_to_numpy(array=left_index._values)
-    right_index = _helpers._convert_array_to_numpy(array=right_index._values)
-
-    # A unique right equi key already gives one direct right position per
-    # left row. There is no duplicate metadata for Rust to build here.
-    if right_codes is None and not range_predicates and not residual_predicates:
-        booleans = left_indexer != -1
-        if not booleans.all():
-            left_indexer = left_indexer[booleans]
-            left_index = left_index[booleans]
-        right_index = right_index[left_indexer]
-        result = {"left_index": left_index, "right_index": right_index}
-    elif (
-        right_codes is not None
-        and not range_predicates
-        and not residual_predicates
-        and return_building_blocks
-    ):
-        result = _EQUI_BUILDING_BLOCKS_FUNCTION(
-            left_index,
-            right_index,
-            left_indexer,
-            right_codes,
+    left_index = _helpers._convert_array_to_numpy(
+        array=left_index._values if hasattr(left_index, "_values") else left_index
+    )
+    right_index = _helpers._convert_array_to_numpy(
+        array=right_index._values if hasattr(right_index, "_values") else right_index
+    )
+    if not range_predicates and not residual_predicates and (starts is not None):
+        result = janitor_rs.equi_only_indices(
+            left_index=left_index,
+            right_index=right_index,
+            starts=starts,
+            ends=ends,
+            right_index_is_ordered=right_index_is_ordered,
+            keep=keep,
         )
-    elif right_codes is not None and not range_predicates and not residual_predicates:
-        result = _EQUI_FUNCTION(
-            left_index,
-            right_index,
-            left_indexer,
-            right_codes,
-            keep,
+    elif starts is None:
+        predicates = [*range_predicates, *residual_predicates]
+        result = janitor_rs.equi_uniq_residual_indices(
+            left_index=left_index,
+            right_index=right_index,
+            residual_predicates=predicates,
+        )
+    elif not range_predicates and residual_predicates:
+        result = janitor_rs.equi_ne_indices(
+            left_index=left_index,
+            right_index=right_index,
+            starts=starts,
+            ends=ends,
+            residual_predicates=residual_predicates,
+            keep=keep,
+        )
+    elif range_predicates and not residual_predicates:
+        result = janitor_rs.equi_range_indices(
+            left_index=left_index,
+            right_index=right_index,
+            starts=starts,
+            ends=ends,
+            range_predicates=range_predicates,
+            keep=keep,
         )
     else:
-        result = _EQUI_FILTERED_FUNCTION(
-            left_index,
-            right_index,
-            left_indexer,
-            right_codes,
-            range_predicates,
-            residual_predicates,
-            keep,
+        result = janitor_rs.equi_range_and_residual_indices(
+            left_index=left_index,
+            right_index=right_index,
+            starts=starts,
+            ends=ends,
+            range_predicates=range_predicates,
+            residual_predicates=residual_predicates,
+            keep=keep,
         )
     result = _helpers._empty_indices() if result is None else result
     return _helpers._materialize_or_return_indices(
@@ -468,13 +557,18 @@ def _aggregate(
 
     Returns:
         A dataframe using the shared conditional-join aggregation contract.
-        Eligible output rows are retained with identity values when no
-        candidate survives; only a missing eligible output domain is empty.
+        Output rows whose equality key matched are retained with identity
+        values when no range or residual candidate survives. The result is
+        empty when no equality key matches.
     """
 
     outcome = _preparatory_work(df, right, conditions)
     if outcome is None:
-        return _empty_aggregation_result(
+        # No equality key matches: return an empty result, consistent with
+        # get_join_indices, rather than every row (including null keys).
+        output_index = right.index if reverse else df.index
+        return _unmatched_aggregation_result(
+            output_index=output_index[:0],
             source=df if reverse else right,
             return_matched=return_matched,
             aggfunc=aggfunc,
@@ -482,10 +576,11 @@ def _aggregate(
     (
         left_index,
         right_index,
-        left_indexer,
-        right_codes,
+        starts,
+        ends,
         range_predicates,
         residual_predicates,
+        _right_index_is_ordered,
     ) = outcome
 
     if isinstance(left_index, slice):
@@ -494,24 +589,27 @@ def _aggregate(
         right_index = right.index
     left_positions = _helpers._convert_array_to_numpy(array=left_index._values)
     index_right = _helpers._convert_array_to_numpy(array=right_index._values)
-
     aggregation_source = df if reverse else right
     source_index = left_index if reverse else right_index
     output_index = right_index if reverse else left_index
-    result = _EQUI_AGGREGATE_FUNCTION(
-        left_positions,
-        index_right,
-        left_indexer,
-        right_codes,
-        range_predicates,
-        residual_predicates,
-        _aggregation_inputs(
+    if reverse and starts is None:
+        # Unique equality preparation aligns one right row with every left
+        # row; reverse aggregation emits one result per distinct right row.
+        output_index = right_index.unique()
+    result = janitor_rs.equi_aggregate(
+        left_index=left_positions,
+        right_index=index_right,
+        starts=starts,
+        ends=ends,
+        range_predicates=range_predicates,
+        residual_predicates=residual_predicates,
+        aggregations=_aggregation_inputs(
             source=aggregation_source,
             aggfunc=aggfunc,
             indexer=source_index,
         ),
-        return_matched,
-        reverse,
+        return_matched=return_matched,
+        reverse=reverse,
     )
     if result is None:
         return _unmatched_aggregation_result(

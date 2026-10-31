@@ -36,6 +36,7 @@ def select_columns(
 
     It accepts a string, shell-like glob strings `(*string*)`,
     regex, slice, array-like object, or a list of the previous options.
+    Use `slice(None)` to select all columns.
 
     Selection on a MultiIndex on a level, or multiple levels,
     is possible with a dictionary.
@@ -43,6 +44,21 @@ def select_columns(
     This method does not mutate the original DataFrame.
 
     Optional ability to invert selection of columns available as well.
+
+    An empty list, set, dict, array, Index, or Series selects nothing
+    (tuples are treated as labels). With `invert=True`, it selects everything.
+    `DropLabel([])` drops nothing and therefore selects everything unless
+    `invert=True` is also passed.
+
+    !!! abstract "Version Changed"
+
+        - 0.32.45
+            - Empty list-like selectors now select nothing; `DropLabel([])`
+              and `invert=True` follow the documented inverse semantics.
+            - Tuples retain their label semantics, and empty dictionaries
+              select nothing on MultiIndex axes.
+        - 0.32.3
+            - The deprecation of `select_columns` was reversed.
 
     !!!note
 
@@ -261,6 +277,7 @@ def select_columns(
         *args: Valid inputs include: an exact column name to look for,
             a shell-style glob string (e.g. `*_thing_*`),
             a regular expression,
+            `slice(None)` to select all columns,
             a callable,
             or variable arguments of all the aforementioned.
             A sequence of booleans is also acceptable.
@@ -289,6 +306,7 @@ def select_rows(
 
     It accepts a string, shell-like glob strings `(*string*)`,
     regex, slice, array-like object, or a list of the previous options.
+    Use `slice(None)` to select all rows.
 
     Selection on a MultiIndex on a level, or multiple levels,
     is possible with a dictionary.
@@ -297,8 +315,23 @@ def select_rows(
 
     Optional ability to invert selection of rows available as well.
 
+    An empty list, set, dict, array, Index, or Series selects nothing
+    (tuples are treated as labels). With `invert=True`, it selects everything.
+    `DropLabel([])` drops nothing and therefore selects everything unless
+    `invert=True` is also passed.
+
 
     !!! info "New in version 0.24.0"
+
+    !!! abstract "Version Changed"
+
+        - 0.32.45
+            - Empty list-like selectors now select nothing; `DropLabel([])`
+              and `invert=True` follow the documented inverse semantics.
+            - Tuples retain their label semantics, and empty dictionaries
+              select nothing on MultiIndex axes.
+        - 0.32.3
+            - The deprecation of `select_rows` was reversed.
 
     !!!note
 
@@ -329,6 +362,7 @@ def select_rows(
         *args: Valid inputs include: an exact index name to look for,
             a shell-style glob string (e.g. `*_thing_*`),
             a regular expression,
+            `slice(None)` to select all rows,
             a callable,
             or variable arguments of all the aforementioned.
             A sequence of booleans is also acceptable.
@@ -344,15 +378,12 @@ def select_rows(
     return _select(df, rows=list(args), invert=invert)
 
 
-@pf.register_dataframe_groupby_method
-@pf.register_dataframe_method
-@pf.register_series_groupby_method
-@pf.register_series_method
 @deprecated_alias(rows="index")
 @refactored_function(
     message=(
         "This function has been deprecated. "
-        "Kindly use `jn.select_columns` or `jn.select_rows` instead."
+        "Kindly use `jn.select_columns`/`jn.select_rows` or "
+        "`df.select_columns`/`df.select_rows` instead."
     )
 )
 def select(
@@ -363,7 +394,7 @@ def select(
     axis: str = "columns",
     invert: bool = False,
 ) -> pd.DataFrame | pd.Series | DataFrameGroupBy:
-    """Method-chainable selection of rows and/or columns.
+    """Functional selection of rows and/or columns.
 
     It accepts a string, shell-like glob strings `(*string*)`,
     regex, slice, array-like object, or a list of the previous options.
@@ -371,13 +402,18 @@ def select(
     Selection on a MultiIndex on a level, or multiple levels,
     is possible with a dictionary.
 
-    This method does not mutate the original DataFrame or Series.
+    This function does not mutate the original DataFrame or Series.
 
     If the pandas object is a Series, selection is possible only on the index.
 
     Selection can be inverted with the `DropLabel` class.
 
     Optional ability to invert selection of index/columns available as well.
+
+    An empty list, set, dict, array, Index, or Series selects nothing
+    (tuples are treated as labels). With `invert=True`, it selects everything.
+    `DropLabel([])` drops nothing and therefore selects everything unless
+    `invert=True` is also passed.
 
 
     !!! info "New in version 0.24.0"
@@ -389,13 +425,27 @@ def select(
         is with `.loc` or `.iloc` methods, as they are generally performant.
         `select` is primarily for convenience.
 
-    !!!note
+    !!!warning
 
-        This function has been deprecated.
-        Kindly use `jn.select_columns` or `jn.select_rows`
+        This function is deprecated and is no longer registered as a pandas
+        DataFrame, Series, or GroupBy method. Use
+        `jn.select_columns`/`jn.select_rows` or
+        `df.select_columns`/`df.select_rows` instead.
+
+        With pandas 3.1 or later, old calls such as
+        ``df.select(columns="a")``, ``df.select(index="x")``, and
+        ``df.select("a", axis="columns")`` invoke pandas' ``select`` API
+        and produce computed columns named ``columns``, ``index``, and
+        ``axis`` respectively. Update these calls rather than relying on
+        pandas to reject them.
 
     !!! abstract "Version Changed"
 
+        - 0.32.45
+            - Empty list-like selectors now select nothing; `DropLabel([])`
+              and `invert=True` follow the documented inverse semantics.
+            - Tuples retain their label semantics, and empty dictionaries
+              select nothing on MultiIndex axes.
         - 0.26.0
             - Added variable `args`, `invert` and `axis` parameters.
             - `rows` keyword deprecated in favour of `index`.
@@ -417,13 +467,13 @@ def select(
         cobra               1       2
         viper               4       5
         sidewinder          7       8
-        >>> df.select(index="cobra", columns="shield")
+        >>> select(df, index="cobra", columns="shield")
                shield
         cobra       2
 
         Labels can be dropped with the `DropLabel` class:
 
-        >>> df.select(index=DropLabel("cobra"))
+        >>> select(df, index=DropLabel("cobra"))
                     max_speed  shield
         viper               4       5
         sidewinder          7       8
@@ -713,6 +763,10 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
 
     Returns a slice object.
     """
+    # Preserve the canonical all-values selector for callers that pass it.
+    if arg.start is None and arg.stop is None and arg.step is None:
+        return arg
+
     index = getattr(df, axis)
     if not index.is_monotonic_increasing:
         if not index.is_unique:
@@ -783,6 +837,8 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
     """
 
     index = getattr(df, axis)
+    if not arg:
+        return np.array([], dtype=np.intp)
     if not isinstance(index, pd.MultiIndex):
         return _select_index(list(arg), df, axis)
     all_str = (isinstance(entry, str) for entry in arg)
@@ -833,6 +889,8 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
                 f"{len(arg)} instead of {len(index)}"
             )
         return np.asanyarray(arg)
+    if len(arg) == 0:
+        return np.array([], dtype=np.intp)
     try:
         if isinstance(arg, pd.Series):
             arr = arg.array
@@ -890,6 +948,9 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
 
         return arg
 
+    if not arg:
+        return np.array([], dtype=np.intp)
+
     # shortcut for single unique dtype of scalars
     checks = (is_scalar(entry) for entry in arg)
     if all(checks):
@@ -915,7 +976,7 @@ def _index_dispatch(arg, df, axis):  # noqa: F811
             exclude = exclude[0]
         exclude = _select_index(exclude, df, axis)
     len_exclude = len(exclude)
-    if len_exclude and not include:
+    if not include:
         index_arr = np.arange(getattr(df, axis).size)
         return np.delete(index_arr, exclude)
     if include and len_exclude:

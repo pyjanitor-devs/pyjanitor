@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import re
 import unicodedata
 import warnings
@@ -25,6 +26,8 @@ from pandas.api.types import (
     is_string_dtype,
     union_categoricals,
 )
+from pandas.core.groupby.generic import DataFrameGroupBy
+from pandas_flavor.register import CachedAccessor
 
 from janitor.errors import JanitorError
 from janitor.utils import (
@@ -33,8 +36,6 @@ from janitor.utils import (
     check_column,
     find_stack_level,
 )
-
-warnings.simplefilter("always", DeprecationWarning)
 
 
 def unionize_dataframe_categories(
@@ -154,7 +155,7 @@ def patterns(regex_pattern: Union[str, Pattern]) -> Pattern:
     """
     warnings.warn(
         "This function is deprecated. Kindly use `re.compile` instead.",
-        DeprecationWarning,
+        FutureWarning,
         stacklevel=find_stack_level(),
     )
     check("regular expression", regex_pattern, [str, Pattern])
@@ -840,3 +841,36 @@ def _is_str_or_cat(index):
     if isinstance(index.dtype, pd.CategoricalDtype):
         return is_string_dtype(index.categories)
     return is_string_dtype(index)
+
+
+def _copy_groupby(grp: DataFrameGroupBy) -> DataFrameGroupBy:
+    """
+    Shallow copy a groupby object, reusing its grouper.
+
+    `copy.copy` also copies instance state tied to earlier objects:
+    pandas' `cache_readonly` values (e.g. `_obj_with_exclusions`)
+    and pandas_flavor accessors cached on the instance.
+    Both would keep referring to old columns,
+    so they are dropped from the copy.
+
+    Accessors are found by their class-level `CachedAccessor`,
+    not by an `_obj` attribute on the value:
+    `getattr(frame, "_obj")` returns a column named `_obj`.
+    `CachedAccessor` is pandas_flavor's own, non-exported class;
+    the `<0.9` pin in pyproject.toml covers that import.
+    """
+    new = copy.copy(grp)
+    mro = type(grp).__mro__
+
+    def _is_accessor(key):
+        # first definition along the MRO wins, as in attribute lookup;
+        # cheaper than inspect.getattr_static
+        for base in mro:
+            if key in base.__dict__:
+                return isinstance(base.__dict__[key], CachedAccessor)
+        return False
+
+    stale = [key for key in vars(new) if key == "_cache" or _is_accessor(key)]
+    for key in stale:
+        del new.__dict__[key]
+    return new

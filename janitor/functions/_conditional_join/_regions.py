@@ -2,32 +2,36 @@
 
 The regions algorithm is selected for joins with at least two inequality
 predicates when ``join_algorithm="regions"``. PyJanitor owns null filtering,
-right-value sorting, and physical-position preservation. Rust then consumes
-two five-field primary anchors, aligns them by their physical positions, and
-performs the monotonic region sweep. Additional predicates remain residuals.
+right-value sorting, and physical-position preservation. Rust consumes either
+two primary range predicates or three-or-more range predicates, depending on
+the number of prepared range conditions. Additional non-range predicates are
+passed through the dual- or n-region residual path.
 
-The first anchor establishes the canonical compact layout. Its left and right
+The first range establishes the canonical compact layout. Its left and right
 physical position arrays are also used to align aggregation inputs, so region
-coordinates never index an unrelated dataframe layout. The Rust index kernels
-return fully materialized pairs; unlike the ordinary range kernels, they do
-not expose ``starts``/``ends`` building blocks.
+coordinates never index an unrelated dataframe layout. Later right ranges are
+aligned to that layout before Rust sees them. The Rust index kernels return
+fully materialized pairs; unlike the ordinary range kernels, they do not
+expose ``starts``/``ends`` building blocks.
 
 Preparation sequence:
 
 1. Filter rows that are null for ordinary predicates, retaining their original
    physical row positions.
-2. Select two inequality predicates as region anchors, preferring one
-   less-than-family and one greater-than-family predicate when available.
-3. Sort each anchor's right values while carrying its physical positions.
-4. Let Rust align the independently prepared anchors by their unique physical
-   positions and construct the region labels.
-5. Keep every remaining predicate as a residual evaluated only after both
-   region anchors pass.
+2. Collect the inequality predicates in their prepared order.
+3. Sort every right range column in the direction required by its operator,
+   carrying its physical positions.
+4. Keep the first range's right order as the global layout. For every later
+   range, build an aligner where ``aligner[global_position]`` identifies the
+   source position in that range's sorted right values.
+5. Send exactly two ranges to the dual-region kernel. Send three-or-more
+   ranges to the n-region kernel, which checks all range paths together.
+6. Keep non-range predicates as residuals for the dual- or n-region path.
 
-The aggregation path uses the same preparation. It adds output maps to the
-first anchor, selects forward or reverse Rust kernels, and passes aggregation
-arrays in the corresponding aligned source layout. It does not use range
-``starts``/``ends`` building blocks or a right-ordering flag.
+The aggregation path uses the same preparation and selects the matching
+dual-region or n-region Rust kernel. Aggregation arrays are passed in the
+corresponding aligned source layout. It does not use range ``starts``/``ends``
+building blocks or a right-ordering flag.
 """
 
 from __future__ import annotations
@@ -49,8 +53,17 @@ def _preparatory_work(
     df: pd.DataFrame,
     right: pd.DataFrame,
     conditions: list[tuple[str, str, str]],
-) -> tuple[pd.Index, pd.Index, list[tuple], list[tuple]] | None:
-    """Prepare the two region anchors and residual predicates.
+) -> (
+    tuple[
+        pd.Index,
+        pd.Index,
+        list[np.ndarray],
+        list[tuple],
+        list[tuple],
+    ]
+    | None
+):
+    """Prepare range predicates, right aligners, and residual predicates.
 
     Args:
         df: Reset-index left dataframe.
@@ -58,17 +71,18 @@ def _preparatory_work(
         conditions: Complete conditional-join predicate list.
 
     Returns:
-        ``(left_index, right_index, anchor_predicates,
-        residual_predicates)``. The anchor list always contains the two
-        region predicates; later predicates are residuals aligned to the
-        first anchor. Returns ``None`` when either side is empty or null
-        filtering leaves no usable rows.
+        ``(left_index, right_index, alignments, range_predicates,
+        residual_predicates)``. ``range_predicates`` contains every
+        inequality predicate in input order. ``alignments`` has one entry for
+        every range after the first, so its length is
+        ``len(range_predicates) - 1``. Returns ``None`` when either side is
+        empty or null filtering leaves no usable rows.
 
         The returned index objects identify physical rows in the reset-index
-        working dataframes. They are not sorted offsets. The first anchor's
-        right values are sorted together with its physical positions; the
-        second anchor is independently sorted and then reindexed to the first
-        anchor's physical layouts.
+        working dataframes. They are not sorted offsets. The first range's
+        right values establish the global right layout. Each later range is
+        independently sorted and its aligner maps a global position to the
+        corresponding position in that sorted array.
 
     Raises:
         ValueError: If fewer than two inequality predicates are available.
@@ -92,94 +106,51 @@ def _preparatory_work(
     if right_index is None:
         return None
 
-    # grab possible range join combo
-    range_positions = []
-    le_lt_count = 0
-    ge_gt_count = 0
+    range_predicates = []
+    alignments = []
+    first_range_condition = False
+    for condition in conditions:
+        if condition.op not in _helpers.less_than_join_types.union(
+            _helpers.greater_than_join_types
+        ):
+            continue
+        left_column = df.loc[left_index, condition.left]
+        right_column = right.loc[right_index, condition.right]
+        if condition.op in _helpers.greater_than_join_types:
+            ascending = False
+        else:
+            ascending = True
+        right_column, _ = _helpers._sort_if_not_monotonic(
+            series=right_column, ascending=ascending
+        )
+        if not first_range_condition:
+            first_range_condition = True
+            right_index = right_column.index
+        else:
+            _align = right_column.index.get_indexer(right_index)
+            alignments.append(_align)
+        range_predicates.append(
+            (
+                _helpers._convert_array_to_numpy(array=left_column._values),
+                _helpers._convert_array_to_numpy(array=right_column._values),
+                condition.op,
+            )
+        )
 
-    # Store condition positions along with the selected anchors. Positions
-    # distinguish duplicate predicates and let residual construction exclude
-    # exactly the selected occurrences later.
-    for position, condition in enumerate(conditions):
-        if le_lt_count and ge_gt_count:
-            break
-        if (condition.op in _helpers.less_than_join_types) and not le_lt_count:
-            range_positions.append(position)
-            le_lt_count += 1
-        elif (condition.op in _helpers.greater_than_join_types) and not ge_gt_count:
-            range_positions.append(position)
-            ge_gt_count += 1
-
-    if (le_lt_count + ge_gt_count) < 2:
-        range_positions = []
-        # The fallback still needs original positions so duplicate predicates
-        # are selected and removed by occurrence, without reordering anything.
-        for position, condition in enumerate(conditions):
-            if len(range_positions) == 2:
-                break
-            if condition.op in _helpers.less_than_join_types.union(
-                _helpers.greater_than_join_types
-            ):
-                range_positions.append(position)
-
-    first_anchor, second_anchor = (conditions[position] for position in range_positions)
-    left_column, right_column, op = (
-        first_anchor.left,
-        first_anchor.right,
-        first_anchor.op,
-    )
-    left_column = df.loc[left_index, left_column]
-    right_column = right.loc[right_index, right_column]
-    right_column, right_index_is_ordered = _helpers._sort_if_not_monotonic(
-        series=right_column
-    )
-    if not right_index_is_ordered:
-        right_index = right_column.index
-    first_anchor = (
-        _helpers._convert_array_to_numpy(array=left_column._values),
-        _helpers._convert_array_to_numpy(array=left_column.index._values),
-        _helpers._convert_array_to_numpy(array=right_column._values),
-        _helpers._convert_array_to_numpy(array=right_column.index._values),
-        op,
-    )
-    second_left_column, second_right_column, second_op = (
-        second_anchor.left,
-        second_anchor.right,
-        second_anchor.op,
-    )
-    second_left_column = df.loc[left_index, second_left_column]
-    second_right_column = right.loc[right_index, second_right_column]
-    second_right_column, _ = _helpers._sort_if_not_monotonic(series=second_right_column)
-    second_anchor = (
-        _helpers._convert_array_to_numpy(array=second_left_column._values),
-        _helpers._convert_array_to_numpy(array=second_left_column.index._values),
-        _helpers._convert_array_to_numpy(array=second_right_column._values),
-        _helpers._convert_array_to_numpy(array=second_right_column.index._values),
-        second_op,
-    )
-
-    anchor_predicates = [first_anchor, second_anchor]
-    primary_positions = set(range_positions)
-    # Filter by original condition position: duplicate anchor occurrences have
-    # already been handled by the regions kernel and must not run as residuals.
-    rest = [
-        condition
-        for position, condition in enumerate(conditions)
-        if position not in primary_positions
-    ]
     residual_predicates = []
-
-    for condition in rest:
+    for condition in conditions:
+        if condition.op in _helpers.less_than_join_types.union(
+            _helpers.greater_than_join_types
+        ):
+            continue
         residual_predicate = _helpers._build_residual_predicate(
             left=df.loc[left_index, condition.left],
             right=right.loc[right_index, condition.right],
             operation=condition.op,
-            left_index=left_index,
-            right_index=right_index,
         )
         residual_predicates.append(residual_predicate)
 
-    return left_index, right_index, anchor_predicates, residual_predicates
+    return left_index, right_index, alignments, range_predicates, residual_predicates
 
 
 def _compute_regions_join(
@@ -207,6 +178,8 @@ def _compute_regions_join(
     Args:
         df: Reset-index left dataframe.
         right: Reset-index right dataframe.
+        conditions: Complete conditional-join predicate list.
+        keep: Match-selection policy passed to Rust.
         how: Requested join shape.
         df_columns: Left columns to retain.
         right_columns: Right columns to retain.
@@ -232,16 +205,72 @@ def _compute_regions_join(
             return_building_blocks=return_building_blocks,
         )
 
-    *_, anchor_predicates, residual_predicates = outcome
-    predicates = [*anchor_predicates, *residual_predicates]
-    function = (
-        janitor_rs.region_indices
-        if not residual_predicates
-        else janitor_rs.region_indices_extended
-    )
-    result = function(predicates=predicates, keep=keep)
+    left_index, right_index, alignments, range_predicates, residual_predicates = outcome
+
+    if isinstance(left_index, slice):
+        left_index = df.index
+    if isinstance(right_index, slice):
+        right_index = right.index
+
+    if (len(range_predicates) == 2) and not residual_predicates:
+        first_predicate, second_predicate = range_predicates
+
+        result = janitor_rs.dual_regions_indices(
+            left_index=_helpers._convert_array_to_numpy(array=left_index._values),
+            right_index=_helpers._convert_array_to_numpy(array=right_index._values),
+            first_predicate=first_predicate,
+            second_predicate=second_predicate,
+            aligner=_helpers._convert_array_to_numpy(array=alignments[0]),
+            keep=keep,
+        )
+    elif len(range_predicates) == 2:
+        first_predicate, second_predicate = range_predicates
+
+        result = janitor_rs.dual_regions_and_residual_indices(
+            left_index=_helpers._convert_array_to_numpy(array=left_index._values),
+            right_index=_helpers._convert_array_to_numpy(array=right_index._values),
+            first_predicate=first_predicate,
+            second_predicate=second_predicate,
+            aligner=_helpers._convert_array_to_numpy(array=alignments[0]),
+            residual_predicates=residual_predicates,
+            keep=keep,
+        )
+    elif (len(range_predicates) > 2) and not residual_predicates:
+        # The first range defines the global right layout. Every later range
+        # is paired with the aligner produced for that same range, so keep
+        # these two lists parallel when crossing the Rust boundary.
+        first_predicate = range_predicates[0]
+        remaining_predicates = range_predicates[1:]
+        aligner_arrays = [
+            _helpers._convert_array_to_numpy(array=aligner) for aligner in alignments
+        ]
+        result = janitor_rs.n_region_indices(
+            left_index=_helpers._convert_array_to_numpy(array=left_index._values),
+            right_index=_helpers._convert_array_to_numpy(array=right_index._values),
+            first_predicate=first_predicate,
+            range_predicates=remaining_predicates,
+            aligners=aligner_arrays,
+            keep=keep,
+        )
+    else:
+        first_predicate = range_predicates[0]
+        remaining_predicates = range_predicates[1:]
+        aligner_arrays = [
+            _helpers._convert_array_to_numpy(array=aligner) for aligner in alignments
+        ]
+        result = janitor_rs.n_region_and_residual_indices(
+            left_index=_helpers._convert_array_to_numpy(array=left_index._values),
+            right_index=_helpers._convert_array_to_numpy(array=right_index._values),
+            first_predicate=first_predicate,
+            range_predicates=remaining_predicates,
+            aligners=aligner_arrays,
+            residual_predicates=residual_predicates,
+            keep=keep,
+        )
+
     if result is None:
         result = _helpers._empty_indices()
+
     return _helpers._materialize_or_return_indices(
         result=result,
         df=df,
@@ -254,27 +283,6 @@ def _compute_regions_join(
         return_matching_indices=return_matching_indices,
         return_building_blocks=return_building_blocks,
     )
-
-
-def _aggregation_predicates(predicates: list[tuple]) -> list[tuple]:
-    """Attach output maps required by the region aggregation ABI.
-
-    The index kernels use five-field anchors. Aggregation additionally needs
-    the output labels for the compact first-anchor layout: forward results are
-    labeled by first-anchor left positions and reverse results by right
-    positions. These maps label outputs only; Rust still uses its internal
-    compact-to-source mappings for reading aggregation values.
-
-    The first four fields remain the normal region anchor fields. The
-    aggregation form inserts a boolean extension marker, then the left and
-    right output maps, and finally the operator. Residual tuples are preserved
-    unchanged after the augmented first anchor. The maps are copied from the
-    first anchor because that anchor defines the canonical output layout.
-    """
-    first = predicates[0]
-    left_output = np.asarray(first[1], dtype=np.int64)
-    right_output = np.asarray(first[3], dtype=np.int64)
-    return [(*first[:4], True, left_output, right_output, first[4]), *predicates[1:]]
 
 
 def _aggregate(
@@ -322,12 +330,17 @@ def _aggregate(
             aggfunc=aggfunc,
             return_matched=return_matched,
         )
-    left_index, right_index, anchor_predicates, residual_predicates = outcome
+    (
+        left_index,
+        right_index,
+        alignments,
+        anchor_predicates,
+        residual_predicates,
+    ) = outcome
     if isinstance(left_index, slice):
         left_index = df.index
     if isinstance(right_index, slice):
         right_index = right.index
-    predicates = _aggregation_predicates([*anchor_predicates, *residual_predicates])
     source_index = left_index if reverse else right_index
     output_index = right_index if reverse else left_index
     aggregation_inputs = _aggregation_inputs(
@@ -335,18 +348,80 @@ def _aggregate(
         aggfunc=aggfunc,
         indexer=source_index,
     )
-    extended = len(predicates) > 2
-    function = {
-        (False, False): janitor_rs.region_aggregate,
-        (True, False): janitor_rs.region_aggregate_reverse,
-        (False, True): janitor_rs.region_extended_aggregate,
-        (True, True): janitor_rs.region_extended_aggregate_reverse,
-    }[(reverse, extended)]
-    result = function(
-        predicates=predicates,
-        aggregations=aggregation_inputs,
-        return_matched=return_matched,
-    )
+    left_index_array = _helpers._convert_array_to_numpy(array=left_index._values)
+    right_index_array = _helpers._convert_array_to_numpy(array=right_index._values)
+    first_predicate = anchor_predicates[0]
+
+    if len(anchor_predicates) == 2:
+        second_predicate = anchor_predicates[1]
+        aligner = _helpers._convert_array_to_numpy(array=alignments[0])
+        if residual_predicates:
+            function = (
+                janitor_rs.dual_regions_and_residual_aggregate_reverse
+                if reverse
+                else janitor_rs.dual_regions_and_residual_aggregate
+            )
+            result = function(
+                left_index=left_index_array,
+                right_index=right_index_array,
+                first_predicate=first_predicate,
+                second_predicate=second_predicate,
+                aligner=aligner,
+                residual_predicates=residual_predicates,
+                aggregations=aggregation_inputs,
+                return_matched=return_matched,
+            )
+        else:
+            function = (
+                janitor_rs.dual_regions_aggregate_reverse
+                if reverse
+                else janitor_rs.dual_regions_aggregate
+            )
+            result = function(
+                left_index=left_index_array,
+                right_index=right_index_array,
+                first_predicate=first_predicate,
+                second_predicate=second_predicate,
+                aligner=aligner,
+                aggregations=aggregation_inputs,
+                return_matched=return_matched,
+            )
+    else:
+        remaining_predicates = anchor_predicates[1:]
+        aligner_arrays = [
+            _helpers._convert_array_to_numpy(array=aligner) for aligner in alignments
+        ]
+        if residual_predicates:
+            function = (
+                janitor_rs.n_region_and_residual_aggregate_reverse
+                if reverse
+                else janitor_rs.n_region_and_residual_aggregate
+            )
+            result = function(
+                left_index=left_index_array,
+                right_index=right_index_array,
+                first_predicate=first_predicate,
+                range_predicates=remaining_predicates,
+                aligners=aligner_arrays,
+                residual_predicates=residual_predicates,
+                aggregations=aggregation_inputs,
+                return_matched=return_matched,
+            )
+        else:
+            function = (
+                janitor_rs.n_region_aggregate_reverse
+                if reverse
+                else janitor_rs.n_region_aggregate
+            )
+            result = function(
+                left_index=left_index_array,
+                right_index=right_index_array,
+                first_predicate=first_predicate,
+                range_predicates=remaining_predicates,
+                aligners=aligner_arrays,
+                aggregations=aggregation_inputs,
+                return_matched=return_matched,
+            )
     if result is None:
         return _unmatched_aggregation_result(
             output_index=output_index,

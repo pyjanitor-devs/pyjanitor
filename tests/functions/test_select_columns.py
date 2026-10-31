@@ -8,7 +8,7 @@ import pytest
 from pandas.api.types import is_numeric_dtype
 from pandas.testing import assert_frame_equal
 
-from janitor.functions.select import DropLabel
+from janitor.functions.select import DropLabel, _select_index, select
 from janitor.functions.utils import patterns
 
 
@@ -60,7 +60,7 @@ def test_select_column_names_droplabel_mix():
 
     df = pd.DataFrame(data)
     selectors = [pd.api.types.is_numeric_dtype, DropLabel(["year", "rowid"])]
-    actual = df.select(selectors)
+    actual = df.select_columns(selectors)
     expected = df.select_dtypes("number").drop(columns=["year", "rowid"])
     assert_frame_equal(actual, expected)
 
@@ -249,7 +249,7 @@ def test_patterns_warning(df_strings):
     """
     Check that warning is raised if `janitor.patterns` is used.
     """
-    with pytest.warns(DeprecationWarning):
+    with pytest.warns(FutureWarning):
         assert_frame_equal(
             df_strings.select_columns(patterns(r"\d$")),
             df_strings.filter(regex=r"\d$"),
@@ -284,6 +284,28 @@ def test_slice_unique():
         match="Non-unique Index labels should be monotonic increasing.",
     ):
         not_unique.select_columns(slice("code", "code2"))
+
+
+def test_slice_none_is_returned_unchanged(df_strings):
+    """An unbounded slice is passed through without conversion."""
+    selector = slice(None)
+
+    assert _select_index(selector, df_strings, "columns") is selector
+
+
+def test_select_columns_slice_none_selects_all_duplicate_columns():
+    """An unbounded slice selects all columns without label validation."""
+    dataframe = pd.DataFrame([[1, 2, 3]], columns=["b", "a", "b"])
+
+    assert_frame_equal(dataframe.select_columns(slice(None)), dataframe)
+
+
+def test_select_rows_slice_none_selects_unsorted_datetime_index():
+    """An unbounded slice selects rows without sorting validation."""
+    index = pd.to_datetime(["2020-01-02", "2020-01-01"])
+    dataframe = pd.DataFrame({"value": [1, 2]}, index=index)
+
+    assert_frame_equal(dataframe.select_rows(slice(None)), dataframe)
 
 
 def test_unsorted_dates_slice(df_dates):
@@ -404,7 +426,7 @@ def test_dict(multiindex):
     """Test output on a dict"""
     mapp = {"first": ["bar", "qux"], "second": "two"}
     expected = multiindex.select_columns(mapp)
-    actual = multiindex.loc(axis=1)[["bar", "qux"], "two"]
+    actual = multiindex.loc(axis=1)[["bar", "qux"], ["two"]]
     assert_frame_equal(expected, actual)
 
 
@@ -412,7 +434,7 @@ def test_dict_callable(multiindex):
     """Test output on a dict"""
     mapp = {"first": ["bar", "qux"], "second": lambda df: df == "two"}
     expected = multiindex.select_columns(mapp)
-    actual = multiindex.loc(axis=1)[["bar", "qux"], "two"]
+    actual = multiindex.loc(axis=1)[["bar", "qux"], ["two"]]
     assert_frame_equal(expected, actual)
 
 
@@ -420,7 +442,7 @@ def test_dict_regex(multiindex):
     """Test output on a dict"""
     mapp = {"first": ["bar", "qux"], "second": re.compile("tw.")}
     expected = multiindex.select_columns(mapp)
-    actual = multiindex.loc(axis=1)[["bar", "qux"], "two"]
+    actual = multiindex.loc(axis=1)[["bar", "qux"], ["two"]]
     assert_frame_equal(expected, actual)
 
 
@@ -474,7 +496,7 @@ def test_select_groupby(dataframe):
 def test_select_groupby_args(dataframe):
     """Test output on a grouped object"""
     expected = dataframe.select_dtypes("number").groupby(dataframe["a"]).sum()
-    actual = dataframe.groupby("a").select(is_numeric_dtype).sum()
+    actual = select(dataframe.groupby("a"), is_numeric_dtype).sum()
     assert_frame_equal(expected, actual)
 
 
@@ -482,7 +504,7 @@ def test_select_groupby_args(dataframe):
 def test_select_groupby_columns(dataframe):
     """Test output on a grouped object"""
     expected = dataframe.select_dtypes("number").groupby(dataframe["a"]).sum()
-    actual = dataframe.groupby("a").select(columns=is_numeric_dtype).sum()
+    actual = select(dataframe.groupby("a"), columns=is_numeric_dtype).sum()
     assert_frame_equal(expected, actual)
 
 

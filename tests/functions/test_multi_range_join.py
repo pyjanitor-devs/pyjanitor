@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 from janitor.functions._conditional_join._helpers import _normalize_conditions
-from janitor.functions._conditional_join._multi_range_join import (
+from janitor.functions._conditional_join._range_join import (
     _compute_multi_range_join,
 )
 
@@ -178,7 +178,13 @@ def test_dual_range_aggregation_rechecks_integer_sum_and_prod(reverse):
     conditions = [("start", "end", "<="), ("end", "start", ">=")]
     aggregation = [("value", "sum"), ("value", "prod")]
 
-    actual = left.join_agg(right, *conditions, aggfunc=aggregation, reverse=reverse)
+    actual = left.join_agg(
+        right,
+        *conditions,
+        aggfunc=aggregation,
+        reverse=reverse,
+        return_matched=True,
+    )
 
     if reverse:
         expected = pd.DataFrame(

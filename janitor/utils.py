@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib
+import inspect
 import os
 import socket
 import sys
@@ -206,8 +207,14 @@ def deprecated_kwargs(
         "The keyword argument '{argument}' of '{func_name}' is deprecated."
     ),
     error: bool = True,
+    category: type[Warning] = FutureWarning,
+    stacklevel: int | None = None,
 ) -> Callable:
     """Used as a decorator when deprecating function's keyword arguments.
+
+    An explicitly supplied value equal to the decorated function's default is
+    not treated as use of the deprecated behavior. This keeps deprecation
+    warnings precise for callers that pass defaults explicitly.
 
     Examples:
 
@@ -222,10 +229,13 @@ def deprecated_kwargs(
 
     Args:
         *arguments: The list of deprecated keyword arguments.
-        message: The message of `ValueError` or `DeprecationWarning`.
+        message: The message of `ValueError` or the selected warning category.
             It should be a string or a string template. If a string template
             defaults input `func_name` and `argument`.
-        error: If True, raises `ValueError` else returns `DeprecationWarning`.
+        error: If True, raises `ValueError`; otherwise emits a warning.
+        category: Warning category used when ``error`` is False.
+        stacklevel: Stack level passed to :func:`warnings.warn`. If `None`,
+            the caller's stack level is determined by `find_stack_level()`.
 
     Raises:
         ValueError: If one of `arguments` is in the decorated function's
@@ -241,10 +251,22 @@ def deprecated_kwargs(
     """
 
     def decorator(func):
+        signature = inspect.signature(func)
+
         @wraps(func)
         def wrapper(*args, **kwargs):
             for argument in arguments:
                 if argument in kwargs:
+                    parameter = signature.parameters.get(argument)
+                    if parameter is not None and (
+                        parameter.default is not inspect.Parameter.empty
+                    ):
+                        try:
+                            is_default = kwargs[argument] == parameter.default
+                        except (TypeError, ValueError):
+                            is_default = False
+                        if isinstance(is_default, (bool, np.bool_)) and is_default:
+                            continue
                     msg = message.format(
                         func_name=func.__name__,
                         argument=argument,
@@ -252,7 +274,10 @@ def deprecated_kwargs(
                     if error:
                         raise ValueError(msg)
                     else:
-                        warn(msg, DeprecationWarning)
+                        warning_stacklevel = (
+                            find_stack_level() if stacklevel is None else stacklevel
+                        )
+                        warn(msg, category, stacklevel=warning_stacklevel)
 
             return func(*args, **kwargs)
 
@@ -356,7 +381,8 @@ def rename_kwargs(func_name: str, kwargs: Dict, aliases: Dict):
                 )
             warn(
                 f"{old_alias} is deprecated; use {new_alias}",
-                DeprecationWarning,
+                FutureWarning,
+                stacklevel=find_stack_level(),
             )
             kwargs[new_alias] = kwargs.pop(old_alias)
 
@@ -523,9 +549,12 @@ def find_stack_level() -> int:
 
     import inspect
 
+    import pandas_flavor
+
     import janitor as jn
 
     pkg_dir = os.path.abspath(os.path.dirname(jn.__file__))
+    flavor_dir = os.path.abspath(os.path.dirname(pandas_flavor.__file__))
     test_dir = os.path.join(os.path.dirname(pkg_dir), "tests")
 
     # https://stackoverflow.com/questions/17407119/python-inspect-stack-is-slow
@@ -533,7 +562,9 @@ def find_stack_level() -> int:
     n = 0
     while frame:
         fname = inspect.getfile(frame)
-        if fname.startswith(pkg_dir) and not fname.startswith(test_dir):
+        if (
+            fname.startswith(pkg_dir) or fname.startswith(flavor_dir)
+        ) and not fname.startswith(test_dir):
             frame = frame.f_back
             n += 1
         else:

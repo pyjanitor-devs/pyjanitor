@@ -854,6 +854,19 @@ that requested flag rather than from the result under test.
 metadata, and strengthen the default-behavior regression test with an exact
 expected frame.
 
+### [2026-10-31] Frankfurter v2 uses base and quotes
+
+**Context**: Re-enabling `convert_currency` against Frankfurter.
+**Learning**: `api.frankfurter.app` redirects to `api.frankfurter.dev`.
+On v2, `base` and `quotes` select currencies, while `from` and `to` are
+date bounds. Official ECB reference rates are served by
+`/v2/providers/ecb/rates` as a list of `{date, base, quote, rate}`
+objects. Dates before 1999-01-04 return an empty list with HTTP 200.
+A weekend or TARGET holiday returns the previous published observation.
+**Recommendation**: Keep `FRANKFURTER_API_URL` on the ECB provider route,
+parse the v2 list, and honor `JANITOR_CURRENCY_API_URL` as a full URL
+override. Send currency codes as `base` and `quotes`.
+
 ### [2026-10-30] adorn row identifier is column position 0
 
 **Context**: Issue #1676. `adorn_pct_formatting`, `adorn_ns`, and

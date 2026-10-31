@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [ENH] Re-enable convert_currency using keyless ECB reference rates from Frankfurter (configurable base URL); honour from_currency and name the new column correctly; api_key is deprecated and ignored. Based on work by @cahthuranag (#1836). - Issue #829
+
 ## [v0.32.66] - 2026-10-30
 
 -   [BUG] Leave a numeric first column unchanged in `adorn_pct_formatting`, `adorn_ns`, and `adorn_rounding`. Column position 0 is the row identifier, matching `adorn_totals` and `adorn_percentages`. Based on work by @dylanpulver (#1677) and @SumanGouda (#1696). - Issue #1676

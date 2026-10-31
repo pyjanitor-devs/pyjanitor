@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [ENH] Optimize pivot_longer with .value columns for mixed NumPy and pandas extension dtypes, avoiding repeated per-label DataFrame construction and improving performance on wide DataFrames. - Issue #1825 @sumangouda
+
 ## [v0.32.65] - 2026-10-30
 
 -   [ENH] Change the `join_agg` default for `return_matched` from `True` to `False`; callers that need the boolean `matched` index level must now pass `return_matched=True`. - PR #1829 @samukweku

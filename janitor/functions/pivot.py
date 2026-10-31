@@ -1534,38 +1534,19 @@ def _stack_dot_value_only_multiple_labels(
                 values_alias_input=values_alias_input,
             )
             continue
-        frame = pd.DataFrame(
-            {position: arrays[position] for position in positions},
-            index=df.index,
-        )
-        no_nulls = frame.columns.size == reps
-        any_extension_array = (
-            frame.dtypes.map(is_extension_array_dtype).any(axis=None).item()
-        )
-        if no_nulls and sort_by_appearance and any_extension_array:
-            if indexer is None:
-                indexer = _build_indexer_reorder_contents(length=len_df, reps=reps)
-            frame = _build_content_extension_array(df=frame)
-            frame = frame.take(indexer)
-        elif no_nulls and any_extension_array:
-            frame = _build_content_extension_array(df=frame)
-        elif no_nulls and sort_by_appearance:
-            frame = _ravel_values(frame, order="C")
-        elif no_nulls:
-            frame = _ravel_values(frame, order="F")
-        else:
+        no_nulls = len(positions) == reps
+        content = concat_compat([arrays[position] for position in positions])
+        if not no_nulls:
             nulls_count = len_df * (reps - counts.loc[label])
             nulls_array = np.full(shape=nulls_count, fill_value=np.nan)
-            frame = _build_content_extension_array_with_nulls(df=frame, nulls_array=nulls_array)
-            if sort_by_appearance and any_extension_array:
-                if indexer is None:
-                    indexer = _build_indexer_reorder_contents(length=len_df, reps=reps)
-                frame = frame.take(indexer)
-            elif sort_by_appearance:
-                shape = (len_df, reps)
-                frame = frame.reshape(shape, order="F")
-                frame = frame.ravel(order="C")
-        contents[label] = frame
+            content = concat_compat([content, nulls_array])
+        if sort_by_appearance:
+            if indexer is None:
+                indexer = _build_indexer_reorder_contents(
+                    length=len_df, reps=reps
+                )
+            content = content.take(indexer)
+        contents[label] = content
     nulls = _build_nulls(contents=contents, dropna=dropna)
     index = _build_index(
         index=index,
@@ -2693,7 +2674,7 @@ def pivot_wider_spec(
         )
     if spec.columns.size == 2:
         raise ValueError(
-            "Kindly provide the column(s) to use to make new frameâ€™s columns"
+            "Kindly provide the column(s) to use to make new frameΓÇÖs columns"
         )
     columns = spec.columns[2:]
     values = spec[".value"].unique()

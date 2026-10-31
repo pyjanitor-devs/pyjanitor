@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [DOC] Document how to sync a fork with upstream `dev`. - Issue #539
+
 ## [v0.32.75] - 2026-11-04
 
 -   [DOC] Rewrite the introductory example to chain `clean_names`, `remove_empty`, and `encode_categorical`, so copying it does not emit `FutureWarning`. - Issue #1442

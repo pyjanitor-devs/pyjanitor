@@ -6,8 +6,10 @@
 
 -   [ENH] Add `read_archive` to read CSV, JSON, Excel, Parquet, and other
     supported files from zip and tar archives with pandas or polars.
-    Keyword arguments are passed through to the underlying reader.
-    Based on work by @Sabrina-Hassaim in #1440. - Issue #1171
+    Keyword arguments are passed through to the underlying reader. A
+    leading `./` on a member name, as stored by `tar czf archive.tgz .`,
+    is ignored when matching. Based on work by @Sabrina-Hassaim in
+    #1440. - Issue #1171
 
 ## [v0.32.75] - 2026-11-04
 

@@ -6,7 +6,7 @@ import subprocess
 import tarfile
 import warnings
 import zipfile
-from collections import defaultdict
+from collections import Counter, defaultdict
 from glob import glob
 from io import BytesIO, StringIO
 from itertools import chain
@@ -209,7 +209,9 @@ def read_archive(
     ignored unless a name is requested explicitly. Directory entries and
     macOS `__MACOSX` metadata are ignored. Nested archives are not opened;
     pass the archive-relative name, such as `nested/sales.csv`, to read a
-    file in a subdirectory.
+    file in a subdirectory. A single leading `./` is removed from member
+    names, so an archive made with `tar czf archive.tgz .` matches
+    `a.csv` as well as `./a.csv`. Dictionary keys omit that prefix.
 
     A single selected file is returned as one DataFrame. Several files are
     returned as a dictionary keyed by member name, in archive order when
@@ -290,7 +292,8 @@ def read_archive(
             `.tar.bz2`, `.tbz2`, `.tar.xz`, `.txz`) or by reading the file.
         filenames: Member to read, or a list or tuple of members. A string
             returns one DataFrame. A list or tuple returns a dictionary.
-            `None` reads every supported data file.
+            `None` reads every supported data file. A leading `./` is
+            ignored, matching the member-name normalization above.
         engine: DataFrame library used to parse each member. Either
             `"pandas"` or `"polars"`. Defaults to `"pandas"`.
         archive_format: `"zip"` or `"tar"` when the file name does not use
@@ -316,6 +319,7 @@ def read_archive(
         dictionary of DataFrames keyed by member name.
     """
 
+    stored_member_names: dict[str, str] = {}
     supported_suffixes = {
         ".csv",
         ".tsv",
@@ -327,6 +331,13 @@ def read_archive(
         ".parquet",
         ".pq",
     }
+
+    def canonical_member_name(name: str) -> str:
+        """Drop one leading ``./`` from an archive member name."""
+
+        if name.startswith("./"):
+            return name[2:]
+        return name
 
     def member_suffix(name: str) -> str:
         """Return the lowercase extension of an archive member."""
@@ -364,23 +375,31 @@ def read_archive(
         )
 
     def list_member_names(kind: str) -> list[str]:
-        """Return regular file names stored in the archive."""
+        """Return regular file names, without a leading ``./``."""
 
         if kind == "zip":
             with zipfile.ZipFile(path) as archive:
-                names = [
+                raw_names = [
                     info.filename
                     for info in archive.infolist()
                     if not info.is_dir() and not is_metadata(info.filename)
                 ]
         else:
             with tarfile.open(path, mode="r:*") as archive:
-                names = [
+                raw_names = [
                     member.name
                     for member in archive.getmembers()
                     if member.isfile() and not is_metadata(member.name)
                 ]
-        duplicates = [name for name in dict.fromkeys(names) if names.count(name) > 1]
+        names: list[str] = []
+        for raw_name in raw_names:
+            name = canonical_member_name(raw_name)
+            names.append(name)
+            stored_member_names[name] = raw_name
+        # One pass over the names. Counting each name with list.count is
+        # quadratic and dominates archives that hold tens of thousands of
+        # members.
+        duplicates = [name for name, count in Counter(names).items() if count > 1]
         if duplicates:
             rendered = ", ".join(repr(name) for name in duplicates)
             raise ValueError(
@@ -419,7 +438,10 @@ def read_archive(
         if not names:
             raise ValueError("The archive is empty.")
         if filenames is not None:
-            requested = [filenames] if isinstance(filenames, str) else list(filenames)
+            requested_names = (
+                [filenames] if isinstance(filenames, str) else list(filenames)
+            )
+            requested = [canonical_member_name(name) for name in requested_names]
             if not requested:
                 raise ValueError("No files selected.")
             if len(requested) != len(set(requested)):
@@ -453,11 +475,14 @@ def read_archive(
 
         if kind == "zip":
             with zipfile.ZipFile(path) as archive:
-                return {name: archive.read(name) for name in selected}
+                return {
+                    name: archive.read(stored_member_names[name]) for name in selected
+                }
         payloads: dict[str, bytes] = {}
         with tarfile.open(path, mode="r:*") as archive:
             for name in selected:
-                extracted = archive.extractfile(name)
+                stored_name = stored_member_names[name]
+                extracted = archive.extractfile(stored_name)
                 if extracted is None:
                     raise ValueError(f"File not found in the archive: {name!r}.")
                 payloads[name] = extracted.read()

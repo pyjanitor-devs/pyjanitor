@@ -1577,7 +1577,9 @@ def join_agg(
         To total overlapping date ranges per day, join a calendar of days to
         the observations on ``start <= day <= end``. The match pairs are
         aggregated without being built, so cost does not grow with how long
-        the ranges are:
+        the ranges are. This is the problem asked in "Python fast aggregation
+        of many observations to daily sum" on Stack Overflow:
+        https://stackoverflow.com/questions/69194678/python-fast-aggregation-of-many-observations-to-daily-sum
 
         >>> start_date = pd.to_datetime(
         ...     ["2021-01-07", "2021-01-04", "2021-01-12", "2021-01-03"]

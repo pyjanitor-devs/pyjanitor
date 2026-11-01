@@ -26,61 +26,140 @@ from janitor.functions._conditional_join._aggregation_helpers import (
 )
 
 
-def _get_bounds_right(right_columns: pd.Index):
-    """Build contiguous equality-key windows for the prepared right layout.
+def _sort_right_rows(key_codes, range_values, right_index):
+    """Order right rows by equality-key codes, then raw range values.
 
-    ``right_columns`` must already be ordered so equal values occupy one
-    contiguous block. Factorization assigns each distinct key a dense code;
-    the returned ``starts`` and ``ends`` arrays map each key to its half-open
-    block in ``right_columns``.
-
-    Args:
-        right_columns: Equality-key index for the prepared right rows. For
-            multiple equality columns this is a ``MultiIndex``.
-
-    Returns:
-        A tuple ``(uniques, starts, ends)``. ``uniques`` contains one value
-        per distinct key, while ``starts[i]:ends[i]`` selects that key's
-        right-side rows.
-    """
-    positions, uniques = right_columns.factorize()
-    counts = np.bincount(positions, minlength=len(uniques))
-    starts = np.empty(counts.size, dtype=np.int64)
-    starts[0] = 0
-    starts[1:] = counts.cumsum()[:-1]
-    ends = starts + counts
-    return uniques, starts, ends
-
-
-def _get_bounds_left(l_cols, uniques, starts, ends):
-    """Align left equality keys with right-side equality windows.
-
-    Left rows with no right key are removed from the compact layout. The
-    returned ``starts`` and ``ends`` remain aligned with the surviving left
-    rows; this is why filtering happens after indexing the window arrays.
+    Equality keys only need to be contiguous, so they sort on their codes.
+    Range values are already NumPy and orderable, so they sort as is. The
+    lexsort is stable, so the right labels join the sort keys only when
+    physical order is not already label order.
 
     Args:
-        l_cols: Equality keys for the prepared left rows.
-        uniques: Distinct right equality keys returned by
-            :func:`_get_bounds_right`.
-        starts: Right-window starts indexed by ``uniques``.
-        ends: Right-window ends indexed by ``uniques``.
+        key_codes: One integer code array per equality key, primary first.
+        range_values: Right range arrays in the selected predicate order.
+        right_index: Physical right labels for the eligible rows.
 
     Returns:
-        ``None`` when no left key matches. Otherwise returns either
-        ``(None, starts, ends)`` when every left row matches or
-        ``(booleans, starts, ends)`` when ``booleans`` identifies the
-        surviving left rows.
+        Positions that sort the eligible right rows.
     """
-    indexers = uniques.get_indexer(l_cols)
-    booleans = indexers != -1
+    sort_keys = [*key_codes, *range_values]
+    if not right_index.is_monotonic_increasing:
+        _array = _helpers._convert_array_to_numpy(array=right_index._values)
+        sort_keys.append(_array)
+    return np.lexsort(sort_keys[::-1])
+
+
+def _drop_unmatched_left(df, left_index, left_positions):
+    """Remove left rows whose equality key has no right match.
+
+    Args:
+        df: Left dataframe in its current physical layout.
+        left_index: Compact physical left index, or ``slice(None)``.
+        left_positions: Per-left-row lookup result; ``-1`` marks no match.
+
+    Returns:
+        ``None`` when nothing matches, else ``(left_index, left_positions)``
+        restricted to the matched left rows.
+    """
+    booleans = left_positions != -1
     if not booleans.any():
         return None
-    matched_starts = starts[indexers[booleans]]
-    matched_ends = ends[indexers[booleans]]
-    if booleans.all():
-        return None, matched_starts, matched_ends
-    return booleans, matched_starts, matched_ends
+    if not booleans.all():
+        left_positions = left_positions[booleans]
+        if isinstance(left_index, slice):
+            left_index = df.index
+        left_index = left_index[booleans]
+    return left_index, left_positions
+
+
+def _single_key_layout(df, right, left_index, right_index, condition, range_values):
+    """Order the right rows for one equality key.
+
+    Only the key is factorized. ``sort=False`` codes are assigned by hashing,
+    so object keys with mixed types never need comparing.
+
+    Args:
+        df: Left dataframe in its current physical layout.
+        right: Right dataframe in its current physical layout.
+        left_index: Compact physical left index, or ``slice(None)``.
+        right_index: Compact physical right index, or ``slice(None)``.
+        condition: The equality predicate.
+        range_values: Right range arrays, converted to NumPy.
+
+    Returns:
+        ``None`` when no left key matches, else
+        ``(left_index, order, starts, ends)``. ``order`` selects the prepared
+        right rows; ``starts``/``ends`` are ``None`` for unique right keys.
+    """
+    right_keys = right.loc[right_index, condition.right]._values
+    codes, uniques = pd.factorize(right_keys, sort=False)
+    left_keys = df.loc[left_index, condition.left]._values
+    left_codes = pd.Index(uniques).get_indexer(left_keys)
+    outcome = _drop_unmatched_left(df, left_index, left_codes)
+    if outcome is None:
+        return None
+    left_index, left_codes = outcome
+    if len(uniques) == len(codes):
+        # Unique right keys: sort=False codes are right positions, so the
+        # left codes select each left row's single right candidate.
+        return left_index, left_codes, None, None
+    _right_index = right.index if isinstance(right_index, slice) else right_index
+    order = _sort_right_rows([codes], range_values, _right_index)
+    counts = np.bincount(codes, minlength=len(uniques))
+    ends = counts.cumsum()
+    starts = ends - counts
+    return left_index, order, starts[left_codes], ends[left_codes]
+
+
+def _multi_key_layout(df, right, left_index, right_index, conditions, range_values):
+    """Order the right rows for several equality keys.
+
+    The MultiIndex holds only the equality keys; its level codes drive the
+    sort, and the range columns stay raw.
+
+    Args:
+        df: Left dataframe in its current physical layout.
+        right: Right dataframe in its current physical layout.
+        left_index: Compact physical left index, or ``slice(None)``.
+        right_index: Compact physical right index, or ``slice(None)``.
+        conditions: The equality predicates, in their original order.
+        range_values: Right range arrays, converted to NumPy.
+
+    Returns:
+        Same as :func:`_single_key_layout`.
+    """
+    right_keys = []
+    left_keys = []
+    for condition in conditions:
+        right_keys.append(right.loc[right_index, condition.right]._values)
+        left_keys.append(df.loc[left_index, condition.left]._values)
+    right_keys = pd.MultiIndex.from_arrays(right_keys)
+    left_keys = pd.MultiIndex.from_arrays(left_keys)
+    if right_keys.is_unique:
+        outcome = _drop_unmatched_left(
+            df, left_index, right_keys.get_indexer(left_keys)
+        )
+        if outcome is None:
+            return None
+        left_index, left_indexer = outcome
+        return left_index, left_indexer, None, None
+    _right_index = right.index if isinstance(right_index, slice) else right_index
+    order = _sort_right_rows(right_keys.codes, range_values, _right_index)
+    # A new key block starts wherever any sorted level code changes.
+    block_start = np.zeros(len(order), dtype=bool)
+    block_start[0] = True
+    for level_codes in right_keys.codes:
+        sorted_codes = level_codes[order]
+        block_start[1:] |= sorted_codes[1:] != sorted_codes[:-1]
+    starts = np.flatnonzero(block_start)
+    ends = np.append(starts[1:], len(order))
+    # One right row per block names that block's key; those keys are unique.
+    block_keys = right_keys.take(order[starts])
+    outcome = _drop_unmatched_left(df, left_index, block_keys.get_indexer(left_keys))
+    if outcome is None:
+        return None
+    left_index, left_blocks = outcome
+    return left_index, order, starts[left_blocks], ends[left_blocks]
 
 
 def _get_equi_indexer(
@@ -89,22 +168,19 @@ def _get_equi_indexer(
     left_index,
     right_index,
     equi_conditions,
-    equi_positions,
     range_conditions,
 ):
     """Prepare the equality mapping and aligned range arrays.
 
-    The right-side sorter is built in this level order:
+    The right rows are ordered by equality key, then by the selected range
+    columns, then by physical right label. Only the equality keys are
+    factorized: the range columns are converted to NumPy once and sorted as
+    raw values, so the same arrays feed both the sort and the Rust kernel.
 
-    1. equality-key columns;
-    2. selected range-key columns; and
-    3. the original physical right index.
-
-    A unique right equality key uses ``get_indexer``. Its matched right rows
-    are projected with ``left_indexer`` so the left and right arrays become
-    one-to-one; this path returns ``starts = ends = None``. Duplicate right
-    equality keys use sorted contiguous windows and return ``starts``/``ends``
-    for the surviving left rows.
+    Unique right equality keys select one right row per left row; this path
+    returns ``starts = ends = None``. Duplicate right equality keys use sorted
+    contiguous windows and return ``starts``/``ends`` for the surviving left
+    rows.
 
     Args:
         df: Left dataframe in its current physical layout.
@@ -115,7 +191,6 @@ def _get_equi_indexer(
             right rows are eligible.
         equi_conditions: Equality predicates, in their original condition
             order.
-        equi_positions: Positions of equality predicates in ``conditions``.
         range_conditions: At most two selected range predicates whose right
             values should be aligned to the prepared right layout.
 
@@ -125,118 +200,37 @@ def _get_equi_indexer(
         right_index_is_ordered)``. In the unique path, ``right_index`` is
         projected to the matched rows and ``starts``/``ends`` are ``None``.
     """
-    # ELI5: build one table whose columns contain every value Rust will need.
-    # The final column is the original right position, so sorting this table
-    # never loses the mapping back to the caller's dataframe rows.
-    sorter = []
-    for condition in equi_conditions:
-        series = right.loc[right_index, condition.right]._values
-        sorter.append(series)
-    if range_conditions:
-        for condition in range_conditions:
-            series = right.loc[right_index, condition.right]._values
-            sorter.append(series)
+    range_values = []
+    for condition in range_conditions:
+        values = right.loc[right_index, condition.right]._values
+        range_values.append(_helpers._convert_array_to_numpy(array=values))
+    layout = _single_key_layout if len(equi_conditions) == 1 else _multi_key_layout
+    outcome = layout(
+        df,
+        right,
+        left_index,
+        right_index,
+        equi_conditions[0] if len(equi_conditions) == 1 else equi_conditions,
+        range_values,
+    )
+    if outcome is None:
+        return None
+    left_index, order, starts, ends = outcome
     _right_index = right.index if isinstance(right_index, slice) else right_index
-    sorter.append(_right_index._values)
-    sorter = pd.MultiIndex.from_arrays(sorter)
-    if len(equi_conditions) == 1:
-        left_keys = df.loc[left_index, equi_conditions[0].left]._values
+    if (
+        isinstance(_right_index, pd.RangeIndex)
+        and _right_index.start == 0
+        and _right_index.step == 1
+    ):
+        # Labels equal positions, so order already holds the right labels.
+        right_index = pd.Index(order, copy=False)
     else:
-        left_keys = []
-        for condition in equi_conditions:
-            series = df.loc[left_index, condition.left]._values
-            left_keys.append(series)
-        left_keys = pd.MultiIndex.from_arrays(left_keys)
-    uniqs = True
-    try:
-        # A successful get_indexer call proves that every right equality key
-        # is unique. The returned positions point into the current sorter;
-        # taking those positions makes the right arrays one-to-one with the
-        # surviving left rows.
-        if len(equi_positions) == 1:
-            right_keys = sorter.get_level_values(0)
-        else:
-            n_equi = len(equi_conditions)
-            right_keys = pd.MultiIndex(
-                levels=sorter.levels[:n_equi],
-                codes=sorter.codes[:n_equi],
-                names=None,
-                copy=False,
-                verify_integrity=False,
-            )
-        left_indexer = right_keys.get_indexer(left_keys)
-        booleans = left_indexer == -1
-        if booleans.all():
-            return None
-        if booleans.any():
-            booleans = ~booleans
-            left_indexer = left_indexer[booleans]
-            if isinstance(left_index, slice):
-                left_index = df.index
-            left_index = left_index[booleans]
-        starts = None
-        ends = None
-    except pd.errors.InvalidIndexError:
-        # Duplicate right keys cannot use get_indexer. Sort the complete row
-        # record first, then derive equality windows from that same sorted
-        # record so starts/ends and right_index share one coordinate system.
-        uniqs = False
-        if sorter.is_monotonic_decreasing:
-            sorter = sorter[::-1]
-        elif not sorter.is_monotonic_increasing:
-            # Sort on level codes rather than values. Object equality keys
-            # may mix types that cannot be compared, and they only need to
-            # be contiguous. Range and position levels are always orderable,
-            # so their levels are sorted and their codes follow value order.
-            sorter = sorter.take(np.lexsort(sorter.codes[::-1]))
-        if len(equi_positions) == 1:
-            right_keys = sorter.get_level_values(0)
-        else:
-            n_equi = len(equi_conditions)
-            right_keys = pd.MultiIndex(
-                levels=sorter.levels[:n_equi],
-                codes=sorter.codes[:n_equi],
-                names=None,
-                copy=False,
-                verify_integrity=False,
-            )
-        uniques, starts, ends = _get_bounds_right(right_keys)
-        outcome = _get_bounds_left(
-            l_cols=left_keys, uniques=uniques, starts=starts, ends=ends
-        )
-        if outcome is None:
-            return None
-        booleans, starts, ends = outcome
-        if booleans is not None:
-            if isinstance(left_index, slice):
-                left_index = df.index
-            left_index = left_index[booleans]
-    if uniqs:
-        # Unique equality rows have no windows: every row's right candidate is
-        # already selected by left_indexer.
-        sorter = sorter.take(left_indexer)
-    if range_conditions:
-        range_arrays = []
-        for level_number in range(len(equi_positions), sorter.nlevels):
-            _index = sorter.get_level_values(level_number)
-            range_arrays.append(_index)
-        right_index = range_arrays[-1]
-        left_arrays = [
-            df.loc[left_index, condition.left] for condition in range_conditions
-        ]
-        range_ops = [condition.op for condition in range_conditions]
-        range_predicates = zip(left_arrays, range_arrays[:-1], range_ops)
-        range_predicates = [
-            (
-                _helpers._convert_array_to_numpy(array=left_array._values),
-                _helpers._convert_array_to_numpy(array=right_array._values),
-                operation,
-            )
-            for left_array, right_array, operation in range_predicates
-        ]
-    else:
-        right_index = sorter.get_level_values(-1)
-        range_predicates = []
+        right_index = _right_index[order]
+    range_predicates = []
+    for condition, values in zip(range_conditions, range_values):
+        left_values = df.loc[left_index, condition.left]._values
+        left_values = _helpers._convert_array_to_numpy(array=left_values)
+        range_predicates.append((left_values, values[order], condition.op))
     right_index_is_ordered = right_index.is_monotonic_increasing
     return (
         left_index,
@@ -357,7 +351,6 @@ def _preparatory_work(
         left_index=left_index,
         right_index=right_index,
         equi_conditions=equi_conditions,
-        equi_positions=equi_positions,
         range_conditions=range_conditions,
     )
     if outcome is None:

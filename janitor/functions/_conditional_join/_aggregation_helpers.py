@@ -170,11 +170,12 @@ def _aggregation_inputs(
     """
     result = []
     for column_name, operation in aggfunc:
-        series = source.loc[indexer, column_name]
-        null_mask = series.isna().to_numpy(dtype=bool)
         if operation == "size":
             result.append(("*", "size"))
-        elif operation == "count":
+            continue
+        series = source.loc[indexer, column_name]
+        null_mask = series.isna().to_numpy(dtype=bool)
+        if operation == "count":
             result.append(("*", null_mask, "count"))
         else:
             # Keep values and masks in the same compact layout as the source

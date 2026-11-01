@@ -4,6 +4,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
+import janitor  # noqa: F401
+
 
 @pytest.fixture
 def simple_df():
@@ -488,3 +490,264 @@ def test_adorn_ns_thousand_separator():
     # Should have thousand separator
     assert "(1,000)" in result.iloc[0]["count"]
     assert "(2,000,000)" in result.iloc[1]["count"]
+
+
+# The first column is the row identifier for every adorn_* function, including
+# when it is numeric. Issue #1676.
+
+
+IDENTIFIER_DTYPES = ["int64", "float64", "Int64", "Float64"]
+
+
+def numeric_identifier_frame(dtype: str) -> pd.DataFrame:
+    """Build a two-row counts frame whose first column uses ``dtype``."""
+    if dtype == "int64":
+        year = pd.Series([2020, 2021], dtype="int64")
+    elif dtype == "float64":
+        # Not already at 2 decimal places, so rounding would change the value.
+        year = pd.Series([2020.444, 2021.555], dtype="float64")
+    elif dtype == "Int64":
+        year = pd.Series([2020, pd.NA], dtype="Int64")
+    elif dtype == "Float64":
+        year = pd.Series([2020.444, pd.NA], dtype="Float64")
+    else:
+        raise AssertionError(f"unexpected dtype {dtype}")
+    return pd.DataFrame({"year": year, "yes": [10, 20], "no": [5, 15]})
+
+
+def assert_identifier_unchanged(result: pd.Series, original: pd.Series) -> None:
+    """Assert a row-identifier column kept its values and dtype."""
+    pd.testing.assert_series_equal(result, original)
+
+
+@pytest.mark.functions
+@pytest.mark.parametrize("dtype", IDENTIFIER_DTYPES)
+def test_adorn_pct_formatting_preserves_numeric_first_column(dtype):
+    """Numeric row identifiers are not formatted as percentages."""
+    df = numeric_identifier_frame(dtype)
+    proportions = df.adorn_percentages("row")
+
+    result = proportions.adorn_pct_formatting()
+
+    assert_identifier_unchanged(result["year"], df["year"])
+    assert result.iloc[0]["yes"] == "66.7%"
+    assert result.iloc[0]["no"] == "33.3%"
+    assert result.iloc[1]["yes"] == "57.1%"
+    assert result.iloc[1]["no"] == "42.9%"
+
+
+@pytest.mark.functions
+@pytest.mark.parametrize("dtype", IDENTIFIER_DTYPES)
+def test_adorn_ns_preserves_numeric_first_column(dtype):
+    """Numeric row identifiers do not receive an N count."""
+    df = numeric_identifier_frame(dtype)
+
+    result = df.adorn_percentages("row").adorn_pct_formatting().adorn_ns()
+
+    assert_identifier_unchanged(result["year"], df["year"])
+    assert result.iloc[0]["yes"] == "66.7% (10)"
+    assert result.iloc[0]["no"] == "33.3% (5)"
+    assert result.iloc[1]["yes"] == "57.1% (20)"
+    assert result.iloc[1]["no"] == "42.9% (15)"
+
+
+@pytest.mark.functions
+@pytest.mark.parametrize("dtype", IDENTIFIER_DTYPES)
+def test_adorn_rounding_preserves_numeric_first_column(dtype):
+    """Numeric row identifiers are not rounded and keep their dtype."""
+    df = numeric_identifier_frame(dtype)
+
+    result = df.adorn_percentages("row").adorn_rounding(digits=2)
+
+    assert_identifier_unchanged(result["year"], df["year"])
+    assert result.iloc[0]["yes"] == 0.67
+    assert result.iloc[0]["no"] == 0.33
+    assert result.iloc[1]["yes"] == 0.57
+    assert result.iloc[1]["no"] == 0.43
+
+
+@pytest.mark.functions
+def test_adorn_pipeline_numeric_grouping_from_tabyl():
+    """A tabyl on a numeric grouping variable keeps that variable readable.
+
+    This is the report from issue #1676: ``cyl`` was rewritten as
+    ``400.0%``, ``600.0%``, ``800.0%``.
+    """
+    df = pd.DataFrame(
+        {
+            "cyl": [4, 6, 8, 4, 6, 8, 4, 6],
+            "gear": [3, 3, 3, 4, 4, 4, 5, 5],
+        }
+    )
+    tabyl = df.tabyl("cyl", "gear")
+
+    formatted = tabyl.adorn_percentages("row").adorn_pct_formatting()
+    counted = formatted.adorn_ns()
+    rounded = tabyl.adorn_percentages("row").adorn_rounding(digits=2)
+
+    assert formatted["cyl"].tolist() == [4, 6, 8]
+    assert formatted["cyl"].dtype == tabyl["cyl"].dtype
+    assert formatted.iloc[0, 1] == "33.3%"
+    assert counted["cyl"].tolist() == [4, 6, 8]
+    assert counted.iloc[0, 1] == "33.3% (1)"
+    assert rounded["cyl"].tolist() == [4, 6, 8]
+    assert rounded["cyl"].dtype == tabyl["cyl"].dtype
+    assert rounded.iloc[0, 1] == 0.33
+
+
+@pytest.mark.functions
+def test_adorn_string_first_column_regression():
+    """A string row identifier is unchanged and data columns are still adorned."""
+    df = pd.DataFrame({"category": ["A", "B"], "count1": [10, 20], "count2": [5, 15]})
+
+    totals = df.adorn_totals("both")
+    percentages = df.adorn_percentages("row")
+    formatted = percentages.adorn_pct_formatting()
+    counted = formatted.adorn_ns()
+    rounded = percentages.adorn_rounding(digits=2)
+
+    assert totals.iloc[0]["category"] == "A"
+    assert totals.iloc[-1]["category"] == "Total"
+    assert totals.iloc[0]["Total"] == 15
+    assert totals.iloc[-1]["count1"] == 30
+    assert percentages["category"].tolist() == ["A", "B"]
+    assert np.isclose(percentages.iloc[0]["count1"], 10 / 15)
+    assert formatted["category"].tolist() == ["A", "B"]
+    assert formatted.iloc[0]["count1"] == "66.7%"
+    assert counted["category"].tolist() == ["A", "B"]
+    assert counted.iloc[0]["count1"] == "66.7% (10)"
+    assert rounded["category"].tolist() == ["A", "B"]
+    assert rounded.iloc[0]["count1"] == 0.67
+
+
+@pytest.mark.functions
+@pytest.mark.parametrize("dtype", IDENTIFIER_DTYPES)
+def test_adorn_totals_and_percentages_leave_numeric_identifier(dtype):
+    """Totals and percentages already treat a numeric first column as a label."""
+    df = numeric_identifier_frame(dtype)
+
+    totals = df.adorn_totals("both")
+    percentages = df.adorn_percentages("row")
+    column_percentages = df.adorn_percentages("col")
+
+    assert totals.iloc[-1, 0] == "Total"
+    # The totals label widens the identifier column, so compare values only.
+    result_ids = totals.iloc[:-1, 0].tolist()
+    original_ids = df["year"].tolist()
+    assert len(result_ids) == len(original_ids)
+    for got, expected in zip(result_ids, original_ids, strict=True):
+        if pd.isna(expected):
+            assert pd.isna(got)
+        else:
+            assert got == expected
+    assert totals.iloc[0]["Total"] == 15
+    assert totals.iloc[-1]["yes"] == 30
+    assert totals.iloc[-1]["no"] == 20
+    assert totals.iloc[-1]["Total"] == 50
+    assert_identifier_unchanged(percentages["year"], df["year"])
+    assert np.isclose(percentages.iloc[0]["yes"], 10 / 15)
+    assert_identifier_unchanged(column_percentages["year"], df["year"])
+    assert np.isclose(column_percentages.iloc[0]["yes"], 10 / 30)
+    assert np.isclose(column_percentages.iloc[1]["yes"], 20 / 30)
+
+
+@pytest.mark.functions
+def test_adorn_rounding_leaves_plain_numeric_first_column():
+    """The identifier rule applies to a plain DataFrame, not only to a tabyl."""
+    df = pd.DataFrame({"year": [2020.44, 2021.55], "value": [1.234, 2.345]})
+
+    result = df.adorn_rounding(digits=1)
+
+    assert result["year"].tolist() == [2020.44, 2021.55]
+    assert result["year"].dtype == df["year"].dtype
+    assert result["value"].tolist() == [1.2, 2.3]
+
+
+@pytest.mark.functions
+def test_adorn_ns_counts_frame_without_identifier_column():
+    """A counts frame that carries no row identifier keeps every count.
+
+    ``ns`` does not have to repeat the identifier column of the frame being
+    adorned. Dropping column 0 of ``ns`` would discard a real count.
+    """
+    df = pd.DataFrame({"id": ["A"], "yes": [0.5], "no": [0.5]})
+    ns = pd.DataFrame({"yes": [10], "no": [5]})
+
+    result = df.adorn_pct_formatting().adorn_ns(ns=ns)
+
+    assert result.iloc[0]["yes"] == "50.0% (10)"
+    assert result.iloc[0]["no"] == "50.0% (5)"
+    assert result.iloc[0]["id"] == "A"
+
+
+@pytest.mark.functions
+def test_adorn_ns_identifier_comes_from_target_frame():
+    """The identifier is column 0 of the frame being adorned, not of ``ns``."""
+    df = pd.DataFrame({"id": ["A"], "yes": [0.5], "no": [0.5]})
+    ns = pd.DataFrame({"no": [5], "yes": [10], "id": [0]})
+
+    result = df.adorn_pct_formatting().adorn_ns(ns=ns)
+
+    assert result.iloc[0]["no"] == "50.0% (5)"
+    assert result.iloc[0]["id"] == "A"
+    assert result.iloc[0]["yes"] == "50.0% (10)"
+
+
+@pytest.mark.functions
+def test_adorn_pct_formatting_duplicate_column_labels():
+    """Only column position 0 is exempt when a label is repeated."""
+    df = pd.DataFrame([[1.0, 2.0, 0.5]], columns=["value", "value", "ratio"])
+
+    result = df.adorn_pct_formatting()
+
+    assert result.iloc[0, 0] == 1.0
+    assert not isinstance(result.iloc[0, 0], str)
+    assert result.iloc[0, 1] == "200.0%"
+    assert isinstance(result.iloc[0, 1], str)
+    assert result.iloc[0, 2] == "50.0%"
+
+
+@pytest.mark.functions
+def test_adorn_rounding_duplicate_column_labels():
+    """Rounding exempts only column position 0 when a label is repeated."""
+    df = pd.DataFrame([[1.25, 2.55, 0.55]], columns=["value", "value", "ratio"])
+
+    result = df.adorn_rounding(digits=1, rounding="half up")
+
+    assert result.iloc[0, 0] == 1.25
+    assert result.iloc[0, 1] == 2.6
+    assert result.iloc[0, 2] == 0.6
+
+
+@pytest.mark.functions
+def test_adorn_ns_duplicate_labels_in_explicit_ns():
+    """Each repeat of a label reads its own count column."""
+    df = pd.DataFrame(
+        [["A", "50.0%", "50.0%"]],
+        columns=["id", "yes", "yes"],
+    )
+    ns = pd.DataFrame([[10, 20]], columns=["yes", "yes"])
+
+    result = df.adorn_ns(ns=ns)
+
+    assert result.iloc[0, 0] == "A"
+    assert result.iloc[0, 1] == "50.0% (10)"
+    assert result.iloc[0, 2] == "50.0% (20)"
+
+
+@pytest.mark.functions
+@pytest.mark.parametrize(
+    "call",
+    [
+        lambda frame: frame.adorn_pct_formatting(),
+        lambda frame: frame.adorn_rounding(),
+        lambda frame: frame.adorn_ns(ns=pd.DataFrame()),
+    ],
+    ids=["pct_formatting", "rounding", "ns"],
+)
+def test_adorn_formatting_on_dataframe_with_no_columns(call):
+    """A DataFrame with no columns comes back unchanged."""
+    result = call(pd.DataFrame())
+
+    assert result.shape == (0, 0)
+    assert list(result.columns) == []

@@ -16,6 +16,93 @@ import pandas_flavor as pf
 from janitor.utils import check
 
 
+def numeric_column_positions(frame: pd.DataFrame) -> list[int]:
+    """Return positions of columns that `select_dtypes` treats as numeric.
+
+    Positions keep duplicate column labels distinct. An empty frame returns
+    an empty list. The dtype test matches `DataFrame.select_dtypes` with
+    `include=[np.number]`, including pandas nullable integer and floating
+    dtypes and excluding booleans.
+
+    Args:
+        frame: A pandas DataFrame.
+
+    Returns:
+        Integer column positions, in ascending order.
+    """
+    if frame.shape[1] == 0:
+        return []
+    # Relabel a zero-row view by position so select_dtypes reports positions
+    # instead of labels, while keeping its dtype rules.
+    numbered = frame.iloc[:0].set_axis(range(frame.shape[1]), axis="columns")
+    selected = numbered.select_dtypes(include=[np.number]).columns
+    return [int(position) for position in selected]
+
+
+def adorn_data_positions(frame: pd.DataFrame) -> list[int]:
+    """Return numeric column positions other than the row identifier.
+
+    Column position 0 is the row identifier for the `adorn_*` functions and
+    is never modified, even when it is numeric. This follows R janitor, which
+    drops column index 1 from the numeric column set before adorning. Only
+    that position is exempt: a later column that repeats the first column's
+    label is still adorned.
+
+    Args:
+        frame: A pandas DataFrame.
+
+    Returns:
+        Integer column positions, in ascending order.
+    """
+    return [position for position in numeric_column_positions(frame) if position != 0]
+
+
+def adorn_count_pairs(df: pd.DataFrame, ns: pd.DataFrame) -> list[tuple[int, int]]:
+    """Pair columns of `df` with the numeric count columns of `ns`.
+
+    Column position 0 of `df` is the row identifier and is never paired.
+    Every numeric column of `ns` is a count, because a counts frame passed
+    through `ns` does not have to repeat the identifier column.
+
+    When `ns` has the same columns as `df`, pairs are positional. That is
+    how counts stored by `adorn_percentages` line up, including when a label
+    is repeated. Otherwise pairs are by label, and a repeated label is
+    consumed once per occurrence so each column reads its own count.
+
+    Args:
+        df: The frame being adorned.
+        ns: The frame of original counts.
+
+    Returns:
+        `(df_position, ns_position)` pairs in `df` column order.
+    """
+    ns_numeric = numeric_column_positions(ns)
+    if df.columns.equals(ns.columns):
+        return [
+            (position, position)
+            for position in ns_numeric
+            if position != 0 and position < df.shape[1]
+        ]
+
+    counts_by_label: dict[object, list[int]] = {}
+    for ns_position in ns_numeric:
+        label = ns.columns[ns_position]
+        counts_by_label.setdefault(label, []).append(ns_position)
+
+    seen: dict[object, int] = {}
+    pairs: list[tuple[int, int]] = []
+    for position in range(1, df.shape[1]):
+        label = df.columns[position]
+        candidates = counts_by_label.get(label)
+        if not candidates:
+            continue
+        occurrence = seen.get(label, 0)
+        seen[label] = occurrence + 1
+        if occurrence < len(candidates):
+            pairs.append((position, candidates[occurrence]))
+    return pairs
+
+
 @pf.register_dataframe_method
 def adorn_totals(
     df: pd.DataFrame,
@@ -212,6 +299,11 @@ def adorn_pct_formatting(
     This function formats numeric columns (assumed to be proportions between
     0 and 1) as percentage strings with the specified number of decimal places.
 
+    The column in position 0 is the row identifier and is left unchanged,
+    even when it is numeric. This matches `adorn_totals` and
+    `adorn_percentages`. A later column that repeats the identifier's
+    label is still formatted.
+
     Examples:
         Format percentages with default settings.
 
@@ -263,9 +355,6 @@ def adorn_pct_formatting(
     # Preserve original counts if they exist
     original_counts = df.attrs.get("_original_counts")
 
-    # Identify numeric columns
-    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-
     rounding_mode = ROUND_HALF_EVEN if rounding == "half to even" else ROUND_HALF_UP
     quantize_str = f"0.{'0' * digits}" if digits > 0 else "0"
 
@@ -283,8 +372,8 @@ def adorn_pct_formatting(
             result += "%"
         return result
 
-    for col in numeric_cols:
-        df[col] = df[col].apply(format_pct)
+    for position in adorn_data_positions(df):
+        df.isetitem(position, df.iloc[:, position].apply(format_pct))
 
     # Restore original counts in attrs
     if original_counts is not None:
@@ -306,6 +395,14 @@ def adorn_ns(
     converted to percentages. It requires either the original counts to be
     stored in the DataFrame's attrs (via prior use of adorn_percentages)
     or to be passed via the `ns` parameter.
+
+    The column in position 0 of `df` is the row identifier and is left
+    unchanged, even when it is numeric. Every numeric column of `ns` is a
+    count: `ns` does not have to repeat the identifier. Columns are matched
+    by position when `ns` has the same columns as `df`, and by label
+    otherwise. A repeated label is matched once per occurrence. Rows of
+    `df` past the end of `ns` (a totals row, for example) are left as
+    they are.
 
     Examples:
         Add counts to formatted percentages.
@@ -366,26 +463,24 @@ def adorn_ns(
 
         format_func = _default_format_func
 
-    # Get numeric columns from the original counts
-    numeric_cols = ns.select_dtypes(include=[np.number]).columns.tolist()
-
-    # Apply to matching columns
-    # Use positional indexing to handle cases where df has more rows than ns
-    # (e.g., after adorn_totals adds a totals row)
-    df_index_list = df.index.tolist()
-    for col in numeric_cols:
-        if col in df.columns:
-            for i, idx in enumerate(df_index_list):
-                # Only process rows that exist in the original counts
-                if i < len(ns):
-                    n_value = ns.iloc[i][col]
-                    formatted_n = format_func(n_value)
-                    current_value = df.loc[idx, col]
-                    if pd.notna(current_value) and formatted_n:
-                        if position == "rear":
-                            df.loc[idx, col] = f"{current_value} {formatted_n}"
-                        else:
-                            df.loc[idx, col] = f"{formatted_n} {current_value}"
+    # Rows are matched by position, so a frame with more rows than `ns`
+    # (for example after adorn_totals) leaves the extra rows alone.
+    # Columns are paired by position or label; column 0 of `df` is skipped.
+    n_rows = min(len(df), len(ns))
+    for df_position, ns_position in adorn_count_pairs(df, ns):
+        values = df.iloc[:, df_position].tolist()
+        adorned = False
+        for row in range(n_rows):
+            formatted_n = format_func(ns.iat[row, ns_position])
+            current_value = values[row]
+            if pd.notna(current_value) and formatted_n:
+                if position == "rear":
+                    values[row] = f"{current_value} {formatted_n}"
+                else:
+                    values[row] = f"{formatted_n} {current_value}"
+                adorned = True
+        if adorned:
+            df.isetitem(df_position, values)
 
     return df
 
@@ -470,8 +565,13 @@ def adorn_rounding(
 ) -> pd.DataFrame:
     """Round numeric columns with configurable rounding method.
 
-    This function rounds all numeric columns to the specified number of
+    This function rounds numeric columns to the specified number of
     decimal places using the specified rounding method.
+
+    The column in position 0 is the row identifier and is left unchanged,
+    even when it is numeric, so an integer identifier keeps its dtype.
+    This matches `adorn_totals` and `adorn_percentages`. A later column
+    that repeats the identifier's label is still rounded.
 
     Examples:
         Round numeric columns.
@@ -523,9 +623,6 @@ def adorn_rounding(
     # Preserve original counts if they exist
     original_counts = df.attrs.get("_original_counts")
 
-    # Identify numeric columns
-    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-
     rounding_mode = ROUND_HALF_EVEN if rounding == "half to even" else ROUND_HALF_UP
     quantize_str = f"0.{'0' * digits}" if digits > 0 else "0"
 
@@ -537,8 +634,8 @@ def adorn_rounding(
         )
         return float(rounded)
 
-    for col in numeric_cols:
-        df[col] = df[col].apply(round_value)
+    for position in adorn_data_positions(df):
+        df.isetitem(position, df.iloc[:, position].apply(round_value))
 
     # Restore original counts in attrs
     if original_counts is not None:

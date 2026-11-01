@@ -801,6 +801,114 @@ tests must also assert the converted values so incorrect offsets remain visible.
 add value assertions, normalizing resolution only where the conversion contract
 does not require a specific precision.
 
+### [2026-10-25] Changelog reconstruction must preserve authored entries
+
+**Context**: Reconstructing accumulated changelog entries from generated
+release notes and Git history for issue #1806.
+**Learning**: Generated release notes can summarize intermediate commits that
+were later reverted, omit hand-written issue/PR attribution, and collapse
+semantic changes into performance summaries. Historical changelog work must
+start from the original authored entries and verify generated summaries
+against the final squashed diff before assigning them to a release.
+**Recommendation**: Preserve original wording and contributor credits where
+available, keep issue and PR numbers accurate, separate behavior changes from
+performance notes, and check for reverted intermediate changes.
+
+Verify each entry against the target tag tree and final squashed diff: do not
+duplicate changes across releases, and do not retain generated summaries for
+test-only regressions or intermediate commits that were later removed.
+
+### [2026-10-25] Empty releases still need changelog sections
+
+**Context**: Reviewing automated changelog rotation for releases triggered by
+merges that add no `[Unreleased]` entries.
+**Learning**: Returning early for an empty `[Unreleased]` body leaves the
+version absent from `CHANGELOG.md` and stale comparison links, even though the
+release and generated `docs/releases/v*.md` file still exist.
+**Recommendation**: Always create the version heading and comparison links;
+use a clear placeholder when there are no user-facing changes, and test that
+path explicitly.
+
+### [2026-10-25] Release changelog entries need attribution and stable formatting
+
+**Context**: Repairing the `v0.32.55` changelog after release automation ran
+before changelog rotation was deployed.
+**Learning**: A release section must not retain the empty-release placeholder
+when it contains an attributed change. Generated bullets and comparison links
+must preserve the existing changelog spacing conventions.
+**Recommendation**: Treat the placeholder as mutually exclusive with real
+entries, use the repository's three-space list marker style, and keep a blank
+line between comparison-link definitions.
+
+### [2026-10-25] Changelog release guards cover the complete tag range
+
+**Context**: Issue #1808 showed that PR checks can remain green after release
+rotation, and bounded or malformed tag selection can miss long-lived PRs or
+fail before validation runs.
+
+**Learning**: Validate `previous_tag..HEAD` before rotation or publishing.
+Use the merge ref's first parent for PR checks, parse uncolored diffs
+defensively, and allow paired historical edits without allowing new entries
+through text matching. Intentional backfills use the explicit manual override.
+
+**Recommendation**: Avoid shell tag filtering in the default guard. If tag
+filtering is ever needed, use `git tag -l 'v[0-9]*'` and test it against stray
+non-version tags.
+
+### [2026-10-28] Never `copy.copy` a groupby; use `_copy_groupby`
+
+**Context**: PR #1826. Groupby `assign`, `rle_id` and the deprecated `mutate`
+shallow-copied a `DataFrameGroupBy` and swapped in a new `obj`. The copy
+shared pandas' `_cache` (stale `_obj_with_exclusions`) and pandas_flavor
+accessors cached on the instance (bound to the original groupby), so new
+columns were silently missing from whole-frame aggregations and
+`get_columns`, and chained calls raised `KeyError`/`ValueError`.
+
+**Learning**: `janitor.functions.utils._copy_groupby` keeps the grouper reuse
+(the reason `grp.assign(...)` + aggregation is 3-9x faster than regrouping)
+and drops `_cache` plus every instance entry that shadows a class-level
+pandas_flavor `CachedAccessor`, whichever object it was bound to. Do not
+detect accessors by an `_obj` attribute: `getattr(frame, "_obj")` returns a
+column named `_obj`. Walk `type(grp).__mro__` checking `base.__dict__`
+(first hit wins); `inspect.getattr_static` gives the same answer but is ~5x
+slower per copy (25 vs 5 us). Mutating `obj` in place after the copy (as
+`assign` does per column) needs `_cache` cleared again. Deprecated functions
+that produce groupbys still go through the helper, because their output feeds
+live methods. Re-assigning a grouping column keeps the old groups (documented
+in `assign`).
+
+**Recommendation**: Any new code that returns a modified groupby must call
+`_copy_groupby` and test reuse (original groupby already aggregated or
+accessed) and chaining, not only a fresh groupby.
+
+### [2026-10-30] Public default changes require a full call-site and documentation audit
+
+**Context**: Changing the public `join_agg` default for `return_matched`.
+**Learning**: A default change must update every test and example that relies
+on the old output shape. Tests that validate optional metadata must pass the
+flag explicitly, and property-test helpers must derive expected shape from
+that requested flag rather than from the result under test.
+
+**Recommendation**: Run all affected test modules, audit changelog and PR
+metadata, and strengthen the default-behavior regression test with an exact
+expected frame.
+
+### [2026-10-30] adorn row identifier is column position 0
+
+**Context**: Issue #1676. `adorn_pct_formatting`, `adorn_ns`, and
+`adorn_rounding` formatted a numeric first column. `adorn_totals` and
+`adorn_percentages` already skipped it by comparing labels to `columns[0]`.
+**Learning**: The identifier is positional on the frame being adorned.
+A label comparison also skips later columns that reuse that name, and
+assigning with `df[label]` writes every column that shares the label.
+`adorn_ns` must read the identifier from `df`: column 0 of a caller-supplied
+`ns` can be a real count. Counts stored by `adorn_percentages` share `df`'s
+columns and have to be matched by position. `select_dtypes(include=[np.number])`
+includes nullable `Int64` and `Float64` columns and excludes booleans.
+**Recommendation**: Choose adorn targets with `adorn_data_positions` and
+assign with `DataFrame.isetitem`. Pair `adorn_ns` counts with
+`adorn_count_pairs`.
+
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import copy
 from functools import singledispatch
 
 import pandas as pd
@@ -12,6 +11,7 @@ from pandas.core.common import apply_if_callable
 from pandas.core.groupby.generic import DataFrameGroupBy
 
 from janitor.functions.select import get_index_labels
+from janitor.functions.utils import _copy_groupby
 from janitor.utils import refactored_function
 
 
@@ -26,6 +26,9 @@ def assign(df: DataFrameGroupBy, **kwargs) -> DataFrameGroupBy:
     Returns a new object with all original columns in addition to new ones.
 
     Existing columns that are re-assigned will be overwritten.
+    The existing grouping is reused, so re-assigning a grouping column
+    changes its values but not the groups; call `get_columns` and
+    group again to regroup on the new values.
 
     Examples:
         >>> import pandas as pd
@@ -70,7 +73,7 @@ def assign(df: DataFrameGroupBy, **kwargs) -> DataFrameGroupBy:
     Returns:
         A pandas DataFrameGroupBy object.
     """
-    df = copy.copy(df)
+    df = _copy_groupby(df)
     df_ = df.obj.copy(deep=False)
     df.obj = df_
     for k, v in kwargs.items():
@@ -79,6 +82,8 @@ def assign(df: DataFrameGroupBy, **kwargs) -> DataFrameGroupBy:
         else:
             outcome = apply_if_callable(v, df)
         df.obj[k] = outcome
+        # a callable may have cached the frame before this column existed
+        df.__dict__.pop("_cache", None)
     return df
 
 
@@ -270,11 +275,13 @@ def mutate(
         A pandas DataFrame, Series, or GroupBy object.
     """  # noqa: E501
     if isinstance(df, DataFrameGroupBy):
-        df = copy.copy(df)
+        df = _copy_groupby(df)
         df_ = df.obj.copy(deep=None)
         df.obj = df_
         for arg in args:
             df_ = _mutator(arg, df=df_, by=df)
+            # a whole-frame callable may have cached the frame before this column
+            df.__dict__.pop("_cache", None)
         return df
     df = df.copy(deep=None)
     for arg in args:

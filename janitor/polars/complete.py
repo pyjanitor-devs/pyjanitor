@@ -639,11 +639,24 @@ def _complete(
         _columns.append(by)
     elif isinstance(by, list):
         _columns.extend(by)
+    maintain_order = "left" if sort else None
     if fill_value is None:
-        return uniques.join(df, on=_columns, how="left", coalesce=True)
+        return uniques.join(
+            df,
+            on=_columns,
+            how="left",
+            coalesce=True,
+            maintain_order=maintain_order,
+        )
     if explicit is False:
         df = df.with_row_index(name="__index__")
-    df = uniques.join(df, on=_columns, how="left", coalesce=True)
+    df = uniques.join(
+        df,
+        on=_columns,
+        how="left",
+        coalesce=True,
+        maintain_order=maintain_order,
+    )
     if explicit is False:
         _columns.append("__index__")
     columns_to_fill = cs.all().exclude(_columns)

@@ -105,14 +105,13 @@ def conditional_join(
     include_join_positions: bool = False,
 ) -> pd.DataFrame:
     """The conditional_join function operates similarly to `pd.merge`,
-    but supports joins on inequality operators,
-    or a combination of equi and non-equi joins.
+    but supports equality joins, inequality joins,
+    and combinations of equi and non-equi joins.
 
-    Joins solely on equality are not supported.
+    Equality-only joins are supported. Unlike `pd.merge`, null keys never
+    match; for plain equality joins `pd.merge` is usually faster.
 
-    If the join is solely on equality, `pd.merge` function
-    covers that; if you are interested in nearest joins, asof joins,
-    or rolling joins, then `pd.merge_asof` covers that.
+    For nearest, asof, or rolling joins, see `pd.merge_asof`.
     There is also pandas' IntervalIndex, which is efficient for range joins,
     especially if the intervals do not overlap.
 
@@ -305,18 +304,20 @@ def conditional_join(
         2        3         2         4
         3        4         3         6
 
-        Get any match for each left row. The selected match is not ordered:
+        Get any match for each left row. Which matching right row is
+        returned is not defined, so only the left side is shown here:
         >>> df1.conditional_join(
         ...     df2,
         ...     ("value_1", "value_2A", ">"),
         ...     ("value_1", "value_2B", "<"),
         ...     keep="any",
+        ...     output_columns={"left": "value_1", "right": []},
         ... )
-           value_1  value_2A  value_2B
-        0        2         1         3
-        1        5         3         6
-        2        3         2         4
-        3        4         3         5
+           value_1
+        0        2
+        1        5
+        2        3
+        3        4
 
         Add an indicator column:
         >>> df1.conditional_join(
@@ -378,6 +379,173 @@ def conditional_join(
         1 1     2     3
         >>> positioned.index.tolist()
         [(0, 0), (0, 1), (1, 1)]
+
+        !!! tip "Existence tests: the staircase"
+
+            To ask only whether a left row has a partner, not which one, use
+            ``keep="any"`` (``how="left_anti"`` returns the rows with none). When the two
+            predicates are inequalities, this "does any right row dominate this left row?"
+            test can also be answered with a staircase. For ``a.x <= b.x`` and
+            ``a.y > b.y``, only right rows with ``b.x >= a.x`` matter, and among them the
+            smallest ``b.y`` is the easiest to beat. Start with two small frames:
+
+            ```python
+            import numpy as np
+            import pandas as pd
+            import janitor
+
+            a = pd.DataFrame({"x": [1, 3, 5, 5, 7], "y": [2, 2, 3, 2, 9]})
+            a
+            ```
+
+            ```text
+               x  y
+            0  1  2
+            1  3  2
+            2  5  3
+            3  5  2
+            4  7  9
+            ```
+
+            ```python
+            b = pd.DataFrame({"x": [2, 4, 6], "y": [3, 1, 2]})
+            b
+            ```
+
+            ```text
+               x  y
+            0  2  3
+            1  4  1
+            2  6  2
+            ```
+
+            Sort the right rows by ``x`` and take a running minimum of ``y`` from the
+            largest ``x`` down. That column is the staircase:
+
+            ```python
+            stairs = b.sort_values("x", ignore_index=True)
+            stairs["stair"] = stairs["y"][::-1].cummin()[::-1]
+            stairs
+            ```
+
+            ```text
+               x  y  stair
+            0  2  3      1
+            1  4  1      1
+            2  6  2      2
+            ```
+
+            Each left row needs one binary search for the first right row with
+            ``b.x >= a.x``, and its step is compared with ``a.y``. A left row beyond every
+            ``b.x`` has no step (``NaN``), and comparing with ``NaN`` is false, so it
+            correctly has no partner:
+
+            ```python
+            position = np.searchsorted(stairs["x"], a["x"], side="left")
+            marked = a.assign(stair=stairs["stair"].reindex(position).to_numpy())
+            marked["has_partner"] = marked["y"] > marked["stair"]
+            marked
+            ```
+
+            ```text
+               x  y  stair  has_partner
+            0  1  2    1.0         True
+            1  3  2    1.0         True
+            2  5  3    2.0         True
+            3  5  2    2.0        False
+            4  7  9    NaN        False
+            ```
+
+            The rows with a partner (semi join) and without one (anti join):
+
+            ```python
+            marked.loc[marked["has_partner"], ["x", "y"]]
+            ```
+
+            ```text
+               x  y
+            0  1  2
+            1  3  2
+            2  5  3
+            ```
+
+            ```python
+            marked.loc[~marked["has_partner"], ["x", "y"]]
+            ```
+
+            ```text
+               x  y
+            3  5  2
+            4  7  9
+            ```
+
+            ``conditional_join`` answers both questions. With ``keep="any"`` it returns the
+            semi join: each left row that has a partner, paired with one matching right row
+            (any one; here each left row has a single candidate, so the pairing is fixed):
+
+            ```python
+            a.conditional_join(b, ("x", "x", "<="), ("y", "y", ">"), keep="any")
+            ```
+
+            ```text
+              left    right
+                 x  y     x  y
+            0    1  2     4  1
+            1    3  2     4  1
+            2    5  3     6  2
+            ```
+
+            ``how="left_anti"`` returns the anti join:
+
+            ```python
+            a.conditional_join(b, ("x", "x", "<="), ("y", "y", ">"), how="left_anti")
+            ```
+
+            ```text
+              left    right
+                 x  y     x   y
+            0    5  2   NaN NaN
+            1    7  9   NaN NaN
+            ```
+
+            The recipe above is for ``a.x <= b.x`` and ``a.y > b.y``. For the other
+            operators, change ``side=`` and which running value you keep. Copying the
+            ``<=`` recipe for ``<`` would silently give wrong answers when ``a.x`` ties
+            with a ``b.x``.
+
+            For the condition on ``x``, ``position`` is where ``a.x`` falls among the
+            sorted ``b.x``:
+
+            | Condition on x | ``side=`` | Right rows that count | Step to read |
+            | --- | --- | --- | --- |
+            | ``a.x <= b.x`` | ``"left"`` | from ``position`` to the end | at ``position`` |
+            | ``a.x < b.x`` | ``"right"`` | from ``position`` to the end | at ``position`` |
+            | ``a.x >= b.x`` | ``"right"`` | from the start up to ``position`` | at ``position - 1`` |
+            | ``a.x > b.x`` | ``"left"`` | from the start up to ``position`` | at ``position - 1`` |
+
+            When the right rows that count run to the end, take the running value from the
+            largest ``x`` down, as above. When they run from the start, take it from the
+            smallest ``x`` up, without reversing (``stairs["y"].cummin()``). A left row with
+            no step to read (``position`` past the last row, or ``position - 1`` before the
+            first) has no partner.
+
+            For the condition on ``y``, keep the running minimum when the left value must be
+            larger, and the running maximum when it must be smaller:
+
+            | Condition on y | Running value | Compare ``a.y`` with the step using |
+            | --- | --- | --- |
+            | ``a.y > b.y`` | minimum (``cummin``) | ``>`` |
+            | ``a.y >= b.y`` | minimum (``cummin``) | ``>=`` |
+            | ``a.y < b.y`` | maximum (``cummax``) | ``<`` |
+            | ``a.y <= b.y`` | maximum (``cummax``) | ``<=`` |
+
+            The staircase answers existence only: it cannot return the matching pairs,
+            count them or aggregate them. It needs exactly two inequalities (equality keys
+            can be handled one group at a time), null rows dropped first, and both sides in
+            the same dtype, so that ``searchsorted`` compares without a lossy common type.
+            On 40 million left rows against 33 thousand right rows the code above ran in
+            about 0.5 seconds, against about 1.7 seconds for the join (single runs; read as
+            orders of magnitude).
 
     !!! abstract "Version Changed"
 
@@ -736,10 +904,6 @@ def _conditional_join_preliminary_checks(
     check("reverse", reverse, [bool])
 
     _check_aggfunc(df, right, aggfunc, reverse)
-    if all((op == _JoinOperator.STRICTLY_EQUAL.value for *_, op in conditions)):
-        if not (return_matching_indices or aggfunc):
-            raise ValueError("Equality only joins are not supported.")
-
     check("include_join_positions", include_join_positions, [bool])
     if include_join_positions and (how != "inner"):
         raise ValueError("include_join_positions is valid only if `how='inner'`")
@@ -1436,7 +1600,7 @@ def join_agg(
     aggfunc: list[tuple],
     force: bool = False,
     reverse: bool = False,
-    return_matched: bool = True,
+    return_matched: bool = False,
     join_algorithm: str = "default",
 ) -> pd.DataFrame:
     """Aggregate values over rows matched by an inner conditional join.
@@ -1461,9 +1625,9 @@ def join_agg(
         - `min` and `max` support numeric, datetime, and timedelta columns.
           Integer results use nullable `Int64` or `UInt64` when an unmatched
           output row needs `pd.NA`; other results retain their source dtype.
-        - `return_matched` identifies whether any row pair matched. This is
-          independent of `count`, which can be zero when all matched source
-          values are null.
+        - When `return_matched=True`, the `matched` index level identifies
+          whether any row pair matched. This is independent of `count`, which
+          can be zero when all matched source values are null.
 
     By default, right-side values are aggregated for each left row. Set
     ``reverse=True`` to aggregate left-side values for each right row.
@@ -1482,10 +1646,10 @@ def join_agg(
         left-row position. Reverse results follow the internal right-side
         layout, which is usually sorted by join value, so their row order is
         not guaranteed. Rows that do appear without a matching partner carry
-        identity values and ``matched=False``. With ``return_matched=True``,
-        the result index has a boolean ``matched`` level so identity-valued
-        unmatched results can be distinguished from matched results with the
-        same value.
+        identity values. When ``return_matched=True``, the result index also
+        has a boolean ``matched`` level, with ``matched=False`` for those
+        rows, so identity-valued unmatched results can be distinguished from
+        matched results with the same value.
 
     Args:
         df: Left DataFrame and reverse-aggregation source.
@@ -1498,14 +1662,16 @@ def join_agg(
             mix equality and ``!=`` predicates without a range predicate.
         reverse: Aggregate left-side values into right-side output rows.
         return_matched: Add a boolean ``matched`` level to the result index.
+            Defaults to ``False``.
         join_algorithm: Strategy for multiple range predicates. ``"default"``
             uses the general range-join implementation and ``"regions"`` uses
             the region-based implementation. It is ignored for other joins.
 
     Returns:
         pd.DataFrame: Aggregated values indexed by physical output-row
-        position. Null join-key rows are excluded; unmatched rows that
-        appear carry identity values.
+        position, optionally with a boolean ``matched`` level when
+        ``return_matched=True``. Null join-key rows are excluded; unmatched
+        rows that appear carry identity values.
 
     Examples:
         >>> import pandas as pd
@@ -1516,14 +1682,12 @@ def join_agg(
         ...     right,
         ...     ("key", "key", "<"),
         ...     aggfunc=[("amount", "sum"), ("amount", "count")],
-        ...     return_matched=True,
         ... )
         >>> print(result.to_string())  # doctest: +NORMALIZE_WHITESPACE
-                  amount
-                     sum count
-              matched
-        0 True        50     2
-        1 True        30     1
+           amount
+              sum count
+        0     50     2
+        1     30     1
 
         ``return_matched`` also distinguishes an unmatched row from a matched
         row whose aggregate happens to be zero:
@@ -1571,7 +1735,6 @@ def join_agg(
         ...     ("key", "key", "<"),
         ...     aggfunc=[("amount", "sum")],
         ...     reverse=True,
-        ...     return_matched=False,
         ... )
         >>> print(reverse_result.to_string())
           amount

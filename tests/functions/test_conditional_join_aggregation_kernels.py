@@ -263,6 +263,7 @@ def test_anchor_non_equi_join_aggregation_dispatches_all_numeric_dtypes(dtype, r
             ("value", "min") if not reverse else ("left_value", "min"),
             ("value", "max") if not reverse else ("left_value", "max"),
         ],
+        return_matched=True,
     )
     expected = _expected_single(left, right, reverse)
     assert_frame_equal(expected, actual)
@@ -282,6 +283,7 @@ def test_count_and_size_support_non_numeric_aggregation_columns():
         right,
         ("limit", "value", "<"),
         aggfunc=[("label", "count"), ("label", "size")],
+        return_matched=True,
     )
 
     expected = pd.DataFrame(
@@ -365,6 +367,7 @@ def test_single_not_equal_aggregation_counts_duplicate_right_candidates():
         right,
         ("key", "key", "!="),
         aggfunc=[("value", "size"), ("value", "sum")],
+        return_matched=True,
     )
 
     expected = pd.DataFrame(
@@ -388,6 +391,7 @@ def test_reverse_not_equal_aggregation_uses_public_right_order():
         ("key", "key", "!="),
         reverse=True,
         aggfunc=[("left_value", "size"), ("left_value", "sum")],
+        return_matched=True,
     )
 
     expected = pd.DataFrame(
@@ -412,6 +416,7 @@ def test_reverse_not_equal_aggregation_marks_only_matching_slots():
         ("key", "key", "!="),
         reverse=True,
         aggfunc=[("left_value", "size"), ("left_value", "sum")],
+        return_matched=True,
     )
 
     expected = pd.DataFrame(
@@ -471,6 +476,7 @@ def test_extended_join_aggregation_dispatches_all_numeric_dtypes(dtype, reverse)
         ("residual", "residual", "!="),
         reverse=reverse,
         aggfunc=aggfunc,
+        return_matched=True,
     )
     expected = _expected_extended(left, right, reverse)
     assert_frame_equal(expected, actual)
@@ -497,6 +503,7 @@ def test_single_not_equal_aggregation_preserves_nullable_dtypes(dtype):
         aggfunc=[
             ("value", operation) for operation in ("size", "sum", "prod", "min", "max")
         ],
+        return_matched=True,
     )
     expected = pd.DataFrame(
         {
@@ -540,6 +547,7 @@ def test_extended_not_equal_aggregation_preserves_nullable_dtypes(dtype):
         aggfunc=[
             ("value", operation) for operation in ("size", "sum", "prod", "min", "max")
         ],
+        return_matched=True,
     )
     expected = pd.DataFrame(
         {
@@ -567,6 +575,7 @@ def test_single_not_equal_numpy_nulls_match_nulls():
         right,
         ("key", "key", "!="),
         aggfunc=[("value", "size"), ("value", "sum")],
+        return_matched=True,
     )
     expected = pd.DataFrame(
         {
@@ -596,6 +605,7 @@ def test_single_not_equal_extension_nulls_do_not_match():
         right,
         ("key", "key", "!="),
         aggfunc=[("value", "size"), ("value", "sum")],
+        return_matched=True,
     )
     expected = pd.DataFrame(
         {
@@ -620,6 +630,7 @@ def test_single_range_aggregation_preserves_match_for_null_value():
         right,
         ("key", "key", "<"),
         aggfunc=[("value", "size"), ("value", "min"), ("value", "max")],
+        return_matched=True,
     )
     expected = pd.DataFrame(
         {
@@ -646,6 +657,7 @@ def test_single_reverse_aggregation_preserves_trimmed_right_order():
         ("key", "key", "<"),
         reverse=True,
         aggfunc=[("value", "size"), ("value", "sum")],
+        return_matched=True,
     )
     expected = pd.DataFrame(
         {
@@ -674,6 +686,7 @@ def test_single_range_aggregation_counts_duplicate_right_values():
             ("value", "min"),
             ("value", "max"),
         ],
+        return_matched=True,
     )
     expected = pd.DataFrame(
         {
@@ -717,6 +730,7 @@ def test_single_range_aggregation_supports_every_range_operator(operator, revers
         aggfunc=[
             (column, operation) for operation in ("size", "sum", "prod", "min", "max")
         ],
+        return_matched=True,
     )
     expected = _expected_single(left, right, reverse, operator)
     assert_frame_equal(expected, actual)
@@ -745,6 +759,7 @@ def test_single_range_aggregation_aligns_unsorted_right_source(reverse):
         aggfunc=[
             (column, operation) for operation in ("size", "sum", "prod", "min", "max")
         ],
+        return_matched=True,
     )
 
     if reverse:
@@ -812,6 +827,7 @@ def test_extended_aggregation_returns_empty_when_residual_rejects_all():
         ("key", "key", "<"),
         ("residual", "residual", "=="),
         aggfunc=[("value", "size"), ("value", "sum")],
+        return_matched=True,
     )
     expected = pd.DataFrame(
         {
@@ -849,6 +865,7 @@ def test_extended_aggregation_intersects_sorted_range_residuals():
         ("first", "first", "<"),
         ("second", "second", "<"),
         aggfunc=[("value", "size"), ("value", "sum")],
+        return_matched=True,
     )
 
     expected = pd.DataFrame(
@@ -871,6 +888,7 @@ def test_single_reverse_aggregation_tracks_unsorted_right_positions():
         ("key", "key", "<"),
         reverse=True,
         aggfunc=[("value", "size"), ("value", "sum")],
+        return_matched=True,
     ).sort_index()
     expected = pd.DataFrame(
         {
@@ -896,6 +914,7 @@ def test_extended_numpy_all_null_not_equal_aggregation_matches():
         ("key", "key", "!="),
         ("residual", "residual", "!="),
         aggfunc=[("value", "size"), ("value", "sum")],
+        return_matched=True,
     )
     expected = pd.DataFrame(
         {
@@ -933,6 +952,7 @@ def test_extended_extension_all_null_not_equal_aggregation_is_empty():
         ("key", "key", "!="),
         ("residual", "residual", "!="),
         aggfunc=[("value", "size"), ("value", "sum")],
+        return_matched=True,
     )
     expected = pd.DataFrame(
         {
@@ -964,6 +984,7 @@ def test_single_reverse_extension_aggregation_preserves_dtype():
         ("key", "key", "<"),
         reverse=True,
         aggfunc=[("value", "size"), ("value", "sum")],
+        return_matched=True,
     ).sort_index()
     expected = pd.DataFrame(
         {
@@ -999,6 +1020,7 @@ def test_single_not_equal_numpy_one_sided_nulls(
         right,
         ("key", "key", "!="),
         aggfunc=[("value", "size"), ("value", "sum")],
+        return_matched=True,
     )
     expected = pd.DataFrame(
         {
@@ -1029,6 +1051,7 @@ def test_single_range_all_null_filtered_side_returns_empty(left_key, right_key):
         right,
         ("key", "key", "<"),
         aggfunc=[("value", "size"), ("value", "sum")],
+        return_matched=True,
     )
     expected = pd.DataFrame(
         {
@@ -1057,6 +1080,7 @@ def test_single_range_all_null_extension_value_handles_sum_and_product():
             ("value", "sum"),
             ("value", "prod"),
         ],
+        return_matched=True,
     )
     expected = pd.DataFrame(
         {
@@ -1083,6 +1107,7 @@ def test_single_reverse_aggregation_keeps_unsorted_duplicate_right_rows():
         ("key", "key", "<"),
         reverse=True,
         aggfunc=[("value", "size"), ("value", "sum")],
+        return_matched=True,
     ).sort_index()
     expected = pd.DataFrame(
         {
@@ -1107,6 +1132,7 @@ def test_single_range_aggregation_handles_float_infinities():
         right,
         ("key", "key", "<"),
         aggfunc=[("value", "size"), ("value", "sum")],
+        return_matched=True,
     )
     expected = pd.DataFrame(
         {
@@ -1131,6 +1157,7 @@ def test_single_range_aggregation_treats_nan_as_null():
         right,
         ("key", "key", "<"),
         aggfunc=[("value", "size"), ("value", "sum")],
+        return_matched=True,
     )
     expected = pd.DataFrame(
         {
@@ -1169,6 +1196,7 @@ def test_extended_reverse_extension_not_equal_aggregation_preserves_dtype():
         ("residual", "residual", "!="),
         reverse=True,
         aggfunc=[("value", "size"), ("value", "sum")],
+        return_matched=True,
     ).sort_index()
     expected = pd.DataFrame(
         {
@@ -1213,6 +1241,7 @@ def test_single_range_aggregation_handles_integer_boundaries(dtype):
         right,
         ("key", "key", "<"),
         aggfunc=[("value", "size"), ("value", "sum")],
+        return_matched=True,
     )
     expected = pd.DataFrame(
         {
@@ -1258,6 +1287,7 @@ def test_single_range_aggregation_uses_pandas_integer_promotion(
         right,
         ("key", "key", "<"),
         aggfunc=[("value", "sum"), ("value", "prod")],
+        return_matched=True,
     )
     expected = pd.DataFrame(
         {
@@ -1287,6 +1317,7 @@ def test_single_range_float32_aggregation_preserves_float32():
         right,
         ("key", "key", "<"),
         aggfunc=[("value", "sum")],
+        return_matched=True,
     )
     expected_value = right["value"].sum()
     expected = pd.DataFrame(
@@ -1428,6 +1459,7 @@ def test_unique_equi_aggregation_covers_forward_and_reverse_output_domains():
         right,
         ("key", "key", "=="),
         aggfunc=aggfunc,
+        return_matched=True,
     )
     expected_forward = pd.DataFrame(
         {
@@ -1460,6 +1492,7 @@ def test_unique_equi_aggregation_covers_forward_and_reverse_output_domains():
             ]
         ],
         reverse=True,
+        return_matched=True,
     )
     expected_reverse = pd.DataFrame(
         {
@@ -1533,6 +1566,7 @@ def test_duplicate_equi_reverse_aggregation_intersects_two_sorted_ranges():
         ("upper", "upper", "<="),
         aggfunc=[("value", "sum"), ("value", "size")],
         reverse=True,
+        return_matched=True,
     )
 
     expected = pd.DataFrame(
@@ -1566,6 +1600,7 @@ def test_duplicate_equi_aggregation_filters_incompatible_second_range_as_residua
         ("first", "first", "<"),
         ("second", "second", "<"),
         aggfunc=[("value", "sum"), ("value", "size")],
+        return_matched=True,
     )
 
     expected = pd.DataFrame(
@@ -1634,6 +1669,7 @@ def test_duplicate_equi_aggregation_unordered_second_range_matches_reference(
             ("value", "size"),
         ],
         reverse=reverse,
+        return_matched=True,
     )
     matched = np.array(expected_sizes, dtype=bool)
     expected = pd.DataFrame(
@@ -1673,6 +1709,7 @@ def test_equi_aggregation_preserves_overlapping_second_range_windows():
         ("first", "first_r", "<"),
         ("second", "second_r", "<"),
         aggfunc=[("value", "sum"), ("value", "size")],
+        return_matched=True,
     )
     expected = pd.DataFrame(
         {
@@ -1697,6 +1734,7 @@ def test_equi_aggregation_preserves_not_equal_residual_semantics():
         ("key", "key", "=="),
         ("filter", "filter", "!="),
         aggfunc=[("value", "sum"), ("value", "size")],
+        return_matched=True,
     )
 
     expected = pd.DataFrame(
@@ -1722,6 +1760,7 @@ def test_equi_aggregation_supports_multiple_equi_columns():
         ("key_a", "key_a", "=="),
         ("key_b", "key_b", "=="),
         aggfunc=[("value", "sum"), ("value", "size")],
+        return_matched=True,
     )
 
     expected = pd.DataFrame(

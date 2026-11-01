@@ -5,6 +5,10 @@
 -   [BUG] Materialize one-shot iterables in `check_column` so callers such as `fill_empty` can reuse column names. - Issue #1015 @cpruijsen
 -   [BUG] Allow hashable scalar column labels such as `2` in `fill_empty` instead of raising `NotImplementedError`. - Issue #1015 @cpruijsen
 
+## [v0.32.67] - 2026-11-01
+
+-   [ENH] Speed up `conditional_join(..., keep="any")` on two range predicates that point the same way (`<`/`<=` with `<`/`<=`, or `>`/`>=` with `>`/`>=`) when the second right column is not monotonic. A negated cumulative envelope now bounds each window and its far end is a genuine match, so no scan is needed. Unsafe dtypes (unsigned values above the int64 maximum, the most negative integer, non-numeric) keep the previous behaviour. `keep="any"` promises only that some matching right row is returned for each left row; it may now return a later match than before, so do not rely on it being the first. Use `keep="first"` for the first match. - Requires `janitor-rs` 0.6.7 for the speedup. PR #1844 @samukweku
+
 ## [v0.32.66] - 2026-10-30
 
 -   [BUG] Leave a numeric first column unchanged in `adorn_pct_formatting`, `adorn_ns`, and `adorn_rounding`. Column position 0 is the row identifier, matching `adorn_totals` and `adorn_percentages`. Based on work by @dylanpulver (#1677) and @SumanGouda (#1696). - Issue #1676
@@ -704,7 +708,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.66...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.67...HEAD
+
+[v0.32.67]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.66...v0.32.67
 
 [v0.32.66]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.65...v0.32.66
 

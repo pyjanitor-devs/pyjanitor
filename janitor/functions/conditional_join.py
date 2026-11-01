@@ -1577,9 +1577,8 @@ def join_agg(
         To total overlapping date ranges per day, join a calendar of days to
         the observations on ``start <= day <= end``. The match pairs are
         aggregated without being built, so cost does not grow with how long
-        the ranges are. This is the problem asked in "Python fast aggregation
-        of many observations to daily sum" on Stack Overflow:
-        https://stackoverflow.com/questions/69194678/python-fast-aggregation-of-many-observations-to-daily-sum
+        the ranges are. This is the problem asked in the Stack Overflow question
+        [Python fast aggregation of many observations to daily sum][so-question].
 
         >>> start_date = pd.to_datetime(
         ...     ["2021-01-07", "2021-01-04", "2021-01-12", "2021-01-03"]
@@ -1614,9 +1613,8 @@ def join_agg(
         times faster than the join in testing. It cannot produce ``min``,
         ``max`` or ``prod``, and it silently gives wrong totals if any range
         has ``end < start``. This is the cumulative-sum technique from
-        Cimbali's answer to the same question, here with the start and end
-        steps combined into one series:
-        https://stackoverflow.com/a/69195082
+        [Cimbali's answer][so-answer] to the same question, here with the start
+        and end steps combined into one series.
 
         >>> values = obs["value"].to_numpy()
         >>> day_after_end = obs["end_date"] + pd.Timedelta(days=1)
@@ -1633,6 +1631,9 @@ def join_agg(
         2021-01-13    16
         2021-01-14    11
         Freq: D
+
+        [so-question]: https://stackoverflow.com/questions/69194678/python-fast-aggregation-of-many-observations-to-daily-sum
+        [so-answer]: https://stackoverflow.com/a/69195082
     """
     return _conditional_join_compute(
         df=df,

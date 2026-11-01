@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
--   [DOC] Add a `join_agg` example that totals overlapping date ranges per day, with the equivalent cumulative-sum form and its limits. - PR #1850 @samukweku
+-   [DOC] Add `join_agg` tips for totalling overlapping date ranges per day (join and cumulative-sum forms) and for counting or summing overlaps by boundaries with `searchsorted`, with their limits. - PR #1850 @samukweku
 
 ## [v0.32.68] - 2026-11-01
 

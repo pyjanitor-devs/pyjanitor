@@ -1791,7 +1791,8 @@ def join_agg(
             ``max`` or ``prod``, and it silently gives wrong totals if any range
             has ``end < start``. This is the cumulative-sum technique from
             [Cimbali's answer][so-answer] to the same question, here with the start
-            and end steps combined into one series.
+            and end steps combined into one series. The ``fillna(0)`` covers calendar
+            days before the first start, which have no running total yet.
 
             ```python
             values = obs["value"].to_numpy()
@@ -1801,7 +1802,7 @@ def join_agg(
             steps = pd.concat([added_on_start, removed_after_end])
             step_per_day = steps.groupby(level=0).sum().sort_index()
             running = step_per_day.cumsum()
-            running.reindex(calendar, method="ffill")
+            running.reindex(calendar, method="ffill").fillna(0).astype(values.dtype)
             ```
 
             ```text
@@ -1816,6 +1817,89 @@ def join_agg(
 
             [so-question]: https://stackoverflow.com/questions/69194678/python-fast-aggregation-of-many-observations-to-daily-sum
             [so-answer]: https://stackoverflow.com/a/69195082
+
+        !!! tip "Counting overlaps by boundaries"
+
+            To count (or sum over) the intervals of ``right`` that overlap each
+            interval of ``df``, without building the pairs, use two sorted lists and
+            two binary searches. When every interval has ``start <= end``:
+
+            ```text
+            overlap = (right starts <= df end) - (right ends < df start)
+            ```
+
+            The first term includes every right interval that ended before ``df``
+            started, because it also started before ``df`` ended. The second term
+            removes exactly those. Start with a small ``right`` and three
+            ``df`` intervals (all closed, so both ends count):
+
+            ```python
+            import numpy as np
+            import pandas as pd
+            import janitor
+
+            right = pd.DataFrame(
+                {
+                    "start": [1, 2, 5, 7, 3],
+                    "end": [4, 6, 8, 9, 3],
+                    "v": [10, 20, 30, 40, 5],
+                }
+            )
+            df = pd.DataFrame({"start": [4, 0, 6], "end": [5, 0, 7]})
+            ```
+
+            Sort the starts and the ends separately and search each. The ``side``
+            arguments encode the comparisons: ``"right"`` counts equal values and
+            ``"left"`` does not.
+
+            ```python
+            starts = np.sort(right["start"].to_numpy())
+            ends = np.sort(right["end"].to_numpy())
+            k_start = np.searchsorted(starts, df["end"].to_numpy(), side="right")
+            k_end = np.searchsorted(ends, df["start"].to_numpy(), side="left")
+            df.assign(count=k_start - k_end)
+            ```
+
+            ```text
+               start  end  count
+            0      4    5      3
+            1      0    0      0
+            2      6    7      3
+            ```
+
+            For a sum, keep a running total of the values beside each sorted list,
+            with a leading 0, and subtract the two totals instead of the two counts:
+
+            ```python
+            by_start = right["v"].to_numpy()[np.argsort(right["start"], kind="stable")]
+            by_end = right["v"].to_numpy()[np.argsort(right["end"], kind="stable")]
+            cum_start = np.concatenate([[0], np.cumsum(by_start)])
+            cum_end = np.concatenate([[0], np.cumsum(by_end)])
+            df.assign(total=cum_start[k_start] - cum_end[k_end])
+            ```
+
+            ```text
+               start  end  total
+            0      4    5     60
+            1      0    0      0
+            2      6    7     90
+            ```
+
+            A point is an interval with equal start and end, so the same code counts
+            how many intervals contain each point. The limits:
+
+            - Only counts and subtractable sums work, not ``min``, ``max`` or
+              ``prod``, and the matching pairs cannot be recovered. Float sums can
+              lose precision when two large running totals are subtracted.
+            - An interval with ``start > end`` on either side gives wrong, even
+              negative, counts. Check ``(start <= end).all()`` on both frames first,
+              and use ``join_agg`` if it fails.
+            - For half-open intervals ``[start, end)``, require ``start < end`` (an
+              empty interval contains nothing) and swap the sides: ``"left"`` for
+              the starts search and ``"right"`` for the ends search.
+            - Nulls never match in a join, so drop rows with a null start or end
+              before sorting. For an equality column such as a contig, sort and
+              search within each group.
     """
     return _conditional_join_compute(
         df=df,

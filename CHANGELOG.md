@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [DOC] Add a `conditional_join` example showing how to answer a two-inequality existence (semi-join or anti-join) test with a NumPy staircase and one binary search per left row, with its limits. - Issue #1843, PR #1854 @samukweku
+
 ## [v0.32.67] - 2026-11-01
 
 -   [ENH] Speed up `conditional_join(..., keep="any")` on two range predicates that point the same way (`<`/`<=` with `<`/`<=`, or `>`/`>=` with `>`/`>=`) when the second right column is not monotonic. A negated cumulative envelope now bounds each window and its far end is a genuine match, so no scan is needed. Unsafe dtypes (unsigned values above the int64 maximum, the most negative integer, non-numeric) keep the previous behaviour. `keep="any"` promises only that some matching right row is returned for each left row; it may now return a later match than before, so do not rely on it being the first. Use `keep="first"` for the first match. - Requires `janitor-rs` 0.6.7 for the speedup. PR #1844 @samukweku

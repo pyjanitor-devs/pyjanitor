@@ -907,30 +907,6 @@ includes nullable `Int64` and `Float64` columns and excludes booleans.
 assign with `DataFrame.isetitem`. Pair `adorn_ns` counts with
 `adorn_count_pairs`.
 
-### [2026-11-11] Preserve CDF dtype promotion and Series metadata
-
-**Context**: Revising PR #1842 for issue #1468 after maintainer review.
-**Learning**: `scipy.stats.norm.cdf` promotes narrow numeric inputs to
-`float64` and returns an array; applying `scipy.special.ndtr` directly to a
-Series can retain its name and narrow dtype instead.
-**Recommendation**: Preserve the existing dtype promotion and construct the
-output from an array. Test named Series, narrow and nullable dtypes, empty
-inputs, missing values, and extreme tails when replacing distribution APIs.
-
-### [2026-11-11] complete indicator names and falsy column labels
-
-**Context**: Issue #1860. `complete(..., explicit=False)` built its merge
-indicator with `"".join(columns)`, and `expand` treated a falsy Series or
-Index name as missing.
-**Learning**: pandas accepts only a string (or bool) for `merge(indicator=)`.
-A one-column join of the labels is that column, and non-string labels cannot
-be joined. The name has to be checked against the columns of both frames
-passed to merge, without assuming those labels are strings. A missing Series
-or Index name is `None`; `0` and other falsy labels are real names, and the
-cartesian product already keeps scalar labels as column names. Grouped
-`complete` keeps those labels as index names. `merge(on=)` then passes an
-integer name to `get_level_values`, which treats it as a level position, so
-the group key has to be moved into columns with `reset_index` before the merge.
 **Recommendation**: Do not build the indicator by joining labels. Keep the
 `None` check in the Series/Index validator, and cover a one-column
 `explicit=False` fill plus integer labels (scalar and list form).

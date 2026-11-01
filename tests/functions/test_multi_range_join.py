@@ -226,6 +226,7 @@ def test_keep_any_two_ranges_every_direction(first_op, second_op, kind):
     rng = np.random.default_rng(seed)
 
     def make(size):
+        """Random integer frame with ties."""
         base = rng.integers(0, 12, size)
         if kind == "float":
             return base.astype(float) / 2
@@ -270,6 +271,7 @@ def _spy_staircase(monkeypatch):
     original = _range_join.janitor_rs.range_exists_indices
 
     def spy(*args, **kwargs):
+        """Count the call, then run the real kernel."""
         calls.append(1)
         return original(*args, **kwargs)
 
@@ -362,6 +364,7 @@ def test_keep_any_staircase_dtypes_and_nulls(dtype, first_op, second_op):
     rng = np.random.default_rng(7)
 
     def build(size):
+        """Random frame with nulls, typed for the case under test."""
         frame = pd.DataFrame(
             {
                 name: pd.array(rng.integers(0, 30, size), dtype="Int64")
@@ -390,3 +393,80 @@ def test_keep_any_staircase_dtypes_and_nulls(dtype, first_op, second_op):
     assert len(left_index) == len(set(left_index.tolist()))
     assert set(left_index.tolist()) == set(np.flatnonzero(hits.any(axis=1)).tolist())
     assert hits[left_index, right_index].all()
+
+
+def _staircase_pools():
+    """Value pools that stress the kernel's dtype families, with plenty of ties."""
+    i64 = np.iinfo(np.int64)
+    return {
+        "int64_extremes": (np.array([i64.min, i64.min + 1, 0, 7, i64.max]), None),
+        "uint64_above_int64": (
+            np.array([2**64 - 1, 2**64 - 2, 2**63 + 1, 2**63, 5], dtype=np.uint64),
+            None,
+        ),
+        "datetime": (np.arange(6) * 3, lambda a: pd.to_datetime(a, unit="s")),
+        "timedelta": (np.arange(6) * 3, lambda a: pd.to_timedelta(a, unit="s")),
+    }
+
+
+@pytest.mark.parametrize("pool", list(_staircase_pools()))
+@pytest.mark.parametrize("how", ["inner", "left", "right"])
+@pytest.mark.parametrize("ops", [("<=", ">"), (">=", "<")])
+def test_keep_any_staircase_labels_dtypes_and_how(monkeypatch, pool, how, ops):
+    """The label mapping into the join result is right for datetimes,
+    timedeltas, the int64 minimum, uint64 above the int64 maximum, and a
+    shuffled non-default index, for every ``how``.
+    """
+    values, wrap = _staircase_pools()[pool]
+    wrap = wrap or (lambda a: a)
+    rng = np.random.default_rng(11)
+
+    def build(size, prefix, id_name):
+        """A frame with ties, an id column, and a shuffled index."""
+        frame = pd.DataFrame(
+            {
+                prefix + "x": wrap(rng.choice(values, size)),
+                prefix + "y": wrap(rng.choice(values, size)),
+                id_name: np.arange(size),
+            }
+        )
+        frame.index = rng.permutation(np.arange(size) + 1000)
+        return frame
+
+    left, right = build(40, "", "lid"), build(50, "r", "rid")
+    calls = _spy_staircase(monkeypatch)
+    actual = left.conditional_join(
+        right, ("x", "rx", ops[0]), ("y", "ry", ops[1]), how=how, keep="any"
+    )
+    assert calls, "the staircase kernel did not run"
+
+    ops_table = {
+        "<": np.less,
+        "<=": np.less_equal,
+        ">": np.greater,
+        ">=": np.greater_equal,
+    }
+    hits = ops_table[ops[0]](
+        left["x"].to_numpy()[:, None], right["rx"].to_numpy()[None, :]
+    ) & ops_table[ops[1]](
+        left["y"].to_numpy()[:, None], right["ry"].to_numpy()[None, :]
+    )
+    want_left = set(np.flatnonzero(hits.any(axis=1)).tolist())
+
+    paired = actual.dropna(subset=["lid", "rid"])
+    assert len(paired) == len(want_left)
+    assert set(paired["lid"].astype(int)) == want_left
+    assert hits[paired["lid"].astype(int), paired["rid"].astype(int)].all()
+    # Carried-along columns must belong to the reported rows.
+    assert (
+        paired["x"].to_numpy()
+        == left.set_index("lid").loc[paired["lid"], "x"].to_numpy()
+    ).all()
+    assert (
+        paired["ry"].to_numpy()
+        == right.set_index("rid").loc[paired["rid"], "ry"].to_numpy()
+    ).all()
+    if how == "left":
+        assert set(actual["lid"].astype(int)) == set(range(len(left)))
+    if how == "right":
+        assert set(actual["rid"].astype(int)) == set(range(len(right)))

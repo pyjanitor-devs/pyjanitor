@@ -304,18 +304,20 @@ def conditional_join(
         2        3         2         4
         3        4         3         6
 
-        Get any match for each left row. The selected match is not ordered:
+        Get any match for each left row. Which matching right row is
+        returned is not defined, so only the left side is shown here:
         >>> df1.conditional_join(
         ...     df2,
         ...     ("value_1", "value_2A", ">"),
         ...     ("value_1", "value_2B", "<"),
         ...     keep="any",
+        ...     output_columns={"left": "value_1", "right": []},
         ... )
-           value_1  value_2A  value_2B
-        0        2         1         3
-        1        5         3         6
-        2        3         2         4
-        3        4         3         5
+           value_1
+        0        2
+        1        5
+        2        3
+        3        4
 
         Add an indicator column:
         >>> df1.conditional_join(

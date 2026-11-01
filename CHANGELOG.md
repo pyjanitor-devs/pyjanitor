@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
--   [DOC] Add guidance to `DataFrameGroupBy.assign` on when it helps and when plain pandas is enough, with examples. - @samukweku
+-   [DOC] Add guidance to `DataFrameGroupBy.assign` on when it helps and when plain pandas is enough, with examples. - PR #1846 @samukweku
 
 ## [v0.32.66] - 2026-10-30
 

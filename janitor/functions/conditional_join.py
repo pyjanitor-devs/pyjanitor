@@ -1741,66 +1741,81 @@ def join_agg(
         1     10
         2     30
 
-        To total overlapping date ranges per day, join a calendar of days to
-        the observations on ``start <= day <= end``. The match pairs are
-        aggregated without being built, so cost does not grow with how long
-        the ranges are. This is the problem asked in the Stack Overflow question
-        [Python fast aggregation of many observations to daily sum][so-question].
+        !!! tip "Daily totals over date ranges"
 
-        >>> start_date = pd.to_datetime(
-        ...     ["2021-01-07", "2021-01-04", "2021-01-12", "2021-01-03"]
-        ... )
-        >>> end_date = pd.to_datetime(
-        ...     ["2021-01-16", "2021-01-12", "2021-01-13", "2021-01-15"]
-        ... )
-        >>> obs = pd.DataFrame(
-        ...     {"start_date": start_date, "end_date": end_date, "value": [7, 6, 5, 4]}
-        ... )
-        >>> calendar = pd.date_range("2021-01-10", "2021-01-14", name="day")
-        >>> days = calendar.to_frame(index=False)
-        >>> totals = days.join_agg(
-        ...     obs,
-        ...     ("day", "start_date", ">="),
-        ...     ("day", "end_date", "<="),
-        ...     aggfunc=[("value", "sum")],
-        ... )
-        >>> print(days.assign(total=totals[("value", "sum")]).to_string())
-                 day  total
-        0 2021-01-10     17
-        1 2021-01-11     17
-        2 2021-01-12     22
-        3 2021-01-13     16
-        4 2021-01-14     11
+            To total overlapping date ranges per day, join a calendar of days to
+            the observations on ``start <= day <= end``. The match pairs are
+            aggregated without being built, so cost does not grow with how long
+            the ranges are. This is the problem asked in the Stack Overflow question
+            [Python fast aggregation of many observations to daily sum][so-question].
 
-        When every range has ``start <= end`` and only a sum (or another
-        quantity that can be subtracted, such as a count) is needed, running
-        totals give the same answer without any join: add each value on its
-        start day, subtract it on the day after its end, and take a
-        cumulative sum. On millions of observations it ran roughly 5 to 15
-        times faster than the join in testing. It cannot produce ``min``,
-        ``max`` or ``prod``, and it silently gives wrong totals if any range
-        has ``end < start``. This is the cumulative-sum technique from
-        [Cimbali's answer][so-answer] to the same question, here with the start
-        and end steps combined into one series.
+            ```python
+            import pandas as pd
+            import janitor
 
-        >>> values = obs["value"].to_numpy()
-        >>> day_after_end = obs["end_date"] + pd.Timedelta(days=1)
-        >>> added_on_start = pd.Series(values, index=obs["start_date"])
-        >>> removed_after_end = pd.Series(-values, index=day_after_end)
-        >>> steps = pd.concat([added_on_start, removed_after_end])
-        >>> step_per_day = steps.groupby(level=0).sum().sort_index()
-        >>> running = step_per_day.cumsum()
-        >>> print(running.reindex(calendar, method="ffill").to_string())
-        day
-        2021-01-10    17
-        2021-01-11    17
-        2021-01-12    22
-        2021-01-13    16
-        2021-01-14    11
-        Freq: D
+            start_date = pd.to_datetime(
+                ["2021-01-07", "2021-01-04", "2021-01-12", "2021-01-03"]
+            )
+            end_date = pd.to_datetime(
+                ["2021-01-16", "2021-01-12", "2021-01-13", "2021-01-15"]
+            )
+            obs = pd.DataFrame(
+                {"start_date": start_date, "end_date": end_date, "value": [7, 6, 5, 4]}
+            )
+            calendar = pd.date_range("2021-01-10", "2021-01-14", name="day")
+            days = calendar.to_frame(index=False)
+            totals = days.join_agg(
+                obs,
+                ("day", "start_date", ">="),
+                ("day", "end_date", "<="),
+                aggfunc=[("value", "sum")],
+            )
+            days.assign(total=totals[("value", "sum")])
+            ```
 
-        [so-question]: https://stackoverflow.com/questions/69194678/python-fast-aggregation-of-many-observations-to-daily-sum
-        [so-answer]: https://stackoverflow.com/a/69195082
+            ```text
+                     day  total
+            0 2021-01-10     17
+            1 2021-01-11     17
+            2 2021-01-12     22
+            3 2021-01-13     16
+            4 2021-01-14     11
+            ```
+
+            When every range has ``start <= end`` and only a sum (or another
+            quantity that can be subtracted, such as a count) is needed, running
+            totals give the same answer without any join: add each value on its
+            start day, subtract it on the day after its end, and take a
+            cumulative sum. On millions of observations it ran roughly 5 to 15
+            times faster than the join in testing. It cannot produce ``min``,
+            ``max`` or ``prod``, and it silently gives wrong totals if any range
+            has ``end < start``. This is the cumulative-sum technique from
+            [Cimbali's answer][so-answer] to the same question, here with the start
+            and end steps combined into one series.
+
+            ```python
+            values = obs["value"].to_numpy()
+            day_after_end = obs["end_date"] + pd.Timedelta(days=1)
+            added_on_start = pd.Series(values, index=obs["start_date"])
+            removed_after_end = pd.Series(-values, index=day_after_end)
+            steps = pd.concat([added_on_start, removed_after_end])
+            step_per_day = steps.groupby(level=0).sum().sort_index()
+            running = step_per_day.cumsum()
+            running.reindex(calendar, method="ffill")
+            ```
+
+            ```text
+            day
+            2021-01-10    17
+            2021-01-11    17
+            2021-01-12    22
+            2021-01-13    16
+            2021-01-14    11
+            Freq: D, dtype: int64
+            ```
+
+            [so-question]: https://stackoverflow.com/questions/69194678/python-fast-aggregation-of-many-observations-to-daily-sum
+            [so-answer]: https://stackoverflow.com/a/69195082
     """
     return _conditional_join_compute(
         df=df,

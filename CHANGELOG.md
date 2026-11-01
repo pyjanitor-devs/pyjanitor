@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
--   [INF] Require a `CHANGELOG.md` entry in every pull request and check for it in review: added to `AGENTS.md`, `CONTRIBUTING.md` and the PR template. - @samukweku
+-   [INF] Require a `CHANGELOG.md` entry in every pull request and check for it in review: added to `AGENTS.md`, `CONTRIBUTING.md` and the PR template. - PR #1848 @samukweku
 
 ## [v0.32.66] - 2026-10-30
 

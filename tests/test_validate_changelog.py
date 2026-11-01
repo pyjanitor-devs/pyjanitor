@@ -191,3 +191,84 @@ def test_main_uses_base_and_head_revisions(monkeypatch):
             "CHANGELOG.md",
         ],
     ]
+
+
+def test_does_not_require_entry_by_default():
+    """Leave the entry requirement off unless it is requested."""
+
+    base = "# Changelog\n\n## [Unreleased]\n\n## [v1.0.0] - 2026-01-01\n"
+
+    assert validate_changelog_diff(base, base, "") == []
+
+
+def test_require_entry_rejects_missing_entry():
+    """Report a pull request that leaves the changelog untouched."""
+
+    base = "# Changelog\n\n## [Unreleased]\n\n## [v1.0.0] - 2026-01-01\n"
+
+    errors = validate_changelog_diff(base, base, "", require_entry=True)
+
+    assert len(errors) == 1
+    assert "no entry added under [Unreleased]" in errors[0]
+    assert "skip-changelog" in errors[0]
+
+
+def test_require_entry_accepts_entry_under_unreleased():
+    """Accept a pull request that adds an entry to the unreleased section."""
+
+    base = "# Changelog\n\n## [Unreleased]\n\n## [v1.0.0] - 2026-01-01\n"
+    head = base.replace("## [Unreleased]\n", "## [Unreleased]\n\n- New feature.\n")
+
+    assert (
+        validate_changelog_diff(base, head, _diff(base, head), require_entry=True) == []
+    )
+
+
+def test_require_entry_rejects_edit_to_historical_section_only():
+    """A typo fix in a released section is not an entry for this pull request."""
+
+    base = "# Changelog\n\n## [Unreleased]\n\n## [v1.0.0] - 2026-01-01\n\n- Typo.\n"
+    head = base.replace("Typo", "Fixed")
+
+    errors = validate_changelog_diff(base, head, _diff(base, head), require_entry=True)
+
+    assert len(errors) == 1
+    assert "no entry added under [Unreleased]" in errors[0]
+
+
+def test_require_entry_rejects_link_definition_only_change():
+    """Structural changes such as link definitions do not count as entries."""
+
+    base = "# Changelog\n\n## [Unreleased]\n\n[Unreleased]: https://x/a...b\n"
+    head = base.replace("a...b", "a...c")
+
+    errors = validate_changelog_diff(base, head, _diff(base, head), require_entry=True)
+
+    assert len(errors) == 1
+
+
+def test_main_passes_require_entry(monkeypatch):
+    """Fail the command when the flag is set and no entry was added."""
+
+    class Result:
+        """Minimal subprocess result for the command mock."""
+
+        def __init__(self, stdout):
+            self.stdout = stdout
+
+    def fake_run(command, **kwargs):
+        """Return changelog text or an empty diff for each mocked command."""
+
+        if command[1] == "show":
+            return Result("# Changelog\n\n## [Unreleased]\n")
+        return Result("")
+
+    monkeypatch.setattr(_MODULE.subprocess, "run", fake_run)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["validate_changelog", "--base", "base", "--head", "head", "--require-entry"],
+    )
+
+    with pytest.raises(SystemExit, match="no entry added under"):
+        _MODULE.main()

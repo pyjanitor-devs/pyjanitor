@@ -1,0 +1,47 @@
+name: Require changelog entry
+
+# Every pull request must add an entry under [Unreleased] in CHANGELOG.md.
+# The check in tests.yml only validates where added entries sit, and it only
+# runs when source files change, so a docs-only pull request could skip the
+# changelog. This workflow runs on every pull request to dev.
+#
+# Exemptions: dependabot, and any pull request a maintainer labels
+# `skip-changelog`. Labelling or unlabelling re-runs the check.
+
+on:
+  pull_request:
+    branches:
+      - dev
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  require-changelog-entry:
+    name: Require a changelog entry
+    if: >-
+      github.actor != 'dependabot[bot]' &&
+      !contains(github.event.pull_request.labels.*.name, 'skip-changelog')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.x"
+
+      - name: Require a changelog entry under [Unreleased]
+        run: |
+          python scripts/validate_changelog.py \
+            --base HEAD^1 \
+            --head HEAD \
+            --require-entry

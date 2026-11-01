@@ -105,23 +105,30 @@ def validate_changelog_diff(
     head: str,
     diff: str,
     allow_backfill: bool = False,
+    require_entry: bool = False,
 ) -> list[str]:
     """Return errors for new entries outside ``[Unreleased]``.
 
     A paired replacement in the same historical section is treated as an edit
     to existing history, which permits typo fixes without permitting a new
     entry to pass merely because it has matching text elsewhere.
+
+    With ``require_entry``, also report an error when the diff adds no entry
+    to ``[Unreleased]``, so a pull request cannot skip the changelog.
     """
 
     base_lines = base.splitlines()
     head_lines = head.splitlines()
     errors = []
+    unreleased_entries = 0
     hunks = _parse_diff(diff)
     for hunk in hunks:
         for index, added in enumerate(hunk.added):
             if _structural_line(added.text):
                 continue
             section = _section_at(head_lines, added.number)
+            if section == "Unreleased":
+                unreleased_entries += 1
             paired_removed = hunk.removed[index] if index < len(hunk.removed) else None
             same_section_edit = (
                 paired_removed is not None
@@ -133,6 +140,12 @@ def validate_changelog_diff(
                     f"CHANGELOG.md:{added.number}: entry added under [{section_name}]; "
                     "new entries must be under [Unreleased]"
                 )
+    if require_entry and not unreleased_entries:
+        errors.append(
+            "CHANGELOG.md: no entry added under [Unreleased]; every pull "
+            "request needs one (maintainers can add the `skip-changelog` "
+            "label to exempt a pull request)"
+        )
     return errors
 
 
@@ -169,6 +182,11 @@ def main() -> None:
         action="store_true",
         help="allow intentional changelog backfills",
     )
+    parser.add_argument(
+        "--require-entry",
+        action="store_true",
+        help="fail when the diff adds no entry under [Unreleased]",
+    )
     args = parser.parse_args()
 
     head_result = subprocess.run(
@@ -188,6 +206,7 @@ def main() -> None:
         head_result.stdout,
         _git_diff(args.base, args.head),
         allow_backfill=args.allow_backfill,
+        require_entry=args.require_entry,
     )
     if errors:
         raise SystemExit("\n".join(errors))

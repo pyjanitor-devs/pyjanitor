@@ -101,10 +101,10 @@ def assign(df: DataFrameGroupBy, **kwargs) -> DataFrameGroupBy:
         ...     }
         ... )
         >>> grp = df.groupby("g")
-        >>> out = (
-        ...     grp.assign(m=grp["x"].transform("mean"))
-        ...     .assign(z=pd.col("x") - pd.col("m"))
-        ...     .assign(zmax=lambda g: g["z"].transform("max"))
+        >>> out = grp.assign(
+        ...     m=grp["x"].transform("mean"),
+        ...     z=pd.col("x") - pd.col("m"),
+        ...     zmax=lambda g: g["z"].transform("max"),
         ... )
         >>> out.get_columns("*")
            g    x    y    m    z  zmax

@@ -380,6 +380,8 @@ def conditional_join(
 
         !!! tip "Existence tests: the staircase"
 
+            !!! tip "Existence tests: the staircase"
+
             To ask only whether a left row has a partner, not which one, use
             ``keep="any"`` (``how="left_anti"`` returns the rows with none). When the two
             predicates are inequalities, this "does any right row dominate this left row?"
@@ -506,13 +508,44 @@ def conditional_join(
             1    7  9   NaN NaN
             ```
 
+            The recipe above is for ``a.x <= b.x`` and ``a.y > b.y``. For the other
+            operators, change ``side=`` and which running value you keep. Copying the
+            ``<=`` recipe for ``<`` would silently give wrong answers when ``a.x`` ties
+            with a ``b.x``.
+
+            For the condition on ``x``, ``position`` is where ``a.x`` falls among the
+            sorted ``b.x``:
+
+            | Condition on x | ``side=`` | Right rows that count | Step to read |
+            | --- | --- | --- | --- |
+            | ``a.x <= b.x`` | ``"left"`` | from ``position`` to the end | at ``position`` |
+            | ``a.x < b.x`` | ``"right"`` | from ``position`` to the end | at ``position`` |
+            | ``a.x >= b.x`` | ``"right"`` | from the start up to ``position`` | at ``position - 1`` |
+            | ``a.x > b.x`` | ``"left"`` | from the start up to ``position`` | at ``position - 1`` |
+
+            When the right rows that count run to the end, take the running value from the
+            largest ``x`` down, as above. When they run from the start, take it from the
+            smallest ``x`` up, without reversing (``stairs["y"].cummin()``). A left row with
+            no step to read (``position`` past the last row, or ``position - 1`` before the
+            first) has no partner.
+
+            For the condition on ``y``, keep the running minimum when the left value must be
+            larger, and the running maximum when it must be smaller:
+
+            | Condition on y | Running value | Compare ``a.y`` with the step using |
+            | --- | --- | --- |
+            | ``a.y > b.y`` | minimum (``cummin``) | ``>`` |
+            | ``a.y >= b.y`` | minimum (``cummin``) | ``>=`` |
+            | ``a.y < b.y`` | maximum (``cummax``) | ``<`` |
+            | ``a.y <= b.y`` | maximum (``cummax``) | ``<=`` |
+
             The staircase answers existence only: it cannot return the matching pairs,
             count them or aggregate them. It needs exactly two inequalities (equality keys
             can be handled one group at a time), null rows dropped first, and both sides in
             the same dtype, so that ``searchsorted`` compares without a lossy common type.
-            On 40 million left rows against 33 thousand right rows a NumPy version of this
-            ran in about 0.4 seconds, against about 1.7 seconds for the join (single runs;
-            read as orders of magnitude).
+            On 40 million left rows against 33 thousand right rows the code above ran in
+            about 0.5 seconds, against about 1.7 seconds for the join (single runs; read as
+            orders of magnitude).
 
     !!! abstract "Version Changed"
 

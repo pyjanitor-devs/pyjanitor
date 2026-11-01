@@ -385,125 +385,79 @@ def conditional_join(
         ``a.y > b.y``, only right rows with ``b.x >= a.x`` matter, and among them the
         smallest ``b.y`` is the easiest to beat. Start with two small frames:
 
-        ```python
-        import numpy as np
-        import pandas as pd
-        import janitor
-
-        a = pd.DataFrame({"x": [1, 3, 5, 5, 7], "y": [2, 2, 3, 2, 9]})
-        b = pd.DataFrame({"x": [2, 4, 6], "y": [3, 1, 2]})
-        ```
-
-        ``a``
-
-        |  | x | y |
-        | --- | --- | --- |
-        | 0 | 1 | 2 |
-        | 1 | 3 | 2 |
-        | 2 | 5 | 3 |
-        | 3 | 5 | 2 |
-        | 4 | 7 | 9 |
-
-        ``b``
-
-        |  | x | y |
-        | --- | --- | --- |
-        | 0 | 2 | 3 |
-        | 1 | 4 | 1 |
-        | 2 | 6 | 2 |
+        >>> import numpy as np
+        >>> a = pd.DataFrame({"x": [1, 3, 5, 5, 7], "y": [2, 2, 3, 2, 9]})
+        >>> a
+           x  y
+        0  1  2
+        1  3  2
+        2  5  3
+        3  5  2
+        4  7  9
+        >>> b = pd.DataFrame({"x": [2, 4, 6], "y": [3, 1, 2]})
+        >>> b
+           x  y
+        0  2  3
+        1  4  1
+        2  6  2
 
         Sort the right rows by ``x`` and take a running minimum of ``y`` from the
         largest ``x`` down. That column is the staircase:
 
-        ```python
-        stairs = b.sort_values("x", ignore_index=True)
-        stairs["stair"] = stairs["y"][::-1].cummin()[::-1]
-        ```
-
-        ``stairs``
-
-        |  | x | y | stair |
-        | --- | --- | --- | --- |
-        | 0 | 2 | 3 | 1 |
-        | 1 | 4 | 1 | 1 |
-        | 2 | 6 | 2 | 2 |
+        >>> stairs = b.sort_values("x", ignore_index=True)
+        >>> stairs["stair"] = stairs["y"][::-1].cummin()[::-1]
+        >>> stairs
+           x  y  stair
+        0  2  3      1
+        1  4  1      1
+        2  6  2      2
 
         Each left row needs one binary search for the first right row with
         ``b.x >= a.x``, and its step is compared with ``a.y``. A left row beyond every
         ``b.x`` has no step (``NaN``), and comparing with ``NaN`` is false, so it
         correctly has no partner:
 
-        ```python
-        position = np.searchsorted(stairs["x"], a["x"], side="left")
-        marked = a.assign(stair=stairs["stair"].reindex(position).to_numpy())
-        marked["has_partner"] = marked["y"] > marked["stair"]
-        ```
-
-        ``marked``
-
-        |  | x | y | stair | has_partner |
-        | --- | --- | --- | --- | --- |
-        | 0 | 1 | 2 | 1.0 | True |
-        | 1 | 3 | 2 | 1.0 | True |
-        | 2 | 5 | 3 | 2.0 | True |
-        | 3 | 5 | 2 | 2.0 | False |
-        | 4 | 7 | 9 | NaN | False |
+        >>> position = np.searchsorted(stairs["x"], a["x"], side="left")
+        >>> marked = a.assign(stair=stairs["stair"].reindex(position).to_numpy())
+        >>> marked["has_partner"] = marked["y"] > marked["stair"]
+        >>> marked
+           x  y  stair  has_partner
+        0  1  2    1.0         True
+        1  3  2    1.0         True
+        2  5  3    2.0         True
+        3  5  2    2.0        False
+        4  7  9    NaN        False
 
         The rows with a partner (semi join) and without one (anti join):
 
-        ```python
-        semi = marked.loc[marked["has_partner"], ["x", "y"]]
-        anti = marked.loc[~marked["has_partner"], ["x", "y"]]
-        ```
+        >>> marked.loc[marked["has_partner"], ["x", "y"]]
+           x  y
+        0  1  2
+        1  3  2
+        2  5  3
+        >>> marked.loc[~marked["has_partner"], ["x", "y"]]
+           x  y
+        3  5  2
+        4  7  9
 
-        ``semi``
+        ``conditional_join`` answers both questions. With ``keep="any"`` it returns the
+        semi join: each left row that has a partner, paired with one matching right row
+        (any one; here each left row has a single candidate, so the pairing is fixed):
 
-        |  | x | y |
-        | --- | --- | --- |
-        | 0 | 1 | 2 |
-        | 1 | 3 | 2 |
-        | 2 | 5 | 3 |
+        >>> a.conditional_join(b, ("x", "x", "<="), ("y", "y", ">"), keep="any")
+          left    right
+             x  y     x  y
+        0    1  2     4  1
+        1    3  2     4  1
+        2    5  3     6  2
 
-        ``anti``
+        ``how="left_anti"`` returns the anti join:
 
-        |  | x | y |
-        | --- | --- | --- |
-        | 3 | 5 | 2 |
-        | 4 | 7 | 9 |
-
-        ``conditional_join`` answers both questions. With ``keep="any"`` it returns
-        the semi join: each left row that has a partner, paired with one matching right
-        row (any one; here each left row has a single candidate, so the pairing is
-        fixed). The right columns are renamed below only to fit the table:
-
-        ```python
-        semi_join = a.conditional_join(b, ("x", "x", "<="), ("y", "y", ">"), keep="any")
-        semi_join.columns = ["x", "y", "b.x", "b.y"]
-        ```
-
-        ``semi_join``
-
-        |  | x | y | b.x | b.y |
-        | --- | --- | --- | --- | --- |
-        | 0 | 1 | 2 | 4 | 1 |
-        | 1 | 3 | 2 | 4 | 1 |
-        | 2 | 5 | 3 | 6 | 2 |
-
-        ``how="left_anti"`` returns the anti join. It puts the left columns under a
-        ``"left"`` column level and renumbers the index:
-
-        ```python
-        joined = a.conditional_join(
-            b, ("x", "x", "<="), ("y", "y", ">"), how="left_anti"
-        )["left"]
-        ```
-
-        ``joined``
-
-        |  | x | y |
-        | --- | --- | --- |
-        | 0 | 5 | 2 |
-        | 1 | 7 | 9 |
+        >>> a.conditional_join(b, ("x", "x", "<="), ("y", "y", ">"), how="left_anti")
+          left    right
+             x  y     x   y
+        0    5  2   NaN NaN
+        1    7  9   NaN NaN
 
         The staircase answers existence only: it cannot return the matching pairs,
         count them or aggregate them. It needs exactly two inequalities (equality keys

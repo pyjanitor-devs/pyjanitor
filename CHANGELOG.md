@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [DOC] Add a `join_agg` example that totals overlapping date ranges per day, with the equivalent cumulative-sum form and its limits. - PR #TBD @samukweku
+
 ## [v0.32.66] - 2026-10-30
 
 -   [BUG] Leave a numeric first column unchanged in `adorn_pct_formatting`, `adorn_ns`, and `adorn_rounding`. Column position 0 is the row identifier, matching `adorn_totals` and `adorn_percentages`. Based on work by @dylanpulver (#1677) and @SumanGouda (#1696). - Issue #1676

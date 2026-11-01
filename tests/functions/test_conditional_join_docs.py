@@ -16,7 +16,16 @@ import pandas as pd
 START = "To ask only whether a left row has a partner"
 END = "The staircase answers existence only"
 TABLE = re.compile(r"^\|.*\|\n^\|[ -|]+\|\n(?:^\|.*\|\n?)+", re.MULTILINE)
-EXPECTED_TABLES = ["a", "b", "stairs", "marked", "semi", "anti", "joined"]
+EXPECTED_TABLES = [
+    "a",
+    "b",
+    "stairs",
+    "marked",
+    "semi",
+    "anti",
+    "semi_join",
+    "joined",
+]
 
 
 def _section():
@@ -65,3 +74,16 @@ def test_docstring_example_semi_and_anti_partition_the_left_rows():
     pd.testing.assert_frame_equal(
         anti.reset_index(drop=True), namespace["joined"].reset_index(drop=True)
     )
+
+
+def test_docstring_example_keep_any_semi_join_matches_the_staircase():
+    namespace = {}
+    for block in re.findall(r"```python\n(.*?)```", _section(), flags=re.DOTALL):
+        exec(block, namespace)  # noqa: S102
+    semi, semi_join = namespace["semi"], namespace["semi_join"]
+    pd.testing.assert_frame_equal(
+        semi_join[["x", "y"]].reset_index(drop=True), semi.reset_index(drop=True)
+    )
+    # each returned right row is a genuine partner
+    assert (semi_join["x"] <= semi_join["b.x"]).all()
+    assert (semi_join["y"] > semi_join["b.y"]).all()

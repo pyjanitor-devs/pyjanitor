@@ -471,8 +471,26 @@ def conditional_join(
         | 3 | 5 | 2 |
         | 4 | 7 | 9 |
 
-        ``conditional_join`` returns the same anti join. ``how="left_anti"`` puts the
-        left columns under a ``"left"`` column level and renumbers the index:
+        ``conditional_join`` answers both questions. With ``keep="any"`` it returns
+        the semi join: each left row that has a partner, paired with one matching right
+        row (any one; here each left row has a single candidate, so the pairing is
+        fixed). The right columns are renamed below only to fit the table:
+
+        ```python
+        semi_join = a.conditional_join(b, ("x", "x", "<="), ("y", "y", ">"), keep="any")
+        semi_join.columns = ["x", "y", "b.x", "b.y"]
+        ```
+
+        ``semi_join``
+
+        |  | x | y | b.x | b.y |
+        | --- | --- | --- | --- | --- |
+        | 0 | 1 | 2 | 4 | 1 |
+        | 1 | 3 | 2 | 4 | 1 |
+        | 2 | 5 | 3 | 6 | 2 |
+
+        ``how="left_anti"`` returns the anti join. It puts the left columns under a
+        ``"left"`` column level and renumbers the index:
 
         ```python
         joined = a.conditional_join(

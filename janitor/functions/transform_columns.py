@@ -47,6 +47,20 @@ def transform_column(
 
     This method does not mutate the original DataFrame.
 
+    !!! tip "Plain pandas equivalent"
+
+        Pandas 3 can do the same in one `assign` call, which also keeps
+        working in the middle of a chain because `pd.col` refers to the
+        frame as it is at that step:
+
+        - Element-wise: `df.assign(a=pd.col("a").map(function))`
+        - Column-wise: `df.assign(a=function(pd.col("a")))`
+        - New column: `df.assign(new=pd.col("a").map(function))`
+
+        What `transform_column` adds is a check: it raises if
+        `dest_column_name` is a different column that already exists, instead
+        of overwriting it.
+
     Examples:
         Transform a column in-place with an element-wise function.
 
@@ -84,6 +98,25 @@ def transform_column(
         0  2   area
         1  3  pyjan
         2  4  grape
+
+    Examples:
+        The same results with plain pandas.
+
+        >>> df.assign(a=pd.col("a").map(lambda x: x**2 - 1))
+            a           b
+        0   3        area
+        1   8   pyjanitor
+        2  15  grapefruit
+        >>> df.assign(b=pd.col("b").str[:5])
+           a      b
+        0  2   area
+        1  3  pyjan
+        2  4  grape
+        >>> df.assign(b_len=pd.col("b").map(len))
+           a           b  b_len
+        0  2        area      4
+        1  3   pyjanitor      9
+        2  4  grapefruit     10
 
     Args:
         df: A pandas DataFrame.

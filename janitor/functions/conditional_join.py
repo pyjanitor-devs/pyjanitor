@@ -1611,9 +1611,12 @@ def join_agg(
         totals give the same answer without any join: add each value on its
         start day, subtract it on the day after its end, and take a
         cumulative sum. On millions of observations it ran roughly 5 to 15
-        times faster than the join in testing, but it cannot produce ``min``, ``max`` or
-        ``prod``, and it silently gives wrong totals if any range has
-        ``end < start``.
+        times faster than the join in testing. It cannot produce ``min``,
+        ``max`` or ``prod``, and it silently gives wrong totals if any range
+        has ``end < start``. This is the cumulative-sum technique from
+        Cimbali's answer to the same question, here with the start and end
+        steps combined into one series:
+        https://stackoverflow.com/a/69195082
 
         >>> values = obs["value"].to_numpy()
         >>> day_after_end = obs["end_date"] + pd.Timedelta(days=1)

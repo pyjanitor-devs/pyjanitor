@@ -38,6 +38,9 @@ these into the main sections.
 - **Test-Driven**: Always run tests after making code changes.
 - **Document**: Keep docstrings up-to-date using Google-style format.
 - **Lint Markdown**: Always run `markdownlint` on markdown files after editing.
+- **Changelog**: Every pull request needs a `CHANGELOG.md` entry under
+  `[Unreleased]`, including documentation-only changes. Never approve or
+  report a PR review as complete without checking for one.
 
 ### Cross-repository compatibility gate (janitor-rs #225)
 
@@ -353,6 +356,28 @@ def test_my_function_error():
     with pytest.raises(ValueError, match="expected error message"):
         df.my_function("invalid")
 ```
+
+### Pull Requests and Review
+
+Every pull request, whatever its size or type (`[ENH]`, `[BUG]`, `[DOC]`,
+`[TST]`, `[INF]`), must add one line to `CHANGELOG.md` under `## [Unreleased]`.
+
+- **Format**: match the neighbouring entries:
+  `-   [TAG] Description. - PR #123 @author`. Use three spaces after the dash.
+  Link the issue as `- Issue #123` when there is one.
+- **PR number**: the number is only known after the PR is opened. Open the PR,
+  then add the number to the entry in a follow-up commit.
+- **Placement**: entries go under `[Unreleased]`, never under a released
+  version. Several related PRs can share one line.
+- **When reviewing a PR**: always check the diff for a `CHANGELOG.md` entry.
+  A missing entry is a finding to report, in the same list as correctness
+  issues. Also check that the entry is under `[Unreleased]`, has the right
+  tag, and carries the PR number.
+- **What CI does and does not check**: `scripts/validate_changelog.py` only
+  checks that added entries sit under `[Unreleased]`. It does not require an
+  entry, and the job only runs when `janitor/`, `tests/`, `pyproject.toml`,
+  `pixi.lock` or `CHANGELOG.md` change, so a docs-only PR can pass without
+  one. The review is the safeguard.
 
 ### Code Style Rules
 

@@ -30,6 +30,30 @@ def assign(df: DataFrameGroupBy, **kwargs) -> DataFrameGroupBy:
     changes its values but not the groups; call `get_columns` and
     group again to regroup on the new values.
 
+    !!! tip "When to use `assign`, and when plain pandas is enough"
+
+        `assign` keeps the grouping across columns. That is the whole point,
+        so it pays off in two situations:
+
+        - A later column uses an earlier one that is also computed per group
+          (the `dplyr` pattern `group_by(g) |> mutate(m = mean(x), z = x - m,
+          zmax = max(z))`).
+        - You assign a column and then aggregate on the same groups. The
+          grouping is reused, so the aggregation does not regroup.
+
+        Plain pandas is just as good, and just as fast, when you only
+        broadcast a group value back to the rows. Keep one groupby and reuse it:
+        `df.assign(x_mean=grp["x"].transform("mean"))`.
+
+        `assign` takes one keyword per column. To apply one function to many
+        columns, one vectorised `grp[cols].transform("mean")` is faster than
+        a keyword per column; unpack the result into `assign`:
+        `grp.assign(**grp[cols].transform("mean").add_suffix("_mean"))`.
+
+        Prefer pandas' built-in function names (`"mean"`, `"sum"`, `"size"`,
+        ...) to a lambda inside `transform` or to `groupby.apply`; they avoid a
+        Python call per group and are usually far faster.
+
     Examples:
         >>> import pandas as pd
         >>> import janitor
@@ -62,6 +86,50 @@ def assign(df: DataFrameGroupBy, **kwargs) -> DataFrameGroupBy:
         2  0  0   1  2  4
         3  1  1   5  1  4
         4  0  0  10  2  4
+
+        Later columns can use earlier ones, still per group:
+
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "g": ["a", "a", "a", "b", "b"],
+        ...         "x": [1.0, 2.0, 6.0, 4.0, 8.0],
+        ...         "y": [2.0, 2.0, 3.0, 1.0, 4.0],
+        ...     }
+        ... )
+        >>> grp = df.groupby("g")
+        >>> out = grp.assign(
+        ...     m=grp["x"].transform("mean"),
+        ...     z=pd.col("x") - pd.col("m"),
+        ...     zmax=lambda g: g["z"].transform("max"),
+        ... )
+        >>> out.get_columns("*")
+           g    x    y    m    z  zmax
+        0  a  1.0  2.0  3.0 -2.0   3.0
+        1  a  2.0  2.0  3.0 -1.0   3.0
+        2  a  6.0  3.0  3.0  3.0   3.0
+        3  b  4.0  1.0  6.0 -2.0   2.0
+        4  b  8.0  4.0  6.0  2.0   2.0
+
+        Assign, then aggregate on the same groups:
+
+        >>> ratio = grp["x"].transform("sum") / grp["y"].transform("sum")
+        >>> grp.assign(ratio=ratio)["ratio"].mean()
+        g
+        a    1.285714
+        b    2.400000
+        Name: ratio, dtype: float64
+
+        One function over several columns:
+
+        >>> cols = ["x", "y"]
+        >>> means = grp[cols].transform("mean").add_suffix("_mean")
+        >>> grp.assign(**means).get_columns("*")
+           g    x    y  x_mean    y_mean
+        0  a  1.0  2.0     3.0  2.333333
+        1  a  2.0  2.0     3.0  2.333333
+        2  a  6.0  3.0     3.0  2.333333
+        3  b  4.0  1.0     6.0  2.500000
+        4  b  8.0  4.0     6.0  2.500000
 
     Args:
         df: A pandas DataFrameGroupBy object.

@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
--   [DOC] Add a `join_agg` example that totals overlapping date ranges per day, with the equivalent cumulative-sum form and its limits. - PR #TBD @samukweku
+-   [DOC] Add a `join_agg` example that totals overlapping date ranges per day, with the equivalent cumulative-sum form and its limits. - PR #1850 @samukweku
 
 ## [v0.32.66] - 2026-10-30
 

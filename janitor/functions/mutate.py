@@ -32,7 +32,7 @@ def assign(df: DataFrameGroupBy, **kwargs) -> DataFrameGroupBy:
 
     !!! tip "When to use `assign`, and when plain pandas is enough"
 
-        `assign` keeps the grouping across steps. That is the whole point,
+        `assign` keeps the grouping across columns. That is the whole point,
         so it pays off in two situations:
 
         - A later column uses an earlier one that is also computed per group

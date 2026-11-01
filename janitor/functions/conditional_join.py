@@ -378,6 +378,173 @@ def conditional_join(
         >>> positioned.index.tolist()
         [(0, 0), (0, 1), (1, 1)]
 
+        !!! tip "Existence tests: the staircase"
+
+            To ask only whether a left row has a partner, not which one, use
+            ``keep="any"`` (``how="left_anti"`` returns the rows with none). When the two
+            predicates are inequalities, this "does any right row dominate this left row?"
+            test can also be answered with a staircase. For ``a.x <= b.x`` and
+            ``a.y > b.y``, only right rows with ``b.x >= a.x`` matter, and among them the
+            smallest ``b.y`` is the easiest to beat. Start with two small frames:
+
+            ```python
+            import numpy as np
+            import pandas as pd
+            import janitor
+
+            a = pd.DataFrame({"x": [1, 3, 5, 5, 7], "y": [2, 2, 3, 2, 9]})
+            a
+            ```
+
+            ```text
+               x  y
+            0  1  2
+            1  3  2
+            2  5  3
+            3  5  2
+            4  7  9
+            ```
+
+            ```python
+            b = pd.DataFrame({"x": [2, 4, 6], "y": [3, 1, 2]})
+            b
+            ```
+
+            ```text
+               x  y
+            0  2  3
+            1  4  1
+            2  6  2
+            ```
+
+            Sort the right rows by ``x`` and take a running minimum of ``y`` from the
+            largest ``x`` down. That column is the staircase:
+
+            ```python
+            stairs = b.sort_values("x", ignore_index=True)
+            stairs["stair"] = stairs["y"][::-1].cummin()[::-1]
+            stairs
+            ```
+
+            ```text
+               x  y  stair
+            0  2  3      1
+            1  4  1      1
+            2  6  2      2
+            ```
+
+            Each left row needs one binary search for the first right row with
+            ``b.x >= a.x``, and its step is compared with ``a.y``. A left row beyond every
+            ``b.x`` has no step (``NaN``), and comparing with ``NaN`` is false, so it
+            correctly has no partner:
+
+            ```python
+            position = np.searchsorted(stairs["x"], a["x"], side="left")
+            marked = a.assign(stair=stairs["stair"].reindex(position).to_numpy())
+            marked["has_partner"] = marked["y"] > marked["stair"]
+            marked
+            ```
+
+            ```text
+               x  y  stair  has_partner
+            0  1  2    1.0         True
+            1  3  2    1.0         True
+            2  5  3    2.0         True
+            3  5  2    2.0        False
+            4  7  9    NaN        False
+            ```
+
+            The rows with a partner (semi join) and without one (anti join):
+
+            ```python
+            marked.loc[marked["has_partner"], ["x", "y"]]
+            ```
+
+            ```text
+               x  y
+            0  1  2
+            1  3  2
+            2  5  3
+            ```
+
+            ```python
+            marked.loc[~marked["has_partner"], ["x", "y"]]
+            ```
+
+            ```text
+               x  y
+            3  5  2
+            4  7  9
+            ```
+
+            ``conditional_join`` answers both questions. With ``keep="any"`` it returns the
+            semi join: each left row that has a partner, paired with one matching right row
+            (any one; here each left row has a single candidate, so the pairing is fixed):
+
+            ```python
+            a.conditional_join(b, ("x", "x", "<="), ("y", "y", ">"), keep="any")
+            ```
+
+            ```text
+              left    right
+                 x  y     x  y
+            0    1  2     4  1
+            1    3  2     4  1
+            2    5  3     6  2
+            ```
+
+            ``how="left_anti"`` returns the anti join:
+
+            ```python
+            a.conditional_join(b, ("x", "x", "<="), ("y", "y", ">"), how="left_anti")
+            ```
+
+            ```text
+              left    right
+                 x  y     x   y
+            0    5  2   NaN NaN
+            1    7  9   NaN NaN
+            ```
+
+            The recipe above is for ``a.x <= b.x`` and ``a.y > b.y``. For the other
+            operators, change ``side=`` and which running value you keep. Copying the
+            ``<=`` recipe for ``<`` would silently give wrong answers when ``a.x`` ties
+            with a ``b.x``.
+
+            For the condition on ``x``, ``position`` is where ``a.x`` falls among the
+            sorted ``b.x``:
+
+            | Condition on x | ``side=`` | Right rows that count | Step to read |
+            | --- | --- | --- | --- |
+            | ``a.x <= b.x`` | ``"left"`` | from ``position`` to the end | at ``position`` |
+            | ``a.x < b.x`` | ``"right"`` | from ``position`` to the end | at ``position`` |
+            | ``a.x >= b.x`` | ``"right"`` | from the start up to ``position`` | at ``position - 1`` |
+            | ``a.x > b.x`` | ``"left"`` | from the start up to ``position`` | at ``position - 1`` |
+
+            When the right rows that count run to the end, take the running value from the
+            largest ``x`` down, as above. When they run from the start, take it from the
+            smallest ``x`` up, without reversing (``stairs["y"].cummin()``). A left row with
+            no step to read (``position`` past the last row, or ``position - 1`` before the
+            first) has no partner.
+
+            For the condition on ``y``, keep the running minimum when the left value must be
+            larger, and the running maximum when it must be smaller:
+
+            | Condition on y | Running value | Compare ``a.y`` with the step using |
+            | --- | --- | --- |
+            | ``a.y > b.y`` | minimum (``cummin``) | ``>`` |
+            | ``a.y >= b.y`` | minimum (``cummin``) | ``>=`` |
+            | ``a.y < b.y`` | maximum (``cummax``) | ``<`` |
+            | ``a.y <= b.y`` | maximum (``cummax``) | ``<=`` |
+
+            The staircase answers existence only: it cannot return the matching pairs,
+            count them or aggregate them. It needs exactly two inequalities (equality keys
+            can be handled one group at a time), null rows dropped first, and both sides in
+            the same dtype, so that ``searchsorted`` compares without a lossy common type.
+            On 40 million left rows against 33 thousand right rows the code above ran in
+            about 0.5 seconds, against about 1.7 seconds for the join (single runs; read as
+            orders of magnitude).
+
     !!! abstract "Version Changed"
 
         - 0.24.0

@@ -13,7 +13,8 @@ from janitor.utils import deprecated_alias, refactored_function
 @refactored_function(
     message=(
         "This function will be deprecated in a 1.x release. "
-        "Please use `janitor.transform_column` instead."
+        "Please use `df.assign(new=df.groupby(by)[col].transform(agg))` "
+        "instead."
     )
 )
 def groupby_agg(
@@ -37,9 +38,10 @@ def groupby_agg(
     !!!note
 
         This function will be deprecated in a 1.x release.
-        Please use
-        [`jn.transform_column`][janitor.functions.transform_columns.transform_column]
-        instead.
+        Declare the grouped object once and reuse it in the chain:
+        `grp = df.groupby(by)`, then
+        `df.assign(new=grp[col].transform(agg))`.
+        The examples below show the equivalent calls.
 
     Examples:
         Basic usage.
@@ -88,6 +90,58 @@ def groupby_agg(
         1     a  9        2
         2   NaN  9        1
         3     b  9        1
+
+        The same results with plain pandas. Declare the grouped object once
+        and reuse it; `dropna` is passed to `groupby`.
+
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "item": ["shoe", "shoe", "bag", "shoe", "bag"],
+        ...         "quantity": [100, 120, 75, 200, 25],
+        ...     }
+        ... )
+        >>> grp = df.groupby("item")
+        >>> df.assign(avg_quantity=grp["quantity"].transform("mean"))
+           item  quantity  avg_quantity
+        0  shoe       100         140.0
+        1  shoe       120         140.0
+        2   bag        75          50.0
+        3  shoe       200         140.0
+        4   bag        25          50.0
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "x": ["a", "a", None, "b"],
+        ...         "y": [9, 9, 9, 9],
+        ...     }
+        ... )
+        >>> grp = df.groupby("x", dropna=False)
+        >>> df.assign(y_count=grp["y"].transform("count"))
+              x  y  y_count
+        0     a  9        2
+        1     a  9        2
+        2   NaN  9        1
+        3     b  9        1
+
+        With a grouped object, `assign` also lets later columns use earlier
+        ones, still per group:
+
+        >>> df = pd.DataFrame(
+        ...     {
+        ...         "item": ["shoe", "shoe", "bag", "shoe", "bag"],
+        ...         "quantity": [100, 120, 75, 200, 25],
+        ...     }
+        ... )
+        >>> grp = df.groupby("item")
+        >>> grp.assign(
+        ...     avg_quantity=grp["quantity"].transform("mean"),
+        ...     diff=pd.col("quantity") - pd.col("avg_quantity"),
+        ... ).get_columns("*")
+           item  quantity  avg_quantity   diff
+        0  shoe       100         140.0  -40.0
+        1  shoe       120         140.0  -20.0
+        2   bag        75          50.0   25.0
+        3  shoe       200         140.0   60.0
+        4   bag        25          50.0  -25.0
 
     Args:
         df: A pandas DataFrame.

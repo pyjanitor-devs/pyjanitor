@@ -2,6 +2,7 @@
 
 import io
 import tarfile
+import time
 import warnings
 import zipfile
 from pathlib import Path
@@ -415,6 +416,39 @@ def test_invalid_archive_format(tmp_path: Path):
 
 
 @pytest.mark.functions
+def test_tar_dot_slash_prefix_matches_plain_name(tmp_path: Path):
+    """`tar czf x.tgz .` names such as `./a.csv` match a plain request."""
+
+    archive = write_tar(
+        tmp_path / "x.tgz",
+        {"./a.csv": CSV_A, "./nested/b.csv": CSV_B},
+        mode="w:gz",
+    )
+
+    assert_frame_equal(read_archive(archive, "a.csv"), FRAME_A)
+    assert_frame_equal(read_archive(archive, "./a.csv"), FRAME_A)
+    selected = read_archive(archive, ["./nested/b.csv", "a.csv"])
+    assert list(selected) == ["nested/b.csv", "a.csv"]
+    assert_frame_equal(selected["nested/b.csv"], FRAME_B)
+    assert list(read_archive(archive)) == ["a.csv", "nested/b.csv"]
+    with pytest.raises(ValueError, match="duplicate names"):
+        read_archive(archive, filenames=["./a.csv", "a.csv"])
+
+
+@pytest.mark.functions
+def test_dot_slash_and_plain_name_are_duplicates(tmp_path: Path):
+    """`./a.csv` and `a.csv` are the same member after normalization."""
+
+    archive = tmp_path / "both.zip"
+    with zipfile.ZipFile(archive, mode="w") as zip_archive:
+        zip_archive.writestr("./a.csv", CSV_A)
+        zip_archive.writestr("a.csv", CSV_B)
+
+    with pytest.raises(ValueError, match="duplicate member names: 'a.csv'"):
+        read_archive(archive)
+
+
+@pytest.mark.functions
 def test_duplicate_member_names(tmp_path: Path):
     """Duplicate member names are rejected instead of silently collapsing."""
 
@@ -431,6 +465,34 @@ def test_duplicate_member_names(tmp_path: Path):
 
     with pytest.raises(ValueError, match="duplicate member names"):
         read_archive(archive)
+
+
+@pytest.mark.functions
+def test_duplicate_member_names_are_counted_in_one_pass(tmp_path: Path):
+    """Repeated names are all reported, in first-seen order."""
+
+    archive = tmp_path / "many-dups.zip"
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=UserWarning)
+        with zipfile.ZipFile(archive, mode="w") as zip_archive:
+            zip_archive.writestr("b.csv", CSV_B)
+            zip_archive.writestr("a.csv", CSV_A)
+            zip_archive.writestr("b.csv", CSV_B)
+            zip_archive.writestr("a.csv", CSV_A)
+            zip_archive.writestr("c.csv", CSV_A)
+            for index in range(20_000):
+                zip_archive.writestr(f"notes/{index}.txt", b"x")
+
+    started = time.perf_counter()
+    with pytest.raises(
+        ValueError,
+        match="duplicate member names: 'b.csv', 'a.csv'",
+    ):
+        read_archive(archive)
+    elapsed = time.perf_counter() - started
+
+    # list.count on 20k names takes seconds; one Counter pass does not.
+    assert elapsed < 2.0
 
 
 @pytest.mark.functions

@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v0.32.68] - 2026-11-01
+
 -   [DOC] Add a `conditional_join` example showing how to answer a two-inequality existence (semi-join or anti-join) test with a NumPy staircase and one binary search per left row, with its limits. - Issue #1843, PR #1854 @samukweku
 
 ## [v0.32.67] - 2026-11-01
@@ -707,7 +709,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.67...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.68...HEAD
+
+[v0.32.68]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.67...v0.32.68
 
 [v0.32.67]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.66...v0.32.67
 

@@ -45,14 +45,10 @@ def assign(df: DataFrameGroupBy, **kwargs) -> DataFrameGroupBy:
         broadcast a group value back to the rows. Keep one groupby and reuse it:
         `df.assign(x_mean=grp["x"].transform("mean"))`.
 
-        A few things `assign` does not do:
-
-        - It never removes rows. To filter, filter the DataFrame and group
-          again afterwards; a filtered frame no longer matches the old groups.
-        - It takes one keyword per column. To apply one function to many
-          columns, one vectorised `grp[cols].transform("mean")` is faster than
-          a keyword per column; unpack the result into `assign`:
-          `grp.assign(**grp[cols].transform("mean").add_suffix("_mean"))`.
+        `assign` takes one keyword per column. To apply one function to many
+        columns, one vectorised `grp[cols].transform("mean")` is faster than
+        a keyword per column; unpack the result into `assign`:
+        `grp.assign(**grp[cols].transform("mean").add_suffix("_mean"))`.
 
         Prefer pandas' built-in function names (`"mean"`, `"sum"`, `"size"`,
         ...) to a lambda inside `transform` or to `groupby.apply`; they avoid a

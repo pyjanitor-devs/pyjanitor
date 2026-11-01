@@ -1963,9 +1963,7 @@ def join_agg(
             single run on random intervals (Apple Silicon, count and sum together),
             1 million intervals on each side took about 0.25 s by boundaries
             against 0.3 s for ``join_agg`` when there were about 10 million
-            matches, and 0.24 s against 7.5 s when there were about a billion. With
-            few matches the two are close, so prefer ``join_agg`` unless the
-            overlaps are dense.
+            matches, and 0.24 s against 7.5 s when there were about a billion.
 
             A point is an interval with equal start and end, so the same code counts
             how many intervals contain each point. The limits:

@@ -1764,8 +1764,37 @@ def join_agg(
             obs = pd.DataFrame(
                 {"start_date": start_date, "end_date": end_date, "value": [7, 6, 5, 4]}
             )
+            obs
+            ```
+
+            ```text
+              start_date   end_date  value
+            0 2021-01-07 2021-01-16      7
+            1 2021-01-04 2021-01-12      6
+            2 2021-01-12 2021-01-13      5
+            3 2021-01-03 2021-01-15      4
+            ```
+
+            The calendar holds the days to total:
+
+            ```python
             calendar = pd.date_range("2021-01-10", "2021-01-14", name="day")
             days = calendar.to_frame(index=False)
+            days
+            ```
+
+            ```text
+                     day
+            0 2021-01-10
+            1 2021-01-11
+            2 2021-01-12
+            3 2021-01-13
+            4 2021-01-14
+            ```
+
+            Join on ``start <= day <= end`` and sum the values:
+
+            ```python
             totals = days.join_agg(
                 obs,
                 ("day", "start_date", ">="),
@@ -1847,7 +1876,28 @@ def join_agg(
                     "v": [10, 20, 30, 40, 5],
                 }
             )
+            right
+            ```
+
+            ```text
+               start  end   v
+            0      1    4  10
+            1      2    6  20
+            2      5    8  30
+            3      7    9  40
+            4      3    3   5
+            ```
+
+            ```python
             df = pd.DataFrame({"start": [4, 0, 6], "end": [5, 0, 7]})
+            df
+            ```
+
+            ```text
+               start  end
+            0      4    5
+            1      0    0
+            2      6    7
             ```
 
             Sort the starts and the ends separately and search each. The ``side``

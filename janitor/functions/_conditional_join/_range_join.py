@@ -157,8 +157,7 @@ def _same_direction_envelope(
     second_wants_max = second_op in _helpers.less_than_join_types
     second_wants_min = second_op in _helpers.greater_than_join_types
     if not (
-        (first_is_suffix and second_wants_max)
-        or (first_is_prefix and second_wants_min)
+        (first_is_suffix and second_wants_max) or (first_is_prefix and second_wants_min)
     ):
         return None
     left_values = _negatable(left_values)
@@ -419,6 +418,78 @@ def _preparatory_work(
     )
 
 
+def _staircase_any(
+    df: pd.DataFrame,
+    right: pd.DataFrame,
+    conditions: list[_helpers.JoinCondition],
+) -> dict[str, np.ndarray] | None:
+    """Answer ``keep="any"`` for exactly two range predicates by staircase.
+
+    ``keep="any"`` only asks whether some right row satisfies both
+    inequalities. After sorting the right side by the first column, the rows
+    satisfying the first predicate are a prefix or suffix, and the second
+    predicate only needs the best second value in it. One running min/max
+    over the sorted order answers that for every left row with a single
+    binary search, so no window is built and no candidates are scanned.
+
+    Joins with an equality key, residual predicates, or a third range
+    predicate keep the window kernels; so do columns that are not numeric,
+    datetime, or timedelta. ``None`` means "not applicable, use the window
+    path". The returned pair is one genuine match per matching left row; which
+    one is not a contract, as for every ``keep="any"`` path.
+
+    Args:
+        df: Left dataframe addressed by physical position.
+        right: Right dataframe addressed by physical position.
+        conditions: The complete predicate list.
+
+    Returns:
+        A physical-index dictionary, or ``None`` when this path cannot answer
+        the join.
+    """
+    range_types = _helpers.less_than_join_types | _helpers.greater_than_join_types
+    if len(conditions) != 2 or any(
+        condition.op not in range_types for condition in conditions
+    ):
+        return None
+    if df.empty or right.empty:
+        return _helpers._empty_indices()
+    left_index = _helpers._get_indexer_for_non_null_rows(
+        df=df, columns_and_ops=[(c.left, c.op) for c in conditions]
+    )
+    right_index = _helpers._get_indexer_for_non_null_rows(
+        df=right, columns_and_ops=[(c.right, c.op) for c in conditions]
+    )
+    if left_index is None or right_index is None:
+        return _helpers._empty_indices()
+    arrays = []
+    for condition in conditions:
+        left_values = _helpers._convert_array_to_numpy(
+            array=df.loc[left_index, condition.left]._values
+        )
+        right_values = _helpers._convert_array_to_numpy(
+            array=right.loc[right_index, condition.right]._values
+        )
+        if left_values.dtype.kind not in "iuf" or right_values.dtype.kind not in "iuf":
+            return None
+        arrays.append((left_values, right_values, condition.op))
+    if isinstance(left_index, slice):
+        left_index = df.index
+    if isinstance(right_index, slice):
+        right_index = right.index
+    result = janitor_rs.range_exists_indices(
+        arrays[0][0],
+        arrays[0][1],
+        arrays[0][2],
+        arrays[1][0],
+        arrays[1][1],
+        arrays[1][2],
+        _helpers._convert_array_to_numpy(array=left_index._values),
+        _helpers._convert_array_to_numpy(array=right_index._values),
+    )
+    return _helpers._empty_indices() if result is None else result
+
+
 def _compute_multi_range_join(
     df,
     right,
@@ -456,6 +527,21 @@ def _compute_multi_range_join(
         requests always retain the dictionary form.
     """
 
+    if keep == "any" and not return_building_blocks:
+        result = _staircase_any(df=df, right=right, conditions=conditions)
+        if result is not None:
+            return _helpers._materialize_or_return_indices(
+                result=result,
+                df=df,
+                right=right,
+                how=how,
+                df_columns=df_columns,
+                right_columns=right_columns,
+                indicator=indicator,
+                include_join_positions=include_join_positions,
+                return_matching_indices=return_matching_indices,
+                return_building_blocks=return_building_blocks,
+            )
     outcome = _preparatory_work(
         df=df,
         right=right,

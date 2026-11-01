@@ -260,3 +260,133 @@ def test_keep_any_two_ranges_every_direction(first_op, second_op, kind):
     assert len(left_index) == len(set(left_index.tolist()))
     assert set(left_index.tolist()) == set(np.flatnonzero(hits.any(axis=1)).tolist())
     assert hits[left_index, right_index].all()
+
+
+def _spy_staircase(monkeypatch):
+    """Count calls to the staircase kernel made by the dual-range module."""
+    from janitor.functions._conditional_join import _range_join
+
+    calls = []
+    original = _range_join.janitor_rs.range_exists_indices
+
+    def spy(*args, **kwargs):
+        calls.append(1)
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(_range_join.janitor_rs, "range_exists_indices", spy)
+    return calls
+
+
+def test_keep_any_staircase_only_for_two_range_predicates(monkeypatch):
+    """Exactly two range predicates and keep="any" use the staircase; an extra
+    predicate, another keep mode, or building blocks keep the window kernels.
+    """
+    calls = _spy_staircase(monkeypatch)
+    left = pd.DataFrame({"x": [1, 5, 9], "y": [3, 3, 3], "z": [0, 0, 1]})
+    right = pd.DataFrame({"x": [2, 6], "y": [1, 9], "z": [0, 1]})
+    two = (("x", "x", "<="), ("y", "y", ">"))
+
+    result = janitor.get_join_indices(left, right, *two, keep="any")
+    assert list(result["left_index"]) == [0]
+    assert len(calls) == 1
+
+    janitor.get_join_indices(left, right, *two, ("z", "z", "!="), keep="any")
+    janitor.get_join_indices(left, right, *two, ("z", "z", "=="), keep="any")
+    janitor.get_join_indices(left, right, *two, keep="first")
+    janitor.get_join_indices(left, right, *two, keep="all")
+    janitor.get_join_indices(left, right, *two, keep="any", return_building_blocks=True)
+    assert len(calls) == 1
+
+
+@pytest.mark.parametrize("first_op", list(_ANY_OPS))
+@pytest.mark.parametrize("second_op", list(_ANY_OPS))
+def test_keep_any_two_ranges_with_residual_every_direction(
+    first_op, second_op, monkeypatch
+):
+    """A third predicate sends keep="any" to the window kernels, so the
+    same-direction negated envelope keeps its coverage: matched left rows are
+    exact and every pair satisfies all three predicates.
+    """
+    calls = _spy_staircase(monkeypatch)
+    rng = np.random.default_rng(sum(map(ord, first_op + second_op)))
+    left = pd.DataFrame(
+        {
+            "x": rng.integers(0, 12, 80),
+            "y": rng.integers(0, 12, 80),
+            "z": rng.integers(0, 3, 80),
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "x": rng.integers(0, 12, 120),
+            "y": rng.integers(0, 12, 120),
+            "z": rng.integers(0, 3, 120),
+        }
+    )
+    right = right.sort_values("x").reset_index(drop=True)
+    right["y"] = right["y"].to_numpy()[::-1]
+
+    actual = janitor.get_join_indices(
+        left,
+        right,
+        ("x", "x", first_op),
+        ("y", "y", second_op),
+        ("z", "z", "!="),
+        keep="any",
+    )
+    left_index, right_index = (np.asarray(v) for v in list(actual.values())[:2])
+    hits = (
+        _ANY_OPS[first_op](
+            left["x"].to_numpy()[:, None], right["x"].to_numpy()[None, :]
+        )
+        & _ANY_OPS[second_op](
+            left["y"].to_numpy()[:, None], right["y"].to_numpy()[None, :]
+        )
+        & (left["z"].to_numpy()[:, None] != right["z"].to_numpy()[None, :])
+    )
+    assert not calls
+    assert len(left_index) == len(set(left_index.tolist()))
+    assert set(left_index.tolist()) == set(np.flatnonzero(hits.any(axis=1)).tolist())
+    assert hits[left_index, right_index].all()
+
+
+@pytest.mark.parametrize(
+    "dtype", ["int8", "uint8", "int32", "uint32", "float32", "Int64", "Float64"]
+)
+@pytest.mark.parametrize("first_op", ["<=", ">"])
+@pytest.mark.parametrize("second_op", ["<", ">="])
+def test_keep_any_staircase_dtypes_and_nulls(dtype, first_op, second_op):
+    """Narrow, unsigned, float32 and nullable columns widen inside the kernel;
+    null rows on either side never match and never shift the reported rows.
+    """
+    rng = np.random.default_rng(7)
+
+    def build(size):
+        frame = pd.DataFrame(
+            {
+                name: pd.array(rng.integers(0, 30, size), dtype="Int64")
+                for name in ("x", "y")
+            }
+        )
+        for name in frame:
+            frame.loc[rng.random(size) < 0.15, name] = pd.NA
+        if dtype in ("Int64", "Float64"):
+            return frame.astype(dtype)
+        # NumPy dtypes cannot hold NA, so only they lose the null rows.
+        return frame.dropna().astype(dtype)
+
+    left, right = build(90), build(110)
+    actual = janitor.get_join_indices(
+        left, right, ("x", "x", first_op), ("y", "y", second_op), keep="any"
+    )
+    left_index, right_index = (np.asarray(v) for v in list(actual.values())[:2])
+    lx = left["x"].to_numpy(dtype="float64", na_value=np.nan)
+    ly = left["y"].to_numpy(dtype="float64", na_value=np.nan)
+    rx = right["x"].to_numpy(dtype="float64", na_value=np.nan)
+    ry = right["y"].to_numpy(dtype="float64", na_value=np.nan)
+    hits = _ANY_OPS[first_op](lx[:, None], rx[None, :]) & _ANY_OPS[second_op](
+        ly[:, None], ry[None, :]
+    )
+    assert len(left_index) == len(set(left_index.tolist()))
+    assert set(left_index.tolist()) == set(np.flatnonzero(hits.any(axis=1)).tolist())
+    assert hits[left_index, right_index].all()

@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
--   [DOC] Show in `groupby_agg` how to get the same result with a reusable pandas groupby and `assign`, and stop pointing to `transform_column`, which has no grouping. - @samukweku
+-   [DOC] Show in `groupby_agg` how to get the same result with a reusable pandas groupby and `assign`, and stop pointing to `transform_column`, which has no grouping. - PR #1847 @samukweku
 
 ## [v0.32.66] - 2026-10-30
 

@@ -1579,18 +1579,17 @@ def join_agg(
         aggregated without being built, so cost does not grow with how long
         the ranges are:
 
-        >>> obs = pd.DataFrame(
-        ...     {
-        ...         "start_date": pd.to_datetime(
-        ...             ["2021-01-07", "2021-01-04", "2021-01-12", "2021-01-03"]
-        ...         ),
-        ...         "end_date": pd.to_datetime(
-        ...             ["2021-01-16", "2021-01-12", "2021-01-13", "2021-01-15"]
-        ...         ),
-        ...         "value": [7, 6, 5, 4],
-        ...     }
+        >>> start_date = pd.to_datetime(
+        ...     ["2021-01-07", "2021-01-04", "2021-01-12", "2021-01-03"]
         ... )
-        >>> days = pd.DataFrame({"day": pd.date_range("2021-01-10", "2021-01-14")})
+        >>> end_date = pd.to_datetime(
+        ...     ["2021-01-16", "2021-01-12", "2021-01-13", "2021-01-15"]
+        ... )
+        >>> obs = pd.DataFrame(
+        ...     {"start_date": start_date, "end_date": end_date, "value": [7, 6, 5, 4]}
+        ... )
+        >>> calendar = pd.date_range("2021-01-10", "2021-01-14", name="day")
+        >>> days = calendar.to_frame(index=False)
         >>> totals = days.join_agg(
         ...     obs,
         ...     ("day", "start_date", ">="),
@@ -1614,23 +1613,21 @@ def join_agg(
         ``prod``, and it silently gives wrong totals if any range has
         ``end < start``.
 
-        >>> steps = pd.concat(
-        ...     [
-        ...         pd.Series(obs["value"].to_numpy(), index=obs["start_date"]),
-        ...         pd.Series(
-        ...             -obs["value"].to_numpy(),
-        ...             index=obs["end_date"] + pd.Timedelta(days=1),
-        ...         ),
-        ...     ]
-        ... )
-        >>> running = steps.groupby(level=0).sum().sort_index().cumsum()
-        >>> print(running.reindex(days["day"], method="ffill").to_string())
+        >>> values = obs["value"].to_numpy()
+        >>> day_after_end = obs["end_date"] + pd.Timedelta(days=1)
+        >>> added_on_start = pd.Series(values, index=obs["start_date"])
+        >>> removed_after_end = pd.Series(-values, index=day_after_end)
+        >>> steps = pd.concat([added_on_start, removed_after_end])
+        >>> step_per_day = steps.groupby(level=0).sum().sort_index()
+        >>> running = step_per_day.cumsum()
+        >>> print(running.reindex(calendar, method="ffill").to_string())
         day
         2021-01-10    17
         2021-01-11    17
         2021-01-12    22
         2021-01-13    16
         2021-01-14    11
+        Freq: D
     """
     return _conditional_join_compute(
         df=df,

@@ -380,8 +380,6 @@ def conditional_join(
 
         !!! tip "Existence tests: the staircase"
 
-            !!! tip "Existence tests: the staircase"
-
             To ask only whether a left row has a partner, not which one, use
             ``keep="any"`` (``how="left_anti"`` returns the rows with none). When the two
             predicates are inequalities, this "does any right row dominate this left row?"

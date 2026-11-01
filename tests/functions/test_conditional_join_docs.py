@@ -164,3 +164,10 @@ def test_docstring_tip_operator_tables_are_correct_for_every_pair():
             ).any(axis=1)
             actual = _recipe(a, b, x_op, y_op, rules)
             np.testing.assert_array_equal(actual, expected, err_msg=f"{x_op} {y_op}")
+
+
+def test_docstring_has_exactly_one_staircase_tip():
+    function = importlib.import_module("janitor.functions.conditional_join")
+    doc = inspect.getdoc(function.conditional_join)
+    assert doc.count(START) == 1
+    assert doc.count("To ask only whether a left row has a partner") == 1

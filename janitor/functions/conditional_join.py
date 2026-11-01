@@ -390,7 +390,19 @@ def conditional_join(
 
         >>> import numpy as np
         >>> a = pd.DataFrame({"x": [1, 3, 5, 5, 7], "y": [2, 2, 3, 2, 9]})
+        >>> a
+           x  y
+        0  1  2
+        1  3  2
+        2  5  3
+        3  5  2
+        4  7  9
         >>> b = pd.DataFrame({"x": [2, 4, 6], "y": [3, 1, 2]})
+        >>> b
+           x  y
+        0  2  3
+        1  4  1
+        2  6  2
         >>> stairs = b.sort_values("x", ignore_index=True)
         >>> stairs["stair"] = stairs["y"][::-1].cummin()[::-1]
         >>> stairs

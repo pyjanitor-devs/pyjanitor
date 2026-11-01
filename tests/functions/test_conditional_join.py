@@ -570,7 +570,12 @@ def test_equi_range_unordered_second_window_applies_keep(keep, expected_right):
     )
 
     assert np.array_equal(result["left_index"], np.array([0] * len(expected_right)))
-    assert np.array_equal(result["right_index"], np.array(expected_right))
+    if keep == "any":
+        # "any" promises one genuine match, not which one (rows 1 and 3 both match).
+        assert len(result["right_index"]) == 1
+        assert result["right_index"][0] in (1, 3)
+    else:
+        assert np.array_equal(result["right_index"], np.array(expected_right))
 
 
 @pytest.mark.parametrize("with_residual", [False, True])

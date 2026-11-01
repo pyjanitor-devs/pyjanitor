@@ -378,6 +378,58 @@ def conditional_join(
         >>> positioned.index.tolist()
         [(0, 0), (0, 1), (1, 1)]
 
+        To ask only whether a left row has a partner, not which one, use
+        ``keep="any"`` (``how="left_anti"`` returns the rows with none). When
+        the two predicates are inequalities, this "does any right row
+        dominate this left row?" test can also be answered in NumPy with a
+        staircase. For ``a.x <= b.x`` and ``a.y > b.y``, only right rows with
+        ``b.x >= a.x`` matter, and among them the smallest ``b.y`` is the
+        easiest to beat. Sort the right rows by ``x``, take a running minimum
+        of ``y`` from the largest ``x`` down (the staircase), and look up each
+        left row's step with one binary search:
+
+        >>> import numpy as np
+        >>> a = pd.DataFrame({"x": [1, 3, 5, 5, 7], "y": [2, 2, 3, 2, 9]})
+        >>> b = pd.DataFrame({"x": [2, 4, 6], "y": [3, 1, 2]})
+        >>> order = np.argsort(b["x"].to_numpy(), kind="stable")
+        >>> bx, by = b["x"].to_numpy()[order], b["y"].to_numpy()[order]
+        >>> stairs = np.minimum.accumulate(by[::-1])[::-1]
+        >>> stairs.tolist()
+        [1, 1, 2]
+        >>> first = np.searchsorted(bx, a["x"].to_numpy(), side="left")
+        >>> first.tolist()
+        [0, 1, 2, 2, 3]
+        >>> has_row = first < len(bx)  # a.x = 7 is beyond every b.x
+        >>> has_partner = np.zeros(len(a), dtype=bool)
+        >>> has_partner[has_row] = a["y"].to_numpy()[has_row] > stairs[first[has_row]]
+        >>> has_partner.tolist()
+        [True, True, True, False, False]
+
+        ``conditional_join`` finds the same rows. ``how="left_anti"`` returns
+        the left rows with no partner (under a ``"left"`` column level, with
+        the index renumbered), which is the complement of ``has_partner``:
+
+        >>> anti = a.conditional_join(
+        ...     b, ("x", "x", "<="), ("y", "y", ">"), how="left_anti"
+        ... )
+        >>> anti["left"].reset_index(drop=True)
+           x  y
+        0  5  2
+        1  7  9
+        >>> a.loc[~has_partner].reset_index(drop=True).equals(
+        ...     anti["left"].reset_index(drop=True)
+        ... )
+        True
+
+        The staircase answers existence only: it cannot return the matching
+        pairs, count them or aggregate them. It needs exactly two inequalities
+        (equality keys can be handled one group at a time), null rows dropped
+        first, and both sides in the same dtype, so that ``searchsorted``
+        compares without a lossy common type. On 40 million left rows against
+        33 thousand right rows it ran in about 0.4 seconds in NumPy, against
+        about 1.7 seconds for the join (single runs; read as orders of
+        magnitude).
+
     !!! abstract "Version Changed"
 
         - 0.24.0

@@ -2,10 +2,11 @@
 
 ## [Unreleased]
 
+-   [ENH] Answer `conditional_join(..., keep="any")` with exactly two range predicates by a staircase instead of a window search. After sorting the right side by the first column, one running min/max of the second column gives every left row its answer with a single binary search, and the left side is never sorted. Joins with an equality key, a third predicate, another `keep` mode, or non-numeric columns keep the window kernels. `keep="any"` returns some matching right row, not necessarily the first. Requires a `janitor-rs` release with `range_exists_indices`. PR #1853 @samukweku
+
 ## [v0.32.68] - 2026-11-01
 
 -   [DOC] Add a `conditional_join` example showing how to answer a two-inequality existence (semi-join or anti-join) test with a NumPy staircase and one binary search per left row, with its limits. - Issue #1843, PR #1854 @samukweku
--   [ENH] Answer `conditional_join(..., keep="any")` with exactly two range predicates by a staircase instead of a window search. After sorting the right side by the first column, one running min/max of the second column gives every left row its answer with a single binary search, and the left side is never sorted. Joins with an equality key, a third predicate, another `keep` mode, or non-numeric columns keep the window kernels. `keep="any"` returns some matching right row, not necessarily the first. Requires a `janitor-rs` release with `range_exists_indices`. PR #1853 @samukweku
 
 ## [v0.32.67] - 2026-11-01
 

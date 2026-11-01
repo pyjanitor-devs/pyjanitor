@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
--   [DOC] Show in `transform_column` the equivalent `assign` calls with `pd.col`, and what the method adds (a guard against overwriting an existing destination column). - PR #1851 @samukweku
+-   [DOC] Show in `transform_column` and `transform_columns` the equivalent `assign` calls with `pd.col`, and what they add (a guard against overwriting an existing destination column). - PR #1851 @samukweku
 
 ## [v0.32.66] - 2026-10-30
 

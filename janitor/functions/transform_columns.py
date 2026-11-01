@@ -180,6 +180,22 @@ def transform_columns(
     column name in `column_names` to its corresponding new column name.
     Note that all column names must be strings.
 
+    !!! tip "Plain pandas equivalent"
+
+        Pandas 3 can do the same in one `assign` call. Build the keyword
+        arguments with a dict comprehension over `pd.col`:
+
+        - In place: `df.assign(**{c: pd.col(c).map(function) for c in cols})`
+        - With a suffix:
+          `df.assign(**{c + suffix: pd.col(c).map(function) for c in cols})`
+        - With a mapping: use `new_column_names.get(c, c)` as the key.
+        - Column-wise: `function(pd.col(c))` in place of
+          `pd.col(c).map(function)`.
+
+        What `transform_columns` adds is a check: it raises if a new column
+        name is a different column that already exists, instead of
+        overwriting it.
+
     Examples:
         log10 transform a list of columns, replacing original columns.
 
@@ -218,6 +234,32 @@ def transform_columns(
         ...     ["col1", "col3"],
         ...     np.log10,
         ...     new_column_names={"col1": "transform1"},
+        ... )
+           col1  col2  col3  transform1
+        0     5     3   1.0    0.698970
+        1    10     6   2.0    1.000000
+        2    15     9   3.0    1.176091
+
+    Examples:
+        The same results with plain pandas.
+
+        >>> cols = ["col1", "col2", "col3"]
+        >>> df.assign(**{c: pd.col(c).map(np.log10) for c in cols})
+               col1      col2  col3
+        0  0.698970  0.477121   1.0
+        1  1.000000  0.778151   2.0
+        2  1.176091  0.954243   3.0
+        >>> df.assign(**{f"{c}_log": pd.col(c).map(np.log10) for c in ["col1", "col3"]})
+           col1  col2  col3  col1_log  col3_log
+        0     5     3    10  0.698970       1.0
+        1    10     6   100  1.000000       2.0
+        2    15     9  1000  1.176091       3.0
+        >>> new_names = {"col1": "transform1"}
+        >>> df.assign(
+        ...     **{
+        ...         new_names.get(c, c): pd.col(c).map(np.log10)
+        ...         for c in ["col1", "col3"]
+        ...     }
         ... )
            col1  col2  col3  transform1
         0     5     3   1.0    0.698970

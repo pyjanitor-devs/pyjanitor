@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [ENH] Speed up `conditional_join(..., keep="any")` on two range predicates that point the same way (`<`/`<=` with `<`/`<=`, or `>`/`>=` with `>`/`>=`) when the second right column is not monotonic. A negated cumulative envelope now bounds each window and its far end is a genuine match, so no scan is needed. Unsafe dtypes (unsigned values above the int64 maximum, the most negative integer, non-numeric) keep the previous behaviour. - PR #1844 @samukweku
+
 ## [v0.32.66] - 2026-10-30
 
 -   [BUG] Leave a numeric first column unchanged in `adorn_pct_formatting`, `adorn_ns`, and `adorn_rounding`. Column position 0 is the row identifier, matching `adorn_totals` and `adorn_percentages`. Based on work by @dylanpulver (#1677) and @SumanGouda (#1696). - Issue #1676

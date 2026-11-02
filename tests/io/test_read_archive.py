@@ -99,7 +99,8 @@ def test_multiple_files_keep_archive_order(tmp_path: Path):
         {"b.csv": CSV_B, "a.csv": CSV_A, "notes.txt": b"ignore me"},
     )
 
-    result = read_archive(archive)
+    with pytest.warns(UserWarning, match="notes.txt"):
+        result = read_archive(archive)
 
     assert list(result) == ["b.csv", "a.csv"]
     assert_frame_equal(result["b.csv"], FRAME_B)
@@ -148,7 +149,8 @@ def test_nested_member_path(tmp_path: Path):
     )
 
     assert_frame_equal(read_archive(archive, "nested/file1.csv"), FRAME_A)
-    assert_frame_equal(read_archive(archive), FRAME_A)
+    with pytest.warns(UserWarning, match="nested/notes.txt"):
+        assert_frame_equal(read_archive(archive), FRAME_A)
 
 
 @pytest.mark.functions
@@ -444,7 +446,7 @@ def test_dot_slash_and_plain_name_are_duplicates(tmp_path: Path):
         zip_archive.writestr("./a.csv", CSV_A)
         zip_archive.writestr("a.csv", CSV_B)
 
-    with pytest.raises(ValueError, match="duplicate member names: 'a.csv'"):
+    with pytest.raises(ValueError, match="Duplicate archive members selected: 'a.csv'"):
         read_archive(archive)
 
 
@@ -463,7 +465,7 @@ def test_duplicate_member_names(tmp_path: Path):
             zip_archive.writestr("file1.csv", CSV_A)
             zip_archive.writestr("file1.csv", CSV_B)
 
-    with pytest.raises(ValueError, match="duplicate member names"):
+    with pytest.raises(ValueError, match="Duplicate archive members selected"):
         read_archive(archive)
 
 
@@ -486,7 +488,7 @@ def test_duplicate_member_names_are_counted_in_one_pass(tmp_path: Path):
     started = time.perf_counter()
     with pytest.raises(
         ValueError,
-        match="duplicate member names: 'b.csv', 'a.csv'",
+        match="Duplicate archive members selected: 'b.csv', 'a.csv'",
     ):
         read_archive(archive)
     elapsed = time.perf_counter() - started
@@ -670,3 +672,127 @@ def test_polars_excel(tmp_path: Path):
     assert result.columns == ["id", "city"]
     assert result.get_column("id").to_list() == [1, 2]
     assert result.get_column("city").to_list() == ["Lisbon", "Porto"]
+
+
+@pytest.mark.functions
+def test_unselected_duplicate_does_not_fail(tmp_path: Path):
+    """A duplicated member is ignored when it is not selected."""
+
+    archive = tmp_path / "dup-readme.zip"
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message="Duplicate name",
+            category=UserWarning,
+        )
+        with zipfile.ZipFile(archive, mode="w") as zip_archive:
+            zip_archive.writestr("README.txt", b"one")
+            zip_archive.writestr("README.txt", b"two")
+            zip_archive.writestr("data.csv", CSV_A)
+
+    assert_frame_equal(read_archive(archive, "data.csv"), FRAME_A)
+    with pytest.warns(UserWarning, match="README.txt"):
+        assert_frame_equal(read_archive(archive), FRAME_A)
+
+
+@pytest.mark.functions
+def test_selected_duplicate_member_fails(tmp_path: Path):
+    """Requesting a member that occurs twice is an error."""
+
+    archive = tmp_path / "dup-data.zip"
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message="Duplicate name",
+            category=UserWarning,
+        )
+        with zipfile.ZipFile(archive, mode="w") as zip_archive:
+            zip_archive.writestr("data.csv", CSV_A)
+            zip_archive.writestr("data.csv", CSV_B)
+            zip_archive.writestr("other.csv", CSV_B)
+
+    with pytest.raises(
+        ValueError,
+        match="Duplicate archive members selected: 'data.csv'",
+    ):
+        read_archive(archive, "data.csv")
+    assert_frame_equal(read_archive(archive, "other.csv"), FRAME_B)
+
+
+@pytest.mark.functions
+def test_unsupported_members_warn_and_explicit_request_raises(tmp_path: Path):
+    """Automatic reads warn about unsupported members and do not pretend success."""
+
+    archive = write_zip(
+        tmp_path / "data.zip",
+        {"a.csv": CSV_A, "b.csv.gz": b"not read", "c.txt": b"text"},
+    )
+
+    with pytest.warns(UserWarning, match="b.csv.gz") as caught:
+        result = read_archive(archive)
+
+    assert_frame_equal(result, FRAME_A)
+    message = str(caught[0].message)
+    assert "c.txt" in message
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", UserWarning)
+        assert_frame_equal(read_archive(archive, "a.csv"), FRAME_A)
+    with pytest.raises(ValueError, match="Unsupported data file"):
+        read_archive(archive, "c.txt")
+
+
+@pytest.mark.functions
+def test_decompressed_size_limit(tmp_path: Path):
+    """Members larger than max_member_bytes are refused before parsing."""
+
+    archive = write_zip(tmp_path / "data.zip", {"file1.csv": CSV_A})
+    tar_archive = write_tar(tmp_path / "data.tar.gz", {"file1.csv": CSV_A}, mode="w:gz")
+
+    with pytest.raises(ValueError, match="decompressed"):
+        read_archive(archive, max_member_bytes=1)
+    with pytest.raises(ValueError, match="decompressed"):
+        read_archive(tar_archive, max_member_bytes=1)
+    assert_frame_equal(read_archive(archive, max_member_bytes=10_000), FRAME_A)
+
+    bulky = write_zip(
+        tmp_path / "bulky.zip",
+        {"notes.txt": b"x" * 50, "file1.csv": CSV_A},
+    )
+    assert_frame_equal(
+        read_archive(bulky, "file1.csv", max_member_bytes=len(CSV_A)),
+        FRAME_A,
+    )
+
+
+@pytest.mark.functions
+def test_tar_gz_is_opened_once(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """A gzip tar archive is opened once, not again for each member."""
+
+    archive = write_tar(
+        tmp_path / "data.tar.gz",
+        {"file1.csv": CSV_A, "file2.csv": CSV_B},
+        mode="w:gz",
+    )
+    opened: list[str] = []
+    real_open = tarfile.open
+
+    def spy_open(*args, **kwargs):
+        opened.append("open")
+        return real_open(*args, **kwargs)
+
+    monkeypatch.setattr("janitor.archive_reader.tarfile.open", spy_open)
+
+    frames = read_archive(archive)
+
+    assert opened == ["open"]
+    assert list(frames) == ["file1.csv", "file2.csv"]
+
+
+@pytest.mark.functions
+def test_canonical_member_name_is_public():
+    """Leading ./ normalization is a public helper, not a nested closure."""
+
+    from janitor.archive_reader import canonical_member_name
+
+    assert canonical_member_name("./nested/a.csv") == "nested/a.csv"
+    assert canonical_member_name("a.csv") == "a.csv"

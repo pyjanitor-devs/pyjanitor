@@ -1848,6 +1848,10 @@ def join_agg(
 
             [so-question]: https://stackoverflow.com/questions/69194678/python-fast-aggregation-of-many-observations-to-daily-sum
             [so-answer]: https://stackoverflow.com/a/69195082
+            [ailist-paper]: https://doi.org/10.1093/bioinformatics/btz407
+            [ailist-repo]: https://github.com/databio/AIList
+            [hint-paper]: https://doi.org/10.1007/s00778-023-00798-w
+            [hint-data]: https://github.com/pbour/hint/tree/main/samples
 
         !!! tip "Counting overlaps by boundaries"
 
@@ -1967,6 +1971,22 @@ def join_agg(
             |----------------------:|------------------:|-----------:|-------------:|
             | about 10              | 10 million        | 0.25 s     | 0.3 s        |
             | about 1,000           | 1 billion         | 0.24 s     | 7.5 s        |
+
+            On real data, counting overlaps (median of repeated runs, same machine):
+
+            | Data                   | Overlapping pairs | Boundaries | ``join_agg`` |
+            |------------------------|------------------:|-----------:|-------------:|
+            | AIList ex-rna, ex-anno  | 307 million       | 0.25 s     | 1.4 s        |
+            | AIList ex-anno, ex-rna  | 307 million       | 0.32 s     | 3.7 s        |
+            | Aarhus books, 365 days  | 59 million        | 0.046 s    | 0.79 s       |
+
+            The genomic data is from the [AIList paper][ailist-paper] and its
+            [repository][ailist-repo]: 9.9 million ex-rna and 1.2 million ex-anno
+            intervals, joined within each chromosome, with the first name as the
+            left side. The books are the 2.3 million Aarhus library loans of 2013
+            used in the [HINT paper][hint-paper] and its [sample data][hint-data],
+            counted against the 365 days of the year. In every case the boundary
+            counts equal the ``join_agg`` counts.
 
             A point is an interval with equal start and end, so the same code counts
             how many intervals contain each point. The limits:

@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
--   [PERF] Use pandas' default unstable sort for non-monotonic conditional-join anchors. - PR #1856 @samukweku
+-   [ENH] Use pandas' default unstable sort for non-monotonic conditional-join anchors; duplicate-value tie order is not part of the contract. - PR #1856 @samukweku
 
 ## [v0.32.69] - 2026-11-01
 

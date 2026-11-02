@@ -440,34 +440,36 @@ def test_sort_if_not_monotonic_normalizes_order_and_preserves_index(
 @pytest.mark.parametrize("path", ["single", "multi", "regions"])
 def test_ties_heavy_non_monotonic_ranges_preserve_keep_semantics(path, keep):
     """Range paths return the brute-force matches after unstable sorting."""
-    left = pd.DataFrame({"a": [1, 2, 4], "b": [4, 3, 2]})
-    right = pd.DataFrame(
+    rng = np.random.default_rng(1856)
+    left = pd.DataFrame(
         {
-            "x": [3, 1, 3, 2, 1, 3, 0, 2],
-            "y": [2, 4, 1, 4, 2, 4, 0, 1],
+            "a": rng.integers(1, 16, size=32),
+            "b": rng.integers(1, 16, size=32),
         }
     )
+    right = pd.DataFrame(
+        {
+            "x": rng.integers(0, 16, size=512),
+            "y": rng.integers(0, 16, size=512),
+        }
+    )
+    assert not right.x.is_monotonic_increasing
     conditions = [("a", "x", "<")]
     if path != "single":
         conditions.append(("b", "y", ">"))
     algorithm = "regions" if path == "regions" else "default"
 
     compare = {
-        "<": lambda left_value, right_value: left_value < right_value,
-        ">": lambda left_value, right_value: left_value > right_value,
+        "<": np.less,
+        ">": np.greater,
     }
-    expected = {}
-    for left_position, left_row in left.iterrows():
-        matches = [
-            right_position
-            for right_position, right_row in right.iterrows()
-            if all(
-                compare[operator](left_row[left_column], right_row[right_column])
-                for left_column, right_column, operator in conditions
-            )
-        ]
-        if matches:
-            expected[left_position] = matches
+    matches = np.ones((len(left), len(right)), dtype=bool)
+    for left_column, right_column, comparison_operator in conditions:
+        matches &= compare[comparison_operator](
+            left[left_column].to_numpy()[:, None],
+            right[right_column].to_numpy()[None, :],
+        )
+    expected_positions = [np.flatnonzero(row) for row in matches]
 
     actual = jn.get_join_indices(
         left,
@@ -481,13 +483,14 @@ def test_ties_heavy_non_monotonic_ranges_preserve_keep_semantics(path, keep):
     if keep == "all":
         assert set(actual_pairs) == {
             (left_position, right_position)
-            for left_position, matches in expected.items()
-            for right_position in matches
+            for left_position, positions in enumerate(expected_positions)
+            for right_position in positions
         }
     else:
         expected_pairs = [
-            (left_position, matches[0] if keep == "first" else matches[-1])
-            for left_position, matches in expected.items()
+            (left_position, positions[0] if keep == "first" else positions[-1])
+            for left_position, positions in enumerate(expected_positions)
+            if positions.size
         ]
         assert actual_pairs == expected_pairs
 

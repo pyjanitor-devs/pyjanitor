@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+-   [BUG] Materialize one-shot iterables in `check_column` so callers such as `fill_empty` can reuse column names. - Issue #1015 @cpruijsen
+-   [BUG] Allow hashable scalar column labels such as `2` in `fill_empty` instead of raising `NotImplementedError`. - Issue #1015 @cpruijsen
+
 ## [v0.32.69] - 2026-11-01
 
 -   [ENH] Answer `conditional_join(..., keep="any")` with exactly two range predicates by a staircase instead of a window search. After sorting the right side by the first column, one running min/max of the second column gives every left row its answer with a single binary search, and the left side is never sorted. Joins with an equality key, a third predicate, another `keep` mode, or non-numeric columns keep the window kernels. `keep="any"` returns some matching right row, not necessarily the first. Requires a `janitor-rs` release with `range_exists_indices`. PR #1853 @samukweku

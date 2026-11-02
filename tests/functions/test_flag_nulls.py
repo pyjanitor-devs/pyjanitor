@@ -51,6 +51,17 @@ def test_functional_on_some_columns(missingdata_df):
 
 
 @pytest.mark.functions
+def test_flag_nulls_generator_columns(missingdata_df):
+    """One-shot iterables should still inspect every requested column."""
+    expected = missingdata_df.copy()
+    expected["null_flag"] = [0, 1, 1] * 3
+
+    df = missingdata_df.flag_nulls(columns=map(lambda x: x, ["a", "Bell__Chart"]))
+
+    assert_frame_equal(df, expected, check_dtype=False)
+
+
+@pytest.mark.functions
 def test_columns_generic_hashable():
     """Checks flag_nulls behaviour when columns is a generic hashable."""
     df = pd.DataFrame(

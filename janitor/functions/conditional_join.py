@@ -1976,9 +1976,9 @@ def join_agg(
 
             | Data                   | Overlapping pairs | Boundaries | ``join_agg`` |
             |------------------------|------------------:|-----------:|-------------:|
-            | AIList ex-rna, ex-anno  | 307 million       | 0.25 s     | 1.4 s        |
-            | AIList ex-anno, ex-rna  | 307 million       | 0.32 s     | 3.7 s        |
-            | Aarhus books, 365 days  | 59 million        | 0.046 s    | 0.79 s       |
+            | AIList ex-rna, ex-anno | 307 million       | 0.25 s     | 1.4 s        |
+            | AIList ex-anno, ex-rna | 307 million       | 0.32 s     | 3.7 s        |
+            | Aarhus books, 365 days | 59 million        | 0.046 s    | 0.79 s       |
 
             The genomic data is from the [AIList paper][ailist-paper] and its
             [repository][ailist-repo]: 9.9 million ex-rna and 1.2 million ex-anno

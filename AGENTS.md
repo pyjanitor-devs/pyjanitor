@@ -895,6 +895,21 @@ includes nullable `Int64` and `Float64` columns and excludes booleans.
 assign with `DataFrame.isetitem`. Pair `adorn_ns` counts with
 `adorn_count_pairs`.
 
+### [2026-11-02] flag_outliers real dtypes, inf, and int64 quartiles
+
+**Context**: Review of `flag_outliers` on pandas 3.
+**Learning**: `is_numeric_dtype` is true for bool and complex. Bool IQR
+raises from NumPy subtraction, while Z-score returns all False. Complex
+IQR raises and Z-score returns all False. `np.int64` and `np.float32`
+are `numbers.Real` but not `int` or `float`, so `check()` rejects them.
+`Series.quantile` on int64 near `2**62` overflows and inverts the fences.
+`np.inf` makes `Series.std` NaN and warns on subtract. A MultiIndex
+column name formatted with an f-string becomes a padded string column.
+**Recommendation**: Reject bool and complex before the cutoff. Accept
+thresholds with `numbers.Real` after rejecting bool. Cast to float64
+before quartiles. Drop infinities from the statistics and flag them.
+Build a MultiIndex flag name by suffixing the last level.
+
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol

@@ -497,10 +497,9 @@ def _sort_if_not_monotonic(
     opposite direction is reversed, which preserves its values and index
     pairing without a full sort. Other non-monotonic series use pandas' default
     unstable sort; duplicate values do not require a stable tie order. The
-    returned
-    pandas index is part of the contract: callers must use it to select and
-    reorder every dependent right-side array, including residual predicates
-    and aggregation inputs.
+    returned pandas index is part of the contract: callers must use it to
+    select and reorder every dependent right-side array, including residual
+    predicates and aggregation inputs.
 
     Args:
         series: Non-null pandas series used as a Rust binary-search layout.

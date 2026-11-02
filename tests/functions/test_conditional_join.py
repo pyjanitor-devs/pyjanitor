@@ -436,6 +436,62 @@ def test_sort_if_not_monotonic_normalizes_order_and_preserves_index(
         assert actual.index[2:].tolist() == [12, 10]
 
 
+@pytest.mark.parametrize("keep", ["all", "first", "last"])
+@pytest.mark.parametrize("path", ["single", "multi", "regions"])
+def test_ties_heavy_non_monotonic_ranges_preserve_keep_semantics(path, keep):
+    """Range paths return the brute-force matches after unstable sorting."""
+    left = pd.DataFrame({"a": [1, 2, 4], "b": [4, 3, 2]})
+    right = pd.DataFrame(
+        {
+            "x": [3, 1, 3, 2, 1, 3, 0, 2],
+            "y": [2, 4, 1, 4, 2, 4, 0, 1],
+        }
+    )
+    conditions = [("a", "x", "<")]
+    if path != "single":
+        conditions.append(("b", "y", ">"))
+    algorithm = "regions" if path == "regions" else "default"
+
+    compare = {
+        "<": lambda left_value, right_value: left_value < right_value,
+        ">": lambda left_value, right_value: left_value > right_value,
+    }
+    expected = {}
+    for left_position, left_row in left.iterrows():
+        matches = [
+            right_position
+            for right_position, right_row in right.iterrows()
+            if all(
+                compare[operator](left_row[left_column], right_row[right_column])
+                for left_column, right_column, operator in conditions
+            )
+        ]
+        if matches:
+            expected[left_position] = matches
+
+    actual = jn.get_join_indices(
+        left,
+        right,
+        *conditions,
+        keep=keep,
+        join_algorithm=algorithm,
+    )
+    actual_pairs = sorted(zip(actual["left_index"], actual["right_index"]))
+
+    if keep == "all":
+        assert set(actual_pairs) == {
+            (left_position, right_position)
+            for left_position, matches in expected.items()
+            for right_position in matches
+        }
+    else:
+        expected_pairs = [
+            (left_position, matches[0] if keep == "first" else matches[-1])
+            for left_position, matches in expected.items()
+        ]
+        assert actual_pairs == expected_pairs
+
+
 def test_multiple_sorted_range_predicates_match_cartesian_reference():
     """Intersecting sorted range windows preserves the Cartesian result."""
     left = pd.DataFrame({"first": [2, 4], "second": [3, 1], "payload": [10, 20]})

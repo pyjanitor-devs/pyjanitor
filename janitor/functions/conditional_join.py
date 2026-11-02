@@ -1959,11 +1959,14 @@ def join_agg(
 
             The boundary form is faster when each interval overlaps many others,
             because its cost is two sorts and two binary searches whatever the
-            number of matches, while ``join_agg`` grows with the matches. In a
-            single run on random intervals (Apple Silicon, count and sum together),
-            1 million intervals on each side took about 0.25 s by boundaries
-            against 0.3 s for ``join_agg`` when there were about 10 million
-            matches, and 0.24 s against 7.5 s when there were about a billion.
+            number of overlapping pairs, while ``join_agg`` grows with the pairs.
+            In a single run on random intervals (Apple Silicon, count and sum
+            together), with 1 million intervals on each side:
+
+            | Overlaps per interval | Overlapping pairs | Boundaries | ``join_agg`` |
+            |----------------------:|------------------:|-----------:|-------------:|
+            | about 10              | 10 million        | 0.25 s     | 0.3 s        |
+            | about 1,000           | 1 billion         | 0.24 s     | 7.5 s        |
 
             A point is an interval with equal start and end, so the same code counts
             how many intervals contain each point. The limits:

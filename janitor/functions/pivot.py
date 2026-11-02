@@ -1518,11 +1518,7 @@ def _stack_dot_value_only_multiple_labels(
     fast_values = _fast_numpy_value_matrix(df)
     values_alias_input = _values_alias_input(fast_values, df)
     group_positions = grouped.indices
-    arrays = (
-        [arr._values for _, arr in df.items()]
-        if fast_values is None
-        else None
-    )
+    arrays = [arr._values for _, arr in df.items()] if fast_values is None else None
     for label in counts.index:
         positions = group_positions[label]
         if fast_values is not None:
@@ -1542,9 +1538,7 @@ def _stack_dot_value_only_multiple_labels(
             content = concat_compat([content, nulls_array])
         if sort_by_appearance:
             if indexer is None:
-                indexer = _build_indexer_reorder_contents(
-                    length=len_df, reps=reps
-                )
+                indexer = _build_indexer_reorder_contents(length=len_df, reps=reps)
             content = content.take(indexer)
         contents[label] = content
     nulls = _build_nulls(contents=contents, dropna=dropna)
@@ -1777,16 +1771,10 @@ def _stack_dot_value_multiple_labels(
     fast_values = _fast_numpy_value_matrix(df)
     values_alias_input = _values_alias_input(fast_values, df)
 
-    # Cache each column's underlying array once. This avoids repeated
-    # DataFrame label lookups for extension and mixed dtypes.
-    arrays = ([arr._values for _, arr in df.items()] if fast_values is None else None)
     fast_codes = df.columns.codes[0]
     for label in range(_value.size):
         start = fast_codes.searchsorted(label, side="left")
         end = fast_codes.searchsorted(label, side="right")
-        if end <= start:
-            contents[_value[label]] = np.full(len_df * reps, np.nan)
-            continue
         positions = np.arange(start, end)
         if fast_values is not None:
             contents[_value[label]] = _fast_ravel_group(
@@ -1797,14 +1785,22 @@ def _stack_dot_value_multiple_labels(
                 values_alias_input=values_alias_input,
             )
             continue
-        content = concat_compat([arrays[position] for position in positions])
-        if sort_by_appearance:
-            if reorder_indexer is None:
-                reorder_indexer = _build_indexer_reorder_contents(
-                    length=len_df,
-                    reps=reps,
-                )
-            content = content.take(reorder_indexer)
+        group_dtypes = df.dtypes.iloc[positions]
+        any_extension_array = group_dtypes.map(is_extension_array_dtype).any()
+        if any_extension_array:
+            group_arrays = [df.iloc[:, position]._values for position in positions]
+            content = concat_compat(group_arrays)
+            if sort_by_appearance:
+                if reorder_indexer is None:
+                    reorder_indexer = _build_indexer_reorder_contents(
+                        length=len_df,
+                        reps=reps,
+                    )
+                content = content.take(reorder_indexer)
+        else:
+            frame = df.iloc[:, positions]
+            order = "C" if sort_by_appearance else "F"
+            content = _ravel_values(frame, order=order)
         contents[_value[label]] = content
     nulls = _build_nulls(contents=contents, dropna=dropna)
     index = _build_index(
@@ -1882,16 +1878,6 @@ def _build_indexer_reorder_contents(length: int, reps: int) -> np.ndarray:
 def _build_content_extension_array(df: pd.DataFrame) -> np.ndarray:
     """Build content array for extension arrays"""
     df = [arr._values for _, arr in df.items()]
-    df = concat_compat(df)
-    return df
-
-
-def _build_content_extension_array_with_nulls(
-    df: pd.DataFrame, nulls_array: np.ndarray
-) -> np.ndarray:
-    """Build content array for extension arrays"""
-    df = [arr._values for _, arr in df.items()]
-    df.append(nulls_array)
     df = concat_compat(df)
     return df
 

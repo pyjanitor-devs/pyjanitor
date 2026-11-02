@@ -1953,12 +1953,8 @@ def test_reorder_contents_preserves_dtypes_sort_by_appearance():
     "value_2020, value_2021, expected",
     [
         pytest.param(
-            pd.Categorical(
-                ["low", "med"], categories=["low", "med", "high"]
-            ),
-            pd.Categorical(
-                ["high", "low"], categories=["high", "low"]
-            ),
+            pd.Categorical(["low", "med"], categories=["low", "med", "high"]),
+            pd.Categorical(["high", "low"], categories=["high", "low"]),
             ["low", "high", "med", "low"],
             id="different-categorical-categories",
         ),
@@ -1989,8 +1985,12 @@ def test_reorder_contents_preserves_dtypes_sort_by_appearance():
             pd.interval_range(0, 2),
             pd.interval_range(2, 4),
             pd.IntervalIndex(
-                [pd.Interval(0, 1), pd.Interval(2, 3),
-                 pd.Interval(1, 2), pd.Interval(3, 4)]
+                [
+                    pd.Interval(0, 1),
+                    pd.Interval(2, 3),
+                    pd.Interval(1, 2),
+                    pd.Interval(3, 4),
+                ]
             ),
             id="interval",
         ),
@@ -2014,9 +2014,7 @@ def test_reorder_contents_preserves_dtypes_sort_by_appearance():
         ),
     ],
 )
-def test_pivot_longer_extension_dtype_compatibility(
-    value_2020, value_2021, expected
-):
+def test_pivot_longer_extension_dtype_compatibility(value_2020, value_2021, expected):
     df = pd.DataFrame(
         {
             "id": [1, 2],
@@ -2035,6 +2033,59 @@ def test_pivot_longer_extension_dtype_compatibility(
             "id": [1, 1, 2, 2],
             "year": ["2020", "2021", "2020", "2021"],
             "value": expected,
+        }
+    )
+    assert_frame_equal(result, expected)
+
+
+def test_pivot_longer_multiple_value_labels_mixed_numpy_dtypes_with_nulls():
+    df = pd.DataFrame(
+        {
+            "id": [1, 2],
+            "height_2020": [1, 2],
+            "height_2021": [3.5, 4.5],
+            "weight_2020": [10, 20],
+        }
+    )
+    result = df.pivot_longer(
+        index="id",
+        names_to=(".value", "year"),
+        names_pattern=r"(.+)_(\d+)",
+        sort_by_appearance=True,
+    )
+    expected = pd.DataFrame(
+        {
+            "id": [1, 1, 2, 2],
+            "year": ["2020", "2021", "2020", "2021"],
+            "height": [1.0, 3.5, 2.0, 4.5],
+            "weight": [10.0, np.nan, 20.0, np.nan],
+        }
+    )
+    assert_frame_equal(result, expected)
+
+
+def test_pivot_longer_multiple_value_labels_extension_dtypes():
+    df = pd.DataFrame(
+        {
+            "id": [1, 2],
+            "value_2020": pd.array([1, 2], dtype="Int64"),
+            "value_2021": pd.array([3, pd.NA], dtype="Int64"),
+            "score_2020": [1.5, 2.5],
+            "score_2021": [3.5, 4.5],
+        }
+    )
+    result = df.pivot_longer(
+        index="id",
+        names_to=(".value", "year"),
+        names_pattern=r"(.+)_(\d+)",
+        sort_by_appearance=True,
+    )
+    expected = pd.DataFrame(
+        {
+            "id": [1, 1, 2, 2],
+            "year": ["2020", "2021", "2020", "2021"],
+            "value": pd.array([1, 3, 2, pd.NA], dtype="Int64"),
+            "score": [1.5, 3.5, 2.5, 4.5],
         }
     )
     assert_frame_equal(result, expected)

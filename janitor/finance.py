@@ -1,10 +1,12 @@
 """Finance-specific data cleaning functions."""
 
 import json
+import math
 import os
 from datetime import date, datetime
 from functools import lru_cache
 from typing import Optional
+from urllib.parse import urlparse
 from warnings import warn
 
 import pandas as pd
@@ -25,7 +27,6 @@ currency_set = {
     "EUR",
     "GBP",
     "HKD",
-    "HRK",
     "HUF",
     "IDR",
     "ILS",
@@ -40,7 +41,6 @@ currency_set = {
     "PHP",
     "PLN",
     "RON",
-    "RUB",
     "SEK",
     "SGD",
     "THB",
@@ -357,75 +357,94 @@ def currency_api_url() -> str:
     ``JANITOR_CURRENCY_API_URL`` environment variable to use another
     endpoint that accepts the same ``base``, ``quotes``, and ``date``
     query parameters and returns a JSON list of objects with ``quote``
-    and ``rate`` fields.
+    and ``rate`` fields. The value must be an absolute ``http`` or
+    ``https`` URL. Currency codes and the requested date are sent to
+    that host.
 
     Returns:
         The rates endpoint URL.
+
+    Raises:
+        ValueError: If ``JANITOR_CURRENCY_API_URL`` is set and is not
+            an absolute http or https URL.
     """
     configured = os.environ.get("JANITOR_CURRENCY_API_URL")
-    if configured:
-        return configured
-    return FRANKFURTER_API_URL
+    if not configured or not configured.strip():
+        return FRANKFURTER_API_URL
+    candidate = configured.strip()
+    parsed = urlparse(candidate)
+    if parsed.scheme.lower() not in {"http", "https"} or not parsed.netloc:
+        raise ValueError(
+            "JANITOR_CURRENCY_API_URL must be an absolute http or https URL. "
+            f"Got {configured!r}."
+        )
+    return candidate
 
 
-@lru_cache(maxsize=32)
-def fetch_exchange_rate(
-    from_currency: Optional[str] = None,
-    to_currency: Optional[str] = None,
-    historical_date: Optional[date] = None,
-    api_url: str = FRANKFURTER_API_URL,
+def positive_exchange_rate(rate: object) -> float:
+    """Return ``rate`` when it is a positive finite number.
+
+    Args:
+        rate: Candidate rate from one response row.
+
+    Returns:
+        The rate as a float.
+
+    Raises:
+        ValueError: If ``rate`` is missing, non-numeric, non-finite,
+            or not positive.
+    """
+    if isinstance(rate, bool) or not isinstance(rate, (int, float, str)):
+        raise ValueError(f"Exchange rate {rate!r} is not a positive finite number.")
+    try:
+        value = float(rate)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(
+            f"Exchange rate {rate!r} is not a positive finite number."
+        ) from exc
+    if not math.isfinite(value) or value <= 0:
+        raise ValueError(f"Exchange rate {rate!r} is not a positive finite number.")
+    return value
+
+
+def request_exchange_rate(
+    from_currency: str,
+    to_currency: str,
+    quote_date: Optional[str],
+    api_url: str,
 ) -> float:
-    """Fetch one ECB reference rate from Frankfurter.
-
-    [Frankfurter](https://www.frankfurter.app) republishes European
-    Central Bank reference rates without an API key. The series starts
-    on 1999-01-04. A date with no published observation, such as a
-    weekend or a TARGET holiday, uses the previous published rate.
+    """Request one uncached rate from a Frankfurter-compatible endpoint.
 
     Args:
         from_currency: Currency code to convert from.
         to_currency: Currency code to convert to.
-        historical_date: Rate date. ``datetime`` values use the
-            calendar date and ignore the time. Omit it for the latest
-            rate.
-        api_url: Rates endpoint. Defaults to ``FRANKFURTER_API_URL``.
-            ``convert_currency`` passes ``currency_api_url``, which
-            honors ``JANITOR_CURRENCY_API_URL``.
+        quote_date: ISO date ``YYYY-MM-DD``, or None for the latest rate.
+        api_url: Rates endpoint.
 
     Returns:
         Units of ``to_currency`` per one unit of ``from_currency``.
 
     Raises:
-        TypeError: If ``historical_date`` is not a ``date`` or
-            ``datetime``.
-        ValueError: If a currency code is unsupported, the date is
-            before 1999-01-04, or the response has no rate.
-        ConnectionError: If the server does not return HTTP 200 or
-            returns a body that is not JSON.
+        ValueError: If the service returns HTTP 422, the body is not a
+            list of rate objects, or the requested rate is missing or
+            not a positive finite number.
+        ConnectionError: If the server does not return HTTP 200 or 422,
+            or returns a body that is not JSON.
     """
-    quote_date = None
-    if historical_date is not None:
-        check("historical_date", historical_date, [datetime, date])
-        # datetime subclasses date, so the datetime check has to come first.
-        if isinstance(historical_date, datetime):
-            if historical_date < datetime(1999, 1, 4):
-                raise ValueError("historical_date must be on or after 1999-01-04.")
-            quote_date = historical_date.date().isoformat()
-        else:
-            if historical_date < date(1999, 1, 4):
-                raise ValueError("historical_date must be on or after 1999-01-04.")
-            quote_date = historical_date.isoformat()
-
-    _check_currency(from_currency)
-    _check_currency(to_currency)
-    if from_currency == to_currency:
-        return 1.0
-
     params = {"base": from_currency, "quotes": to_currency}
     if quote_date is not None:
         params["date"] = quote_date
 
     result = requests.get(api_url, params=params, timeout=30)
+    if result.status_code == 422:
+        detail = "the rates service rejected the request"
+        try:
+            body = json.loads(result.text)
+        except json.JSONDecodeError:
+            body = None
+        if isinstance(body, dict) and body.get("message"):
+            detail = str(body["message"])
+        raise ValueError(f"Exchange rate request was rejected: {detail}.")
     if result.status_code != 200:
         raise ConnectionError(
             "Exchange Rate API failed to receive a 200 "
@@ -439,19 +458,109 @@ def fetch_exchange_rate(
         raise ConnectionError(
             "Exchange Rate API returned a response that is not valid JSON."
         ) from exc
+    if not isinstance(payload, list):
+        raise ValueError("Exchange rate response must be a list of rate objects.")
 
     published = quote_date or "the latest date"
-    if isinstance(payload, list):
-        for row in payload:
-            if not isinstance(row, dict):
-                continue
-            if row.get("date"):
-                published = row["date"]
-            if row.get("quote") == to_currency and row.get("rate") is not None:
-                return float(row["rate"])
+    for row in payload:
+        if not isinstance(row, dict):
+            raise ValueError(
+                "Exchange rate response contained a row that is not an object."
+            )
+        if row.get("date"):
+            published = str(row["date"])
+        if row.get("quote") != to_currency:
+            continue
+        return positive_exchange_rate(row.get("rate"))
 
     raise ValueError(
         f"No {from_currency}/{to_currency} rate was published for {published}."
+    )
+
+
+@lru_cache(maxsize=32)
+def cached_historical_exchange_rate(
+    from_currency: str,
+    to_currency: str,
+    quote_date: str,
+    api_url: str,
+) -> float:
+    """Return a cached ECB rate for one calendar date.
+
+    Latest rates are not stored. ``quote_date`` is ``YYYY-MM-DD``.
+
+    Args:
+        from_currency: Currency code to convert from.
+        to_currency: Currency code to convert to.
+        quote_date: ISO date ``YYYY-MM-DD``.
+        api_url: Rates endpoint.
+
+    Returns:
+        Units of ``to_currency`` per one unit of ``from_currency``.
+    """
+    return request_exchange_rate(from_currency, to_currency, quote_date, api_url)
+
+
+def fetch_exchange_rate(
+    from_currency: Optional[str] = None,
+    to_currency: Optional[str] = None,
+    historical_date: Optional[date] = None,
+    api_url: str = FRANKFURTER_API_URL,
+) -> float:
+    """Fetch one ECB reference rate from Frankfurter.
+
+    [Frankfurter](https://www.frankfurter.app) republishes European
+    Central Bank reference rates without an API key. The series starts
+    on 1999-01-04. A date with no published observation, such as a
+    weekend or a TARGET holiday, uses the previous published rate.
+
+    A historical date is cached. A latest-rate call, with
+    ``historical_date`` omitted, always requests a fresh rate.
+
+    Args:
+        from_currency: Currency code to convert from.
+        to_currency: Currency code to convert to.
+        historical_date: Rate date. ``datetime`` values, including
+            timezone-aware values and ``pandas.Timestamp``, use their
+            calendar date and ignore the time. Omit it for the latest
+            rate.
+        api_url: Rates endpoint. Defaults to ``FRANKFURTER_API_URL``.
+            ``convert_currency`` passes ``currency_api_url``, which
+            honors ``JANITOR_CURRENCY_API_URL``.
+
+    Returns:
+        Units of ``to_currency`` per one unit of ``from_currency``.
+
+    Raises:
+        TypeError: If ``historical_date`` is not a ``date`` or
+            ``datetime``.
+        ValueError: If a currency code is unsupported, the date is
+            before 1999-01-04, or the response has no usable rate.
+        ConnectionError: If the server does not return HTTP 200 or
+            422, or returns a body that is not JSON.
+    """
+    quote_date = None
+    if historical_date is not None:
+        check("historical_date", historical_date, [datetime, date])
+        # Compare calendar dates. An aware datetime is not ordered
+        # against a naive datetime, and Timestamp is a datetime.
+        day = (
+            historical_date.date()
+            if isinstance(historical_date, datetime)
+            else historical_date
+        )
+        if day < date(1999, 1, 4):
+            raise ValueError("historical_date must be on or after 1999-01-04.")
+        quote_date = day.isoformat()
+
+    _check_currency(from_currency)
+    _check_currency(to_currency)
+    if from_currency == to_currency:
+        return 1.0
+    if quote_date is None:
+        return request_exchange_rate(from_currency, to_currency, None, api_url)
+    return cached_historical_exchange_rate(
+        from_currency, to_currency, quote_date, api_url
     )
 
 
@@ -474,9 +583,15 @@ def convert_currency(
     (weekends and TARGET holidays), the previous published rate is used.
 
     Set ``JANITOR_CURRENCY_API_URL`` to replace the default endpoint,
-    ``FRANKFURTER_API_URL``. The replacement must accept ``base``,
-    ``quotes``, and an optional ``date`` query parameter, and return a
-    JSON list of objects with ``quote`` and ``rate`` fields.
+    ``FRANKFURTER_API_URL``. The value must be an absolute ``http`` or
+    ``https`` URL. It must accept ``base``, ``quotes``, and an optional
+    ``date`` query parameter, and return a JSON list of objects with
+    ``quote`` and ``rate`` fields. Currency codes and the date are sent
+    to that host.
+
+    Latest rates are requested on every call. A historical date is
+    cached for the life of the process. ``HRK`` and ``RUB`` are not
+    accepted; the ECB no longer publishes them.
 
     The returned DataFrame is a copy. The input is left unchanged.
 
@@ -506,26 +621,70 @@ def convert_currency(
         to_currency: The target currency to convert to. Must be a
             member of ``currency_set``.
         historical_date: Exchange-rate date. Omit it for the latest
-            rate. ``datetime`` values use the calendar date. Rates go
-            back to 1999-01-04.
+            rate. ``datetime`` values, including timezone-aware values,
+            use their calendar date. Rates go back to 1999-01-04.
         make_new_column: When True, store the converted values in
             ``{column_name}_{to_currency}``. When False, replace
             ``column_name`` on the returned copy.
         api_key: Deprecated and ignored. Frankfurter does not require
-            a key.
+            a key. A call that still passes the key as the first
+            positional argument is accepted with a ``FutureWarning``.
 
     Returns:
         A DataFrame with the converted currency column.
 
     Raises:
         TypeError: If ``historical_date`` is not a ``date`` or
-            ``datetime``.
+            ``datetime``, or an old positional call cannot be mapped
+            back onto the current arguments.
         ValueError: If a currency code is unsupported, the date is
-            before 1999-01-04, or no rate was published.
+            before 1999-01-04, the service returns HTTP 422, the
+            response has no usable rate, or
+            ``JANITOR_CURRENCY_API_URL`` is not an http(s) URL.
         ConnectionError: If the rates endpoint does not return HTTP 200
-            or returns a body that is not JSON.
+            or 422, or returns a body that is not JSON.
     """
-    if api_key is not None:
+    legacy_call = (
+        isinstance(from_currency, str)
+        and from_currency in df.columns
+        and isinstance(to_currency, str)
+        and to_currency in currency_set
+        and isinstance(historical_date, str)
+        and historical_date in currency_set
+    )
+    if legacy_call:
+        warn(
+            "Passing api_key as the first positional argument of "
+            "convert_currency is deprecated and ignored. Pass the "
+            "column name first: df.convert_currency(column_name, "
+            "from_currency, to_currency). api_key will be removed in "
+            "a future release.",
+            FutureWarning,
+            stacklevel=find_stack_level(),
+        )
+        shifted_column = from_currency
+        shifted_from = to_currency
+        shifted_to = historical_date
+        if isinstance(make_new_column, date):
+            shifted_date = make_new_column
+            shifted_make_new = api_key if isinstance(api_key, bool) else False
+        else:
+            shifted_date = None
+            shifted_make_new = make_new_column
+        column_name = shifted_column
+        from_currency = shifted_from
+        to_currency = shifted_to
+        historical_date = shifted_date
+        make_new_column = shifted_make_new
+    elif isinstance(historical_date, str) and historical_date in currency_set:
+        raise TypeError(
+            "convert_currency received a currency code where a date was "
+            "expected. api_key is no longer the first positional "
+            "argument. Pass the column name first: "
+            "df.convert_currency(column_name, from_currency, to_currency). "
+            "api_key is ignored."
+        )
+    elif api_key is not None:
         warn(
             "The `api_key` argument of `convert_currency` is deprecated "
             "and ignored. It will be removed in a future release.",

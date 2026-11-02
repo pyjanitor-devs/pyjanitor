@@ -3,7 +3,7 @@
 ## [Unreleased]
 
 -   [INF] Require a `CHANGELOG.md` entry in every pull request and check for it in review: added to `AGENTS.md`, `CONTRIBUTING.md` and the PR template. - PR #1848 @samukweku
--   [ENH] Re-enable convert_currency using keyless ECB reference rates from Frankfurter (configurable base URL); honour from_currency and name the new column correctly; api_key is deprecated and ignored. Based on work by @cahthuranag (#1836). - Issue #829
+-   [ENH] Re-enable convert_currency using keyless ECB reference rates from Frankfurter (configurable base URL); honour from_currency and name the new column correctly; api_key is deprecated and ignored, including when it is still passed as the first positional argument. Latest rates are not cached. HRK and RUB are no longer accepted. HTTP 422 and a non-http(s) JANITOR_CURRENCY_API_URL raise ValueError. Based on work by @cahthuranag (#1836). - Issue #829
 
 ## [v0.32.75] - 2026-11-04
 

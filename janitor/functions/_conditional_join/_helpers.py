@@ -495,8 +495,8 @@ def _sort_if_not_monotonic(
 
     An already ordered series is returned unchanged. A series ordered in the
     opposite direction is reversed, which preserves its values and index
-    pairing without a full sort. Other non-monotonic series use a stable sort
-    so duplicate values retain deterministic physical order. The returned
+    pairing without a full sort. Other non-monotonic series use an unstable
+    sort; duplicate values do not require a stable tie order. The returned
     pandas index is part of the contract: callers must use it to select and
     reorder every dependent right-side array, including residual predicates
     and aggregation inputs.
@@ -521,7 +521,7 @@ def _sort_if_not_monotonic(
         return series.iloc[::-1], False
     if series.is_monotonic_decreasing:
         return series.iloc[::-1], False
-    return series.sort_values(ascending=ascending, kind="stable"), False
+    return series.sort_values(ascending=ascending, kind="quicksort"), False
 
 
 def _convert_array_to_numpy(

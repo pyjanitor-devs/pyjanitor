@@ -533,6 +533,12 @@ rm -rf .pixi && pixi install
 
 ## Learned Patterns
 
+- For conditional joins, `keep="any"` may return a different matching
+  candidate when traversal order changes; that is acceptable if the candidate
+  still satisfies every predicate. `join_agg` should not inherit sorting solely
+  from ordinary join materialization, and `_sort_if_not_monotonic` should not
+  reverse an already reverse-monotonic input when no sorted layout is needed.
+
 <!--
 This section is for agents to record new learnings.
 Add entries in the format:

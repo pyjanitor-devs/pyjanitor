@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [DOC] Show in `transform_column` and `transform_columns` the equivalent `assign` calls with `pd.col`, and what they add (a guard against overwriting an existing destination column). - PR #1851 @samukweku
+
 ## [v0.32.69] - 2026-11-01
 
 -   [ENH] Answer `conditional_join(..., keep="any")` with exactly two range predicates by a staircase instead of a window search. After sorting the right side by the first column, one running min/max of the second column gives every left row its answer with a single binary search, and the left side is never sorted. Joins with an equality key, a third predicate, another `keep` mode, or non-numeric columns keep the window kernels. `keep="any"` returns some matching right row, not necessarily the first. Requires a `janitor-rs` release with `range_exists_indices`. PR #1853 @samukweku

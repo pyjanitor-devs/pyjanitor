@@ -395,3 +395,86 @@ def test_existing_flag_column_raises():
         df.flag_outliers("values")
     with pytest.raises(ValueError, match="is_outlier already present"):
         custom.flag_outliers("values", flag_column_name="is_outlier")
+
+
+@pytest.mark.functions
+@pytest.mark.parametrize("method", ["iqr", "zscore"])
+def test_infinity_is_flagged_without_warning(method):
+    """Non-finite values are outliers and do not emit a RuntimeWarning."""
+    df = _frame([1.0, 2.0, 3.0, np.inf, -np.inf])
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        result = df.flag_outliers("values", method=method)
+
+    assert result["values_outlier_flag"].tolist() == [
+        False,
+        False,
+        False,
+        True,
+        True,
+    ]
+
+
+@pytest.mark.functions
+@pytest.mark.parametrize("method", ["iqr", "zscore"])
+@pytest.mark.parametrize(
+    "values",
+    [
+        [True, False, True, False],
+        pd.Series([True, False, pd.NA, True], dtype="boolean"),
+        [1 + 0j, 2 + 0j, 50 + 0j],
+    ],
+)
+def test_bool_and_complex_columns_raise(method, values):
+    """Boolean and complex columns raise the same TypeError for both methods."""
+    df = pd.DataFrame({"values": values})
+
+    with pytest.raises(TypeError, match="must be numeric"):
+        df.flag_outliers("values", method=method)
+
+
+@pytest.mark.functions
+@pytest.mark.parametrize("threshold", [np.int64(2), np.float32(2.0)])
+def test_numpy_real_threshold_matches_python_number(threshold):
+    """NumPy real scalars are accepted thresholds."""
+    df = _frame([1, 2, 3, 4, 5, 10])
+
+    result = df.flag_outliers("values", threshold=threshold)
+    expected = df.flag_outliers("values", threshold=float(threshold))
+
+    assert_series_equal(
+        result["values_outlier_flag"],
+        expected["values_outlier_flag"],
+        check_names=False,
+    )
+
+
+@pytest.mark.functions
+def test_iqr_large_int64_is_computed_in_float():
+    """IQR fences use float64 so values near the int64 limit do not overflow."""
+    df = _frame([2**62, 2**62 + 1, 2**62 + 2, -(2**62)], dtype="int64")
+
+    result = df.flag_outliers("values")
+
+    assert result["values"].dtype == np.dtype("int64")
+    assert result["values_outlier_flag"].tolist() == [False, False, False, True]
+
+
+@pytest.mark.functions
+def test_multiindex_flag_name_uses_the_last_level():
+    """A MultiIndex column keeps its upper levels in the flag name."""
+    df = pd.DataFrame({("group", "values"): [10, 12, 11, 100]})
+
+    result = df.flag_outliers(("group", "values"))
+
+    assert result.columns.tolist() == [
+        ("group", "values"),
+        ("group", "values_outlier_flag"),
+    ]
+    assert result[("group", "values_outlier_flag")].tolist() == [
+        False,
+        False,
+        False,
+        True,
+    ]

@@ -907,17 +907,6 @@ includes nullable `Int64` and `Float64` columns and excludes booleans.
 assign with `DataFrame.isetitem`. Pair `adorn_ns` counts with
 `adorn_count_pairs`.
 
-### [2026-11-01] Archive member scans stay linear and drop a leading `./`
-
-**Context**: Review of `read_archive` on PR #1833.
-**Learning**: `list.count` per member is quadratic and dominates archives
-with tens of thousands of files. `collections.Counter` finds duplicate
-names in one pass. `tar czf archive.tgz .` stores names as `./a.csv`.
-Drop one leading `./` before matching, and keep the stored name for the
-actual read.
-**Recommendation**: Match callers' plain names to those tar members, and
-do not scan member names with repeated `list.count`.
-
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol

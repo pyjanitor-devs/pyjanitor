@@ -8,8 +8,11 @@
     supported files from zip and tar archives with pandas or polars.
     Keyword arguments are passed through to the underlying reader. A
     leading `./` on a member name, as stored by `tar czf archive.tgz .`,
-    is ignored when matching. Based on work by @Sabrina-Hassaim in
-    #1440. - Issue #1171
+    is ignored when matching. Unsupported members are skipped with a
+    warning unless requested by name, and a duplicated member raises
+    only when it is selected. Each selected member must stay within
+    `max_member_bytes`. Based on work by @Sabrina-Hassaim in #1440.
+    Issue #1171
 
 ## [v0.32.75] - 2026-11-04
 

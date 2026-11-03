@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v0.32.72] - 2026-11-03
+
 -   [DOC] Add `join_agg` tips for totalling overlapping date ranges per day (join and cumulative-sum forms) and for counting or summing overlaps by boundaries with `searchsorted`, with their limits. - PR #1850 @samukweku
 
 ## [v0.32.71] - 2026-11-03
@@ -724,7 +726,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.71...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.72...HEAD
+
+[v0.32.72]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.71...v0.32.72
 
 [v0.32.71]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.70...v0.32.71
 

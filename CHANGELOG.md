@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v0.32.71] - 2026-11-03
+
 -   [ENH] Use pandas' default unstable sort for non-monotonic conditional-join anchors; duplicate-value tie order is not part of the contract. - PR #1856 @samukweku
 
 ## [v0.32.70] - 2026-11-03
@@ -720,7 +722,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.70...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.71...HEAD
+
+[v0.32.71]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.70...v0.32.71
 
 [v0.32.70]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.69...v0.32.70
 

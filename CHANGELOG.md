@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v0.32.70] - 2026-11-03
+
 -   [ENH] Allow `unionize_dataframe_categories` to accept a single list or
     tuple of DataFrames. - Issue #637 @priy-anshugupta
 
@@ -716,7 +718,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.69...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.70...HEAD
+
+[v0.32.70]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.69...v0.32.70
 
 [v0.32.69]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.68...v0.32.69
 

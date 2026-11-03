@@ -1770,7 +1770,9 @@ def _stack_dot_value_multiple_labels(
 
     fast_values = _fast_numpy_value_matrix(df)
     values_alias_input = _values_alias_input(fast_values, df)
-
+    arrays = None
+    if fast_values is None:
+        arrays = [arr._values for _, arr in df.items()]
     fast_codes = df.columns.codes[0]
     for label in range(_value.size):
         start = fast_codes.searchsorted(label, side="left")
@@ -1785,22 +1787,14 @@ def _stack_dot_value_multiple_labels(
                 values_alias_input=values_alias_input,
             )
             continue
-        group_dtypes = df.dtypes.iloc[positions]
-        any_extension_array = group_dtypes.map(is_extension_array_dtype).any()
-        if any_extension_array:
-            group_arrays = [df.iloc[:, position]._values for position in positions]
-            content = concat_compat(group_arrays)
-            if sort_by_appearance:
-                if reorder_indexer is None:
-                    reorder_indexer = _build_indexer_reorder_contents(
-                        length=len_df,
-                        reps=reps,
-                    )
-                content = content.take(reorder_indexer)
-        else:
-            frame = df.iloc[:, positions]
-            order = "C" if sort_by_appearance else "F"
-            content = _ravel_values(frame, order=order)
+        content = concat_compat([arrays[position] for position in positions])
+        if sort_by_appearance:
+            if reorder_indexer is None:
+                reorder_indexer = _build_indexer_reorder_contents(
+                    length=len_df,
+                    reps=reps,
+                )
+            content = content.take(reorder_indexer)
         contents[_value[label]] = content
     nulls = _build_nulls(contents=contents, dropna=dropna)
     index = _build_index(

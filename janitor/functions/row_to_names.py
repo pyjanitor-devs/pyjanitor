@@ -15,7 +15,7 @@ from janitor.utils import check, deprecated_alias
 @deprecated_alias(row_number="row_numbers", remove_row="remove_rows")
 def row_to_names(
     df: pd.DataFrame,
-    row_numbers: int | list | slice = 0,
+    row_numbers: int | list | slice | str = 0,
     remove_rows: bool = False,
     remove_rows_above: bool = False,
     reset_index: bool = False,
@@ -78,7 +78,7 @@ def row_to_names(
     Args:
         df: A pandas DataFrame.
         row_numbers: Position of the row(s) containing the variable names.
-            It can be an integer, a list or a slice.
+            It can be an integer, a list, a slice, or the string 'find_header'.
             Defaults to 0 (first row).
         remove_rows: Whether the row(s) should be removed from the DataFrame.
         remove_rows_above: Whether the row(s) above the selected row should
@@ -107,8 +107,29 @@ def _row_to_names(
     """
     raise TypeError(
         "row_numbers should be either an integer, "
-        "a slice or a list; "
+        "a slice, a list or 'find_header'; "
         f"instead got type {type(row_numbers).__name__}"
+    )
+
+
+@_row_to_names.register(str)  # noqa: F811
+def _row_to_names_dispatch(  # noqa: F811
+    row_numbers, df, remove_rows, remove_rows_above, reset_index
+):
+    if row_numbers == "find_header":
+        from janitor.functions.find_header import find_header
+
+        detected_row = find_header(df)
+        return _row_to_names(
+            detected_row,
+            df=df,
+            remove_rows=remove_rows,
+            remove_rows_above=remove_rows_above,
+            reset_index=reset_index,
+        )
+    raise ValueError(
+        f"Unsupported string option '{row_numbers}' for row_numbers. "
+        "Use 'find_header' to locate the header row automatically."
     )
 
 

@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v0.32.73] - 2026-11-03
+
 -   [INF] Match the Python trove classifiers and the ruff, black, and pixi minimum versions to the supported range, Python 3.11, 3.12, and 3.13.
 
 ## [v0.32.72] - 2026-11-03
@@ -728,7 +730,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.72...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.73...HEAD
+
+[v0.32.73]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.72...v0.32.73
 
 [v0.32.72]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.71...v0.32.72
 

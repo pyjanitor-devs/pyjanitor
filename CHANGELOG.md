@@ -4,6 +4,11 @@
 
 -   [ENH] Use pandas' default unstable sort for non-monotonic conditional-join anchors; duplicate-value tie order is not part of the contract. - PR #1856 @samukweku
 
+## [v0.32.70] - 2026-11-03
+
+-   [ENH] Allow `unionize_dataframe_categories` to accept a single list or
+    tuple of DataFrames. - Issue #637 @priy-anshugupta
+
 ## [v0.32.69] - 2026-11-01
 
 -   [ENH] Answer `conditional_join(..., keep="any")` with exactly two range predicates by a staircase instead of a window search. After sorting the right side by the first column, one running min/max of the second column gives every left row its answer with a single binary search, and the left side is never sorted. Joins with an equality key, a third predicate, another `keep` mode, or non-numeric columns keep the window kernels. `keep="any"` returns some matching right row, not necessarily the first. Requires a `janitor-rs` release with `range_exists_indices`. PR #1853 @samukweku
@@ -715,7 +720,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.69...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.70...HEAD
+
+[v0.32.70]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.69...v0.32.70
 
 [v0.32.69]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.68...v0.32.69
 

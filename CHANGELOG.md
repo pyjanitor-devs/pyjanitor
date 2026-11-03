@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [ENH] Add `find_header` and support `"find_header"` in `row_to_names` to detect header row in DataFrames.
+
 ## [v0.32.75] - 2026-11-04
 
 -   [DOC] Rewrite the introductory example to chain `clean_names`, `remove_empty`, and `encode_categorical`, so copying it does not emit `FutureWarning`. - Issue #1442

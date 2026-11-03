@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [DOC] Add `join_agg` tips for totalling overlapping date ranges per day (join and cumulative-sum forms) and for counting or summing overlaps by boundaries with `searchsorted`, with their limits. - PR #1850 @samukweku
+
 ## [v0.32.71] - 2026-11-03
 
 -   [ENH] Use pandas' default unstable sort for non-monotonic conditional-join anchors; duplicate-value tie order is not part of the contract. - PR #1856 @samukweku

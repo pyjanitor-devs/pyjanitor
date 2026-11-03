@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [ENH] Use pandas' default unstable sort for non-monotonic conditional-join anchors; duplicate-value tie order is not part of the contract. - PR #1856 @samukweku
+
 ## [v0.32.70] - 2026-11-03
 
 -   [ENH] Allow `unionize_dataframe_categories` to accept a single list or

@@ -22,10 +22,9 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering",
 ]
 dependencies = [
@@ -130,7 +129,7 @@ platforms = ["osx-arm64", "linux-64", "win-64"]
 pyjanitor = { path = ".", editable = true }
 
 [tool.pixi.dependencies]
-python = ">=3.10"
+python = ">=3.11"
 pandas = "*"
 numpy = "*"
 jupyter = ">=1.1.1,<2"
@@ -243,7 +242,7 @@ exclude = '''
 '''
 include = '\.pyi?$'
 line-length = 79
-target-version = ['py38', 'py39', 'py310']
+target-version = ['py311', 'py312', 'py313']
 
 [tool.interrogate]
 exclude = ["docs"]
@@ -312,8 +311,8 @@ exclude = [
 ]
 
 
-# Assume Python 3.8 (minimum supported)
-target-version = "py38"
+# Assume Python 3.11 (minimum supported)
+target-version = "py311"
 
 [tool.ruff.format]
 indent-style = "space"

@@ -59,6 +59,7 @@ from .explode_index import explode_index
 from .factorize_columns import factorize_columns
 from .fill import fill_direction, fill_empty
 from .filter import filter_column_isin, filter_date, filter_on, filter_string
+from .find_header import find_header
 from .find_replace import find_replace
 from .flag_nulls import flag_nulls
 from .get_dupes import get_dupes
@@ -169,6 +170,7 @@ __all__ = [
     "filter_column_isin",
     "filter_on",
     "filter_string",
+    "find_header",
     "find_replace",
     "flag_nulls",
     "get_dupes",

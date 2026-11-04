@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v0.32.74] - 2026-11-04
+
 -   [BUG] Leave already-numeric columns unchanged in `currency_column_to_numeric`, so calling it again on a converted column no longer raises. An invalid `cleaning_style` raises `ValueError` before that numeric pass-through, including when the column is already numeric. - Issue #197
 
 ## [v0.32.73] - 2026-11-03
@@ -732,7 +734,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.73...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.74...HEAD
+
+[v0.32.74]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.73...v0.32.74
 
 [v0.32.73]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.72...v0.32.73
 

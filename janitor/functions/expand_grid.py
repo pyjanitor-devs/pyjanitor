@@ -364,6 +364,27 @@ def expand(
         FutureWarning,
         stacklevel=find_stack_level(),
     )
+    grouped = groupby_for_expand(df, by)
+    return _expand_groupby(grouped=grouped, columns=columns, sort=sort)
+
+
+def groupby_for_expand(df: pd.DataFrame, by: str | list) -> DataFrameGroupBy:
+    """Group a frame the way deprecated ``expand(by=...)`` does.
+
+    ``expand`` and ``complete`` both use this so the ``by`` checks and the
+    groupby arguments stay in one place.
+
+    Args:
+        df: Frame to group.
+        by: Column label or list of labels.
+
+    Returns:
+        GroupBy with ``sort=False``, ``dropna=False``, and ``observed=True``.
+
+    Raises:
+        TypeError: If ``by`` is not a scalar or a list.
+        ValueError: If a label in ``by`` is not a column.
+    """
     if not is_scalar(by) and not isinstance(by, list):
         raise TypeError(
             "The argument to the by parameter "
@@ -371,8 +392,7 @@ def expand(
             f"instead got {type(by).__name__}"
         )
     check_column(df, column_names=by, present=True)
-    grouped = df.groupby(by=by, sort=False, dropna=False, observed=True)
-    return _expand_groupby(grouped=grouped, columns=columns, sort=sort)
+    return df.groupby(by=by, sort=False, dropna=False, observed=True)
 
 
 def _expand_groupby(grouped: DataFrameGroupBy, columns: tuple, sort: bool):

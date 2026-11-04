@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [DOC] Rewrite the introductory example to chain `clean_names`, `remove_empty`, and `encode_categorical`, so copying it does not emit `FutureWarning`. - Issue #1442
+
 ## [v0.32.74] - 2026-11-04
 
 -   [BUG] Leave already-numeric columns unchanged in `currency_column_to_numeric`, so calling it again on a converted column no longer raises. An invalid `cleaning_style` raises `ValueError` before that numeric pass-through, including when the column is already numeric. - Issue #197

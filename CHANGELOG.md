@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v0.32.75] - 2026-11-04
+
 -   [DOC] Rewrite the introductory example to chain `clean_names`, `remove_empty`, and `encode_categorical`, so copying it does not emit `FutureWarning`. - Issue #1442
 
 ## [v0.32.74] - 2026-11-04
@@ -736,7 +738,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.74...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.75...HEAD
+
+[v0.32.75]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.74...v0.32.75
 
 [v0.32.74]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.73...v0.32.74
 

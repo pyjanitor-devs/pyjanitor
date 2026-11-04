@@ -58,11 +58,14 @@ def excel_payload(frame: pd.DataFrame) -> bytes:
 
 @pytest.mark.functions
 def test_read_single_csv_from_zip(tmp_path: Path):
-    """A zip with one CSV returns that DataFrame."""
+    """A zip with one CSV returns a dictionary of that DataFrame."""
 
     archive = write_zip(tmp_path / "data.zip", {"file1.csv": CSV_A})
 
-    assert_frame_equal(read_archive(archive), FRAME_A)
+    result = read_archive(archive)
+
+    assert list(result) == ["file1.csv"]
+    assert_frame_equal(result["file1.csv"], FRAME_A)
 
 
 @pytest.mark.functions
@@ -79,7 +82,7 @@ def test_read_single_csv_from_zip(tmp_path: Path):
     ],
 )
 def test_read_single_csv_from_tar(tmp_path: Path, suffix: str, mode: str):
-    """Tar archives, including compressed aliases, yield the member."""
+    """Tar archives, including compressed aliases, yield a one-entry dict."""
 
     archive = write_tar(
         tmp_path / f"data{suffix}",
@@ -87,7 +90,10 @@ def test_read_single_csv_from_tar(tmp_path: Path, suffix: str, mode: str):
         mode=mode,
     )
 
-    assert_frame_equal(read_archive(archive), FRAME_A)
+    result = read_archive(archive)
+
+    assert list(result) == ["file1.csv"]
+    assert_frame_equal(result["file1.csv"], FRAME_A)
 
 
 @pytest.mark.functions
@@ -150,7 +156,9 @@ def test_nested_member_path(tmp_path: Path):
 
     assert_frame_equal(read_archive(archive, "nested/file1.csv"), FRAME_A)
     with pytest.warns(UserWarning, match="nested/notes.txt"):
-        assert_frame_equal(read_archive(archive), FRAME_A)
+        result = read_archive(archive)
+    assert list(result) == ["nested/file1.csv"]
+    assert_frame_equal(result["nested/file1.csv"], FRAME_A)
 
 
 @pytest.mark.functions
@@ -165,7 +173,10 @@ def test_macos_metadata_is_ignored(tmp_path: Path):
         },
     )
 
-    assert_frame_equal(read_archive(archive), FRAME_A)
+    result = read_archive(archive)
+
+    assert list(result) == ["sales.csv"]
+    assert_frame_equal(result["sales.csv"], FRAME_A)
 
 
 @pytest.mark.functions
@@ -174,7 +185,10 @@ def test_uppercase_extension(tmp_path: Path):
 
     archive = write_zip(tmp_path / "data.zip", {"FILE1.CSV": CSV_A})
 
-    assert_frame_equal(read_archive(archive), FRAME_A)
+    result = read_archive(archive)
+
+    assert list(result) == ["FILE1.CSV"]
+    assert_frame_equal(result["FILE1.CSV"], FRAME_A)
 
 
 @pytest.mark.functions
@@ -183,7 +197,10 @@ def test_string_path(tmp_path: Path):
 
     archive = write_zip(tmp_path / "data.zip", {"file1.csv": CSV_A})
 
-    assert_frame_equal(read_archive(str(archive)), FRAME_A)
+    result = read_archive(str(archive))
+
+    assert list(result) == ["file1.csv"]
+    assert_frame_equal(result["file1.csv"], FRAME_A)
 
 
 @pytest.mark.functions
@@ -211,7 +228,10 @@ def test_read_tsv(tmp_path: Path):
 
     archive = write_zip(tmp_path / "data.zip", {"file1.tsv": TSV})
 
-    assert_frame_equal(read_archive(archive), FRAME_A)
+    result = read_archive(archive)
+
+    assert list(result) == ["file1.tsv"]
+    assert_frame_equal(result["file1.tsv"], FRAME_A)
 
 
 @pytest.mark.functions
@@ -222,9 +242,16 @@ def test_read_json_and_json_lines(tmp_path: Path):
     lines = write_zip(tmp_path / "lines.zip", {"cities.jsonl": JSON_LINES})
     ndjson = write_zip(tmp_path / "ndjson.zip", {"cities.ndjson": JSON_LINES})
 
-    assert_frame_equal(read_archive(records), JSON_FRAME)
-    assert_frame_equal(read_archive(lines), JSON_FRAME)
-    assert_frame_equal(read_archive(ndjson), JSON_FRAME)
+    records_result = read_archive(records)
+    lines_result = read_archive(lines)
+    ndjson_result = read_archive(ndjson)
+
+    assert list(records_result) == ["cities.json"]
+    assert list(lines_result) == ["cities.jsonl"]
+    assert list(ndjson_result) == ["cities.ndjson"]
+    assert_frame_equal(records_result["cities.json"], JSON_FRAME)
+    assert_frame_equal(lines_result["cities.jsonl"], JSON_FRAME)
+    assert_frame_equal(ndjson_result["cities.ndjson"], JSON_FRAME)
 
 
 @pytest.mark.functions
@@ -254,7 +281,10 @@ def test_read_excel(tmp_path: Path):
         {"cities.xlsx": excel_payload(frame)},
     )
 
-    assert_frame_equal(read_archive(archive), frame)
+    result = read_archive(archive)
+
+    assert list(result) == ["cities.xlsx"]
+    assert_frame_equal(result["cities.xlsx"], frame)
 
 
 @pytest.mark.functions
@@ -270,7 +300,10 @@ def test_read_parquet_pandas(tmp_path: Path):
         {"cities.parquet": buffer.getvalue()},
     )
 
-    assert_frame_equal(read_archive(archive), frame)
+    result = read_archive(archive)
+
+    assert list(result) == ["cities.parquet"]
+    assert_frame_equal(result["cities.parquet"], frame)
 
 
 @pytest.mark.functions
@@ -403,8 +436,13 @@ def test_archive_format_override(tmp_path: Path):
     renamed_tar = tmp_path / "plain"
     renamed_tar.write_bytes(tar_path.read_bytes())
 
-    assert_frame_equal(read_archive(zip_path, archive_format="ZIP"), FRAME_A)
-    assert_frame_equal(read_archive(renamed_tar, archive_format="tar"), FRAME_A)
+    zip_result = read_archive(zip_path, archive_format="ZIP")
+    tar_result = read_archive(renamed_tar, archive_format="tar")
+
+    assert list(zip_result) == ["file1.csv"]
+    assert list(tar_result) == ["file1.csv"]
+    assert_frame_equal(zip_result["file1.csv"], FRAME_A)
+    assert_frame_equal(tar_result["file1.csv"], FRAME_A)
 
 
 @pytest.mark.functions
@@ -576,6 +614,8 @@ def test_exported_from_package():
     import janitor
 
     assert janitor.read_archive is read_archive
+    assert janitor.JanitorError.__name__ == "JanitorError"
+    assert callable(janitor.check)
 
 
 @pytest.mark.polars
@@ -593,10 +633,12 @@ def test_polars_engine_csv_from_zip_and_tar_gz(tmp_path: Path):
 
     for archive in (zip_path, tar_path):
         result = read_archive(archive, engine="polars")
-        assert isinstance(result, pl.DataFrame)
-        assert result.columns == ["col1", "col2"]
-        assert result.get_column("col1").to_list() == [1, 3]
-        assert result.get_column("col2").to_list() == [2, 4]
+        assert list(result) == ["file1.csv"]
+        frame = result["file1.csv"]
+        assert isinstance(frame, pl.DataFrame)
+        assert frame.columns == ["col1", "col2"]
+        assert frame.get_column("col1").to_list() == [1, 3]
+        assert frame.get_column("col2").to_list() == [2, 4]
 
 
 @pytest.mark.polars
@@ -668,10 +710,12 @@ def test_polars_excel(tmp_path: Path):
 
     result = read_archive(archive, engine="polars")
 
-    assert isinstance(result, pl.DataFrame)
-    assert result.columns == ["id", "city"]
-    assert result.get_column("id").to_list() == [1, 2]
-    assert result.get_column("city").to_list() == ["Lisbon", "Porto"]
+    assert list(result) == ["cities.xlsx"]
+    frame_out = result["cities.xlsx"]
+    assert isinstance(frame_out, pl.DataFrame)
+    assert frame_out.columns == ["id", "city"]
+    assert frame_out.get_column("id").to_list() == [1, 2]
+    assert frame_out.get_column("city").to_list() == ["Lisbon", "Porto"]
 
 
 @pytest.mark.functions
@@ -692,7 +736,9 @@ def test_unselected_duplicate_does_not_fail(tmp_path: Path):
 
     assert_frame_equal(read_archive(archive, "data.csv"), FRAME_A)
     with pytest.warns(UserWarning, match="README.txt"):
-        assert_frame_equal(read_archive(archive), FRAME_A)
+        result = read_archive(archive)
+    assert list(result) == ["data.csv"]
+    assert_frame_equal(result["data.csv"], FRAME_A)
 
 
 @pytest.mark.functions
@@ -731,7 +777,8 @@ def test_unsupported_members_warn_and_explicit_request_raises(tmp_path: Path):
     with pytest.warns(UserWarning, match="b.csv.gz") as caught:
         result = read_archive(archive)
 
-    assert_frame_equal(result, FRAME_A)
+    assert list(result) == ["a.csv"]
+    assert_frame_equal(result["a.csv"], FRAME_A)
     message = str(caught[0].message)
     assert "c.txt" in message
     with warnings.catch_warnings():
@@ -752,7 +799,10 @@ def test_decompressed_size_limit(tmp_path: Path):
         read_archive(archive, max_member_bytes=1)
     with pytest.raises(ValueError, match="decompressed"):
         read_archive(tar_archive, max_member_bytes=1)
-    assert_frame_equal(read_archive(archive, max_member_bytes=10_000), FRAME_A)
+    result = read_archive(archive, max_member_bytes=10_000)
+
+    assert list(result) == ["file1.csv"]
+    assert_frame_equal(result["file1.csv"], FRAME_A)
 
     bulky = write_zip(
         tmp_path / "bulky.zip",
@@ -796,3 +846,70 @@ def test_canonical_member_name_is_public():
 
     assert canonical_member_name("./nested/a.csv") == "nested/a.csv"
     assert canonical_member_name("a.csv") == "a.csv"
+
+
+@pytest.mark.functions
+def test_appledouble_sidecar_is_not_read(tmp_path: Path):
+    """macOS tar sidecars named `._*` are metadata, not data files."""
+
+    archive = write_tar(
+        tmp_path / "mac.tar",
+        {"a.csv": CSV_A, "._a.csv": b"\x00\x05\x16\x07not a csv"},
+    )
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", UserWarning)
+        result = read_archive(archive)
+
+    assert list(result) == ["a.csv"]
+    assert_frame_equal(result["a.csv"], FRAME_A)
+
+
+@pytest.mark.functions
+def test_members_are_parsed_as_they_are_read(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """Each member is parsed before the next member is read."""
+
+    from janitor import archive_reader
+
+    archive = write_zip(
+        tmp_path / "data.zip",
+        {"a.csv": CSV_A, "b.csv": CSV_B},
+    )
+    events: list[str] = []
+    real_read = archive_reader.read_bounded_stream
+    real_parse = archive_reader.read_member_frame
+
+    def spy_read(*args, **kwargs):
+        events.append("read")
+        return real_read(*args, **kwargs)
+
+    def spy_parse(*args, **kwargs):
+        events.append("parse")
+        return real_parse(*args, **kwargs)
+
+    monkeypatch.setattr(archive_reader, "read_bounded_stream", spy_read)
+    monkeypatch.setattr(archive_reader, "read_member_frame", spy_parse)
+
+    result = read_archive(archive)
+
+    assert events == ["read", "parse", "read", "parse"]
+    assert list(result) == ["a.csv", "b.csv"]
+
+
+@pytest.mark.functions
+def test_interactive_one_file_returns_dict(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """Omitting filenames returns a dictionary, including one interactive choice."""
+
+    archive = write_zip(tmp_path / "data.zip", {"file1.csv": CSV_A})
+    monkeypatch.setattr("builtins.input", lambda prompt: "1")
+
+    result = read_archive(archive, interactive=True)
+
+    assert list(result) == ["file1.csv"]
+    assert_frame_equal(result["file1.csv"], FRAME_A)

@@ -98,8 +98,8 @@ def flag_outliers(
             MultiIndex level.
 
     Raises:
-        ValueError: If ``column_name`` is not in the DataFrame, or if
-            ``flag_column_name`` already is.
+        ValueError: If ``column_name`` is not in the DataFrame, matches
+            more than one column, or if ``flag_column_name`` already is.
         ValueError: If ``method`` is not ``"iqr"`` or ``"zscore"``.
         TypeError: If ``threshold`` is not a real number.
         ValueError: If ``threshold`` is not finite and greater than zero.
@@ -126,10 +126,23 @@ def flag_outliers(
         raise TypeError(
             f"threshold must be a positive number, got {type(threshold).__name__}."
         )
-    elif not math.isfinite(float(threshold)) or threshold <= 0:
-        raise ValueError(f"threshold must be a positive number, got {threshold}.")
+    else:
+        try:
+            threshold = float(threshold)
+        except OverflowError as error:
+            raise ValueError(
+                "threshold must be a positive number, "
+                "got a value too large to convert to float."
+            ) from error
+        if not math.isfinite(threshold) or threshold <= 0:
+            raise ValueError(f"threshold must be a positive number, got {threshold}.")
 
     series = df[column_name]
+    if isinstance(series, pd.DataFrame):
+        raise ValueError(
+            f"Column {column_name!r} matches more than one column. "
+            "Pass a single column."
+        )
     if (
         pd.api.types.is_bool_dtype(series)
         or pd.api.types.is_complex_dtype(series)
@@ -139,27 +152,30 @@ def flag_outliers(
 
     # Float64 avoids int64 overflow in the quartile arithmetic. Infinities
     # are outliers on their own and are removed before the cutoff is built.
-    numeric = series.astype("float64")
-    infinite = np.isinf(numeric.to_numpy())
-    finite = numeric.mask(infinite)
-    if method == "iqr":
-        quartile_1 = finite.quantile(0.25)
-        quartile_3 = finite.quantile(0.75)
-        iqr = quartile_3 - quartile_1
-        if pd.isna(iqr):
-            outlier = np.zeros(len(df), dtype=bool)
+    # errstate covers overflow near the float64 range and 0/0 on a constant
+    # column, whose Z-scores are NaN and therefore not flags.
+    with np.errstate(divide="ignore", over="ignore", invalid="ignore"):
+        numeric = series.astype("float64")
+        infinite = np.isinf(numeric.to_numpy())
+        finite = numeric.mask(infinite)
+        if method == "iqr":
+            quartile_1 = finite.quantile(0.25)
+            quartile_3 = finite.quantile(0.75)
+            iqr = quartile_3 - quartile_1
+            if pd.isna(iqr):
+                outlier = np.zeros(len(df), dtype=bool)
+            else:
+                lower = quartile_1 - threshold * iqr
+                upper = quartile_3 + threshold * iqr
+                outlier = ((finite < lower) | (finite > upper)).to_numpy()
         else:
-            lower = quartile_1 - threshold * iqr
-            upper = quartile_3 + threshold * iqr
-            outlier = ((finite < lower) | (finite > upper)).fillna(False).to_numpy()
-    else:
-        scale = finite.std(ddof=1, skipna=True)
-        if pd.isna(scale) or scale == 0:
-            outlier = np.zeros(len(df), dtype=bool)
-        else:
-            center = finite.mean(skipna=True)
-            outlier = (((finite - center) / scale).abs() > threshold).fillna(False)
-            outlier = outlier.to_numpy()
+            scale = finite.std(ddof=1, skipna=True)
+            if pd.isna(scale):
+                outlier = np.zeros(len(df), dtype=bool)
+            else:
+                center = finite.mean(skipna=True)
+                outlier = (((finite - center) / scale).abs() > threshold).fillna(False)
+                outlier = outlier.to_numpy()
 
     result = df.copy()
     result[flag_column_name] = np.logical_or(outlier, infinite)

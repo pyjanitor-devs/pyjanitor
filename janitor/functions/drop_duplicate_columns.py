@@ -47,6 +47,10 @@ def drop_duplicate_columns(
         nth_index: Among the duplicated columns,
             select the nth column to drop.
 
+    Raises:
+        KeyError: If no column is named `column_name`.
+        IndexError: If `nth_index` is out of range for the duplicated columns.
+
     Returns:
         A pandas DataFrame
     """
@@ -56,8 +60,16 @@ def drop_duplicate_columns(
         if col_name == column_name
     ]
 
-    # Select the column to remove based on nth_index.
-    removed_col_idx = col_indexes[nth_index]
+    if not col_indexes:
+        raise KeyError(f"Column {column_name!r} not found in the DataFrame.")
+    try:
+        # Select the column to remove based on nth_index.
+        removed_col_idx = col_indexes[nth_index]
+    except IndexError:
+        raise IndexError(
+            f"nth_index={nth_index} is out of range: "
+            f"{len(col_indexes)} columns named {column_name!r}."
+        ) from None
     # Filter out columns except for the one to be removed.
     filtered_cols = [c_i for c_i, _ in enumerate(df.columns) if c_i != removed_col_idx]
 

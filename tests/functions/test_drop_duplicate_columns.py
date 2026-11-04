@@ -48,3 +48,25 @@ def test_drop_duplicate_columns_for_third_duplicated_column(
 def test_drop_duplicate_columns_with_error(df_duplicated_columns):
     with pytest.raises(IndexError):
         df_duplicated_columns.drop_duplicate_columns(column_name="a", nth_index=3)
+
+
+@pytest.mark.functions
+def test_drop_duplicate_columns_missing_column_message(df_duplicated_columns):
+    with pytest.raises(KeyError, match="'zz' not found"):
+        df_duplicated_columns.drop_duplicate_columns(column_name="zz")
+
+
+@pytest.mark.functions
+def test_drop_duplicate_columns_out_of_range_message(df_duplicated_columns):
+    msg = r"nth_index=3 is out of range: 3 columns named 'a'"
+    with pytest.raises(IndexError, match=msg):
+        df_duplicated_columns.drop_duplicate_columns(column_name="a", nth_index=3)
+
+
+@pytest.mark.functions
+def test_drop_duplicate_columns_negative_index_still_supported(
+    df_duplicated_columns,
+):
+    last = df_duplicated_columns.drop_duplicate_columns(column_name="a", nth_index=-1)
+    third = df_duplicated_columns.drop_duplicate_columns(column_name="a", nth_index=2)
+    assert_frame_equal(last, third)

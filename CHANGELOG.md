@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [ENH] Raise a `KeyError` naming the column when `drop_duplicate_columns` is given a missing `column_name`, and an `IndexError` stating how many duplicates exist when `nth_index` is out of range, instead of a bare `list index out of range`. - Issue #386
+
 ## [v0.32.75] - 2026-11-04
 
 -   [DOC] Rewrite the introductory example to chain `clean_names`, `remove_empty`, and `encode_categorical`, so copying it does not emit `FutureWarning`. - Issue #1442

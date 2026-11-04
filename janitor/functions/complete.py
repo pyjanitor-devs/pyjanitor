@@ -8,6 +8,7 @@ import pandas_flavor as pf
 from pandas.api.types import is_scalar
 from pandas.core.groupby.generic import DataFrameGroupBy
 
+from janitor.functions.expand_grid import groupby_for_expand
 from janitor.utils import check, check_column, find_stack_level
 
 
@@ -268,7 +269,10 @@ def complete(
             for missing combinations. A dictionary mapping column names
             to scalar values is also accepted. Columns omitted from the
             dictionary are left missing, including on rows that `complete`
-            adds.
+            adds. With `explicit=False`, a categorical column gains the
+            fill value as a category only when pandas does not already
+            treat it as one. `fill_value={"k": True}` on categories
+            `[1, 2]` stores `1`, the existing category equal to `True`.
         explicit: Determines if only implicitly missing values
             should be filled (`False`), or all nulls existing in the dataframe
             (`True`). `explicit` is applicable only
@@ -312,16 +316,9 @@ def _computations_complete(
             if not is_scalar(value):
                 raise ValueError(f"The value for {column_name} should be a scalar.")
     # Group first so `expand` is not called with the deprecated `by` argument.
-    # The checks match `expand` so invalid `by` values raise the same errors.
+    # Invalid `by` raises here, before `complete` emits its own warning.
     if by is not None and isinstance(df, pd.DataFrame):
-        if not is_scalar(by) and not isinstance(by, list):
-            raise TypeError(
-                "The argument to the by parameter "
-                "should be a scalar or a list; "
-                f"instead got {type(by).__name__}"
-            )
-        check_column(df, column_names=by, present=True)
-        grouped = df.groupby(by=by, sort=False, dropna=False, observed=True)
+        grouped = groupby_for_expand(df, by)
         uniques = grouped.expand(*columns, sort=sort)
     else:
         uniques = df.expand(*columns, sort=sort)

@@ -1067,12 +1067,19 @@ def test_complete_by_warning_does_not_silence_expand():
 
 
 def test_complete_by_rejects_invalid_groupers():
-    """Invalid `by` values still use expand's errors."""
+    """Invalid `by` raises, and does not warn first."""
     frame = pd.DataFrame({"group": [1], "item": [1]})
-    with pytest.raises(TypeError, match="The argument to the by parameter"):
-        frame.complete("item", by={"group": 1})
-    with pytest.raises(ValueError, match="not present in dataframe columns"):
-        frame.complete("item", by="missing")
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        with pytest.raises(TypeError, match="The argument to the by parameter"):
+            frame.complete("item", by={"group": 1})
+    assert by_deprecation_warnings(recorded) == []
+
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        with pytest.raises(ValueError, match="not present in dataframe columns"):
+            frame.complete("item", by="missing")
+    assert by_deprecation_warnings(recorded) == []
 
 
 def test_explicit_false_categorical_fill_already_present():

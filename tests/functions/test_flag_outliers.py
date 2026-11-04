@@ -478,3 +478,56 @@ def test_multiindex_flag_name_uses_the_last_level():
         False,
         True,
     ]
+
+
+@pytest.mark.functions
+def test_huge_threshold_raises_value_error():
+    """An integer too large for float64 raises ValueError, not OverflowError."""
+    df = _frame([1.0, 2.0, 3.0, 4.0])
+
+    with pytest.raises(ValueError, match="positive number"):
+        df.flag_outliers("values", threshold=10**400)
+
+
+@pytest.mark.functions
+@pytest.mark.parametrize("method", ["iqr", "zscore"])
+def test_duplicate_column_name_raises(method):
+    """A repeated column label is an error, not a non-numeric column."""
+    df = pd.DataFrame(
+        [[1.0, 10.0], [2.0, 3.0], [3.0, 4.0], [4.0, 5.0]],
+        columns=["a", "a"],
+    )
+
+    with pytest.raises(ValueError, match="more than one column"):
+        df.flag_outliers("a", method=method)
+
+
+@pytest.mark.functions
+@pytest.mark.parametrize("method", ["iqr", "zscore"])
+def test_partial_multiindex_key_raises(method):
+    """A partial MultiIndex key that selects several columns is an error."""
+    df = pd.DataFrame(
+        {
+            ("g", "a"): [1.0, 2.0, 3.0, 100.0],
+            ("g", "b"): [1.0, 2.0, 3.0, 4.0],
+        }
+    )
+
+    with pytest.raises(ValueError, match="more than one column"):
+        df.flag_outliers("g", method=method)
+
+
+@pytest.mark.functions
+@pytest.mark.parametrize(
+    ("method", "expected"),
+    [("iqr", [True, True]), ("zscore", [False, False])],
+)
+def test_extreme_magnitude_does_not_warn(method, expected):
+    """Values near the float64 range do not emit a RuntimeWarning."""
+    df = _frame([1e308, -1e308])
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        result = df.flag_outliers("values", method=method)
+
+    assert result["values_outlier_flag"].tolist() == expected

@@ -1292,6 +1292,15 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "Psycoder0611",
+      "name": "Trapti Kulshrestha",
+      "avatar_url": "https://avatars.githubusercontent.com/u/241852331?v=4",
+      "profile": "https://github.com/Psycoder0611",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "badgeTemplate": "<img alt=\"All Contributors: {{contributorCount}}\" src=\"https://img.shields.io/github/all-contributors/{{projectOwner}}/{{projectName}}?color=ee8449&style=flat-square\">",

@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [ENH] Add `flag_outliers` to flag numeric outliers. The default threshold is 1.5 for the IQR method and 3 for the Z-score method. Missing values are ignored when computing the cutoff and are never flagged. - PR #1835 @Psycoder0611
+
 ## [v0.32.75] - 2026-11-04
 
 -   [DOC] Rewrite the introductory example to chain `clean_names`, `remove_empty`, and `encode_categorical`, so copying it does not emit `FutureWarning`. - Issue #1442

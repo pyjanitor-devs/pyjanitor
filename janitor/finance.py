@@ -15,6 +15,15 @@ import requests
 
 from .utils import check, deprecated_alias, find_stack_level, is_connected
 
+__all__ = [
+    "FRANKFURTER_API_URL",
+    "convert_currency",
+    "convert_stock",
+    "currency_set",
+    "get_symbol",
+    "inflate_currency",
+]
+
 currency_set = {
     "AUD",
     "BGN",
@@ -27,6 +36,7 @@ currency_set = {
     "EUR",
     "GBP",
     "HKD",
+    "HRK",
     "HUF",
     "IDR",
     "ILS",
@@ -41,6 +51,7 @@ currency_set = {
     "PHP",
     "PLN",
     "RON",
+    "RUB",
     "SEK",
     "SGD",
     "THB",
@@ -349,6 +360,14 @@ def _check_wb_years(year: int):
 # JANITOR_CURRENCY_API_URL replaces the whole URL.
 FRANKFURTER_API_URL = "https://api.frankfurter.dev/v2/providers/ecb/rates"
 
+# First date with no ECB observation. Later requests still repeat the last
+# published rate, so availability is decided here.
+retired_currencies = {
+    "BGN": (date(2026, 1, 1), "EUR"),
+    "HRK": (date(2023, 1, 1), "EUR"),
+    "RUB": (date(2022, 3, 2), None),
+}
+
 
 def currency_api_url() -> str:
     """Return the exchange-rate endpoint used by ``convert_currency``.
@@ -428,14 +447,23 @@ def request_exchange_rate(
         ValueError: If the service returns HTTP 422, the body is not a
             list of rate objects, or the requested rate is missing or
             not a positive finite number.
-        ConnectionError: If the server does not return HTTP 200 or 422,
-            or returns a body that is not JSON.
+        ConnectionError: If the request times out, cannot connect, the
+            server does not return HTTP 200 or 422, or the body is not JSON.
     """
     params = {"base": from_currency, "quotes": to_currency}
     if quote_date is not None:
         params["date"] = quote_date
 
-    result = requests.get(api_url, params=params, timeout=30)
+    try:
+        result = requests.get(api_url, params=params, timeout=30)
+    except requests.Timeout as exc:
+        raise ConnectionError(
+            "Exchange rate request timed out after 30 seconds."
+        ) from exc
+    except requests.ConnectionError as exc:
+        raise ConnectionError(
+            "Exchange rate request could not connect to the server."
+        ) from exc
     if result.status_code == 422:
         detail = "the rates service rejected the request"
         try:
@@ -501,6 +529,136 @@ def cached_historical_exchange_rate(
     return request_exchange_rate(from_currency, to_currency, quote_date, api_url)
 
 
+def is_currency_code(value: object) -> bool:
+    """Return whether ``value`` is a three-letter currency code.
+
+    Args:
+        value: Candidate currency code.
+
+    Returns:
+        True when ``value`` is three letters.
+    """
+    return isinstance(value, str) and len(value) == 3 and value.isalpha()
+
+
+def currency_code(currency: object) -> str:
+    """Return a three-letter currency code.
+
+    Args:
+        currency: Candidate ISO code.
+
+    Returns:
+        The upper-case code.
+
+    Raises:
+        ValueError: If ``currency`` is not three letters.
+    """
+    if not is_currency_code(currency):
+        raise ValueError(
+            f"currency {currency} is not a three-letter ISO currency code."
+        )
+    return str(currency).upper()
+
+
+def require_currency_available(currency: str, on_date: Optional[date]) -> None:
+    """Reject a currency after the ECB stopped publishing it.
+
+    Args:
+        currency: Three-letter currency code.
+        on_date: Calendar date, or None for the latest rate.
+
+    Raises:
+        ValueError: If ``currency`` was replaced or withdrawn on or
+            before ``on_date``.
+    """
+    retirement = retired_currencies.get(currency)
+    if retirement is None:
+        return
+    unavailable_from, replaced_by = retirement
+    as_of = date.today() if on_date is None else on_date
+    if as_of < unavailable_from:
+        return
+    when = "the latest rate" if on_date is None else as_of.isoformat()
+    if replaced_by:
+        raise ValueError(
+            f"{currency} was replaced by {replaced_by} on "
+            f"{unavailable_from.isoformat()}, so no {currency} rate is "
+            f"available for {when}."
+        )
+    raise ValueError(
+        f"{currency} is not available for {when}. The ECB stopped "
+        f"publishing it on {unavailable_from.isoformat()}."
+    )
+
+
+def normalize_convert_currency_arguments(
+    df: pd.DataFrame,
+    column_name: Optional[str],
+    from_currency: Optional[str],
+    to_currency: Optional[str],
+    historical_date: Optional[date],
+    make_new_column: bool,
+    api_key: Optional[str],
+) -> tuple:
+    """Map an api_key-first positional call onto the current arguments.
+
+    Args:
+        df: DataFrame whose columns identify the old column argument.
+        column_name: Current column argument, or the old api key.
+        from_currency: Current source currency, or the old column name.
+        to_currency: Current target currency, or the old source currency.
+        historical_date: Current rate date, or the old target currency.
+        make_new_column: Current flag, or the old rate date.
+        api_key: Current key, or the old new-column flag.
+
+    Returns:
+        ``column_name``, ``from_currency``, ``to_currency``,
+        ``historical_date``, ``make_new_column``, and whether the old
+        positional order was detected.
+
+    Raises:
+        TypeError: If a currency code lands in the date position and
+            the call is not the old positional order.
+    """
+    legacy_call = (
+        isinstance(from_currency, str)
+        and from_currency in df.columns
+        and is_currency_code(to_currency)
+        and is_currency_code(historical_date)
+    )
+    if legacy_call:
+        if isinstance(make_new_column, date):
+            shifted_date = make_new_column
+            shifted_make_new = api_key if isinstance(api_key, bool) else False
+        else:
+            shifted_date = None
+            shifted_make_new = make_new_column
+        return (
+            from_currency,
+            to_currency,
+            historical_date,
+            shifted_date,
+            shifted_make_new,
+            True,
+        )
+    if is_currency_code(historical_date):
+        raise TypeError(
+            "convert_currency received a currency code where a date was "
+            "expected. api_key is no longer the first positional "
+            "argument. Pass the column name first: "
+            "df.convert_currency(column_name, from_currency, to_currency). "
+            "api_key is ignored."
+        )
+    return (
+        column_name,
+        from_currency,
+        to_currency,
+        historical_date,
+        make_new_column,
+        False,
+    )
+
+
 def fetch_exchange_rate(
     from_currency: Optional[str] = None,
     to_currency: Optional[str] = None,
@@ -514,8 +672,8 @@ def fetch_exchange_rate(
     on 1999-01-04. A date with no published observation, such as a
     weekend or a TARGET holiday, uses the previous published rate.
 
-    A historical date is cached. A latest-rate call, with
-    ``historical_date`` omitted, always requests a fresh rate.
+    A date before today is cached. The latest rate and today's date
+    are requested every time.
 
     Args:
         from_currency: Currency code to convert from.
@@ -523,7 +681,7 @@ def fetch_exchange_rate(
         historical_date: Rate date. ``datetime`` values, including
             timezone-aware values and ``pandas.Timestamp``, use their
             calendar date and ignore the time. Omit it for the latest
-            rate.
+            rate. ``NaT`` is rejected.
         api_url: Rates endpoint. Defaults to ``FRANKFURTER_API_URL``.
             ``convert_currency`` passes ``currency_api_url``, which
             honors ``JANITOR_CURRENCY_API_URL``.
@@ -534,31 +692,39 @@ def fetch_exchange_rate(
     Raises:
         TypeError: If ``historical_date`` is not a ``date`` or
             ``datetime``.
-        ValueError: If a currency code is unsupported, the date is
-            before 1999-01-04, or the response has no usable rate.
-        ConnectionError: If the server does not return HTTP 200 or
-            422, or returns a body that is not JSON.
+        ValueError: If a currency code is not three letters, the date
+            is before 1999-01-04 or ``NaT``, the currency is no longer
+            published on that date, or the response has no usable rate.
+        ConnectionError: If the request times out, cannot connect, the
+            server does not return HTTP 200 or 422, or the body is not
+            JSON.
     """
-    quote_date = None
+    quote_day = None
     if historical_date is not None:
+        if pd.isna(historical_date):
+            raise ValueError(
+                "historical_date is NaT and cannot be used as a rate date."
+            )
         check("historical_date", historical_date, [datetime, date])
         # Compare calendar dates. An aware datetime is not ordered
         # against a naive datetime, and Timestamp is a datetime.
-        day = (
+        quote_day = (
             historical_date.date()
             if isinstance(historical_date, datetime)
             else historical_date
         )
-        if day < date(1999, 1, 4):
+        if quote_day < date(1999, 1, 4):
             raise ValueError("historical_date must be on or after 1999-01-04.")
-        quote_date = day.isoformat()
 
-    _check_currency(from_currency)
-    _check_currency(to_currency)
+    from_currency = currency_code(from_currency)
+    to_currency = currency_code(to_currency)
     if from_currency == to_currency:
         return 1.0
-    if quote_date is None:
-        return request_exchange_rate(from_currency, to_currency, None, api_url)
+    require_currency_available(from_currency, quote_day)
+    require_currency_available(to_currency, quote_day)
+    quote_date = None if quote_day is None else quote_day.isoformat()
+    if quote_date is None or quote_day >= date.today():
+        return request_exchange_rate(from_currency, to_currency, quote_date, api_url)
     return cached_historical_exchange_rate(
         from_currency, to_currency, quote_date, api_url
     )
@@ -589,37 +755,23 @@ def convert_currency(
     ``quote`` and ``rate`` fields. Currency codes and the date are sent
     to that host.
 
-    Latest rates are requested on every call. A historical date is
-    cached for the life of the process. ``HRK`` and ``RUB`` are not
-    accepted; the ECB no longer publishes them.
+    Latest rates and today's date are requested on every call. An
+    earlier historical date is cached for the life of the process.
+    ``HRK`` was replaced by EUR on 2023-01-01, ``RUB`` stopped on
+    2022-03-02, and ``BGN`` was replaced by EUR on 2026-01-01. Those
+    codes still convert on earlier dates.
 
     The returned DataFrame is a copy. The input is left unchanged.
-
-    Examples:
-        >>> import pandas as pd
-        >>> import janitor.finance
-        >>> from datetime import date
-        >>> df = pd.DataFrame({"price": [10.0, 20.0, 30.0]})
-        >>> df.convert_currency(
-        ...     column_name="price",
-        ...     from_currency="USD",
-        ...     to_currency="EUR",
-        ...     historical_date=date(2018, 1, 2),
-        ...     make_new_column=True,
-        ... )  # doctest: +SKIP
-           price  price_EUR
-        0   10.0     8.2884
-        1   20.0    16.5768
-        2   30.0    24.8652
+    Converting a currency to itself keeps the column's dtype.
 
     Args:
         df: A pandas DataFrame.
         column_name: Name of the column containing monetary values
             to convert.
-        from_currency: The base currency to convert from. Must be a
-            member of ``currency_set``.
-        to_currency: The target currency to convert to. Must be a
-            member of ``currency_set``.
+        from_currency: The base currency to convert from. A three-letter
+            ISO code.
+        to_currency: The target currency to convert to. A three-letter
+            ISO code.
         historical_date: Exchange-rate date. Omit it for the latest
             rate. ``datetime`` values, including timezone-aware values,
             use their calendar date. Rates go back to 1999-01-04.
@@ -637,20 +789,48 @@ def convert_currency(
         TypeError: If ``historical_date`` is not a ``date`` or
             ``datetime``, or an old positional call cannot be mapped
             back onto the current arguments.
-        ValueError: If a currency code is unsupported, the date is
-            before 1999-01-04, the service returns HTTP 422, the
+        ValueError: If a currency code is not three letters, the date
+            is before 1999-01-04 or ``NaT``, the currency is no longer
+            published on that date, the service returns HTTP 422, the
             response has no usable rate, or
             ``JANITOR_CURRENCY_API_URL`` is not an http(s) URL.
-        ConnectionError: If the rates endpoint does not return HTTP 200
-            or 422, or returns a body that is not JSON.
+        ConnectionError: If the request times out, cannot connect, the
+            rates endpoint does not return HTTP 200 or 422, or the body
+            is not JSON.
+        KeyError: If ``column_name`` is not in the DataFrame.
+
+    Examples:
+        >>> import pandas as pd
+        >>> import janitor.finance
+        >>> from datetime import date
+        >>> df = pd.DataFrame({"price": [10.0, 20.0, 30.0]})
+        >>> df.convert_currency(
+        ...     column_name="price",
+        ...     from_currency="USD",
+        ...     to_currency="EUR",
+        ...     historical_date=date(2018, 1, 2),
+        ...     make_new_column=True,
+        ... )  # doctest: +SKIP
+           price  price_EUR
+        0   10.0     8.2884
+        1   20.0    16.5768
+        2   30.0    24.8652
     """
-    legacy_call = (
-        isinstance(from_currency, str)
-        and from_currency in df.columns
-        and isinstance(to_currency, str)
-        and to_currency in currency_set
-        and isinstance(historical_date, str)
-        and historical_date in currency_set
+    (
+        column_name,
+        from_currency,
+        to_currency,
+        historical_date,
+        make_new_column,
+        legacy_call,
+    ) = normalize_convert_currency_arguments(
+        df,
+        column_name,
+        from_currency,
+        to_currency,
+        historical_date,
+        make_new_column,
+        api_key,
     )
     if legacy_call:
         warn(
@@ -662,28 +842,6 @@ def convert_currency(
             FutureWarning,
             stacklevel=find_stack_level(),
         )
-        shifted_column = from_currency
-        shifted_from = to_currency
-        shifted_to = historical_date
-        if isinstance(make_new_column, date):
-            shifted_date = make_new_column
-            shifted_make_new = api_key if isinstance(api_key, bool) else False
-        else:
-            shifted_date = None
-            shifted_make_new = make_new_column
-        column_name = shifted_column
-        from_currency = shifted_from
-        to_currency = shifted_to
-        historical_date = shifted_date
-        make_new_column = shifted_make_new
-    elif isinstance(historical_date, str) and historical_date in currency_set:
-        raise TypeError(
-            "convert_currency received a currency code where a date was "
-            "expected. api_key is no longer the first positional "
-            "argument. Pass the column name first: "
-            "df.convert_currency(column_name, from_currency, to_currency). "
-            "api_key is ignored."
-        )
     elif api_key is not None:
         warn(
             "The `api_key` argument of `convert_currency` is deprecated "
@@ -692,16 +850,24 @@ def convert_currency(
             stacklevel=find_stack_level(),
         )
 
-    rate = fetch_exchange_rate(
-        from_currency,
-        to_currency,
-        historical_date,
-        currency_api_url(),
-    )
+    if column_name not in df.columns:
+        raise KeyError(f"column_name {column_name!r} is not in the DataFrame.")
+    from_currency = currency_code(from_currency)
+    to_currency = currency_code(to_currency)
+    if from_currency == to_currency:
+        converted = df[column_name]
+    else:
+        rate = fetch_exchange_rate(
+            from_currency,
+            to_currency,
+            historical_date,
+            currency_api_url(),
+        )
+        converted = df[column_name] * rate
     new_column_name = column_name
     if make_new_column:
         new_column_name = f"{column_name}_{to_currency}"
-    return df.assign(**{new_column_name: df[column_name] * rate})
+    return df.assign(**{new_column_name: converted})
 
 
 @lru_cache(maxsize=32)

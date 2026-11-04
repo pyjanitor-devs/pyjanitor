@@ -903,8 +903,9 @@ A weekend or TARGET holiday returns the previous published observation.
 **Recommendation**: Keep `FRANKFURTER_API_URL` on the ECB provider route,
 parse the v2 list, and honor `JANITOR_CURRENCY_API_URL` only when it is
 an absolute http or https URL. Send currency codes as `base` and
-`quotes`. Cache historical dates only; request latest rates every time.
-Map HTTP 422 to `ValueError`. `HRK` and `RUB` are not in `currency_set`.
+`quotes`. Cache only dates before today. HRK, RUB, and BGN stay valid
+until the ECB stopped publishing them. List the dataframe methods in
+`__all__` and leave the rate helpers out of that list.
 
 ### [2026-10-30] adorn row identifier is column position 0
 

@@ -19,19 +19,8 @@ from janitor.utils import (
     import_message,
 )
 
-from .archive_reader import read_archive
+from .archive_reader import read_archive  # noqa: F401
 from .errors import JanitorError
-
-if TYPE_CHECKING:
-    from openpyxl import Workbook
-
-__all__ = [
-    "read_archive",
-    "read_commandline",
-    "read_csvs",
-    "xlsx_cells",
-    "xlsx_table",
-]
 
 
 @deprecated_alias(seperate_df="separate_df", filespath="files_path")
@@ -201,6 +190,10 @@ def read_commandline(cmd: str, engine: str = "pandas", **kwargs: Any) -> Mapping
             )
         return pl.read_csv(StringIO(outcome.stdout), **kwargs)
     return pd.read_csv(StringIO(outcome.stdout), **kwargs)
+
+
+if TYPE_CHECKING:
+    from openpyxl import Workbook
 
 
 def xlsx_table(

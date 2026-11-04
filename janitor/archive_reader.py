@@ -7,6 +7,7 @@ import tarfile
 import warnings
 import zipfile
 from dataclasses import dataclass
+from functools import partial
 from io import BytesIO
 from pathlib import PurePosixPath
 from typing import IO, Any
@@ -39,13 +40,13 @@ class ArchiveContents:
     Attributes:
         names: Unique canonical member names in first-seen order.
         counts: How many times each canonical name occurs.
-        payloads: Decompressed bytes for members that were loaded.
+        frames: Parsed DataFrames for members that were loaded.
         skipped: Unsupported members skipped while reading every file.
     """
 
     names: list[str]
     counts: dict[str, int]
-    payloads: dict[str, bytes]
+    frames: dict[str, Any]
     skipped: list[str]
 
 
@@ -83,14 +84,20 @@ def archive_member_suffix(name: str) -> str:
 def archive_member_is_metadata(name: str) -> bool:
     """Return whether a member is macOS archive metadata.
 
+    Zip archives store AppleDouble files under ``__MACOSX``. macOS tar
+    writes a sidecar whose basename starts with ``._`` next to the file.
+
     Args:
         name: Member name as stored in the archive.
 
     Returns:
-        True when the name is under ``__MACOSX``.
+        True when the member is Apple metadata rather than user data.
     """
 
-    return "__MACOSX" in PurePosixPath(name).parts
+    member = PurePosixPath(name)
+    if member.name.startswith("._"):
+        return True
+    return "__MACOSX" in member.parts
 
 
 def infer_archive_kind(
@@ -254,8 +261,9 @@ def record_archive_member(
     stream: IO[bytes] | None,
     wanted: set[str] | None,
     limit: int,
+    parse_member,
 ) -> None:
-    """Record one regular file and load it when it will be parsed.
+    """Record one regular file and parse it as soon as its bytes are read.
 
     Args:
         contents: Accumulator for this archive. Mutated in place.
@@ -265,6 +273,8 @@ def record_archive_member(
         wanted: Names the caller asked for, or None for every
             supported member.
         limit: Maximum decompressed bytes for one member.
+        parse_member: Called with the member bytes and suffix. The bytes
+            are not retained after it returns.
 
     Raises:
         ValueError: If a loaded member exceeds `limit`.
@@ -279,30 +289,32 @@ def record_archive_member(
             and archive_member_suffix(name) not in SUPPORTED_MEMBER_SUFFIXES
         ):
             contents.skipped.append(name)
-    if stream is not None:
-        contents.payloads[name] = read_bounded_stream(
-            stream, declared_size, limit, name
-        )
+    if stream is None:
+        return
+    payload = read_bounded_stream(stream, declared_size, limit, name)
+    contents.frames[name] = parse_member(payload, archive_member_suffix(name))
 
 
 def load_zip_archive(
     path: str | os.PathLike[str],
     wanted: set[str] | None,
     limit: int,
+    parse_member,
 ) -> ArchiveContents:
-    """Read a zip archive once and load the members that will be parsed.
+    """Read a zip archive once and parse each selected member immediately.
 
     Args:
         path: Path of the zip archive.
         wanted: Names the caller asked for, or None for every
             supported member.
         limit: Maximum decompressed bytes for one member.
+        parse_member: Called with each loaded member's bytes and suffix.
 
     Returns:
-        Names, counts, payloads, and skipped members.
+        Names, counts, parsed frames, and skipped members.
     """
 
-    contents = ArchiveContents(names=[], counts={}, payloads={}, skipped=[])
+    contents = ArchiveContents(names=[], counts={}, frames={}, skipped=[])
     with zipfile.ZipFile(path) as archive:
         for info in archive.infolist():
             if info.is_dir() or archive_member_is_metadata(info.filename):
@@ -319,6 +331,7 @@ def load_zip_archive(
                     stream,
                     wanted,
                     limit,
+                    parse_member,
                 )
             finally:
                 if stream is not None:
@@ -330,8 +343,9 @@ def load_tar_archive(
     path: str | os.PathLike[str],
     wanted: set[str] | None,
     limit: int,
+    parse_member,
 ) -> ArchiveContents:
-    """Read a tar archive once and load the members that will be parsed.
+    """Read a tar archive once and parse each selected member immediately.
 
     The archive is opened once. Member bodies that are not parsed are
     skipped by the tar reader as it advances, including gzip streams.
@@ -341,15 +355,16 @@ def load_tar_archive(
         wanted: Names the caller asked for, or None for every
             supported member.
         limit: Maximum decompressed bytes for one member.
+        parse_member: Called with each loaded member's bytes and suffix.
 
     Returns:
-        Names, counts, payloads, and skipped members.
+        Names, counts, parsed frames, and skipped members.
 
     Raises:
         ValueError: If a member that should be loaded cannot be read.
     """
 
-    contents = ArchiveContents(names=[], counts={}, payloads={}, skipped=[])
+    contents = ArchiveContents(names=[], counts={}, frames={}, skipped=[])
     with tarfile.open(path, mode="r:*") as archive:
         for member in archive:
             if not member.isfile() or archive_member_is_metadata(member.name):
@@ -368,6 +383,7 @@ def load_tar_archive(
                     stream,
                     wanted,
                     limit,
+                    parse_member,
                 )
             finally:
                 if stream is not None:
@@ -404,11 +420,12 @@ def select_archive_members(
     filenames: str | list[str] | tuple[str, ...] | None,
     interactive: bool,
 ) -> tuple[list[str], bool]:
-    """Choose members and whether a single frame should be unwrapped.
+    """Choose members and whether a string filename should be unwrapped.
 
-    A list or tuple stays a dictionary. A string, one interactive choice,
-    or a single supported member is unwrapped. A duplicated name raises
-    only when that name is among the chosen members.
+    Omitting `filenames` always returns a dictionary, including when one
+    supported member is present and when interactive mode chooses one file.
+    A string returns one DataFrame. A list or tuple stays a dictionary.
+    A duplicated name raises only when that name is among the chosen members.
 
     Args:
         contents: Members found in the archive.
@@ -416,7 +433,7 @@ def select_archive_members(
         interactive: Whether to prompt when `filenames` is omitted.
 
     Returns:
-        Chosen canonical names, and True when the result is one frame.
+        Chosen canonical names, and True when `filenames` is a string.
 
     Raises:
         ValueError: If the archive is empty, a name is missing or
@@ -452,7 +469,7 @@ def select_archive_members(
             raise ValueError("No supported data files found in the archive.")
         if interactive:
             chosen = choose_archive_members(chosen)
-        unwrap = len(chosen) == 1
+        unwrap = False
     duplicated = [name for name in chosen if contents.counts[name] > 1]
     if duplicated:
         rendered = ", ".join(repr(name) for name in duplicated)
@@ -526,25 +543,27 @@ def read_archive(
     is omitted and at least one supported member is read, other regular
     files are skipped and a `UserWarning` lists them. Requesting one of
     those names raises `ValueError`. An archive with no supported members
-    raises `ValueError` as well. Directory entries and macOS `__MACOSX`
-    metadata are ignored. Nested archives are not opened; pass the
-    archive-relative name, such as `nested/sales.csv`, to read a file in
-    a subdirectory. A single leading `./` is removed from member names,
-    so an archive made with `tar czf archive.tgz .` matches `a.csv` as
-    well as `./a.csv`. Dictionary keys omit that prefix.
+    raises `ValueError` as well. Directory entries, macOS `__MACOSX`
+    paths, and members whose basename starts with `._` are ignored.
+    Nested archives are not opened; pass the archive-relative name, such
+    as `nested/sales.csv`, to read a file in a subdirectory. A single
+    leading `./` is removed from member names, so an archive made with
+    `tar czf archive.tgz .` matches `a.csv` as well as `./a.csv`.
+    Dictionary keys omit that prefix.
 
     A duplicated name raises `ValueError` only when that name is selected.
     Duplicates of members that are not selected are ignored. The archive
-    is opened once. Each selected member is refused when its decompressed
-    size is above `max_member_bytes`.
+    is opened once, and each selected member is parsed as soon as its
+    bytes have been read. A selected member is refused when its
+    decompressed size is above `max_member_bytes`.
 
-    A single selected file is returned as one DataFrame. Several files are
-    returned as a dictionary keyed by member name, in archive order when
-    every supported file is read and in the requested order when `filenames`
-    is a list or tuple. A list or tuple always returns a dictionary, even
-    when it contains one name. Tab-separated files use a tab separator
-    unless one is already present in `kwargs` (`sep` for pandas, `separator`
-    for polars).
+    Omitting `filenames` always returns a dictionary keyed by member name,
+    even when the archive contains one supported file. A string filename
+    returns one DataFrame. A list or tuple returns a dictionary, even
+    when it contains one name. Interactive selection uses the dictionary
+    form because `filenames` is omitted. Tab-separated files use a tab
+    separator unless one is already present in `kwargs` (`sep` for
+    pandas, `separator` for polars).
 
     `engine` chooses pandas or polars and is not forwarded to the reader.
     Pandas `read_csv`, pandas `read_excel`, and polars `read_excel` also
@@ -570,17 +589,21 @@ def read_archive(
         ...     archive.write(sales, arcname="sales.csv")
         ...     archive.writestr("notes.txt", "ignore me")
 
-        One supported file is returned as a DataFrame. `notes.txt` is
-        skipped and a warning is emitted:
+        One supported file is still a dictionary. `notes.txt` is skipped
+        and a warning is emitted:
 
-        >>> read_archive(archive_path)
+        >>> frames = read_archive(archive_path)
+        >>> sorted(frames)
+        ['sales.csv']
+        >>> frames["sales.csv"]
            id    city
         0   1  Lisbon
         1   2   Porto
 
-        Keyword arguments are passed through to the underlying reader:
+        A string filename returns one DataFrame. Keyword arguments are
+        passed through to that reader:
 
-        >>> read_archive(archive_path, usecols=["city"])
+        >>> read_archive(archive_path, "sales.csv", usecols=["city"])
              city
         0  Lisbon
         1   Porto
@@ -605,7 +628,7 @@ def read_archive(
 
         `engine="polars"` returns polars objects:
 
-        >>> frame = read_archive(archive_path, engine="polars")
+        >>> frame = read_archive(archive_path, "sales.csv", engine="polars")
         >>> frame.columns
         ['id', 'city']
         >>> frame.get_column("id").to_list()
@@ -617,8 +640,8 @@ def read_archive(
             `.tar.bz2`, `.tbz2`, `.tar.xz`, `.txz`) or by reading the file.
         filenames: Member to read, or a list or tuple of members. A string
             returns one DataFrame. A list or tuple returns a dictionary.
-            `None` reads every supported data file and warns about the
-            rest. A leading `./` is ignored.
+            `None` reads every supported data file into a dictionary and
+            warns about the other regular files. A leading `./` is ignored.
         engine: DataFrame library used to parse each member. Either
             `"pandas"` or `"polars"`. Defaults to `"pandas"`.
         archive_format: `"zip"` or `"tar"` when the file name does not use
@@ -643,8 +666,9 @@ def read_archive(
         ImportError: If `engine` is `"polars"` and polars is not installed.
 
     Returns:
-        A pandas or polars DataFrame when one member is read, or a
-        dictionary of DataFrames keyed by member name.
+        A dictionary of DataFrames keyed by member name when `filenames`
+        is omitted or is a list or tuple. One DataFrame when `filenames`
+        is a string.
     """
 
     check("path", path, [str, os.PathLike])
@@ -685,23 +709,20 @@ def read_archive(
     wanted = None
     if filenames is not None:
         wanted = set(requested_member_names(filenames))
+    parse_member = partial(
+        read_member_frame,
+        engine=engine,
+        reader_kwargs=kwargs,
+        polars_module=polars_module,
+    )
     if kind == "zip":
-        contents = load_zip_archive(path, wanted, max_member_bytes)
+        contents = load_zip_archive(path, wanted, max_member_bytes, parse_member)
     else:
-        contents = load_tar_archive(path, wanted, max_member_bytes)
+        contents = load_tar_archive(path, wanted, max_member_bytes, parse_member)
     chosen, unwrap = select_archive_members(contents, filenames, interactive)
     if filenames is None and contents.skipped:
         warn_about_unsupported_members(contents.skipped)
-    frames = {
-        name: read_member_frame(
-            contents.payloads[name],
-            archive_member_suffix(name),
-            engine,
-            kwargs,
-            polars_module,
-        )
-        for name in chosen
-    }
+    frames = {name: contents.frames[name] for name in chosen}
     if unwrap:
         return next(iter(frames.values()))
     return frames

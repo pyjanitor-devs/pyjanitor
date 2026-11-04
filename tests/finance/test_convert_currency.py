@@ -89,6 +89,8 @@ def test_same_currency_skips_request(dataframe, fake_api):
     """Test converting to the same currency returns the original values."""
     df = dataframe.convert_currency("a", "USD", "USD", make_new_column=True)
     assert all(df["a"] == df["a_USD"])
+    assert df["a_USD"].dtype == dataframe["a"].dtype
+    assert df["a"].dtype == dataframe["a"].dtype
     assert fake_api == []
 
 
@@ -234,12 +236,55 @@ def test_historical_rate_is_cached(dataframe, monkeypatch):
 
 
 @pytest.mark.finance
-@pytest.mark.parametrize("code", ["HRK", "RUB"])
-def test_retired_ecb_currencies_rejected(dataframe, fake_api, code):
-    """Test HRK and RUB are no longer accepted currency codes."""
-    assert code not in finance.currency_set
-    with pytest.raises(ValueError, match=code):
-        dataframe.convert_currency("a", "USD", code)
+@pytest.mark.parametrize(
+    ("source", "target", "historical_date"),
+    [
+        ("EUR", "HRK", date(2021, 6, 2)),
+        ("RUB", "EUR", date(2021, 6, 2)),
+        ("BGN", "EUR", date(2025, 6, 2)),
+    ],
+)
+def test_retired_currency_historical_conversion(
+    dataframe, fake_api, source, target, historical_date
+):
+    """Test a retired currency still converts on a date the ECB published."""
+    df = dataframe.convert_currency(
+        "a",
+        source,
+        target,
+        historical_date=historical_date,
+        make_new_column=True,
+    )
+    assert f"a_{target}" in df.columns
+    pd.testing.assert_series_equal(
+        df[f"a_{target}"], dataframe["a"] * 0.5, check_names=False
+    )
+    assert fake_api[0][1] == {
+        "base": source,
+        "quotes": target,
+        "date": historical_date.isoformat(),
+    }
+
+
+@pytest.mark.finance
+@pytest.mark.parametrize(
+    ("source", "target", "historical_date", "message"),
+    [
+        ("BGN", "EUR", None, "BGN was replaced by EUR"),
+        ("EUR", "BGN", date(2026, 1, 1), "BGN was replaced by EUR on 2026-01-01"),
+        ("EUR", "HRK", date(2023, 6, 1), "HRK was replaced by EUR"),
+        ("USD", "RUB", date(2022, 6, 1), "RUB is not available"),
+    ],
+)
+def test_retired_currency_after_cutoff(
+    dataframe, fake_api, source, target, historical_date, message
+):
+    """Test a retired currency raises a clear error after its last date."""
+    kwargs = {}
+    if historical_date is not None:
+        kwargs["historical_date"] = historical_date
+    with pytest.raises(ValueError, match=message):
+        dataframe.convert_currency("a", source, target, **kwargs)
     assert fake_api == []
 
 
@@ -313,6 +358,80 @@ def test_legacy_positional_api_key_with_date(dataframe, fake_api):
         "quotes": "EUR",
         "date": "2018-01-02",
     }
+
+
+@pytest.mark.finance
+def test_legacy_positional_six_arguments(dataframe, fake_api):
+    """Test an api_key-first call with a date and a new-column flag."""
+    with pytest.warns(FutureWarning, match="positional"):
+        df = dataframe.convert_currency(
+            "KEY", "a", "USD", "EUR", date(2018, 1, 2), True
+        )
+    assert "a_EUR" in df.columns
+    assert fake_api[0][1] == {
+        "base": "USD",
+        "quotes": "EUR",
+        "date": "2018-01-02",
+    }
+
+
+@pytest.mark.finance
+def test_today_is_not_cached(dataframe, monkeypatch):
+    """Test today's rate is requested again on the next call."""
+    calls = []
+
+    def fake_get(url, params=None, timeout=None):
+        calls.append(params)
+        return _FakeResponse(
+            _rate_payload(params, rate=0.5 if len(calls) == 1 else 0.25)
+        )
+
+    _clear_rate_cache()
+    monkeypatch.setattr(finance.requests, "get", fake_get)
+    today = date.today()
+    first = dataframe.convert_currency("a", "USD", "EUR", historical_date=today)
+    second = dataframe.convert_currency("a", "USD", "EUR", historical_date=today)
+    assert len(calls) == 2
+    pd.testing.assert_series_equal(first["a"], dataframe["a"] * 0.5)
+    pd.testing.assert_series_equal(second["a"], dataframe["a"] * 0.25)
+    _clear_rate_cache()
+
+
+@pytest.mark.finance
+def test_nat_historical_date(dataframe, fake_api):
+    """Test NaT is rejected before a rate request."""
+    with pytest.raises(ValueError, match="NaT"):
+        dataframe.convert_currency("a", "USD", "EUR", historical_date=pd.NaT)
+    assert fake_api == []
+
+
+@pytest.mark.finance
+def test_missing_column_before_request(dataframe, fake_api):
+    """Test a missing column raises before the rates service is called."""
+    with pytest.raises(KeyError, match="missing"):
+        dataframe.convert_currency("missing", "USD", "EUR")
+    assert fake_api == []
+
+
+@pytest.mark.finance
+def test_request_timeout(dataframe, monkeypatch):
+    """Test a request timeout raises a clear connection error."""
+
+    def fake_get(url, params=None, timeout=None):
+        raise requests.Timeout("deadline exceeded")
+
+    monkeypatch.setattr(finance.requests, "get", fake_get)
+    with pytest.raises(ConnectionError, match="timed out"):
+        dataframe.convert_currency("a", "USD", "EUR")
+
+
+@pytest.mark.finance
+def test_public_api_lists_methods_not_helpers():
+    """Test helper functions stay importable and out of the public list."""
+    assert "convert_currency" in finance.__all__
+    assert "fetch_exchange_rate" not in finance.__all__
+    assert "request_exchange_rate" not in finance.__all__
+    assert callable(finance.fetch_exchange_rate)
 
 
 @pytest.mark.finance

@@ -289,7 +289,11 @@ def _computations_complete(
         for column_name, value in fill_value.items():
             if not is_scalar(value):
                 raise ValueError(f"The value for {column_name} should be a scalar.")
-    uniques = df.expand(*columns, by=by, sort=sort)
+    if by is not None and isinstance(df, pd.DataFrame):
+        grouped = df.groupby(by=by, sort=False, dropna=False, observed=True)
+        uniques = grouped.expand(*columns, sort=sort)
+    else:
+        uniques = df.expand(*columns, sort=sort)
     if (by is None) and isinstance(df, pd.DataFrame):
         merge_columns = uniques.columns.tolist()
     else:

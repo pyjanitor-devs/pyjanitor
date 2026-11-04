@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+-   [BUG] Fix duplicate deprecation warnings when using the `by` argument in `complete`. - Issue #1788 @sumangouda
 
 ## [v0.32.75] - 2026-11-04
 

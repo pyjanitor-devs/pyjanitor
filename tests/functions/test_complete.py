@@ -809,3 +809,14 @@ def test_MI_1(MI):
     ).rename_axis(columns=[None, None])
     actual = MI.iloc[:2].complete({("a", "bar"): pd.Series(range(1, 5))})
     assert_frame_equal(actual, expected)
+
+
+def test_complete_by_deprecation_warning():
+    """Test that using `by` raises only the `complete` deprecation warning."""
+    df = pd.DataFrame({"group": [1, 1, 2], "item": [1, 2, 1]})
+
+    with pytest.warns(FutureWarning) as warning_record:
+        df.complete("item", by="group")
+
+    assert len(warning_record) == 1
+    assert "complete" in str(warning_record[0].message)

@@ -149,6 +149,15 @@ To add support for a new Python version (e.g., Python 3.14):
 
 That's it! Pixi and GitHub Actions will handle the rest automatically.
 
+## Polars 2 coverage
+
+The `tests` feature pins `polars>=1.37.1,<2`. Pixi unions every feature's
+requirements, so an environment that includes `tests` cannot also request
+Polars 2. `py313-polars2` leaves `tests` out and depends on Polars 2,
+`pandas>=3`, pyarrow, and pytest directly. `py311`, `py312`, and `py313`
+stay on the locked Polars 1.41.1 line. CI runs `tests/polars` and
+`--doctest-modules janitor/polars` in `py313-polars2`.
+
 ## Troubleshooting
 
 If tests fail in a specific Python version:

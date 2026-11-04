@@ -117,6 +117,7 @@ pixi run <command>
 | `engineering` | Engineering module development | unyt |
 | `spark` | PySpark development | pyspark |
 | `py311`/`py312`/`py313` | Python version testing | Specific Python versions |
+| `py313-polars2` | Polars 2.x test coverage | Python 3.13, Polars 2.x, pytest |
 
 To run commands in a specific environment:
 
@@ -881,6 +882,8 @@ includes nullable `Int64` and `Float64` columns and excludes booleans.
 **Recommendation**: Choose adorn targets with `adorn_data_positions` and
 assign with `DataFrame.isetitem`. Pair `adorn_ns` counts with
 `adorn_count_pairs`.
+
+### [2026-11-04] Polars 2 CI (`py313-polars2`) omits the `tests` feature, which pins Polars `<2`, so py311/py312/py313 stay on locked Polars 1.41.1.
 
 ## Version History
 

@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [ENH] Add `to_fasta` method to `janitor.biology` for exporting a DataFrame of sequences to a FASTA file. - Issue #646 @naseem173
+-   
 ## [v0.32.75] - 2026-11-04
 
 -   [DOC] Rewrite the introductory example to chain `clean_names`, `remove_empty`, and `encode_categorical`, so copying it does not emit `FutureWarning`. - Issue #1442

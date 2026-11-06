@@ -11620,7 +11620,10 @@ dictionary are left missing, including on rows that <code>complete</code>
 adds. With <code>explicit=False</code>, a categorical column gains the
 fill value as a category only when pandas does not already
 treat it as one. <code>fill_value={"k": True}</code> on categories
-<code>[1, 2]</code> stores <code>1</code>, the existing category equal to <code>True</code>.</p>
+<code>[1, 2]</code> stores <code>1</code>, the existing category equal to <code>True</code>.
+<code>explicit=True</code> does not add categories. A fill value that is
+not already a category, including <code>True</code> on categories
+<code>[1, 2]</code>, raises <code>TypeError</code>.</p>
               </div>
             </td>
             <td>
@@ -11639,7 +11642,8 @@ treat it as one. <code>fill_value={"k": True}</code> on categories
                 <p>Determines if only implicitly missing values
 should be filled (<code>False</code>), or all nulls existing in the dataframe
 (<code>True</code>). <code>explicit</code> is applicable only
-if <code>fill_value</code> is not <code>None</code>.</p>
+if <code>fill_value</code> is not <code>None</code>. Categorical columns are
+extended only when <code>explicit</code> is <code>False</code>.</p>
               </div>
             </td>
             <td>
@@ -11947,7 +11951,11 @@ if <code>fill_value</code> is not <code>None</code>.</p>
 <span class="normal">284</span>
 <span class="normal">285</span>
 <span class="normal">286</span>
-<span class="normal">287</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_groupby_method</span>
+<span class="normal">287</span>
+<span class="normal">288</span>
+<span class="normal">289</span>
+<span class="normal">290</span>
+<span class="normal">291</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_groupby_method</span>
 <span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">complete</span><span class="p">(</span>
     <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span> <span class="o">|</span> <span class="n">DataFrameGroupBy</span><span class="p">,</span>
@@ -12208,10 +12216,14 @@ if <code>fill_value</code> is not <code>None</code>.</p>
 <span class="sd">            fill value as a category only when pandas does not already</span>
 <span class="sd">            treat it as one. `fill_value={&quot;k&quot;: True}` on categories</span>
 <span class="sd">            `[1, 2]` stores `1`, the existing category equal to `True`.</span>
+<span class="sd">            `explicit=True` does not add categories. A fill value that is</span>
+<span class="sd">            not already a category, including `True` on categories</span>
+<span class="sd">            `[1, 2]`, raises `TypeError`.</span>
 <span class="sd">        explicit: Determines if only implicitly missing values</span>
 <span class="sd">            should be filled (`False`), or all nulls existing in the dataframe</span>
 <span class="sd">            (`True`). `explicit` is applicable only</span>
-<span class="sd">            if `fill_value` is not `None`.</span>
+<span class="sd">            if `fill_value` is not `None`. Categorical columns are</span>
+<span class="sd">            extended only when `explicit` is `False`.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A pandas DataFrame with explicit missing rows, if any.</span>

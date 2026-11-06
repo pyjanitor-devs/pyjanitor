@@ -3317,7 +3317,7 @@
 <h2 id="unreleased"><a href="https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.75...HEAD">Unreleased</a><a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <ul>
 <li>[BUG] Make <code>complete</code> safe for grouped frames and partial <code>fill_value</code> dictionaries, and emit one <code>FutureWarning</code> for the deprecated <code>by</code> argument. Grouped calls no longer warn that <code>by</code> was used, a dictionary that names only some columns no longer raises <code>KeyError</code>, and <code>complete(..., by=...)</code> no longer also warns about <code>expand</code>. An invalid <code>by</code> raises without that warning. Issues #1669, #1788 @SumanGouda (#1700, #1790). PR #1834 @ericmjl</li>
-<li>[BUG] <code>complete(..., explicit=False)</code> adds a categorical fill value only when pandas does not already treat it as a category. <code>fill_value={"k": True}</code> on categories <code>[1, 2]</code> stores <code>1</code>, the existing category equal to <code>True</code>. PR #1834</li>
+<li>[BUG] <code>complete(..., explicit=False)</code> adds a categorical fill value only when pandas does not already treat it as a category. <code>fill_value={"k": True}</code> on categories <code>[1, 2]</code> stores <code>1</code>, the existing category equal to <code>True</code>. <code>explicit=True</code> does not add categories and raises <code>TypeError</code> when the fill value is new, including <code>True</code> on categories <code>[1, 2]</code>. PR #1834</li>
 </ul>
 <h2 id="v03275-2026-11-04"><a href="https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.74...v0.32.75">v0.32.75</a> - 2026-11-04<a class="headerlink" href="#v03275-2026-11-04" title="Permanent link">&para;</a></h2>
 <ul>

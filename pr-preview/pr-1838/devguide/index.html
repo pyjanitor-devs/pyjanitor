@@ -1594,7 +1594,10 @@ git<span class="w"> </span>fetch<span class="w"> </span>upstream
 The default branch is <code>dev</code>.
 Keep local <code>dev</code> as a fast-forward of <code>upstream/dev</code>.
 Maintainers squash-merge pull requests into <code>dev</code>.</p>
-<p>Add <code>upstream</code> when this clone does not have it yet, then fast-forward <code>dev</code>:</p>
+<p>Add <code>upstream</code> when this clone does not have it yet, then fast-forward <code>dev</code>.
+Commit or stash uncommitted work before <code>git checkout dev</code>.
+A checkout from a dirty feature branch stops when those changes
+would be overwritten.</p>
 <div class="highlight"><pre><span></span><code><span class="k">if</span><span class="w"> </span>!<span class="w"> </span>git<span class="w"> </span>remote<span class="w"> </span>get-url<span class="w"> </span>upstream<span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
 <span class="w">  </span>git<span class="w"> </span>remote<span class="w"> </span>add<span class="w"> </span>upstream<span class="w"> </span>https://github.com/pyjanitor-devs/pyjanitor.git
 <span class="k">fi</span>
@@ -1603,15 +1606,21 @@ git<span class="w"> </span>fetch<span class="w"> </span>upstream
 git<span class="w"> </span>merge<span class="w"> </span>--ff-only<span class="w"> </span>upstream/dev
 git<span class="w"> </span>push<span class="w"> </span>origin<span class="w"> </span>dev
 </code></pre></div>
-<p>If <code>git push origin dev</code> is rejected,
-the fork's <code>dev</code> has commits that are not on upstream.
-Replace that branch with upstream's <code>dev</code> and push it:</p>
-<div class="highlight"><pre><span></span><code>git<span class="w"> </span>checkout<span class="w"> </span>dev
-git<span class="w"> </span>fetch<span class="w"> </span>upstream
+<p>If <code>git merge --ff-only upstream/dev</code> fails,
+local <code>dev</code> has commits that are not on <code>upstream/dev</code>.
+Commit or stash uncommitted work first.
+<code>git reset --hard</code> then discards that uncommitted work
+and the commits that exist only on local <code>dev</code>:</p>
+<div class="highlight"><pre><span></span><code>git<span class="w"> </span>fetch<span class="w"> </span>upstream
 git<span class="w"> </span>reset<span class="w"> </span>--hard<span class="w"> </span>upstream/dev
-git<span class="w"> </span>push<span class="w"> </span>--force-with-lease<span class="w"> </span>origin<span class="w"> </span>dev
+git<span class="w"> </span>push<span class="w"> </span>origin<span class="w"> </span>dev
 </code></pre></div>
-<p><code>git reset --hard</code> drops commits that exist only on your local <code>dev</code>.</p>
+<p>If <code>git push origin dev</code> is rejected,
+<code>origin/dev</code> has commits that are not on <code>upstream/dev</code>.
+Local <code>dev</code> should already match <code>upstream/dev</code>.
+Update the fork with:</p>
+<div class="highlight"><pre><span></span><code>git<span class="w"> </span>push<span class="w"> </span>--force-with-lease<span class="w"> </span>origin<span class="w"> </span>dev
+</code></pre></div>
 <p>Rebase a feature branch onto <code>upstream/dev</code>, then force-push it with lease:</p>
 <div class="highlight"><pre><span></span><code>git<span class="w"> </span>checkout<span class="w"> </span>&lt;name-of-your-bugfix-or-feature&gt;
 git<span class="w"> </span>fetch<span class="w"> </span>upstream

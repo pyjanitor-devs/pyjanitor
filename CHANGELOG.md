@@ -2,7 +2,32 @@
 
 ## [Unreleased]
 
--   [ENH] Speed up `pivot_longer` with `.value` on wide DataFrames with mixed NumPy and pandas extension dtypes (including string, categorical and datetime). Column arrays are collected once instead of looking up each `.value` label in the DataFrame. - Issue #1825, PR #1830 @SumanGouda
+-   [ENH] Speed up `pivot_longer` with `.value` on wide DataFrames with mixed NumPy and pandas extension dtypes (including string, categorical and datetime). - Issue #1825, PR #1830 @SumanGouda
+
+## [v0.32.75] - 2026-11-04
+
+-   [DOC] Rewrite the introductory example to chain `clean_names`, `remove_empty`, and `encode_categorical`, so copying it does not emit `FutureWarning`. - Issue #1442
+
+## [v0.32.74] - 2026-11-04
+
+-   [BUG] Leave already-numeric columns unchanged in `currency_column_to_numeric`, so calling it again on a converted column no longer raises. An invalid `cleaning_style` raises `ValueError` before that numeric pass-through, including when the column is already numeric. - Issue #197
+
+## [v0.32.73] - 2026-11-03
+
+-   [INF] Match the Python trove classifiers and the ruff, black, and pixi minimum versions to the supported range, Python 3.11, 3.12, and 3.13.
+
+## [v0.32.72] - 2026-11-03
+
+-   [DOC] Add `join_agg` tips for totalling overlapping date ranges per day (join and cumulative-sum forms) and for counting or summing overlaps by boundaries with `searchsorted`, with their limits. - PR #1850 @samukweku
+
+## [v0.32.71] - 2026-11-03
+
+-   [ENH] Use pandas' default unstable sort for non-monotonic conditional-join anchors; duplicate-value tie order is not part of the contract. - PR #1856 @samukweku
+
+## [v0.32.70] - 2026-11-03
+
+-   [ENH] Allow `unionize_dataframe_categories` to accept a single list or
+    tuple of DataFrames. - Issue #637 @priy-anshugupta
 
 ## [v0.32.69] - 2026-11-01
 

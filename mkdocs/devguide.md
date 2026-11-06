@@ -32,7 +32,10 @@ The default branch is `dev`.
 Keep local `dev` as a fast-forward of `upstream/dev`.
 Maintainers squash-merge pull requests into `dev`.
 
-Add `upstream` when this clone does not have it yet, then fast-forward `dev`:
+Add `upstream` when this clone does not have it yet, then fast-forward `dev`.
+Commit or stash uncommitted work before `git checkout dev`.
+A checkout from a dirty feature branch stops when those changes
+would be overwritten.
 
 ```bash
 if ! git remote get-url upstream >/dev/null 2>&1; then
@@ -44,18 +47,26 @@ git merge --ff-only upstream/dev
 git push origin dev
 ```
 
-If `git push origin dev` is rejected,
-the fork's `dev` has commits that are not on upstream.
-Replace that branch with upstream's `dev` and push it:
+If `git merge --ff-only upstream/dev` fails,
+local `dev` has commits that are not on `upstream/dev`.
+Commit or stash uncommitted work first.
+`git reset --hard` then discards that uncommitted work
+and the commits that exist only on local `dev`:
 
 ```bash
-git checkout dev
 git fetch upstream
 git reset --hard upstream/dev
-git push --force-with-lease origin dev
+git push origin dev
 ```
 
-`git reset --hard` drops commits that exist only on your local `dev`.
+If `git push origin dev` is rejected,
+`origin/dev` has commits that are not on `upstream/dev`.
+Local `dev` should already match `upstream/dev`.
+Update the fork with:
+
+```bash
+git push --force-with-lease origin dev
+```
 
 Rebase a feature branch onto `upstream/dev`, then force-push it with lease:
 

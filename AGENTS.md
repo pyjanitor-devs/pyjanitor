@@ -879,8 +879,6 @@ that requested flag rather than from the result under test.
 metadata, and strengthen the default-behavior regression test with an exact
 expected frame.
 
-### [2026-11-04] `CONTRIBUTING.md` is a symlink to `mkdocs/devguide.md`.
-
 ### [2026-10-31] The published introduction is the README symlink
 
 **Context**: Replacing deprecated calls in the basic example from issue #1442.
@@ -908,6 +906,13 @@ includes nullable `Int64` and `Float64` columns and excludes booleans.
 **Recommendation**: Choose adorn targets with `adorn_data_positions` and
 assign with `DataFrame.isetitem`. Pair `adorn_ns` counts with
 `adorn_count_pairs`.
+
+### [2026-11-04] Contributor guide is one file
+
+**Context**: Fork-sync instructions belong in the contributor guide.
+**Learning**: `CONTRIBUTING.md` is a symlink to `mkdocs/devguide.md`.
+**Recommendation**: Edit `mkdocs/devguide.md` only. One-line notes are fine
+when they help; keep this template and date order.
 
 ## Version History
 

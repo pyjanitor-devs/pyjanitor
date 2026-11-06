@@ -40,13 +40,11 @@ class ArchiveContents:
     Attributes:
         names: Unique canonical member names in first-seen order.
         counts: How many times each canonical name occurs.
-        frames: Parsed DataFrames for members that were loaded.
         skipped: Unsupported members skipped while reading every file.
     """
 
     names: list[str]
     counts: dict[str, int]
-    frames: dict[str, Any]
     skipped: list[str]
 
 
@@ -234,161 +232,174 @@ def choose_archive_members(candidates: list[str]) -> list[str]:
     return chosen_names
 
 
-def member_should_be_loaded(
-    name: str,
-    wanted: set[str] | None,
-) -> bool:
-    """Return whether this member's bytes should be kept.
-
-    Args:
-        name: Canonical member name.
-        wanted: Names the caller asked for, or None to take every
-            supported member.
-
-    Returns:
-        True when the member is supported and selected.
-    """
-
-    if archive_member_suffix(name) not in SUPPORTED_MEMBER_SUFFIXES:
-        return False
-    return wanted is None or name in wanted
-
-
-def record_archive_member(
-    contents: ArchiveContents,
-    raw_name: str,
-    declared_size: int,
-    stream: IO[bytes] | None,
-    wanted: set[str] | None,
-    limit: int,
-    parse_member,
-) -> None:
-    """Record one regular file and parse it as soon as its bytes are read.
+def note_archive_member(contents: ArchiveContents, raw_name: str) -> None:
+    """Record one regular file without reading its body.
 
     Args:
         contents: Accumulator for this archive. Mutated in place.
         raw_name: Name stored in the archive.
-        declared_size: Uncompressed size from the archive header.
-        stream: Open body when the member should be loaded.
-        wanted: Names the caller asked for, or None for every
-            supported member.
-        limit: Maximum decompressed bytes for one member.
-        parse_member: Called with the member bytes and suffix. The bytes
-            are not retained after it returns.
-
-    Raises:
-        ValueError: If a loaded member exceeds `limit`.
     """
 
     name = canonical_member_name(raw_name)
     contents.counts[name] = contents.counts.get(name, 0) + 1
-    if contents.counts[name] == 1:
-        contents.names.append(name)
-        if (
-            wanted is None
-            and archive_member_suffix(name) not in SUPPORTED_MEMBER_SUFFIXES
-        ):
-            contents.skipped.append(name)
-    if stream is None:
+    if contents.counts[name] != 1:
         return
-    payload = read_bounded_stream(stream, declared_size, limit, name)
-    contents.frames[name] = parse_member(payload, archive_member_suffix(name))
+    contents.names.append(name)
+    if archive_member_suffix(name) not in SUPPORTED_MEMBER_SUFFIXES:
+        contents.skipped.append(name)
 
 
-def load_zip_archive(
-    path: str | os.PathLike[str],
-    wanted: set[str] | None,
-    limit: int,
-    parse_member,
-) -> ArchiveContents:
-    """Read a zip archive once and parse each selected member immediately.
+def index_zip_archive(archive: zipfile.ZipFile) -> ArchiveContents:
+    """List zip members without reading their bodies.
 
     Args:
-        path: Path of the zip archive.
-        wanted: Names the caller asked for, or None for every
-            supported member.
-        limit: Maximum decompressed bytes for one member.
-        parse_member: Called with each loaded member's bytes and suffix.
+        archive: Open zip archive.
 
     Returns:
-        Names, counts, parsed frames, and skipped members.
+        Names, counts, and unsupported members.
     """
 
-    contents = ArchiveContents(names=[], counts={}, frames={}, skipped=[])
-    with zipfile.ZipFile(path) as archive:
-        for info in archive.infolist():
-            if info.is_dir() or archive_member_is_metadata(info.filename):
-                continue
-            name = canonical_member_name(info.filename)
-            stream = None
-            if member_should_be_loaded(name, wanted):
-                stream = archive.open(info)
-            try:
-                record_archive_member(
-                    contents,
-                    info.filename,
-                    info.file_size,
-                    stream,
-                    wanted,
-                    limit,
-                    parse_member,
-                )
-            finally:
-                if stream is not None:
-                    stream.close()
+    contents = ArchiveContents(names=[], counts={}, skipped=[])
+    for info in archive.infolist():
+        if info.is_dir() or archive_member_is_metadata(info.filename):
+            continue
+        note_archive_member(contents, info.filename)
     return contents
 
 
-def load_tar_archive(
-    path: str | os.PathLike[str],
-    wanted: set[str] | None,
+def index_tar_archive(archive: tarfile.TarFile) -> ArchiveContents:
+    """List tar members without parsing their bodies.
+
+    Args:
+        archive: Open tar archive.
+
+    Returns:
+        Names, counts, and unsupported members.
+    """
+
+    contents = ArchiveContents(names=[], counts={}, skipped=[])
+    for member in archive:
+        if not member.isfile() or archive_member_is_metadata(member.name):
+            continue
+        note_archive_member(contents, member.name)
+    return contents
+
+
+def parse_member_stream(
+    stream: IO[bytes],
+    declared_size: int,
+    limit: int,
+    name: str,
+    parse_member,
+) -> Any:
+    """Read one member and parse it, naming the member on failure.
+
+    Args:
+        stream: Open member body.
+        declared_size: Uncompressed size from the archive header.
+        limit: Maximum decompressed bytes to accept.
+        name: Canonical member name.
+        parse_member: Called with the member bytes and suffix.
+
+    Returns:
+        The parsed DataFrame.
+
+    Raises:
+        ValueError: If the member exceeds `limit` or cannot be parsed.
+    """
+
+    payload = read_bounded_stream(stream, declared_size, limit, name)
+    try:
+        return parse_member(payload, archive_member_suffix(name))
+    except Exception as error:
+        raise ValueError(f"Could not read archive member {name!r}: {error}") from error
+
+
+def parse_selected_zip_members(
+    archive: zipfile.ZipFile,
+    chosen: list[str],
     limit: int,
     parse_member,
-) -> ArchiveContents:
-    """Read a tar archive once and parse each selected member immediately.
+) -> dict[str, Any]:
+    """Parse the chosen zip members in selection order.
 
-    The archive is opened once. Member bodies that are not parsed are
-    skipped by the tar reader as it advances, including gzip streams.
+    Args:
+        archive: Open zip archive.
+        chosen: Canonical names to parse. Each name occurs once.
+        limit: Maximum decompressed bytes for one member.
+        parse_member: Called with each member's bytes and suffix.
+
+    Returns:
+        Parsed frames keyed by canonical name.
+    """
+
+    infos: dict[str, zipfile.ZipInfo] = {}
+    for info in archive.infolist():
+        if info.is_dir() or archive_member_is_metadata(info.filename):
+            continue
+        name = canonical_member_name(info.filename)
+        if name in chosen and name not in infos:
+            infos[name] = info
+    frames: dict[str, Any] = {}
+    for name in chosen:
+        with archive.open(infos[name]) as stream:
+            frames[name] = parse_member_stream(
+                stream,
+                infos[name].file_size,
+                limit,
+                name,
+                parse_member,
+            )
+    return frames
+
+
+def parse_selected_tar_members(
+    path: str | os.PathLike[str],
+    chosen: list[str],
+    limit: int,
+    parse_member,
+) -> dict[str, Any]:
+    """Reopen a tar archive and parse only the chosen members.
 
     Args:
         path: Path of the tar archive.
-        wanted: Names the caller asked for, or None for every
-            supported member.
+        chosen: Canonical names to parse. Each name occurs once.
         limit: Maximum decompressed bytes for one member.
-        parse_member: Called with each loaded member's bytes and suffix.
+        parse_member: Called with each member's bytes and suffix.
 
     Returns:
-        Names, counts, parsed frames, and skipped members.
+        Parsed frames keyed by canonical name.
 
     Raises:
-        ValueError: If a member that should be loaded cannot be read.
+        ValueError: If a chosen member cannot be read.
     """
 
-    contents = ArchiveContents(names=[], counts={}, frames={}, skipped=[])
+    remaining = set(chosen)
+    frames: dict[str, Any] = {}
     with tarfile.open(path, mode="r:*") as archive:
         for member in archive:
+            if not remaining:
+                break
             if not member.isfile() or archive_member_is_metadata(member.name):
                 continue
             name = canonical_member_name(member.name)
-            stream = None
+            if name not in remaining:
+                continue
+            stream = archive.extractfile(member)
+            if stream is None:
+                raise ValueError(f"File not found in the archive: {name!r}.")
             try:
-                if member_should_be_loaded(name, wanted):
-                    stream = archive.extractfile(member)
-                    if stream is None:
-                        raise ValueError(f"File not found in the archive: {name!r}.")
-                record_archive_member(
-                    contents,
-                    member.name,
-                    member.size,
+                frames[name] = parse_member_stream(
                     stream,
-                    wanted,
+                    member.size,
                     limit,
+                    name,
                     parse_member,
                 )
             finally:
-                if stream is not None:
-                    stream.close()
-    return contents
+                stream.close()
+            remaining.remove(name)
+    return {name: frames[name] for name in chosen}
 
 
 def requested_member_names(
@@ -552,10 +563,16 @@ def read_archive(
     Dictionary keys omit that prefix.
 
     A duplicated name raises `ValueError` only when that name is selected.
-    Duplicates of members that are not selected are ignored. The archive
-    is opened once, and each selected member is parsed as soon as its
-    bytes have been read. A selected member is refused when its
-    decompressed size is above `max_member_bytes`.
+    Duplicates of members that are not selected are ignored. Member names
+    are collected before any file is parsed, so a missing name, an
+    unsupported name, or a duplicated selection fails before those files
+    are read. Interactive mode prompts from that name list and then parses
+    only the chosen members; an unchosen file is not read and cannot abort
+    the call. A zip archive stays open for the selected reads. A tar
+    archive is opened again to read the chosen members. Each selected
+    member is parsed as soon as its bytes have been read, and is refused
+    when its decompressed size is above `max_member_bytes`. A parse
+    failure names the member.
 
     Omitting `filenames` always returns a dictionary keyed by member name,
     even when the archive contains one supported file. A string filename
@@ -706,9 +723,6 @@ def read_archive(
             raise ImportError("polars is required when engine='polars'.") from error
 
     kind = infer_archive_kind(path, archive_format)
-    wanted = None
-    if filenames is not None:
-        wanted = set(requested_member_names(filenames))
     parse_member = partial(
         read_member_frame,
         engine=engine,
@@ -716,13 +730,23 @@ def read_archive(
         polars_module=polars_module,
     )
     if kind == "zip":
-        contents = load_zip_archive(path, wanted, max_member_bytes, parse_member)
+        with zipfile.ZipFile(path) as archive:
+            contents = index_zip_archive(archive)
+            chosen, unwrap = select_archive_members(contents, filenames, interactive)
+            if filenames is None and contents.skipped:
+                warn_about_unsupported_members(contents.skipped)
+            frames = parse_selected_zip_members(
+                archive, chosen, max_member_bytes, parse_member
+            )
     else:
-        contents = load_tar_archive(path, wanted, max_member_bytes, parse_member)
-    chosen, unwrap = select_archive_members(contents, filenames, interactive)
-    if filenames is None and contents.skipped:
-        warn_about_unsupported_members(contents.skipped)
-    frames = {name: contents.frames[name] for name in chosen}
+        with tarfile.open(path, mode="r:*") as archive:
+            contents = index_tar_archive(archive)
+        chosen, unwrap = select_archive_members(contents, filenames, interactive)
+        if filenames is None and contents.skipped:
+            warn_about_unsupported_members(contents.skipped)
+        frames = parse_selected_tar_members(
+            path, chosen, max_member_bytes, parse_member
+        )
     if unwrap:
         return next(iter(frames.values()))
     return frames

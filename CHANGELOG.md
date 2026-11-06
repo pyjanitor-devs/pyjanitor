@@ -10,8 +10,9 @@
     leading `./` on a member name, as stored by `tar czf archive.tgz .`,
     is ignored when matching. Unsupported members are skipped with a
     warning unless requested by name, and a duplicated member raises
-    only when it is selected. Each selected member is parsed as soon as
-    it is read and must stay within `max_member_bytes`. Omitting
+    only when it is selected. Names are checked before any member is
+    parsed, including interactive choices. Parse errors name the member.
+    Each selected member must stay within `max_member_bytes`. Omitting
     `filenames` always returns a dictionary of DataFrames. Based on work
     by @Sabrina-Hassaim in #1440. - Issue #1171, PR #1833 @ericmjl
 

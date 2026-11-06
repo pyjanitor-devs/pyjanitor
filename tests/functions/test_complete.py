@@ -913,7 +913,7 @@ def test_complete_fill_value_dict_is_not_mutated(fill_df):
 
 
 def test_complete_partial_fill_with_column_named_obj():
-    """A column named obj is data, including when it is left unfilled."""
+    """A grouped frame treats a column named obj as data."""
     frame = pd.DataFrame(
         {
             "state": ["CA", "NY"],
@@ -922,8 +922,7 @@ def test_complete_partial_fill_with_column_named_obj():
             "obj": [1, 2],
         }
     )
-    result = frame.complete(
-        "state",
+    result = frame.groupby("state").complete(
         {"year": [2020, 2021]},
         fill_value={"sales": 0},
         sort=True,
@@ -1040,30 +1039,66 @@ def test_complete_by_emits_one_future_warning(by):
     assert Path(matches[0].filename).resolve() == Path(__file__).resolve()
     assert matches[0].lineno == lineno
 
-    expected = frame.groupby(
-        by=by,
-        sort=False,
-        dropna=False,
-        observed=True,
-    ).complete({"item": [1, 2, 3]}, sort=True)
+    expected = pd.DataFrame(
+        {
+            "group": [1, 1, 1, 2, 2, 2],
+            "item": [1, 2, 3, 1, 2, 3],
+            "value": [10.0, 20.0, np.nan, 30.0, np.nan, np.nan],
+        }
+    )
     assert_frame_equal(result, expected)
 
 
-def test_complete_by_warning_does_not_silence_expand():
-    """The filter around expand(by=...) does not leak to the caller."""
-    frame = pd.DataFrame({"group": [1, 1, 2], "item": [1, 2, 1]})
-    frame.complete("item", by="group")
+def test_complete_by_warns_when_expand_fails():
+    """A later expand failure still reports the deprecated `by` argument."""
+    frame = pd.DataFrame(
+        {
+            "group": ["a", "a", "b"],
+            "item": [1, 2, 1],
+            "value": [1.0, 2.0, 3.0],
+        }
+    )
     with warnings.catch_warnings(record=True) as recorded:
         warnings.simplefilter("always")
+        with pytest.raises(ZeroDivisionError):
+            frame.complete("item", lambda column: 1 / 0, by="group")
+
+    matches = by_deprecation_warnings(recorded)
+    assert len(matches) == 1
+    assert "complete" in str(matches[0].message)
+    assert "expand" not in str(matches[0].message)
+
+
+def test_groupby_complete_matches_hand_built_rows():
+    """Grouped complete matches a frame built without calling complete."""
+    frame = pd.DataFrame({"group": [1, 1, 2], "item": [1, 2, 1], "value": [10, 20, 30]})
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        grouped = frame.groupby("group").complete({"item": [1, 2, 3]}, sort=True)
+        with_by = frame.complete({"item": [1, 2, 3]}, by="group", sort=True)
         frame.expand("item", by="group")
 
-    matches = [
+    complete_warnings = [
         item
-        for item in recorded
-        if item.category is FutureWarning and "expand" in str(item.message)
+        for item in by_deprecation_warnings(recorded)
+        if "complete" in str(item.message)
     ]
-    assert len(matches) == 1
-    assert "complete" not in str(matches[0].message)
+    expand_warnings = [
+        item
+        for item in by_deprecation_warnings(recorded)
+        if "expand" in str(item.message)
+    ]
+    assert len(complete_warnings) == 1
+    assert len(expand_warnings) == 1
+    expected = pd.DataFrame(
+        {
+            "group": [1, 1, 1, 2, 2, 2],
+            "item": [1, 2, 3, 1, 2, 3],
+            "value": [10.0, 20.0, np.nan, 30.0, np.nan, np.nan],
+        }
+    )
+    assert_frame_equal(grouped, expected)
+    assert_frame_equal(with_by, expected)
 
 
 def test_complete_by_rejects_invalid_groupers():
@@ -1158,3 +1193,40 @@ def test_explicit_false_categorical_true_matches_integer_index():
     assert_frame_equal(scalar, expected)
     assert partial["label"].cat.categories.equals(categories)
     assert scalar["label"].cat.categories.equals(categories)
+
+
+def test_explicit_true_categorical_does_not_add_categories():
+    """explicit=True fills an existing category and rejects a new one."""
+    frame = pd.DataFrame(
+        {
+            "group": ["a", "b"],
+            "item": ["x", "x"],
+            "label": pd.Categorical(["keep", "keep"], categories=["keep", "drop"]),
+        }
+    )
+    filled = frame.complete(
+        "group",
+        {"item": ["x", "y"]},
+        fill_value={"label": "keep"},
+        explicit=True,
+        sort=True,
+    )
+    expected = pd.DataFrame(
+        {
+            "group": ["a", "a", "b", "b"],
+            "item": ["x", "y", "x", "y"],
+            "label": pd.Categorical(
+                ["keep", "keep", "keep", "keep"],
+                categories=["keep", "drop"],
+            ),
+        }
+    )
+    assert_frame_equal(filled, expected)
+    with pytest.raises(TypeError, match="new category"):
+        frame.complete(
+            "group",
+            {"item": ["x", "y"]},
+            fill_value={"label": "new"},
+            explicit=True,
+            sort=True,
+        )

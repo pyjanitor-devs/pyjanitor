@@ -273,10 +273,14 @@ def complete(
             fill value as a category only when pandas does not already
             treat it as one. `fill_value={"k": True}` on categories
             `[1, 2]` stores `1`, the existing category equal to `True`.
+            `explicit=True` does not add categories. A fill value that is
+            not already a category, including `True` on categories
+            `[1, 2]`, raises `TypeError`.
         explicit: Determines if only implicitly missing values
             should be filled (`False`), or all nulls existing in the dataframe
             (`True`). `explicit` is applicable only
-            if `fill_value` is not `None`.
+            if `fill_value` is not `None`. Categorical columns are
+            extended only when `explicit` is `False`.
 
     Returns:
         A pandas DataFrame with explicit missing rows, if any.
@@ -316,13 +320,13 @@ def _computations_complete(
             if not is_scalar(value):
                 raise ValueError(f"The value for {column_name} should be a scalar.")
     # Group first so `expand` is not called with the deprecated `by` argument.
-    # Invalid `by` raises here, before `complete` emits its own warning.
+    # Invalid `by` raises in `groupby_for_expand` before any warning.
+    # The warning is next, before `expand`, so a later expand failure
+    # does not hide the deprecation.
     if by is not None and isinstance(df, pd.DataFrame):
-        grouped = groupby_for_expand(df, by)
-        uniques = grouped.expand(*columns, sort=sort)
+        df_for_expand = groupby_for_expand(df, by)
     else:
-        uniques = df.expand(*columns, sort=sort)
-    # An already grouped frame did not pass `by`; only the argument is deprecated.
+        df_for_expand = df
     if by is not None:
         warnings.warn(
             "The `by` argument is deprecated. "
@@ -331,6 +335,7 @@ def _computations_complete(
             FutureWarning,
             stacklevel=find_stack_level(),
         )
+    uniques = df_for_expand.expand(*columns, sort=sort)
     if (by is None) and isinstance(df, pd.DataFrame):
         merge_columns = uniques.columns.tolist()
     else:

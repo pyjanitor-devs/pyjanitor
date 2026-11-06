@@ -815,8 +815,10 @@ def test_decompressed_size_limit(tmp_path: Path):
 
 
 @pytest.mark.functions
-def test_tar_gz_is_opened_once(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-    """A gzip tar archive is opened once, not again for each member."""
+def test_tar_gz_lists_names_before_reading(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """A gzip tar is listed, then opened again to read the chosen members."""
 
     archive = write_tar(
         tmp_path / "data.tar.gz",
@@ -834,7 +836,7 @@ def test_tar_gz_is_opened_once(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
     frames = read_archive(archive)
 
-    assert opened == ["open"]
+    assert opened == ["open", "open"]
     assert list(frames) == ["file1.csv", "file2.csv"]
 
 
@@ -913,3 +915,66 @@ def test_interactive_one_file_returns_dict(
 
     assert list(result) == ["file1.csv"]
     assert_frame_equal(result["file1.csv"], FRAME_A)
+
+
+@pytest.mark.functions
+def test_interactive_does_not_parse_unpicked_members(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """A corrupt member that is not chosen does not abort interactive mode."""
+
+    archive = write_zip(
+        tmp_path / "data.zip",
+        {"good.csv": CSV_A, "bad.json": b"{"},
+    )
+    monkeypatch.setattr("builtins.input", lambda prompt: "1")
+
+    result = read_archive(archive, interactive=True)
+
+    assert list(result) == ["good.csv"]
+    assert_frame_equal(result["good.csv"], FRAME_A)
+
+
+@pytest.mark.functions
+def test_filename_typo_does_not_parse_other_members(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """A missing name fails before any member is parsed."""
+
+    from janitor import archive_reader
+
+    archive = write_zip(
+        tmp_path / "data.zip",
+        {"a.csv": CSV_A, "b.csv": CSV_B},
+    )
+    calls: list[str] = []
+    real_parse = archive_reader.read_member_frame
+
+    def spy_parse(*args, **kwargs):
+        calls.append("parse")
+        return real_parse(*args, **kwargs)
+
+    monkeypatch.setattr(archive_reader, "read_member_frame", spy_parse)
+
+    with pytest.raises(ValueError, match="missing.csv"):
+        read_archive(archive, ["a.csv", "missing.csv"])
+
+    assert calls == []
+
+
+@pytest.mark.functions
+def test_parse_error_names_the_member(tmp_path: Path):
+    """A member that cannot be parsed raises with that member's name."""
+
+    archive = write_zip(
+        tmp_path / "data.zip",
+        {"good.csv": CSV_A, "empty.csv": b""},
+    )
+
+    with pytest.raises(ValueError, match="empty.csv") as raised:
+        read_archive(archive)
+
+    assert raised.value.__cause__ is not None
+    assert "good.csv" not in str(raised.value)

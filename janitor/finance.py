@@ -591,72 +591,34 @@ def require_currency_available(currency: str, on_date: Optional[date]) -> None:
     )
 
 
-def normalize_convert_currency_arguments(
-    df: pd.DataFrame,
-    column_name: Optional[str],
-    from_currency: Optional[str],
-    to_currency: Optional[str],
-    historical_date: Optional[date],
-    make_new_column: bool,
-    api_key: Optional[str],
-) -> tuple:
-    """Map an api_key-first positional call onto the current arguments.
+def exchange_rate_day(historical_date: Optional[date]) -> Optional[date]:
+    """Return the calendar day for a rate lookup.
 
     Args:
-        df: DataFrame whose columns identify the old column argument.
-        column_name: Current column argument, or the old api key.
-        from_currency: Current source currency, or the old column name.
-        to_currency: Current target currency, or the old source currency.
-        historical_date: Current rate date, or the old target currency.
-        make_new_column: Current flag, or the old rate date.
-        api_key: Current key, or the old new-column flag.
+        historical_date: Requested rate date, or None for the latest rate.
 
     Returns:
-        ``column_name``, ``from_currency``, ``to_currency``,
-        ``historical_date``, ``make_new_column``, and whether the old
-        positional order was detected.
+        The calendar date, or None when the latest rate was requested.
 
     Raises:
-        TypeError: If a currency code lands in the date position and
-            the call is not the old positional order.
+        TypeError: If ``historical_date`` is not a date or datetime.
+        ValueError: If the value is NaT or before 1999-01-04.
     """
-    legacy_call = (
-        isinstance(from_currency, str)
-        and from_currency in df.columns
-        and is_currency_code(to_currency)
-        and is_currency_code(historical_date)
+    if historical_date is None:
+        return None
+    if pd.isna(historical_date):
+        raise ValueError("historical_date is NaT and cannot be used as a rate date.")
+    check("historical_date", historical_date, [datetime, date])
+    # Compare calendar dates. An aware datetime is not ordered against
+    # a naive datetime, and Timestamp is a datetime.
+    quote_day = (
+        historical_date.date()
+        if isinstance(historical_date, datetime)
+        else historical_date
     )
-    if legacy_call:
-        if isinstance(make_new_column, date):
-            shifted_date = make_new_column
-            shifted_make_new = api_key if isinstance(api_key, bool) else False
-        else:
-            shifted_date = None
-            shifted_make_new = make_new_column
-        return (
-            from_currency,
-            to_currency,
-            historical_date,
-            shifted_date,
-            shifted_make_new,
-            True,
-        )
-    if is_currency_code(historical_date):
-        raise TypeError(
-            "convert_currency received a currency code where a date was "
-            "expected. api_key is no longer the first positional "
-            "argument. Pass the column name first: "
-            "df.convert_currency(column_name, from_currency, to_currency). "
-            "api_key is ignored."
-        )
-    return (
-        column_name,
-        from_currency,
-        to_currency,
-        historical_date,
-        make_new_column,
-        False,
-    )
+    if quote_day < date(1999, 1, 4):
+        raise ValueError("historical_date must be on or after 1999-01-04.")
+    return quote_day
 
 
 def fetch_exchange_rate(
@@ -699,23 +661,7 @@ def fetch_exchange_rate(
             server does not return HTTP 200 or 422, or the body is not
             JSON.
     """
-    quote_day = None
-    if historical_date is not None:
-        if pd.isna(historical_date):
-            raise ValueError(
-                "historical_date is NaT and cannot be used as a rate date."
-            )
-        check("historical_date", historical_date, [datetime, date])
-        # Compare calendar dates. An aware datetime is not ordered
-        # against a naive datetime, and Timestamp is a datetime.
-        quote_day = (
-            historical_date.date()
-            if isinstance(historical_date, datetime)
-            else historical_date
-        )
-        if quote_day < date(1999, 1, 4):
-            raise ValueError("historical_date must be on or after 1999-01-04.")
-
+    quote_day = exchange_rate_day(historical_date)
     from_currency = currency_code(from_currency)
     to_currency = currency_code(to_currency)
     if from_currency == to_currency:
@@ -779,16 +725,17 @@ def convert_currency(
             ``{column_name}_{to_currency}``. When False, replace
             ``column_name`` on the returned copy.
         api_key: Deprecated and ignored. Frankfurter does not require
-            a key. A call that still passes the key as the first
-            positional argument is accepted with a ``FutureWarning``.
+            a key. Passing a key as the first positional argument
+            raises ``TypeError``.
 
     Returns:
         A DataFrame with the converted currency column.
 
     Raises:
         TypeError: If ``historical_date`` is not a ``date`` or
-            ``datetime``, or an old positional call cannot be mapped
-            back onto the current arguments.
+            ``datetime``, including when an old positional call puts
+            ``api_key`` first and a currency code lands in the date
+            position.
         ValueError: If a currency code is not three letters, the date
             is before 1999-01-04 or ``NaT``, the currency is no longer
             published on that date, the service returns HTTP 422, the
@@ -816,33 +763,15 @@ def convert_currency(
         1   20.0    16.5768
         2   30.0    24.8652
     """
-    (
-        column_name,
-        from_currency,
-        to_currency,
-        historical_date,
-        make_new_column,
-        legacy_call,
-    ) = normalize_convert_currency_arguments(
-        df,
-        column_name,
-        from_currency,
-        to_currency,
-        historical_date,
-        make_new_column,
-        api_key,
-    )
-    if legacy_call:
-        warn(
-            "Passing api_key as the first positional argument of "
-            "convert_currency is deprecated and ignored. Pass the "
-            "column name first: df.convert_currency(column_name, "
-            "from_currency, to_currency). api_key will be removed in "
-            "a future release.",
-            FutureWarning,
-            stacklevel=find_stack_level(),
+    if is_currency_code(historical_date):
+        raise TypeError(
+            "convert_currency received a currency code where a date was "
+            "expected. api_key is no longer the first positional "
+            "argument. Pass the column name first: "
+            "df.convert_currency(column_name, from_currency, to_currency). "
+            "api_key is ignored."
         )
-    elif api_key is not None:
+    if api_key is not None:
         warn(
             "The `api_key` argument of `convert_currency` is deprecated "
             "and ignored. It will be removed in a future release.",
@@ -854,6 +783,9 @@ def convert_currency(
         raise KeyError(f"column_name {column_name!r} is not in the DataFrame.")
     from_currency = currency_code(from_currency)
     to_currency = currency_code(to_currency)
+    # Validate the date before the same-currency shortcut. NaT, a
+    # non-date, and a pre-1999 date fail for USD to USD as well.
+    exchange_rate_day(historical_date)
     if from_currency == to_currency:
         converted = df[column_name]
     else:
@@ -867,7 +799,9 @@ def convert_currency(
     new_column_name = column_name
     if make_new_column:
         new_column_name = f"{column_name}_{to_currency}"
-    return df.assign(**{new_column_name: converted})
+    result = df.copy()
+    result[new_column_name] = converted
+    return result
 
 
 @lru_cache(maxsize=32)

@@ -882,6 +882,13 @@ includes nullable `Int64` and `Float64` columns and excludes booleans.
 assign with `DataFrame.isetitem`. Pair `adorn_ns` counts with
 `adorn_count_pairs`.
 
+### [2026-11-04] Contributor guide is one file
+
+**Context**: Fork-sync instructions belong in the contributor guide.
+**Learning**: `CONTRIBUTING.md` is a symlink to `mkdocs/devguide.md`.
+**Recommendation**: Edit `mkdocs/devguide.md` only. One-line notes are fine
+when they help; keep this template and date order.
+
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol

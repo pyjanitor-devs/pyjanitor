@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+-   [BUG] Make `complete` safe for grouped frames and partial `fill_value` dictionaries, and emit one `FutureWarning` for the deprecated `by` argument. Grouped calls no longer warn that `by` was used, a dictionary that names only some columns no longer raises `KeyError`, and `complete(..., by=...)` no longer also warns about `expand`. An invalid `by` raises without that warning. Issues #1669, #1788 @SumanGouda (#1700, #1790). PR #1834 @ericmjl
+-   [BUG] `complete(..., explicit=False)` adds a categorical fill value only when pandas does not already treat it as a category. `fill_value={"k": True}` on categories `[1, 2]` stores `1`, the existing category equal to `True`. `explicit=True` does not add categories and raises `TypeError` when the fill value is new, including `True` on categories `[1, 2]`. PR #1834
+
 ## [v0.32.75] - 2026-11-04
 
 -   [DOC] Rewrite the introductory example to chain `clean_names`, `remove_empty`, and `encode_categorical`, so copying it does not emit `FutureWarning`. - Issue #1442

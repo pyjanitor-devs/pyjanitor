@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [ENH] Speed up `pivot_longer` with `.value` on wide DataFrames with mixed NumPy and pandas extension dtypes (including string, categorical and datetime). - Issue #1825, PR #1830 @SumanGouda
+
 ## [v0.32.75] - 2026-11-04
 
 -   [DOC] Rewrite the introductory example to chain `clean_names`, `remove_empty`, and `encode_categorical`, so copying it does not emit `FutureWarning`. - Issue #1442

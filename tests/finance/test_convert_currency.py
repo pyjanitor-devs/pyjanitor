@@ -340,39 +340,23 @@ def test_timezone_aware_date_before_ecb_history(dataframe, fake_api, historical_
 
 
 @pytest.mark.finance
-def test_legacy_positional_api_key_still_converts(dataframe, fake_api):
-    """Test an api_key-first positional call still converts the column."""
-    with pytest.warns(FutureWarning, match="positional"):
-        df = dataframe.convert_currency("KEY", "a", "USD", "EUR", make_new_column=True)
-    assert "a_EUR" in df.columns
-    assert fake_api[0][1] == {"base": "USD", "quotes": "EUR"}
-
-
-@pytest.mark.finance
-def test_legacy_positional_api_key_with_date(dataframe, fake_api):
-    """Test an api_key-first call keeps a following historical date."""
-    with pytest.warns(FutureWarning, match="positional"):
-        dataframe.convert_currency("KEY", "a", "USD", "EUR", date(2018, 1, 2))
-    assert fake_api[0][1] == {
-        "base": "USD",
-        "quotes": "EUR",
-        "date": "2018-01-02",
-    }
-
-
-@pytest.mark.finance
-def test_legacy_positional_six_arguments(dataframe, fake_api):
-    """Test an api_key-first call with a date and a new-column flag."""
-    with pytest.warns(FutureWarning, match="positional"):
-        df = dataframe.convert_currency(
-            "KEY", "a", "USD", "EUR", date(2018, 1, 2), True
-        )
-    assert "a_EUR" in df.columns
-    assert fake_api[0][1] == {
-        "base": "USD",
-        "quotes": "EUR",
-        "date": "2018-01-02",
-    }
+@pytest.mark.parametrize(
+    "args",
+    [
+        ("KEY", "a", "USD", "EUR"),
+        ("KEY", "a", "USD", "EUR", date(2018, 1, 2)),
+        ("KEY", "a", "USD", "EUR", date(2018, 1, 2), True),
+        ("KEY", "a", "USD", "EUR", None, True),
+        ("KEY", "missing", "USD", "EUR"),
+    ],
+)
+def test_legacy_positional_api_key_raises(dataframe, fake_api, args):
+    """Test an api_key-first positional call raises TypeError."""
+    original = dataframe.copy()
+    with pytest.raises(TypeError, match="api_key"):
+        dataframe.convert_currency(*args)
+    assert fake_api == []
+    pd.testing.assert_frame_equal(dataframe, original)
 
 
 @pytest.mark.finance
@@ -435,10 +419,38 @@ def test_public_api_lists_methods_not_helpers():
 
 
 @pytest.mark.finance
-def test_legacy_positional_unknown_column_is_clear(dataframe, fake_api):
-    """Test an old positional call with a missing column explains the shift."""
-    with pytest.raises(TypeError, match="api_key"):
-        dataframe.convert_currency("KEY", "missing", "USD", "EUR")
+def test_integer_column_labels(fake_api):
+    """Test integer column labels convert without keyword assignment."""
+    df = pd.DataFrame({0: [1, 2, 3]})
+    original = df[0].copy()
+    converted = df.convert_currency(0, "USD", "EUR")
+    assert list(converted.columns) == [0]
+    pd.testing.assert_series_equal(converted[0], original * 0.5, check_names=False)
+    pd.testing.assert_series_equal(df[0], original)
+    same = df.convert_currency(0, "USD", "USD")
+    assert list(same.columns) == [0]
+    assert same[0].dtype == df[0].dtype
+    pd.testing.assert_series_equal(df[0], original)
+
+
+@pytest.mark.finance
+@pytest.mark.parametrize(
+    ("historical_date", "error"),
+    [
+        (pd.NaT, ValueError),
+        (date(1980, 1, 1), ValueError),
+        ("garbage", TypeError),
+    ],
+)
+def test_same_currency_validates_date(dataframe, fake_api, historical_date, error):
+    """Test USD to USD still rejects NaT, pre-1999 dates, and non-dates."""
+    with pytest.raises(error):
+        dataframe.convert_currency(
+            "a",
+            "USD",
+            "USD",
+            historical_date=historical_date,
+        )
     assert fake_api == []
 
 

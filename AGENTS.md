@@ -882,6 +882,14 @@ an absolute http or https URL. Send currency codes as `base` and
 until the ECB stopped publishing them. List the dataframe methods in
 `__all__` and leave the rate helpers out of that list.
 
+### [2026-11-06] DataFrame.assign requires string column labels
+
+**Context**: `convert_currency` wrote its result with
+`df.assign(**{name: values})`.
+**Learning**: Keyword assignment requires string keys. Integer labels and
+tuple labels from a `MultiIndex` raise `TypeError: keywords must be strings`.
+**Recommendation**: Copy the frame and assign with `out[label] = values`.
+
 ### [2026-10-30] adorn row identifier is column position 0
 
 **Context**: Issue #1676. `adorn_pct_formatting`, `adorn_ns`, and

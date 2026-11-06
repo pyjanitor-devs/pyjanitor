@@ -3317,7 +3317,7 @@
 <h2 id="unreleased"><a href="https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.75...HEAD">Unreleased</a><a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <ul>
 <li>[ENH] Re-enable <code>convert_currency</code> with keyless ECB reference rates from Frankfurter. <code>from_currency</code> is sent as the base, a new column is named from the source column, and an absolute http(s) <code>JANITOR_CURRENCY_API_URL</code> can replace the endpoint. Latest rates and today's date are not cached. HRK, RUB, and BGN still convert on dates the ECB published them, and raise <code>ValueError</code> after they stopped. Based on work by @cahthuranag (#1836). - Issue #829 - PR #1845 @ericmjl</li>
-<li>[DEPR] <code>convert_currency</code>'s <code>api_key</code> argument is deprecated, ignored, and will be removed. Passing it by keyword or as the first positional argument still runs and emits <code>FutureWarning</code>. - PR #1845 @ericmjl</li>
+<li>[DEPR] <code>convert_currency</code>'s <code>api_key</code> argument is deprecated, ignored, and will be removed. Passing it by keyword emits <code>FutureWarning</code>. Passing it as the first positional argument raises <code>TypeError</code>. - PR #1845 @ericmjl</li>
 </ul>
 <h2 id="v03275-2026-11-04"><a href="https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.74...v0.32.75">v0.32.75</a> - 2026-11-04<a class="headerlink" href="#v03275-2026-11-04" title="Permanent link">&para;</a></h2>
 <ul>

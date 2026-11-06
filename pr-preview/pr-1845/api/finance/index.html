@@ -565,6 +565,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#janitor.finance.exchange_rate_day" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        exchange_rate_day
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#janitor.finance.fetch_exchange_rate" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -602,17 +613,6 @@
     <span class="md-ellipsis">
       
         is_currency_code
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#janitor.finance.normalize_convert_currency_arguments" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        normalize_convert_currency_arguments
       
     </span>
   </a>
@@ -1127,6 +1127,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#janitor.finance.exchange_rate_day" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        exchange_rate_day
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#janitor.finance.fetch_exchange_rate" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1164,17 +1175,6 @@
     <span class="md-ellipsis">
       
         is_currency_code
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#janitor.finance.normalize_convert_currency_arguments" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        normalize_convert_currency_arguments
       
     </span>
   </a>
@@ -1601,8 +1601,8 @@ use their calendar date. Rates go back to 1999-01-04.</p>
             <td>
               <div class="doc-md-description">
                 <p>Deprecated and ignored. Frankfurter does not require
-a key. A call that still passes the key as the first
-positional argument is accepted with a <code>FutureWarning</code>.</p>
+a key. Passing a key as the first positional argument
+raises <code>TypeError</code>.</p>
               </div>
             </td>
             <td>
@@ -1652,8 +1652,9 @@ positional argument is accepted with a <code>FutureWarning</code>.</p>
             <td>
               <div class="doc-md-description">
                 <p>If <code>historical_date</code> is not a <code>date</code> or
-<code>datetime</code>, or an old positional call cannot be mapped
-back onto the current arguments.</p>
+<code>datetime</code>, including when an old positional call puts
+<code>api_key</code> first and a currency code lands in the date
+position.</p>
               </div>
             </td>
           </tr>
@@ -1718,7 +1719,61 @@ is not JSON.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>janitor/finance.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">733</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">679</span>
+<span class="normal">680</span>
+<span class="normal">681</span>
+<span class="normal">682</span>
+<span class="normal">683</span>
+<span class="normal">684</span>
+<span class="normal">685</span>
+<span class="normal">686</span>
+<span class="normal">687</span>
+<span class="normal">688</span>
+<span class="normal">689</span>
+<span class="normal">690</span>
+<span class="normal">691</span>
+<span class="normal">692</span>
+<span class="normal">693</span>
+<span class="normal">694</span>
+<span class="normal">695</span>
+<span class="normal">696</span>
+<span class="normal">697</span>
+<span class="normal">698</span>
+<span class="normal">699</span>
+<span class="normal">700</span>
+<span class="normal">701</span>
+<span class="normal">702</span>
+<span class="normal">703</span>
+<span class="normal">704</span>
+<span class="normal">705</span>
+<span class="normal">706</span>
+<span class="normal">707</span>
+<span class="normal">708</span>
+<span class="normal">709</span>
+<span class="normal">710</span>
+<span class="normal">711</span>
+<span class="normal">712</span>
+<span class="normal">713</span>
+<span class="normal">714</span>
+<span class="normal">715</span>
+<span class="normal">716</span>
+<span class="normal">717</span>
+<span class="normal">718</span>
+<span class="normal">719</span>
+<span class="normal">720</span>
+<span class="normal">721</span>
+<span class="normal">722</span>
+<span class="normal">723</span>
+<span class="normal">724</span>
+<span class="normal">725</span>
+<span class="normal">726</span>
+<span class="normal">727</span>
+<span class="normal">728</span>
+<span class="normal">729</span>
+<span class="normal">730</span>
+<span class="normal">731</span>
+<span class="normal">732</span>
+<span class="normal">733</span>
 <span class="normal">734</span>
 <span class="normal">735</span>
 <span class="normal">736</span>
@@ -1789,73 +1844,7 @@ is not JSON.</p>
 <span class="normal">801</span>
 <span class="normal">802</span>
 <span class="normal">803</span>
-<span class="normal">804</span>
-<span class="normal">805</span>
-<span class="normal">806</span>
-<span class="normal">807</span>
-<span class="normal">808</span>
-<span class="normal">809</span>
-<span class="normal">810</span>
-<span class="normal">811</span>
-<span class="normal">812</span>
-<span class="normal">813</span>
-<span class="normal">814</span>
-<span class="normal">815</span>
-<span class="normal">816</span>
-<span class="normal">817</span>
-<span class="normal">818</span>
-<span class="normal">819</span>
-<span class="normal">820</span>
-<span class="normal">821</span>
-<span class="normal">822</span>
-<span class="normal">823</span>
-<span class="normal">824</span>
-<span class="normal">825</span>
-<span class="normal">826</span>
-<span class="normal">827</span>
-<span class="normal">828</span>
-<span class="normal">829</span>
-<span class="normal">830</span>
-<span class="normal">831</span>
-<span class="normal">832</span>
-<span class="normal">833</span>
-<span class="normal">834</span>
-<span class="normal">835</span>
-<span class="normal">836</span>
-<span class="normal">837</span>
-<span class="normal">838</span>
-<span class="normal">839</span>
-<span class="normal">840</span>
-<span class="normal">841</span>
-<span class="normal">842</span>
-<span class="normal">843</span>
-<span class="normal">844</span>
-<span class="normal">845</span>
-<span class="normal">846</span>
-<span class="normal">847</span>
-<span class="normal">848</span>
-<span class="normal">849</span>
-<span class="normal">850</span>
-<span class="normal">851</span>
-<span class="normal">852</span>
-<span class="normal">853</span>
-<span class="normal">854</span>
-<span class="normal">855</span>
-<span class="normal">856</span>
-<span class="normal">857</span>
-<span class="normal">858</span>
-<span class="normal">859</span>
-<span class="normal">860</span>
-<span class="normal">861</span>
-<span class="normal">862</span>
-<span class="normal">863</span>
-<span class="normal">864</span>
-<span class="normal">865</span>
-<span class="normal">866</span>
-<span class="normal">867</span>
-<span class="normal">868</span>
-<span class="normal">869</span>
-<span class="normal">870</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
+<span class="normal">804</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
 <span class="nd">@deprecated_alias</span><span class="p">(</span><span class="n">colname</span><span class="o">=</span><span class="s2">&quot;column_name&quot;</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">convert_currency</span><span class="p">(</span>
     <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
@@ -1904,16 +1893,17 @@ is not JSON.</p>
 <span class="sd">            ``{column_name}_{to_currency}``. When False, replace</span>
 <span class="sd">            ``column_name`` on the returned copy.</span>
 <span class="sd">        api_key: Deprecated and ignored. Frankfurter does not require</span>
-<span class="sd">            a key. A call that still passes the key as the first</span>
-<span class="sd">            positional argument is accepted with a ``FutureWarning``.</span>
+<span class="sd">            a key. Passing a key as the first positional argument</span>
+<span class="sd">            raises ``TypeError``.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A DataFrame with the converted currency column.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        TypeError: If ``historical_date`` is not a ``date`` or</span>
-<span class="sd">            ``datetime``, or an old positional call cannot be mapped</span>
-<span class="sd">            back onto the current arguments.</span>
+<span class="sd">            ``datetime``, including when an old positional call puts</span>
+<span class="sd">            ``api_key`` first and a currency code lands in the date</span>
+<span class="sd">            position.</span>
 <span class="sd">        ValueError: If a currency code is not three letters, the date</span>
 <span class="sd">            is before 1999-01-04 or ``NaT``, the currency is no longer</span>
 <span class="sd">            published on that date, the service returns HTTP 422, the</span>
@@ -1941,33 +1931,15 @@ is not JSON.</p>
 <span class="sd">        1   20.0    16.5768</span>
 <span class="sd">        2   30.0    24.8652</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="p">(</span>
-        <span class="n">column_name</span><span class="p">,</span>
-        <span class="n">from_currency</span><span class="p">,</span>
-        <span class="n">to_currency</span><span class="p">,</span>
-        <span class="n">historical_date</span><span class="p">,</span>
-        <span class="n">make_new_column</span><span class="p">,</span>
-        <span class="n">legacy_call</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">=</span> <span class="n">normalize_convert_currency_arguments</span><span class="p">(</span>
-        <span class="n">df</span><span class="p">,</span>
-        <span class="n">column_name</span><span class="p">,</span>
-        <span class="n">from_currency</span><span class="p">,</span>
-        <span class="n">to_currency</span><span class="p">,</span>
-        <span class="n">historical_date</span><span class="p">,</span>
-        <span class="n">make_new_column</span><span class="p">,</span>
-        <span class="n">api_key</span><span class="p">,</span>
-    <span class="p">)</span>
-    <span class="k">if</span> <span class="n">legacy_call</span><span class="p">:</span>
-        <span class="n">warn</span><span class="p">(</span>
-            <span class="s2">&quot;Passing api_key as the first positional argument of &quot;</span>
-            <span class="s2">&quot;convert_currency is deprecated and ignored. Pass the &quot;</span>
-            <span class="s2">&quot;column name first: df.convert_currency(column_name, &quot;</span>
-            <span class="s2">&quot;from_currency, to_currency). api_key will be removed in &quot;</span>
-            <span class="s2">&quot;a future release.&quot;</span><span class="p">,</span>
-            <span class="ne">FutureWarning</span><span class="p">,</span>
-            <span class="n">stacklevel</span><span class="o">=</span><span class="n">find_stack_level</span><span class="p">(),</span>
+    <span class="k">if</span> <span class="n">is_currency_code</span><span class="p">(</span><span class="n">historical_date</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+            <span class="s2">&quot;convert_currency received a currency code where a date was &quot;</span>
+            <span class="s2">&quot;expected. api_key is no longer the first positional &quot;</span>
+            <span class="s2">&quot;argument. Pass the column name first: &quot;</span>
+            <span class="s2">&quot;df.convert_currency(column_name, from_currency, to_currency). &quot;</span>
+            <span class="s2">&quot;api_key is ignored.&quot;</span>
         <span class="p">)</span>
-    <span class="k">elif</span> <span class="n">api_key</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">api_key</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">warn</span><span class="p">(</span>
             <span class="s2">&quot;The `api_key` argument of `convert_currency` is deprecated &quot;</span>
             <span class="s2">&quot;and ignored. It will be removed in a future release.&quot;</span><span class="p">,</span>
@@ -1979,6 +1951,9 @@ is not JSON.</p>
         <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;column_name </span><span class="si">{</span><span class="n">column_name</span><span class="si">!r}</span><span class="s2"> is not in the DataFrame.&quot;</span><span class="p">)</span>
     <span class="n">from_currency</span> <span class="o">=</span> <span class="n">currency_code</span><span class="p">(</span><span class="n">from_currency</span><span class="p">)</span>
     <span class="n">to_currency</span> <span class="o">=</span> <span class="n">currency_code</span><span class="p">(</span><span class="n">to_currency</span><span class="p">)</span>
+    <span class="c1"># Validate the date before the same-currency shortcut. NaT, a</span>
+    <span class="c1"># non-date, and a pre-1999 date fail for USD to USD as well.</span>
+    <span class="n">exchange_rate_day</span><span class="p">(</span><span class="n">historical_date</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">from_currency</span> <span class="o">==</span> <span class="n">to_currency</span><span class="p">:</span>
         <span class="n">converted</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">column_name</span><span class="p">]</span>
     <span class="k">else</span><span class="p">:</span>
@@ -1992,7 +1967,9 @@ is not JSON.</p>
     <span class="n">new_column_name</span> <span class="o">=</span> <span class="n">column_name</span>
     <span class="k">if</span> <span class="n">make_new_column</span><span class="p">:</span>
         <span class="n">new_column_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">column_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">to_currency</span><span class="si">}</span><span class="s2">&quot;</span>
-    <span class="k">return</span> <span class="n">df</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span><span class="o">**</span><span class="p">{</span><span class="n">new_column_name</span><span class="p">:</span> <span class="n">converted</span><span class="p">})</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">result</span><span class="p">[</span><span class="n">new_column_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">converted</span>
+    <span class="k">return</span> <span class="n">result</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -2101,34 +2078,34 @@ janitor.finance.convert_stock(&quot;aapl&quot;)
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>janitor/finance.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1030</span>
-<span class="normal">1031</span>
-<span class="normal">1032</span>
-<span class="normal">1033</span>
-<span class="normal">1034</span>
-<span class="normal">1035</span>
-<span class="normal">1036</span>
-<span class="normal">1037</span>
-<span class="normal">1038</span>
-<span class="normal">1039</span>
-<span class="normal">1040</span>
-<span class="normal">1041</span>
-<span class="normal">1042</span>
-<span class="normal">1043</span>
-<span class="normal">1044</span>
-<span class="normal">1045</span>
-<span class="normal">1046</span>
-<span class="normal">1047</span>
-<span class="normal">1048</span>
-<span class="normal">1049</span>
-<span class="normal">1050</span>
-<span class="normal">1051</span>
-<span class="normal">1052</span>
-<span class="normal">1053</span>
-<span class="normal">1054</span>
-<span class="normal">1055</span>
-<span class="normal">1056</span>
-<span class="normal">1057</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">convert_stock</span><span class="p">(</span><span class="n">stock_symbol</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">964</span>
+<span class="normal">965</span>
+<span class="normal">966</span>
+<span class="normal">967</span>
+<span class="normal">968</span>
+<span class="normal">969</span>
+<span class="normal">970</span>
+<span class="normal">971</span>
+<span class="normal">972</span>
+<span class="normal">973</span>
+<span class="normal">974</span>
+<span class="normal">975</span>
+<span class="normal">976</span>
+<span class="normal">977</span>
+<span class="normal">978</span>
+<span class="normal">979</span>
+<span class="normal">980</span>
+<span class="normal">981</span>
+<span class="normal">982</span>
+<span class="normal">983</span>
+<span class="normal">984</span>
+<span class="normal">985</span>
+<span class="normal">986</span>
+<span class="normal">987</span>
+<span class="normal">988</span>
+<span class="normal">989</span>
+<span class="normal">990</span>
+<span class="normal">991</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">convert_stock</span><span class="p">(</span><span class="n">stock_symbol</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    This function takes in a stock symbol as a parameter,</span>
 <span class="sd">    queries an API for the companies full name and returns</span>
@@ -2430,6 +2407,170 @@ an absolute http or https URL.</p>
 <div class="doc doc-object doc-function">
 
 
+<h3 id="janitor.finance.exchange_rate_day" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">exchange_rate_day</span><span class="p">(</span><span class="n">historical_date</span><span class="p">)</span></code>
+
+<a href="#janitor.finance.exchange_rate_day" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Return the calendar day for a rate lookup.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>historical_date</code>
+            </td>
+            <td>
+                  <code><span title="typing.Optional">Optional</span>[<span title="datetime.date">date</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Requested rate date, or None for the latest rate.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="typing.Optional">Optional</span>[<span title="datetime.date">date</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The calendar date, or None when the latest rate was requested.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="TypeError">TypeError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If <code>historical_date</code> is not a date or datetime.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="ValueError">ValueError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If the value is NaT or before 1999-01-04.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+            <details class="mkdocstrings-source">
+              <summary>Source code in <code>janitor/finance.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">594</span>
+<span class="normal">595</span>
+<span class="normal">596</span>
+<span class="normal">597</span>
+<span class="normal">598</span>
+<span class="normal">599</span>
+<span class="normal">600</span>
+<span class="normal">601</span>
+<span class="normal">602</span>
+<span class="normal">603</span>
+<span class="normal">604</span>
+<span class="normal">605</span>
+<span class="normal">606</span>
+<span class="normal">607</span>
+<span class="normal">608</span>
+<span class="normal">609</span>
+<span class="normal">610</span>
+<span class="normal">611</span>
+<span class="normal">612</span>
+<span class="normal">613</span>
+<span class="normal">614</span>
+<span class="normal">615</span>
+<span class="normal">616</span>
+<span class="normal">617</span>
+<span class="normal">618</span>
+<span class="normal">619</span>
+<span class="normal">620</span>
+<span class="normal">621</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">exchange_rate_day</span><span class="p">(</span><span class="n">historical_date</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">date</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">date</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the calendar day for a rate lookup.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        historical_date: Requested rate date, or None for the latest rate.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The calendar date, or None when the latest rate was requested.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        TypeError: If ``historical_date`` is not a date or datetime.</span>
+<span class="sd">        ValueError: If the value is NaT or before 1999-01-04.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">historical_date</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">isna</span><span class="p">(</span><span class="n">historical_date</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;historical_date is NaT and cannot be used as a rate date.&quot;</span><span class="p">)</span>
+    <span class="n">check</span><span class="p">(</span><span class="s2">&quot;historical_date&quot;</span><span class="p">,</span> <span class="n">historical_date</span><span class="p">,</span> <span class="p">[</span><span class="n">datetime</span><span class="p">,</span> <span class="n">date</span><span class="p">])</span>
+    <span class="c1"># Compare calendar dates. An aware datetime is not ordered against</span>
+    <span class="c1"># a naive datetime, and Timestamp is a datetime.</span>
+    <span class="n">quote_day</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">historical_date</span><span class="o">.</span><span class="n">date</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">historical_date</span><span class="p">,</span> <span class="n">datetime</span><span class="p">)</span>
+        <span class="k">else</span> <span class="n">historical_date</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">quote_day</span> <span class="o">&lt;</span> <span class="n">date</span><span class="p">(</span><span class="mi">1999</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;historical_date must be on or after 1999-01-04.&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">quote_day</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h3 id="janitor.finance.fetch_exchange_rate" class="doc doc-heading">
             <code class="highlight language-python"><span class="n">fetch_exchange_rate</span><span class="p">(</span><span class="n">from_currency</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">to_currency</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">historical_date</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">api_url</span><span class="o">=</span><span class="n">FRANKFURTER_API_URL</span><span class="p">)</span></code>
 
@@ -2604,7 +2745,45 @@ JSON.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>janitor/finance.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">662</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">624</span>
+<span class="normal">625</span>
+<span class="normal">626</span>
+<span class="normal">627</span>
+<span class="normal">628</span>
+<span class="normal">629</span>
+<span class="normal">630</span>
+<span class="normal">631</span>
+<span class="normal">632</span>
+<span class="normal">633</span>
+<span class="normal">634</span>
+<span class="normal">635</span>
+<span class="normal">636</span>
+<span class="normal">637</span>
+<span class="normal">638</span>
+<span class="normal">639</span>
+<span class="normal">640</span>
+<span class="normal">641</span>
+<span class="normal">642</span>
+<span class="normal">643</span>
+<span class="normal">644</span>
+<span class="normal">645</span>
+<span class="normal">646</span>
+<span class="normal">647</span>
+<span class="normal">648</span>
+<span class="normal">649</span>
+<span class="normal">650</span>
+<span class="normal">651</span>
+<span class="normal">652</span>
+<span class="normal">653</span>
+<span class="normal">654</span>
+<span class="normal">655</span>
+<span class="normal">656</span>
+<span class="normal">657</span>
+<span class="normal">658</span>
+<span class="normal">659</span>
+<span class="normal">660</span>
+<span class="normal">661</span>
+<span class="normal">662</span>
 <span class="normal">663</span>
 <span class="normal">664</span>
 <span class="normal">665</span>
@@ -2618,61 +2797,7 @@ JSON.</p>
 <span class="normal">673</span>
 <span class="normal">674</span>
 <span class="normal">675</span>
-<span class="normal">676</span>
-<span class="normal">677</span>
-<span class="normal">678</span>
-<span class="normal">679</span>
-<span class="normal">680</span>
-<span class="normal">681</span>
-<span class="normal">682</span>
-<span class="normal">683</span>
-<span class="normal">684</span>
-<span class="normal">685</span>
-<span class="normal">686</span>
-<span class="normal">687</span>
-<span class="normal">688</span>
-<span class="normal">689</span>
-<span class="normal">690</span>
-<span class="normal">691</span>
-<span class="normal">692</span>
-<span class="normal">693</span>
-<span class="normal">694</span>
-<span class="normal">695</span>
-<span class="normal">696</span>
-<span class="normal">697</span>
-<span class="normal">698</span>
-<span class="normal">699</span>
-<span class="normal">700</span>
-<span class="normal">701</span>
-<span class="normal">702</span>
-<span class="normal">703</span>
-<span class="normal">704</span>
-<span class="normal">705</span>
-<span class="normal">706</span>
-<span class="normal">707</span>
-<span class="normal">708</span>
-<span class="normal">709</span>
-<span class="normal">710</span>
-<span class="normal">711</span>
-<span class="normal">712</span>
-<span class="normal">713</span>
-<span class="normal">714</span>
-<span class="normal">715</span>
-<span class="normal">716</span>
-<span class="normal">717</span>
-<span class="normal">718</span>
-<span class="normal">719</span>
-<span class="normal">720</span>
-<span class="normal">721</span>
-<span class="normal">722</span>
-<span class="normal">723</span>
-<span class="normal">724</span>
-<span class="normal">725</span>
-<span class="normal">726</span>
-<span class="normal">727</span>
-<span class="normal">728</span>
-<span class="normal">729</span>
-<span class="normal">730</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">fetch_exchange_rate</span><span class="p">(</span>
+<span class="normal">676</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">fetch_exchange_rate</span><span class="p">(</span>
     <span class="n">from_currency</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">to_currency</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">historical_date</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">date</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -2712,23 +2837,7 @@ JSON.</p>
 <span class="sd">            server does not return HTTP 200 or 422, or the body is not</span>
 <span class="sd">            JSON.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">quote_day</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="k">if</span> <span class="n">historical_date</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">isna</span><span class="p">(</span><span class="n">historical_date</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;historical_date is NaT and cannot be used as a rate date.&quot;</span>
-            <span class="p">)</span>
-        <span class="n">check</span><span class="p">(</span><span class="s2">&quot;historical_date&quot;</span><span class="p">,</span> <span class="n">historical_date</span><span class="p">,</span> <span class="p">[</span><span class="n">datetime</span><span class="p">,</span> <span class="n">date</span><span class="p">])</span>
-        <span class="c1"># Compare calendar dates. An aware datetime is not ordered</span>
-        <span class="c1"># against a naive datetime, and Timestamp is a datetime.</span>
-        <span class="n">quote_day</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">historical_date</span><span class="o">.</span><span class="n">date</span><span class="p">()</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">historical_date</span><span class="p">,</span> <span class="n">datetime</span><span class="p">)</span>
-            <span class="k">else</span> <span class="n">historical_date</span>
-        <span class="p">)</span>
-        <span class="k">if</span> <span class="n">quote_day</span> <span class="o">&lt;</span> <span class="n">date</span><span class="p">(</span><span class="mi">1999</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;historical_date must be on or after 1999-01-04.&quot;</span><span class="p">)</span>
-
+    <span class="n">quote_day</span> <span class="o">=</span> <span class="n">exchange_rate_day</span><span class="p">(</span><span class="n">historical_date</span><span class="p">)</span>
     <span class="n">from_currency</span> <span class="o">=</span> <span class="n">currency_code</span><span class="p">(</span><span class="n">from_currency</span><span class="p">)</span>
     <span class="n">to_currency</span> <span class="o">=</span> <span class="n">currency_code</span><span class="p">(</span><span class="n">to_currency</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">from_currency</span> <span class="o">==</span> <span class="n">to_currency</span><span class="p">:</span>
@@ -2826,36 +2935,36 @@ to query the api for the companies full name.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>janitor/finance.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1060</span>
-<span class="normal">1061</span>
-<span class="normal">1062</span>
-<span class="normal">1063</span>
-<span class="normal">1064</span>
-<span class="normal">1065</span>
-<span class="normal">1066</span>
-<span class="normal">1067</span>
-<span class="normal">1068</span>
-<span class="normal">1069</span>
-<span class="normal">1070</span>
-<span class="normal">1071</span>
-<span class="normal">1072</span>
-<span class="normal">1073</span>
-<span class="normal">1074</span>
-<span class="normal">1075</span>
-<span class="normal">1076</span>
-<span class="normal">1077</span>
-<span class="normal">1078</span>
-<span class="normal">1079</span>
-<span class="normal">1080</span>
-<span class="normal">1081</span>
-<span class="normal">1082</span>
-<span class="normal">1083</span>
-<span class="normal">1084</span>
-<span class="normal">1085</span>
-<span class="normal">1086</span>
-<span class="normal">1087</span>
-<span class="normal">1088</span>
-<span class="normal">1089</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_symbol</span><span class="p">(</span><span class="n">symbol</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 994</span>
+<span class="normal"> 995</span>
+<span class="normal"> 996</span>
+<span class="normal"> 997</span>
+<span class="normal"> 998</span>
+<span class="normal"> 999</span>
+<span class="normal">1000</span>
+<span class="normal">1001</span>
+<span class="normal">1002</span>
+<span class="normal">1003</span>
+<span class="normal">1004</span>
+<span class="normal">1005</span>
+<span class="normal">1006</span>
+<span class="normal">1007</span>
+<span class="normal">1008</span>
+<span class="normal">1009</span>
+<span class="normal">1010</span>
+<span class="normal">1011</span>
+<span class="normal">1012</span>
+<span class="normal">1013</span>
+<span class="normal">1014</span>
+<span class="normal">1015</span>
+<span class="normal">1016</span>
+<span class="normal">1017</span>
+<span class="normal">1018</span>
+<span class="normal">1019</span>
+<span class="normal">1020</span>
+<span class="normal">1021</span>
+<span class="normal">1022</span>
+<span class="normal">1023</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_symbol</span><span class="p">(</span><span class="n">symbol</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    This is a helper function to get a companies full</span>
 <span class="sd">    name based on the stock symbol.</span>
@@ -3076,78 +3185,78 @@ True, otherwise, inflates currency in place.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>janitor/finance.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 956</span>
-<span class="normal"> 957</span>
-<span class="normal"> 958</span>
-<span class="normal"> 959</span>
-<span class="normal"> 960</span>
-<span class="normal"> 961</span>
-<span class="normal"> 962</span>
-<span class="normal"> 963</span>
-<span class="normal"> 964</span>
-<span class="normal"> 965</span>
-<span class="normal"> 966</span>
-<span class="normal"> 967</span>
-<span class="normal"> 968</span>
-<span class="normal"> 969</span>
-<span class="normal"> 970</span>
-<span class="normal"> 971</span>
-<span class="normal"> 972</span>
-<span class="normal"> 973</span>
-<span class="normal"> 974</span>
-<span class="normal"> 975</span>
-<span class="normal"> 976</span>
-<span class="normal"> 977</span>
-<span class="normal"> 978</span>
-<span class="normal"> 979</span>
-<span class="normal"> 980</span>
-<span class="normal"> 981</span>
-<span class="normal"> 982</span>
-<span class="normal"> 983</span>
-<span class="normal"> 984</span>
-<span class="normal"> 985</span>
-<span class="normal"> 986</span>
-<span class="normal"> 987</span>
-<span class="normal"> 988</span>
-<span class="normal"> 989</span>
-<span class="normal"> 990</span>
-<span class="normal"> 991</span>
-<span class="normal"> 992</span>
-<span class="normal"> 993</span>
-<span class="normal"> 994</span>
-<span class="normal"> 995</span>
-<span class="normal"> 996</span>
-<span class="normal"> 997</span>
-<span class="normal"> 998</span>
-<span class="normal"> 999</span>
-<span class="normal">1000</span>
-<span class="normal">1001</span>
-<span class="normal">1002</span>
-<span class="normal">1003</span>
-<span class="normal">1004</span>
-<span class="normal">1005</span>
-<span class="normal">1006</span>
-<span class="normal">1007</span>
-<span class="normal">1008</span>
-<span class="normal">1009</span>
-<span class="normal">1010</span>
-<span class="normal">1011</span>
-<span class="normal">1012</span>
-<span class="normal">1013</span>
-<span class="normal">1014</span>
-<span class="normal">1015</span>
-<span class="normal">1016</span>
-<span class="normal">1017</span>
-<span class="normal">1018</span>
-<span class="normal">1019</span>
-<span class="normal">1020</span>
-<span class="normal">1021</span>
-<span class="normal">1022</span>
-<span class="normal">1023</span>
-<span class="normal">1024</span>
-<span class="normal">1025</span>
-<span class="normal">1026</span>
-<span class="normal">1027</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">890</span>
+<span class="normal">891</span>
+<span class="normal">892</span>
+<span class="normal">893</span>
+<span class="normal">894</span>
+<span class="normal">895</span>
+<span class="normal">896</span>
+<span class="normal">897</span>
+<span class="normal">898</span>
+<span class="normal">899</span>
+<span class="normal">900</span>
+<span class="normal">901</span>
+<span class="normal">902</span>
+<span class="normal">903</span>
+<span class="normal">904</span>
+<span class="normal">905</span>
+<span class="normal">906</span>
+<span class="normal">907</span>
+<span class="normal">908</span>
+<span class="normal">909</span>
+<span class="normal">910</span>
+<span class="normal">911</span>
+<span class="normal">912</span>
+<span class="normal">913</span>
+<span class="normal">914</span>
+<span class="normal">915</span>
+<span class="normal">916</span>
+<span class="normal">917</span>
+<span class="normal">918</span>
+<span class="normal">919</span>
+<span class="normal">920</span>
+<span class="normal">921</span>
+<span class="normal">922</span>
+<span class="normal">923</span>
+<span class="normal">924</span>
+<span class="normal">925</span>
+<span class="normal">926</span>
+<span class="normal">927</span>
+<span class="normal">928</span>
+<span class="normal">929</span>
+<span class="normal">930</span>
+<span class="normal">931</span>
+<span class="normal">932</span>
+<span class="normal">933</span>
+<span class="normal">934</span>
+<span class="normal">935</span>
+<span class="normal">936</span>
+<span class="normal">937</span>
+<span class="normal">938</span>
+<span class="normal">939</span>
+<span class="normal">940</span>
+<span class="normal">941</span>
+<span class="normal">942</span>
+<span class="normal">943</span>
+<span class="normal">944</span>
+<span class="normal">945</span>
+<span class="normal">946</span>
+<span class="normal">947</span>
+<span class="normal">948</span>
+<span class="normal">949</span>
+<span class="normal">950</span>
+<span class="normal">951</span>
+<span class="normal">952</span>
+<span class="normal">953</span>
+<span class="normal">954</span>
+<span class="normal">955</span>
+<span class="normal">956</span>
+<span class="normal">957</span>
+<span class="normal">958</span>
+<span class="normal">959</span>
+<span class="normal">960</span>
+<span class="normal">961</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@pf</span><span class="o">.</span><span class="n">register_dataframe_method</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">inflate_currency</span><span class="p">(</span>
     <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
     <span class="n">column_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -3314,353 +3423,6 @@ True, otherwise, inflates currency in place.</p>
 <span class="sd">        True when ``value`` is three letters.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span> <span class="ow">and</span> <span class="n">value</span><span class="o">.</span><span class="n">isalpha</span><span class="p">()</span>
-</code></pre></div></td></tr></table></div>
-            </details>
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="janitor.finance.normalize_convert_currency_arguments" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">normalize_convert_currency_arguments</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">column_name</span><span class="p">,</span> <span class="n">from_currency</span><span class="p">,</span> <span class="n">to_currency</span><span class="p">,</span> <span class="n">historical_date</span><span class="p">,</span> <span class="n">make_new_column</span><span class="p">,</span> <span class="n">api_key</span><span class="p">)</span></code>
-
-<a href="#janitor.finance.normalize_convert_currency_arguments" class="headerlink" title="Permanent link">&para;</a></h3>
-
-
-    <div class="doc doc-contents ">
-
-        <p>Map an api_key-first positional call onto the current arguments.</p>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>df</code>
-            </td>
-            <td>
-                  <code><span title="pandas.DataFrame">DataFrame</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>DataFrame whose columns identify the old column argument.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>column_name</code>
-            </td>
-            <td>
-                  <code><span title="typing.Optional">Optional</span>[<span title="str">str</span>]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Current column argument, or the old api key.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>from_currency</code>
-            </td>
-            <td>
-                  <code><span title="typing.Optional">Optional</span>[<span title="str">str</span>]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Current source currency, or the old column name.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>to_currency</code>
-            </td>
-            <td>
-                  <code><span title="typing.Optional">Optional</span>[<span title="str">str</span>]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Current target currency, or the old source currency.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>historical_date</code>
-            </td>
-            <td>
-                  <code><span title="typing.Optional">Optional</span>[<span title="datetime.date">date</span>]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Current rate date, or the old target currency.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>make_new_column</code>
-            </td>
-            <td>
-                  <code><span title="bool">bool</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Current flag, or the old rate date.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>api_key</code>
-            </td>
-            <td>
-                  <code><span title="typing.Optional">Optional</span>[<span title="str">str</span>]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Current key, or the old new-column flag.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><span title="tuple">tuple</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p><code>column_name</code>, <code>from_currency</code>, <code>to_currency</code>,</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                  <code><span title="tuple">tuple</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p><code>historical_date</code>, <code>make_new_column</code>, and whether the old</p>
-              </div>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                  <code><span title="tuple">tuple</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>positional order was detected.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-<p><span class="doc-section-title">Raises:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><span title="TypeError">TypeError</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If a currency code lands in the date position and
-the call is not the old positional order.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-            <details class="mkdocstrings-source">
-              <summary>Source code in <code>janitor/finance.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">594</span>
-<span class="normal">595</span>
-<span class="normal">596</span>
-<span class="normal">597</span>
-<span class="normal">598</span>
-<span class="normal">599</span>
-<span class="normal">600</span>
-<span class="normal">601</span>
-<span class="normal">602</span>
-<span class="normal">603</span>
-<span class="normal">604</span>
-<span class="normal">605</span>
-<span class="normal">606</span>
-<span class="normal">607</span>
-<span class="normal">608</span>
-<span class="normal">609</span>
-<span class="normal">610</span>
-<span class="normal">611</span>
-<span class="normal">612</span>
-<span class="normal">613</span>
-<span class="normal">614</span>
-<span class="normal">615</span>
-<span class="normal">616</span>
-<span class="normal">617</span>
-<span class="normal">618</span>
-<span class="normal">619</span>
-<span class="normal">620</span>
-<span class="normal">621</span>
-<span class="normal">622</span>
-<span class="normal">623</span>
-<span class="normal">624</span>
-<span class="normal">625</span>
-<span class="normal">626</span>
-<span class="normal">627</span>
-<span class="normal">628</span>
-<span class="normal">629</span>
-<span class="normal">630</span>
-<span class="normal">631</span>
-<span class="normal">632</span>
-<span class="normal">633</span>
-<span class="normal">634</span>
-<span class="normal">635</span>
-<span class="normal">636</span>
-<span class="normal">637</span>
-<span class="normal">638</span>
-<span class="normal">639</span>
-<span class="normal">640</span>
-<span class="normal">641</span>
-<span class="normal">642</span>
-<span class="normal">643</span>
-<span class="normal">644</span>
-<span class="normal">645</span>
-<span class="normal">646</span>
-<span class="normal">647</span>
-<span class="normal">648</span>
-<span class="normal">649</span>
-<span class="normal">650</span>
-<span class="normal">651</span>
-<span class="normal">652</span>
-<span class="normal">653</span>
-<span class="normal">654</span>
-<span class="normal">655</span>
-<span class="normal">656</span>
-<span class="normal">657</span>
-<span class="normal">658</span>
-<span class="normal">659</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">normalize_convert_currency_arguments</span><span class="p">(</span>
-    <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
-    <span class="n">column_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-    <span class="n">from_currency</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-    <span class="n">to_currency</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-    <span class="n">historical_date</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">date</span><span class="p">],</span>
-    <span class="n">make_new_column</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
-    <span class="n">api_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Map an api_key-first positional call onto the current arguments.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        df: DataFrame whose columns identify the old column argument.</span>
-<span class="sd">        column_name: Current column argument, or the old api key.</span>
-<span class="sd">        from_currency: Current source currency, or the old column name.</span>
-<span class="sd">        to_currency: Current target currency, or the old source currency.</span>
-<span class="sd">        historical_date: Current rate date, or the old target currency.</span>
-<span class="sd">        make_new_column: Current flag, or the old rate date.</span>
-<span class="sd">        api_key: Current key, or the old new-column flag.</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        ``column_name``, ``from_currency``, ``to_currency``,</span>
-<span class="sd">        ``historical_date``, ``make_new_column``, and whether the old</span>
-<span class="sd">        positional order was detected.</span>
-
-<span class="sd">    Raises:</span>
-<span class="sd">        TypeError: If a currency code lands in the date position and</span>
-<span class="sd">            the call is not the old positional order.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">legacy_call</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="nb">isinstance</span><span class="p">(</span><span class="n">from_currency</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
-        <span class="ow">and</span> <span class="n">from_currency</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span>
-        <span class="ow">and</span> <span class="n">is_currency_code</span><span class="p">(</span><span class="n">to_currency</span><span class="p">)</span>
-        <span class="ow">and</span> <span class="n">is_currency_code</span><span class="p">(</span><span class="n">historical_date</span><span class="p">)</span>
-    <span class="p">)</span>
-    <span class="k">if</span> <span class="n">legacy_call</span><span class="p">:</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">make_new_column</span><span class="p">,</span> <span class="n">date</span><span class="p">):</span>
-            <span class="n">shifted_date</span> <span class="o">=</span> <span class="n">make_new_column</span>
-            <span class="n">shifted_make_new</span> <span class="o">=</span> <span class="n">api_key</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">api_key</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span> <span class="k">else</span> <span class="kc">False</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">shifted_date</span> <span class="o">=</span> <span class="kc">None</span>
-            <span class="n">shifted_make_new</span> <span class="o">=</span> <span class="n">make_new_column</span>
-        <span class="k">return</span> <span class="p">(</span>
-            <span class="n">from_currency</span><span class="p">,</span>
-            <span class="n">to_currency</span><span class="p">,</span>
-            <span class="n">historical_date</span><span class="p">,</span>
-            <span class="n">shifted_date</span><span class="p">,</span>
-            <span class="n">shifted_make_new</span><span class="p">,</span>
-            <span class="kc">True</span><span class="p">,</span>
-        <span class="p">)</span>
-    <span class="k">if</span> <span class="n">is_currency_code</span><span class="p">(</span><span class="n">historical_date</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
-            <span class="s2">&quot;convert_currency received a currency code where a date was &quot;</span>
-            <span class="s2">&quot;expected. api_key is no longer the first positional &quot;</span>
-            <span class="s2">&quot;argument. Pass the column name first: &quot;</span>
-            <span class="s2">&quot;df.convert_currency(column_name, from_currency, to_currency). &quot;</span>
-            <span class="s2">&quot;api_key is ignored.&quot;</span>
-        <span class="p">)</span>
-    <span class="k">return</span> <span class="p">(</span>
-        <span class="n">column_name</span><span class="p">,</span>
-        <span class="n">from_currency</span><span class="p">,</span>
-        <span class="n">to_currency</span><span class="p">,</span>
-        <span class="n">historical_date</span><span class="p">,</span>
-        <span class="n">make_new_column</span><span class="p">,</span>
-        <span class="kc">False</span><span class="p">,</span>
-    <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>

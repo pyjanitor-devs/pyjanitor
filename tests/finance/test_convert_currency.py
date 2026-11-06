@@ -1,70 +1,575 @@
-"""Tests for convert_currency() in finance module."""
+"""Tests for convert_currency() in the finance module."""
 
-from datetime import date, datetime
+import json
+from datetime import date, datetime, timedelta, timezone
 
+import pandas as pd
 import pytest
 import requests
 
+from janitor import finance
 from janitor.finance import convert_currency  # noqa: F401
 
 
+class _FakeResponse:
+    """Minimal ``requests`` response stub."""
+
+    def __init__(self, payload, status_code=200):
+        self.status_code = status_code
+        self.text = json.dumps(payload)
+
+
+def _clear_rate_cache():
+    """Drop cached historical exchange rates when the helper is present."""
+    for name in ("fetch_exchange_rate", "cached_historical_exchange_rate"):
+        fetch = getattr(finance, name, None)
+        clear = getattr(fetch, "cache_clear", None)
+        if clear is not None:
+            clear()
+
+
+def _rate_payload(params, rate=0.5):
+    """Frankfurter v2 rates body, including the base identity row."""
+    return [
+        {
+            "date": params.get("date", "2026-10-30"),
+            "base": params["base"],
+            "quote": params["base"],
+            "rate": 1.0,
+        },
+        {
+            "date": params.get("date", "2026-10-30"),
+            "base": params["base"],
+            "quote": params["quotes"],
+            "rate": rate,
+        },
+    ]
+
+
+@pytest.fixture
+def fake_api(monkeypatch):
+    """Replace the rates API with a stub that records each request."""
+    calls = []
+
+    def fake_get(url, params=None, timeout=None):
+        calls.append((url, params, timeout))
+        return _FakeResponse(_rate_payload(params))
+
+    _clear_rate_cache()
+    monkeypatch.setattr(finance.requests, "get", fake_get)
+    yield calls
+    _clear_rate_cache()
+
+
 @pytest.mark.finance
-@pytest.mark.xfail(reason="changes made to web API prevent this from running")
-def test_make_currency_api_request():
-    """
-    Test for currency API request.
-
-    This test exists because we rely solely on the service by
-    exchangeratesapi. That said, we also mark it as expected to fail because
-    it sometimes pings the exchange rates API a too frequently and causes
-    tests to fail.
-
-    For an example of how this test fails, see:
-    https://github.com/pyjanitor-devs/pyjanitor/issues/147
-    """
-    r = requests.get("https://api.exchangeratesapi.io")
-    assert r.status_code == 200
+def test_requests_frankfurter_latest_rate(dataframe, fake_api):
+    """Test a new column uses the Frankfurter base and quotes parameters."""
+    df = dataframe.convert_currency("a", "USD", "EUR", make_new_column=True)
+    assert "a_EUR" in df.columns
+    assert "column_name" not in df.columns
+    pd.testing.assert_series_equal(df["a_EUR"], dataframe["a"] * 0.5, check_names=False)
+    url, params, timeout = fake_api[0]
+    assert url == finance.FRANKFURTER_API_URL
+    assert params == {"base": "USD", "quotes": "EUR"}
+    assert timeout is not None and timeout > 0
 
 
-@pytest.mark.xfail(reason="changes made to web API prevent this from running")
 @pytest.mark.finance
-def test_make_new_currency_col(dataframe):
-    """Test converting to same currency equals original currency column."""
+def test_convert_in_place(dataframe, fake_api):
+    """Test the column is overwritten and the input frame is untouched."""
+    original = dataframe["a"].copy()
+    df = dataframe.convert_currency("a", "USD", "EUR")
+    pd.testing.assert_series_equal(df["a"], original * 0.5)
+    pd.testing.assert_series_equal(dataframe["a"], original)
+    assert len(fake_api) == 1
+
+
+@pytest.mark.finance
+def test_same_currency_skips_request(dataframe, fake_api):
+    """Test converting to the same currency returns the original values."""
     df = dataframe.convert_currency("a", "USD", "USD", make_new_column=True)
     assert all(df["a"] == df["a_USD"])
+    assert df["a_USD"].dtype == dataframe["a"].dtype
+    assert df["a"].dtype == dataframe["a"].dtype
+    assert fake_api == []
 
 
 @pytest.mark.finance
-@pytest.mark.xfail(reason="changes made to web API prevent this from running")
-def test_historical_datetime(dataframe):
-    """Test conversion raises exception for datetime outside API range."""
-    with pytest.raises(ValueError):
-        assert dataframe.convert_currency(
+@pytest.mark.parametrize(
+    "historical_date",
+    [date(2018, 1, 2), datetime(2018, 1, 2, 15, 30)],
+)
+def test_historical_date_and_datetime(dataframe, fake_api, historical_date):
+    """Test a historical date or datetime is sent as a date query parameter."""
+    dataframe.convert_currency("a", "USD", "EUR", historical_date=historical_date)
+    url, params, _timeout = fake_api[0]
+    assert url == finance.FRANKFURTER_API_URL
+    assert params == {
+        "base": "USD",
+        "quotes": "EUR",
+        "date": "2018-01-02",
+    }
+
+
+@pytest.mark.finance
+def test_base_url_override(dataframe, monkeypatch):
+    """Test JANITOR_CURRENCY_API_URL replaces the Frankfurter endpoint."""
+    override = "https://example.test/rates"
+    calls = []
+
+    def fake_get(url, params=None, timeout=None):
+        calls.append((url, params, timeout))
+        return _FakeResponse(_rate_payload(params))
+
+    monkeypatch.setenv("JANITOR_CURRENCY_API_URL", override)
+    _clear_rate_cache()
+    monkeypatch.setattr(finance.requests, "get", fake_get)
+    dataframe.convert_currency("a", "USD", "EUR")
+    assert calls[0][0] == override
+    assert calls[0][1] == {"base": "USD", "quotes": "EUR"}
+    _clear_rate_cache()
+
+
+@pytest.mark.finance
+def test_api_key_deprecated(dataframe, fake_api):
+    """Test passing api_key warns and is otherwise ignored."""
+    with pytest.warns(FutureWarning, match="api_key"):
+        dataframe.convert_currency("a", "USD", "EUR", api_key="abc")
+    assert "access_key" not in fake_api[0][1]
+    assert "api_key" not in fake_api[0][1]
+
+
+@pytest.mark.finance
+def test_missing_rate(dataframe, monkeypatch):
+    """Test a response without the requested rate raises ValueError."""
+    _clear_rate_cache()
+    monkeypatch.setattr(
+        finance.requests,
+        "get",
+        lambda url, params=None, timeout=None: _FakeResponse([]),
+    )
+    with pytest.raises(ValueError, match="No USD/EUR rate"):
+        dataframe.convert_currency("a", "USD", "EUR")
+    _clear_rate_cache()
+
+
+@pytest.mark.finance
+def test_server_error(dataframe, monkeypatch):
+    """Test a non-200 response raises ConnectionError."""
+    _clear_rate_cache()
+    monkeypatch.setattr(
+        finance.requests,
+        "get",
+        lambda url, params=None, timeout=None: _FakeResponse(
+            {"status": 503, "message": "unavailable"},
+            status_code=503,
+        ),
+    )
+    with pytest.raises(ConnectionError):
+        dataframe.convert_currency("a", "USD", "EUR")
+    _clear_rate_cache()
+
+
+@pytest.mark.finance
+def test_currency_check(dataframe, fake_api):
+    """Test conversion raises exception for an invalid currency."""
+    with pytest.raises(ValueError, match="INVALID-CURRENCY"):
+        dataframe.convert_currency("a", "USD", "INVALID-CURRENCY")
+    assert fake_api == []
+
+
+@pytest.mark.finance
+@pytest.mark.parametrize(
+    "historical_date",
+    [date(1982, 10, 27), datetime(1982, 10, 27, 1, 2, 3)],
+)
+def test_historical_before_ecb_history(dataframe, fake_api, historical_date):
+    """Test dates before the ECB series raises ValueError without a request."""
+    with pytest.raises(ValueError, match="1999-01-04"):
+        dataframe.convert_currency(
             "a",
             "USD",
             "AUD",
             make_new_column=True,
-            historical_date=datetime(1982, 10, 27),
+            historical_date=historical_date,
         )
+    assert fake_api == []
 
 
 @pytest.mark.finance
-@pytest.mark.xfail(reason="changes made to web API prevent this from running")
-def test_historical_date(dataframe):
-    """Test conversion raises exception for date outside API range."""
-    with pytest.raises(ValueError):
-        assert dataframe.convert_currency(
+def test_latest_rate_is_not_cached(dataframe, monkeypatch):
+    """Test a second latest-rate call hits the service again."""
+    calls = []
+
+    def fake_get(url, params=None, timeout=None):
+        calls.append(params)
+        return _FakeResponse(
+            _rate_payload(params, rate=0.5 if len(calls) == 1 else 0.25)
+        )
+
+    _clear_rate_cache()
+    monkeypatch.setattr(finance.requests, "get", fake_get)
+    first = dataframe.convert_currency("a", "USD", "EUR")
+    second = dataframe.convert_currency("a", "USD", "EUR")
+    assert len(calls) == 2
+    pd.testing.assert_series_equal(first["a"], dataframe["a"] * 0.5)
+    pd.testing.assert_series_equal(second["a"], dataframe["a"] * 0.25)
+    _clear_rate_cache()
+
+
+@pytest.mark.finance
+def test_historical_rate_is_cached(dataframe, monkeypatch):
+    """Test a repeated historical date reuses the first response."""
+    calls = []
+
+    def fake_get(url, params=None, timeout=None):
+        calls.append(params)
+        return _FakeResponse(_rate_payload(params))
+
+    _clear_rate_cache()
+    monkeypatch.setattr(finance.requests, "get", fake_get)
+    historical_date = date(2018, 1, 2)
+    dataframe.convert_currency("a", "USD", "EUR", historical_date=historical_date)
+    dataframe.convert_currency("a", "USD", "EUR", historical_date=historical_date)
+    assert len(calls) == 1
+    _clear_rate_cache()
+
+
+@pytest.mark.finance
+@pytest.mark.parametrize(
+    ("source", "target", "historical_date"),
+    [
+        ("EUR", "HRK", date(2021, 6, 2)),
+        ("RUB", "EUR", date(2021, 6, 2)),
+        ("BGN", "EUR", date(2025, 6, 2)),
+    ],
+)
+def test_retired_currency_historical_conversion(
+    dataframe, fake_api, source, target, historical_date
+):
+    """Test a retired currency still converts on a date the ECB published."""
+    df = dataframe.convert_currency(
+        "a",
+        source,
+        target,
+        historical_date=historical_date,
+        make_new_column=True,
+    )
+    assert f"a_{target}" in df.columns
+    pd.testing.assert_series_equal(
+        df[f"a_{target}"], dataframe["a"] * 0.5, check_names=False
+    )
+    assert fake_api[0][1] == {
+        "base": source,
+        "quotes": target,
+        "date": historical_date.isoformat(),
+    }
+
+
+@pytest.mark.finance
+@pytest.mark.parametrize(
+    ("source", "target", "historical_date", "message"),
+    [
+        ("BGN", "EUR", None, "BGN was replaced by EUR"),
+        ("EUR", "BGN", date(2026, 1, 1), "BGN was replaced by EUR on 2026-01-01"),
+        ("EUR", "HRK", date(2023, 6, 1), "HRK was replaced by EUR"),
+        ("USD", "RUB", date(2022, 6, 1), "RUB is not available"),
+    ],
+)
+def test_retired_currency_after_cutoff(
+    dataframe, fake_api, source, target, historical_date, message
+):
+    """Test a retired currency raises a clear error after its last date."""
+    kwargs = {}
+    if historical_date is not None:
+        kwargs["historical_date"] = historical_date
+    with pytest.raises(ValueError, match=message):
+        dataframe.convert_currency("a", source, target, **kwargs)
+    assert fake_api == []
+
+
+@pytest.mark.finance
+def test_unprocessable_entity_is_value_error(dataframe, monkeypatch):
+    """Test HTTP 422 raises ValueError with the service message."""
+    _clear_rate_cache()
+    monkeypatch.setattr(
+        finance.requests,
+        "get",
+        lambda url, params=None, timeout=None: _FakeResponse(
+            {"status": 422, "message": "invalid currency: ABC"},
+            status_code=422,
+        ),
+    )
+    with pytest.raises(ValueError, match="invalid currency: ABC"):
+        dataframe.convert_currency("a", "USD", "EUR")
+    _clear_rate_cache()
+
+
+@pytest.mark.finance
+@pytest.mark.parametrize(
+    "historical_date",
+    [
+        datetime(2018, 1, 2, 23, 30, tzinfo=timezone(timedelta(hours=14))),
+        pd.Timestamp("2018-01-02 23:30", tz="UTC"),
+    ],
+)
+def test_timezone_aware_historical_date(dataframe, fake_api, historical_date):
+    """Test an aware datetime uses its calendar date."""
+    dataframe.convert_currency("a", "USD", "EUR", historical_date=historical_date)
+    assert fake_api[0][1]["date"] == "2018-01-02"
+
+
+@pytest.mark.finance
+@pytest.mark.parametrize(
+    "historical_date",
+    [
+        datetime(1998, 12, 31, 23, 0, tzinfo=timezone.utc),
+        pd.Timestamp("1998-12-31 23:00", tz="UTC"),
+    ],
+)
+def test_timezone_aware_date_before_ecb_history(dataframe, fake_api, historical_date):
+    """Test an aware date before 1999-01-04 raises ValueError."""
+    with pytest.raises(ValueError, match="1999-01-04"):
+        dataframe.convert_currency(
             "a",
             "USD",
-            "AUD",
-            make_new_column=True,
-            historical_date=date(1982, 10, 27),
+            "EUR",
+            historical_date=historical_date,
         )
+    assert fake_api == []
 
 
 @pytest.mark.finance
-@pytest.mark.xfail(reason="changes made to web API prevent this from running")
-def test_currency_check(dataframe):
-    """Test conversion raises exception for invalid currency."""
-    with pytest.raises(ValueError):
-        assert dataframe.convert_currency("a", "USD", "INVALID-CURRENCY")
+@pytest.mark.parametrize(
+    "args",
+    [
+        ("KEY", "a", "USD", "EUR"),
+        ("KEY", "a", "USD", "EUR", date(2018, 1, 2)),
+        ("KEY", "a", "USD", "EUR", date(2018, 1, 2), True),
+        ("KEY", "a", "USD", "EUR", None, True),
+        ("KEY", "missing", "USD", "EUR"),
+    ],
+)
+def test_legacy_positional_api_key_raises(dataframe, fake_api, args):
+    """Test an api_key-first positional call raises TypeError."""
+    original = dataframe.copy()
+    with pytest.raises(TypeError, match="api_key"):
+        dataframe.convert_currency(*args)
+    assert fake_api == []
+    pd.testing.assert_frame_equal(dataframe, original)
+
+
+@pytest.mark.finance
+def test_today_is_not_cached(dataframe, monkeypatch):
+    """Test today's rate is requested again on the next call."""
+    calls = []
+
+    def fake_get(url, params=None, timeout=None):
+        calls.append(params)
+        return _FakeResponse(
+            _rate_payload(params, rate=0.5 if len(calls) == 1 else 0.25)
+        )
+
+    _clear_rate_cache()
+    monkeypatch.setattr(finance.requests, "get", fake_get)
+    today = date.today()
+    first = dataframe.convert_currency("a", "USD", "EUR", historical_date=today)
+    second = dataframe.convert_currency("a", "USD", "EUR", historical_date=today)
+    assert len(calls) == 2
+    pd.testing.assert_series_equal(first["a"], dataframe["a"] * 0.5)
+    pd.testing.assert_series_equal(second["a"], dataframe["a"] * 0.25)
+    _clear_rate_cache()
+
+
+@pytest.mark.finance
+def test_nat_historical_date(dataframe, fake_api):
+    """Test NaT is rejected before a rate request."""
+    with pytest.raises(ValueError, match="NaT"):
+        dataframe.convert_currency("a", "USD", "EUR", historical_date=pd.NaT)
+    assert fake_api == []
+
+
+@pytest.mark.finance
+def test_missing_column_before_request(dataframe, fake_api):
+    """Test a missing column raises before the rates service is called."""
+    with pytest.raises(KeyError, match="missing"):
+        dataframe.convert_currency("missing", "USD", "EUR")
+    assert fake_api == []
+
+
+@pytest.mark.finance
+def test_request_timeout(dataframe, monkeypatch):
+    """Test a request timeout raises a clear connection error."""
+
+    def fake_get(url, params=None, timeout=None):
+        raise requests.Timeout("deadline exceeded")
+
+    monkeypatch.setattr(finance.requests, "get", fake_get)
+    with pytest.raises(ConnectionError, match="timed out"):
+        dataframe.convert_currency("a", "USD", "EUR")
+
+
+@pytest.mark.finance
+def test_public_api_lists_methods_not_helpers():
+    """Test helper functions stay importable and out of the public list."""
+    assert "convert_currency" in finance.__all__
+    assert "fetch_exchange_rate" not in finance.__all__
+    assert "request_exchange_rate" not in finance.__all__
+    assert callable(finance.fetch_exchange_rate)
+
+
+@pytest.mark.finance
+def test_integer_column_labels(fake_api):
+    """Test integer column labels convert without keyword assignment."""
+    df = pd.DataFrame({0: [1, 2, 3]})
+    original = df[0].copy()
+    converted = df.convert_currency(0, "USD", "EUR")
+    assert list(converted.columns) == [0]
+    pd.testing.assert_series_equal(converted[0], original * 0.5, check_names=False)
+    pd.testing.assert_series_equal(df[0], original)
+    same = df.convert_currency(0, "USD", "USD")
+    assert list(same.columns) == [0]
+    assert same[0].dtype == df[0].dtype
+    pd.testing.assert_series_equal(df[0], original)
+
+
+@pytest.mark.finance
+@pytest.mark.parametrize(
+    ("historical_date", "error"),
+    [
+        (pd.NaT, ValueError),
+        (date(1980, 1, 1), ValueError),
+        ("garbage", TypeError),
+    ],
+)
+def test_same_currency_validates_date(dataframe, fake_api, historical_date, error):
+    """Test USD to USD still rejects NaT, pre-1999 dates, and non-dates."""
+    with pytest.raises(error):
+        dataframe.convert_currency(
+            "a",
+            "USD",
+            "USD",
+            historical_date=historical_date,
+        )
+    assert fake_api == []
+
+
+@pytest.mark.finance
+def test_response_must_be_a_list(dataframe, monkeypatch):
+    """Test a JSON object body is not reported as a missing rate."""
+    _clear_rate_cache()
+    monkeypatch.setattr(
+        finance.requests,
+        "get",
+        lambda url, params=None, timeout=None: _FakeResponse(
+            {"base": "USD", "rates": {"EUR": 0.5}}
+        ),
+    )
+    with pytest.raises(ValueError, match="list"):
+        dataframe.convert_currency("a", "USD", "EUR")
+    _clear_rate_cache()
+
+
+@pytest.mark.finance
+@pytest.mark.parametrize("rate", [0, -1, float("nan"), "nope", None, True])
+def test_non_positive_or_non_numeric_rate_rejected(dataframe, monkeypatch, rate):
+    """Test a zero, non-finite, or non-numeric rate raises ValueError."""
+    _clear_rate_cache()
+    payload = [
+        {
+            "date": "2018-01-02",
+            "base": "USD",
+            "quote": "EUR",
+            "rate": rate,
+        }
+    ]
+    monkeypatch.setattr(
+        finance.requests,
+        "get",
+        lambda url, params=None, timeout=None: _FakeResponse(payload),
+    )
+    with pytest.raises(ValueError, match="positive finite number"):
+        dataframe.convert_currency("a", "USD", "EUR")
+    _clear_rate_cache()
+
+
+@pytest.mark.finance
+def test_missing_quote_among_other_rows(dataframe, monkeypatch):
+    """Test rows for a different quote do not satisfy the request."""
+    _clear_rate_cache()
+    monkeypatch.setattr(
+        finance.requests,
+        "get",
+        lambda url, params=None, timeout=None: _FakeResponse(
+            [
+                {
+                    "date": "2018-01-02",
+                    "base": "USD",
+                    "quote": "GBP",
+                    "rate": 0.75,
+                }
+            ]
+        ),
+    )
+    with pytest.raises(ValueError, match="No USD/EUR rate"):
+        dataframe.convert_currency("a", "USD", "EUR")
+    _clear_rate_cache()
+
+
+@pytest.mark.finance
+def test_non_object_rate_row_rejected(dataframe, monkeypatch):
+    """Test a list row that is not an object raises ValueError."""
+    _clear_rate_cache()
+    monkeypatch.setattr(
+        finance.requests,
+        "get",
+        lambda url, params=None, timeout=None: _FakeResponse(
+            ["bad", {"date": "2018-01-02", "base": "USD", "quote": "EUR", "rate": 0.5}]
+        ),
+    )
+    with pytest.raises(ValueError, match="not an object"):
+        dataframe.convert_currency("a", "USD", "EUR")
+    _clear_rate_cache()
+
+
+@pytest.mark.finance
+def test_invalid_json_is_connection_error(dataframe, monkeypatch):
+    """Test a 200 response that is not JSON raises ConnectionError."""
+
+    class _BadBody:
+        status_code = 200
+        text = "not-json"
+
+    _clear_rate_cache()
+    monkeypatch.setattr(
+        finance.requests,
+        "get",
+        lambda url, params=None, timeout=None: _BadBody(),
+    )
+    with pytest.raises(ConnectionError):
+        dataframe.convert_currency("a", "USD", "EUR")
+    _clear_rate_cache()
+
+
+@pytest.mark.finance
+@pytest.mark.parametrize(
+    "override",
+    ["file:///tmp/rates", "ftp://example.test/rates", "example.test/rates"],
+)
+def test_currency_api_url_requires_http(dataframe, monkeypatch, override):
+    """Test JANITOR_CURRENCY_API_URL rejects a non-http(s) URL."""
+    monkeypatch.setenv("JANITOR_CURRENCY_API_URL", override)
+    with pytest.raises(ValueError, match="http"):
+        dataframe.convert_currency("a", "USD", "EUR")
+
+
+@pytest.mark.finance
+@pytest.mark.xfail(
+    reason="hits the live Frankfurter API, which may be unreachable",
+    raises=(requests.exceptions.RequestException, ConnectionError),
+)
+def test_live_historical_rate():
+    """Test a known ECB reference rate from the live Frankfurter API."""
+    _clear_rate_cache()
+    rate = finance.fetch_exchange_rate("USD", "EUR", date(2018, 1, 2))
+    assert rate == pytest.approx(0.82884)

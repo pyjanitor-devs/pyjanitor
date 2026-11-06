@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+-   [ENH] Re-enable `convert_currency` with keyless ECB reference rates from Frankfurter. `from_currency` is sent as the base, a new column is named from the source column, and an absolute http(s) `JANITOR_CURRENCY_API_URL` can replace the endpoint. Latest rates and today's date are not cached. HRK, RUB, and BGN still convert on dates the ECB published them, and raise `ValueError` after they stopped. Based on work by @cahthuranag (#1836). - Issue #829 - PR #1845 @ericmjl
+-   [DEPR] `convert_currency`'s `api_key` argument is deprecated, ignored, and will be removed. Passing it by keyword emits `FutureWarning`. Passing it as the first positional argument raises `TypeError`. - PR #1845 @ericmjl
+
 ## [v0.32.75] - 2026-11-04
 
 -   [DOC] Rewrite the introductory example to chain `clean_names`, `remove_empty`, and `encode_categorical`, so copying it does not emit `FutureWarning`. - Issue #1442

@@ -58,10 +58,9 @@ Let us see the annotated example below.
 First off, here is the textual description of a data cleaning pathway:
 
 1. Create a `DataFrame`.
-2. Delete one column.
-3. Drop rows with empty values in two particular columns.
-4. Rename another two columns.
-5. Add a new column.
+2. Clean the column names.
+3. Remove rows and columns that are completely empty.
+4. Encode one column as a categorical.
 
 Let's import some libraries
 and begin with some sample data for this example:
@@ -74,10 +73,11 @@ import janitor
 
 # Sample Data curated for this example
 company_sales = {
-    'SalesMonth': ['Jan', 'Feb', 'Mar', 'April'],
-    'Company1': [150.0, 200.0, 300.0, 400.0],
-    'Company2': [180.0, 250.0, np.nan, 500.0],
-    'Company3': [400.0, 500.0, 600.0, 675.0]
+    'Sales Month': ['Jan', 'Feb', 'Mar', 'April'],
+    'Company 1': [150.0, 200.0, 300.0, 400.0],
+    'Company 2': [180.0, 250.0, np.nan, 500.0],
+    'Company 3': [400.0, 500.0, 600.0, 675.0],
+    'Notes': [np.nan, np.nan, np.nan, np.nan]
 }
 ```
 
@@ -89,30 +89,24 @@ In `pandas` code, most users might type something like this:
 # 1. Create a pandas DataFrame from the company_sales dictionary
 df = pd.DataFrame.from_dict(company_sales)
 
-# 2. Delete a column from the DataFrame. Say 'Company1'
-del df['Company1']
-
-# 3. Drop rows that have empty values in columns 'Company2' and 'Company3'
-df = df.dropna(subset=['Company2', 'Company3'])
-
-# 4. Rename 'Company2' to 'Amazon' and 'Company3' to 'Facebook'
-df = df.rename(
-    {
-        'Company2': 'Amazon',
-        'Company3': 'Facebook',
-    },
-    axis=1,
+# 2. Clean column names: strip, lowercase, and turn spaces into underscores
+df.columns = (
+    df.columns.str.strip().str.lower().str.replace(' ', '_', regex=False)
 )
 
-# 5. Let's add some data for another company. Say 'Google'
-df['Google'] = [450.0, 550.0, 800.0]
+# 3. Drop rows and columns that are completely empty
+df = df.dropna(axis='index', how='all').dropna(axis='columns', how='all')
+df = df.reset_index(drop=True)
+
+# 4. Encode the month column as a categorical
+df['sales_month'] = df['sales_month'].astype('category')
 
 # Output looks like this:
-# Out[15]:
-#   SalesMonth  Amazon  Facebook  Google
-# 0        Jan   180.0     400.0   450.0
-# 1        Feb   250.0     500.0   550.0
-# 3      April   500.0     675.0   800.0
+#   sales_month  company_1  company_2  company_3
+# 0         Jan      150.0      180.0      400.0
+# 1         Feb      200.0      250.0      500.0
+# 2         Mar      300.0        NaN      600.0
+# 3       April      400.0      500.0      675.0
 ```
 
 Slightly more advanced users might take advantage of the functional API:
@@ -120,18 +114,19 @@ Slightly more advanced users might take advantage of the functional API:
 ```python
 df = (
     pd.DataFrame(company_sales)
-    .drop(columns="Company1")
-    .dropna(subset=["Company2", "Company3"])
-    .rename(columns={"Company2": "Amazon", "Company3": "Facebook"})
-    .assign(Google=[450.0, 550.0, 800.0])
+    .rename(columns=lambda name: name.strip().lower().replace(' ', '_'))
+    .dropna(axis='index', how='all')
+    .dropna(axis='columns', how='all')
+    .reset_index(drop=True)
+    .astype({'sales_month': 'category'})
 )
 
 # The output is the same as before, and looks like this:
-# Out[15]:
-#   SalesMonth  Amazon  Facebook  Google
-# 0        Jan   180.0     400.0   450.0
-# 1        Feb   250.0     500.0   550.0
-# 3      April   500.0     675.0   800.0
+#   sales_month  company_1  company_2  company_3
+# 0         Jan      150.0      180.0      400.0
+# 1         Feb      200.0      250.0      500.0
+# 2         Mar      300.0        NaN      600.0
+# 3       April      400.0      500.0      675.0
 ```
 
 With `pyjanitor`, we enable method chaining with method names
@@ -140,19 +135,17 @@ that are *explicitly named verbs*, which describe the action taken.
 ```python
 df = (
     pd.DataFrame.from_dict(company_sales)
-    .remove_columns(["Company1"])
-    .dropna(subset=["Company2", "Company3"])
-    .rename_column("Company2", "Amazon")
-    .rename_column("Company3", "Facebook")
-    .add_column("Google", [450.0, 550.0, 800.0])
+    .clean_names()
+    .remove_empty()
+    .encode_categorical(column_names='sales_month')
 )
 
 # Output looks like this:
-# Out[15]:
-#   SalesMonth  Amazon  Facebook  Google
-# 0        Jan   180.0     400.0   450.0
-# 1        Feb   250.0     500.0   550.0
-# 3      April   500.0     675.0   800.0
+#   sales_month  company_1  company_2  company_3
+# 0         Jan      150.0      180.0      400.0
+# 1         Feb      200.0      250.0      500.0
+# 2         Mar      300.0        NaN      600.0
+# 3       April      400.0      500.0      675.0
 ```
 
 As such,
@@ -213,7 +206,7 @@ The idea behind the API is two-fold:
 - Add other utility functions
   that make it easy to do data cleaning/preprocessing in `pandas`.
 
-Continuing with the company_sales dataframe previously used:
+The snippets below start from this sales table:
 
 ```python
 import pandas as pd

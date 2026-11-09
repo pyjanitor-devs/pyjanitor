@@ -304,18 +304,20 @@ def conditional_join(
         2        3         2         4
         3        4         3         6
 
-        Get any match for each left row. The selected match is not ordered:
+        Get any match for each left row. Which matching right row is
+        returned is not defined, so only the left side is shown here:
         >>> df1.conditional_join(
         ...     df2,
         ...     ("value_1", "value_2A", ">"),
         ...     ("value_1", "value_2B", "<"),
         ...     keep="any",
+        ...     output_columns={"left": "value_1", "right": []},
         ... )
-           value_1  value_2A  value_2B
-        0        2         1         3
-        1        5         3         6
-        2        3         2         4
-        3        4         3         5
+           value_1
+        0        2
+        1        5
+        2        3
+        3        4
 
         Add an indicator column:
         >>> df1.conditional_join(
@@ -377,6 +379,173 @@ def conditional_join(
         1 1     2     3
         >>> positioned.index.tolist()
         [(0, 0), (0, 1), (1, 1)]
+
+        !!! tip "Existence tests: the staircase"
+
+            To ask only whether a left row has a partner, not which one, use
+            ``keep="any"`` (``how="left_anti"`` returns the rows with none). When the two
+            predicates are inequalities, this "does any right row dominate this left row?"
+            test can also be answered with a staircase. For ``a.x <= b.x`` and
+            ``a.y > b.y``, only right rows with ``b.x >= a.x`` matter, and among them the
+            smallest ``b.y`` is the easiest to beat. Start with two small frames:
+
+            ```python
+            import numpy as np
+            import pandas as pd
+            import janitor
+
+            a = pd.DataFrame({"x": [1, 3, 5, 5, 7], "y": [2, 2, 3, 2, 9]})
+            a
+            ```
+
+            ```text
+               x  y
+            0  1  2
+            1  3  2
+            2  5  3
+            3  5  2
+            4  7  9
+            ```
+
+            ```python
+            b = pd.DataFrame({"x": [2, 4, 6], "y": [3, 1, 2]})
+            b
+            ```
+
+            ```text
+               x  y
+            0  2  3
+            1  4  1
+            2  6  2
+            ```
+
+            Sort the right rows by ``x`` and take a running minimum of ``y`` from the
+            largest ``x`` down. That column is the staircase:
+
+            ```python
+            stairs = b.sort_values("x", ignore_index=True)
+            stairs["stair"] = stairs["y"][::-1].cummin()[::-1]
+            stairs
+            ```
+
+            ```text
+               x  y  stair
+            0  2  3      1
+            1  4  1      1
+            2  6  2      2
+            ```
+
+            Each left row needs one binary search for the first right row with
+            ``b.x >= a.x``, and its step is compared with ``a.y``. A left row beyond every
+            ``b.x`` has no step (``NaN``), and comparing with ``NaN`` is false, so it
+            correctly has no partner:
+
+            ```python
+            position = np.searchsorted(stairs["x"], a["x"], side="left")
+            marked = a.assign(stair=stairs["stair"].reindex(position).to_numpy())
+            marked["has_partner"] = marked["y"] > marked["stair"]
+            marked
+            ```
+
+            ```text
+               x  y  stair  has_partner
+            0  1  2    1.0         True
+            1  3  2    1.0         True
+            2  5  3    2.0         True
+            3  5  2    2.0        False
+            4  7  9    NaN        False
+            ```
+
+            The rows with a partner (semi join) and without one (anti join):
+
+            ```python
+            marked.loc[marked["has_partner"], ["x", "y"]]
+            ```
+
+            ```text
+               x  y
+            0  1  2
+            1  3  2
+            2  5  3
+            ```
+
+            ```python
+            marked.loc[~marked["has_partner"], ["x", "y"]]
+            ```
+
+            ```text
+               x  y
+            3  5  2
+            4  7  9
+            ```
+
+            ``conditional_join`` answers both questions. With ``keep="any"`` it returns the
+            semi join: each left row that has a partner, paired with one matching right row
+            (any one; here each left row has a single candidate, so the pairing is fixed):
+
+            ```python
+            a.conditional_join(b, ("x", "x", "<="), ("y", "y", ">"), keep="any")
+            ```
+
+            ```text
+              left    right
+                 x  y     x  y
+            0    1  2     4  1
+            1    3  2     4  1
+            2    5  3     6  2
+            ```
+
+            ``how="left_anti"`` returns the anti join:
+
+            ```python
+            a.conditional_join(b, ("x", "x", "<="), ("y", "y", ">"), how="left_anti")
+            ```
+
+            ```text
+              left    right
+                 x  y     x   y
+            0    5  2   NaN NaN
+            1    7  9   NaN NaN
+            ```
+
+            The recipe above is for ``a.x <= b.x`` and ``a.y > b.y``. For the other
+            operators, change ``side=`` and which running value you keep. Copying the
+            ``<=`` recipe for ``<`` would silently give wrong answers when ``a.x`` ties
+            with a ``b.x``.
+
+            For the condition on ``x``, ``position`` is where ``a.x`` falls among the
+            sorted ``b.x``:
+
+            | Condition on x | ``side=`` | Right rows that count | Step to read |
+            | --- | --- | --- | --- |
+            | ``a.x <= b.x`` | ``"left"`` | from ``position`` to the end | at ``position`` |
+            | ``a.x < b.x`` | ``"right"`` | from ``position`` to the end | at ``position`` |
+            | ``a.x >= b.x`` | ``"right"`` | from the start up to ``position`` | at ``position - 1`` |
+            | ``a.x > b.x`` | ``"left"`` | from the start up to ``position`` | at ``position - 1`` |
+
+            When the right rows that count run to the end, take the running value from the
+            largest ``x`` down, as above. When they run from the start, take it from the
+            smallest ``x`` up, without reversing (``stairs["y"].cummin()``). A left row with
+            no step to read (``position`` past the last row, or ``position - 1`` before the
+            first) has no partner.
+
+            For the condition on ``y``, keep the running minimum when the left value must be
+            larger, and the running maximum when it must be smaller:
+
+            | Condition on y | Running value | Compare ``a.y`` with the step using |
+            | --- | --- | --- |
+            | ``a.y > b.y`` | minimum (``cummin``) | ``>`` |
+            | ``a.y >= b.y`` | minimum (``cummin``) | ``>=`` |
+            | ``a.y < b.y`` | maximum (``cummax``) | ``<`` |
+            | ``a.y <= b.y`` | maximum (``cummax``) | ``<=`` |
+
+            The staircase answers existence only: it cannot return the matching pairs,
+            count them or aggregate them. It needs exactly two inequalities (equality keys
+            can be handled one group at a time), null rows dropped first, and both sides in
+            the same dtype, so that ``searchsorted`` compares without a lossy common type.
+            On 40 million left rows against 33 thousand right rows the code above ran in
+            about 0.5 seconds, against about 1.7 seconds for the join (single runs; read as
+            orders of magnitude).
 
     !!! abstract "Version Changed"
 
@@ -1573,6 +1742,267 @@ def join_agg(
         0      0
         1     10
         2     30
+
+        !!! tip "Daily totals over date ranges"
+
+            To total overlapping date ranges per day, join a calendar of days to
+            the observations on ``start <= day <= end``. The match pairs are
+            aggregated without being built, so cost does not grow with how long
+            the ranges are. This is the problem asked in the Stack Overflow question
+            [Python fast aggregation of many observations to daily sum][so-question].
+
+            ```python
+            import pandas as pd
+            import janitor
+
+            start_date = pd.to_datetime(
+                ["2021-01-07", "2021-01-04", "2021-01-12", "2021-01-03"]
+            )
+            end_date = pd.to_datetime(
+                ["2021-01-16", "2021-01-12", "2021-01-13", "2021-01-15"]
+            )
+            obs = pd.DataFrame(
+                {"start_date": start_date, "end_date": end_date, "value": [7, 6, 5, 4]}
+            )
+            obs
+            ```
+
+            ```text
+              start_date   end_date  value
+            0 2021-01-07 2021-01-16      7
+            1 2021-01-04 2021-01-12      6
+            2 2021-01-12 2021-01-13      5
+            3 2021-01-03 2021-01-15      4
+            ```
+
+            The calendar holds the days to total:
+
+            ```python
+            calendar = pd.date_range("2021-01-10", "2021-01-14", name="day")
+            days = calendar.to_frame(index=False)
+            days
+            ```
+
+            ```text
+                     day
+            0 2021-01-10
+            1 2021-01-11
+            2 2021-01-12
+            3 2021-01-13
+            4 2021-01-14
+            ```
+
+            Join on ``start <= day <= end`` and sum the values:
+
+            ```python
+            totals = days.join_agg(
+                obs,
+                ("day", "start_date", ">="),
+                ("day", "end_date", "<="),
+                aggfunc=[("value", "sum")],
+            )
+            days.assign(total=totals[("value", "sum")])
+            ```
+
+            ```text
+                     day  total
+            0 2021-01-10     17
+            1 2021-01-11     17
+            2 2021-01-12     22
+            3 2021-01-13     16
+            4 2021-01-14     11
+            ```
+
+            When every range has ``start <= end`` and only a sum (or another
+            quantity that can be subtracted, such as a count) is needed, running
+            totals give the same answer without any join: add each value on its
+            start day, subtract it on the day after its end, and take a
+            cumulative sum. On millions of observations it ran roughly 5 to 15
+            times faster than the join in testing. It cannot produce ``min``,
+            ``max`` or ``prod``, and it silently gives wrong totals if any range
+            has ``end < start``. This is the cumulative-sum technique from
+            [Cimbali's answer][so-answer] to the same question, here with the start
+            and end steps combined into one series. The ``fillna(0)`` covers calendar
+            days before the first start, which have no running total yet.
+
+            ```python
+            values = obs["value"].to_numpy()
+            day_after_end = obs["end_date"] + pd.Timedelta(days=1)
+            added_on_start = pd.Series(values, index=obs["start_date"])
+            removed_after_end = pd.Series(-values, index=day_after_end)
+            steps = pd.concat([added_on_start, removed_after_end])
+            step_per_day = steps.groupby(level=0).sum().sort_index()
+            running = step_per_day.cumsum()
+            running.reindex(calendar, method="ffill").fillna(0).astype(values.dtype)
+            ```
+
+            ```text
+            day
+            2021-01-10    17
+            2021-01-11    17
+            2021-01-12    22
+            2021-01-13    16
+            2021-01-14    11
+            Freq: D, dtype: int64
+            ```
+
+            [so-question]: https://stackoverflow.com/questions/69194678/python-fast-aggregation-of-many-observations-to-daily-sum
+            [so-answer]: https://stackoverflow.com/a/69195082
+            [ailist-paper]: https://doi.org/10.1093/bioinformatics/btz407
+            [ailist-repo]: https://github.com/databio/AIList
+            [hint-paper]: https://doi.org/10.1007/s00778-023-00798-w
+            [hint-data]: https://github.com/pbour/hint/tree/main/samples
+
+        !!! tip "Counting overlaps by boundaries"
+
+            To count (or sum over) the intervals of ``right`` that overlap each
+            interval of ``df``, without building the pairs, use two sorted lists and
+            two binary searches. When every interval has ``start <= end``:
+
+            ```text
+            overlap = (right starts <= df end) - (right ends < df start)
+            ```
+
+            The first term includes every right interval that ended before ``df``
+            started, because it also started before ``df`` ended. The second term
+            removes exactly those. Start with a small ``right`` and three
+            ``df`` intervals (all closed, so both ends count):
+
+            ```python
+            import numpy as np
+            import pandas as pd
+            import janitor
+
+            right = pd.DataFrame(
+                {
+                    "start": [1, 2, 5, 7, 3],
+                    "end": [4, 6, 8, 9, 3],
+                    "v": [10, 20, 30, 40, 5],
+                }
+            )
+            right
+            ```
+
+            ```text
+               start  end   v
+            0      1    4  10
+            1      2    6  20
+            2      5    8  30
+            3      7    9  40
+            4      3    3   5
+            ```
+
+            ```python
+            df = pd.DataFrame({"start": [4, 0, 6], "end": [5, 0, 7]})
+            df
+            ```
+
+            ```text
+               start  end
+            0      4    5
+            1      0    0
+            2      6    7
+            ```
+
+            Sort the starts and the ends separately and search each. The ``side``
+            arguments encode the comparisons: ``"right"`` counts equal values and
+            ``"left"`` does not.
+
+            ```python
+            starts = np.sort(right["start"].to_numpy())
+            ends = np.sort(right["end"].to_numpy())
+            k_start = np.searchsorted(starts, df["end"].to_numpy(), side="right")
+            k_end = np.searchsorted(ends, df["start"].to_numpy(), side="left")
+            df.assign(count=k_start - k_end)
+            ```
+
+            ```text
+               start  end  count
+            0      4    5      3
+            1      0    0      0
+            2      6    7      3
+            ```
+
+            For a sum, keep a running total of the values beside each sorted list,
+            with a leading 0, and subtract the two totals instead of the two counts:
+
+            ```python
+            by_start = right["v"].to_numpy()[np.argsort(right["start"], kind="stable")]
+            by_end = right["v"].to_numpy()[np.argsort(right["end"], kind="stable")]
+            cum_start = np.concatenate([[0], np.cumsum(by_start)])
+            cum_end = np.concatenate([[0], np.cumsum(by_end)])
+            df.assign(total=cum_start[k_start] - cum_end[k_end])
+            ```
+
+            ```text
+               start  end  total
+            0      4    5     60
+            1      0    0      0
+            2      6    7     90
+            ```
+
+            ``join_agg`` gives the same answer from two inequality predicates, and
+            also handles the cases below that this approach cannot:
+
+            ```python
+            totals = df.join_agg(
+                right,
+                ("start", "end", "<="),
+                ("end", "start", ">="),
+                aggfunc=[("v", "count"), ("v", "sum")],
+            )
+            df.assign(count=totals[("v", "count")], total=totals[("v", "sum")])
+            ```
+
+            ```text
+               start  end  count  total
+            0      4    5      3     60
+            1      0    0      0      0
+            2      6    7      3     90
+            ```
+
+            The boundary form is faster when each interval overlaps many others,
+            because its cost is two sorts and two binary searches whatever the
+            number of overlapping pairs, while ``join_agg`` grows with the pairs.
+            In a single run on random intervals (Apple Silicon, count and sum
+            together), with 1 million intervals on each side:
+
+            | Overlaps per interval | Overlapping pairs | Boundaries | ``join_agg`` |
+            |----------------------:|------------------:|-----------:|-------------:|
+            | about 10              | 10 million        | 0.25 s     | 0.3 s        |
+            | about 1,000           | 1 billion         | 0.24 s     | 7.5 s        |
+
+            On real data, counting overlaps (median of repeated runs, same machine):
+
+            | Data                   | Overlapping pairs | Boundaries | ``join_agg`` |
+            |------------------------|------------------:|-----------:|-------------:|
+            | AIList ex-rna, ex-anno | 307 million       | 0.25 s     | 1.4 s        |
+            | AIList ex-anno, ex-rna | 307 million       | 0.32 s     | 3.7 s        |
+            | Aarhus books, 365 days | 59 million        | 0.046 s    | 0.79 s       |
+
+            The genomic data is from the [AIList paper][ailist-paper] and its
+            [repository][ailist-repo]: 9.9 million ex-rna and 1.2 million ex-anno
+            intervals, joined within each chromosome, with the first name as the
+            left side. The books are the 2.3 million Aarhus library loans of 2013
+            used in the [HINT paper][hint-paper] and its [sample data][hint-data],
+            counted against the 365 days of the year. In every case the boundary
+            counts equal the ``join_agg`` counts.
+
+            A point is an interval with equal start and end, so the same code counts
+            how many intervals contain each point. The limits:
+
+            - Only counts and subtractable sums work, not ``min``, ``max`` or
+              ``prod``, and the matching pairs cannot be recovered. Float sums can
+              lose precision when two large running totals are subtracted.
+            - An interval with ``start > end`` on either side gives wrong, even
+              negative, counts. Check ``(start <= end).all()`` on both frames first,
+              and use ``join_agg`` if it fails.
+            - For half-open intervals ``[start, end)``, require ``start < end`` (an
+              empty interval contains nothing) and swap the sides: ``"left"`` for
+              the starts search and ``"right"`` for the ends search.
+            - Nulls never match in a join, so drop rows with a null start or end
+              before sorting. For an equality column such as a contig, sort and
+              search within each group.
     """
     return _conditional_join_compute(
         df=df,

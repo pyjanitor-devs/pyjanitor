@@ -431,8 +431,68 @@ def test_sort_if_not_monotonic_normalizes_order_and_preserves_index(
     if values == [4, 2, 2, 1]:
         assert actual.index.tolist() == [13, 12, 11, 10]
     elif values == [3, 1, 2, 1]:
-        # Stable sorting keeps the original order of the duplicate value 1.
-        assert actual.index.tolist() == [11, 13, 12, 10]
+        # Either duplicate value may be visited first by an unstable sort.
+        assert set(actual.index[:2]) == {11, 13}
+        assert actual.index[2:].tolist() == [12, 10]
+
+
+@pytest.mark.parametrize("keep", ["all", "first", "last"])
+@pytest.mark.parametrize("path", ["single", "multi", "regions"])
+def test_ties_heavy_non_monotonic_ranges_preserve_keep_semantics(path, keep):
+    """Range paths return the brute-force matches after unstable sorting."""
+    rng = np.random.default_rng(1856)
+    left = pd.DataFrame(
+        {
+            "a": rng.integers(1, 16, size=32),
+            "b": rng.integers(1, 16, size=32),
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "x": rng.integers(0, 16, size=512),
+            "y": rng.integers(0, 16, size=512),
+        }
+    )
+    assert not right.x.is_monotonic_increasing
+    conditions = [("a", "x", "<")]
+    if path != "single":
+        conditions.append(("b", "y", ">"))
+    algorithm = "regions" if path == "regions" else "default"
+
+    compare = {
+        "<": np.less,
+        ">": np.greater,
+    }
+    matches = np.ones((len(left), len(right)), dtype=bool)
+    for left_column, right_column, comparison_operator in conditions:
+        matches &= compare[comparison_operator](
+            left[left_column].to_numpy()[:, None],
+            right[right_column].to_numpy()[None, :],
+        )
+    expected_positions = [np.flatnonzero(row) for row in matches]
+
+    actual = jn.get_join_indices(
+        left,
+        right,
+        *conditions,
+        keep=keep,
+        join_algorithm=algorithm,
+    )
+    actual_pairs = sorted(zip(actual["left_index"], actual["right_index"]))
+
+    if keep == "all":
+        assert set(actual_pairs) == {
+            (left_position, right_position)
+            for left_position, positions in enumerate(expected_positions)
+            for right_position in positions
+        }
+    else:
+        expected_pairs = [
+            (left_position, positions[0] if keep == "first" else positions[-1])
+            for left_position, positions in enumerate(expected_positions)
+            if positions.size
+        ]
+        assert actual_pairs == expected_pairs
 
 
 def test_multiple_sorted_range_predicates_match_cartesian_reference():

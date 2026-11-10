@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v0.32.76] - 2026-11-10
+
 -   [INF] Require a `CHANGELOG.md` entry in every pull request and check for it in review: added to `AGENTS.md`, `CONTRIBUTING.md` and the PR template. - PR #1848 @samukweku
 
 ## [v0.32.75] - 2026-11-04
@@ -740,7 +742,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.75...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.76...HEAD
+
+[v0.32.76]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.75...v0.32.76
 
 [v0.32.75]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.74...v0.32.75
 

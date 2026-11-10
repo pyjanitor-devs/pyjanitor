@@ -58,7 +58,7 @@ jobs:
           github.event_name == 'pull_request' &&
           github.event.pull_request.base.ref == 'dev' &&
           github.event.pull_request.head.repo.full_name == github.repository
-        uses: rossjrw/pr-preview-action@v1.8.1
+        uses: rossjrw/pr-preview-action@v1.8.2
         with:
           source-dir: ./site
           preview-branch: gh-pages

@@ -32,15 +32,13 @@ The default branch is `dev`.
 Keep local `dev` as a fast-forward of `upstream/dev`.
 Maintainers squash-merge pull requests into `dev`.
 
-Add `upstream` when this clone does not have it yet, then fast-forward `dev`.
+Fast-forward `dev` to `upstream/dev`.
+The `upstream` remote was added in Step 1.
 Commit or stash uncommitted work before `git checkout dev`.
 A checkout from a dirty feature branch stops when those changes
 would be overwritten.
 
 ```bash
-if ! git remote get-url upstream >/dev/null 2>&1; then
-  git remote add upstream https://github.com/pyjanitor-devs/pyjanitor.git
-fi
 git checkout dev
 git fetch upstream
 git merge --ff-only upstream/dev
@@ -83,13 +81,15 @@ If the rebase stops on a conflict,
 fix the marked files, stage them with `git add`,
 and run `git rebase --continue`.
 `git rebase --abort` restores the branch.
-The [Atlassian guide to forks and upstreams][forks]
-covers this workflow, including conflicts.
+GitHub's [guide to syncing a fork][syncing-a-fork] covers this workflow.
 
-[forks]: https://www.atlassian.com/git/tutorials/git-forks-and-upstreams
+[syncing-a-fork]: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/syncing-a-fork
 
-GitHub's **Sync fork** button updates the fork's `dev` branch on GitHub.
+GitHub's **Sync fork** button updates the fork's `dev` branch on GitHub
+from `upstream/dev`.
 Then run `git fetch origin` and `git rebase origin/dev`.
+If the two branches differ, `upstream/dev` is the source of truth:
+use the button's discard option, or the reset recipe above.
 
 ## Step 2: Set Up the Development Environment
 
@@ -147,6 +147,11 @@ Create a new branch from an up-to-date `upstream/dev`.
 See [Sync your fork](#sync-your-fork).
 `--no-track` leaves the branch untracked,
 so later pushes name your fork (`origin`) explicitly.
+The cost is that `git status` shows no ahead/behind information
+and a bare `git pull` has no upstream to pull from.
+`git push --force-with-lease` also compares against `origin/<branch>`,
+so run `git fetch origin` first
+when the branch was pushed from another clone.
 
 ```bash
 git fetch upstream

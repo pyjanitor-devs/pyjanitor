@@ -1117,6 +1117,23 @@ def test_complete_by_rejects_invalid_groupers():
     assert by_deprecation_warnings(recorded) == []
 
 
+def test_complete_by_rejects_invalid_groupers_on_grouped_path():
+    """Invalid `by` raises on grouped frames too, and does not warn first."""
+    frame = pd.DataFrame({"group": [1], "item": [1]})
+    grouped = frame.groupby("group")
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        with pytest.raises(TypeError, match="The argument to the by parameter"):
+            grouped.complete("item", by={"group": 1})
+    assert by_deprecation_warnings(recorded) == []
+
+    with warnings.catch_warnings(record=True) as recorded:
+        warnings.simplefilter("always")
+        with pytest.raises(ValueError, match="not present in dataframe columns"):
+            grouped.complete("item", by="missing")
+    assert by_deprecation_warnings(recorded) == []
+
+
 def test_explicit_false_categorical_fill_already_present():
     """Keep an existing categorical fill value instead of adding it again."""
     categories = ["keep", "drop"]

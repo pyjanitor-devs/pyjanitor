@@ -8,7 +8,7 @@ import pandas_flavor as pf
 from pandas.api.types import is_scalar
 from pandas.core.groupby.generic import DataFrameGroupBy
 
-from janitor.functions.expand_grid import groupby_for_expand
+from janitor.functions.expand_grid import check_by, groupby_for_expand
 from janitor.utils import check, check_column, find_stack_level
 
 
@@ -320,14 +320,16 @@ def _computations_complete(
             if not is_scalar(value):
                 raise ValueError(f"The value for {column_name} should be a scalar.")
     # Group first so `expand` is not called with the deprecated `by` argument.
-    # Invalid `by` raises in `groupby_for_expand` before any warning.
+    # Invalid `by` raises before any warning, on grouped frames as well,
+    # even though `by` is ignored there.
     # The warning is next, before `expand`, so a later expand failure
     # does not hide the deprecation.
-    if by is not None and isinstance(df, pd.DataFrame):
-        df_for_expand = groupby_for_expand(df, by)
-    else:
-        df_for_expand = df
     if by is not None:
+        check_by(df.obj if isinstance(df, DataFrameGroupBy) else df, by)
+        if isinstance(df, pd.DataFrame):
+            df_for_expand = groupby_for_expand(df, by)
+        else:
+            df_for_expand = df
         warnings.warn(
             "The `by` argument is deprecated. "
             "Call the `complete` function "
@@ -335,6 +337,8 @@ def _computations_complete(
             FutureWarning,
             stacklevel=find_stack_level(),
         )
+    else:
+        df_for_expand = df
     uniques = df_for_expand.expand(*columns, sort=sort)
     if (by is None) and isinstance(df, pd.DataFrame):
         merge_columns = uniques.columns.tolist()
@@ -384,8 +388,6 @@ def _computations_complete(
     else:
         fill_value = {column: fill_value[column] for column in null_columns}
 
-    if not fill_value:
-        return out
     if explicit:
         return out.fillna(fill_value)
     # when explicit is False

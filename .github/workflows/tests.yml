@@ -48,8 +48,8 @@ jobs:
       - name: Validate pull-request changelog entries
         run: |
           pixi run python scripts/validate_changelog.py \
-            --base HEAD^1 \
-            --head HEAD
+            --base "${{ github.event.pull_request.base.sha }}" \
+            --head "${{ github.event.pull_request.head.sha }}"
 
   run-tests:
     strategy:

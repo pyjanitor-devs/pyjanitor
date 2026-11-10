@@ -38,6 +38,19 @@ def test_accepts_entry_under_unreleased():
     assert validate_changelog_diff(base, head, _diff(base, head)) == []
 
 
+def test_accepts_entry_added_before_a_later_pr_change():
+    """Validate the complete PR range, not only its latest commit."""
+
+    base = "# Changelog\n\n## [Unreleased]\n\n## [v1.0.0] - 2026-01-01\n"
+    head = base.replace(
+        "## [Unreleased]\n",
+        "## [Unreleased]\n\n- Entry from an earlier commit.\n",
+    )
+    head = head + "\n[Unreleased]: https://example.test/v1...HEAD\n"
+
+    assert validate_changelog_diff(base, head, _diff(base, head)) == []
+
+
 def test_rejects_new_entry_under_versioned_section():
     """Reject a new entry added under a released version."""
 

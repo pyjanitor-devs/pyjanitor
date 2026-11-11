@@ -20,76 +20,11 @@ Fork the [`pyjanitor` repository][repo] on GitHub, then clone your fork locally:
 ```bash
 git clone git@github.com:<your_github_username>/pyjanitor.git
 cd pyjanitor
-git remote add upstream https://github.com/pyjanitor-devs/pyjanitor.git
-git fetch upstream
 ```
 
-### Sync your fork
-
-`origin` is your fork.
-`upstream` is the pyjanitor repository.
-The default branch is `dev`.
-Keep local `dev` as a fast-forward of `upstream/dev`.
-Maintainers squash-merge pull requests into `dev`.
-
-Fast-forward `dev` to `upstream/dev`.
-The `upstream` remote was added in Step 1.
-Commit or stash uncommitted work before `git checkout dev`.
-A checkout from a dirty feature branch stops when those changes
-would be overwritten.
-
-```bash
-git checkout dev
-git fetch upstream
-git merge --ff-only upstream/dev
-git push origin dev
-```
-
-If `git merge --ff-only upstream/dev` fails,
-local `dev` has commits that are not on `upstream/dev`.
-Commit or stash uncommitted work first.
-`git reset --hard` then discards that uncommitted work
-and the commits that exist only on local `dev`:
-
-```bash
-git fetch upstream
-git reset --hard upstream/dev
-git push origin dev
-```
-
-If `git push origin dev` is rejected,
-`origin/dev` has commits that are not on `upstream/dev`.
-Local `dev` should already match `upstream/dev`.
-Update the fork with:
-
-```bash
-git push --force-with-lease origin dev
-```
-
-Rebase a feature branch onto `upstream/dev`, then force-push it with lease:
-
-```bash
-git checkout <name-of-your-bugfix-or-feature>
-git fetch upstream
-git rebase upstream/dev
-git push --force-with-lease origin <name-of-your-bugfix-or-feature>
-```
-
-The first push, before that branch exists on your fork, is in Step 8.
-
-If the rebase stops on a conflict,
-fix the marked files, stage them with `git add`,
-and run `git rebase --continue`.
-`git rebase --abort` restores the branch.
-GitHub's [guide to syncing a fork][syncing-a-fork] covers this workflow.
-
-[syncing-a-fork]: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/syncing-a-fork
-
-GitHub's **Sync fork** button updates the fork's `dev` branch on GitHub
-from `upstream/dev`.
-Then run `git fetch origin` and `git rebase origin/dev`.
-If the two branches differ, `upstream/dev` is the source of truth:
-use the button's discard option, or the reset recipe above.
+The `upstream` remote is set up in
+[Keeping your branch current](#keeping-your-branch-current),
+together with the recipes for keeping your branches up to date.
 
 ## Step 2: Set Up the Development Environment
 
@@ -144,7 +79,8 @@ This helps:
 ## Step 5: Create a Feature Branch
 
 Create a new branch from an up-to-date `upstream/dev`.
-See [Sync your fork](#sync-your-fork).
+See [Keeping your branch current](#keeping-your-branch-current)
+for the one-time `upstream` setup and the update recipes.
 `--no-track` leaves the branch untracked,
 so later pushes name your fork (`origin`) explicitly.
 The cost is that `git status` shows no ahead/behind information
@@ -179,7 +115,7 @@ As you write code, keep these guidelines in mind:
 
 - **Commit early and often**: Make frequent, smaller commits with clear messages
 - **Stay updated**: Rebase your branch onto `upstream/dev` before you push.
-  See [Sync your fork](#sync-your-fork).
+  See [Keeping your branch current](#keeping-your-branch-current).
 
 ### Write Tests
 
@@ -269,6 +205,92 @@ GitHub Actions will automatically run:
 If any checks fail, review the logs and fix the issues.
 Maintainers may also request changes during code review.
 Update your branch and push new commits to address feedback.
+If the feedback builds on changes that have landed on `dev` since
+you branched off, rebase first — see
+[Keeping your branch current](#keeping-your-branch-current).
+
+## Keeping your branch current
+
+Keep your branches based on the latest `upstream/dev` while you work.
+
+`origin` is your fork.
+`upstream` is the pyjanitor repository.
+The default branch is `dev`.
+Keep local `dev` as a fast-forward of `upstream/dev`.
+Pull requests are typically squash-merged into `dev`.
+
+If this clone has no `upstream` remote yet, add it once.
+The guard makes this safe on both new and older clones:
+
+```bash
+git remote get-url upstream >/dev/null 2>&1 || \
+  git remote add upstream https://github.com/pyjanitor-devs/pyjanitor.git
+```
+
+Fast-forward `dev` to `upstream/dev`.
+Commit or stash uncommitted work before `git checkout dev`.
+A checkout from a dirty feature branch stops when those changes
+would be overwritten.
+
+```bash
+git checkout dev
+git fetch upstream
+git merge --ff-only upstream/dev
+git push origin dev
+```
+
+If `git merge --ff-only upstream/dev` fails,
+local `dev` has commits that are not on `upstream/dev`.
+Commit or stash uncommitted work first.
+`git reset --hard` then discards that uncommitted work
+and the commits that exist only on local `dev`:
+
+```bash
+git fetch upstream
+git reset --hard upstream/dev
+git push origin dev
+```
+
+If `git push origin dev` is rejected,
+`origin/dev` has commits that are not on `upstream/dev`.
+Local `dev` should already match `upstream/dev`.
+Update the fork with:
+
+```bash
+git push --force-with-lease origin dev
+```
+
+Rebase a feature branch onto `upstream/dev`, then force-push it with lease:
+
+```bash
+git checkout <name-of-your-bugfix-or-feature>
+git fetch upstream
+git rebase upstream/dev
+git push --force-with-lease origin <name-of-your-bugfix-or-feature>
+```
+
+The first push, before that branch exists on your fork, is in Step 8.
+
+If the rebase stops on a conflict,
+fix the marked files, stage them with `git add`,
+and run `git rebase --continue`.
+`git rebase --abort` restores the branch.
+GitHub's [guide to syncing a fork][syncing-a-fork] covers this workflow.
+
+[syncing-a-fork]: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/syncing-a-fork
+
+`git push --force-with-lease` compares against your local
+`origin/<branch>` remote-tracking ref.
+An IDE or a background fetch can refresh that ref without you noticing,
+which silently defeats the lease:
+the push then overwrites work on the fork you meant to protect.
+Run `git fetch origin` yourself and push right after.
+
+GitHub's **Sync fork** button updates the fork's `dev` branch on GitHub
+from `upstream/dev`.
+Then run `git fetch origin` and `git rebase origin/dev`.
+If the two branches differ, `upstream/dev` is the source of truth:
+use the button's discard option, or the reset recipe above.
 
 ## Common Development Tasks
 

@@ -879,6 +879,19 @@ that requested flag rather than from the result under test.
 metadata, and strengthen the default-behavior regression test with an exact
 expected frame.
 
+### [2026-10-30] No new private helpers, and nullable comparisons keep NA
+
+**Context**: Replacing the `flag_outliers` draft, which added `_check_column`.
+**Learning**: New code should call `janitor.utils.check_column` and `check`
+instead of copying them, and should not introduce leading-underscore private
+names. Comparisons on pandas nullable dtypes yield `pd.NA` rather than
+`False`, so a boolean flag has to `fillna(False)` before it is stored as
+`bool`. Assign the resulting NumPy array so duplicate index labels stay
+positional.
+**Recommendation**: Reuse `check_column` for presence and absence. When a
+nullable series is compared, fill missing results before converting to
+`bool`, and assign with `.to_numpy()`.
+
 ### [2026-10-31] The published introduction is the README symlink
 
 **Context**: Replacing deprecated calls in the basic example from issue #1442.
@@ -906,6 +919,21 @@ includes nullable `Int64` and `Float64` columns and excludes booleans.
 **Recommendation**: Choose adorn targets with `adorn_data_positions` and
 assign with `DataFrame.isetitem`. Pair `adorn_ns` counts with
 `adorn_count_pairs`.
+
+### [2026-11-02] flag_outliers real dtypes, inf, and int64 quartiles
+
+**Context**: Review of `flag_outliers` on pandas 3.
+**Learning**: `is_numeric_dtype` is true for bool and complex. Bool IQR
+raises from NumPy subtraction, while Z-score returns all False. Complex
+IQR raises and Z-score returns all False. `np.int64` and `np.float32`
+are `numbers.Real` but not `int` or `float`, so `check()` rejects them.
+`Series.quantile` on int64 near `2**62` overflows and inverts the fences.
+`np.inf` makes `Series.std` NaN and warns on subtract. A MultiIndex
+column name formatted with an f-string becomes a padded string column.
+**Recommendation**: Reject bool and complex before the cutoff. Accept
+thresholds with `numbers.Real` after rejecting bool. Cast to float64
+before quartiles. Drop infinities from the statistics and flag them.
+Build a MultiIndex flag name by suffixing the last level.
 
 ## Version History
 

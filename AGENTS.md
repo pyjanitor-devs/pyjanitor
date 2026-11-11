@@ -907,6 +907,21 @@ includes nullable `Int64` and `Float64` columns and excludes booleans.
 assign with `DataFrame.isetitem`. Pair `adorn_ns` counts with
 `adorn_count_pairs`.
 
+### [2026-11-11] complete indicator names and falsy column labels
+
+**Context**: Issue #1860. `complete(..., explicit=False)` built its merge
+indicator with `"".join(columns)`, and `expand` treated a falsy Series or
+Index name as missing.
+**Learning**: pandas accepts only a string (or bool) for `merge(indicator=)`.
+A one-column join of the labels is that column, and non-string labels cannot
+be joined. The name has to be checked against the columns of both frames
+passed to merge, without assuming those labels are strings. A missing Series
+or Index name is `None`; `0` and other falsy labels are real names, and the
+cartesian product already keeps scalar labels as column names.
+**Recommendation**: Do not build the indicator by joining labels. Keep the
+`None` check in the Series/Index validator, and cover a one-column
+`explicit=False` fill plus integer labels (scalar and list form).
+
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol

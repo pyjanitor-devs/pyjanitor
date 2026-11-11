@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
--   [BUG] `complete` accepts a one-column frame with `explicit=False`, and `complete` and `expand` accept non-string column labels such as integers. - Issue #1860 @ericmjl
+-   [BUG] `complete` accepts a one-column frame with `explicit=False`, and `complete` and `expand` accept non-string column labels such as integers. - Issue #1860, PR #1861 @ericmjl
 
 ## [v0.32.77] - 2026-11-11
 

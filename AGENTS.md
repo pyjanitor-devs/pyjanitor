@@ -917,6 +917,22 @@ Series can retain its name and narrow dtype instead.
 output from an array. Test named Series, narrow and nullable dtypes, empty
 inputs, missing values, and extreme tails when replacing distribution APIs.
 
+### [2026-11-11] complete indicator names and falsy column labels
+
+**Context**: Issue #1860. `complete(..., explicit=False)` built its merge
+indicator with `"".join(columns)`, and `expand` treated a falsy Series or
+Index name as missing.
+**Learning**: pandas accepts only a string (or bool) for `merge(indicator=)`.
+A one-column join of the labels is that column, and non-string labels cannot
+be joined. The name has to be checked against the columns of both frames
+passed to merge, without assuming those labels are strings. A missing Series
+or Index name is `None`; `0` and other falsy labels are real names, and the
+cartesian product already keeps scalar labels as column names.
+**Recommendation**: Do not build the indicator by joining labels. Keep the
+`None` check in the Series/Index validator, and cover a one-column
+`explicit=False` fill plus integer labels (scalar and list form).
+>>>>>>> a0a29c7 ([BUG] Accept one-column and non-string labels in complete)
+
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol

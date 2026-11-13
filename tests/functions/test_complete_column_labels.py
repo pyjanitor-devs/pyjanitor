@@ -133,6 +133,93 @@ def test_complete_integer_labels_with_fill(integer_labels_df, columns, explicit)
 
 
 @pytest.mark.functions
+@pytest.mark.parametrize("explicit", [True, False])
+def test_complete_groupby_integer_label(explicit):
+    """Grouped complete keeps an integer group key, including the label 0.
+
+    Within each group the observed values of column 1 are already complete,
+    so the result is the input. ``explicit=False`` must not turn the key
+    into an all-null column.
+    """
+    frame = pd.DataFrame({0: [1, 1, 2], 1: [1, 2, 1], 2: [1.0, 2, 3]})
+    original = frame.copy()
+    result = frame.groupby(0).complete(1, fill_value=0, explicit=explicit)
+
+    assert_frame_equal(frame, original)
+    assert_frame_equal(result, frame)
+
+
+@pytest.mark.functions
+def test_complete_groupby_integer_label_without_fill():
+    """A grouped complete with no fill keeps the integer group key."""
+    frame = pd.DataFrame({0: [1, 1, 2], 1: [1, 2, 1], 2: [1.0, 2, 3]})
+    assert_frame_equal(frame.groupby(0).complete(1), frame)
+    assert_frame_equal(frame.groupby(0).complete([1]), frame)
+
+
+@pytest.mark.functions
+def test_complete_groupby_integer_label_past_nlevels():
+    """An integer group key above the index depth is still a column name."""
+    frame = pd.DataFrame({5: [1, 1, 2], 6: [1, 2, 1], 7: [1.0, None, 3.0]})
+    original = frame.copy()
+    implicit = frame.groupby(5).complete(6, fill_value=0, explicit=False)
+    explicit = frame.groupby(5).complete(6, fill_value=0, explicit=True)
+    filled = frame.copy()
+    filled.loc[filled[7].isna(), 7] = 0
+
+    assert_frame_equal(frame, original)
+    assert_frame_equal(implicit, frame)
+    assert_frame_equal(explicit, filled)
+
+
+@pytest.mark.functions
+@pytest.mark.parametrize("explicit", [True, False])
+def test_complete_by_integer_label(explicit):
+    """The deprecated ``by`` path uses the same integer group key."""
+    frame = pd.DataFrame({0: [1, 1, 2], 1: [1, 2, 1], 2: [1.0, 2, 3]})
+    with pytest.warns(FutureWarning, match="by"):
+        result = frame.complete(1, by=0, fill_value=0, explicit=explicit)
+    assert_frame_equal(result, frame)
+
+
+@pytest.mark.functions
+@pytest.mark.parametrize("explicit", [True, False])
+def test_complete_groupby_two_integer_keys(explicit):
+    """Both integer group keys survive a grouped complete.
+
+    The null is in the expanded column, so ``fill_value`` does not replace it.
+    """
+    frame = pd.DataFrame({0: [1, 1, 2], 1: [10, 11, 20], 2: [1.0, None, 3.0]})
+    result = frame.groupby([0, 1]).complete(2, fill_value=0, explicit=explicit)
+    assert_frame_equal(result, frame)
+
+
+@pytest.mark.functions
+@pytest.mark.parametrize("explicit", [True, False])
+def test_complete_groupby_integer_label_adds_missing_pair(explicit):
+    """A missing pair inside an integer-keyed group is filled, and only that pair."""
+    frame = pd.DataFrame(
+        {
+            0: [1, 1, 1],
+            1: [1, 2, 1],
+            2: ["a", "b", "b"],
+            3: [10.0, 20.0, None],
+        }
+    )
+    result = frame.groupby(0).complete(1, 2, fill_value=0, explicit=explicit)
+    original_null = 0.0 if explicit else np.nan
+    expected = pd.DataFrame(
+        {
+            0: [1, 1, 1, 1],
+            1: [1, 1, 2, 2],
+            2: ["a", "b", "a", "b"],
+            3: [10.0, original_null, 0.0, 20.0],
+        }
+    )
+    assert_frame_equal(result, expected)
+
+
+@pytest.mark.functions
 def test_expand_integer_labels(integer_labels_df):
     """expand accepts an integer label, including the falsy label 0."""
     assert_frame_equal(integer_labels_df.expand(0), pd.DataFrame({0: [1, 2]}))

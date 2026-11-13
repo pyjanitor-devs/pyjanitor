@@ -343,8 +343,19 @@ def _computations_complete(
     if (by is None) and isinstance(df, pd.DataFrame):
         merge_columns = uniques.columns.tolist()
     else:
-        merge_columns = [*uniques.index.names]
-        merge_columns.extend(uniques.columns.tolist())
+        # Group labels are index names. merge() resolves an integer name
+        # with get_level_values, which reads it as a level position, so a
+        # key of 0 becomes an all-null column and a key of 5 raises.
+        # Lift the index into columns so every label is a column name.
+        # A name that is already a column stays on the index; merge then
+        # reports that the label is both a level and a column.
+        names = list(uniques.index.names)
+        if any(name in uniques.columns for name in names):
+            merge_columns = [*names]
+            merge_columns.extend(uniques.columns.tolist())
+        else:
+            uniques = uniques.reset_index()
+            merge_columns = uniques.columns.tolist()
     if not isinstance(df, pd.DataFrame):
         df = df.obj
     columns = df.columns

@@ -917,7 +917,10 @@ A one-column join of the labels is that column, and non-string labels cannot
 be joined. The name has to be checked against the columns of both frames
 passed to merge, without assuming those labels are strings. A missing Series
 or Index name is `None`; `0` and other falsy labels are real names, and the
-cartesian product already keeps scalar labels as column names.
+cartesian product already keeps scalar labels as column names. Grouped
+`complete` keeps those labels as index names. `merge(on=)` then passes an
+integer name to `get_level_values`, which treats it as a level position, so
+the group key has to be moved into columns with `reset_index` before the merge.
 **Recommendation**: Do not build the indicator by joining labels. Keep the
 `None` check in the Series/Index validator, and cover a one-column
 `explicit=False` fill plus integer labels (scalar and list form).

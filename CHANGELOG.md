@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [BUG] `complete` accepts a one-column frame with `explicit=False`, and `complete` and `expand` accept non-string column labels such as integers, including on grouped frames. - Issue #1860, PR #1861 @ericmjl
+
 ## [v0.32.77] - 2026-11-11
 
 -   [BUG] Make `complete` safe for grouped frames and partial `fill_value` dictionaries, and emit one `FutureWarning` for the deprecated `by` argument. Grouped calls no longer warn that `by` was used, a dictionary that names only some columns no longer raises `KeyError`, and `complete(..., by=...)` no longer also warns about `expand`. An invalid `by` raises without that warning. Issues #1669, #1788 @SumanGouda (#1700, #1790). - PR #1834 @ericmjl

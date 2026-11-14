@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [DOC] Show in `transform_column` and `transform_columns` the equivalent `assign` calls with `pd.col`, and what they add (a guard against overwriting an existing destination column). - PR #1851 @samukweku
+
 ## [v0.32.78] - 2026-11-14
 
 -   [ENH] Speed up `normal_cdf` with `scipy.special.ndtr`, preserving dtype

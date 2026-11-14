@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [DOC] Add guidance to `DataFrameGroupBy.assign` on when it helps and when plain pandas is enough, with examples. - PR #1846 @samukweku
+
 ## [v0.32.78] - 2026-11-14
 
 -   [ENH] Speed up `normal_cdf` with `scipy.special.ndtr`, preserving dtype

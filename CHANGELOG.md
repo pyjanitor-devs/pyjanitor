@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [ENH] Improve `pivot_longer` handling of `.value` columns with mixed NumPy and pandas extension dtypes. - Issue #1825, PR #1830 @SumanGouda
+
 ## [v0.32.78] - 2026-11-14
 
 -   [ENH] Speed up `normal_cdf` with `scipy.special.ndtr`, preserving dtype

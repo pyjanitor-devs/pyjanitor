@@ -1515,8 +1515,6 @@ def _stack_dot_value_only_multiple_labels(
     contents = {}
     indexer = None
     df.columns = spec
-    # Build the homogeneous value matrix once. Group indices are positional,
-    # avoiding repeated duplicate-label scans for each .value group.
     fast_values = _fast_numpy_value_matrix(df)
     values_alias_input = _values_alias_input(fast_values, df)
     group_positions = grouped.indices if fast_values is not None else None
@@ -1536,39 +1534,41 @@ def _stack_dot_value_only_multiple_labels(
         any_extension_array = (
             frame.dtypes.map(is_extension_array_dtype).any(axis=None).item()
         )
-        if no_nulls and sort_by_appearance and any_extension_array:
-            if indexer is None:
-                indexer = _build_indexer_reorder_contents(
-                    length=len_df,
-                    reps=reps,
+        if any_extension_array:
+            content = _build_content_extension_array(df=frame)
+            if not no_nulls:
+                nulls_count = len_df * (reps - counts.loc[label])
+                nulls_array = np.full(
+                    shape=nulls_count,
+                    fill_value=np.nan,
                 )
-            frame = _build_content_extension_array(df=frame)
-            frame = frame.take(indexer)
-        elif no_nulls and any_extension_array:
-            frame = _build_content_extension_array(df=frame)
-        elif no_nulls and sort_by_appearance:
-            frame = _ravel_values(frame, order="C")
-        elif no_nulls:
-            frame = _ravel_values(frame, order="F")
-        else:
-            nulls_count = reps - counts.loc[label]
-            nulls_count = len_df * nulls_count
-            nulls_array = np.full(shape=nulls_count, fill_value=np.nan)
-            frame = _build_content_extension_array_with_nulls(
-                df=frame, nulls_array=nulls_array
-            )
-            if sort_by_appearance and any_extension_array:
+                content = concat_compat([content, nulls_array])
+            if sort_by_appearance:
                 if indexer is None:
                     indexer = _build_indexer_reorder_contents(
                         length=len_df,
                         reps=reps,
                     )
-                frame = frame.take(indexer)
-            elif sort_by_appearance:
-                shape = (len_df, reps)
-                frame = frame.reshape(shape, order="F")
-                frame = frame.ravel(order="C")
-        contents[label] = frame
+                content = content.take(indexer)
+        else:
+            if no_nulls:
+                order = "C" if sort_by_appearance else "F"
+                content = _ravel_values(frame, order=order)
+            else:
+                nulls_count = len_df * (reps - counts.loc[label])
+                nulls_array = np.full(
+                    shape=nulls_count,
+                    fill_value=np.nan,
+                )
+                content = _build_content_extension_array_with_nulls(
+                    df=frame,
+                    nulls_array=nulls_array,
+                )
+                if sort_by_appearance:
+                    shape = (len_df, reps)
+                    content = content.reshape(shape, order="F")
+                    content = content.ravel(order="C")
+        contents[label] = content
     nulls = _build_nulls(contents=contents, dropna=dropna)
     index = _build_index(
         index=index,
@@ -1794,7 +1794,8 @@ def _stack_dot_value_multiple_labels(
     if not df.columns.is_monotonic_increasing:
         df = df.sort_index(axis=1)
     contents = {}
-    indexer = None
+    reorder_indexer = None
+
     fast_values = _fast_numpy_value_matrix(df)
     values_alias_input = _values_alias_input(fast_values, df)
     fast_codes = df.columns.codes[0] if fast_values is not None else None
@@ -1815,22 +1816,19 @@ def _stack_dot_value_multiple_labels(
         any_extension_array = (
             frame.dtypes.map(is_extension_array_dtype).any(axis=None).item()
         )
-        if sort_by_appearance and any_extension_array:
-            frame = _build_content_extension_array(df=frame)
-            if indexer is None:
-                indexer = _build_indexer_reorder_contents(
-                    length=len_df,
-                    reps=reps,
-                )
-            frame = frame.take(indexer)
-        elif any_extension_array:
-            frame = _build_content_extension_array(df=frame)
-        elif sort_by_appearance:
-            frame = _ravel_values(frame, order="C")
+        if any_extension_array:
+            content = _build_content_extension_array(df=frame)
+            if sort_by_appearance:
+                if reorder_indexer is None:
+                    reorder_indexer = _build_indexer_reorder_contents(
+                        length=len_df,
+                        reps=reps,
+                    )
+                content = content.take(reorder_indexer)
         else:
-            frame = _ravel_values(frame, order="F")
-        label = _value[label]
-        contents[label] = frame
+            order = "C" if sort_by_appearance else "F"
+            content = _ravel_values(frame, order=order)
+        contents[_value[label]] = content
     nulls = _build_nulls(contents=contents, dropna=dropna)
     index = _build_index(
         index=index,

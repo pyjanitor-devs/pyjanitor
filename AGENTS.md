@@ -891,6 +891,30 @@ introduction on current methods such as `clean_names`, and execute the snippet
 from `tests/test_readme_example.py` with `FutureWarning` and
 `DeprecationWarning` set to errors.
 
+### [2026-10-31] Frankfurter v2 uses base and quotes
+
+**Context**: Re-enabling `convert_currency` against Frankfurter.
+**Learning**: `api.frankfurter.app` redirects to `api.frankfurter.dev`.
+On v2, `base` and `quotes` select currencies, while `from` and `to` are
+date bounds. Official ECB reference rates are served by
+`/v2/providers/ecb/rates` as a list of `{date, base, quote, rate}`
+objects. Dates before 1999-01-04 return an empty list with HTTP 200.
+A weekend or TARGET holiday returns the previous published observation.
+**Recommendation**: Keep `FRANKFURTER_API_URL` on the ECB provider route,
+parse the v2 list, and honor `JANITOR_CURRENCY_API_URL` only when it is
+an absolute http or https URL. Send currency codes as `base` and
+`quotes`. Cache only dates before today. HRK, RUB, and BGN stay valid
+until the ECB stopped publishing them. List the dataframe methods in
+`__all__` and leave the rate helpers out of that list.
+
+### [2026-11-06] DataFrame.assign requires string column labels
+
+**Context**: `convert_currency` wrote its result with
+`df.assign(**{name: values})`.
+**Learning**: Keyword assignment requires string keys. Integer labels and
+tuple labels from a `MultiIndex` raise `TypeError: keywords must be strings`.
+**Recommendation**: Copy the frame and assign with `out[label] = values`.
+
 ### [2026-10-30] adorn row identifier is column position 0
 
 **Context**: Issue #1676. `adorn_pct_formatting`, `adorn_ns`, and

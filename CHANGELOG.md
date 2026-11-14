@@ -4,6 +4,46 @@
 
 -   [DOC] Show in `groupby_agg` how to get the same result with a reusable pandas groupby and `assign`, and stop pointing to `transform_column`, which has no grouping. - PR #1847 @samukweku
 
+## [v0.32.78] - 2026-11-14
+
+-   [ENH] Speed up `normal_cdf` with `scipy.special.ndtr`, preserving dtype
+    promotion and the unnamed result Series on the original index (float64
+    for ordinary real numeric inputs). - Issue #1468, PR #1842 @priy-anshugupta
+
+## [v0.32.77] - 2026-11-11
+
+-   [BUG] Make `complete` safe for grouped frames and partial `fill_value` dictionaries, and emit one `FutureWarning` for the deprecated `by` argument. Grouped calls no longer warn that `by` was used, a dictionary that names only some columns no longer raises `KeyError`, and `complete(..., by=...)` no longer also warns about `expand`. An invalid `by` raises without that warning. Issues #1669, #1788 @SumanGouda (#1700, #1790). - PR #1834 @ericmjl
+-   [BUG] `complete(..., explicit=False)` adds a categorical fill value only when pandas does not already treat it as a category. `fill_value={"k": True}` on categories `[1, 2]` stores `1`, the existing category equal to `True`. `explicit=True` does not add categories and raises `TypeError` when the fill value is new, including `True` on categories `[1, 2]`. - PR #1834 @ericmjl
+
+## [v0.32.76] - 2026-11-10
+
+-   [INF] Require a `CHANGELOG.md` entry in every pull request and check for it in review: added to `AGENTS.md`, `CONTRIBUTING.md` and the PR template. - PR #1848 @samukweku
+
+## [v0.32.75] - 2026-11-04
+
+-   [DOC] Rewrite the introductory example to chain `clean_names`, `remove_empty`, and `encode_categorical`, so copying it does not emit `FutureWarning`. - Issue #1442
+
+## [v0.32.74] - 2026-11-04
+
+-   [BUG] Leave already-numeric columns unchanged in `currency_column_to_numeric`, so calling it again on a converted column no longer raises. An invalid `cleaning_style` raises `ValueError` before that numeric pass-through, including when the column is already numeric. - Issue #197
+
+## [v0.32.73] - 2026-11-03
+
+-   [INF] Match the Python trove classifiers and the ruff, black, and pixi minimum versions to the supported range, Python 3.11, 3.12, and 3.13.
+
+## [v0.32.72] - 2026-11-03
+
+-   [DOC] Add `join_agg` tips for totalling overlapping date ranges per day (join and cumulative-sum forms) and for counting or summing overlaps by boundaries with `searchsorted`, with their limits. - PR #1850 @samukweku
+
+## [v0.32.71] - 2026-11-03
+
+-   [ENH] Use pandas' default unstable sort for non-monotonic conditional-join anchors; duplicate-value tie order is not part of the contract. - PR #1856 @samukweku
+
+## [v0.32.70] - 2026-11-03
+
+-   [ENH] Allow `unionize_dataframe_categories` to accept a single list or
+    tuple of DataFrames. - Issue #637 @priy-anshugupta
+
 ## [v0.32.69] - 2026-11-01
 
 -   [ENH] Answer `conditional_join(..., keep="any")` with exactly two range predicates by a staircase instead of a window search. After sorting the right side by the first column, one running min/max of the second column gives every left row its answer with a single binary search, and the left side is never sorted. Joins with an equality key, a third predicate, another `keep` mode, or non-numeric columns keep the window kernels. `keep="any"` returns some matching right row, not necessarily the first. Requires a `janitor-rs` release with `range_exists_indices`. PR #1853 @samukweku
@@ -715,7 +755,25 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.69...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.78...HEAD
+
+[v0.32.78]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.77...v0.32.78
+
+[v0.32.77]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.76...v0.32.77
+
+[v0.32.76]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.75...v0.32.76
+
+[v0.32.75]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.74...v0.32.75
+
+[v0.32.74]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.73...v0.32.74
+
+[v0.32.73]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.72...v0.32.73
+
+[v0.32.72]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.71...v0.32.72
+
+[v0.32.71]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.70...v0.32.71
+
+[v0.32.70]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.69...v0.32.70
 
 [v0.32.69]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.68...v0.32.69
 

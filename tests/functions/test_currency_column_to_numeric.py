@@ -200,3 +200,83 @@ def test_cast_non_numeric_false():
 def test_non_cast_input():
     """Checks default cleaning behaviour."""
     assert _currency_column_to_numeric("-1,000,000 yen") == "-1000000"
+
+
+@pytest.mark.functions
+@pytest.mark.parametrize("cleaning_style", [None, "accounting"])
+def test_currency_column_to_numeric_is_idempotent(cleaning_style):
+    """Calling the conversion twice matches calling it once.
+
+    ``janitor.utils.idempotent`` does not fit this check. It evaluates
+    ``not (left == right)``, and DataFrame equality is a boolean frame, so
+    that expression raises.
+    """
+    frame = pd.DataFrame(
+        {
+            "amount": ["$24.56", "($12.12)", "$1,000,000", "1.50"],
+            "label": list("abcd"),
+        }
+    )
+
+    def convert(data):
+        return data.currency_column_to_numeric(
+            "amount",
+            cleaning_style=cleaning_style,
+        )
+
+    assert_frame_equal(convert(convert(frame)), convert(frame))
+
+
+@pytest.mark.functions
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {},
+        {"cast_non_numeric": {"foo": 0}},
+        {"fill_all_non_numeric": 0},
+        {"remove_non_numeric": True},
+    ],
+)
+def test_default_currency_cleaning_is_idempotent(kwargs):
+    """Default cleaning, including its optional arguments, can be re-run."""
+    frame = pd.DataFrame(
+        {
+            "amount": ["", "foo", "1.23 dollars", "-1,000 yen"],
+            "label": list("abcd"),
+        }
+    )
+
+    def convert(data):
+        return data.currency_column_to_numeric("amount", **kwargs)
+
+    assert_frame_equal(convert(convert(frame)), convert(frame))
+
+
+@pytest.mark.functions
+@pytest.mark.parametrize("cleaning_style", [None, "accounting"])
+@pytest.mark.parametrize(
+    ("values", "dtype"),
+    [
+        ([1, 0, -3], "int64"),
+        ([1.5, np.nan, -2.0], "float64"),
+        ([1, pd.NA, 3], "Int64"),
+        ([1.5, pd.NA, -2.0], "Float64"),
+    ],
+)
+def test_numeric_column_passes_through_unchanged(cleaning_style, values, dtype):
+    """An already-numeric column is returned unchanged."""
+    original = pd.DataFrame(
+        {
+            "amount": pd.Series(values, dtype=dtype),
+            "label": ["a", "b", "c"],
+        }
+    )
+    untouched = original.copy()
+
+    result = original.currency_column_to_numeric(
+        "amount",
+        cleaning_style=cleaning_style,
+    )
+
+    assert_frame_equal(result, untouched)
+    assert_frame_equal(original, untouched)

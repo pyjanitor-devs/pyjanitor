@@ -112,3 +112,57 @@ def test_pivot_longer_spec(df_checks):
     )
 
     assert_frame_equal(actual, expected)
+
+
+def test_pivot_longer_spec_allows_null_extra_values(df_checks):
+    """Null non-.value spec fields are output data, not column names."""
+    null_spec = pl.DataFrame(
+        {".name": ["ht1", "ht2"], ".value": ["ht", "ht"], "age": [1, None]}
+    )
+
+    result = pivot_longer_spec(df_checks, spec=null_spec)
+
+    assert result.get_column("age").null_count() == len(df_checks)
+
+
+def test_pivot_longer_spec_rejects_duplicate_keys(df_checks):
+    """Duplicate .value/additional-field keys must not silently overwrite."""
+    duplicate_spec = pl.DataFrame(
+        {".name": ["ht1", "ht2"], ".value": ["ht", "ht"], "age": [1, 1]}
+    )
+
+    with pytest.raises(ValueError, match="combination of the `.value` column"):
+        pivot_longer_spec(df_checks, spec=duplicate_spec)
+
+
+@pytest.mark.parametrize(
+    "extra_values",
+    [
+        [[1], [2]],
+        [{"kind": "a"}, {"kind": "b"}],
+    ],
+)
+@pytest.mark.parametrize("lazy", [False, True])
+def test_pivot_longer_spec_supports_unhashable_extra_values(
+    df_checks, extra_values, lazy
+):
+    """List and Struct spec fields can be used as grouping keys."""
+    extra_name = "metadata"
+    unhashable_spec = pl.DataFrame(
+        {
+            ".name": ["ht1", "ht2"],
+            ".value": ["ht", "ht"],
+            extra_name: extra_values,
+        }
+    )
+
+    result = pivot_longer_spec(
+        df_checks.lazy() if lazy else df_checks,
+        spec=unhashable_spec,
+    )
+    if lazy:
+        result = result.collect()
+
+    assert result.height == len(df_checks) * 2
+    actual_values = result.get_column(extra_name).unique().to_list()
+    assert sorted(map(str, actual_values)) == sorted(map(str, extra_values))

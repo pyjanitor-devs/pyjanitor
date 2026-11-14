@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [DOC] Show in `groupby_agg` how to get the same result with a reusable pandas groupby and `assign`, and stop pointing to `transform_column`, which has no grouping. - PR #1847 @samukweku
+
 ## [v0.32.78] - 2026-11-14
 
 -   [ENH] Speed up `normal_cdf` with `scipy.special.ndtr`, preserving dtype

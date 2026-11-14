@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v0.32.78] - 2026-11-14
+
 -   [ENH] Speed up `normal_cdf` with `scipy.special.ndtr`, preserving dtype
     promotion and the unnamed result Series on the original index (float64
     for ordinary real numeric inputs). - Issue #1468, PR #1842 @priy-anshugupta
@@ -751,7 +753,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.77...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.78...HEAD
+
+[v0.32.78]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.77...v0.32.78
 
 [v0.32.77]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.76...v0.32.77
 

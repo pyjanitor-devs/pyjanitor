@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [INF] Fail pull-request checks when a PR adds no `CHANGELOG.md` entry under `[Unreleased]`, with a `skip-changelog` label and dependabot exempt. - PR #1849 @samukweku
+
 ## [v0.32.78] - 2026-11-14
 
 -   [ENH] Speed up `normal_cdf` with `scipy.special.ndtr`, preserving dtype

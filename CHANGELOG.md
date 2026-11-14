@@ -3,6 +3,20 @@
 ## [Unreleased]
 
 -   [DOC] Show in `transform_column` and `transform_columns` the equivalent `assign` calls with `pd.col`, and what they add (a guard against overwriting an existing destination column). - PR #1851 @samukweku
+
+## [v0.32.78] - 2026-11-14
+
+-   [ENH] Speed up `normal_cdf` with `scipy.special.ndtr`, preserving dtype
+    promotion and the unnamed result Series on the original index (float64
+    for ordinary real numeric inputs). - Issue #1468, PR #1842 @priy-anshugupta
+
+## [v0.32.77] - 2026-11-11
+
+-   [BUG] Make `complete` safe for grouped frames and partial `fill_value` dictionaries, and emit one `FutureWarning` for the deprecated `by` argument. Grouped calls no longer warn that `by` was used, a dictionary that names only some columns no longer raises `KeyError`, and `complete(..., by=...)` no longer also warns about `expand`. An invalid `by` raises without that warning. Issues #1669, #1788 @SumanGouda (#1700, #1790). - PR #1834 @ericmjl
+-   [BUG] `complete(..., explicit=False)` adds a categorical fill value only when pandas does not already treat it as a category. `fill_value={"k": True}` on categories `[1, 2]` stores `1`, the existing category equal to `True`. `explicit=True` does not add categories and raises `TypeError` when the fill value is new, including `True` on categories `[1, 2]`. - PR #1834 @ericmjl
+
+## [v0.32.76] - 2026-11-10
+
 -   [INF] Require a `CHANGELOG.md` entry in every pull request and check for it in review: added to `AGENTS.md`, `CONTRIBUTING.md` and the PR template. - PR #1848 @samukweku
 
 ## [v0.32.75] - 2026-11-04
@@ -741,7 +755,13 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.75...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.78...HEAD
+
+[v0.32.78]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.77...v0.32.78
+
+[v0.32.77]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.76...v0.32.77
+
+[v0.32.76]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.75...v0.32.76
 
 [v0.32.75]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.74...v0.32.75
 

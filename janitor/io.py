@@ -19,6 +19,7 @@ from janitor.utils import (
     import_message,
 )
 
+from .archive_reader import read_archive  # noqa: F401
 from .errors import JanitorError
 
 

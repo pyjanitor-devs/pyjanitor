@@ -1519,8 +1519,8 @@ def _stack_dot_value_only_multiple_labels(
     values_alias_input = _values_alias_input(fast_values, df)
     group_positions = grouped.indices if fast_values is not None else None
     for label in counts.index:
-        if fast_values is not None:
-            positions = group_positions[label]
+        positions = group_positions.get(label) if group_positions is not None else None
+        if positions is not None and len(positions):
             contents[label] = _fast_ravel_group(
                 values=fast_values,
                 positions=positions,
@@ -1798,21 +1798,21 @@ def _stack_dot_value_multiple_labels(
 
     fast_values = _fast_numpy_value_matrix(df)
     values_alias_input = _values_alias_input(fast_values, df)
-    fast_codes = df.columns.codes[0]
+    fast_codes = df.columns.codes[0] if fast_values is not None else None
     for label in range(_value.size):
-        start = fast_codes.searchsorted(label, side="left")
-        end = fast_codes.searchsorted(label, side="right")
-        positions = np.arange(start, end)
         if fast_values is not None:
-            contents[_value[label]] = _fast_ravel_group(
-                values=fast_values,
-                positions=positions,
-                reps=reps,
-                sort_by_appearance=sort_by_appearance,
-                values_alias_input=values_alias_input,
-            )
-            continue
-        frame = df.iloc[:, positions]
+            start = fast_codes.searchsorted(label, side="left")
+            end = fast_codes.searchsorted(label, side="right")
+            if end > start:
+                contents[_value[label]] = _fast_ravel_group(
+                    values=fast_values,
+                    positions=np.arange(start, end),
+                    reps=reps,
+                    sort_by_appearance=sort_by_appearance,
+                    values_alias_input=values_alias_input,
+                )
+                continue
+        frame = df.loc[:, [label]]
         any_extension_array = (
             frame.dtypes.map(is_extension_array_dtype).any(axis=None).item()
         )

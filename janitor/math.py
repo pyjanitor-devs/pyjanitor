@@ -223,10 +223,14 @@ def normal_cdf(s: "Series") -> "Series":
     Returns:
         Transformed Series.
     """
+    import numpy as np
     import pandas as pd
-    import scipy
+    from scipy.special import ndtr
 
-    return pd.Series(scipy.stats.norm.cdf(s), index=s.index)
+    values = np.asarray(s)
+    # Keep the dtype promotion used by scipy.stats.norm.cdf.
+    values = values.astype(np.promote_types(values.dtype, np.float64), copy=False)
+    return pd.Series(ndtr(values), index=s.index)
 
 
 @pf.register_series_method

@@ -178,6 +178,10 @@ If pre-commit hooks fail, fix the issues they report before committing.
 3. Select your branch and set the target branch to **`dev`** (not `main` or `master`)
 4. Fill out the pull request template with details about your changes
 5. Submit the pull request
+6. Add a line to `CHANGELOG.md` under `## [Unreleased]`, in the form
+   `-   [TAG] Description. - PR #123 @your-username`, once you know the PR
+   number. Every pull request needs an entry, including documentation-only
+   changes, and reviewers check for it.
 
 ## Step 10: Address Review Feedback
 

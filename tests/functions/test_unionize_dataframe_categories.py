@@ -48,6 +48,65 @@ def test_unionize_dataframe_categories_type(uniontest_df1):
         janitor.unionize_dataframe_categories(uniontest_df1, uniontest_df1["jerbs"])
 
 
+@pytest.mark.parametrize("container", [list, tuple])
+@pytest.mark.parametrize("column_names", [None, "fruits"])
+def test_unionize_dataframe_categories_collection(
+    uniontest_df1, uniontest_df2, uniontest_df3, container, column_names
+):
+    """Collections match positional calls without changing their inputs."""
+    frames = container([uniontest_df1, uniontest_df2, uniontest_df3])
+    originals = [df.copy(deep=True) for df in frames]
+    expected = janitor.unionize_dataframe_categories(*frames, column_names=column_names)
+
+    result = janitor.unionize_dataframe_categories(frames, column_names=column_names)
+
+    assert isinstance(result, list)
+    assert len(result) == len(frames)
+    for actual, wanted, original, snapshot in zip(result, expected, frames, originals):
+        assert_frame_equal(actual, wanted)
+        assert_frame_equal(original, snapshot)
+        assert actual is not original
+    assert set(result[0]["fruits"].cat.categories) == {
+        "apple",
+        "banana",
+        "orange",
+        "grape",
+        "strawberry",
+        "cherry",
+    }
+
+
+@pytest.mark.parametrize("container", [list, tuple])
+def test_unionize_dataframe_categories_invalid_collection(uniontest_df1, container):
+    """Validate collection members, including nested collections."""
+    for invalid in [None, uniontest_df1["jerbs"], [uniontest_df1]]:
+        with pytest.raises(TypeError, match=r"^Inputs must all be dataframes\.$"):
+            janitor.unionize_dataframe_categories(container([uniontest_df1, invalid]))
+
+
+@pytest.mark.parametrize("args", [(), ([],), ((),)])
+def test_unionize_dataframe_categories_empty(args):
+    """Empty collections return the same empty list as a call with no arguments."""
+    assert janitor.unionize_dataframe_categories(*args) == []
+
+
+@pytest.mark.parametrize("container", [None, list, tuple])
+def test_unionize_dataframe_categories_one_dataframe(uniontest_df1, container):
+    """A single frame is copied with or without a surrounding collection."""
+    argument = uniontest_df1 if container is None else container([uniontest_df1])
+    result = janitor.unionize_dataframe_categories(argument)
+    assert len(result) == 1
+    assert_frame_equal(result[0], uniontest_df1)
+    assert result[0] is not uniontest_df1
+
+
+@pytest.mark.parametrize("container", [list, tuple])
+def test_unionize_dataframe_categories_mixed_arguments(uniontest_df1, container):
+    """A collection is accepted only as the sole positional argument."""
+    with pytest.raises(TypeError, match=r"^Inputs must all be dataframes\.$"):
+        janitor.unionize_dataframe_categories(uniontest_df1, container([uniontest_df1]))
+
+
 def test_unionize_dataframe_categories(uniontest_df1, uniontest_df2, uniontest_df3):
     udf1, udf2, udf3 = janitor.unionize_dataframe_categories(
         uniontest_df1, uniontest_df2, uniontest_df3

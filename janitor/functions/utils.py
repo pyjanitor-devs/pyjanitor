@@ -72,13 +72,19 @@ def unionize_dataframe_categories(
         use:
 
         ```python
-        unionized_dataframes = unionize_dataframe_categories(df1, df2, df2)
+        unionized_dataframes = unionize_dataframe_categories(df1, df2, df3)
         concatenated_df = pd.concat(unionized_dataframes, ignore_index=True)
+        ```
+
+        A single list or tuple of dataframes can also be passed:
+
+        ```python
+        unionized_dataframes = unionize_dataframe_categories([df1, df2, df3])
         ```
 
     Args:
         *dataframes: The dataframes you wish to unionize the categorical
-            objects for.
+            objects for, passed individually or as a single list or tuple.
         column_names: If supplied, only unionize this subset of columns.
 
     Raises:
@@ -88,6 +94,9 @@ def unionize_dataframe_categories(
         A list of the category-unioned dataframes in the same order they
             were provided.
     """
+
+    if len(dataframes) == 1 and isinstance(dataframes[0], (list, tuple)):
+        dataframes = dataframes[0]
 
     if any(not isinstance(df, pd.DataFrame) for df in dataframes):
         raise TypeError("Inputs must all be dataframes.")

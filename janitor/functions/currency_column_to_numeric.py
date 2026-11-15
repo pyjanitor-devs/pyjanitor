@@ -26,6 +26,10 @@ def currency_column_to_numeric(
     usually the case when reading CSV files that were modified in Excel.
     Empty strings (i.e. `''`) are retained as `NaN` values.
 
+    A column whose dtype is already numeric passes through unchanged for
+    every cleaning style. Calling this method again on a converted column
+    therefore leaves that column as it is.
+
     Examples:
         >>> import pandas as pd
         >>> import janitor
@@ -95,8 +99,19 @@ def currency_column_to_numeric(
 
     check("column_name", column_name, [str])
     check_column(df, column_name)
+    if cleaning_style not in (None, "accounting"):
+        raise ValueError(
+            "`cleaning_style` is expected to be one of ('accounting', None). "
+            f"Got {cleaning_style!r} instead."
+        )
 
     column_series = df[column_name]
+    # String cleaning iterates characters or uses the .str accessor. A numeric
+    # dtype, including the result of a previous call, has neither and is
+    # already in the requested form.
+    if pd.api.types.is_numeric_dtype(column_series):
+        return df.copy()
+
     if cleaning_style == "accounting":
         outcome = (
             df[column_name]
@@ -109,11 +124,6 @@ def currency_column_to_numeric(
             .astype(float)
         )
         return df.assign(**{column_name: outcome})
-    if cleaning_style is not None:
-        raise ValueError(
-            "`cleaning_style` is expected to be one of ('accounting', None). "
-            f"Got {cleaning_style!r} instead."
-        )
 
     if cast_non_numeric:
         check("cast_non_numeric", cast_non_numeric, [dict])

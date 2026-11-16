@@ -4,6 +4,12 @@
 
 -   [ENH] Raise a `KeyError` naming the column when `drop_duplicate_columns` is given a missing `column_name`, and an `IndexError` stating how many duplicates exist when `nth_index` is out of range, instead of a bare `list index out of range`. - Issue #386
 
+## [v0.32.78] - 2026-11-14
+
+-   [ENH] Speed up `normal_cdf` with `scipy.special.ndtr`, preserving dtype
+    promotion and the unnamed result Series on the original index (float64
+    for ordinary real numeric inputs). - Issue #1468, PR #1842 @priy-anshugupta
+
 ## [v0.32.77] - 2026-11-11
 
 -   [BUG] Make `complete` safe for grouped frames and partial `fill_value` dictionaries, and emit one `FutureWarning` for the deprecated `by` argument. Grouped calls no longer warn that `by` was used, a dictionary that names only some columns no longer raises `KeyError`, and `complete(..., by=...)` no longer also warns about `expand`. An invalid `by` raises without that warning. Issues #1669, #1788 @SumanGouda (#1700, #1790). - PR #1834 @ericmjl
@@ -749,7 +755,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.77...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.78...HEAD
+
+[v0.32.78]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.77...v0.32.78
 
 [v0.32.77]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.76...v0.32.77
 

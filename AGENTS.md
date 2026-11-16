@@ -907,6 +907,16 @@ includes nullable `Int64` and `Float64` columns and excludes booleans.
 assign with `DataFrame.isetitem`. Pair `adorn_ns` counts with
 `adorn_count_pairs`.
 
+### [2026-11-11] Preserve CDF dtype promotion and Series metadata
+
+**Context**: Revising PR #1842 for issue #1468 after maintainer review.
+**Learning**: `scipy.stats.norm.cdf` promotes narrow numeric inputs to
+`float64` and returns an array; applying `scipy.special.ndtr` directly to a
+Series can retain its name and narrow dtype instead.
+**Recommendation**: Preserve the existing dtype promotion and construct the
+output from an array. Test named Series, narrow and nullable dtypes, empty
+inputs, missing values, and extreme tails when replacing distribution APIs.
+
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol

@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [ENH] Raise a `KeyError` naming the column when `drop_duplicate_columns` is given a missing `column_name`, and an `IndexError` stating how many duplicates exist when `nth_index` is out of range, instead of a bare `list index out of range`. - Issue #386
+
 ## [v0.32.78] - 2026-11-14
 
 -   [ENH] Speed up `normal_cdf` with `scipy.special.ndtr`, preserving dtype

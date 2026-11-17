@@ -934,7 +934,6 @@ the group key has to be moved into columns with `reset_index` before the merge.
 **Recommendation**: Do not build the indicator by joining labels. Keep the
 `None` check in the Series/Index validator, and cover a one-column
 `explicit=False` fill plus integer labels (scalar and list form).
->>>>>>> a0a29c7 ([BUG] Accept one-column and non-string labels in complete)
 
 ## Version History
 

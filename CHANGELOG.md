@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
--   [BUG] Validate `coalesce`'s `default_value` when it is falsy, so invalid values such as `{}` raise `TypeError`. - Issue #1864
+-   [BUG] Validate `coalesce`'s `default_value` when it is falsy, so invalid values such as `{}` raise `TypeError`. - Issue #1864, PR #1865 @mayankm00007
 
 ## [v0.32.79] - 2026-11-17
 

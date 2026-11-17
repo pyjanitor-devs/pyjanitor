@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [BUG] Validate `coalesce`'s `default_value` when it is falsy, so invalid values such as `{}` raise `TypeError`. - Issue #1864
+
 ## [v0.32.79] - 2026-11-17
 
 -   [BUG] `complete` accepts a one-column frame with `explicit=False`, and `complete` and `expand` accept non-string column labels such as integers, including on grouped frames. - Issue #1860, PR #1861 @ericmjl

@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+-   [ENH] Improve `pivot_longer` handling of `.value` columns with mixed NumPy and pandas extension dtypes. - Issue #1825, PR #1830 @SumanGouda
 ## [v0.32.79] - 2026-11-17
 
 -   [BUG] `complete` accepts a one-column frame with `explicit=False`, and `complete` and `expand` accept non-string column labels such as integers, including on grouped frames. - Issue #1860, PR #1861 @ericmjl

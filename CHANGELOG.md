@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [v0.32.80] - 2026-11-19
+
 -   [BUG] Validate `coalesce`'s `default_value` when it is falsy, so invalid values
     such as `{}` raise `TypeError`. - Issue #1864, PR #1865 @mayankm00007
 
@@ -760,7 +762,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.79...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.80...HEAD
+
+[v0.32.80]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.79...v0.32.80
 
 [v0.32.79]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.78...v0.32.79
 

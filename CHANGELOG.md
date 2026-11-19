@@ -5,6 +5,10 @@
 -   [BUG] Materialize one-shot iterables in `check_column` so callers such as `fill_empty` can reuse column names. - Issue #1015 @cpruijsen
 -   [BUG] Allow hashable scalar column labels such as `2` in `fill_empty` instead of raising `NotImplementedError`. - Issue #1015 @cpruijsen
 
+## [v0.32.79] - 2026-11-17
+
+-   [BUG] `complete` accepts a one-column frame with `explicit=False`, and `complete` and `expand` accept non-string column labels such as integers, including on grouped frames. - Issue #1860, PR #1861 @ericmjl
+
 ## [v0.32.78] - 2026-11-14
 
 -   [ENH] Speed up `normal_cdf` with `scipy.special.ndtr`, preserving dtype
@@ -756,7 +760,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.78...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.79...HEAD
+
+[v0.32.79]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.78...v0.32.79
 
 [v0.32.78]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.77...v0.32.78
 

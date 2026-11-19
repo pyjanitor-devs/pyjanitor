@@ -343,14 +343,30 @@ def _computations_complete(
     if (by is None) and isinstance(df, pd.DataFrame):
         merge_columns = uniques.columns.tolist()
     else:
-        merge_columns = [*uniques.index.names]
-        merge_columns.extend(uniques.columns.tolist())
+        # Group labels are index names. merge() resolves an integer name
+        # with get_level_values, which reads it as a level position, so a
+        # key of 0 becomes an all-null column and a key of 5 raises.
+        # Lift the index into columns so every label is a column name.
+        # A name that is already a column stays on the index; merge then
+        # reports that the label is both a level and a column.
+        names = list(uniques.index.names)
+        if any(name in uniques.columns for name in names):
+            merge_columns = [*names]
+            merge_columns.extend(uniques.columns.tolist())
+        else:
+            uniques = uniques.reset_index()
+            merge_columns = uniques.columns.tolist()
     if not isinstance(df, pd.DataFrame):
         df = df.obj
     columns = df.columns
     if (fill_value is not None) and not explicit:
-        # to get a name that does not exist in the columns
-        indicator = "".join(columns)
+        # Joining the labels repeats a one-column name, and labels are
+        # not necessarily strings. Use a string absent from both frames
+        # that merge will see. pandas only accepts a string indicator.
+        taken = set(columns).union(uniques.columns)
+        indicator = "\0"
+        while indicator in taken:
+            indicator += "\0"
     else:
         indicator = False
     out = pd.merge(
@@ -365,6 +381,11 @@ def _computations_complete(
         indicator = out.pop(indicator)
     if not out.columns.equals(columns):
         out = out.reindex(columns=columns)
+    elif out.columns.dtype != columns.dtype:
+        # A string indicator beside non-string labels widens the column
+        # Index to object. equals() still holds, so put the original back
+        # before later assignment freezes that widened Index in place.
+        out.columns = columns
     if fill_value is None:
         return out
     # keep only columns that are not part of column_checker

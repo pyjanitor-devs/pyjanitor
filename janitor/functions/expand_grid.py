@@ -659,7 +659,8 @@ def _validate_pandas_object_(  # noqa: F811
     Validate a pandas MultiIndex
     """
     label = pandas_object.name
-    if not label:
+    # None is unnamed. 0 and other falsy labels are real names.
+    if label is None:
         raise ValueError(
             f"Kindly ensure the {type(pandas_object).__name__} "
             f"at position {position} has a name."

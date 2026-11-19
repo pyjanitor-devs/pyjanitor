@@ -531,3 +531,30 @@ def test_extreme_magnitude_does_not_warn(method, expected):
         result = df.flag_outliers("values", method=method)
 
     assert result["values_outlier_flag"].tolist() == expected
+
+
+@pytest.mark.functions
+@pytest.mark.parametrize("method", ["iqr", "zscore"])
+@pytest.mark.parametrize("threshold", [0.5, 0.9, 0.99])
+@pytest.mark.parametrize(
+    ("value", "size"),
+    [(0.1, 3), (0.1, 8), (0.3, 2), (0.7, 5), (123.456, 4), (2.2, 7), (1.0, 3)],
+)
+def test_constant_float_flags_nothing_below_unit_threshold(
+    method, threshold, value, size
+):
+    """A constant float column flags nothing, even below a unit threshold."""
+    df = _frame(np.full(size, value))
+
+    result = df.flag_outliers("values", method=method, threshold=threshold)
+
+    assert result["values_outlier_flag"].tolist() == [False] * size
+
+
+@pytest.mark.functions
+def test_unhashable_column_name_raises():
+    """A list of column names raises ValueError, not a raw TypeError."""
+    df = pd.DataFrame({"a": [1.0, 2.0, 3.0], "b": [4.0, 5.0, 6.0]})
+
+    with pytest.raises(ValueError, match="not a valid column label"):
+        df.flag_outliers(["a", "b"])

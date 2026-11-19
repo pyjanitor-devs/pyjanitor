@@ -935,6 +935,17 @@ thresholds with `numbers.Real` after rejecting bool. Cast to float64
 before quartiles. Drop infinities from the statistics and flag them.
 Build a MultiIndex flag name by suffixing the last level.
 
+### [2026-11-19] Constant float columns are not std == 0
+
+**Context**: `flag_outliers` Z-score with a threshold below 1.
+**Learning**: The mean of a constant float column can be off by one
+rounding step, so the sample standard deviation is a tiny nonzero and
+every absolute Z-score is about ``sqrt((n - 1) / n)``. A threshold below
+1 then flags every row. ``nunique(dropna=True) <= 1`` on the finite
+values is the constant check.
+**Recommendation**: Do not treat ``std == 0`` as the only constant-column
+test for float data.
+
 ### [2026-11-11] Preserve CDF dtype promotion and Series metadata
 
 **Context**: Revising PR #1842 for issue #1468 after maintainer review.

@@ -28,6 +28,9 @@ def test_wrong_type_default_value(df):
     with pytest.raises(TypeError):
         df.coalesce("a", "b", target_column_name="new_name", default_value=[1, 2, 3])
 
+    with pytest.raises(TypeError):
+        df.coalesce("a", "b", target_column_name="new_name", default_value={})
+
 
 def test_len_column_names_less_than_2(df):
     """Raise Error if column_names length is less than 2."""

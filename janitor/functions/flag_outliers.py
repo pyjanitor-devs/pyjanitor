@@ -41,17 +41,25 @@ def flag_outliers(
     Positive and negative infinity are outliers. They are left out of
     those statistics, so the cutoff stays finite and the calculation does
     not warn. A column whose observed finite values are all equal has no
-    finite outliers. If the IQR is zero and some finite values still
-    differ, those values are flagged. Statistics that are undefined, such
-    as the sample standard deviation of fewer than two finite observations,
-    flag nothing among the finite values.
+    finite outliers, including when a Z-score threshold below 1 would
+    otherwise flag rounding error in the mean. If the IQR is zero and
+    some finite values still differ, those values are flagged. Statistics
+    that are undefined, such as the sample standard deviation of fewer
+    than two finite observations, flag nothing among the finite values.
+    If the mean overflows to infinity, the Z-scores are undefined and
+    nothing is flagged.
 
-    Quartiles are computed in float64, including for integer columns.
-    Boolean and complex columns are rejected. ``threshold`` may be any
-    real number, including a NumPy scalar. Booleans are rejected.
+    Quartiles, the mean, and the standard deviation are computed in
+    float64. Integers above ``2**53`` can collapse to the same float, so
+    a column of nine ``2**60`` values plus one ``2**60 + 1`` has a zero
+    IQR and flags nothing. Boolean and complex columns are rejected.
+    ``threshold`` may be any real number, including a NumPy scalar.
+    Booleans are rejected.
 
-    ``column_name`` selects one column. Call the method again to flag
-    another column. When the columns are a MultiIndex, the default flag
+    ``column_name`` is the input column. In ``flag_nulls``,
+    ``column_name`` names the output flag; here that name is
+    ``flag_column_name``. Call the method again to flag another column.
+    When the columns are a MultiIndex, the default flag
     name keeps the upper levels and appends ``_outlier_flag`` to the last
     level: ``("group", "values")`` becomes
     ``("group", "values_outlier_flag")``.
@@ -89,7 +97,8 @@ def flag_outliers(
 
     Args:
         df: Input pandas DataFrame.
-        column_name: Name of the numeric column to check.
+        column_name: Input column to check. Unlike ``flag_nulls``, this
+            is not the output flag name.
         method: ``"iqr"`` (default) or ``"zscore"``.
         threshold: Positive real cutoff, including NumPy scalars.
             ``None`` uses ``1.5`` for IQR and ``3`` for Z-score.
@@ -98,8 +107,9 @@ def flag_outliers(
             MultiIndex level.
 
     Raises:
-        ValueError: If ``column_name`` is not in the DataFrame, matches
-            more than one column, or if ``flag_column_name`` already is.
+        ValueError: If ``column_name`` is not a valid label, is missing,
+            or matches more than one column, or if ``flag_column_name``
+            already is.
         ValueError: If ``method`` is not ``"iqr"`` or ``"zscore"``.
         TypeError: If ``threshold`` is not a real number.
         ValueError: If ``threshold`` is not finite and greater than zero.
@@ -109,6 +119,12 @@ def flag_outliers(
     Returns:
         A copy of ``df`` with a boolean outlier column appended.
     """
+    try:
+        hash(column_name)
+    except TypeError as error:
+        raise ValueError(
+            f"Column {column_name!r} is not a valid column label."
+        ) from error
     check_column(df, [column_name])
     if flag_column_name is None:
         if isinstance(df.columns, pd.MultiIndex) and isinstance(column_name, tuple):
@@ -152,13 +168,17 @@ def flag_outliers(
 
     # Float64 avoids int64 overflow in the quartile arithmetic. Infinities
     # are outliers on their own and are removed before the cutoff is built.
-    # errstate covers overflow near the float64 range and 0/0 on a constant
-    # column, whose Z-scores are NaN and therefore not flags.
+    # errstate covers overflow near the float64 range.
     with np.errstate(divide="ignore", over="ignore", invalid="ignore"):
         numeric = series.astype("float64")
         infinite = np.isinf(numeric.to_numpy())
         finite = numeric.mask(infinite)
-        if method == "iqr":
+        # A constant float mean can be off by one rounding step, so the
+        # sample standard deviation is a tiny nonzero and every Z-score is
+        # about sqrt((n-1)/n). One distinct finite value is a constant.
+        if finite.nunique(dropna=True) <= 1:
+            outlier = np.zeros(len(df), dtype=bool)
+        elif method == "iqr":
             quartile_1 = finite.quantile(0.25)
             quartile_3 = finite.quantile(0.75)
             iqr = quartile_3 - quartile_1

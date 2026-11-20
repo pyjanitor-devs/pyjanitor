@@ -114,7 +114,7 @@ def coalesce(
     if target_column_name:
         check("target_column_name", target_column_name, [str])
 
-    if default_value:
+    if default_value is not None:
         check("default_value", default_value, [int, float, str])
 
     df = df.copy()

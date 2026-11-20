@@ -4,6 +4,11 @@
 
 -   [BUG] Reuse validated names from one-shot iterables and accept scalar integer labels in `fill_empty`. - Issue #1015, PR #1717 @cpruijsen
 
+## [v0.32.80] - 2026-11-19
+
+-   [BUG] Validate `coalesce`'s `default_value` when it is falsy, so invalid values
+    such as `{}` raise `TypeError`. - Issue #1864, PR #1865 @mayankm00007
+
 ## [v0.32.79] - 2026-11-17
 
 -   [BUG] `complete` accepts a one-column frame with `explicit=False`, and `complete` and `expand` accept non-string column labels such as integers, including on grouped frames. - Issue #1860, PR #1861 @ericmjl
@@ -759,7 +764,9 @@ We thank all contributors
 who have helped make `pyjanitor`
 the package that it is today.
 
-[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.79...HEAD
+[Unreleased]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.80...HEAD
+
+[v0.32.80]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.79...v0.32.80
 
 [v0.32.79]: https://github.com/pyjanitor-devs/pyjanitor/compare/v0.32.78...v0.32.79
 

@@ -68,5 +68,7 @@ def test_check_column_generator_is_reusable(dataframe):
     assert result == ["a"]
     assert list(result) == ["a"]
 
-    with pytest.raises(ValueError):
-        check_column(dataframe, (name for name in ["missing"]))
+    names = (name for name in ["missing", "a"])
+    with pytest.raises(ValueError, match="missing not present"):
+        check_column(dataframe, names)
+    assert list(names) == ["a"]

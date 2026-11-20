@@ -1,3 +1,5 @@
+from unittest.mock import MagicMock
+
 import pandas as pd
 import pytest
 
@@ -41,6 +43,10 @@ def test_fill_empty_generator(null_df):
     expected = null_df.fillna(3)
 
     assert result.equals(expected)
+
+    names = MagicMock(spec=["__iter__"])
+    names.__iter__.return_value = iter(null_df.columns)
+    assert null_df.fill_empty(names, 3).equals(expected)
 
 
 @pytest.mark.functions

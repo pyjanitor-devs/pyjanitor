@@ -424,15 +424,15 @@ def check_column(
     """
     if isinstance(column_names, str) or not isinstance(column_names, Iterable):
         column_names = [column_names]
-    else:
-        column_names = list(column_names)
 
+    validated = []
     for column_name in column_names:
         if present and column_name not in df.columns:  # skipcq: PYL-R1720
             raise ValueError(f"{column_name} not present in dataframe columns!")
         elif not present and column_name in df.columns:
             raise ValueError(f"{column_name} already present in dataframe columns!")
-    return column_names
+        validated.append(column_name)
+    return validated
 
 
 def skipna(f: Callable) -> Callable:

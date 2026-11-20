@@ -2,8 +2,8 @@
 
 ## [Unreleased]
 
--   [BUG] Materialize one-shot iterables in `check_column` so callers such as `fill_empty` can reuse column names. - Issue #1015 @cpruijsen
--   [BUG] Allow hashable scalar column labels such as `2` in `fill_empty` instead of raising `NotImplementedError`. - Issue #1015 @cpruijsen
+-   [BUG] Materialize one-shot iterables in `check_column` so callers such as `fill_empty` can reuse column names. - Issue #1015, PR #1717 @cpruijsen
+-   [BUG] Allow hashable scalar column labels such as `2` in `fill_empty` instead of raising `NotImplementedError`. - Issue #1015, PR #1717 @cpruijsen
 
 ## [v0.32.79] - 2026-11-17
 

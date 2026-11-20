@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [ENH] Add `find_header` and support `"find_header"` in `row_to_names` to detect header row in DataFrames.
+
 ## [v0.32.80] - 2026-11-19
 
 -   [BUG] Validate `coalesce`'s `default_value` when it is falsy, so invalid values
@@ -12,10 +14,6 @@
 -   [BUG] `complete` accepts a one-column frame with `explicit=False`, and `complete` and `expand` accept non-string column labels such as integers, including on grouped frames. - Issue #1860, PR #1861 @ericmjl
 
 ## [v0.32.78] - 2026-11-14
-
--   [ENH] Speed up `normal_cdf` with `scipy.special.ndtr`, preserving dtype
-    promotion and the unnamed result Series on the original index (float64
-    for ordinary real numeric inputs). - Issue #1468, PR #1842 @priy-anshugupta
 
 ## [v0.32.77] - 2026-11-11
 

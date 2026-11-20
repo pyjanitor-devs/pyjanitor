@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [BUG] Reuse validated names from one-shot iterables and accept scalar integer labels in `fill_empty`. - Issue #1015, PR #1717 @cpruijsen
+
 ## [v0.32.80] - 2026-11-19
 
 -   [BUG] Validate `coalesce`'s `default_value` when it is falsy, so invalid values

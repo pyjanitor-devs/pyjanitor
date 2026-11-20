@@ -1,3 +1,5 @@
+from unittest.mock import MagicMock
+
 import pandas as pd
 import pytest
 
@@ -31,3 +33,26 @@ def test_column_names_iterable_type(null_df, column_names):
     excepted = null_df.fillna(3)
 
     assert result.equals(excepted)
+
+
+@pytest.mark.functions
+def test_fill_empty_generator(null_df):
+    """One-shot iterables must still fill every requested column."""
+    column_names = map(lambda x: x if x < 2 else str(x), range(4))
+    result = null_df.fill_empty(column_names=column_names, value=3)
+    expected = null_df.fillna(3)
+
+    assert result.equals(expected)
+
+    names = MagicMock(spec=["__iter__"])
+    names.__iter__.return_value = iter(null_df.columns)
+    assert null_df.fill_empty(names, 3).equals(expected)
+
+
+@pytest.mark.functions
+def test_fill_empty_hashable_label():
+    """A hashable scalar column name fills that column."""
+    df = pd.DataFrame({2: [None, 1.0], "b": [None, 2.0]})
+    result = df.fill_empty(column_names=2, value=0)
+    expected = pd.DataFrame({2: [0.0, 1.0], "b": [None, 2.0]})
+    assert result.equals(expected)

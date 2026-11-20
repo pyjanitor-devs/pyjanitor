@@ -156,7 +156,9 @@ def read_bounded_stream(
         The member body.
 
     Raises:
-        ValueError: If the member is larger than `limit`.
+        ValueError: If the member is larger than `limit` or the stream
+            cannot be read. The chunks and the joined body can both be in
+            memory, so a member can briefly use about twice its size.
     """
 
     if declared_size > limit:
@@ -167,7 +169,14 @@ def read_bounded_stream(
     chunks: list[bytes] = []
     total = 0
     while True:
-        block = stream.read(READ_BLOCK_BYTES)
+        try:
+            block = stream.read(READ_BLOCK_BYTES)
+        except ImportError:
+            raise
+        except Exception as error:
+            raise ValueError(
+                f"Could not read archive member {name!r}: {error}"
+            ) from error
         if not block:
             break
         total += len(block)
@@ -212,15 +221,22 @@ def choose_archive_members(candidates: list[str]) -> list[str]:
         The chosen names, in the order entered.
 
     Raises:
-        ValueError: If the entry is empty or not a listed number.
+        ValueError: If the entry is empty, not a listed number, or stdin
+            is closed.
     """
 
     print("Compatible files found in the archive:")
     for index, name in enumerate(candidates, start=1):
         print(f"{index}. {name}")
-    raw = input(
-        "Enter the numbers of the files to read, separated by commas (e.g., 1,2,3): "
-    )
+    try:
+        raw = input(
+            "Enter the numbers of the files to read, "
+            "separated by commas (e.g., 1,2,3): "
+        )
+    except EOFError as error:
+        raise ValueError(
+            "Interactive selection ended before any files were chosen."
+        ) from error
     chosen_names: list[str] = []
     for token in raw.split(","):
         text = token.strip()
@@ -306,11 +322,14 @@ def parse_member_stream(
 
     Raises:
         ValueError: If the member exceeds `limit` or cannot be parsed.
+        ImportError: If parsing needs a dependency that is not installed.
     """
 
     payload = read_bounded_stream(stream, declared_size, limit, name)
     try:
         return parse_member(payload, archive_member_suffix(name))
+    except ImportError as error:
+        raise ImportError(f"Could not read archive member {name!r}: {error}") from error
     except Exception as error:
         raise ValueError(f"Could not read archive member {name!r}: {error}") from error
 
@@ -342,7 +361,15 @@ def parse_selected_zip_members(
             infos[name] = info
     frames: dict[str, Any] = {}
     for name in chosen:
-        with archive.open(infos[name]) as stream:
+        try:
+            member = archive.open(infos[name])
+        except ImportError:
+            raise
+        except Exception as error:
+            raise ValueError(
+                f"Could not read archive member {name!r}: {error}"
+            ) from error
+        with member as stream:
             frames[name] = parse_member_stream(
                 stream,
                 infos[name].file_size,
@@ -376,7 +403,7 @@ def parse_selected_tar_members(
 
     remaining = set(chosen)
     frames: dict[str, Any] = {}
-    with tarfile.open(path, mode="r:*") as archive:
+    with open_archive(path, "tar") as archive:
         for member in archive:
             if not remaining:
                 break
@@ -385,7 +412,14 @@ def parse_selected_tar_members(
             name = canonical_member_name(member.name)
             if name not in remaining:
                 continue
-            stream = archive.extractfile(member)
+            try:
+                stream = archive.extractfile(member)
+            except ImportError:
+                raise
+            except Exception as error:
+                raise ValueError(
+                    f"Could not read archive member {name!r}: {error}"
+                ) from error
             if stream is None:
                 raise ValueError(f"File not found in the archive: {name!r}.")
             try:
@@ -538,6 +572,37 @@ def read_member_frame(
     return polars_module.read_csv(buffer, **options)
 
 
+def open_archive(
+    path: str | os.PathLike[str],
+    kind: str,
+) -> zipfile.ZipFile | tarfile.TarFile:
+    """Open a zip or tar archive, naming the path when that fails.
+
+    Args:
+        path: Archive path.
+        kind: ``zip`` or ``tar``.
+
+    Returns:
+        An open archive. The caller closes it.
+
+    Raises:
+        ValueError: If the archive cannot be opened.
+    """
+
+    try:
+        if kind == "zip":
+            return zipfile.ZipFile(path)
+        return tarfile.open(path, mode="r:*")
+    except ImportError:
+        raise
+    except (FileNotFoundError, PermissionError, IsADirectoryError):
+        raise
+    except Exception as error:
+        raise ValueError(
+            f"Could not open archive {os.fspath(path)!r}: {error}"
+        ) from error
+
+
 def read_archive(
     path: str | os.PathLike[str],
     filenames: str | list[str] | tuple[str, ...] | None = None,
@@ -546,7 +611,7 @@ def read_archive(
     interactive: bool = False,
     max_member_bytes: int = DEFAULT_MAX_MEMBER_BYTES,
     **kwargs: Any,
-) -> pd.DataFrame | dict[str, pd.DataFrame]:
+) -> pd.DataFrame | Any | dict[str, pd.DataFrame | Any]:
     """Read data files stored inside a zip or tar archive.
 
     Supported member extensions are `.csv`, `.tsv`, `.json`, `.jsonl`,
@@ -667,25 +732,32 @@ def read_archive(
         interactive: When `True` and `filenames` is omitted, prompt for the
             members to read. The prompt lists supported files and expects
             comma-separated numbers such as `1,2`.
-        max_member_bytes: Largest decompressed member that will be read.
-            Defaults to 1 GiB.
+        max_member_bytes: Largest decompressed size accepted for one member.
+            The limit applies to each member on its own, not to the total
+            across members. Defaults to 1 GiB. `read_bounded_stream` keeps
+            the chunks until they are joined, so one member can briefly use
+            about twice its decompressed size.
         **kwargs: Keyword arguments forwarded to the underlying reader
             (`pandas.read_csv`, `polars.read_csv`, and the matching reader
             for each other extension).
 
     Raises:
         ValueError: If the archive type, `engine`, or `archive_format` is
-            unsupported, the archive is empty, no supported data file is
-            present, a requested member is missing or has an unsupported
-            extension, a selected member name is duplicated, a selected
-            member exceeds `max_member_bytes`, or interactive selection is
-            empty or combined with `filenames`.
-        ImportError: If `engine` is `"polars"` and polars is not installed.
+            unsupported, the archive cannot be opened, the archive is empty,
+            no supported data file is present, a requested member is missing
+            or has an unsupported extension, a selected member name is
+            duplicated, a selected member exceeds `max_member_bytes` or
+            cannot be read or parsed, or interactive selection is empty,
+            closed, or combined with `filenames`.
+        ImportError: If `engine` is `"polars"` and polars is not installed,
+            or a member needs an optional reader dependency that is not
+            installed.
 
     Returns:
-        A dictionary of DataFrames keyed by member name when `filenames`
-        is omitted or is a list or tuple. One DataFrame when `filenames`
-        is a string.
+        A pandas or polars DataFrame when `filenames` is a string. A
+        dictionary of those frames, keyed by member name, when `filenames`
+        is omitted or is a list or tuple. `engine="polars"` returns polars
+        frames.
     """
 
     check("path", path, [str, os.PathLike])
@@ -730,7 +802,7 @@ def read_archive(
         polars_module=polars_module,
     )
     if kind == "zip":
-        with zipfile.ZipFile(path) as archive:
+        with open_archive(path, "zip") as archive:
             contents = index_zip_archive(archive)
             chosen, unwrap = select_archive_members(contents, filenames, interactive)
             if filenames is None and contents.skipped:
@@ -739,7 +811,7 @@ def read_archive(
                 archive, chosen, max_member_bytes, parse_member
             )
     else:
-        with tarfile.open(path, mode="r:*") as archive:
+        with open_archive(path, "tar") as archive:
             contents = index_tar_archive(archive)
         chosen, unwrap = select_archive_members(contents, filenames, interactive)
         if filenames is None and contents.skipped:

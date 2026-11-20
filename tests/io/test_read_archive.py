@@ -978,3 +978,70 @@ def test_parse_error_names_the_member(tmp_path: Path):
 
     assert raised.value.__cause__ is not None
     assert "good.csv" not in str(raised.value)
+
+
+@pytest.mark.functions
+def test_missing_reader_dependency_stays_import_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """A missing optional reader dependency is an ImportError."""
+
+    archive = write_zip(tmp_path / "data.zip", {"rows.parquet": b"not parquet"})
+
+    def missing_pyarrow(*args, **kwargs):
+        raise ImportError("Unable to find a usable engine; pyarrow is missing.")
+
+    monkeypatch.setattr(pd, "read_parquet", missing_pyarrow)
+    with pytest.raises(ImportError, match="rows.parquet") as raised:
+        read_archive(archive, "rows.parquet")
+
+    assert not isinstance(raised.value, ValueError)
+
+
+@pytest.mark.functions
+def test_corrupt_zip_crc_names_the_member(tmp_path: Path):
+    """A bad CRC is a ValueError that names the member."""
+
+    archive = write_zip(tmp_path / "data.zip", {"a.csv": CSV_A})
+    raw = bytearray(archive.read_bytes())
+    payload = raw.find(CSV_A)
+    assert payload > 0
+    raw[payload] ^= 0xFF
+    archive.write_bytes(raw)
+
+    with pytest.raises(ValueError, match="a.csv") as raised:
+        read_archive(archive, "a.csv")
+
+    assert not isinstance(raised.value, zipfile.BadZipFile)
+    assert raised.value.__cause__ is not None
+
+
+@pytest.mark.functions
+def test_wrong_archive_format_names_the_archive(tmp_path: Path):
+    """Opening a zip as tar raises ValueError and names the archive."""
+
+    archive = write_zip(tmp_path / "data.zip", {"a.csv": CSV_A})
+
+    with pytest.raises(ValueError, match="data.zip") as raised:
+        read_archive(archive, "a.csv", archive_format="tar")
+
+    assert not isinstance(raised.value, tarfile.ReadError)
+    assert raised.value.__cause__ is not None
+
+
+@pytest.mark.functions
+def test_interactive_closed_stdin_is_value_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """A closed prompt becomes a ValueError instead of EOFError."""
+
+    archive = write_zip(tmp_path / "data.zip", {"a.csv": CSV_A})
+
+    def closed_stdin(prompt: str) -> str:
+        raise EOFError
+
+    monkeypatch.setattr("builtins.input", closed_stdin)
+    with pytest.raises(ValueError, match="Interactive selection ended"):
+        read_archive(archive, interactive=True)

@@ -24,7 +24,7 @@ def currency_column_to_numeric(
     This method allows one to take a column containing currency values,
     inadvertently imported as a string, and cast it as a float. This is
     usually the case when reading CSV files that were modified in Excel.
-    Empty strings (i.e. `''`) are retained as `NaN` values.
+    Empty strings (i.e. `''`) and missing values are retained as `NaN` values.
 
     A column whose dtype is already numeric passes through unchanged for
     every cleaning style. Calling this method again on a converted column
@@ -187,6 +187,8 @@ def _currency_column_to_numeric(
         "9",
         "0",
     }
+    if not isinstance(x, str) and pd.isna(x):
+        return "ORIGINAL_NA"
     if not x:
         return "ORIGINAL_NA"
 

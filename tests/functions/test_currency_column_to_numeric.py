@@ -280,3 +280,21 @@ def test_numeric_column_passes_through_unchanged(cleaning_style, values, dtype):
 
     assert_frame_equal(result, untouched)
     assert_frame_equal(original, untouched)
+
+
+@pytest.mark.functions
+@pytest.mark.parametrize("missing", [np.nan, None, pd.NA])
+@pytest.mark.parametrize(
+    "kwargs",
+    [{}, {"fill_all_non_numeric": 0}, {"remove_non_numeric": True}],
+)
+def test_default_cleaning_keeps_missing_values(missing, kwargs):
+    """Missing values are kept as NaN, like empty strings."""
+    df = pd.DataFrame(
+        {"amount": pd.Series(["$1,200.50", missing, "$3.00"], dtype=object)}
+    )
+    expected = pd.DataFrame({"amount": [1200.5, np.nan, 3.0]})
+
+    result = df.currency_column_to_numeric("amount", **kwargs)
+
+    assert_frame_equal(result, expected)

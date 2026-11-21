@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [BUG] `currency_column_to_numeric` keeps missing values (`NaN`, `None`, `pd.NA`) as `NaN` in the default cleaning style instead of raising `TypeError`. - Issue #1866, PR #1867 @EnesSoydan
+
 ## [v0.32.81] - 2026-11-22
 
 -   [ENH] Add `read_archive` to read supported files from zip and tar archives with pandas or polars. Keyword arguments are passed through, and omitting `filenames` returns a dictionary of DataFrames. Based on work by @Sabrina-Hassaim in #1440. - Issue #1171, PR #1833 @ericmjl

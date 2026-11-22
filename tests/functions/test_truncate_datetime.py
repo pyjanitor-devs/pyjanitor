@@ -70,3 +70,83 @@ def test_truncate_datetime_containing_NaT():
         dt=lambda df: df["dt"].dt.as_unit("ns")
     )
     assert_frame_equal(result, expected)
+
+
+@pytest.mark.functions
+def test_truncate_datetime_preserves_index():
+    df = pd.DataFrame(
+        {"dt": pd.to_datetime(["2022-03-21 09:01", "2023-07-04 18:30"])},
+        index=["x", "y"],
+    )
+    result = df.truncate_datetime_dataframe("day")
+    expected = pd.DataFrame(
+        {"dt": pd.to_datetime(["2022-03-21", "2023-07-04"])},
+        index=["x", "y"],
+    )
+    assert_frame_equal(result, expected, check_dtype=False)
+
+
+@pytest.mark.functions
+def test_truncate_datetime_timezone_aware():
+    df = pd.DataFrame(
+        {
+            "dt": pd.to_datetime(["2022-03-21 03:00", "2022-11-06 01:30"]).tz_localize(
+                "America/New_York", ambiguous=[True, False]
+            ),
+            "foo": [1, 2],
+        }
+    )
+    result = df.truncate_datetime_dataframe("day")
+    expected = pd.DataFrame(
+        {
+            "dt": pd.to_datetime(["2022-03-21", "2022-11-06"]).tz_localize(
+                "America/New_York"
+            ),
+            "foo": [1, 2],
+        }
+    )
+    assert_frame_equal(result, expected, check_dtype=False)
+    hourly = df.truncate_datetime_dataframe("hour")
+    assert hourly["dt"].tolist() == [
+        pd.Timestamp("2022-03-21 03:00", tz="America/New_York"),
+        pd.Timestamp("2022-11-06 06:00", tz="UTC").tz_convert("America/New_York"),
+    ]
+
+
+@pytest.mark.functions
+def test_truncate_datetime_preserves_multiindex():
+    index = pd.MultiIndex.from_tuples([("a", 1), ("b", 2)], names=["key", "num"])
+    df = pd.DataFrame(
+        {"dt": pd.to_datetime(["2022-03-21 09:01", "2023-07-04 18:30"])},
+        index=index,
+    )
+    result = df.truncate_datetime_dataframe("day")
+    expected = pd.DataFrame(
+        {"dt": pd.to_datetime(["2022-03-21", "2023-07-04"])},
+        index=index,
+    )
+    assert_frame_equal(result, expected, check_dtype=False)
+
+
+@pytest.mark.functions
+def test_truncate_datetime_timezone_aware_with_NaT():
+    df = pd.DataFrame(
+        {
+            "dt": pd.to_datetime(
+                ["2022-03-21 09:01", None, "2022-07-04 18:30"]
+            ).tz_localize("Europe/Berlin"),
+        },
+        index=[10, 20, 30],
+    )
+    result = df.truncate_datetime_dataframe("day").assign(
+        dt=lambda df: df["dt"].dt.as_unit("ns")
+    )
+    expected = pd.DataFrame(
+        {
+            "dt": pd.to_datetime(["2022-03-21", None, "2022-07-04"])
+            .tz_localize("Europe/Berlin")
+            .as_unit("ns"),
+        },
+        index=[10, 20, 30],
+    )
+    assert_frame_equal(result, expected)

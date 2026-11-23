@@ -1310,6 +1310,15 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "mayankm00007",
+      "name": "mayankm00007",
+      "avatar_url": "https://avatars.githubusercontent.com/u/226336294?v=4",
+      "profile": "https://github.com/mayankm00007",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "badgeTemplate": "<img alt=\"All Contributors: {{contributorCount}}\" src=\"https://img.shields.io/github/all-contributors/{{projectOwner}}/{{projectName}}?color=ee8449&style=flat-square\">",

@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
--   [INF] Add brute-force tests of `conditional_join` and `join_agg` for equality plus overlap predicates on heavy-duplicate, nested, single-dominant-key and point-interval data, in closed and half-open form. - Issue #1843
+-   [INF] Add brute-force tests of `conditional_join` and `join_agg` for equality plus overlap predicates on heavy-duplicate, nested, single-dominant-key and point-interval data, in closed and half-open form. - Issue #1843, PR #1869
 
 ## [v0.32.81] - 2026-11-22
 

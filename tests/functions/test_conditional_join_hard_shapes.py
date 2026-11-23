@@ -2,8 +2,8 @@
 
 Each shape is checked against a brute-force cross join, for ``conditional_join``
 (matched pairs) and ``join_agg`` (per-left-row size and sum), in closed
-(``<=`` / ``>=``) and half-open (``<`` / ``>``) form, and for both the
-``default`` and ``regions`` range algorithms.
+(``<=`` / ``>=``) and half-open (``<`` / ``>``) form, and for the equality
+path plus the forced ``default`` and ``regions`` range paths.
 
 The shapes target boundary behaviour that random data rarely reaches:
 
@@ -23,6 +23,13 @@ import janitor  # noqa: F401
 
 N = 120
 SHAPES = ["heavy_duplicates", "nesting", "dominant_key", "point_intervals"]
+# With an equality predicate, ``join_algorithm`` only matters once ``force=True``
+# sends the join down the non-equi path, so each id names the path it exercises.
+PATHS = {
+    "equi": {},
+    "forced_default": {"force": True, "join_algorithm": "default"},
+    "forced_regions": {"force": True, "join_algorithm": "regions"},
+}
 FORMS = {
     # overlap of left [a_start, a_end] and right [b_start, b_end]
     "closed": (">=", "<="),
@@ -97,15 +104,15 @@ def _brute_force(left, right, form):
 
 
 @pytest.mark.parametrize("seed", [0, 1, 2])
-@pytest.mark.parametrize("algorithm", ["default", "regions"])
+@pytest.mark.parametrize("path", list(PATHS))
 @pytest.mark.parametrize("form", list(FORMS))
 @pytest.mark.parametrize("shape", SHAPES)
-def test_hard_shapes_conditional_join_matches_brute_force(shape, form, algorithm, seed):
+def test_hard_shapes_conditional_join_matches_brute_force(shape, form, path, seed):
     """conditional_join pairs equal the brute-force pairs."""
     left, right = _frames(shape, seed, closed=form == "closed")
     expected = _brute_force(left, right, form)
     assert len(expected) > 0  # the shape must actually produce matches
-    actual = left.conditional_join(right, *_conditions(form), join_algorithm=algorithm)
+    actual = left.conditional_join(right, *_conditions(form), **PATHS[path])
     cols = ["lid", "rid"]
     assert_frame_equal(
         actual[cols].sort_values(cols).reset_index(drop=True),
@@ -114,10 +121,10 @@ def test_hard_shapes_conditional_join_matches_brute_force(shape, form, algorithm
 
 
 @pytest.mark.parametrize("seed", [0, 1, 2])
-@pytest.mark.parametrize("algorithm", ["default", "regions"])
+@pytest.mark.parametrize("path", list(PATHS))
 @pytest.mark.parametrize("form", list(FORMS))
 @pytest.mark.parametrize("shape", SHAPES)
-def test_hard_shapes_join_agg_matches_brute_force(shape, form, algorithm, seed):
+def test_hard_shapes_join_agg_matches_brute_force(shape, form, path, seed):
     """join_agg size and sum equal the brute-force aggregates."""
     left, right = _frames(shape, seed, closed=form == "closed")
     expected_pairs = _brute_force(left, right, form)
@@ -129,7 +136,7 @@ def test_hard_shapes_join_agg_matches_brute_force(shape, form, algorithm, seed):
         right,
         *_conditions(form),
         aggfunc=[("val", "size"), ("val", "sum")],
-        join_algorithm=algorithm,
+        **PATHS[path],
     )
     # rows without a match may be absent; they aggregate to the identity
     actual = actual.droplevel(0, axis=1).reindex(range(len(left)), fill_value=0)

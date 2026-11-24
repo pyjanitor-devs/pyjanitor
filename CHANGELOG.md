@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased]
+- [ENH] Add `flag_overlapping_intervals` to identify overlapping intervals in a DataFrame, with optional grouping support.
 
 ## [v0.32.81] - 2026-11-22
 

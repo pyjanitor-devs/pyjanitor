@@ -15,6 +15,8 @@ def truncate_datetime_dataframe(
     year, month, day, hour, minute, or second.
 
     This method does not mutate the original DataFrame.
+    The index is kept, and tz-aware columns keep their time zone
+    and are truncated in local time.
 
     Examples:
         >>> import pandas as pd
@@ -73,7 +75,21 @@ def truncate_datetime_dataframe(
         if is_datetime64_any_dtype(series):
             dtype = ACCEPTABLE_DATEPARTS[datepart]
             # TODO: add branch for pyarrow arrays
-            series = np.array(series._values, dtype=dtype)
+            tz = getattr(series.dtype, "tz", None)
+            if tz is not None:
+                is_dst = series.map(
+                    lambda ts: pd.notna(ts) and bool(ts.dst())
+                ).to_numpy(dtype=bool)
+                series = series.dt.tz_localize(None)
+            series = pd.Series(
+                np.array(series._values, dtype=dtype),
+                index=df.index,
+                name=label,
+            )
+            if tz is not None:
+                series = series.dt.tz_localize(
+                    tz, ambiguous=is_dst, nonexistent="shift_forward"
+                )
         dictionary[label] = series
 
     return pd.DataFrame(dictionary)

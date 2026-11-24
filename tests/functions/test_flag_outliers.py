@@ -558,3 +558,22 @@ def test_unhashable_column_name_raises():
 
     with pytest.raises(ValueError, match="not a valid column label"):
         df.flag_outliers(["a", "b"])
+
+
+@pytest.mark.functions
+def test_unhashable_flag_column_name_raises():
+    """An unhashable flag name raises the same ValueError as column_name."""
+    df = _frame([1.0, 2.0, 3.0])
+
+    with pytest.raises(ValueError, match="not a valid column label"):
+        df.flag_outliers("values", flag_column_name=["x"])
+
+
+@pytest.mark.functions
+def test_zscore_flags_extremes_when_unscaled_std_would_overflow():
+    """Huge finite extremes stay visible after scaling the Z-score."""
+    df = pd.DataFrame({"a": [0.0] * 50 + [1e308, -1e308]})
+
+    result = df.flag_outliers("a", method="zscore")
+
+    assert result["a_outlier_flag"].tolist() == [False] * 50 + [True, True]

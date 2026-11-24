@@ -46,8 +46,10 @@ def flag_outliers(
     some finite values still differ, those values are flagged. Statistics
     that are undefined, such as the sample standard deviation of fewer
     than two finite observations, flag nothing among the finite values.
-    If the mean overflows to infinity, the Z-scores are undefined and
-    nothing is flagged.
+    Z-scores divide by the largest finite absolute value before the mean
+    and standard deviation, so a pair near the float64 limit does not
+    overflow the standard deviation. If that scaled mean is still not
+    finite, nothing is flagged.
 
     Quartiles, the mean, and the standard deviation are computed in
     float64. Integers above ``2**53`` can collapse to the same float, so
@@ -131,6 +133,13 @@ def flag_outliers(
             flag_column_name = column_name[:-1] + (f"{column_name[-1]}_outlier_flag",)
         else:
             flag_column_name = f"{column_name}_outlier_flag"
+    else:
+        try:
+            hash(flag_column_name)
+        except TypeError as error:
+            raise ValueError(
+                f"Column {flag_column_name!r} is not a valid column label."
+            ) from error
     check_column(df, [flag_column_name], present=False)
 
     if method not in ("iqr", "zscore"):
@@ -173,14 +182,20 @@ def flag_outliers(
         numeric = series.astype("float64")
         infinite = np.isinf(numeric.to_numpy())
         finite = numeric.mask(infinite)
-        # A constant float mean can be off by one rounding step, so the
-        # sample standard deviation is a tiny nonzero and every Z-score is
-        # about sqrt((n-1)/n). One distinct finite value is a constant.
-        if finite.nunique(dropna=True) <= 1:
+        # min == max skips missing values. A constant float mean can be off
+        # by one rounding step, so this is the constant check instead of
+        # comparing the sample standard deviation with zero. NaN == NaN is
+        # False, so an all-missing column falls through.
+        low = finite.min(skipna=True)
+        high = finite.max(skipna=True)
+        same = low == high
+        constant = bool(same) if isinstance(same, (bool, np.bool_)) else False
+        if constant:
             outlier = np.zeros(len(df), dtype=bool)
         elif method == "iqr":
-            quartile_1 = finite.quantile(0.25)
-            quartile_3 = finite.quantile(0.75)
+            quartiles = finite.quantile([0.25, 0.75])
+            quartile_1 = quartiles.iloc[0]
+            quartile_3 = quartiles.iloc[1]
             iqr = quartile_3 - quartile_1
             if pd.isna(iqr):
                 outlier = np.zeros(len(df), dtype=bool)
@@ -189,12 +204,19 @@ def flag_outliers(
                 upper = quartile_3 + threshold * iqr
                 outlier = ((finite < lower) | (finite > upper)).to_numpy()
         else:
-            scale = finite.std(ddof=1, skipna=True)
-            if pd.isna(scale):
+            # Scale by the largest finite magnitude so a huge pair does not
+            # overflow the sample standard deviation to infinity.
+            peak = finite.abs().max(skipna=True)
+            if pd.notna(peak) and np.isfinite(peak) and peak > 0:
+                scaled = finite / peak
+            else:
+                scaled = finite
+            scale = scaled.std(ddof=1, skipna=True)
+            if pd.isna(scale) or not np.isfinite(scale):
                 outlier = np.zeros(len(df), dtype=bool)
             else:
-                center = finite.mean(skipna=True)
-                outlier = (((finite - center) / scale).abs() > threshold).fillna(False)
+                center = scaled.mean(skipna=True)
+                outlier = (((scaled - center) / scale).abs() > threshold).fillna(False)
                 outlier = outlier.to_numpy()
 
     result = df.copy()

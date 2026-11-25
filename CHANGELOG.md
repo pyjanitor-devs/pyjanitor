@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+-   [BUG] Preserve separators inside field values in `concatenate_columns`. @yutianjiang39
+
 ## [v0.32.81] - 2026-11-22
 
 -   [ENH] Add `read_archive` to read supported files from zip and tar archives with pandas or polars. Keyword arguments are passed through, and omitting `filenames` returns a dictionary of DataFrames. Based on work by @Sabrina-Hassaim in #1440. - Issue #1171, PR #1833 @ericmjl

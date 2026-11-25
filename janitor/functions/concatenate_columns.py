@@ -59,14 +59,12 @@ def concatenate_columns(
     if len(column_names) < 2:
         raise JanitorError("At least two columns must be specified")
 
-    df[new_column_name] = df[column_names].astype(str).fillna("").agg(sep.join, axis=1)
-
+    fields = df[column_names].astype(str).fillna("")
     if ignore_empty:
-
-        def remove_empty_string(x):
-            """Ignore empty/null string values from the concatenated output."""
-            return sep.join(x for x in x.split(sep) if x)
-
-        df[new_column_name] = df[new_column_name].transform(remove_empty_string)
+        df[new_column_name] = fields.agg(
+            lambda row: sep.join(filter(None, row)), axis=1
+        )
+    else:
+        df[new_column_name] = fields.agg(sep.join, axis=1)
 
     return df

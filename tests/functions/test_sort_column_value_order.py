@@ -73,6 +73,41 @@ def test_sort_column_value_order_without_column_value_order(company_sales_df):
         company_sales_df.sort_column_value_order("SalesMonth", {})
 
 
+def test_sort_preserves_cond_order_as_secondary_key():
+    df = pd.DataFrame({"group": ["B", "A", "A"], "cond_order": [5, 3, 1]})
+    expected = df.iloc[[2, 1, 0]].copy()
+    result = df.sort_column_value_order("group", {"A": 1, "B": 2}, ["cond_order"])
+    pd.testing.assert_frame_equal(result, expected)
+
+
+def test_missing_secondary_key_raises():
+    df = pd.DataFrame({"group": ["A", "A"], "cond_order": [2, 1]})
+    with pytest.raises(KeyError, match="cond_order_"):
+        df.sort_column_value_order("group", {"A": 1}, ["cond_order_"])
+
+
+def test_sort_by_missing_value_column_label():
+    df = pd.DataFrame({"group": ["A", "A"], pd.NA: [2, 1]})
+    result = df.sort_column_value_order("group", {"A": 1}, [pd.NA])
+    pd.testing.assert_frame_equal(result, df.iloc[[1, 0]])
+
+
+def test_sort_preserves_unrelated_cond_order_columns():
+    df = pd.DataFrame(
+        {"group": ["B", "A"], "cond_order": [9, 8], "cond_order_": [4, 5]}
+    )
+    result = df.sort_column_value_order("group", {"A": 1, "B": 2})
+    pd.testing.assert_frame_equal(result, df.iloc[[1, 0]])
+
+
+def test_sort_preserves_index_level_named_cond_order():
+    df = pd.DataFrame(
+        {"group": ["A", "B", "A"]}, index=pd.Index([3, 2, 1], name="cond_order")
+    )
+    result = df.sort_column_value_order("group", {"A": 1, "B": 2})
+    pd.testing.assert_frame_equal(result, df.iloc[[0, 2, 1]])
+
+
 def test_sort_column_value_order_with_columns(company_sales_df):
     """Execution test for sort_column_value_order
 

@@ -91,6 +91,29 @@ def test_deconcatenate_column_preserve_position_string(dataframe):
     )
 
 
+@pytest.mark.parametrize("neighbor_names", [("left", "right"), ("side", "side")])
+def test_replace_column_with_reused_name(neighbor_names):
+    left, right = neighbor_names
+    df = pd.DataFrame(
+        [[1, "ab:cd", 3], [4, "ef:gh", 6]],
+        columns=[left, "part", right],
+        index=[7, 2],
+    )
+    original = df.copy()
+
+    result = df.deconcatenate_column(
+        "part", sep=":", new_column_names=["part", "suffix"], preserve_position=True
+    )
+
+    expected = pd.DataFrame(
+        [[1, "ab", "cd", 3], [4, "ef", "gh", 6]],
+        columns=[left, "part", "suffix", right],
+        index=[7, 2],
+    )
+    assert_frame_equal(result, expected)
+    assert_frame_equal(df, original)
+
+
 def test_deconcatenate_column_autoname(dataframe):
     df_original = dataframe.concatenate_columns(
         column_names=["a", "decorated-elephant"],

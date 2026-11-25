@@ -80,5 +80,14 @@ def expand_column(
     if drop_first:
         expanded_df = expanded_df.iloc[:, 1:]
     if concat:
+        if not df.index.is_unique:
+            # The dummy rows already follow input order. Join by position to
+            # avoid pairing each row with every occurrence of its index label.
+            positions = pd.RangeIndex(len(df))
+            return (
+                df.set_axis(positions)
+                .join(expanded_df.set_axis(positions))
+                .set_axis(df.index)
+            )
         return df.join(expanded_df)
     return expanded_df

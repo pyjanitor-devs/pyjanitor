@@ -68,3 +68,22 @@ def test_sep_default_parameter():
     result = df.expand_column("col1")
 
     assert result.shape[1] == 8
+
+
+@pytest.mark.functions
+def test_expand_and_concat_duplicate_index():
+    index = pd.Index([2, 1, 2], name="row")
+    df = pd.DataFrame({"tags": ["A", "A|B", "B"]}, index=index)
+
+    result = df.expand_column("tags")
+
+    expected = df.assign(A=[1, 1, 0], B=[0, 1, 1])
+    pd.testing.assert_frame_equal(result, expected)
+
+
+@pytest.mark.functions
+def test_expand_duplicate_index_overlapping_columns():
+    df = pd.DataFrame({"tags": ["A", "B"], "A": [3, 4]}, index=[1, 1])
+
+    with pytest.raises(ValueError, match="columns overlap"):
+        df.expand_column("tags")

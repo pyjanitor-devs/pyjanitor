@@ -66,7 +66,7 @@ def round_to_fraction(
     check("denominator", denominator, [float, int])
     check("digits", digits, [float, int])
 
-    if denominator <= 0:
+    if not denominator > 0:
         raise ValueError("denominator is expected to be a positive number.")
 
     df[column_name] = round(df[column_name] * denominator, 0) / denominator

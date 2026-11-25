@@ -28,11 +28,13 @@ def test_round_digits(dataframe):
 @pytest.mark.functions
 @pytest.mark.parametrize(
     "denominator",
-    [0, -5, -0.25],
+    [0, -5, -0.25, float("nan")],
 )
 def test_invalid_denominator_args(dataframe, denominator):
     """Ensure ValueError's are raised if denominator value passed in
     is invalid.
     """
-    with pytest.raises(ValueError):
+    original = dataframe["Bell__Chart"].copy()
+    with pytest.raises(ValueError, match="denominator"):
         dataframe.round_to_fraction("Bell__Chart", denominator)
+    assert dataframe["Bell__Chart"].equals(original)

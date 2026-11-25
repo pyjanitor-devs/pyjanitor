@@ -1,8 +1,10 @@
+import numpy as np
 import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal
 
 import janitor  # noqa: F401
+from janitor.errors import JanitorError
 
 
 @pytest.mark.functions
@@ -89,6 +91,25 @@ def test_deconcatenate_column_preserve_position_string(dataframe):
     assert len(df.columns) == (len(df_original.columns) + len(new_column_names) - 1), (
         "Number of columns after deconcatenation is incorrect"
     )
+
+
+@pytest.mark.functions
+@pytest.mark.parametrize("missing", [None, np.nan, pd.NA])
+def test_deconcatenate_column_string_leading_missing(missing):
+    """Split a string column whose first value is missing."""
+    df = pd.DataFrame({"a": [missing, "x,y", "z"], "n": [1, 2, 3]})
+    result = df.deconcatenate_column("a", sep=",", new_column_names=["u", "v"])
+    expected = df.assign(u=[np.nan, "x", "z"], v=[np.nan, "y", np.nan])
+    assert_frame_equal(result, expected, check_dtype=False)
+
+
+@pytest.mark.functions
+@pytest.mark.parametrize("new_column_names", [["u"], ["u", "v", "w", "x"]])
+def test_deconcatenate_column_wrong_number_of_names(new_column_names):
+    """Raise JanitorError, naming the number of columns needed."""
+    df = pd.DataFrame({"a": ["x,y,z", "p,q,r"]})
+    with pytest.raises(JanitorError, match="You need to provide 3 names"):
+        df.deconcatenate_column("a", sep=",", new_column_names=new_column_names)
 
 
 def test_deconcatenate_column_autoname(dataframe):

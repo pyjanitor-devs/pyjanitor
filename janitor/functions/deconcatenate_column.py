@@ -26,7 +26,7 @@ def deconcatenate_column(
     or a string to slice based on `sep`.
 
     To determine this behaviour automatically,
-    the first element in the column specified is inspected.
+    the first non-missing element in the column specified is inspected.
 
     If it is a string, then `sep` must be specified.
     Else, the function assumes that it is an iterable type
@@ -107,7 +107,9 @@ def deconcatenate_column(
     if column_name not in df.columns:
         raise ValueError(f"column name {column_name} not present in DataFrame")
 
-    if isinstance(df[column_name].iloc[0], str):
+    values = df[column_name]
+    first = values.iloc[values.notna().to_numpy().argmax()] if len(values) else None
+    if isinstance(first, str):
         if sep is None:
             raise ValueError(
                 "`sep` must be specified if the column values are of type `str`."
@@ -128,8 +130,7 @@ def deconcatenate_column(
 
     if not len(new_column_names) == df_deconcat.shape[1]:
         raise JanitorError(
-            f"You need to provide {len(df_deconcat.shape[1])} names "
-            "to `new_column_names`"
+            f"You need to provide {df_deconcat.shape[1]} names to `new_column_names`"
         )
 
     df_deconcat.columns = new_column_names

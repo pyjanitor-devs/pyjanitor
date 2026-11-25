@@ -135,7 +135,7 @@ def currency_column_to_numeric(
     column_series = column_series.apply(_make_cc_patrial)
 
     if remove_non_numeric:
-        df = df.loc[column_series != "", :]
+        keep = column_series != ""
 
     # _replace_empty_string_with_none is applied here after the check on
     # remove_non_numeric since "" is our indicator that a string was coerced
@@ -149,6 +149,8 @@ def currency_column_to_numeric(
     column_series = _replace_original_empty_string_with_none(column_series)
 
     df = df.assign(**{column_name: pd.to_numeric(column_series)})
+    if remove_non_numeric:
+        df = df.loc[keep, :]
 
     return df
 

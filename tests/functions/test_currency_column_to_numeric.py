@@ -280,3 +280,32 @@ def test_numeric_column_passes_through_unchanged(cleaning_style, values, dtype):
 
     assert_frame_equal(result, untouched)
     assert_frame_equal(original, untouched)
+
+
+@pytest.mark.functions
+def test_remove_non_numeric_with_duplicate_index():
+    """Keep individual rows, including original blanks, in input order."""
+    df = pd.DataFrame(
+        {"amount": ["$4", "invalid", "", "$2"], "row": [0, 1, 2, 3]},
+        index=[7, 3, 3, 7],
+    )
+    untouched = df.copy()
+    expected = pd.DataFrame(
+        {"amount": [4.0, np.nan, 2.0], "row": [0, 2, 3]}, index=[7, 3, 7]
+    )
+
+    result = df.currency_column_to_numeric("amount", remove_non_numeric=True)
+
+    assert_frame_equal(result, expected)
+    assert_frame_equal(df, untouched)
+
+
+@pytest.mark.functions
+def test_remove_non_numeric_preserves_numeric_dtype():
+    """Dropping a non-numeric row preserves the inferred floating dtype."""
+    df = pd.DataFrame({"amount": ["4", "bad", "2"]})
+    expected = pd.DataFrame({"amount": [4.0, 2.0]}, index=[0, 2])
+
+    result = df.currency_column_to_numeric("amount", remove_non_numeric=True)
+
+    assert_frame_equal(result, expected)

@@ -65,12 +65,15 @@ def sort_column_value_order(
     if not column_value_order:
         raise ValueError("column_value_order dictionary cannot be empty")
 
-    df = df.assign(cond_order=df[column].map(column_value_order))
+    order_key = "cond_order"
+    secondary = [] if columns is None else columns
+    reserved = set(df.index.names).union(secondary)
+    while order_key in df.columns or order_key in reserved:
+        order_key += "_"
+    df = df.assign(**{order_key: df[column].map(column_value_order)})
 
-    sort_by = ["cond_order"]
-    if columns is not None:
-        sort_by = ["cond_order"] + columns
+    sort_by = [order_key] + secondary
 
     # Use stable sort to preserve original order for equal values
-    df = df.sort_values(sort_by, kind="stable").remove_columns("cond_order")
+    df = df.sort_values(sort_by, kind="stable").drop(columns=[order_key])
     return df

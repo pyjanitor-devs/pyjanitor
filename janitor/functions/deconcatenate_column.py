@@ -133,16 +133,10 @@ def deconcatenate_column(
         )
 
     df_deconcat.columns = new_column_names
-    df_new = pd.concat([df, df_deconcat], axis=1)
-
     if preserve_position:
-        df_original = df.copy()
-        cols = list(df_original.columns)
-        index_original = cols.index(column_name)
+        position = df.columns.get_loc(column_name)
+        return pd.concat(
+            [df.iloc[:, :position], df_deconcat, df.iloc[:, position + 1 :]], axis=1
+        )
 
-        for i, col_new in enumerate(new_column_names):
-            cols.insert(index_original + i, col_new)
-
-        df_new = df_new.select_columns(cols).drop(columns=column_name)
-
-    return df_new
+    return pd.concat([df, df_deconcat], axis=1)

@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
--   [BUG] `deconcatenate_column` splits a string column whose first value is missing, instead of leaving it unsplit or raising a shape error. Passing the wrong number of `new_column_names` raises the documented `JanitorError` instead of a `TypeError`.
+-   [BUG] `deconcatenate_column` splits a string column whose first value is missing, instead of leaving it unsplit or raising a shape error. Passing the wrong number of `new_column_names` raises the documented `JanitorError` instead of a `TypeError`. - PR #1880 @tushar-mahalya
 
 ## [v0.32.81] - 2026-11-22
 

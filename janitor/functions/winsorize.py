@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
+import math
 from numbers import Real
 from typing import Any, Literal
 
+import numpy as np
 import pandas as pd
 import pandas_flavor as pf
 from pandas.api.types import (
     is_bool_dtype,
+    is_complex_dtype,
     is_extension_array_dtype,
     is_integer_dtype,
     is_numeric_dtype,
@@ -26,7 +29,7 @@ def winsorize(
     column_names: Any = None,
     limits: tuple[float | None, float | None] = (0.05, 0.95),
     method: Literal["quantile", "iqr"] = "quantile",
-    iqr_factor: float = 1.5,
+    threshold: float = 1.5,
     by: Any = None,
     suffix: str | None = None,
 ) -> pd.DataFrame:
@@ -42,14 +45,19 @@ def winsorize(
     - `method="quantile"` (default): the bounds are the `limits` quantiles
       of each column. `limits=(0.05, 0.95)` caps the bottom and top 5%.
     - `method="iqr"`: the bounds are Tukey's fences,
-      `Q1 - iqr_factor * IQR` and `Q3 + iqr_factor * IQR`, where
+      `Q1 - threshold * IQR` and `Q3 + threshold * IQR`, where
       `IQR = Q3 - Q1`.
 
     Bounds are computed per column. If `by` is given, they are computed
     within each group instead, so that each group is capped against its
     own distribution. Rows whose group key is missing are left unchanged.
 
-    Missing values are ignored when computing bounds and stay missing.
+    Missing values and infinite values (`inf` and `-inf`) are left out
+    when computing the bounds. Missing values stay missing. Infinite values
+    are capped like any other value; a side without a bound, such as the
+    lower side of `limits=(None, 0.95)`, leaves them unchanged. A column or
+    group with no finite values is left unchanged.
+
     Integer columns are returned as floats, since the bounds are usually
     not whole numbers.
 
@@ -106,21 +114,32 @@ def winsorize(
         4     b   200.0
         5     b   200.0
 
+        Infinite values do not affect the bounds, and are capped as well.
+
+        >>> df = pd.DataFrame({"x": [1.0, 2.0, 3.0, 4.0, float("inf")]})
+        >>> df.winsorize("x", limits=(0, 0.75))
+              x
+        0  1.00
+        1  2.00
+        2  3.00
+        3  3.25
+        4  3.25
+
     Args:
         df: A pandas DataFrame.
         column_names: The columns to winsorize. Accepts any selection that
             [`select`][janitor.functions.select.select] accepts, such as a
             column name, a list of names, a glob string or a callable.
-            Defaults to every numeric (non-boolean) column that is not
-            in `by`.
+            Defaults to every numeric column that is not boolean, not
+            complex and not in `by`.
         limits: The `(lower, upper)` quantiles used as bounds when
             `method="quantile"`. Each must be between 0 and 1. Use `None`
             on one side to leave that tail untouched. Ignored when
             `method="iqr"`.
         method: How to compute the bounds, either `"quantile"` or `"iqr"`.
-        iqr_factor: How many IQRs below Q1 and above Q3 the bounds lie when
-            `method="iqr"`. Must be non-negative. Ignored when
-            `method="quantile"`.
+        threshold: How many IQRs below Q1 and above Q3 the bounds lie when
+            `method="iqr"`. Must be finite and non-negative; `0` caps values
+            at the quartiles. Ignored when `method="quantile"`.
         by: Optional column(s) to group by. Bounds are computed separately
             for each group.
         suffix: If given, the winsorized values are written to new columns
@@ -128,12 +147,13 @@ def winsorize(
             Otherwise, the original columns are overwritten.
 
     Raises:
-        TypeError: If `method`, `iqr_factor` or `suffix` has the wrong type.
-        TypeError: If a selected column is not numeric.
+        TypeError: If `method`, `threshold` or `suffix` has the wrong type.
+        TypeError: If a selected column is not numeric, or is boolean or
+            complex.
         ValueError: If `method` is not `"quantile"` or `"iqr"`.
         ValueError: If `limits` is not a pair of quantiles between 0 and 1
             with the lower one smaller than the upper one.
-        ValueError: If `iqr_factor` is negative.
+        ValueError: If `threshold` is negative or not finite.
         ValueError: If a column in `by` is also selected for winsorizing.
         ValueError: If a column created by `suffix` already exists.
 
@@ -145,12 +165,12 @@ def winsorize(
     if method not in WINSORIZE_METHODS:
         raise ValueError(f"`method` must be 'quantile' or 'iqr', not {method!r}.")
     if method == "quantile":
-        lower_q, upper_q = _validate_limits(limits)
+        lower_q, upper_q = validate_limits(limits)
     else:
-        if not _is_real_number(iqr_factor):
-            raise TypeError("`iqr_factor` must be an int or a float.")
-        if iqr_factor < 0:
-            raise ValueError("`iqr_factor` must be non-negative.")
+        if not is_real_number(threshold):
+            raise TypeError("`threshold` must be a real number.")
+        if not math.isfinite(threshold) or threshold < 0:
+            raise ValueError("`threshold` must be a finite, non-negative number.")
     if suffix is not None:
         check("suffix", suffix, [str])
         if not suffix:
@@ -158,7 +178,9 @@ def winsorize(
 
     by_columns = [] if by is None else list(get_index_labels([by], df, axis="columns"))
     if column_names is None:
-        numeric = df.select_dtypes(include="number").columns
+        numeric = df.select_dtypes(
+            include="number", exclude=[np.complexfloating]
+        ).columns
         selected = [col for col in numeric if col not in by_columns]
     else:
         selected = list(get_index_labels([column_names], df, axis="columns"))
@@ -168,10 +190,15 @@ def winsorize(
                 f"Columns {overlap} are used in `by` and cannot be winsorized."
             )
     for col in selected:
-        if not is_numeric_dtype(df[col]) or is_bool_dtype(df[col]):
+        dtype = df[col].dtype
+        if (
+            not is_numeric_dtype(dtype)
+            or is_bool_dtype(dtype)
+            or is_complex_dtype(dtype)
+        ):
             raise TypeError(
-                f"Column {col!r} must be numeric to be winsorized; "
-                f"got dtype {df[col].dtype}."
+                f"Column {col!r} must be numeric (not boolean or complex) "
+                f"to be winsorized; got dtype {dtype}."
             )
     if suffix is not None:
         check_column(df, [f"{col}{suffix}" for col in selected], present=False)
@@ -181,14 +208,19 @@ def winsorize(
     # which also works when the index has duplicate labels.
     keys = [result[col].array for col in by_columns] or None
     for col in selected:
-        values = _as_float(result[col])
+        values = as_float(result[col])
+        # A single inf would turn an interpolated quantile into NaN, which
+        # `clip` reads as "no bound". Infinite values are therefore left out
+        # of the statistics, and then capped like any other value.
+        infinite = np.isinf(values.to_numpy(dtype=float, na_value=np.nan))
+        finite = values.mask(infinite)
         if method == "quantile":
-            lower = _quantile(values, lower_q, keys)
-            upper = _quantile(values, upper_q, keys)
+            probs = [q for q in (lower_q, upper_q) if q is not None]
+            found = dict(zip(probs, compute_quantiles(finite, probs, keys)))
+            lower, upper = found.get(lower_q), found.get(upper_q)
         else:
-            q1 = _quantile(values, 0.25, keys)
-            q3 = _quantile(values, 0.75, keys)
-            spread = iqr_factor * (q3 - q1)
+            q1, q3 = compute_quantiles(finite, [0.25, 0.75], keys)
+            spread = threshold * (q3 - q1)
             lower, upper = q1 - spread, q3 + spread
         target = col if suffix is None else f"{col}{suffix}"
         result[target] = values.clip(lower=lower, upper=upper)
@@ -196,12 +228,12 @@ def winsorize(
     return result
 
 
-def _is_real_number(value: Any) -> bool:
-    """Return True for ints and floats, but not booleans."""
+def is_real_number(value: Any) -> bool:
+    """Return True for real numbers, including NumPy scalars, but not booleans."""
     return isinstance(value, Real) and not isinstance(value, bool)
 
 
-def _validate_limits(limits: Any) -> tuple[float | None, float | None]:
+def validate_limits(limits: Any) -> tuple[float | None, float | None]:
     """Check that `limits` is a valid `(lower, upper)` pair of quantiles."""
     if not isinstance(limits, (tuple, list)) or len(limits) != 2:
         raise ValueError("`limits` must be a (lower, upper) pair.")
@@ -211,7 +243,7 @@ def _validate_limits(limits: Any) -> tuple[float | None, float | None]:
     for name, value in (("lower", lower), ("upper", upper)):
         if value is None:
             continue
-        if not _is_real_number(value) or not 0 <= value <= 1:
+        if not is_real_number(value) or not 0 <= value <= 1:
             raise ValueError(
                 f"The {name} limit must be a number between 0 and 1, not {value!r}."
             )
@@ -220,7 +252,7 @@ def _validate_limits(limits: Any) -> tuple[float | None, float | None]:
     return lower, upper
 
 
-def _as_float(series: pd.Series) -> pd.Series:
+def as_float(series: pd.Series) -> pd.Series:
     """Convert integer columns to float so they can hold fractional bounds."""
     if not is_integer_dtype(series):
         return series
@@ -229,19 +261,31 @@ def _as_float(series: pd.Series) -> pd.Series:
     return series.astype("float64")
 
 
-def _quantile(
+def compute_quantiles(
     series: pd.Series,
-    q: float | None,
+    probs: list[float],
     keys: list | None,
-) -> float | pd.Series | None:
-    """Return the `q` quantile of `series`, per group if `keys` are given.
+) -> list[float | np.ndarray]:
+    """Return the `probs` quantiles of `series`, per group if `keys` are given.
 
-    A grouped quantile is returned as a Series aligned with `series`, so it
+    All quantiles come from a single `quantile` call. Without `keys`, each
+    quantile is a float. With `keys`, each quantile is an array aligned by
+    position with `series`, holding the quantile of the row's group, so it
     can be passed straight to `Series.clip`. Rows whose group key is missing
     get NaN, which `Series.clip` treats as no bound.
     """
-    if q is None:
-        return None
     if keys is None:
-        return series.quantile(q)
-    return series.groupby(keys, sort=False).transform("quantile", q)
+        quantiles = series.quantile(probs).to_numpy(dtype=float, na_value=np.nan)
+        return list(quantiles)
+    grouped = series.groupby(keys, sort=False, observed=True)
+    # One row per group, in the same order as the group numbers of `ngroup`.
+    table = (
+        grouped.quantile(probs)
+        .to_numpy(dtype=float, na_value=np.nan)
+        .reshape(-1, len(probs))
+    )
+    codes = grouped.ngroup().to_numpy()
+    has_group = ~np.isnan(codes)
+    rows = np.full((len(series), len(probs)), np.nan)
+    rows[has_group] = table[codes[has_group].astype(int)]
+    return list(rows.T)

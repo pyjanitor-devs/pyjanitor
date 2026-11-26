@@ -116,6 +116,7 @@ from .update_where import update_where
 from .utils import (
     unionize_dataframe_categories,
 )
+from .winsorize import winsorize
 
 __all__ = [
     "add_columns",
@@ -221,6 +222,7 @@ __all__ = [
     "truncate_datetime_dataframe",
     "update_where",
     "unionize_dataframe_categories",
+    "winsorize",
     "DropLabel",
     "get_index_labels",
     "get_columns",

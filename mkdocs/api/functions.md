@@ -69,3 +69,4 @@
         - truncate_datetime
         - update_where
         - utils
+        - winsorize

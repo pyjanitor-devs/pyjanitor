@@ -935,6 +935,22 @@ the group key has to be moved into columns with `reset_index` before the merge.
 `None` check in the Series/Index validator, and cover a one-column
 `explicit=False` fill plus integer labels (scalar and list form).
 
+### [2026-11-25] Outlier bounds leave out infinities
+
+**Context**: Maintainer review of `winsorize` (PR #1872), aligning it with
+`flag_outliers` (PR #1835).
+**Learning**: A single `inf` makes an interpolated `Series.quantile` return
+`NaN`, and `Series.clip` treats a `NaN` bound as no bound, so the cap
+silently disappears. `is_numeric_dtype` and `select_dtypes("number")` both
+accept complex columns. The IQR multiplier is named `threshold` in outlier
+functions, and new helpers in `janitor/functions/` modules do not use a
+leading underscore. Winsorizing is not idempotent: a second pass re-estimates
+the bounds from the clipped sample and can clip further.
+**Recommendation**: Mask `inf` and `-inf` before computing quantile or IQR
+bounds, then clip infinite values to the finite bounds. Reject complex
+columns explicitly and leave them out of default numeric selections. Do not
+write idempotence property tests for winsorize-style functions.
+
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol

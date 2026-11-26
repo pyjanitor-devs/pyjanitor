@@ -9,6 +9,28 @@ from pandas.testing import assert_frame_equal, assert_series_equal
 
 import janitor  # noqa: F401
 
+finite_floats = st.floats(
+    min_value=-1e6, max_value=1e6, allow_nan=False, allow_infinity=False
+)
+# Mostly finite values, with some missing and infinite ones mixed in.
+values_with_gaps = st.lists(
+    st.one_of(
+        finite_floats,
+        finite_floats,
+        finite_floats,
+        st.sampled_from([np.nan, np.inf, -np.inf]),
+    ),
+    min_size=1,
+    max_size=40,
+)
+probabilities = st.floats(min_value=0, max_value=1)
+valid_limits = st.one_of(
+    st.tuples(probabilities, probabilities).filter(lambda pair: pair[0] < pair[1]),
+    st.tuples(st.none(), probabilities),
+    st.tuples(probabilities, st.none()),
+)
+thresholds = st.one_of(st.just(0.0), st.floats(min_value=0, max_value=10))
+
 
 @pytest.fixture
 def sales():
@@ -41,45 +63,6 @@ def test_winsorize_default_selects_numeric_columns(sales):
 
 
 @pytest.mark.functions
-def test_winsorize_quantile_matches_manual_clip():
-    """Quantile bounds match a manual clip on random data."""
-    rng = np.random.default_rng(0)
-    df = pd.DataFrame({"x": rng.standard_t(df=2, size=500)})
-
-    result = df.winsorize("x", limits=(0.01, 0.99))
-
-    expected = df["x"].clip(df["x"].quantile(0.01), df["x"].quantile(0.99))
-    assert_series_equal(result["x"], expected)
-    assert result["x"].min() == pytest.approx(df["x"].quantile(0.01))
-    assert result["x"].max() == pytest.approx(df["x"].quantile(0.99))
-
-
-@pytest.mark.functions
-def test_winsorize_iqr_uses_tukey_fences():
-    """method='iqr' caps at Q1 - 1.5 IQR and Q3 + 1.5 IQR."""
-    df = pd.DataFrame({"x": [-500.0, 10.0, 11.0, 12.0, 13.0, 500.0]})
-    q1, q3 = df["x"].quantile([0.25, 0.75])
-    iqr = q3 - q1
-
-    result = df.winsorize("x", method="iqr")
-
-    expected = pd.Series(
-        [q1 - 1.5 * iqr, 10.0, 11.0, 12.0, 13.0, q3 + 1.5 * iqr], name="x"
-    )
-    assert_series_equal(result["x"], expected)
-
-
-@pytest.mark.functions
-def test_winsorize_iqr_factor_controls_fence_width():
-    """iqr_factor=0 caps values to the interquartile range itself."""
-    df = pd.DataFrame({"x": [1.0, 2.0, 3.0, 4.0, 5.0]})
-
-    result = df.winsorize("x", method="iqr", iqr_factor=0)
-
-    assert result["x"].tolist() == [2.0, 2.0, 3.0, 4.0, 4.0]
-
-
-@pytest.mark.functions
 def test_winsorize_iqr_ignores_limits():
     """limits has no effect when method='iqr'."""
     df = pd.DataFrame({"x": [1.0, 2.0, 3.0, 4.0, 100.0]})
@@ -88,26 +71,6 @@ def test_winsorize_iqr_ignores_limits():
     custom = df.winsorize("x", method="iqr", limits=(0.4, 0.6))
 
     assert_frame_equal(default, custom)
-
-
-@pytest.mark.functions
-def test_winsorize_upper_tail_only():
-    """A None lower limit leaves the low values alone."""
-    df = pd.DataFrame({"x": [-1000.0, 1.0, 2.0, 3.0, 1000.0]})
-
-    result = df.winsorize("x", limits=(None, 0.75))
-
-    assert result["x"].tolist() == [-1000.0, 1.0, 2.0, 3.0, 3.0]
-
-
-@pytest.mark.functions
-def test_winsorize_lower_tail_only():
-    """A None upper limit leaves the high values alone."""
-    df = pd.DataFrame({"x": [-1000.0, 1.0, 2.0, 3.0, 1000.0]})
-
-    result = df.winsorize("x", limits=(0.25, None))
-
-    assert result["x"].tolist() == [1.0, 1.0, 2.0, 3.0, 1000.0]
 
 
 @pytest.mark.functions
@@ -127,46 +90,6 @@ def test_winsorize_suffix_existing_column_raises(sales):
 
     with pytest.raises(ValueError, match="amount_capped"):
         df.winsorize("amount", suffix="_capped")
-
-
-@pytest.mark.functions
-def test_winsorize_by_group(sales):
-    """Bounds are computed within each group when by is given."""
-    result = sales.winsorize("amount", limits=(0, 0.75), by="store")
-
-    expected = pd.Series(
-        [1.0, 2.0, 3.0, 12.25, 100.0, 200.0, 300.0, 1225.0], name="amount"
-    )
-    assert_series_equal(result["amount"], expected)
-    assert_series_equal(result["store"], sales["store"])
-
-
-@pytest.mark.functions
-def test_winsorize_by_group_differs_from_global(sales):
-    """Grouping caps each store against its own values, not the whole table."""
-    global_result = sales.winsorize("amount", limits=(0, 0.75))
-    grouped_result = sales.winsorize("amount", limits=(0, 0.75), by="store")
-
-    # Globally, the 75th percentile is 225, so store b's 300 gets capped.
-    assert global_result.loc[6, "amount"] == 225.0
-    # Within store b, 300 is below that store's own 75th percentile.
-    assert grouped_result.loc[6, "amount"] == 300.0
-
-
-@pytest.mark.functions
-def test_winsorize_by_multiple_keys():
-    """Several grouping columns can be used together."""
-    df = pd.DataFrame(
-        {
-            "region": ["n", "n", "n", "n", "n", "n"],
-            "store": ["a", "a", "a", "b", "b", "b"],
-            "amount": [1.0, 2.0, 30.0, 10.0, 20.0, 300.0],
-        }
-    )
-
-    result = df.winsorize("amount", limits=(0, 0.5), by=["region", "store"])
-
-    assert result["amount"].tolist() == [1.0, 2.0, 2.0, 10.0, 20.0, 20.0]
 
 
 @pytest.mark.functions
@@ -219,14 +142,16 @@ def test_winsorize_by_with_duplicate_index_labels():
 
 
 @pytest.mark.functions
-def test_winsorize_missing_values_are_preserved():
-    """NaN values are ignored for the bounds and stay NaN."""
-    df = pd.DataFrame({"x": [1.0, np.nan, 2.0, 3.0, 100.0]})
+def test_winsorize_caps_infinite_values():
+    """inf is left out of the bounds and then capped, for both methods."""
+    df = pd.DataFrame({"x": [-np.inf, 1.0, 2.0, 3.0, 4.0, np.inf]})
 
-    result = df.winsorize("x", limits=(0, 0.75))
+    by_quantile = df.winsorize("x", limits=(0, 0.75))
+    by_iqr = df.winsorize("x", method="iqr")
 
-    assert np.isnan(result.loc[1, "x"])
-    assert result["x"].dropna().tolist() == [1.0, 2.0, 3.0, 27.25]
+    # The finite values are 1, 2, 3 and 4: Q1 = 1.75, Q3 = 3.25, IQR = 1.5.
+    assert by_quantile["x"].tolist() == [1.0, 1.0, 2.0, 3.0, 3.25, 3.25]
+    assert by_iqr["x"].tolist() == [-0.5, 1.0, 2.0, 3.0, 4.0, 5.5]
 
 
 @pytest.mark.functions
@@ -312,6 +237,18 @@ def test_winsorize_non_numeric_column_raises(sales, column):
 
 
 @pytest.mark.functions
+def test_winsorize_complex_column_raises():
+    """Complex columns are rejected, and skipped by the default selection."""
+    df = pd.DataFrame({"z": [1 + 1j, 2 + 0j, 3 - 1j], "x": [1.0, 2.0, 30.0]})
+
+    with pytest.raises(TypeError, match="not boolean or complex"):
+        df.winsorize("z")
+    result = df.winsorize(limits=(0, 0.5))
+    assert_series_equal(result["z"], df["z"])
+    assert result["x"].tolist() == [1.0, 2.0, 2.0]
+
+
+@pytest.mark.functions
 def test_winsorize_missing_column_raises(sales):
     """Selecting a column that does not exist raises KeyError."""
     with pytest.raises(KeyError):
@@ -349,12 +286,19 @@ def test_winsorize_invalid_limits_raise(sales, limits):
 
 
 @pytest.mark.functions
-def test_winsorize_invalid_iqr_factor_raises(sales):
-    """iqr_factor must be a non-negative number."""
-    with pytest.raises(ValueError, match="non-negative"):
-        sales.winsorize("amount", method="iqr", iqr_factor=-1)
-    with pytest.raises(TypeError, match="iqr_factor"):
-        sales.winsorize("amount", method="iqr", iqr_factor="1.5")
+@pytest.mark.parametrize("threshold", [-1, np.inf, np.nan])
+def test_winsorize_invalid_threshold_raises(sales, threshold):
+    """threshold must be a finite, non-negative number."""
+    with pytest.raises(ValueError, match="finite, non-negative"):
+        sales.winsorize("amount", method="iqr", threshold=threshold)
+
+
+@pytest.mark.functions
+@pytest.mark.parametrize("threshold", ["1.5", True, None])
+def test_winsorize_non_numeric_threshold_raises(sales, threshold):
+    """threshold must be a real number."""
+    with pytest.raises(TypeError, match="threshold"):
+        sales.winsorize("amount", method="iqr", threshold=threshold)
 
 
 @pytest.mark.functions
@@ -366,27 +310,124 @@ def test_winsorize_invalid_suffix_raises(sales):
         sales.winsorize("amount", suffix=1)
 
 
+@st.composite
+def frames_with_missing_values(draw):
+    """Frames with missing values, a repeated index and an optional group."""
+    dtype = draw(st.sampled_from(["float64", "Float64", "Int64"]))
+    size = draw(st.integers(min_value=1, max_value=30))
+    numbers = st.integers(-1000, 1000) if dtype == "Int64" else finite_floats
+    values = draw(st.lists(st.none() | numbers, min_size=size, max_size=size))
+    if dtype == "float64":
+        x = np.array([np.nan if v is None else v for v in values], dtype=float)
+    else:
+        x = pd.array(values, dtype=dtype)
+    groups = draw(
+        st.lists(st.sampled_from(["a", "b", None]), min_size=size, max_size=size)
+    )
+    index = draw(st.lists(st.integers(0, 3), min_size=size, max_size=size))
+    return pd.DataFrame({"g": groups, "x": x}, index=index)
+
+
+@st.composite
+def grouped_frames(draw):
+    """Frames with a value column and a group key that may be missing."""
+    values = draw(values_with_gaps)
+    groups = draw(
+        st.lists(
+            st.sampled_from(["a", "b", "c", None]),
+            min_size=len(values),
+            max_size=len(values),
+        )
+    )
+    return pd.DataFrame({"g": groups, "x": values})
+
+
 @pytest.mark.functions
-@settings(deadline=None, max_examples=10)
+@settings(deadline=None, max_examples=100)
+@given(values=values_with_gaps, limits=valid_limits)
+def test_winsorize_quantile_bounds_property(values, limits):
+    """Output stays within the input's quantile bounds and keeps its order."""
+    x = pd.Series(values, name="x")
+    finite = x[np.isfinite(x)]
+
+    result = pd.DataFrame({"x": x}).winsorize("x", limits=limits)["x"]
+
+    if finite.empty:
+        # Without finite values there are no bounds, so nothing changes.
+        assert_series_equal(result, x)
+        return
+    lower, upper = limits
+    low = -np.inf if lower is None else finite.quantile(lower)
+    high = np.inf if upper is None else finite.quantile(upper)
+    capped = result[np.isfinite(result)]
+    assert (capped >= low).all()
+    assert (capped <= high).all()
+    # Infinite values are capped on every side that has a bound.
+    if lower is not None:
+        assert not (result == -np.inf).any()
+    if upper is not None:
+        assert not (result == np.inf).any()
+    inside = x.between(low, high)
+    assert_series_equal(result[inside], x[inside])
+    order = np.argsort(x.to_numpy(), kind="stable")
+    ranked = result.to_numpy()[order]
+    ranked = ranked[~np.isnan(ranked)]
+    assert (ranked[1:] >= ranked[:-1]).all()
+
+
+@pytest.mark.functions
+@settings(deadline=None, max_examples=100)
 @given(
-    values=st.lists(
-        st.floats(min_value=-1e6, max_value=1e6, allow_nan=False),
-        min_size=1,
-        max_size=50,
-    ),
-    lower=st.floats(min_value=0, max_value=0.49),
-    upper=st.floats(min_value=0.51, max_value=1),
+    df=frames_with_missing_values(),
+    method=st.sampled_from(["quantile", "iqr"]),
+    grouped=st.booleans(),
 )
-def test_winsorize_properties(values, lower, upper):
-    """Results stay within the bounds, keep order and leave inner values alone."""
-    df = pd.DataFrame({"x": values})
-    low, high = df["x"].quantile(lower), df["x"].quantile(upper)
+def test_winsorize_keeps_missing_values_and_index(df, method, grouped):
+    """Missing values stay missing, and the index is unchanged."""
+    result = df.winsorize("x", method=method, by="g" if grouped else None)
 
-    result = df.winsorize("x", limits=(lower, upper))["x"]
+    assert result.index.equals(df.index)
+    assert result["x"].isna().tolist() == df["x"].isna().tolist()
+    assert_series_equal(result["g"], df["g"])
 
-    assert (result >= low).all()
-    assert (result <= high).all()
-    inside = df["x"].between(low, high)
-    assert_series_equal(result[inside], df["x"][inside])
-    order = np.argsort(df["x"].to_numpy(), kind="stable")
-    assert (np.diff(result.to_numpy()[order]) >= 0).all()
+
+@pytest.mark.functions
+@settings(deadline=None, max_examples=100)
+@given(values=values_with_gaps, threshold=thresholds)
+def test_winsorize_iqr_matches_tukey_fences(values, threshold):
+    """method="iqr" clips at Tukey's fences computed from the finite values."""
+    x = pd.Series(values, name="x")
+    q1, q3 = x[np.isfinite(x)].quantile([0.25, 0.75])
+    spread = threshold * (q3 - q1)
+    low, high = q1 - spread, q3 + spread
+
+    result = pd.DataFrame({"x": x}).winsorize("x", method="iqr", threshold=threshold)[
+        "x"
+    ]
+
+    assert_series_equal(result, x.clip(low, high))
+    inside = x.between(low, high)
+    assert_series_equal(result[inside], x[inside])
+
+
+@pytest.mark.functions
+@settings(deadline=None, max_examples=100)
+@given(
+    df=grouped_frames(),
+    method=st.sampled_from(["quantile", "iqr"]),
+    limits=valid_limits,
+    threshold=thresholds,
+)
+def test_winsorize_by_group_matches_each_group(df, method, limits, threshold):
+    """Grouped results equal winsorizing each group on its own."""
+    options = {"method": method, "limits": limits, "threshold": threshold}
+
+    result = df.winsorize("x", by="g", **options)
+
+    expected = df["x"].copy()
+    for key in df["g"].dropna().unique():
+        rows = (df["g"] == key).to_numpy()
+        expected[rows] = df[rows].winsorize("x", **options)["x"].to_numpy()
+    assert_series_equal(result["x"], expected)
+    missing = df["g"].isna()
+    assert_series_equal(result["x"][missing], df["x"][missing])

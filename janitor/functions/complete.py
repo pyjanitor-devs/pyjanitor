@@ -386,6 +386,11 @@ def _computations_complete(
         # Index to object. equals() still holds, so put the original back
         # before later assignment freezes that widened Index in place.
         out.columns = columns
+    if type(out) is not type(df):
+        # pd.merge builds its result from `uniques`, which is a plain
+        # DataFrame. Rebuild it with the input's constructor and carry over
+        # `_metadata` and attrs, as pandas operations on a subclass do.
+        out = df._constructor(out).__finalize__(df)
     if fill_value is None:
         return out
     # keep only columns that are not part of column_checker

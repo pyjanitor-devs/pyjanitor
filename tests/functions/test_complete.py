@@ -1247,3 +1247,61 @@ def test_explicit_true_categorical_does_not_add_categories():
             explicit=True,
             sort=True,
         )
+
+
+class _MetadataFrame(pd.DataFrame):
+    """DataFrame subclass with a `_metadata` property (issue #1473)."""
+
+    _metadata = ["myvar"]
+
+    @property
+    def _constructor(self):
+        return _MetadataFrame
+
+
+def _metadata_frame():
+    frame = _MetadataFrame(
+        {
+            "Year": [1999, 2000, 2004, 1999, 2004],
+            "Taxon": ["S", "S", "S", "A", "A"],
+            "Abundance": [4, 5, 2, 1, 8],
+        }
+    )
+    frame.myvar = 2
+    return frame
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {},
+        {"fill_value": 0},
+        {"fill_value": {"Abundance": 0}, "explicit": False},
+    ],
+)
+def test_complete_preserves_subclass_metadata(kwargs):
+    """complete keeps a DataFrame subclass and its `_metadata`."""
+    frame = _metadata_frame()
+    index = pd.Index(range(1999, 2005), name="Year")
+    out = frame.complete(index, "Taxon", sort=True, **kwargs)
+    assert type(out) is _MetadataFrame
+    assert out.myvar == 2
+    expected = pd.DataFrame(frame).complete(index, "Taxon", sort=True, **kwargs)
+    assert_frame_equal(pd.DataFrame(out), expected)
+
+
+def test_complete_preserves_subclass_metadata_grouped():
+    """Grouped complete keeps the subclass and `_metadata` of the frame."""
+    frame = _metadata_frame()
+    out = frame.groupby("Taxon").complete({"Year": [1999, 2000, 2004]})
+    assert type(out) is _MetadataFrame
+    assert out.myvar == 2
+
+
+def test_complete_preserves_attrs_on_subclass():
+    """attrs of a subclassed frame survive complete."""
+    frame = _metadata_frame()
+    frame.attrs["source"] = "survey"
+    out = frame.complete("Year", "Taxon")
+    assert out.attrs == {"source": "survey"}
+    assert out.myvar == 2

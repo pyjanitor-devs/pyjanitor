@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
--   [DOC] Add a learned pattern to `AGENTS.md`: validate changelog placement after a rebase. - @ericmjl
+-   [DOC] Add a learned pattern to `AGENTS.md`: validate changelog placement after a rebase. - PR #1882 @ericmjl
 
 ## [v0.32.81] - 2026-11-22
 

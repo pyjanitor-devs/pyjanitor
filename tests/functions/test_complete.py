@@ -1436,3 +1436,13 @@ def test_complete_uses_subclass_constructor_hook():
     expected = pd.DataFrame(frame).complete({"k": [1, 2]}, fill_value=0)
     assert_frame_equal(pd.DataFrame(out), expected)
     assert out["v"].tolist() == [7.0, 0.0]
+
+
+def test_complete_callable_sees_subclass_metadata():
+    """A callable column spec receives the subclass with its metadata."""
+    frame = _MetadataFrame({"k": [0]})
+    frame.myvar = 2
+    out = frame.complete({"k": lambda f: range(f.myvar + 1)}, sort=True)
+    assert type(out) is _MetadataFrame
+    assert out.myvar == 2
+    assert out["k"].tolist() == [0, 1, 2]

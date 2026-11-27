@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
--   [BUG] `complete` returns the input's DataFrame subclass and keeps its `_metadata` and `attrs`, on plain and grouped frames. - Issue #1473
+-   [BUG] `complete` returns the input's DataFrame subclass and keeps its `_metadata` and `attrs`, on plain and grouped frames. - Issue #1473, PR #1881 @yutianjiang39
 
 ## [v0.32.81] - 2026-11-22
 

@@ -120,6 +120,7 @@ pixi run <command>
 | `engineering` | Engineering module development | unyt |
 | `spark` | PySpark development | pyspark |
 | `py311`/`py312`/`py313` | Python version testing | Specific Python versions |
+| `py313-polars2` | Polars 2.x test coverage | Python 3.13, Polars 2.x, pytest |
 
 To run commands in a specific environment:
 
@@ -906,6 +907,17 @@ includes nullable `Int64` and `Float64` columns and excludes booleans.
 **Recommendation**: Choose adorn targets with `adorn_data_positions` and
 assign with `DataFrame.isetitem`. Pair `adorn_ns` counts with
 `adorn_count_pairs`.
+
+### [2026-11-04] A Polars 2 environment cannot include the `tests` feature
+
+**Context**: Adding the `py313-polars2` environment for issue #1818.
+**Learning**: The `tests` feature pins `polars>=1.37.1,<2`, and Pixi unions
+the requirements of every feature in an environment. An environment that
+includes `tests` therefore cannot also request Polars 2.
+**Recommendation**: Give the Polars 2 environment `no-default-feature = true`
+with `features = ["py313"]`, and declare Polars 2, pandas 3, pyarrow and pytest
+on the environment itself. Leave `py311`, `py312` and `py313` on the locked
+Polars 1.41.1 line.
 
 ### [2026-11-11] Preserve CDF dtype promotion and Series metadata
 

@@ -385,6 +385,11 @@ def _complete_frame(
             merge_columns = uniques.columns.tolist()
     if not isinstance(df, pd.DataFrame):
         df = df.obj
+    if type(df) is not pd.DataFrame:
+        # Merge with a plain view of a subclass, so pandas' internal writes
+        # (such as the merge indicator) do not go through subclass methods.
+        # The caller restores the subclass and its metadata on return.
+        df = pd.DataFrame(df)
     columns = df.columns
     if (fill_value is not None) and not explicit:
         # Joining the labels repeats a one-column name, and labels are

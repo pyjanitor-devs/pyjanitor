@@ -1369,3 +1369,31 @@ def test_complete_plain_frame_attrs_follow_merge():
     combinations = frame.expand("x", "y")
     merged = pd.merge(combinations, frame, how="outer", on=["x", "y"])
     assert out.attrs == merged.attrs
+
+
+class _SchemaFrame(_MetadataFrame):
+    """Subclass that rejects writes to columns it does not already have."""
+
+    @property
+    def _constructor(self):
+        return _SchemaFrame
+
+    def __setitem__(self, key, value):
+        if key not in self.columns:
+            raise ValueError(f"unknown column {key!r}")
+        super().__setitem__(key, value)
+
+
+@pytest.mark.parametrize("explicit", [True, False])
+def test_complete_schema_restricted_subclass(explicit):
+    """complete does not write temporary columns through the subclass."""
+    frame = _SchemaFrame({"k": [1], "v": [7]})
+    frame.myvar = 2
+    out = frame.complete({"k": [1, 2]}, fill_value=0, explicit=explicit)
+    assert type(out) is _SchemaFrame
+    assert out.myvar == 2
+    expected = pd.DataFrame(frame).complete(
+        {"k": [1, 2]}, fill_value=0, explicit=explicit
+    )
+    assert_frame_equal(pd.DataFrame(out), expected)
+    assert out["v"].tolist() == [7.0, 0.0]

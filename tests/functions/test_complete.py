@@ -1446,3 +1446,21 @@ def test_complete_callable_sees_subclass_metadata():
     assert type(out) is _MetadataFrame
     assert out.myvar == 2
     assert out["k"].tolist() == [0, 1, 2]
+
+
+class _AttrsOnlyFrame(pd.DataFrame):
+    """Subclass that declares no `_metadata` and relies on attrs."""
+
+    @property
+    def _constructor(self):
+        return _AttrsOnlyFrame
+
+
+def test_complete_preserves_attrs_only_subclass():
+    """A subclass without `_metadata` keeps its type and attrs."""
+    frame = _AttrsOnlyFrame({"k": [1], "v": [7]})
+    frame.attrs["source"] = "survey"
+    out = frame.complete({"k": [1, 2]})
+    assert type(out) is _AttrsOnlyFrame
+    assert out.attrs == {"source": "survey"}
+    assert out["k"].tolist() == [1, 2]

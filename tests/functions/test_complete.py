@@ -1258,6 +1258,10 @@ class _MetadataFrame(pd.DataFrame):
     def _constructor(self):
         return _MetadataFrame
 
+    def fillna(self, value=None, *, limit=1, **kwargs):
+        """Fill at most one null per column, unlike pandas' default."""
+        return super().fillna(value, limit=limit, **kwargs)
+
 
 def _metadata_frame():
     frame = _MetadataFrame(
@@ -1290,12 +1294,32 @@ def test_complete_preserves_subclass_metadata(kwargs):
     assert_frame_equal(pd.DataFrame(out), expected)
 
 
+@pytest.mark.parametrize("explicit", [True, False])
+def test_complete_subclass_fill_matches_plain_frame(explicit):
+    """Filled values on a subclass match those of a plain DataFrame."""
+    frame = _MetadataFrame({"k": [0], "v": [7]})
+    frame.myvar = 2
+    out = frame.complete({"k": [0, 1, 2]}, fill_value=0, explicit=explicit)
+    assert type(out) is _MetadataFrame
+    assert out.myvar == 2
+    expected = pd.DataFrame(frame).complete(
+        {"k": [0, 1, 2]}, fill_value=0, explicit=explicit
+    )
+    assert_frame_equal(pd.DataFrame(out), expected)
+    assert not out["v"].hasnans
+
+
 def test_complete_preserves_subclass_metadata_grouped():
     """Grouped complete keeps the subclass and `_metadata` of the frame."""
     frame = _metadata_frame()
     out = frame.groupby("Taxon").complete({"Year": [1999, 2000, 2004]})
     assert type(out) is _MetadataFrame
     assert out.myvar == 2
+    expected = (
+        pd.DataFrame(frame).groupby("Taxon").complete({"Year": [1999, 2000, 2004]})
+    )
+    assert_frame_equal(pd.DataFrame(out), expected)
+    assert len(out) == 6
 
 
 def test_complete_preserves_attrs_on_subclass():
@@ -1305,3 +1329,14 @@ def test_complete_preserves_attrs_on_subclass():
     out = frame.complete("Year", "Taxon")
     assert out.attrs == {"source": "survey"}
     assert out.myvar == 2
+
+
+def test_complete_plain_frame_attrs_follow_merge():
+    """A plain DataFrame result keeps the attrs that pd.merge gives it."""
+    frame = pd.DataFrame({"x": [1, 1, 2], "y": ["a", "b", "a"], "z": [1, 2, 3]})
+    frame.attrs["source"] = "survey"
+    out = frame.complete("x", "y")
+    assert type(out) is pd.DataFrame
+    combinations = frame.expand("x", "y")
+    merged = pd.merge(combinations, frame, how="outer", on=["x", "y"])
+    assert out.attrs == merged.attrs

@@ -304,6 +304,27 @@ def _computations_complete(
 
     A DataFrame, with rows of missing values, if any, is returned.
     """
+    out = _complete_frame(df, columns, sort, by, fill_value, explicit)
+    source = df.obj if isinstance(df, DataFrameGroupBy) else df
+    if type(out) is not type(source):
+        # pd.merge builds the result from the expanded combinations, which
+        # are a plain DataFrame. Rebuild the finished result with the
+        # input's constructor and carry over `_metadata` and attrs, as
+        # pandas operations on a subclass do. This happens after filling,
+        # so the values match those of an equivalent plain DataFrame.
+        out = source._constructor(out).__finalize__(source)
+    return out
+
+
+def _complete_frame(
+    df: pd.DataFrame | DataFrameGroupBy,
+    columns: list | tuple | dict | str,
+    sort: bool,
+    by: list | str,
+    fill_value: dict | Any,
+    explicit: bool,
+) -> pd.DataFrame:
+    """Merge the combinations with the frame and fill, as a plain DataFrame."""
     check("explicit", explicit, [bool])
 
     check("sort", sort, [bool])
@@ -386,11 +407,6 @@ def _computations_complete(
         # Index to object. equals() still holds, so put the original back
         # before later assignment freezes that widened Index in place.
         out.columns = columns
-    if type(out) is not type(df):
-        # pd.merge builds its result from `uniques`, which is a plain
-        # DataFrame. Rebuild it with the input's constructor and carry over
-        # `_metadata` and attrs, as pandas operations on a subclass do.
-        out = df._constructor(out).__finalize__(df)
     if fill_value is None:
         return out
     # keep only columns that are not part of column_checker

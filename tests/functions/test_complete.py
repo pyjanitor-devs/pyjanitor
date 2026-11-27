@@ -1,3 +1,4 @@
+import functools
 import inspect
 import warnings
 from pathlib import Path
@@ -1371,6 +1372,18 @@ def test_complete_plain_frame_attrs_follow_merge():
     assert out.attrs == merged.attrs
 
 
+def test_complete_plain_frame_keeps_duplicate_label_flag():
+    """A plain DataFrame that disallows duplicate labels still does after."""
+    frame = pd.DataFrame(
+        {"k": [1, 1, 2], "j": ["a", "b", "a"], "v": [1, 2, 3]}
+    ).set_flags(allows_duplicate_labels=False)
+    out = frame.complete("k", "j")
+    assert type(out) is pd.DataFrame
+    assert out.flags.allows_duplicate_labels is False
+    with pytest.raises(pd.errors.DuplicateLabelError):
+        out.rename(columns={"j": "k"})
+
+
 class _SchemaFrame(_MetadataFrame):
     """Subclass that rejects writes to columns it does not already have."""
 
@@ -1395,5 +1408,31 @@ def test_complete_schema_restricted_subclass(explicit):
     expected = pd.DataFrame(frame).complete(
         {"k": [1, 2]}, fill_value=0, explicit=explicit
     )
+    assert_frame_equal(pd.DataFrame(out), expected)
+    assert out["v"].tolist() == [7.0, 0.0]
+
+
+class _SiteFrame(pd.DataFrame):
+    """Subclass whose constructor requires a keyword set by its hook."""
+
+    _metadata = ["site"]
+
+    def __init__(self, *args, site, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.site = site
+
+    @property
+    def _constructor(self):
+        return functools.partial(type(self), site=self.site)
+
+
+def test_complete_uses_subclass_constructor_hook():
+    """complete builds the result through the subclass's _constructor."""
+    frame = _SiteFrame({"k": [1], "v": [7]}, site="north")
+    assert frame.query("k == 1").site == "north"
+    out = frame.complete({"k": [1, 2]}, fill_value=0)
+    assert type(out) is _SiteFrame
+    assert out.site == "north"
+    expected = pd.DataFrame(frame).complete({"k": [1, 2]}, fill_value=0)
     assert_frame_equal(pd.DataFrame(out), expected)
     assert out["v"].tolist() == [7.0, 0.0]

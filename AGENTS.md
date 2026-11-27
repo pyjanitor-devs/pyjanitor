@@ -935,6 +935,30 @@ the group key has to be moved into columns with `reset_index` before the merge.
 `None` check in the Series/Index validator, and cover a one-column
 `explicit=False` fill plus integer labels (scalar and list form).
 
+### [2026-11-27] Check changelog placement after every rebase
+
+**Context**: Rebasing PR #1839 after six patch releases had landed on `dev`.
+**Learning**: A release moves `[Unreleased]` entries under a version heading.
+When an older PR is then rebased, its added lines keep their place after the
+neighbouring entry and land inside the released section. Git reports a clean
+auto-merge, so the conflict list does not show it.
+**Recommendation**: After rebasing a PR that touches `CHANGELOG.md`, commit,
+then run
+`pixi run python scripts/validate_changelog.py --base origin/dev --head HEAD`.
+If it reports `entry added under [vX.Y.Z]`, move the lines back under
+`## [Unreleased]` before pushing.
+
+### [2026-11-27] Upgrade pixi instead of installing a throwaway copy
+
+**Context**: Verifying PR #1839 on a machine with pixi 0.72.2, which rejects
+`[tool.pixi.environments.<name>.dependencies]` with `Unexpected keys`.
+**Learning**: The pixi installer appends an `export PATH=...` line to
+`~/.zshrc` unless `PIXI_NO_MODIFY_PATH=1` is set. A throwaway `PIXI_HOME`
+does not prevent that, and `~/.zshrc` is a symlink into the dotfiles repo.
+**Recommendation**: When an old pixi cannot parse `pyproject.toml`, run
+`pixi self-update`. If a side-by-side install is unavoidable, set
+`PIXI_NO_MODIFY_PATH=1` and check the shell rc file afterwards.
+
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol

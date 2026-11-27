@@ -948,6 +948,17 @@ then run
 If it reports `entry added under [vX.Y.Z]`, move the lines back under
 `## [Unreleased]` before pushing.
 
+### [2026-11-27] Upgrade pixi instead of installing a throwaway copy
+
+**Context**: Verifying PR #1839 on a machine with pixi 0.72.2, which rejects
+`[tool.pixi.environments.<name>.dependencies]` with `Unexpected keys`.
+**Learning**: The pixi installer appends an `export PATH=...` line to
+`~/.zshrc` unless `PIXI_NO_MODIFY_PATH=1` is set. A throwaway `PIXI_HOME`
+does not prevent that, and `~/.zshrc` is a symlink into the dotfiles repo.
+**Recommendation**: When an old pixi cannot parse `pyproject.toml`, run
+`pixi self-update`. If a side-by-side install is unavoidable, set
+`PIXI_NO_MODIFY_PATH=1` and check the shell rc file afterwards.
+
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol

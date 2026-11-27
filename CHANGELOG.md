@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
--   [DOC] Add a learned pattern to `AGENTS.md`: validate changelog placement after a rebase. - PR #1882 @ericmjl
+-   [DOC] Add two learned patterns to `AGENTS.md`: validate changelog placement after a rebase, and upgrade pixi instead of installing a throwaway copy. - PR #1882 @ericmjl
 
 ## [v0.32.81] - 2026-11-22
 

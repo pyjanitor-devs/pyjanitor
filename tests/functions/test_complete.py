@@ -9,6 +9,7 @@ import pytest
 from hypothesis import given, settings
 from pandas.testing import assert_frame_equal
 
+from janitor.functions.expand_grid import expand as expand_function
 from janitor.testing_utils.strategies import categoricaldf_strategy
 
 
@@ -1323,12 +1324,40 @@ def test_complete_preserves_subclass_metadata_grouped():
 
 
 def test_complete_preserves_attrs_on_subclass():
-    """attrs of a subclassed frame survive complete."""
+    """attrs of a subclassed frame survive complete, without sharing."""
     frame = _metadata_frame()
     frame.attrs["source"] = "survey"
+    frame.attrs["history"] = []
     out = frame.complete("Year", "Taxon")
-    assert out.attrs == {"source": "survey"}
+    assert out.attrs == {"source": "survey", "history": []}
     assert out.myvar == 2
+    out.attrs["history"].append("done")
+    assert frame.attrs["history"] == []
+
+
+class _ExpandingFrame(_MetadataFrame):
+    """Subclass whose expand already returns the subclass with metadata."""
+
+    @property
+    def _constructor(self):
+        return _ExpandingFrame
+
+    def expand(self, *args, **kwargs):
+        """Expand as pyjanitor does, keeping the subclass and metadata."""
+        combinations = expand_function(pd.DataFrame(self), *args, **kwargs)
+        return _ExpandingFrame(combinations).__finalize__(self)
+
+
+@pytest.mark.parametrize("fill_value", [None, 0])
+def test_complete_subclass_expand_returning_subclass(fill_value):
+    """Metadata survives when expand already yields the subclass."""
+    frame = _ExpandingFrame({"k": [1], "v": [7]})
+    frame.myvar = 2
+    out = frame.complete({"k": [1, 2, 3]}, fill_value=fill_value)
+    assert type(out) is _ExpandingFrame
+    assert out.myvar == 2
+    expected = pd.DataFrame(frame).complete({"k": [1, 2, 3]}, fill_value=fill_value)
+    assert_frame_equal(pd.DataFrame(out), expected)
 
 
 def test_complete_plain_frame_attrs_follow_merge():

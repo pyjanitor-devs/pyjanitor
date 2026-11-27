@@ -306,12 +306,13 @@ def _computations_complete(
     """
     out = _complete_frame(df, columns, sort, by, fill_value, explicit)
     source = df.obj if isinstance(df, DataFrameGroupBy) else df
-    if type(out) is not type(source):
-        # pd.merge builds the result from the expanded combinations, which
-        # are a plain DataFrame. Rebuild the finished result with the
-        # input's constructor and carry over `_metadata` and attrs, as
-        # pandas operations on a subclass do. This happens after filling,
-        # so the values match those of an equivalent plain DataFrame.
+    if type(source) is not pd.DataFrame:
+        # The merge and fill run on plain frames. Rebuild the finished
+        # result with the input's constructor and carry over `_metadata`
+        # and attrs, as pandas operations on a subclass do. Finalize even
+        # when the class already matches, since the class alone does not
+        # carry the metadata. Exact DataFrame inputs keep the merge's
+        # attrs, as before.
         out = source._constructor(out).__finalize__(source)
     return out
 
@@ -361,6 +362,11 @@ def _complete_frame(
     else:
         df_for_expand = df
     uniques = df_for_expand.expand(*columns, sort=sort)
+    if type(uniques) is not pd.DataFrame:
+        # An expand override on a subclass may return the subclass. Merge
+        # and fill on a plain frame, so those steps do not dispatch to
+        # subclass methods; the subclass is restored on return.
+        uniques = pd.DataFrame(uniques)
     if (by is None) and isinstance(df, pd.DataFrame):
         merge_columns = uniques.columns.tolist()
     else:

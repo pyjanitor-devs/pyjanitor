@@ -1,3 +1,4 @@
+import functools
 import inspect
 import warnings
 from pathlib import Path
@@ -9,6 +10,7 @@ import pytest
 from hypothesis import given, settings
 from pandas.testing import assert_frame_equal
 
+from janitor.functions.expand_grid import expand as expand_function
 from janitor.testing_utils.strategies import categoricaldf_strategy
 
 
@@ -1247,3 +1249,218 @@ def test_explicit_true_categorical_does_not_add_categories():
             explicit=True,
             sort=True,
         )
+
+
+class _MetadataFrame(pd.DataFrame):
+    """DataFrame subclass with a `_metadata` property (issue #1473)."""
+
+    _metadata = ["myvar"]
+
+    @property
+    def _constructor(self):
+        return _MetadataFrame
+
+    def fillna(self, value=None, *, limit=1, **kwargs):
+        """Fill at most one null per column, unlike pandas' default."""
+        return super().fillna(value, limit=limit, **kwargs)
+
+
+def _metadata_frame():
+    frame = _MetadataFrame(
+        {
+            "Year": [1999, 2000, 2004, 1999, 2004],
+            "Taxon": ["S", "S", "S", "A", "A"],
+            "Abundance": [4, 5, 2, 1, 8],
+        }
+    )
+    frame.myvar = 2
+    return frame
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {},
+        {"fill_value": 0},
+        {"fill_value": {"Abundance": 0}, "explicit": False},
+    ],
+)
+def test_complete_preserves_subclass_metadata(kwargs):
+    """complete keeps a DataFrame subclass and its `_metadata`."""
+    frame = _metadata_frame()
+    index = pd.Index(range(1999, 2005), name="Year")
+    out = frame.complete(index, "Taxon", sort=True, **kwargs)
+    assert type(out) is _MetadataFrame
+    assert out.myvar == 2
+    expected = pd.DataFrame(frame).complete(index, "Taxon", sort=True, **kwargs)
+    assert_frame_equal(pd.DataFrame(out), expected)
+
+
+@pytest.mark.parametrize("explicit", [True, False])
+def test_complete_subclass_fill_matches_plain_frame(explicit):
+    """Filled values on a subclass match those of a plain DataFrame."""
+    frame = _MetadataFrame({"k": [0], "v": [7]})
+    frame.myvar = 2
+    out = frame.complete({"k": [0, 1, 2]}, fill_value=0, explicit=explicit)
+    assert type(out) is _MetadataFrame
+    assert out.myvar == 2
+    expected = pd.DataFrame(frame).complete(
+        {"k": [0, 1, 2]}, fill_value=0, explicit=explicit
+    )
+    assert_frame_equal(pd.DataFrame(out), expected)
+    assert not out["v"].hasnans
+
+
+def test_complete_preserves_subclass_metadata_grouped():
+    """Grouped complete keeps the subclass and `_metadata` of the frame."""
+    frame = _metadata_frame()
+    out = frame.groupby("Taxon").complete({"Year": [1999, 2000, 2004]})
+    assert type(out) is _MetadataFrame
+    assert out.myvar == 2
+    expected = (
+        pd.DataFrame(frame).groupby("Taxon").complete({"Year": [1999, 2000, 2004]})
+    )
+    assert_frame_equal(pd.DataFrame(out), expected)
+    assert len(out) == 6
+
+
+def test_complete_preserves_attrs_on_subclass():
+    """attrs of a subclassed frame survive complete, without sharing."""
+    frame = _metadata_frame()
+    frame.attrs["source"] = "survey"
+    frame.attrs["history"] = []
+    out = frame.complete("Year", "Taxon")
+    assert out.attrs == {"source": "survey", "history": []}
+    assert out.myvar == 2
+    out.attrs["history"].append("done")
+    assert frame.attrs["history"] == []
+
+
+class _ExpandingFrame(_MetadataFrame):
+    """Subclass whose expand already returns the subclass with metadata."""
+
+    @property
+    def _constructor(self):
+        return _ExpandingFrame
+
+    def expand(self, *args, **kwargs):
+        """Expand as pyjanitor does, keeping the subclass and metadata."""
+        combinations = expand_function(pd.DataFrame(self), *args, **kwargs)
+        return _ExpandingFrame(combinations).__finalize__(self)
+
+
+@pytest.mark.parametrize("fill_value", [None, 0])
+def test_complete_subclass_expand_returning_subclass(fill_value):
+    """Metadata survives when expand already yields the subclass."""
+    frame = _ExpandingFrame({"k": [1], "v": [7]})
+    frame.myvar = 2
+    out = frame.complete({"k": [1, 2, 3]}, fill_value=fill_value)
+    assert type(out) is _ExpandingFrame
+    assert out.myvar == 2
+    expected = pd.DataFrame(frame).complete({"k": [1, 2, 3]}, fill_value=fill_value)
+    assert_frame_equal(pd.DataFrame(out), expected)
+
+
+def test_complete_plain_frame_attrs_follow_merge():
+    """A plain DataFrame result keeps the attrs that pd.merge gives it."""
+    frame = pd.DataFrame({"x": [1, 1, 2], "y": ["a", "b", "a"], "z": [1, 2, 3]})
+    frame.attrs["source"] = "survey"
+    out = frame.complete("x", "y")
+    assert type(out) is pd.DataFrame
+    combinations = frame.expand("x", "y")
+    merged = pd.merge(combinations, frame, how="outer", on=["x", "y"])
+    assert out.attrs == merged.attrs
+
+
+def test_complete_plain_frame_keeps_duplicate_label_flag():
+    """A plain DataFrame that disallows duplicate labels still does after."""
+    frame = pd.DataFrame(
+        {"k": [1, 1, 2], "j": ["a", "b", "a"], "v": [1, 2, 3]}
+    ).set_flags(allows_duplicate_labels=False)
+    out = frame.complete("k", "j")
+    assert type(out) is pd.DataFrame
+    assert out.flags.allows_duplicate_labels is False
+    with pytest.raises(pd.errors.DuplicateLabelError):
+        out.rename(columns={"j": "k"})
+
+
+class _SchemaFrame(_MetadataFrame):
+    """Subclass that rejects writes to columns it does not already have."""
+
+    @property
+    def _constructor(self):
+        return _SchemaFrame
+
+    def __setitem__(self, key, value):
+        if key not in self.columns:
+            raise ValueError(f"unknown column {key!r}")
+        super().__setitem__(key, value)
+
+
+@pytest.mark.parametrize("explicit", [True, False])
+def test_complete_schema_restricted_subclass(explicit):
+    """complete does not write temporary columns through the subclass."""
+    frame = _SchemaFrame({"k": [1], "v": [7]})
+    frame.myvar = 2
+    out = frame.complete({"k": [1, 2]}, fill_value=0, explicit=explicit)
+    assert type(out) is _SchemaFrame
+    assert out.myvar == 2
+    expected = pd.DataFrame(frame).complete(
+        {"k": [1, 2]}, fill_value=0, explicit=explicit
+    )
+    assert_frame_equal(pd.DataFrame(out), expected)
+    assert out["v"].tolist() == [7.0, 0.0]
+
+
+class _SiteFrame(pd.DataFrame):
+    """Subclass whose constructor requires a keyword set by its hook."""
+
+    _metadata = ["site"]
+
+    def __init__(self, *args, site, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.site = site
+
+    @property
+    def _constructor(self):
+        return functools.partial(type(self), site=self.site)
+
+
+def test_complete_uses_subclass_constructor_hook():
+    """complete builds the result through the subclass's _constructor."""
+    frame = _SiteFrame({"k": [1], "v": [7]}, site="north")
+    assert frame.query("k == 1").site == "north"
+    out = frame.complete({"k": [1, 2]}, fill_value=0)
+    assert type(out) is _SiteFrame
+    assert out.site == "north"
+    expected = pd.DataFrame(frame).complete({"k": [1, 2]}, fill_value=0)
+    assert_frame_equal(pd.DataFrame(out), expected)
+    assert out["v"].tolist() == [7.0, 0.0]
+
+
+def test_complete_callable_sees_subclass_metadata():
+    """A callable column spec receives the subclass with its metadata."""
+    frame = _MetadataFrame({"k": [0]})
+    frame.myvar = 2
+    out = frame.complete({"k": lambda f: range(f.myvar + 1)}, sort=True)
+    assert type(out) is _MetadataFrame
+    assert out.myvar == 2
+    assert out["k"].tolist() == [0, 1, 2]
+
+
+class _AttrsOnlyFrame(pd.DataFrame):
+    """Subclass that declares no `_metadata` and relies on attrs."""
+
+    @property
+    def _constructor(self):
+        return _AttrsOnlyFrame
+
+
+def test_complete_preserves_attrs_only_subclass():
+    """A subclass without `_metadata` keeps its type and attrs."""
+    frame = _AttrsOnlyFrame({"k": [1], "v": [7]})
+    frame.attrs["source"] = "survey"
+    out = frame.complete({"k": [1, 2]})
+    assert type(out) is _AttrsOnlyFrame
+    assert out.attrs == {"source": "survey"}
+    assert out["k"].tolist() == [1, 2]

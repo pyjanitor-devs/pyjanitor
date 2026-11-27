@@ -304,6 +304,28 @@ def _computations_complete(
 
     A DataFrame, with rows of missing values, if any, is returned.
     """
+    out = _complete_frame(df, columns, sort, by, fill_value, explicit)
+    source = df.obj if isinstance(df, DataFrameGroupBy) else df
+    if type(source) is not pd.DataFrame:
+        # The merge and fill run on plain frames. Rebuild the finished
+        # result with the input's constructor and carry over `_metadata`
+        # and attrs, as pandas operations on a subclass do. Finalize even
+        # when the class already matches, since the class alone does not
+        # carry the metadata. Exact DataFrame inputs keep the merge's
+        # attrs, as before.
+        out = source._constructor(out).__finalize__(source)
+    return out
+
+
+def _complete_frame(
+    df: pd.DataFrame | DataFrameGroupBy,
+    columns: list | tuple | dict | str,
+    sort: bool,
+    by: list | str,
+    fill_value: dict | Any,
+    explicit: bool,
+) -> pd.DataFrame:
+    """Merge the combinations with the frame and fill, as a plain DataFrame."""
     check("explicit", explicit, [bool])
 
     check("sort", sort, [bool])
@@ -340,6 +362,11 @@ def _computations_complete(
     else:
         df_for_expand = df
     uniques = df_for_expand.expand(*columns, sort=sort)
+    if type(uniques) is not pd.DataFrame:
+        # An expand override on a subclass may return the subclass. Merge
+        # and fill on a plain frame, so those steps do not dispatch to
+        # subclass methods; the subclass is restored on return.
+        uniques = pd.DataFrame(uniques)
     if (by is None) and isinstance(df, pd.DataFrame):
         merge_columns = uniques.columns.tolist()
     else:
@@ -358,6 +385,11 @@ def _computations_complete(
             merge_columns = uniques.columns.tolist()
     if not isinstance(df, pd.DataFrame):
         df = df.obj
+    if type(df) is not pd.DataFrame:
+        # Merge with a plain view of a subclass, so pandas' internal writes
+        # (such as the merge indicator) do not go through subclass methods.
+        # The caller restores the subclass and its metadata on return.
+        df = pd.DataFrame(df)
     columns = df.columns
     if (fill_value is not None) and not explicit:
         # Joining the labels repeats a one-column name, and labels are

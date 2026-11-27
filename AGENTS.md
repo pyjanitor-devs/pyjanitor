@@ -935,6 +935,19 @@ the group key has to be moved into columns with `reset_index` before the merge.
 `None` check in the Series/Index validator, and cover a one-column
 `explicit=False` fill plus integer labels (scalar and list form).
 
+### [2026-11-27] Check changelog placement after every rebase
+
+**Context**: Rebasing PR #1839 after six patch releases had landed on `dev`.
+**Learning**: A release moves `[Unreleased]` entries under a version heading.
+When an older PR is then rebased, its added lines keep their place after the
+neighbouring entry and land inside the released section. Git reports a clean
+auto-merge, so the conflict list does not show it.
+**Recommendation**: After rebasing a PR that touches `CHANGELOG.md`, commit,
+then run
+`pixi run python scripts/validate_changelog.py --base origin/dev --head HEAD`.
+If it reports `entry added under [vX.Y.Z]`, move the lines back under
+`## [Unreleased]` before pushing.
+
 ## Version History
 
 - **2025-12-19**: Initial comprehensive AGENTS.md with self-improvement protocol
